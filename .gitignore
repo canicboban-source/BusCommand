@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Firebase / tajni ključevi — NIKAD ne uploada na GitHub!
+firebase-admin-key.json
+firebase-admin-key.json.json
+*.json.json
+serviceAccount*.json
+*-credentials.json
+
+# OS fajlovi
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temp / build
+dist/
+build/
+.cache/
