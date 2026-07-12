@@ -1,0 +1,12 @@
+# Lokalni produkcioni test: docker compose up --build
+services:
+  buscommand:
+    build: .
+    ports:
+      - "8766:8766"
+    environment:
+      NODE_ENV: production
+      PORT: 8766
+      LOG_LEVEL: info
+      CORS_ORIGINS: http://localhost:8766,https://buscommand.com,https://www.buscommand.com
+      # FIREBASE_SERVICE_ACCOUNT_JSON: '{"type":"service_account",...}'
