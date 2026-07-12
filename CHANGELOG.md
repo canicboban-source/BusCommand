@@ -1,4 +1,4 @@
-# FleetPulse — Changelog
+# BusCommand — Changelog
 
 ## Version 9.1 — Vizualni redesign — 2026-07-02
 
@@ -20,7 +20,7 @@
 - Sidebar: `#0a0a18`, 230px, `calc(100vh - 62px)` visina
 - Nav stavke: border-based active state (plava boja granice)
 - Kartice: solid pozadina bez glassmorphisma
-- "FleetPulse v9.1" u sidebar footeru
+- "BusCommand v9.1" u sidebar footeru
 
 **Mobilni bottom nav (≤640px, Samsung A54 i slični):**
 - Sidebar se sakriva na mobilnom
@@ -35,7 +35,7 @@
 | `style-v9.css` | Nov (509 linija) — CSS override koji se učitava NAKON style.css |
 | `index.html` | `<link>` za style-v9.css, HTML bottom nav `#fp-mobile-nav`, verzija → v9.1 |
 | `app.js` | `fpNavSwitch()`, `patchSwitchSection()`, null-check u `renderStopsTimeline()` |
-| `translations.js` | `nav_home` ključ za SR/EN/DE, `saas_version` → "FleetPulse v9.1" |
+| `translations.js` | `nav_home` ključ za SR/EN/DE, `saas_version` → "BusCommand v9.1" |
 | `server.js` | Bind na `0.0.0.0` (umjesto 127.0.0.1) → pristup s telefona via 192.168.x.x |
 | `.gitignore` | Nov — excluduje firebase ključeve i node_modules |
 

@@ -1,19 +1,49 @@
 {
-  "name": "fleetpulse-server",
-  "version": "1.0.0",
-  "description": "FleetPulse — SaaS Bus Fleet Management Platform",
+  "name": "buscommand-server",
+  "version": "30.1.0",
+  "description": "BusCommand — SaaS Bus Fleet Management Platform",
   "main": "api-server.js",
   "scripts": {
     "start": "node api-server.js",
+    "start:built": "npm run build && node api-server.js",
     "dev": "node --watch api-server.js",
+    "demo": "node api-server.js",
+    "lint": "eslint js api-server.js server tests",
+    "lint:fix": "eslint . --fix",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --test tests/unit/**/*.test.js tests/unit/**/*.test.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "setup": "node scripts/setup-company.js",
-    "hash-pin": "node scripts/hash-pin.js"
+    "hash-pin": "node scripts/hash-pin.js",
+    "extract-modules": "node scripts/extract-modules.js",
+    "split-phase2": "node scripts/split-phase2.js",
+    "split-phase3": "node scripts/split-phase3.js",
+    "split-phase4": "node scripts/split-phase4.js",
+    "split-phase5": "node scripts/split-phase5.js",
+    "build": "vite build && node scripts/copy-static-to-dist.js",
+    "dev:ui": "vite",
+    "esmify": "node scripts/esmify-modules.js",
+    "build:legacy-bundle": "node scripts/build-buscommand-bundle.js",
+    "preview": "vite preview",
+    "set-claims": "node scripts/set-claims.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@playwright/test": "^1.57.0",
+    "eslint": "^9.39.2",
+    "globals": "^16.5.0",
+    "vite": "^6.3.5"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "express": "^4.19.2",
-    "firebase-admin": "^12.0.0"
+    "firebase-admin": "^12.0.0",
+    "helmet": "^8.3.0",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
+    "zod": "^4.4.3"
   },
   "engines": {
     "node": ">=18.0.0"

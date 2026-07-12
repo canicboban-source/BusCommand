@@ -1,0 +1,82 @@
+// AUTO-GENERATED — node scripts/esmify-modules.js
+// Side-effect importi svih modula (v9.5 — bez window registracije)
+
+import "./core/runtime-config.js";
+import "./core/auth-client.js";
+import "./core/api-client.js";
+import "./core/firebase-service.js";
+import "./core/store.js";
+import "./core/constants.js";
+import "./core/utils.js";
+import "./core/state.js";
+import "./core/line-shift-catalog.js";
+import "./core/access.js";
+import "./ui/modals.js";
+import "./features/print-calendar.js";
+import "./dispatcher/dispatchers.js";
+import "./core/export-csv.js";
+import "./maps/gps-track.js";
+import "./features/onboarding.js";
+import "./ui/theme.js";
+import "./core/license.js";
+import "./ui/mode-badge.js";
+import "./sync/cross-tab.js";
+import "./ui/i18n.js";
+import "./ui/confirm-modal.js";
+import "./auth/login-selects.js";
+import "./auth/login-session.js";
+import "./auth/password-fields.js";
+import "./auth/superadmin.js";
+import "./auth/login-ui.js";
+import "./auth/login-driver.js";
+import "./auth/login-dispatcher.js";
+import "./layout/shell.js";
+import "./layout/pretrip.js";
+import "./layout/role-switch.js";
+import "./layout/navigation.js";
+import "./dispatcher/shift-utils.js";
+import "./dispatcher/shift-grid.js";
+import "./dispatcher/shifts.js";
+import "./driver/dashboard.js";
+import "./ui/speak.js";
+import "./driver/message-alerts.js";
+import "./driver/messages-inbox.js";
+import "./driver/avatar.js";
+import "./driver/calendar.js";
+import "./driver/reports.js";
+import "./dispatcher/msg-compose.js";
+import "./dispatcher/dashboard.js";
+import "./dispatcher/sent-messages.js";
+import "./dispatcher/quick-view.js";
+import "./dispatcher/reports.js";
+import "./dispatcher/lost-items.js";
+import "./dispatcher/vacations.js";
+import "./dispatcher/settings.js";
+import "./data/groups.js";
+import "./data/drivers.js";
+import "./data/buses-routes.js";
+import "./maps/helpers.js";
+import "./maps/map-data.js";
+import "./maps/live-map-core.js";
+import "./maps/sos-siren.js";
+import "./maps/damage-photo.js";
+import "./driver/quick-reports.js";
+import "./maps/route-stops.js";
+import "./maps/schedule-parse.js";
+import "./maps/schedule-upload.js";
+import "./maps/schedule-viewer.js";
+import "./maps/schedule-auto-detect.js";
+import "./admin/superadmin.js";
+import "./admin/company-admin-onboarding.js";
+import "./admin/company-admin.js";
+import "./admin/dispatcher-setup.js";
+import "./data/schedules.js";
+import "./layout/mobile-nav.js";
+import "./dispatcher/monthly-plans.js";
+import "./dispatcher/daily-plan.js";
+import "./demo/blaguss-310-seed.js";
+import "./bootstrap/init.js";
+
+export function installBusCommand() {
+    // Moduli se učitavaju importom iznad; onclick handleri u register-onclick.js
+}

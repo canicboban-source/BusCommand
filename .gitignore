@@ -20,7 +20,13 @@ desktop.ini
 *.swp
 *.swo
 
+# Env (tajne)
+.env
+.env.local
+
 # Temp / build
 dist/
 build/
 .cache/
+test-results/
+playwright-report/

@@ -40,14 +40,12 @@ service cloud.firestore {
       allow write: if isCompanyAdmin(companyId);
     }
 
-    // ─── KORISNICI (Dispečeri, Company Admin) ───────────────
-
     match /companies/{companyId}/users/{userId} {
       // Svaki user vidi vlastiti profil, admin vidi sve
       allow read: if isCompanyAdmin(companyId)
                   || (isCompanyMember(companyId) && request.auth.uid == userId);
-      allow create: if isCompanyAdmin(companyId);
-      allow update: if isCompanyAdmin(companyId)
+      allow create: if isCompanyAdmin(companyId) && isLicenseActive(companyId);
+      allow update: if (isCompanyAdmin(companyId) && isLicenseActive(companyId))
                     || (isCompanyMember(companyId) && request.auth.uid == userId
                         && onlyUpdatingOwnProfile());
       allow delete: if isCompanyAdmin(companyId);
@@ -60,8 +58,8 @@ service cloud.firestore {
       // Vozač vidi SAMO vlastiti profil
       allow read: if isCompanyStaff(companyId)
                   || isOwnDriverProfile(companyId, driverId);
-      allow create: if isCompanyStaff(companyId);
-      allow update: if isCompanyStaff(companyId)
+      allow create: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      allow update: if (isCompanyStaff(companyId) && isLicenseActive(companyId))
                     || (isDriver(companyId) && request.auth.uid == driverId
                         && onlyUpdatingAllowedDriverFields());
       allow delete: if isCompanyAdmin(companyId);
@@ -71,8 +69,8 @@ service cloud.firestore {
 
     match /companies/{companyId}/shifts/{shiftId} {
       allow read: if isCompanyMember(companyId);
-      allow create: if isCompanyStaff(companyId);
-      allow update: if isCompanyStaff(companyId);
+      allow create: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      allow update: if isCompanyStaff(companyId) && isLicenseActive(companyId);
       allow delete: if isCompanyAdmin(companyId);
     }
 
@@ -80,9 +78,9 @@ service cloud.firestore {
 
     match /companies/{companyId}/messages/{msgId} {
       allow read: if isCompanyMember(companyId);
-      allow create: if isCompanyMember(companyId);
+      allow create: if isCompanyMember(companyId) && isLicenseActive(companyId);
       // Vozač može samo markirati poruku kao pročitanu
-      allow update: if isCompanyStaff(companyId)
+      allow update: if (isCompanyStaff(companyId) && isLicenseActive(companyId))
                     || (isDriver(companyId) && onlyMarkingRead());
       allow delete: if isCompanyAdmin(companyId);
     }
@@ -91,6 +89,7 @@ service cloud.firestore {
 
     match /companies/{companyId}/sos/{sosId} {
       allow read: if isCompanyMember(companyId);
+      // SOS ostaje dostupan bez obzira na status licence — sigurnosni alarm se ne smije blokirati
       allow create: if isDriver(companyId);
       // Samo dispečer/admin može riješiti SOS
       allow update: if isCompanyStaff(companyId);
@@ -100,8 +99,45 @@ service cloud.firestore {
     // ─── RASPORED ───────────────────────────────────────────
 
     match /companies/{companyId}/schedules/{scheduleId} {
-      allow read: if isCompanyMember(companyId);
-      allow write: if isCompanyStaff(companyId);
+      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow write: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+    }
+
+    match /companies/{companyId}/groups/{groupId} {
+      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow write: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+    }
+
+    match /companies/{companyId}/buses/{busId} {
+      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow write: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+    }
+
+    match /companies/{companyId}/routes/{routeId} {
+      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow write: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+    }
+
+    match /companies/{companyId}/reports/{reportId} {
+      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow create: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow update, delete: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+    }
+
+    match /companies/{companyId}/vacations/{vacId} {
+      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow create: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow update, delete: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+    }
+
+    match /companies/{companyId}/lost_items/{itemId} {
+      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow write: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+    }
+
+    match /companies/{companyId}/company_admins/{adminId} {
+      allow read: if isCompanyAdmin(companyId);
+      allow write: if isCompanyAdmin(companyId);
     }
 
     // ─── AUDIT LOG (GDPR — nepromjenjivo) ───────────────────
@@ -150,6 +186,10 @@ service cloud.firestore {
     function isOwnDriverProfile(companyId, driverId) {
       return isDriver(companyId)
         && request.auth.uid == driverId;
+    }
+
+    function isLicenseActive(companyId) {
+      return get(/databases/$(database)/documents/companies/$(companyId)/settings/main).data.status != "suspended";
     }
 
     // Vozač može mijenjati samo lastSeen i slično — ne PIN, ne bus

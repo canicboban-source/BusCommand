@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FleetPulse - SaaS Portal für Fahrer & Disponenten</title>
+    <title>BusCommand - SaaS Portal für Fahrer & Disponenten</title>
     <!-- Google Font: Outfit (Moderan i premium izgled) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,9 +18,15 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- ✅ Firebase compat SDK (v10) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-    <link rel="stylesheet" href="style.css?v=91">
-    <link rel="stylesheet" href="style-v9.css?v=91">
+
+
+    <!-- Runtime (mora biti prije Vite modula) -->
+    <script src="translations.js"></script>
+    <link rel="stylesheet" href="css/design-tokens.css">
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="js/main.js"></script>
 </head>
 <body>
 
@@ -30,7 +36,7 @@
 
             <!-- Selektor jezika (gore desno) -->
             <div class="login-lang-selector">
-                <select id="login-lang-select" onchange="changeLanguage(this.value)">
+                <select id="login-lang-select" data-change-action="changeLanguage">
                     <option value="en">🇬🇧 English</option>
                     <option value="de">🇩🇪 Deutsch</option>
                     <option value="sr">🇷🇸 Srpski</option>
@@ -39,7 +45,7 @@
 
             <!-- Logo / Header -->
             <div class="login-header">
-                <div class="logo" id="login-logo" onclick="handleLogoClick()" style="cursor:default;user-select:none;">
+                <div class="logo" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;">
                     <i data-lucide="bus"></i>
                     <span>Fleet<span class="logo-dot">Pulse</span></span>
                 </div>
@@ -55,11 +61,11 @@
 
                 <!-- Tabovi -->
                 <div class="login-tabs">
-                    <button id="tab-driver-btn" class="login-tab active" onclick="switchLoginTab('driver')">
+                    <button id="tab-driver-btn" class="login-tab active" data-action="switchLoginTab" data-action-args='["driver"]'>
                         <i data-lucide="user"></i>
                         <span data-i18n="driver">Driver</span>
                     </button>
-                    <button id="tab-dispatcher-btn" class="login-tab" onclick="switchLoginTab('dispatcher')">
+                    <button id="tab-dispatcher-btn" class="login-tab" data-action="switchLoginTab" data-action-args='["dispatcher"]'>
                         <i data-lucide="shield"></i>
                         <span data-i18n="dispatcher">Dispatcher</span>
                     </button>
@@ -77,11 +83,12 @@
                             <i data-lucide="lock"></i>
                             <input type="password" id="login-driver-pin"
                                 placeholder="•••••" maxlength="6"
+                                autocomplete="off"
                                 onkeydown="if(event.key==='Enter') loginAsDriver()">
                         </div>
                     </div>
                     <div id="login-error-driver" class="login-error hidden"></div>
-                    <button class="btn-primary btn-full-width" onclick="loginAsDriver()">
+                    <button class="btn-primary btn-full-width" data-action="loginAsDriver">
                         <span data-i18n="login_btn_driver">Start Shift</span>
                         <i data-lucide="arrow-right"></i>
                     </button>
@@ -105,7 +112,7 @@
                                 <input type="email" id="login-dispatcher-email"
                                     data-i18n-placeholder="email_placeholder"
                                     placeholder="dispatcher@company.com"
-                                    autocomplete="email">
+                                    autocomplete="off">
                             </div>
                         </div>
                         <div class="form-group">
@@ -114,17 +121,17 @@
                                 <i data-lucide="lock"></i>
                                 <input type="password" id="login-dispatcher-password"
                                     placeholder="••••••••"
-                                    autocomplete="current-password"
+                                    autocomplete="new-password"
                                     onkeydown="if(event.key==='Enter') loginAsDispatcher()">
                             </div>
                         </div>
                         <div id="login-error-dispatcher" class="login-error hidden"></div>
-                        <button class="btn-primary btn-full-width" id="dispatcher-login-btn" onclick="loginAsDispatcher()">
+                        <button class="btn-primary btn-full-width" id="dispatcher-login-btn" data-action="loginAsDispatcher">
                             <span data-i18n="login_btn_disp">Login</span>
                             <i data-lucide="arrow-right"></i>
                         </button>
                         <div style="text-align:center; margin-top:10px;">
-                            <button onclick="forgotDispatcherPassword()" class="btn-reset-subtle" data-i18n="forgot_password">Forgot password?</button>
+                            <button data-action="forgotDispatcherPassword" class="btn-reset-subtle" data-i18n="forgot_password">Forgot password?</button>
                         </div>
                     </div>
 
@@ -134,7 +141,7 @@
 
             <!-- Reset link (diskretan) -->
             <div style="text-align:center; margin-top:24px;">
-                <button onclick="resetApp()" class="btn-reset-subtle" data-i18n="reset_app">Reset App</button>
+                <button data-action="resetApp" class="btn-reset-subtle" data-i18n="reset_app">Reset App</button>
             </div>
 
         </div><!-- /login-card -->
@@ -148,22 +155,22 @@
                     <i data-lucide="key-round" style="color: var(--primary-color);"></i>
                     <span data-i18n="disp_new_password_title">Set New Password</span>
                 </div>
-                <p data-i18n="disp_new_password_subtitle">Choose your personal access PIN (4-6 digits)</p>
+                <p data-i18n="disp_new_password_subtitle">Izaberite ličnu lozinku (najmanje 6 karaktera)</p>
             </div>
             
             <div class="login-form-content">
                 <input type="hidden" id="setup-dispatcher-id">
                 <div class="form-group">
                     <label for="setup-new-pin" data-i18n="disp_new_password_label">New PIN Code</label>
-                    <input type="password" id="setup-new-pin" placeholder="••••" maxlength="6"
+                    <input type="password" id="setup-new-pin" placeholder="••••••" minlength="6"
                         style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 16px; outline: none; transition: var(--transition-normal);" required>
                 </div>
                 <div class="form-group">
                     <label for="setup-confirm-pin" data-i18n="disp_new_password_confirm">Confirm New PIN</label>
-                    <input type="password" id="setup-confirm-pin" placeholder="••••" maxlength="6"
+                    <input type="password" id="setup-confirm-pin" placeholder="••••••" minlength="6"
                         style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 16px; outline: none; transition: var(--transition-normal);" required>
                 </div>
-                <button type="button" class="btn-primary" onclick="saveNewDispatcherPassword()">
+                <button type="button" class="btn-primary" data-action="saveNewDispatcherPassword">
                     <span data-i18n="btn_save_password">Save Password</span> <i data-lucide="check"></i>
                 </button>
             </div>
@@ -189,7 +196,7 @@
                         <select id="group-setup-select" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; flex:1; font-size: 16px; outline: none;">
                             <!-- Populated dynamically -->
                         </select>
-                        <button type="button" class="btn-primary" onclick="enterDispatcherActiveGroup()" style="padding:0 20px; font-size:0.9rem;">
+                        <button type="button" class="btn-primary" data-action="enterDispatcherActiveGroup" style="padding:0 20px; font-size:0.9rem;">
                             <span data-i18n="btn_confirm_shift">Enter</span> <i data-lucide="log-in"></i>
                         </button>
                     </div>
@@ -197,19 +204,19 @@
                 
                 <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:10px 0;">
                 
-                <!-- Create New Group -->
-                <div>
+                <!-- Create New Group — samo legacy; CA sada upravlja grupama -->
+                <div id="group-setup-create-block" style="display:none;">
                     <h3 style="margin-top:0; font-size:1.1rem; color:var(--text-main); font-weight:600; margin-bottom:12px;" data-i18n="btn_create_group">Create New Group</h3>
                     <div style="display:flex; flex-direction:column; gap:12px;">
                         <div class="form-group" style="margin:0;">
-                            <label for="new-group-id" data-i18n="label_group_id">Group ID (e.g. 105)</label>
-                            <input type="text" id="new-group-id" placeholder="105" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 16px; outline: none;">
+                            <label for="setup-new-group-id" data-i18n="label_group_id">Group ID (e.g. 105)</label>
+                            <input type="text" id="setup-new-group-id" placeholder="105" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 16px; outline: none;">
                         </div>
                         <div class="form-group" style="margin:0;">
-                            <label for="new-group-name" data-i18n="label_group_name">Group Name (e.g. Route 105)</label>
-                            <input type="text" id="new-group-name" placeholder="Linija 105" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 16px; outline: none;">
+                            <label for="setup-new-group-name" data-i18n="label_group_name">Group Name (e.g. Route 105)</label>
+                            <input type="text" id="setup-new-group-name" placeholder="Linija 105" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 16px; outline: none;">
                         </div>
-                        <button type="button" class="btn-primary" onclick="createDispatcherGroup()" style="width:100%;">
+                        <button type="button" class="btn-primary" data-action="createDispatcherGroup" style="width:100%;">
                             <span data-i18n="btn_create_group">Create Group</span> <i data-lucide="plus"></i>
                         </button>
                     </div>
@@ -230,7 +237,7 @@
                     <span id="dispatcher-sos-info">Fahrer Rezwani Azizollah (Bus 91028) hat ein SOS-Signal gesendet!</span>
                 </div>
             </div>
-            <button class="btn-sos-resolve" onclick="resolveSOS()" data-i18n="btn_clear_sos">Als gelöst markieren</button>
+            <button class="btn-sos-resolve" data-action="resolveSOS" data-i18n="btn_clear_sos">Als gelöst markieren</button>
         </div>
 
         <!-- ZAGLAVLJE (HEADER) -->
@@ -239,7 +246,7 @@
                 <div id="header-logo-container">
                     <div class="logo">
                         <i data-lucide="bus"></i>
-                        <span id="app-branding-title">FleetPulse</span>
+                        <span id="app-branding-title">BusCommand</span>
                     </div>
                 </div>
                 <div class="trial-indicator" id="app-trial-badge">
@@ -250,7 +257,7 @@
             <div class="header-right">
                 <!-- Selektor jezika u zaglavlju -->
                 <div class="header-lang-selector">
-                    <select id="header-lang-select" onchange="changeLanguage(this.value)">
+                    <select id="header-lang-select" data-change-action="changeLanguage">
                         <option value="en">🇬🇧 EN</option>
                         <option value="de">🇩🇪 DE</option>
                         <option value="sr">🇷🇸 SR</option>
@@ -259,7 +266,7 @@
 
                 <div class="role-selector-container">
                     <span class="role-label" data-i18n="role_label">Aktivna uloga:</span>
-                    <div class="role-toggle" onclick="toggleRoleDirectly()">
+                    <div class="role-toggle" data-action="toggleRoleDirectly">
                         <span id="current-role-badge">Vozač</span>
                         <i data-lucide="refresh-cw"></i>
                     </div>
@@ -277,11 +284,11 @@
                 </div>
                 
                 <!-- Dark/Light mode toggle -->
-                <button id="theme-toggle-btn" class="btn-logout" onclick="toggleTheme()" title="Toggle dark/light mode" style="margin-right:4px;">
+                <button id="theme-toggle-btn" class="btn-logout" data-action="toggleTheme" title="Toggle dark/light mode" style="margin-right:4px;">
                     <i data-lucide="moon" id="theme-icon"></i>
                 </button>
 
-                <button class="btn-logout" onclick="logout()" title="Logout">
+                <button class="btn-logout" data-action="logout" title="Logout">
                     <i data-lucide="log-out"></i>
                 </button>
             </div>
@@ -294,23 +301,23 @@
                     <!-- Navigacija za vozača -->
                     <ul id="driver-nav" class="nav-list">
                         <li>
-                            <a href="#" class="nav-item active" onclick="switchSection('driver-dashboard')" style="position:relative;">
+                            <a href="#" class="nav-item active" data-action="switchSection" data-action-args='["driver-dashboard"]' style="position:relative;">
                                 <i data-lucide="layout-dashboard"></i> <span data-i18n="nav_daily_plan">Dnevni plan vožnje</span>
                                 <span id="nav-badge-driver-msgs" class="nav-notification-badge hidden"></span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="nav-item" onclick="switchSection('driver-calendar')">
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["driver-calendar"]'>
                                 <i data-lucide="calendar"></i> <span data-i18n="nav_monthly_plan">Mesečni plan (Smene)</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="nav-item" onclick="switchSection('driver-reports')">
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["driver-reports"]'>
                                 <i data-lucide="alert-triangle"></i> <span data-i18n="nav_report_issue">Prijava kašnjenja/kvara</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="nav-item" onclick="switchSection('driver-vacation')">
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["driver-vacation"]'>
                                 <i data-lucide="calendar-days"></i> <span data-i18n="nav_vacation">Godišnji odmor</span>
                             </a>
                         </li>
@@ -318,7 +325,7 @@
 
                     <ul id="superadmin-nav" class="nav-list hidden">
                         <li>
-                            <a href="#" class="nav-item active" onclick="switchSection('superadmin-dashboard')">
+                            <a href="#" class="nav-item active" data-action="switchSection" data-action-args='["superadmin-dashboard"]'>
                                 <i data-lucide="building-2"></i> <span data-i18n="superadmin_title">Super Admin Dashboard</span>
                             </a>
                         </li>
@@ -326,83 +333,68 @@
 
                     <ul id="company-admin-nav" class="nav-list hidden">
                         <li>
-                            <a href="#" class="nav-item active" onclick="switchSection('company-admin-dashboard')">
-                                <i data-lucide="layout-dashboard"></i> <span>Admin Dashboard</span>
+                            <a href="#" class="nav-item active" data-action="switchSection" data-action-args='["company-admin-dashboard"]'>
+                                <i data-lucide="building-2"></i> <span data-i18n="ca_nav_dashboard">Firma & pregled</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="nav-item" onclick="switchSection('dispatcher-shifts')">
-                                <i data-lucide="calendar-range"></i> <span data-i18n="nav_shifts">Shifts</span>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["company-admin-branding"]'>
+                                <i data-lucide="palette"></i> <span data-i18n="ca_nav_branding">Brending firme</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="nav-item" onclick="switchSection('dispatcher-daily-schedule')">
-                                <i data-lucide="calendar-clock"></i> <span data-i18n="upload_schedule_title">Daily Schedule</span>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["company-admin-groups"]'>
+                                <i data-lucide="layers"></i> <span data-i18n="ca_nav_groups">Grupe / linije</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="nav-item" onclick="switchSection('dispatcher-reports')">
-                                <i data-lucide="shield-alert"></i> <span data-i18n="nav_live_alerts">Live Alerts</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" class="nav-item" onclick="switchSection('dispatcher-messages')">
-                                <i data-lucide="message-circle"></i> <span data-i18n="nav_messages">Messages</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" class="nav-item" onclick="switchSection('dispatcher-settings')">
-                                <i data-lucide="settings"></i> <span data-i18n="nav_settings">Settings</span>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["company-admin-team"]'>
+                                <i data-lucide="users"></i> <span data-i18n="ca_nav_team">Tim dispečera</span>
                             </a>
                         </li>
                     </ul>
 
                     <ul id="dispatcher-nav" class="nav-list hidden">
                         <li>
-                            <a href="#" class="nav-item active" onclick="switchSection('dispatcher-dashboard')">
+                            <a href="#" class="nav-item active" data-action="switchSection" data-action-args='["dispatcher-dashboard"]'>
                                 <i data-lucide="bar-chart-2"></i> <span data-i18n="nav_dashboard">Kontrolna tabla</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="nav-item" onclick="switchSection('dispatcher-daily-schedule')">
-                                <i data-lucide="calendar-clock"></i> <span data-i18n="upload_schedule_title">Dnevni raspored</span>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["dispatcher-daily-plan-pick"]'>
+                                <i data-lucide="calendar-days"></i> <span data-i18n="nav_daily_plan_disp">Dnevni plan</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="nav-item" onclick="switchSection('dispatcher-shifts')">
-                                <i data-lucide="calendar-range"></i> <span data-i18n="nav_shifts">Raspored smena</span>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["dispatcher-monthly-plan-pick"]'>
+                                <i data-lucide="calendar-range"></i> <span data-i18n="nav_monthly_plan_disp">Mesečni plan</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="nav-item" onclick="switchSection('dispatcher-reports')">
-                                <i data-lucide="shield-alert"></i> <span data-i18n="nav_live_alerts">Uživo kvarovi/kašnjenja</span>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["dispatcher-reports"]'>
+                                <i data-lucide="shield-alert"></i> <span data-i18n="nav_reports">Prijave problema</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="nav-item" onclick="switchSection('dispatcher-lost-found')">
-                                <i data-lucide="package-search"></i> <span data-i18n="nav_lost_found">Izgubljene stvari</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" class="nav-item" onclick="switchSection('dispatcher-vacations')">
-                                <i data-lucide="file-check"></i> <span data-i18n="nav_vacation_requests">Zahtevi za odmor</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" class="nav-item" onclick="switchSection('dispatcher-messages')" style="position:relative;">
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["dispatcher-messages"]' style="position:relative;">
                                 <i data-lucide="message-circle"></i> <span data-i18n="nav_messages">Poruke</span>
                                 <span id="nav-badge-disp-unread" class="nav-notification-badge hidden"></span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="nav-item" onclick="switchSection('dispatcher-settings')">
-                                <i data-lucide="settings"></i> <span data-i18n="nav_settings">Podešavanja firme (SaaS)</span>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["dispatcher-live-map-section"]'>
+                                <i data-lucide="map"></i> <span data-i18n="nav_map">Mapa</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["dispatcher-settings"]'>
+                                <i data-lucide="settings"></i> <span data-i18n="nav_settings">Podešavanja</span>
                             </a>
                         </li>
                     </ul>
                 </nav>
                 <div class="sidebar-footer">
-                    <p data-i18n="saas_version">FleetPulse v9.1</p>
+                    <p data-i18n="saas_version">BusCommand v30.1</p>
                 </div>
             </aside>
 
@@ -422,7 +414,7 @@
                         <h2 data-i18n="driver_dashboard_title">Dnevni plan vožnje</h2>
                         <div style="display:flex; gap:10px; align-items:center;">
                             <!-- PANIK TASTER SOS -->
-                            <button id="sos-btn" class="btn-sos-emergency" onclick="triggerSOSAlert()">
+                            <button id="sos-btn" class="btn-sos-emergency" data-action="triggerSOSAlert">
                                 <i data-lucide="phone-call"></i> <span>SOS</span>
                             </button>
                             <span class="date-badge" id="current-date-badge">Danas</span>
@@ -432,7 +424,7 @@
                     <div class="driver-dashboard-grid-two">
                         <!-- PROFIL KARTICA VOZAČA -->
                         <div class="card driver-profile-card" style="display: flex; align-items: center; gap: 20px; padding: 20px;">
-                            <div class="user-avatar-upload" onclick="triggerAvatarUpload()" style="
+                            <div class="user-avatar-upload" data-action="triggerAvatarUpload" style="
                                 width: 80px; height: 80px; border-radius: 50%;
                                 background: rgba(255,255,255,0.05); border: 2px dashed rgba(255,255,255,0.2);
                                 display: flex; align-items: center; justify-content: center;
@@ -442,14 +434,14 @@
                                 onmouseout="this.style.borderColor='rgba(255,255,255,0.2)'">
                                 <img id="driver-dashboard-avatar-img" src="" class="hidden" style="width: 100%; height: 100%; object-fit: cover;">
                                 <i data-lucide="camera" id="driver-dashboard-avatar-placeholder" style="width: 28px; height: 28px; color: rgba(255,255,255,0.4);"></i>
-                                <input type="file" id="driver-avatar-file-input" accept="image/jpeg,image/jpg" style="display: none;" onchange="handleAvatarUpload(event)">
+                                <input type="file" id="driver-avatar-file-input" accept="image/jpeg,image/jpg" style="display: none;" data-change-action="handleAvatarUpload" data-change-pass="event">
                             </div>
                             <div style="flex: 1;">
                                 <h3 id="driver-profile-name" style="margin: 0 0 6px 0; font-size: 1.15rem; font-weight: 700; color: #fff;">...</h3>
                                 <p style="margin: 0 0 8px 0; font-size: 0.82rem; color: var(--text-muted);">
                                     <span data-i18n="vehicle">Vozilo</span>: <strong id="driver-profile-bus" style="color: #fff;">-</strong>
                                 </p>
-                                <button onclick="triggerAvatarUpload()" style="
+                                <button data-action="triggerAvatarUpload" style="
                                     background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
                                     color: #fff; border-radius: 8px; padding: 5px 12px; font-size: 0.72rem;
                                     font-weight: 600; cursor: pointer; transition: all 0.2s;"
@@ -481,7 +473,7 @@
                                 </div>
                                 <div class="stat-item">
                                     <span data-i18n="delay_status">Status kašnjenja</span>
-                                    <strong id="driver-delay-status" class="status-ok">Nema kašnjenja</strong>
+                                    <strong id="driver-delay-status" class="status-ok" data-i18n="status_no_delay">Nema kašnjenja</strong>
                                 </div>
                             </div>
                         </div>
@@ -509,19 +501,19 @@
                             <h3><i data-lucide="zap"></i> <span data-i18n="quick_reports_title">Schnell-Meldungen</span></h3>
                             <p class="subtitle" data-i18n="quick_reports_subtitle">Tippen Sie auf eine Meldung zur schnellen Übermittlung an die Leitstelle</p>
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
-                                <button onclick="sendQuickReport('Stau')" class="btn-quick-report" style="background:#f59e0b; color:white; border:none; padding:12px; border-radius:var(--radius-md); font-weight:700; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer; transition: transform 0.1s ease;">
+                                <button data-action="sendQuickReport" data-action-args='["Stau"]' class="btn-quick-report" style="background:#f59e0b; color:white; border:none; padding:12px; border-radius:var(--radius-md); font-weight:700; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer; transition: transform 0.1s ease;">
                                     <i data-lucide="clock" style="width:20px; height:20px;"></i>
                                     <span data-i18n="qr_traffic">Stau (+10 Min)</span>
                                 </button>
-                                <button onclick="sendQuickReport('Panne')" class="btn-quick-report" style="background:#ef4444; color:white; border:none; padding:12px; border-radius:var(--radius-md); font-weight:700; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer; transition: transform 0.1s ease;">
+                                <button data-action="sendQuickReport" data-action-args='["Panne"]' class="btn-quick-report" style="background:#ef4444; color:white; border:none; padding:12px; border-radius:var(--radius-md); font-weight:700; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer; transition: transform 0.1s ease;">
                                     <i data-lucide="alert-octagon" style="width:20px; height:20px;"></i>
                                     <span data-i18n="qr_breakdown">Panne (Defekt)</span>
                                 </button>
-                                <button onclick="sendQuickReport('Bus Voll')" class="btn-quick-report" style="background:#3b82f6; color:white; border:none; padding:12px; border-radius:var(--radius-md); font-weight:700; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer; transition: transform 0.1s ease;">
+                                <button data-action="sendQuickReport" data-action-args='["Bus Voll"]' class="btn-quick-report" style="background:#3b82f6; color:white; border:none; padding:12px; border-radius:var(--radius-md); font-weight:700; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer; transition: transform 0.1s ease;">
                                     <i data-lucide="users" style="width:20px; height:20px;"></i>
                                     <span data-i18n="qr_full_bus">Bus Voll (+5 M)</span>
                                 </button>
-                                <button onclick="sendQuickReport('Verspatung')" class="btn-quick-report" style="background:#8b5cf6; color:white; border:none; padding:12px; border-radius:var(--radius-md); font-weight:700; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer; transition: transform 0.1s ease;">
+                                <button data-action="sendQuickReport" data-action-args='["Verspatung"]' class="btn-quick-report" style="background:#8b5cf6; color:white; border:none; padding:12px; border-radius:var(--radius-md); font-weight:700; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer; transition: transform 0.1s ease;">
                                     <i data-lucide="timer" style="width:20px; height:20px;"></i>
                                     <span data-i18n="qr_delay">Verspätung (+5 M)</span>
                                 </button>
@@ -548,11 +540,11 @@
                     <div class="section-header">
                         <h2 data-i18n="calendar_title">Mesečni plan rada</h2>
                         <div class="calendar-controls" style="display:flex; align-items:center; gap:8px;">
-                            <button onclick="changeCalendarMonth(-1)" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; cursor:pointer;">
+                            <button data-action="changeCalendarMonth" data-action-args='[-1]' style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; cursor:pointer;">
                                 <i data-lucide="chevron-left" style="width:16px; height:16px;"></i>
                             </button>
                             <span class="current-month" id="calendar-month-year" style="font-weight:700;">Jun 2026</span>
-                            <button onclick="changeCalendarMonth(1)" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; cursor:pointer;">
+                            <button data-action="changeCalendarMonth" data-action-args='[1]' style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; cursor:pointer;">
                                 <i data-lucide="chevron-right" style="width:16px; height:16px;"></i>
                             </button>
                         </div>
@@ -567,7 +559,7 @@
                                 <p style="font-size:0.8rem; color:var(--text-muted);" id="driver-schedule-filename">dienstplan.pdf</p>
                             </div>
                         </div>
-                        <button class="btn-primary" onclick="viewUploadedSchedule()" style="padding: 8px 16px; font-size: 0.85rem; height: auto;">
+                        <button class="btn-primary" data-action="viewUploadedSchedule" style="padding: 8px 16px; font-size: 0.85rem; height: auto;">
                             <span data-i18n="btn_view_document">Pogledaj dokument</span> <i data-lucide="eye"></i>
                         </button>
                     </div>
@@ -608,7 +600,7 @@
                                 <i data-lucide="clock"></i>
                                 <h3 data-i18n="report_delay_title">Prijavi kašnjenje</h3>
                             </div>
-                            <form id="delay-report-form" onsubmit="submitDelayReport(event)">
+                            <form id="delay-report-form" data-submit-action="submitDelayReport">
                                 <div class="form-group">
                                     <label for="delay-time" data-i18n="delay_time_label">Vreme kašnjenja (minuti)</label>
                                     <select id="delay-time" required>
@@ -653,7 +645,7 @@
                                 <i data-lucide="wrench"></i>
                                 <h3 data-i18n="report_breakdown_title">Prijavi kvar na vozilu</h3>
                             </div>
-                            <form id="breakdown-report-form" onsubmit="submitBreakdownReport(event)">
+                            <form id="breakdown-report-form" data-submit-action="submitBreakdownReport">
                                 <div class="form-group">
                                     <label for="breakdown-type" data-i18n="breakdown_type_label">Kategorija kvara</label>
                                     <select id="breakdown-type" required>
@@ -689,7 +681,7 @@
                                 <i data-lucide="package-open"></i>
                                 <h3 data-i18n="report_lost_title">Prijavi izgubljenu stvar</h3>
                             </div>
-                            <form id="lost-item-form" onsubmit="submitLostItem(event)">
+                            <form id="lost-item-form" data-submit-action="submitLostItem">
                                 <div class="form-group">
                                     <label for="lost-item-type" data-i18n="lost_type_label">Pronađeni predmet</label>
                                     <select id="lost-item-type" required>
@@ -726,7 +718,7 @@
                     <div class="vacation-grid">
                         <div class="card request-vacation-card">
                             <h3 data-i18n="new_request_title">Kreiraj novi zahtev</h3>
-                            <form id="vacation-form" onsubmit="submitVacationRequest(event)">
+                            <form id="vacation-form" data-submit-action="submitVacationRequest">
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="vacation-start" data-i18n="start_date_label">Datum početka</label>
@@ -801,7 +793,7 @@
                             </div>
                             <div class="stat-info">
                                 <h3 id="superadmin-total-users">0</h3>
-                                <p>Total Drivers</p>
+                                <p data-i18n="superadmin_total_drivers">Total Drivers</p>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -810,7 +802,7 @@
                             </div>
                             <div class="stat-info">
                                 <h3 id="superadmin-total-groups">0</h3>
-                                <p>Total Groups</p>
+                                <p data-i18n="superadmin_total_groups">Total Groups</p>
                             </div>
                         </div>
                     </div>
@@ -827,7 +819,7 @@
                                 <label for="sa-new-pin" data-i18n="disp_pin_label" style="font-size:0.75rem; margin-bottom:4px;">Initial PIN</label>
                                 <input type="password" id="sa-new-pin" placeholder="1234" maxlength="6" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 10px; color: white; width: 100%; outline: none;">
                             </div>
-                            <button type="button" class="btn-primary" onclick="superadminCreateCompany()" style="height:42px; padding: 0 20px;">
+                            <button type="button" class="btn-primary" data-action="superadminCreateCompany" style="height:42px; padding: 0 20px;">
                                 <i data-lucide="plus"></i> <span data-i18n="btn_add_dispatcher">Add</span>
                             </button>
                         </div>
@@ -839,7 +831,7 @@
                             <i data-lucide="user-plus" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;color:var(--primary-color);"></i>
                             Create Company Admin Account
                         </h3>
-                        <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:14px;">Company Admin logs in with email + password. Assign a companyId (= dispatcher/company ID).</p>
+                        <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:14px;" data-i18n="sa_ca_login_hint">Company Admin logs in with email + password. Assign a companyId (= dispatcher/company ID).</p>
                         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
                             <div class="form-group" style="flex:1;min-width:160px;margin:0;">
                                 <label style="font-size:0.75rem;margin-bottom:4px;display:block;">Admin Name</label>
@@ -851,13 +843,13 @@
                             </div>
                             <div class="form-group" style="flex:1;min-width:140px;margin:0;">
                                 <label style="font-size:0.75rem;margin-bottom:4px;display:block;">Password</label>
-                                <input type="password" id="sa-ca-password" placeholder="min 6 chars" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-md);padding:10px;color:white;width:100%;outline:none;box-sizing:border-box;">
+                                <input type="password" id="sa-ca-password" data-i18n-placeholder="password_min_placeholder" placeholder="min 6 chars" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-md);padding:10px;color:white;width:100%;outline:none;box-sizing:border-box;">
                             </div>
                             <div class="form-group" style="flex:1;min-width:140px;margin:0;">
                                 <label style="font-size:0.75rem;margin-bottom:4px;display:block;">Company ID</label>
                                 <input type="text" id="sa-ca-company-id" placeholder="e.g. blaguss" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-md);padding:10px;color:white;width:100%;outline:none;box-sizing:border-box;">
                             </div>
-                            <button type="button" class="btn-primary" onclick="superadminCreateCompanyAdmin()" style="height:42px;padding:0 20px;white-space:nowrap;">
+                            <button type="button" class="btn-primary" data-action="superadminCreateCompanyAdmin" style="height:42px;padding:0 20px;white-space:nowrap;">
                                 <i data-lucide="user-plus"></i> Add Admin
                             </button>
                         </div>
@@ -886,46 +878,172 @@
                     </div>
                 </section>
 
-                <!-- COMPANY ADMIN DASHBOARD -->
+                <!-- COMPANY ADMIN — FIRMA & PREGLED -->
                 <section id="company-admin-dashboard" class="content-section hidden">
                     <div class="section-header">
-                        <h2><i data-lucide="layout-dashboard" style="color:var(--primary-color);width:22px;height:22px;vertical-align:middle;margin-right:8px;"></i> Company Admin Dashboard</h2>
+                        <h2><i data-lucide="building-2" style="color:var(--primary-color);width:22px;height:22px;vertical-align:middle;margin-right:8px;"></i> <span data-i18n="ca_nav_dashboard">Firma & pregled</span></h2>
+                        <p class="subtitle" data-i18n="ca_dashboard_subtitle">Licenca, grupe, vozači po liniji i status podešavanja — sve na jednom mestu.</p>
                     </div>
-                    <!-- Stats grid -->
-                    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:24px;">
+
+                    <div id="ca-firm-license-card" class="card" style="margin-bottom:20px;"></div>
+
+                    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:24px;">
                         <div class="stat-card">
                             <div class="stat-icon" style="background:rgba(37,99,235,0.12);color:#2563eb;"><i data-lucide="users"></i></div>
-                            <div class="stat-info"><h3 id="ca-stat-drivers">0</h3><p data-i18n="table_driver">Drivers</p></div>
+                            <div class="stat-info"><h3 id="ca-stat-drivers">0</h3><p data-i18n="table_driver">Vozači</p></div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon" style="background:rgba(22,163,74,0.12);color:#16a34a;"><i data-lucide="layers"></i></div>
-                            <div class="stat-info"><h3 id="ca-stat-groups">0</h3><p>Groups</p></div>
+                            <div class="stat-info"><h3 id="ca-stat-groups">0</h3><p data-i18n="ca_stat_groups">Grupe / linije</p></div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon" style="background:rgba(234,179,8,0.12);color:#ca8a04;"><i data-lucide="shield"></i></div>
-                            <div class="stat-info"><h3 id="ca-stat-dispatchers">0</h3><p>Dispatchers</p></div>
+                            <div class="stat-info"><h3 id="ca-stat-dispatchers">0</h3><p data-i18n="ca_stat_dispatchers">Dispečeri</p></div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon" style="background:rgba(239,68,68,0.12);color:#ef4444;"><i data-lucide="alert-triangle"></i></div>
-                            <div class="stat-info"><h3 id="ca-stat-incidents">0</h3><p>Active Incidents</p></div>
+                            <div class="stat-icon" style="background:rgba(139,92,246,0.12);color:#8b5cf6;"><i data-lucide="bus"></i></div>
+                            <div class="stat-info"><h3 id="ca-stat-buses">0</h3><p data-i18n="ca_stat_buses">Autobusi</p></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background:rgba(16,185,129,0.12);color:#10b981;"><i data-lucide="radio"></i></div>
+                            <div class="stat-info"><h3 id="ca-stat-online">0</h3><p data-i18n="ca_stat_online">Online sada</p></div>
                         </div>
                     </div>
-                    <!-- Grupe & dispečeri pregled -->
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;" class="ca-grid">
+
+                    <div class="card" style="margin-bottom:20px;">
+                        <h3 style="margin:0 0 14px;display:flex;align-items:center;gap:8px;">
+                            <i data-lucide="table" style="color:var(--primary-color);width:16px;height:16px;"></i>
+                            <span data-i18n="ca_groups_table_title">Pregled grupa i linija</span>
+                        </h3>
+                        <div id="ca-groups-table-wrap"></div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" class="ca-grid">
                         <div class="card">
-                            <h3 style="margin-bottom:14px;display:flex;align-items:center;gap:8px;"><i data-lucide="layers" style="color:var(--primary-color);width:16px;height:16px;"></i> Groups</h3>
-                            <div id="ca-groups-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+                            <h3 style="margin:0 0 14px;display:flex;align-items:center;gap:8px;">
+                                <i data-lucide="users" style="color:var(--primary-color);width:16px;height:16px;"></i>
+                                <span data-i18n="ca_stat_dispatchers">Tim dispečera</span>
+                            </h3>
+                            <div id="ca-dispatchers-summary"></div>
                         </div>
                         <div class="card">
-                            <h3 style="margin-bottom:14px;display:flex;align-items:center;gap:8px;"><i data-lucide="shield" style="color:var(--primary-color);width:16px;height:16px;"></i> Dispatchers</h3>
-                            <div id="ca-dispatchers-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+                            <h3 style="margin:0 0 14px;display:flex;align-items:center;gap:8px;">
+                                <i data-lucide="list-checks" style="color:var(--primary-color);width:16px;height:16px;"></i>
+                                <span data-i18n="ca_setup_title">Kontrolna lista</span>
+                            </h3>
+                            <div id="ca-setup-checklist"></div>
                         </div>
                     </div>
-                    <!-- Vozači tabela -->
-                    <div class="card">
-                        <h3 style="margin-bottom:14px;display:flex;align-items:center;gap:8px;"><i data-lucide="users" style="color:var(--primary-color);width:16px;height:16px;"></i> All Drivers</h3>
-                        <div id="ca-drivers-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+                </section>
+
+                <!-- COMPANY ADMIN — BRENDING (Faza 1) -->
+                <section id="company-admin-branding" class="content-section hidden">
+                    <div class="section-header">
+                        <h2><i data-lucide="palette" style="color:var(--primary-color);width:22px;height:22px;vertical-align:middle;margin-right:8px;"></i> <span data-i18n="ca_nav_branding">Brending firme</span></h2>
+                        <p class="subtitle" data-i18n="ca_branding_subtitle">Naziv, boja i logo koji vide dispečeri i vozači u aplikaciji.</p>
                     </div>
+
+                    <div id="ca-branding-first-run" class="card" style="margin-bottom:16px;border:1px dashed rgba(14,165,233,0.45);background:rgba(14,165,233,0.06);display:none;">
+                        <p style="margin:0;font-size:0.9rem;" data-i18n="ca_branding_first_run">Korak 1: Podesite izgled firme pre nego što dodate dispečere i grupe.</p>
+                    </div>
+
+                    <div class="card settings-card-branding">
+                        <h3 style="margin-top:0;"><i data-lucide="sparkles"></i> <span data-i18n="branding_title">Izgled i brendiranje</span></h3>
+                        <div class="settings-branding-grid">
+                            <div class="form-group">
+                                <label for="settings-brand-name" data-i18n="brand_name_label">Naziv firme prevoznika</label>
+                                <input type="text" id="settings-brand-name" placeholder="npr. Blaguss Graz">
+                            </div>
+                            <div class="form-group">
+                                <label for="settings-primary-color" data-i18n="primary_color_label">Primarna boja aplikacije</label>
+                                <div class="color-picker-wrapper">
+                                    <input type="color" id="settings-primary-color" value="#0ea5e9">
+                                    <span class="color-hex-label" id="color-hex-display">#0EA5E9</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="settings-brand-logo" data-i18n="ph_brand_logo_label">Logo URL</label>
+                                <input type="text" id="settings-brand-logo" data-i18n-placeholder="ph_brand_logo" placeholder="https://example.com/logo.png">
+                            </div>
+                            <div class="form-group button-align">
+                                <button type="button" class="btn-primary" data-action="applyBrandingSettings">
+                                    <i data-lucide="check"></i> <span data-i18n="btn_apply_branding">Primeni brendiranje</span>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="subtitle" style="font-size:0.78rem;margin-top:14px;margin-bottom:0;opacity:0.8;" data-i18n="ca_branding_scope_hint">Važi za celu firmu — svi dispečeri i vozači vide isti brend.</p>
+                    </div>
+                </section>
+
+                <!-- COMPANY ADMIN — GRUPE / LINIJE (Faza 3) -->
+                <section id="company-admin-groups" class="content-section hidden">
+                    <div class="section-header">
+                        <h2><i data-lucide="layers" style="color:var(--primary-color);width:22px;height:22px;vertical-align:middle;margin-right:8px;"></i> <span data-i18n="ca_nav_groups">Grupe / linije</span></h2>
+                        <p class="subtitle" data-i18n="ca_groups_subtitle">Kreirajte linije (310, 105…) pre nego što dodelite dispečere i uvezete podatke.</p>
+                    </div>
+                    <div class="card" style="margin-bottom:18px;">
+                        <h3 style="margin-top:0;"><i data-lucide="plus"></i> <span data-i18n="ca_add_group_title">Nova linija / grupa</span></h3>
+                        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                            <div class="form-group" style="flex:0 0 100px;margin-bottom:0;">
+                                <label style="font-size:0.78rem;display:block;margin-bottom:4px;" data-i18n="label_group_id">ID linije</label>
+                                <input type="text" id="ca-new-group-line-id" placeholder="310" maxlength="6"
+                                    style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-md);padding:10px;color:white;width:100%;font-size:14px;outline:none;box-sizing:border-box;"
+                                    onkeydown="if(event.key==='Enter') addCompanyGroup()">
+                            </div>
+                            <div class="form-group" style="flex:2;min-width:160px;margin-bottom:0;">
+                                <label style="font-size:0.78rem;display:block;margin-bottom:4px;" data-i18n="group_name_label">Naziv</label>
+                                <input type="text" id="ca-new-group-name" data-i18n-placeholder="ph_group_name" placeholder="Linija 310"
+                                    style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-md);padding:10px;color:white;width:100%;font-size:14px;outline:none;box-sizing:border-box;">
+                            </div>
+                            <div class="form-group" style="flex:2;min-width:140px;margin-bottom:0;">
+                                <label style="font-size:0.78rem;display:block;margin-bottom:4px;" data-i18n="group_desc_label">Opis</label>
+                                <input type="text" id="ca-new-group-desc" placeholder="Blaguss 310"
+                                    style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-md);padding:10px;color:white;width:100%;font-size:14px;outline:none;box-sizing:border-box;">
+                            </div>
+                            <div class="form-group" style="flex:0;margin-bottom:0;">
+                                <label style="font-size:0.78rem;display:block;margin-bottom:4px;" data-i18n="group_color_label">Boja</label>
+                                <input type="color" id="ca-new-group-color" value="#0ea5e9" style="width:46px;height:40px;border-radius:var(--radius-md);cursor:pointer;">
+                            </div>
+                            <button type="button" class="btn-primary" data-action="addCompanyGroup" style="height:42px;white-space:nowrap;">
+                                <i data-lucide="plus"></i> <span data-i18n="btn_add_group">Dodaj</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="ca-groups-manage-list"></div>
+                </section>
+
+                <!-- COMPANY ADMIN — TIM DISPEČERA (Faza 2) -->
+                <section id="company-admin-team" class="content-section hidden">
+                    <div class="section-header">
+                        <h2><i data-lucide="users" style="color:var(--primary-color);width:22px;height:22px;vertical-align:middle;margin-right:8px;"></i> <span data-i18n="ca_nav_team">Tim dispečera</span></h2>
+                        <p class="subtitle" data-i18n="ca_team_subtitle">Dodajte dispečere, dodelite im grupe i resetujte lozinku ako zatreba.</p>
+                    </div>
+                    <div class="card" style="margin-bottom:18px;">
+                        <h3 style="margin-top:0;"><i data-lucide="user-plus"></i> <span data-i18n="ca_add_disp_title">Novi dispečer</span></h3>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label data-i18n="disp_name_label">Ime</label>
+                                <input type="text" id="ca-new-disp-name" placeholder="Ana Kovačević">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label data-i18n="email_label">Email</label>
+                                <input type="email" id="ca-new-disp-email" placeholder="disp@firma.com">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label data-i18n="pass_label">Početna lozinka</label>
+                                <input type="password" id="ca-new-disp-password" data-i18n-placeholder="password_min_placeholder" placeholder="min. 6 karaktera" autocomplete="new-password">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label data-i18n="ca_assign_groups">Grupe (linije)</label>
+                                <select id="ca-disp-groups-select" multiple style="min-height:88px;width:100%;padding:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-md);color:white;font-size:0.85rem;"></select>
+                                <p style="font-size:0.72rem;color:var(--text-muted);margin:6px 0 0;" data-i18n="ca_multiselect_hint">Držite Ctrl za više grupa</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-primary" style="margin-top:14px;" data-action="addCompanyDispatcher">
+                            <i data-lucide="plus"></i> <span data-i18n="btn_add_dispatcher">Dodaj dispečera</span>
+                        </button>
+                    </div>
+                    <div id="ca-dispatchers-manage-list"></div>
                 </section>
 
                 <!-- RASPORED SMENA (NOVI) -->
@@ -937,14 +1055,14 @@
                         <h2 data-i18n="nav_shifts">Raspored smena</h2>
                         <div style="display:flex; gap:10px; align-items:center;">
                             <!-- Navigacija po nedeljama -->
-                            <button onclick="shiftWeekNav(-1)" class="btn-icon-nav" title="Prethodna nedelja">
+                            <button data-action="shiftWeekNav" data-action-args='[-1]' class="btn-icon-nav" title="Prethodna nedelja">
                                 <i data-lucide="chevron-left"></i>
                             </button>
                             <span id="shifts-week-label" style="font-weight:600; font-size:0.9rem; min-width:160px; text-align:center;"></span>
-                            <button onclick="shiftWeekNav(1)" class="btn-icon-nav" title="Next week">
+                            <button data-action="shiftWeekNav" data-action-args='[1]' class="btn-icon-nav" title="Next week">
                                 <i data-lucide="chevron-right"></i>
                             </button>
-                            <button onclick="shiftWeekNav(0)" class="btn-secondary" style="padding:6px 14px; font-size:0.8rem;" data-i18n="btn_today">Danas</button>
+                            <button data-action="shiftWeekNav" data-action-args='[0]' class="btn-secondary" style="padding:6px 14px; font-size:0.8rem;" data-i18n="btn_today">Danas</button>
                         </div>
                     </div>
 
@@ -970,13 +1088,14 @@
                                     <option value="night" data-i18n="shift_night">Noćna (Nachtdienst)</option>
                                     <option value="off" data-i18n="shift_off">Slobodan dan</option>
                                     <option value="vacation" data-i18n="shift_vacation_type">Godišnji odmor</option>
+                                    <option value="sick" data-i18n="shift_sick_type">Bolovanje</option>
                                 </select>
                             </div>
                             <div class="form-group" style="margin-bottom:0;">
                                 <label data-i18n="shift_name_label">Oznaka smene (opciono)</label>
                                 <input type="text" id="shift-name-input" placeholder="npr. 320.S08" maxlength="30">
                             </div>
-                            <button onclick="assignShift()" class="btn-primary" style="height:46px; white-space:nowrap;">
+                            <button data-action="assignShift" class="btn-primary" style="height:46px; white-space:nowrap;">
                                 <i data-lucide="check"></i> <span data-i18n="btn_assign_shift">Dodeli</span>
                             </button>
                         </div>
@@ -991,6 +1110,7 @@
                     </div>
                 </section>
 
+
                 <!-- ══ DNEVNI RASPORED ══════════════════════════════════════════ -->
                 <section id="dispatcher-daily-schedule" class="content-section hidden">
                     <div class="section-header">
@@ -1000,7 +1120,7 @@
                         </div>
                         <div style="display:flex;gap:10px;align-items:center;">
                             <input type="date" id="schedule-date-picker" style="padding:8px 12px;border-radius:var(--radius-sm);">
-                            <button onclick="sendScheduleToDrivers()" class="btn-primary">
+                            <button data-action="sendScheduleToDrivers" class="btn-primary">
                                 <i data-lucide="send"></i> <span data-i18n="btn_send_message">Pošalji svim vozačima</span>
                             </button>
                         </div>
@@ -1008,12 +1128,12 @@
 
                     <!-- TABS: Upload / Text -->
                     <div style="display:flex;gap:0;border-bottom:1px solid var(--panel-border);margin-bottom:20px;">
-                        <button id="sched-tab-upload" onclick="switchScheduleTab('upload')"
+                        <button id="sched-tab-upload" data-action="switchScheduleTab" data-action-args='["upload"]'
                             style="padding:10px 20px;border:none;background:none;color:var(--primary-color);font-weight:600;font-size:13px;border-bottom:2px solid var(--primary-color);cursor:pointer;">
                             <i data-lucide="upload" style="width:14px;height:14px;margin-right:5px;"></i>
                             <span data-i18n="btn_upload">Upload fajla</span>
                         </button>
-                        <button id="sched-tab-text" onclick="switchScheduleTab('text')"
+                        <button id="sched-tab-text" data-action="switchScheduleTab" data-action-args='["text"]'
                             style="padding:10px 20px;border:none;background:none;color:var(--text-muted);font-weight:600;font-size:13px;border-bottom:2px solid transparent;cursor:pointer;">
                             <i data-lucide="type" style="width:14px;height:14px;margin-right:5px;"></i>
                             <span data-i18n="schedule_tab_text">Unos teksta</span>
@@ -1022,7 +1142,7 @@
 
                     <!-- TAB: Upload -->
                     <div id="sched-panel-upload">
-                        <div class="card" id="schedule-dropzone" onclick="document.getElementById('schedule-file-input').click()"
+                        <div class="card" id="schedule-dropzone" data-action="clickElementById" data-action-args='["schedule-file-input"]'
                             style="border:2px dashed var(--panel-border);text-align:center;padding:48px;cursor:pointer;transition:all .2s;background:rgba(61,126,245,0.02);"
                             ondragover="event.preventDefault();this.style.borderColor='var(--primary-color)'"
                             ondragleave="this.style.borderColor='var(--panel-border)'"
@@ -1033,13 +1153,13 @@
                             <div id="schedule-file-name" style="margin-top:14px;font-size:13px;color:var(--primary-color);font-weight:600;display:none;"></div>
                         </div>
                         <input type="file" id="schedule-file-input" accept=".pdf,.jpg,.jpeg,.png,.docx,.txt"
-                            style="display:none;" onchange="handleScheduleFileSelect(this)">
+                            style="display:none;" data-change-action="handleScheduleFileSelect" data-change-pass="element">
 
                         <!-- Preview dokumenta -->
                         <div id="schedule-file-preview" class="card" style="display:none;margin-top:16px;padding:12px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                                 <span id="schedule-preview-name" style="font-weight:600;font-size:13px;color:var(--text-main);"></span>
-                                <button onclick="clearScheduleFile()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;">
+                                <button data-action="clearScheduleFile" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;">
                                     <i data-lucide="x"></i> <span data-i18n="btn_remove">Ukloni</span>
                                 </button>
                             </div>
@@ -1055,11 +1175,11 @@
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                                 <label style="font-weight:600;font-size:13px;" data-i18n="schedule_text_label">Unesi raspored kao tekst</label>
                                 <div style="display:flex;gap:8px;">
-                                    <button onclick="formatScheduleText('bold')" style="background:none;border:1px solid var(--panel-border);padding:4px 10px;border-radius:6px;color:var(--text-muted);cursor:pointer;font-weight:700;">B</button>
-                                    <button onclick="insertScheduleTable()" style="background:none;border:1px solid var(--panel-border);padding:4px 10px;border-radius:6px;color:var(--text-muted);cursor:pointer;font-size:11px;">
+                                    <button data-action="formatScheduleText" data-action-args='["bold"]' style="background:none;border:1px solid var(--panel-border);padding:4px 10px;border-radius:6px;color:var(--text-muted);cursor:pointer;font-weight:700;">B</button>
+                                    <button data-action="insertScheduleTable" style="background:none;border:1px solid var(--panel-border);padding:4px 10px;border-radius:6px;color:var(--text-muted);cursor:pointer;font-size:11px;">
                                         <i data-lucide="table" style="width:12px;height:12px;"></i> <span data-i18n="btn_table">Tabela</span>
                                     </button>
-                                    <button onclick="clearScheduleText()" style="background:none;border:1px solid var(--panel-border);padding:4px 10px;border-radius:6px;color:var(--text-muted);cursor:pointer;font-size:11px;" data-i18n="btn_clear">Obriši</button>
+                                    <button data-action="clearScheduleText" style="background:none;border:1px solid var(--panel-border);padding:4px 10px;border-radius:6px;color:var(--text-muted);cursor:pointer;font-size:11px;" data-i18n="btn_clear">Obriši</button>
                                 </div>
                             </div>
                             <textarea id="schedule-text-input" rows="16"
@@ -1068,6 +1188,14 @@
                                 style="width:100%;min-height:300px;font-family:monospace;font-size:13px;line-height:1.7;resize:vertical;background:rgba(0,0,0,0.2);border:1px solid var(--panel-border);border-radius:8px;padding:14px;color:var(--text-main);outline:none;">
                             </textarea>
                         </div>
+                    </div>
+
+                    <!-- DNEVNI PLAN — poz. 1 x2 Bereitschaft -->
+                    <div class="card" style="margin-top:20px;">
+                        <h3 style="margin-bottom:8px;"><i data-lucide="list-ordered"></i> Dnevni plan smena</h3>
+                        <p class="subtitle" style="margin-bottom:12px;" data-i18n="daily_bereitschaft_hint">Pozicija 1 je uvek x2 Bereitschaft (pon–pet) — jedan vozač.</p>
+                        <div id="daily-plan-meta" style="font-size:0.85rem;margin-bottom:12px;color:var(--text-muted);"></div>
+                        <div id="daily-plan-slots"></div>
                     </div>
 
                     <!-- HISTORIJA POSLANIH RASPOREDA -->
@@ -1081,139 +1209,85 @@
 
                 <!-- KONTROLNA TABLA -->
                 <section id="dispatcher-dashboard" class="content-section hidden">
-                    <!-- GROUP FILTER BAR -->
-                    <div id="group-filter-bar" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; align-items:center;">
-                        <!-- Dinamički iz JS -->
-                    </div>
                     <div class="section-header">
                         <h2 data-i18n="disp_dashboard_title">Kontrolna tabla dispečera</h2>
+                        <p class="subtitle" style="margin-top:6px;" data-i18n="disp_dashboard_subtitle">Pregled grupa, vozača na dužnosti i aktivnih problema — jutarnji uvid na jednom mestu.</p>
                     </div>
+
+                    <div id="dashboard-groups-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:22px;"></div>
 
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-icon-wrapper blue-icon">
-                                <i data-lucide="bus"></i>
+                                <i data-lucide="users"></i>
                             </div>
                             <div class="stat-data">
-                                <span id="stat-active-buses">5</span>
-                                <label data-i18n="stat_active_buses_lbl">Aktivnih vozila na trasi</label>
+                                <span id="stat-active-drivers-count">0</span>
+                                <label data-i18n="stat_active_drivers">Prijavljenih vozača</label>
                             </div>
                         </div>
                         <div class="stat-card">
+                            <div class="stat-icon-wrapper green-icon" style="background: rgba(16,185,129,0.12); color: #10b981;">
+                                <i data-lucide="bus"></i>
+                            </div>
+                            <div class="stat-data">
+                                <span id="stat-active-buses-count">0</span>
+                                <label data-i18n="stat_active_buses">Aktivnih vozila</label>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="cursor:pointer;" data-action="switchSection" data-action-args='["dispatcher-messages"]'>
+                            <div class="stat-icon-wrapper" style="background:rgba(14,165,233,0.12);color:#0ea5e9;">
+                                <i data-lucide="message-circle"></i>
+                            </div>
+                            <div class="stat-data">
+                                <span id="stat-unread-messages-count">0</span>
+                                <label data-i18n="stat_unread_messages">Nepročitane poruke</label>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="cursor:pointer;" data-action="switchSection" data-action-args='["dispatcher-reports"]'>
                             <div class="stat-icon-wrapper red-icon">
                                 <i data-lucide="alert-octagon"></i>
                             </div>
                             <div class="stat-data">
-                                <span id="stat-open-reports">0</span>
-                                <label data-i18n="stat_open_reports_lbl">Aktivnih kvarova i zastoja</label>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon-wrapper orange-icon">
-                                <i data-lucide="clock-alert"></i>
-                            </div>
-                            <div class="stat-data">
-                                <span id="stat-pending-vacations">0</span>
-                                <label data-i18n="stat_pending_vacations_lbl">Zahteva za odmor na čekanju</label>
+                                <span id="stat-open-problems-count">0</span>
+                                <label data-i18n="stat_live_problems">Problemi uživo</label>
                             </div>
                         </div>
                     </div>
 
                     <div class="dispatcher-dashboard-grid">
-                        <!-- BRZI PREGLED VOZAČA I SMENA (QUICK VIEW) -->
-                        <div class="card dispatcher-quick-view-card">
-                            <h3><i data-lucide="user-check"></i> <span data-i18n="disp_quick_view_title">Dienst-Schnellansicht</span></h3>
-                            <p class="subtitle" data-i18n="disp_quick_view_subtitle">Wählen Sie einen Lenker aus, um den heutigen und morgigen Dienst anzuzeigen</p>
-                            <div class="form-group" style="margin-top: 15px;">
-                                <select id="disp-quick-driver-select" onchange="renderDispatcherQuickView()" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 15px; outline: none; transition: var(--transition-normal); cursor:pointer;">
-                                    <!-- Popunjava se iz JS -->
-                                </select>
-                            </div>
-                            <div id="disp-quick-view-details" style="margin-top: 15px;">
-                                <!-- Dinamički detalji iz JS -->
-                            </div>
-                        </div>
-
-                        <!-- Live log prijava -->
                         <div class="card live-alerts-card">
                             <div class="card-header-with-action">
                                 <h3 data-i18n="live_alerts_title">Najnovije prijave sa terena</h3>
-                                <button class="btn-text-only" onclick="switchSection('dispatcher-reports')" data-i18n="btn_see_all">Vidi sve</button>
+                                <button class="btn-text-only" data-action="switchSection" data-action-args='["dispatcher-reports"]' data-i18n="btn_see_all">Vidi sve</button>
                             </div>
                             <div class="alerts-list" id="dispatcher-live-alerts">
                                 <!-- Dinamičke prijave iz JS -->
                             </div>
                         </div>
 
-                        <!-- SLANJE PORUKE VOZAČIMA -->
-                        <div class="card send-message-card">
-                            <h3><i data-lucide="send"></i> <span data-i18n="send_message_title">Pošalji poruku vozačima</span></h3>
-                            <form id="dispatcher-message-form" onsubmit="submitDispatcherMessage(event)">
-                                <!-- SCOPE: vozač ili cijela grupa -->
-                                <div class="form-group">
-                                    <label data-i18n="msg_scope_label">Pošalji</label>
-                                    <div style="display:flex;gap:8px;">
-                                        <button type="button" id="msg-scope-driver-btn" onclick="setMessageScope('driver','dispatcher-message-form')"
-                                            class="msg-scope-btn msg-scope-active" data-i18n="msg_scope_driver">Vozaču</button>
-                                        <button type="button" id="msg-scope-group-btn" onclick="setMessageScope('group','dispatcher-message-form')"
-                                            class="msg-scope-btn" data-i18n="msg_scope_group">Cijeloj grupi</button>
-                                    </div>
-                                </div>
-                                <!-- PRIMALAC: vozač ili grupa (dinamički mijenja sadržaj) -->
-                                <div class="form-group">
-                                    <label for="message-recipient" data-i18n="recipient_label">Primalac</label>
-                                    <select id="message-recipient" required>
-                                        <!-- Dinamički se popunjava iz JS -->
-                                    </select>
-                                </div>
-                                <!-- ŠABLON PORUKE -->
-                                <div class="form-group">
-                                    <label for="message-template" data-i18n="msg_template_label">Šablon poruke</label>
-                                    <select id="message-template" required>
-                                        <!-- Dinamički se popunjava iz JS na osnovu jezika -->
-                                    </select>
-                                </div>
-                                <!-- OPCIONI DETALJ -->
-                                <div class="form-group">
-                                    <label for="message-detail" data-i18n="message_text_label">Detalj <span style="font-size:0.78rem;opacity:0.6;" data-i18n="wizard_optional">(opcionalno)</span></label>
-                                    <input type="text" id="message-detail" data-i18n-placeholder="tmpl_detail_placeholder" placeholder="Stanica, br. busa, vrijema...">
-                                </div>
-                                <button type="submit" class="btn-primary btn-full-width">
-                                    <i data-lucide="send"></i> <span data-i18n="btn_send_message">Pošalji poruku</span>
-                                </button>
-                            </form>
-                        </div>
-
-                        <!-- POTVRDA SMENA ZA SUTRA (DIENSTFREIGABE) -->
-                        <div class="card confirm-shifts-card">
-                            <h3><i data-lucide="check-square"></i> <span data-i18n="dispatcher_confirm_shifts_title">Dienstfreigabe für morgen</span></h3>
-                            <div class="confirm-shifts-list" id="dispatcher-confirm-shifts-list" style="margin-top: 15px; display:flex; flex-direction:column; gap:8px;">
-                                <!-- Dinamički spisak iz JS -->
-                            </div>
-                        </div>
-
-                        <!-- KARTA UŽIVO ZA DISPEČERA -->
-                        <div class="card live-map-card card-span-two">
+                        <div class="card" style="cursor:pointer;" data-action="switchSection" data-action-args='["dispatcher-messages"]'>
                             <div class="card-header-with-action">
-                                <h3><i data-lucide="map"></i> <span data-i18n="live_map_title">Aktivna mapa i GPS praćenje</span></h3>
-                                <span class="badge active-pulse" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.8rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; display:flex; align-items:center; gap:4px;">
-                                    <span style="width: 6px; height: 6px; background: #10b981; border-radius: 50%;"></span> GPS Live
-                                </span>
+                                <h3><i data-lucide="message-circle"></i> <span data-i18n="messages_title">Poruke</span></h3>
+                                <button type="button" class="btn-text-only" data-action="switchSection" data-action-args='["dispatcher-messages"]' data-action-stop-propagation="true" data-i18n="btn_see_all">Vidi sve</button>
                             </div>
-                            <div id="dispatcher-live-map" style="height: 380px; width: 100%; border-radius: var(--radius-md); margin-top: 15px; border: 1px solid rgba(255,255,255,0.06); overflow:hidden; z-index: 1;"></div>
+                            <div class="alerts-list" id="dispatcher-messages-preview">
+                                <!-- Dinamički iz JS -->
+                            </div>
                         </div>
 
-                        <!-- Aktivni vozači status -->
                         <div class="card active-fleet-card card-span-two">
-                            <h3 data-i18n="active_crew_title">Pregled trenutne posade na dužnosti</h3>
+                            <div style="display:flex; justify-content:space-between; align-items:center; width:100%; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+                                <h3 data-i18n="active_crew_title" style="margin:0;"><i data-lucide="users" style="color:var(--primary-color); vertical-align:middle; margin-right:6px;"></i> Pregled trenutne posade na dužnosti</h3>
+                            </div>
                             <div class="table-container">
                                 <table class="app-table">
                                     <thead>
                                         <tr>
                                             <th data-i18n="table_driver">Vozač</th>
-                                            <th data-i18n="table_bus">Autobus</th>
-                                            <th data-i18n="table_route">Linija</th>
-                                            <th data-i18n="table_last_stop">Poslednja stanica</th>
+                                            <th data-i18n="table_bus">Vozilo (Bus)</th>
+                                            <th data-i18n="table_shift_route">Smena (i linija)</th>
+                                            <th data-i18n="table_last_stop">Trenutna pozicija</th>
                                         </tr>
                                     </thead>
                                     <tbody id="dispatcher-active-drivers-list">
@@ -1222,6 +1296,234 @@
                                 </table>
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                <!-- IZBOR GRUPE — DNEVNI PLAN -->
+                <section id="dispatcher-daily-plan-pick" class="content-section hidden">
+                    <div class="section-header">
+                        <h2 data-i18n="plan_pick_daily_title">Dnevni plan</h2>
+                        <p class="subtitle" data-i18n="plan_pick_daily_sub">Izaberite grupu (liniju), zatim otvorite dnevni plan za tu grupu.</p>
+                    </div>
+                    <div id="daily-plan-groups-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;"></div>
+                </section>
+
+                <!-- IZBOR GRUPE — MESEČNI PLAN -->
+                <section id="dispatcher-monthly-plan-pick" class="content-section hidden">
+                    <div class="section-header">
+                        <h2 data-i18n="plan_pick_monthly_title">Mesečni plan</h2>
+                        <p class="subtitle" data-i18n="plan_pick_monthly_sub">Izaberite grupu (liniju), zatim otvorite mesečni plan za tu grupu.</p>
+                    </div>
+                    <div id="monthly-plan-groups-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;"></div>
+                </section>
+
+                <!-- MAPA UŽIVO -->
+                <section id="dispatcher-live-map-section" class="content-section hidden">
+                    <div class="section-header">
+                        <h2 data-i18n="nav_map">Mapa</h2>
+                        <p class="subtitle" data-i18n="live_map_subtitle">GPS praćenje aktivnih vozila — opciono, odvojeno od kontrolne table.</p>
+                    </div>
+                    <div class="card live-map-card">
+                        <div class="card-header-with-action">
+                            <h3><i data-lucide="map"></i> <span data-i18n="live_map_title">Aktivna mapa i GPS praćenje</span></h3>
+                            <span class="badge active-pulse" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.8rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; display:flex; align-items:center; gap:4px;">
+                                <span style="width: 6px; height: 6px; background: #10b981; border-radius: 50%;"></span> GPS Live
+                            </span>
+                        </div>
+                        <div id="dispatcher-live-map" style="height: min(70vh, 560px); width: 100%; border-radius: var(--radius-md); margin-top: 15px; border: 1px solid rgba(255,255,255,0.06); overflow:hidden; z-index: 1;"></div>
+                    </div>
+                </section>
+
+                <!-- GROUP HUB — upravljanje podacima po grupi -->
+                <section id="dispatcher-group-hub" class="content-section hidden">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;">
+                        <button type="button" class="btn-secondary" data-action="closeGroupHub" style="height:40px;padding:0 14px;">
+                            <i data-lucide="arrow-left"></i> Nazad
+                        </button>
+                        <div style="flex:1;min-width:200px;">
+                            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                                <h2 id="group-hub-title" style="margin:0;font-size:1.35rem;">Grupa</h2>
+                                <span id="group-hub-id-badge" style="font-size:0.75rem;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid;">ID</span>
+                            </div>
+                            <p id="group-hub-desc" class="subtitle" style="margin:6px 0 0;font-size:0.85rem;"></p>
+                        </div>
+                        <button type="button" class="btn-secondary" data-action="loadBlaguss310TestSeed" style="height:36px;">
+                            <i data-lucide="flask-conical"></i> Test 310
+                        </button>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;">
+                        <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="scrollHubSection" data-action-args='["group-hub-overview-detail"]'><span id="hub-stat-drivers" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_drivers" style="font-size:0.75rem;">Vozači</label></div>
+                        <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="scrollHubSection" data-action-args='["hub-section-buses"]'><span id="hub-stat-buses" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_buses" style="font-size:0.75rem;">Autobusi</label></div>
+                        <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="openMonthlyPlansFull"><span id="hub-stat-plans" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_plans" style="font-size:0.75rem;">Planovi</label></div>
+                        <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="scrollHubSection" data-action-args='["hub-section-catalog"]'><span id="hub-stat-catalog" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_catalog" style="font-size:0.75rem;">Smena V66</label></div>
+                    </div>
+
+                    <div class="card" id="group-hub-overview-detail" style="margin-bottom:18px;border:1px solid rgba(61,126,245,0.35);"></div>
+
+                    <div id="group-hub-empty-hint" class="card" style="margin-bottom:16px;border:1px dashed rgba(245,158,11,0.4);background:rgba(245,158,11,0.06);padding:16px;display:none;">
+                        <p style="margin:0;font-size:0.9rem;" data-i18n="import_step1_hint">Korak 1: Prevuci vozaci.csv + mesecni_plan.xlsx u polje ispod, pa klikni Snimi paket. Ili klikni Test 310 gore desno.</p>
+                    </div>
+
+                    <!-- JEDAN KORAK: UVOZ -->
+                    <div class="card" id="group-hub-step-import" style="margin-bottom:18px;border:2px solid rgba(61,126,245,0.45);">
+                        <h3 style="margin-top:0;display:flex;align-items:center;gap:8px;">
+                            <span style="background:var(--primary-color);color:#fff;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:0.85rem;">1</span>
+                            <span data-i18n="import_all_title">Uvezi sve odjednom (vozači + plan + V66)</span>
+                        </h3>
+                        <p class="subtitle" style="font-size:0.85rem;margin-bottom:12px;" data-i18n="import_all_subtitle">CSV vozača + Excel mesečni plan — jedan drop, jedan klik Snimi.</p>
+                        <div id="blaguss-dropzone" data-action="clickElementById" data-action-args='["blaguss-package-files"]'
+                            style="border:2px dashed rgba(61,126,245,0.55);text-align:center;padding:28px;cursor:pointer;border-radius:var(--radius-md);background:rgba(61,126,245,0.05);"
+                            ondragover="event.preventDefault();this.style.borderColor='var(--primary-color)'"
+                            ondragleave="this.style.borderColor='rgba(61,126,245,0.55)'"
+                            ondrop="handleBlagussPackageDrop(event)">
+                            <i data-lucide="package-open" style="width:40px;height:40px;color:var(--primary-color);"></i>
+                            <p style="font-weight:700;margin:10px 0 4px;" data-i18n="import_drop_main">Prevuci ovde: vozaci.csv + mesecni_plan.xlsx</p>
+                            <p style="font-size:0.78rem;color:var(--text-muted);margin:0;" data-i18n="import_drop_sub">ili klikni za odabir fajlova</p>
+                        </div>
+                        <input type="file" id="blaguss-package-files" multiple accept=".csv,.xlsx,.xls" style="display:none;" data-change-action="handleBlagussPackageInput" data-change-pass="event">
+                        <div id="blaguss-import-preview"></div>
+                    </div>
+
+                    <!-- KORAK 2: SVE NA JEDNOM EKRANU -->
+                    <div id="group-hub-workspace" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div class="card" id="hub-section-drivers" style="margin:0;">
+                            <h3 style="margin-top:0;"><i data-lucide="users"></i> <span data-i18n="hub_drivers_section">Vozači</span></h3>
+                            <form id="add-driver-form" data-submit-action="addDriver" style="margin-bottom:10px;">
+                                <div style="display:grid;grid-template-columns:1fr 1fr 80px auto;gap:8px;">
+                                    <input type="text" id="new-driver-name" required placeholder="Ime" style="padding:8px;background:rgba(0,0,0,0.3);border:1px solid var(--panel-border);border-radius:6px;color:white;">
+                                    <input type="text" id="new-driver-company-id" required placeholder="ID" style="padding:8px;background:rgba(0,0,0,0.3);border:1px solid var(--panel-border);border-radius:6px;color:white;">
+                                    <input type="password" id="new-driver-pin" required placeholder="PIN" style="padding:8px;background:rgba(0,0,0,0.3);border:1px solid var(--panel-border);border-radius:6px;color:white;">
+                                    <button type="submit" class="btn-primary" style="height:36px;padding:0 12px;"><i data-lucide="plus"></i></button>
+                                </div>
+                                <select id="new-driver-group" style="display:none;"><option value=""></option></select>
+                            </form>
+                            <details style="margin-bottom:8px;font-size:0.85rem;">
+                                <summary style="cursor:pointer;color:var(--primary-color);">+ CSV uvoz</summary>
+                                <textarea id="bulk-drivers-input" placeholder="Ime, PIN, G1" style="width:100%;height:60px;margin:8px 0;font-size:11px;background:rgba(0,0,0,0.3);border:1px solid var(--panel-border);color:white;padding:8px;box-sizing:border-box;"></textarea>
+                                <input type="file" id="bulk-drivers-file" accept=".csv,.txt" data-change-action="importDriversFromFile" data-change-pass="element" style="display:none;">
+                                <button type="button" data-action="clickElementById" data-action-args='["bulk-drivers-file"]' class="btn-secondary" style="height:32px;font-size:0.8rem;">Fajl</button>
+                                <button type="button" data-action="importDriversBulk" class="btn-primary" style="height:32px;font-size:0.8rem;">Uvezi</button>
+                            </details>
+                            <ul class="crud-list" id="settings-drivers-list" style="max-height:220px;overflow-y:auto;"></ul>
+                        </div>
+
+                        <div class="card" id="hub-section-buses" style="margin:0;">
+                            <h3 style="margin-top:0;"><i data-lucide="bus"></i> Autobusi</h3>
+                            <form id="add-bus-form" data-submit-action="addBus" class="crud-form" style="margin-bottom:10px;">
+                                <input type="text" id="new-bus-num" required placeholder="npr. 91103">
+                                <button type="submit" class="btn-icon-only"><i data-lucide="plus"></i></button>
+                            </form>
+                            <ul class="crud-list" id="settings-buses-list" style="max-height:280px;overflow-y:auto;"></ul>
+                        </div>
+
+                        <div class="card" id="hub-section-catalog" style="margin:0;">
+                            <h3 style="margin-top:0;font-size:0.95rem;"><i data-lucide="book-open"></i> Plan rada V66</h3>
+                            <div id="shift-catalog-status"></div>
+                        </div>
+
+                        <div class="card" id="hub-section-extra-import" style="margin:0;">
+                            <h3 style="margin-top:0;font-size:0.95rem;"><i data-lucide="file-up"></i> Dodatni planovi</h3>
+                            <div id="plan-import-dropzone" data-action="clickElementById" data-action-args='["bulk-plan-import-files"]'
+                                style="border:1px dashed var(--panel-border);padding:14px;text-align:center;cursor:pointer;border-radius:8px;font-size:0.82rem;"
+                                ondragover="event.preventDefault()" ondrop="handleBulkPlanDrop(event)">Prevuci PDF/Excel planove</div>
+                            <input type="file" id="bulk-plan-import-files" multiple accept=".xlsx,.xls,.pdf,.csv,.txt" style="display:none;" data-change-action="handleBulkPlanFileInput" data-change-pass="event">
+                            <div id="plan-import-preview"></div>
+                        </div>
+
+                        <div class="card" id="hub-section-plan-shortcuts" style="margin:0;grid-column:1/-1;">
+                            <h3 style="margin-top:0;display:flex;align-items:center;gap:8px;">
+                                <i data-lucide="calendar-range"></i> <span data-i18n="hub_plans_quick_title">Planovi — brzi pregled</span>
+                            </h3>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                                <div style="padding:14px;border:1px solid var(--panel-border);border-radius:10px;background:rgba(245,158,11,0.04);">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                                        <strong style="font-size:0.9rem;"><i data-lucide="sun"></i> <span data-i18n="hub_daily_plan">Dnevni plan</span></strong>
+                                        <span id="hub-daily-date-label" style="font-size:0.75rem;color:var(--text-muted);"></span>
+                                    </div>
+                                    <div id="hub-daily-preview" style="min-height:80px;font-size:0.82rem;"></div>
+                                    <button type="button" class="btn-primary" style="width:100%;margin-top:12px;height:38px;" data-action="openDailyPlanFull">
+                                        <i data-lucide="maximize-2"></i> <span data-i18n="hub_open_daily_full">Otvori pun dnevni plan</span>
+                                    </button>
+                                </div>
+                                <div style="padding:14px;border:1px solid var(--panel-border);border-radius:10px;background:rgba(61,126,245,0.04);">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                                        <strong style="font-size:0.9rem;"><i data-lucide="calendar"></i> <span data-i18n="hub_monthly_plan">Mesečni plan</span></strong>
+                                        <span id="hub-monthly-month-label" style="font-size:0.75rem;color:var(--text-muted);"></span>
+                                    </div>
+                                    <div id="hub-monthly-preview" style="min-height:80px;font-size:0.82rem;"></div>
+                                    <button type="button" class="btn-primary" style="width:100%;margin-top:12px;height:38px;" data-action="openMonthlyPlansFull">
+                                        <i data-lucide="maximize-2"></i> <span data-i18n="hub_open_monthly_full">Otvori mesečni plan</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- MESEČNI PLAN — pun ekran -->
+                <section id="dispatcher-monthly-plans-full" class="content-section hidden">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+                        <button type="button" class="btn-secondary" data-action="backFromPlanFullPage" style="height:40px;padding:0 14px;">
+                            <i data-lucide="arrow-left"></i> <span data-i18n="btn_back">Nazad</span>
+                        </button>
+                        <div style="flex:1;min-width:200px;">
+                            <h2 style="margin:0;font-size:1.4rem;display:flex;align-items:center;gap:10px;">
+                                <i data-lucide="calendar"></i> <span data-i18n="monthly_full_title">Mesečni plan</span>
+                            </h2>
+                            <p id="monthly-full-subtitle" class="subtitle" style="margin:6px 0 0;font-size:0.85rem;"></p>
+                        </div>
+                    </div>
+
+                    <div class="card full-width-card" style="margin-bottom:16px;">
+                        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;flex-wrap:wrap;">
+                            <div>
+                                <label data-i18n="monthly_label_driver" style="font-size:0.75rem;color:var(--text-muted);">Vozač</label>
+                                <select id="monthly-driver-select" data-change-action="loadMonthlyPlanForDriver" style="width:100%;padding:10px;font-size:0.9rem;"></select>
+                            </div>
+                            <div>
+                                <label data-i18n="monthly_label_month" style="font-size:0.75rem;color:var(--text-muted);">Mesec</label>
+                                <select id="monthly-month-select" data-change-action="loadMonthlyPlanForDriver" style="width:100%;padding:10px;font-size:0.9rem;">
+                                    <option value="2026-08" selected>Avgust 2026</option>
+                                    <option value="2026-07">Jul 2026</option>
+                                    <option value="2026-06">Jun 2026</option>
+                                    <option value="2026-09">Septembar 2026</option>
+                                </select>
+                            </div>
+                            <form id="upload-schedule-form" data-submit-action="uploadDriverSchedule" style="display:flex;gap:8px;align-items:end;">
+                                <input type="file" id="upload-schedule-file" accept=".xlsx,.xls,.pdf,.csv,.txt" required style="max-width:180px;font-size:0.8rem;">
+                                <select id="upload-schedule-driver" required style="display:none;"></select>
+                                <select id="upload-schedule-month" required style="display:none;"><option value="2026-08" selected></option></select>
+                                <button type="submit" class="btn-secondary" style="height:42px;"><i data-lucide="file-up"></i> <span data-i18n="monthly_btn_import">Uvezi fajl</span></button>
+                            </form>
+                        </div>
+                        <div id="monthly-groups-list" style="display:none;margin-top:12px;"></div>
+                        <div id="monthly-plan-driver-summary" style="font-size:0.88rem;color:var(--text-muted);margin-top:14px;min-height:1.2em;"></div>
+                    </div>
+
+                    <div class="card full-width-card">
+                        <div id="monthly-plan-grid-container" style="overflow-x:auto;min-height:60vh;"></div>
+                    </div>
+                </section>
+
+                <!-- DNEVNI PLAN — pun ekran -->
+                <section id="dispatcher-daily-plan-full" class="content-section hidden">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+                        <button type="button" class="btn-secondary" data-action="backFromPlanFullPage" style="height:40px;padding:0 14px;">
+                            <i data-lucide="arrow-left"></i> <span data-i18n="btn_back">Nazad</span>
+                        </button>
+                        <div style="flex:1;min-width:200px;">
+                            <h2 style="margin:0;font-size:1.4rem;display:flex;align-items:center;gap:10px;">
+                                <i data-lucide="list-ordered"></i> <span data-i18n="daily_full_title">Dnevni plan smena</span>
+                            </h2>
+                            <p id="daily-full-subtitle" class="subtitle" style="margin:6px 0 0;font-size:0.85rem;" data-i18n="daily_full_subtitle">Pozicija 1 = x2 Bereitschaft (pon–pet)</p>
+                        </div>
+                        <input type="date" id="daily-plan-date-picker" style="padding:10px 14px;border-radius:var(--radius-sm);font-size:0.9rem;">
+                    </div>
+
+                    <div class="card full-width-card">
+                        <div id="daily-plan-full-meta" style="font-size:0.9rem;margin-bottom:16px;color:var(--text-muted);"></div>
+                        <div id="daily-plan-full-slots" style="min-height:50vh;"></div>
                     </div>
                 </section>
 
@@ -1316,36 +1618,30 @@
 
                 <!-- PORUKE (DISPATCHER MESSAGES) -->
                 <section id="dispatcher-messages" class="content-section hidden">
-                    <div id="group-filter-bar-messages" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; align-items:center;">
-                        <!-- Dinamički iz JS -->
-                    </div>
                     <div class="section-header">
                         <h2 data-i18n="nav_messages">Poruke</h2>
+                        <p class="subtitle" data-i18n="msg_page_subtitle">Lične poruke vozačima i grupne objave — odvojeno.</p>
+                    </div>
+
+                    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+                        <button type="button" id="msg-tab-personal-btn" class="msg-scope-btn msg-scope-active" data-action="setMessagesPageTab" data-action-args='["personal"]'>
+                            <i data-lucide="user"></i> <span data-i18n="msg_tab_personal">Lične poruke</span>
+                        </button>
+                        <button type="button" id="msg-tab-group-btn" class="msg-scope-btn" data-action="setMessagesPageTab" data-action-args='["group"]'>
+                            <i data-lucide="users"></i> <span data-i18n="msg_tab_group">Grupne poruke</span>
+                        </button>
                     </div>
 
                     <div class="dispatcher-dashboard-grid">
-                        <!-- SLANJE PORUKE VOZAČIMA -->
                         <div class="card send-message-card">
-                            <h3><i data-lucide="send"></i> <span data-i18n="send_message_title">Pošalji poruku vozačima</span></h3>
-                            <form id="dispatcher-message-form-messages" onsubmit="submitDispatcherMessage(event)">
-                                <!-- SCOPE -->
-                                <div class="form-group">
-                                    <label data-i18n="msg_scope_label">Pošalji</label>
-                                    <div style="display:flex;gap:8px;">
-                                        <button type="button" id="msg-scope-driver-btn-m" onclick="setMessageScope('driver','dispatcher-message-form-messages')"
-                                            class="msg-scope-btn msg-scope-active" data-i18n="msg_scope_driver">Vozaču</button>
-                                        <button type="button" id="msg-scope-group-btn-m" onclick="setMessageScope('group','dispatcher-message-form-messages')"
-                                            class="msg-scope-btn" data-i18n="msg_scope_group">Cijeloj grupi</button>
-                                    </div>
-                                </div>
-                                <!-- PRIMALAC -->
-                                <div class="form-group">
+                            <h3><i data-lucide="send"></i> <span id="msg-compose-title" data-i18n="send_message_title">Pošalji poruku vozačima</span></h3>
+                            <form id="dispatcher-message-form-messages" data-submit-action="submitDispatcherMessage">
+                                <div class="form-group" id="msg-recipient-group-wrap">
                                     <label for="message-recipient-messages" data-i18n="recipient_label">Primalac</label>
                                     <select id="message-recipient-messages" required>
                                         <!-- Dinamički se popunjava iz JS -->
                                     </select>
                                 </div>
-                                <!-- ŠABLON PORUKE -->
                                 <div class="form-group">
                                     <label for="message-template-messages" data-i18n="msg_template_label">Šablon poruke</label>
                                     <select id="message-template-messages" required>
@@ -1362,14 +1658,17 @@
                             </form>
                         </div>
 
-                        <!-- ISTORIJA SVIH POSLATIH PORUKA -->
                         <div class="card live-alerts-card">
                             <div class="card-header-with-action">
-                                <h3 data-i18n="messages_title">Istorija poruka</h3>
+                                <h3 id="msg-history-title" data-i18n="msg_history_personal">Istorija ličnih poruka</h3>
+                                <button type="button" id="msg-archive-all-btn" class="btn-text-only" data-action="archiveAllDispatcherMessages" style="display:none;">
+                                    <i data-lucide="archive"></i> <span data-i18n="btn_archive_all">Arhiviraj sve</span>
+                                </button>
                             </div>
                             <div class="alerts-list" id="dispatcher-all-messages-list">
                                 <!-- Dinamički iz JS -->
                             </div>
+                            <div id="dispatcher-messages-page-archive"></div>
                         </div>
                     </div>
                 </section>
@@ -1377,186 +1676,9 @@
                 <!-- PODEŠAVANJA FIRME (SAAS PANEL) -->
                 <section id="dispatcher-settings" class="content-section hidden">
                     <div class="section-header">
-                        <h2 data-i18n="settings_title">Podešavanja firme (SaaS kastomizacija)</h2>
-                        <p data-i18n="settings_subtitle">Dodajte vozače, rute i prilagodite izgled za probnu verziju</p>
-                    </div>
-
-                    <!-- Podešavanja brenda -->
-                    <div class="card settings-card-branding">
-                        <h3><i data-lucide="palette"></i> <span data-i18n="branding_title">Izgled i brendiranje (SaaS kastomizacija)</span></h3>
-                        <div class="settings-branding-grid">
-                            <div class="form-group">
-                                <label for="settings-brand-name" data-i18n="brand_name_label">Naziv firme prevoznika</label>
-                                <input type="text" id="settings-brand-name" value="TransitFlow Beograd">
-                            </div>
-                            <div class="form-group">
-                                <label for="settings-primary-color" data-i18n="primary_color_label">Primarna boja aplikacije</label>
-                                <div class="color-picker-wrapper">
-                                    <input type="color" id="settings-primary-color" value="#0ea5e9">
-                                    <span class="color-hex-label" id="color-hex-display">#0ea5e9</span>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="settings-brand-logo" data-i18n="ph_brand_logo_label">Firmenlogo-URL / Logo URL (SaaS)</label>
-                                <input type="text" id="settings-brand-logo" data-i18n-placeholder="ph_brand_logo" placeholder="z.B. https://example.com/logo.png" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 14px; outline: none; transition: var(--transition-normal);">
-                            </div>
-                            <div class="form-group button-align">
-                                <button type="button" class="btn-primary" onclick="showConfirm(t('confirm_apply_branding') || 'Apply branding changes?', applyBrandingSettings, {danger:false, confirmText: t('btn_yes') || 'Da'})">
-                                    <span data-i18n="btn_apply_branding">Primeni brendiranje</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- UPRAVLJANJE DISPEČERIMA -->
-                    <div class="card" style="margin-top: 20px;">
-                        <h3><i data-lucide="shield-check"></i> <span data-i18n="disp_mgmt_title">Upravljanje dispečerima</span></h3>
-                        <p class="subtitle" data-i18n="disp_mgmt_subtitle">Dodajte do 5 dispečerskih naloga, svaki sa sopstvenim PIN-om</p>
-
-                        <!-- Forma za dodavanje novog dispečera -->
-                        <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:12px; align-items:end; margin-top:16px;">
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label data-i18n="disp_name_label">Ime dispečera</label>
-                                <input type="text" id="new-disp-name" data-i18n-placeholder="disp_name_ph" placeholder="npr. Ana Kovačević" maxlength="40"
-                                    style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-md);padding:12px;color:white;width:100%;font-size:14px;outline:none;">
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label data-i18n="disp_pin_label">PIN (4–6 cifara)</label>
-                                <input type="password" id="new-disp-pin" placeholder="••••••" maxlength="6"
-                                    style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-md);padding:12px;color:white;width:100%;font-size:14px;outline:none;"
-                                    onkeydown="if(event.key==='Enter') addDispatcher()">
-                            </div>
-                            <button type="button" class="btn-primary" onclick="addDispatcher()" style="height:46px; white-space:nowrap;">
-                                <i data-lucide="plus"></i> <span data-i18n="btn_add_dispatcher">Dodaj</span>
-                            </button>
-                        </div>
-
-                        <!-- Lista dispečera -->
-                        <div id="dispatchers-list-container" style="margin-top:16px;">
-                            <!-- Dinamički iz JS -->
-                        </div>
-                    </div>
-
-                    <!-- UVOZ PLANOVA RADA (SAAS) -->
-                    <div class="card settings-card-schedules" style="margin-top: 20px;">
-                        <h3><i data-lucide="file-up"></i> <span data-i18n="upload_schedule_title">Uvoz mesečnih planova rada (Dienstplan)</span></h3>
-                        <p class="subtitle" data-i18n="upload_schedule_subtitle">Otpremite PDF ili sliku plana rada za izabranog vozača</p>
-                        
-                        <form id="upload-schedule-form" onsubmit="uploadDriverSchedule(event)" style="display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:15px; align-items:end; margin-top:15px;">
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label for="upload-schedule-driver" data-i18n="select_driver">Lenker auswählen</label>
-                                <select id="upload-schedule-driver" required style="cursor:pointer; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--panel-border); color: var(--text-main); padding: 12px; border-radius: var(--radius-md); font-size: 15px; width: 100%;">
-                                    <!-- Popunjava se iz JS -->
-                                </select>
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label for="upload-schedule-month" data-i18n="select_month">Izaberite mesec</label>
-                                <select id="upload-schedule-month" required style="cursor:pointer; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--panel-border); color: var(--text-main); padding: 12px; border-radius: var(--radius-md); font-size: 15px; width: 100%;">
-                                    <option value="2026-06" selected>Jun 2026</option>
-                                    <option value="2026-07">Jul 2026</option>
-                                    <option value="2026-08">Avgust 2026</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label for="upload-schedule-file" data-i18n="select_file">Izaberite fajl (PDF, Slika, TXT)</label>
-                                <input type="file" id="upload-schedule-file" accept=".pdf,.png,.jpg,.jpeg,.txt" required style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 8px; color: white; width: 100%; font-size: 14px; outline: none; transition: var(--transition-normal); cursor:pointer;">
-                            </div>
-                            <button type="submit" class="btn-primary" style="height:46px;">
-                                <span data-i18n="btn_upload">Otpremi plan</span> <i data-lucide="upload"></i>
-                            </button>
-                        </form>
-                    </div>
-
-                    <div class="settings-crud-grid">
-                        <!-- Upravljanje vozačima -->
-                        <div class="card crud-card" style="grid-column: span 2;">
-                            <h3><i data-lucide="users"></i> <span data-i18n="settings_drivers_title">Vozači</span></h3>
-                            <form id="add-driver-form" onsubmit="addDriver(event)" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                    <input type="text" id="new-driver-name" required data-i18n-placeholder="ph_driver_name" placeholder="Ime i prezime vozača" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 10px; color: white; font-size: 14px; outline: none;">
-                                    <input type="text" id="new-driver-company-id" required data-i18n-placeholder="ph_driver_id" placeholder="Broj vozača u firmi (ID)" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 10px; color: white; font-size: 14px; outline: none;">
-                                </div>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                    <input type="password" id="new-driver-pin" required data-i18n-placeholder="ph_driver_pin" placeholder="Lozinka / PIN vozača" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 10px; color: white; font-size: 14px; outline: none;">
-                                    <input type="text" id="new-driver-phone" data-i18n-placeholder="ph_driver_phone" placeholder="Broj telefona vozača" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 10px; color: white; font-size: 14px; outline: none;">
-                                </div>
-                                <input type="email" id="new-driver-email" data-i18n-placeholder="ph_driver_email" placeholder="E-mail adresa vozača" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 10px; color: white; font-size: 14px; outline: none; width: 100%; box-sizing: border-box;">
-                                <div style="display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;">
-                                    <select id="new-driver-group" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 10px; color: white; font-size: 14px; outline: none; cursor:pointer;">
-                                        <option value="" data-i18n="group_none">— Bez grupe —</option>
-                                        <!-- Popunjava se iz JS -->
-                                    </select>
-                                    <button type="submit" class="btn-primary" style="height:42px; padding: 0 20px; white-space:nowrap;">
-                                        <i data-lucide="plus"></i> <span data-i18n="btn_add_driver">Dodaj vozača</span>
-                                    </button>
-                                </div>
-                            </form>
-                            <ul class="crud-list" id="settings-drivers-list">
-                                <!-- Dinamički podaci -->
-                            </ul>
-                        </div>
-
-                        <!-- Upravljanje vozilima -->
-                        <div class="card crud-card">
-                            <h3><i data-lucide="bus"></i> <span data-i18n="settings_buses_title">Vozila (Autobusi)</span></h3>
-                            <form id="add-bus-form" onsubmit="addBus(event)" class="crud-form">
-                                <input type="text" id="new-bus-num" required data-i18n-placeholder="ph_bus_num" placeholder="Broj autobusa (npr. 142)">
-                                <button type="submit" class="btn-icon-only" title="Dodaj autobus">
-                                    <i data-lucide="plus"></i>
-                                </button>
-                            </form>
-                            <ul class="crud-list" id="settings-buses-list">
-                                <!-- Dinamički podaci -->
-                            </ul>
-                        </div>
-
-                        <!-- Upravljanje linijama/rutama -->
-                        <div class="card crud-card card-wide">
-                            <h3><i data-lucide="map-pin"></i> <span data-i18n="settings_routes_title">Linije i rute</span></h3>
-                            <form id="add-route-form" onsubmit="addRoute(event)" class="crud-form-multiline">
-                                <div class="form-row-mini">
-                                    <input type="text" id="new-route-num" required data-i18n-placeholder="ph_route_num" placeholder="Broj linije (npr. 16)">
-                                    <input type="text" id="new-route-name" required data-i18n-placeholder="ph_route_name" placeholder="Smer (npr. Karaburma - Novi Beograd)">
-                                </div>
-                                <input type="text" id="new-route-stops" required data-i18n-placeholder="ph_route_stops" placeholder="Stanice odvojene zarezom (npr. Karaburma, Trg Republike, Zeleni Venac...)">
-                                <button type="submit" class="btn-primary" style="margin-top: 10px;">
-                                    <i data-lucide="plus"></i> <span data-i18n="btn_add_route">Dodaj liniju</span>
-                                </button>
-                            </form>
-                            <ul class="crud-list-large" id="settings-routes-list">
-                                <!-- Dinamički podaci -->
-                            </ul>
-                        </div>
-
-                        <!-- Upravljanje grupama -->
-                        <div class="card crud-card card-wide" style="margin-top:0;">
-                            <h3><i data-lucide="layers"></i> <span data-i18n="settings_groups_title">Grupe vozača</span></h3>
-                            <div style="display:flex; gap:10px; align-items:flex-end; margin-bottom:14px; flex-wrap:wrap;">
-                                <div class="form-group" style="flex:2; min-width:160px; margin-bottom:0;">
-                                    <label style="font-size:0.78rem; margin-bottom:4px; display:block;" data-i18n="group_name_label">Naziv grupe</label>
-                                    <input type="text" id="new-group-name" placeholder="npr. Linija 105"
-                                        style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-md);padding:10px;color:white;width:100%;font-size:14px;outline:none;box-sizing:border-box;"
-                                        onkeydown="if(event.key==='Enter') addGroup()">
-                                </div>
-                                <div class="form-group" style="flex:2; min-width:160px; margin-bottom:0;">
-                                    <label style="font-size:0.78rem; margin-bottom:4px; display:block;" data-i18n="group_desc_label">Opis (opcionalno)</label>
-                                    <input type="text" id="new-group-desc" placeholder="npr. Jutarnje smene"
-                                        style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-md);padding:10px;color:white;width:100%;font-size:14px;outline:none;box-sizing:border-box;">
-                                </div>
-                                <div class="form-group" style="flex:0; margin-bottom:0;">
-                                    <label style="font-size:0.78rem; margin-bottom:4px; display:block;" data-i18n="group_color_label">Boja</label>
-                                    <input type="color" id="new-group-color" value="#0ea5e9"
-                                        style="width:46px;height:40px;border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-md);background:rgba(255,255,255,0.03);cursor:pointer;padding:2px;">
-                                </div>
-                                <button type="button" class="btn-primary" onclick="addGroup()" style="height:42px; padding:0 18px; white-space:nowrap; flex-shrink:0;">
-                                    <i data-lucide="plus"></i> <span data-i18n="btn_add_group">Dodaj grupu</span>
-                                </button>
-                            </div>
-                            <div id="groups-list" style="display:flex; flex-direction:column; gap:8px;">
-                                <!-- Dinamički iz JS -->
-                            </div>
-                        </div>
-
+                        <h2 data-i18n="settings_title">Podešavanja firme</h2>
+                        <p data-i18n="settings_subtitle">Izvoz podataka i operativne opcije.</p>
+                        <p class="subtitle" style="font-size:0.8rem;margin-top:4px;opacity:0.75;" data-i18n="settings_admin_hint">Brending, grupe i dispečeri — u Firm Admin nalogu.</p>
                     </div>
 
                     <!-- EXPORT IZVEŠTAJA -->
@@ -1564,66 +1686,37 @@
                         <h3><i data-lucide="download-cloud"></i> <span data-i18n="export_title">Export izveštaja</span></h3>
                         <p class="subtitle" data-i18n="export_subtitle">Preuzmite sve izveštaje i podatke u CSV formatu za analizu</p>
                         <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-top:16px;">
-                            <button onclick="exportReportsCSV()" class="btn-primary" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); color: #10b981; height:auto; padding:12px; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:0.85rem;">
+                            <button data-action="exportReportsCSV" class="btn-primary" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); color: #10b981; height:auto; padding:12px; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:0.85rem;">
                                 <i data-lucide="file-spreadsheet" style="width:20px;height:20px;"></i>
                                 <span data-i18n="export_reports_btn">Izveštaji (CSV)</span>
                             </button>
-                            <button onclick="exportDriversCSV()" class="btn-primary" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); color: #10b981; height:auto; padding:12px; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:0.85rem;">
+                            <button data-action="exportDriversCSV" class="btn-primary" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); color: #10b981; height:auto; padding:12px; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:0.85rem;">
                                 <i data-lucide="users" style="width:20px;height:20px;"></i>
                                 <span data-i18n="export_drivers_btn">Vozači (CSV)</span>
                             </button>
-                            <button onclick="exportLostItemsCSV()" class="btn-primary" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); color: #10b981; height:auto; padding:12px; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:0.85rem;">
+                            <button data-action="exportLostItemsCSV" class="btn-primary" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); color: #10b981; height:auto; padding:12px; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:0.85rem;">
                                 <i data-lucide="package" style="width:20px;height:20px;"></i>
                                 <span data-i18n="export_lost_btn">Izgubljene stvari (CSV)</span>
                             </button>
                         </div>
                     </div>
 
-                    <!-- UPRAVLJANJE GRUPAMA -->
-                    <div class="card" style="margin-top:20px;">
-                        <h3><i data-lucide="layers"></i> <span data-i18n="groups_title">Upravljanje grupama</span></h3>
-                        <p class="subtitle" data-i18n="groups_subtitle">Organizujte vozače u grupe po linijama ili depoa</p>
 
-                        <!-- Forma za dodavanje grupe -->
-                        <div style="display:grid; grid-template-columns:1fr 120px 1fr auto; gap:10px; align-items:end; margin-top:16px;" class="groups-form-grid">
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label data-i18n="group_name_label">Naziv grupe</label>
-                                <input type="text" id="new-group-name" data-i18n-placeholder="ph_group_name" placeholder="npr. Linie 310" maxlength="40">
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label data-i18n="group_color_label">Boja</label>
-                                <input type="color" id="new-group-color" value="#0ea5e9"
-                                    style="width:100%; height:46px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:none; cursor:pointer; padding:4px;">
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label data-i18n="group_desc_label">Opis (opciono)</label>
-                                <input type="text" id="new-group-desc" data-i18n-placeholder="ph_group_desc" placeholder="npr. Baden - Wien ekspres" maxlength="60">
-                            </div>
-                            <button onclick="addGroup()" class="btn-primary" style="height:46px; padding:0 18px;">
-                                <i data-lucide="plus"></i> <span data-i18n="btn_add_group">Dodaj</span>
-                            </button>
-                        </div>
-
-                        <!-- Lista grupa -->
-                        <div id="groups-list" style="margin-top:20px; display:flex; flex-direction:column; gap:10px;">
-                            <!-- Dinamički iz JS -->
-                        </div>
-                    </div>
 
                     <!-- RESET DEMO PODATAKA -->
                     <div class="card" style="margin-top: 20px; border: 1px solid rgba(239,68,68,0.25); background: rgba(239,68,68,0.04);">
                         <h3 style="color: var(--danger-color);"><i data-lucide="refresh-ccw"></i> <span data-i18n="reset_title">Reset i upravljanje podacima</span></h3>
                         <p class="subtitle" data-i18n="reset_subtitle">Koristi za testiranje — briše sve lokalne podatke i vraća factory postavke</p>
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:16px;">
-                            <button onclick="showModal('factory-reset-modal')" class="btn-primary" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.4); color: var(--danger-color); height:auto; padding:12px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:0.88rem; font-weight:700;">
+                            <button data-action="showModal" data-action-args='["factory-reset-modal"]' class="btn-primary" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.4); color: var(--danger-color); height:auto; padding:12px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:0.88rem; font-weight:700;">
                                 <i data-lucide="trash-2" style="width:18px;height:18px;"></i>
                                 <span data-i18n="btn_factory_reset">Factory Reset</span>
                             </button>
-                            <button onclick="showModal('clear-sos-modal')" class="btn-primary" style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.4); color: #f59e0b; height:auto; padding:12px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:0.88rem; font-weight:700;">
+                            <button data-action="showModal" data-action-args='["clear-sos-modal"]' class="btn-primary" style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.4); color: #f59e0b; height:auto; padding:12px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:0.88rem; font-weight:700;">
                                 <i data-lucide="shield-off" style="width:18px;height:18px;"></i>
                                 <span data-i18n="btn_clear_sos">Clear SOS Alarm</span>
                             </button>
-                            <button onclick="showModal('print-schedule-modal')" class="btn-primary" style="background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.3); color: #0ea5e9; height:auto; padding:12px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:0.88rem; font-weight:700;">
+                            <button data-action="showModal" data-action-args='["print-schedule-modal"]' class="btn-primary" style="background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.3); color: #0ea5e9; height:auto; padding:12px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:0.88rem; font-weight:700;">
                                 <i data-lucide="printer" style="width:18px;height:18px;"></i>
                                 <span>Print Schedule</span>
                             </button>
@@ -1636,24 +1729,24 @@
 
             <!-- MOBILNA BOTTOM NAVIGACIJA (samo za vozača, samo na telefonu) -->
             <nav id="mobile-bottom-nav" class="mobile-bottom-nav hidden">
-                <button class="mob-nav-btn active" onclick="switchSection('driver-dashboard')" id="mobnav-dashboard" style="position:relative;">
+                <button class="mob-nav-btn active" data-action="switchSection" data-action-args='["driver-dashboard"]' id="mobnav-dashboard" style="position:relative;">
                     <i data-lucide="layout-dashboard"></i>
                     <span data-i18n="nav_daily_plan_short">Plan</span>
                     <span id="mobnav-badge-msgs" class="mob-nav-badge hidden"></span>
                 </button>
-                <button class="mob-nav-btn" onclick="switchSection('driver-calendar')" id="mobnav-calendar">
+                <button class="mob-nav-btn" data-action="switchSection" data-action-args='["driver-calendar"]' id="mobnav-calendar">
                     <i data-lucide="calendar"></i>
                     <span data-i18n="nav_monthly_plan_short">Smene</span>
                 </button>
-                <button class="mob-nav-btn mob-nav-sos" onclick="triggerSOSAlert()" id="mobnav-sos">
+                <button class="mob-nav-btn mob-nav-sos" data-action="triggerSOSAlert" id="mobnav-sos">
                     <i data-lucide="phone-call"></i>
                     <span>SOS</span>
                 </button>
-                <button class="mob-nav-btn" onclick="switchSection('driver-reports')" id="mobnav-reports">
+                <button class="mob-nav-btn" data-action="switchSection" data-action-args='["driver-reports"]' id="mobnav-reports">
                     <i data-lucide="alert-triangle"></i>
                     <span data-i18n="nav_report_short">Prijavi</span>
                 </button>
-                <button class="mob-nav-btn" onclick="switchSection('driver-vacation')" id="mobnav-vacation">
+                <button class="mob-nav-btn" data-action="switchSection" data-action-args='["driver-vacation"]' id="mobnav-vacation">
                     <i data-lucide="calendar-days"></i>
                     <span data-i18n="nav_vacation_short">Odmor</span>
                 </button>
@@ -1724,7 +1817,7 @@
             </div>
 
             <!-- Dugme potvrde -->
-            <button onclick="confirmMessageRead()" style="
+            <button data-action="confirmMessageRead" style="
                 width: 100%;
                 padding: 16px;
                 background: linear-gradient(135deg, #6366f1, #8b5cf6);
@@ -1753,7 +1846,7 @@
     </div>
 
     <!-- SOS TRIGGER MODAL (driver activates SOS) -->
-    <div id="sos-trigger-modal" class="modal-backdrop hidden" onclick="if(event.target===this) closeSosTriggerModal()" style="position:fixed;inset:0;z-index:19000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);">
+    <div id="sos-trigger-modal" class="modal-backdrop hidden" data-action="closeSosTriggerModal" data-action-self="true" style="position:fixed;inset:0;z-index:19000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);">
         <div style="background:#0f0f19;border:2px solid rgba(239,68,68,0.7);border-radius:20px;padding:32px 28px;width:92%;max-width:380px;text-align:center;animation:sosModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;box-shadow:0 0 60px rgba(239,68,68,0.25);">
             <div style="width:72px;height:72px;border-radius:50%;background:rgba(239,68,68,0.15);border:2px solid rgba(239,68,68,0.5);margin:0 auto 20px;display:flex;align-items:center;justify-content:center;animation:sosPulse 0.8s ease-in-out infinite;">
                 <i data-lucide="phone-call" style="width:34px;height:34px;color:#ef4444;"></i>
@@ -1761,14 +1854,14 @@
             <h3 style="font-size:1.3rem;font-weight:800;color:#ef4444;margin-bottom:10px;" data-i18n="sos_trigger_title">SOS ALARM</h3>
             <p style="font-size:0.9rem;color:rgba(255,255,255,0.7);margin-bottom:24px;line-height:1.6;" data-i18n="js_confirm_sos">Möchten Sie wirklich den NOTFALL SOS-ALARM aktivieren?</p>
             <div style="display:flex;gap:12px;">
-                <button onclick="closeSosTriggerModal()" style="flex:1;padding:13px;border-radius:10px;font-size:0.9rem;font-weight:600;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);cursor:pointer;" data-i18n="btn_cancel">Cancel</button>
-                <button onclick="confirmSOSTrigger()" style="flex:1;padding:13px;border-radius:10px;font-size:0.9rem;font-weight:800;background:linear-gradient(135deg,#dc2626,#b91c1c);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 16px rgba(239,68,68,0.4);" data-i18n="sos_trigger_btn">🚨 SEND SOS</button>
+                <button data-action="closeSosTriggerModal" style="flex:1;padding:13px;border-radius:10px;font-size:0.9rem;font-weight:600;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);cursor:pointer;" data-i18n="btn_cancel">Cancel</button>
+                <button data-action="confirmSOSTrigger" style="flex:1;padding:13px;border-radius:10px;font-size:0.9rem;font-weight:800;background:linear-gradient(135deg,#dc2626,#b91c1c);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 16px rgba(239,68,68,0.4);" data-i18n="sos_trigger_btn">🚨 SEND SOS</button>
             </div>
         </div>
     </div>
 
     <!-- SOS CONFIRM MODAL -->
-    <div id="sos-confirm-modal" class="modal-backdrop hidden" onclick="if(event.target===this) closeSosConfirmModal()">
+    <div id="sos-confirm-modal" class="modal-backdrop hidden" data-action="closeSosConfirmModal" data-action-self="true">
         <div style="
             background: #0f0f19;
             border: 2px solid rgba(239,68,68,0.5);
@@ -1800,13 +1893,13 @@
             </div>
 
             <div style="display:flex; gap:12px; margin-top:8px;">
-                <button onclick="closeSosConfirmModal()" style="
+                <button data-action="closeSosConfirmModal" style="
                     flex:1; padding:13px; border-radius:10px; font-size:0.9rem; font-weight:600;
                     background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
                     color:rgba(255,255,255,0.7); cursor:pointer;" data-i18n="btn_cancel">
                     Otkaži
                 </button>
-                <button onclick="confirmResolveSOS()" style="
+                <button data-action="confirmResolveSOS" style="
                     flex:1; padding:13px; border-radius:10px; font-size:0.9rem; font-weight:700;
                     background:linear-gradient(135deg,#10b981,#059669); border:none;
                     color:#fff; cursor:pointer; box-shadow:0 4px 16px rgba(16,185,129,0.3);"
@@ -1823,7 +1916,7 @@
             <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;" data-i18n="pretrip_title">Pre-Trip Pregled</h3>
             <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 25px;" data-i18n="pretrip_subtitle">Molimo potvrdite ispravnost vozila pre pokretanja smene:</p>
 
-            <form id="pre-trip-form" onsubmit="submitPreTripCheck(event)" autocomplete="off" style="text-align: left; display: flex; flex-direction: column; gap: 15px;">
+            <form id="pre-trip-form" data-submit-action="submitPreTripCheck" autocomplete="off" style="text-align: left; display: flex; flex-direction: column; gap: 15px;">
                 <label style="display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 12px 15px; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition-fast);">
                     <input type="checkbox" name="pt1" autocomplete="off" required style="width: 20px; height: 20px; accent-color: var(--primary-color); cursor: pointer;">
                     <span style="font-size: 0.95rem; color: var(--text-main); font-weight: 500;" data-i18n="pretrip_check_1">Gume i felne proverene (pritisak i profil)</span>
@@ -1921,7 +2014,7 @@
                         oninput="wizardPreviewBranding()" />
 
                     <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="wizard_logo_label">Logo firme <span style="font-weight:400;opacity:0.6;" data-i18n="wizard_optional">(opcionalno)</span></label>
-                    <div id="wizard-logo-drop" onclick="document.getElementById('wizard-logo-input').click()"
+                    <div id="wizard-logo-drop" data-action="clickElementById" data-action-args='["wizard-logo-input"]'
                         style="border:2px dashed var(--panel-border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:border-color 0.2s;"
                         onmouseenter="this.style.borderColor='var(--primary-color)'"
                         onmouseleave="this.style.borderColor='var(--panel-border)'">
@@ -1932,7 +2025,7 @@
                             <i data-lucide="image-plus" style="width:28px;height:28px;color:var(--text-muted);display:block;margin:0 auto 8px;"></i>
                             <span style="font-size:0.82rem;color:var(--text-muted);" data-i18n="wizard_logo_hint">Klikni za upload logoa (PNG, JPG, SVG)</span>
                         </div>
-                        <input type="file" id="wizard-logo-input" accept="image/*" style="display:none;" onchange="wizardHandleLogo(this)" />
+                        <input type="file" id="wizard-logo-input" accept="image/*" style="display:none;" data-change-action="wizardHandleLogo" data-change-pass="element" />
                     </div>
                 </div>
 
@@ -1943,18 +2036,18 @@
 
                     <!-- Preset colors -->
                     <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px;">
-                        <div class="wizard-color-chip" data-color="#29ABE2" onclick="wizardSelectColor('#29ABE2')" style="background:#29ABE2;" title="TransitFlow Blue"></div>
-                        <div class="wizard-color-chip" data-color="#a6001a" onclick="wizardSelectColor('#a6001a')" style="background:#a6001a;" title="Blaguss Red"></div>
-                        <div class="wizard-color-chip" data-color="#16a34a" onclick="wizardSelectColor('#16a34a')" style="background:#16a34a;" title="Green"></div>
-                        <div class="wizard-color-chip" data-color="#2563eb" onclick="wizardSelectColor('#2563eb')" style="background:#2563eb;" title="Royal Blue"></div>
-                        <div class="wizard-color-chip" data-color="#7c3aed" onclick="wizardSelectColor('#7c3aed')" style="background:#7c3aed;" title="Purple"></div>
-                        <div class="wizard-color-chip" data-color="#ea580c" onclick="wizardSelectColor('#ea580c')" style="background:#ea580c;" title="Orange"></div>
-                        <div class="wizard-color-chip" data-color="#0f766e" onclick="wizardSelectColor('#0f766e')" style="background:#0f766e;" title="Teal"></div>
-                        <div class="wizard-color-chip" data-color="#be123c" onclick="wizardSelectColor('#be123c')" style="background:#be123c;" title="Rose"></div>
-                        <div class="wizard-color-chip" data-color="#b45309" onclick="wizardSelectColor('#b45309')" style="background:#b45309;" title="Amber"></div>
-                        <div class="wizard-color-chip" data-color="#1e3a5f" onclick="wizardSelectColor('#1e3a5f')" style="background:#1e3a5f;" title="Navy"></div>
-                        <div class="wizard-color-chip" data-color="#374151" onclick="wizardSelectColor('#374151')" style="background:#374151;" title="Slate"></div>
-                        <div class="wizard-color-chip" data-color="#111827" onclick="wizardSelectColor('#111827')" style="background:#111827;border:1px solid rgba(255,255,255,0.15);" title="Black"></div>
+                        <div class="wizard-color-chip" data-color="#29ABE2" data-action="wizardSelectColor" data-action-args='["#29ABE2"]' style="background:#29ABE2;" title="TransitFlow Blue"></div>
+                        <div class="wizard-color-chip" data-color="#a6001a" data-action="wizardSelectColor" data-action-args='["#a6001a"]' style="background:#a6001a;" title="Blaguss Red"></div>
+                        <div class="wizard-color-chip" data-color="#16a34a" data-action="wizardSelectColor" data-action-args='["#16a34a"]' style="background:#16a34a;" title="Green"></div>
+                        <div class="wizard-color-chip" data-color="#2563eb" data-action="wizardSelectColor" data-action-args='["#2563eb"]' style="background:#2563eb;" title="Royal Blue"></div>
+                        <div class="wizard-color-chip" data-color="#7c3aed" data-action="wizardSelectColor" data-action-args='["#7c3aed"]' style="background:#7c3aed;" title="Purple"></div>
+                        <div class="wizard-color-chip" data-color="#ea580c" data-action="wizardSelectColor" data-action-args='["#ea580c"]' style="background:#ea580c;" title="Orange"></div>
+                        <div class="wizard-color-chip" data-color="#0f766e" data-action="wizardSelectColor" data-action-args='["#0f766e"]' style="background:#0f766e;" title="Teal"></div>
+                        <div class="wizard-color-chip" data-color="#be123c" data-action="wizardSelectColor" data-action-args='["#be123c"]' style="background:#be123c;" title="Rose"></div>
+                        <div class="wizard-color-chip" data-color="#b45309" data-action="wizardSelectColor" data-action-args='["#b45309"]' style="background:#b45309;" title="Amber"></div>
+                        <div class="wizard-color-chip" data-color="#1e3a5f" data-action="wizardSelectColor" data-action-args='["#1e3a5f"]' style="background:#1e3a5f;" title="Navy"></div>
+                        <div class="wizard-color-chip" data-color="#374151" data-action="wizardSelectColor" data-action-args='["#374151"]' style="background:#374151;" title="Slate"></div>
+                        <div class="wizard-color-chip" data-color="#111827" data-action="wizardSelectColor" data-action-args='["#111827"]' style="background:#111827;border:1px solid rgba(255,255,255,0.15);" title="Black"></div>
                     </div>
 
                     <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:8px;" data-i18n="wizard_custom_color">Ili odaberite prilagođenu boju</label>
@@ -1979,7 +2072,7 @@
                         <!-- Dinamički -->
                     </div>
 
-                    <button onclick="wizardAddDriverRow()" style="width:100%;padding:10px;border:2px dashed var(--panel-border);border-radius:10px;background:none;color:var(--primary-color);font-size:0.88rem;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;transition:border-color 0.2s;"
+                    <button data-action="wizardAddDriverRow" style="width:100%;padding:10px;border:2px dashed var(--panel-border);border-radius:10px;background:none;color:var(--primary-color);font-size:0.88rem;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;transition:border-color 0.2s;"
                         onmouseenter="this.style.borderColor='var(--primary-color)'"
                         onmouseleave="this.style.borderColor='var(--panel-border)'">
                         <i data-lucide="plus" style="width:16px;height:16px;"></i>
@@ -1991,10 +2084,192 @@
 
                 <!-- Navigation buttons -->
                 <div style="display:flex;gap:10px;margin-top:28px;">
-                    <button id="wizard-btn-back" onclick="wizardBack()" style="display:none;flex:1;padding:13px;border-radius:12px;border:1px solid var(--panel-border);background:rgba(255,255,255,0.05);color:var(--text-muted);font-size:0.9rem;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;" data-i18n="btn_back">Nazad</button>
-                    <button id="wizard-btn-skip" onclick="wizardSkip()" style="padding:13px 20px;border-radius:12px;border:1px solid var(--panel-border);background:none;color:var(--text-muted);font-size:0.85rem;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;" data-i18n="btn_skip">Preskoči</button>
-                    <button id="wizard-btn-next" onclick="wizardNext()" style="flex:1;padding:13px;border-radius:12px;border:none;background:var(--primary-color);color:white;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;" data-i18n="btn_next">Dalje →</button>
+                    <button id="wizard-btn-back" data-action="wizardBack" style="display:none;flex:1;padding:13px;border-radius:12px;border:1px solid var(--panel-border);background:rgba(255,255,255,0.05);color:var(--text-muted);font-size:0.9rem;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;" data-i18n="btn_back">Nazad</button>
+                    <button id="wizard-btn-skip" data-action="wizardSkip" style="padding:13px 20px;border-radius:12px;border:1px solid var(--panel-border);background:none;color:var(--text-muted);font-size:0.85rem;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;" data-i18n="btn_skip">Preskoči</button>
+                    <button id="wizard-btn-next" data-action="wizardNext" style="flex:1;padding:13px;border-radius:12px;border:none;background:var(--primary-color);color:white;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;" data-i18n="btn_next">Dalje →</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== COMPANY ADMIN ONBOARDING WIZARD ===== -->
+    <div id="ca-onboarding-wizard" class="hidden" style="
+        position:fixed; inset:0; z-index:10001;
+        background:rgba(0,0,0,0.88); backdrop-filter:blur(12px);
+        display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div style="
+            background:var(--card-bg);
+            border:1px solid var(--panel-border);
+            border-radius:24px; width:100%; max-width:520px;
+            box-shadow:0 30px 80px rgba(0,0,0,0.6);
+            overflow:hidden;">
+
+            <div style="padding:28px 32px 0;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:36px;height:36px;border-radius:50%;background:var(--primary-color);display:flex;align-items:center;justify-content:center;">
+                            <i data-lucide="building-2" style="width:18px;height:18px;color:white;"></i>
+                        </div>
+                        <span style="font-weight:800;font-size:1rem;color:var(--text-main);" data-i18n="ca_wizard_title">Postavljanje firme</span>
+                    </div>
+                    <span id="ca-wizard-step-label" style="font-size:0.78rem;color:var(--text-muted);font-weight:600;">1 / 3</span>
+                </div>
+                <div style="height:4px;background:var(--panel-border);border-radius:4px;overflow:hidden;">
+                    <div id="ca-wizard-progress-bar" style="height:100%;background:var(--primary-color);border-radius:4px;transition:width 0.4s ease;width:33%;"></div>
+                </div>
+            </div>
+
+            <div style="padding:28px 32px 32px;">
+
+                <!-- KORAK 1: Brending -->
+                <div id="ca-wizard-step-1">
+                    <h2 style="font-size:1.35rem;font-weight:800;margin-bottom:6px;color:var(--text-main);" data-i18n="ca_wizard_step1_title">Brending firme</h2>
+                    <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:20px;" data-i18n="ca_wizard_step1_sub">Naziv, boja i logo — vide ih svi dispečeri i vozači.</p>
+
+                    <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="wizard_company_name">Naziv firme</label>
+                    <input id="ca-wizard-company-name" type="text" placeholder="npr. Blaguss Graz"
+                        style="width:100%;padding:12px 16px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-main);font-size:0.95rem;font-family:'Outfit',sans-serif;outline:none;box-sizing:border-box;margin-bottom:16px;"
+                        oninput="caWizardPreviewName()" />
+
+                    <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:8px;" data-i18n="wizard_color_title">Boja brenda</label>
+                    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:12px;">
+                        <div class="ca-wizard-color-chip" data-color="#29ABE2" data-action="caWizardSelectColor" data-action-args='["#29ABE2"]' style="background:#29ABE2;height:28px;border-radius:6px;cursor:pointer;"></div>
+                        <div class="ca-wizard-color-chip" data-color="#a6001a" data-action="caWizardSelectColor" data-action-args='["#a6001a"]' style="background:#a6001a;height:28px;border-radius:6px;cursor:pointer;"></div>
+                        <div class="ca-wizard-color-chip" data-color="#16a34a" data-action="caWizardSelectColor" data-action-args='["#16a34a"]' style="background:#16a34a;height:28px;border-radius:6px;cursor:pointer;"></div>
+                        <div class="ca-wizard-color-chip" data-color="#2563eb" data-action="caWizardSelectColor" data-action-args='["#2563eb"]' style="background:#2563eb;height:28px;border-radius:6px;cursor:pointer;"></div>
+                        <div class="ca-wizard-color-chip" data-color="#0ea5e9" data-action="caWizardSelectColor" data-action-args='["#0ea5e9"]' style="background:#0ea5e9;height:28px;border-radius:6px;cursor:pointer;"></div>
+                        <div class="ca-wizard-color-chip" data-color="#1e3a5f" data-action="caWizardSelectColor" data-action-args='["#1e3a5f"]' style="background:#1e3a5f;height:28px;border-radius:6px;cursor:pointer;"></div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                        <input type="color" id="ca-wizard-color-picker" value="#29ABE2" oninput="caWizardSelectColor(this.value)"
+                            style="width:48px;height:48px;border:none;border-radius:10px;cursor:pointer;" />
+                        <div id="ca-wizard-color-preview" style="flex:1;height:48px;border-radius:10px;background:#29ABE2;display:flex;align-items:center;justify-content:center;">
+                            <span id="ca-wizard-color-hex" style="color:white;font-weight:700;font-size:0.85rem;text-shadow:0 1px 3px rgba(0,0,0,0.4);">#29ABE2</span>
+                        </div>
+                    </div>
+
+                    <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="ph_brand_logo_label">Logo URL <span style="font-weight:400;opacity:0.6;" data-i18n="wizard_optional">(opcionalno)</span></label>
+                    <input id="ca-wizard-logo-url" type="text" placeholder="https://..."
+                        style="width:100%;padding:12px 16px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-main);font-size:0.9rem;font-family:'Outfit',sans-serif;outline:none;box-sizing:border-box;" />
+                </div>
+
+                <!-- KORAK 2: Prva grupa / linija -->
+                <div id="ca-wizard-step-2" style="display:none;">
+                    <h2 style="font-size:1.35rem;font-weight:800;margin-bottom:6px;color:var(--text-main);" data-i18n="ca_wizard_step2_title">Prva linija / grupa</h2>
+                    <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:20px;" data-i18n="ca_wizard_step2_sub">Npr. linija 310 — dispečer kasnije uvozi vozače i planove za tu liniju.</p>
+
+                    <div style="display:grid;grid-template-columns:100px 1fr;gap:12px;margin-bottom:16px;">
+                        <div>
+                            <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="label_group_id">ID linije</label>
+                            <input id="ca-wizard-line-id" type="text" placeholder="310" maxlength="6"
+                                style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-main);font-size:0.95rem;outline:none;box-sizing:border-box;" />
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="group_name_label">Naziv</label>
+                            <input id="ca-wizard-group-name" type="text" placeholder="Linija 310"
+                                style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-main);font-size:0.95rem;outline:none;box-sizing:border-box;" />
+                        </div>
+                    </div>
+                    <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="group_color_label">Boja grupe</label>
+                    <input type="color" id="ca-wizard-group-color" value="#0ea5e9" style="width:48px;height:40px;border-radius:8px;cursor:pointer;" />
+                </div>
+
+                <!-- KORAK 3: Prvi dispečer -->
+                <div id="ca-wizard-step-3" style="display:none;">
+                    <h2 style="font-size:1.35rem;font-weight:800;margin-bottom:6px;color:var(--text-main);" data-i18n="ca_wizard_step3_title">Prvi dispečer</h2>
+                    <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:20px;" data-i18n="ca_wizard_step3_sub">Nalog za dnevni rad — planovi, poruke, prijave. Možete dodati više kasnije.</p>
+
+                    <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="disp_name_label">Ime</label>
+                    <input id="ca-wizard-disp-name" type="text" placeholder="Marko Dispečer"
+                        style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-main);font-size:0.95rem;outline:none;box-sizing:border-box;margin-bottom:12px;" />
+
+                    <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="email_label">Email</label>
+                    <input id="ca-wizard-disp-email" type="email" placeholder="disp@firma.com"
+                        style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-main);font-size:0.95rem;outline:none;box-sizing:border-box;margin-bottom:12px;" />
+
+                    <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="pass_label">Početna lozinka</label>
+                    <input id="ca-wizard-disp-password" type="password" data-i18n-placeholder="password_min_placeholder" placeholder="min. 6 karaktera" autocomplete="new-password"
+                        style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-main);font-size:0.95rem;outline:none;box-sizing:border-box;" />
+                </div>
+
+                <div style="display:flex;gap:10px;margin-top:28px;">
+                    <button id="ca-wizard-btn-back" type="button" data-action="caWizardBack" style="display:none;flex:1;padding:13px;border-radius:12px;border:1px solid var(--panel-border);background:rgba(255,255,255,0.05);color:var(--text-muted);font-size:0.9rem;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;" data-i18n="btn_back">Nazad</button>
+                    <button id="ca-wizard-btn-skip" type="button" data-action="caWizardSkip" style="display:none;padding:13px 20px;border-radius:12px;border:1px solid var(--panel-border);background:none;color:var(--text-muted);font-size:0.85rem;cursor:pointer;font-family:'Outfit',sans-serif;" data-i18n="btn_skip">Preskoči</button>
+                    <button id="ca-wizard-btn-next" type="button" data-action="caWizardNext" style="flex:1;padding:13px;border-radius:12px;border:none;background:var(--primary-color);color:white;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;" data-i18n="btn_next">Dalje</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MESEČNI PLAN — UREĐIVANJE DANA ===== -->
+    <div id="monthly-day-edit-modal" class="hidden" style="
+        position:fixed; inset:0; z-index:9999;
+        background:rgba(0,0,0,0.75); backdrop-filter:blur(8px);
+        display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div style="
+            background:linear-gradient(135deg,#0f1419,#1a2332);
+            border:1px solid rgba(61,126,245,0.45);
+            border-radius:16px; padding:24px; max-width:480px; width:100%;
+            box-shadow:0 20px 50px rgba(0,0,0,0.6);">
+            <h3 style="margin:0 0 4px;font-size:1.1rem;display:flex;align-items:center;gap:8px;">
+                <i data-lucide="calendar-cog" style="width:20px;height:20px;color:var(--primary-color);"></i>
+                <span data-i18n="med_edit_title">Izmena smene za dan</span>
+            </h3>
+            <p style="margin:0 0 16px;font-size:0.82rem;color:var(--text-muted);">
+                <span data-i18n="med_edit_driver">Vozač</span>: <strong id="med-driver-label" style="color:var(--text-main);">—</strong>
+                · <span data-i18n="med_edit_month">Mesec</span>: <strong id="med-month-label" style="color:var(--text-main);">—</strong>
+            </p>
+            <p style="margin:-8px 0 14px;font-size:0.72rem;color:var(--text-muted);" data-i18n="med_edit_hint">
+                Za svaki dan: izaberite tip (slobodno / odmor / bolovanje / radna smena), zatim šifru i autobus ako treba.
+            </p>
+
+            <div class="form-group" style="margin-bottom:12px;">
+                <label data-i18n="med_label_day" style="font-size:0.75rem;color:var(--text-muted);font-weight:600;">Dan / datum</label>
+                <select id="med-day-select" data-change-action="onMedDaySelectChange"
+                    style="width:100%;padding:10px;margin-top:4px;box-sizing:border-box;background:rgba(0,0,0,0.3);border:1px solid var(--panel-border);color:white;border-radius:8px;cursor:pointer;"></select>
+                <div id="med-date-hint" style="font-size:0.78rem;color:var(--primary-color);margin-top:6px;font-weight:600;"></div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:12px;">
+                <label data-i18n="med_label_type" style="font-size:0.75rem;color:var(--text-muted);font-weight:600;">Tip smene</label>
+                <select id="med-shift-type" data-change-action="onMedShiftTypeChange"
+                    style="width:100%;padding:10px;margin-top:4px;box-sizing:border-box;background:rgba(0,0,0,0.3);border:1px solid var(--panel-border);color:white;border-radius:8px;cursor:pointer;">
+                    <option value="morning" data-i18n="shift_type_morning">🌅 Prepodne (Frühdienst)</option>
+                    <option value="afternoon" data-i18n="shift_type_afternoon">🌇 Popodne (Spätdienst)</option>
+                    <option value="night" data-i18n="shift_type_night">🌙 Noćna (Nachtdienst)</option>
+                    <option value="bereitschaft" data-i18n="shift_type_bereitschaft">x2 Bereitschaft</option>
+                    <option value="off" data-i18n="shift_type_off">💤 Slobodan dan</option>
+                    <option value="vacation" data-i18n="shift_type_vacation">🏖️ Godišnji odmor</option>
+                    <option value="sick" data-i18n="shift_type_sick">🤒 Bolovanje</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom:12px;">
+                <label data-i18n="med_label_code" style="font-size:0.75rem;color:var(--text-muted);font-weight:600;">Šifra smene / plan (V66)</label>
+                <select id="med-shift-code-select" data-change-action="onMedCatalogSelectChange"
+                    style="width:100%;padding:10px;margin-top:4px;box-sizing:border-box;background:rgba(0,0,0,0.3);border:1px solid var(--panel-border);color:white;border-radius:8px;cursor:pointer;">
+                    <option value="" data-i18n="med_code_none">— Bez šifre / slobodno —</option>
+                </select>
+                <input type="text" id="med-shift-code-custom" data-i18n-placeholder="med_code_placeholder" placeholder="ili ukucajte šifru, npr. 310.F08"
+                    oninput="onMedShiftCodeCustomInput()"
+                    style="width:100%;padding:10px;margin-top:6px;box-sizing:border-box;background:rgba(0,0,0,0.3);border:1px solid var(--panel-border);color:white;border-radius:8px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom:18px;">
+                <label data-i18n="med_label_bus" style="font-size:0.75rem;color:var(--text-muted);font-weight:600;">Autobus</label>
+                <select id="med-bus-select"
+                    style="width:100%;padding:10px;margin-top:4px;box-sizing:border-box;background:rgba(0,0,0,0.3);border:1px solid var(--panel-border);color:white;border-radius:8px;cursor:pointer;">
+                    <option value="" data-i18n="med_bus_none">— Bez autobusa —</option>
+                </select>
+                <input type="text" id="med-bus-custom" data-i18n-placeholder="med_bus_placeholder" placeholder="ili ukucajte broj autobusa, npr. 91103" inputmode="numeric"
+                    style="width:100%;padding:10px;margin-top:6px;box-sizing:border-box;background:rgba(0,0,0,0.3);border:1px solid var(--panel-border);color:white;border-radius:8px;">
+            </div>
+
+            <div style="display:flex;gap:10px;">
+                <button type="button" data-action="closeMonthlyDayEditModal" class="btn-secondary" style="flex:1;height:42px;"><span data-i18n="btn_cancel">Otkaži</span></button>
+                <button type="button" data-action="saveMonthlyDayEdit" class="btn-primary" style="flex:1;height:42px;">
+                    <i data-lucide="save"></i> <span data-i18n="btn_save">Sačuvaj</span>
+                </button>
             </div>
         </div>
     </div>
@@ -2020,13 +2295,13 @@
                 <span style="font-size:0.8rem; opacity:0.6;">This action cannot be undone.</span>
             </p>
             <div style="display:flex; gap:12px; justify-content:center;">
-                <button onclick="closeModal('factory-reset-modal')"
+                <button data-action="closeModal" data-action-args='["factory-reset-modal"]'
                     style="flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12);
                     background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.8); font-size:0.9rem;
                     font-weight:600; cursor:pointer; font-family:'Outfit',sans-serif;">
                     Cancel
                 </button>
-                <button onclick="confirmFactoryReset()"
+                <button data-action="confirmFactoryReset"
                     style="flex:1; padding:12px; border-radius:10px; border:none;
                     background:linear-gradient(135deg,#ef4444,#dc2626); color:white; font-size:0.9rem;
                     font-weight:700; cursor:pointer; font-family:'Outfit',sans-serif;
@@ -2056,13 +2331,13 @@
                 Have you contacted the driver and verified the situation?
             </p>
             <div style="display:flex; gap:12px; justify-content:center;">
-                <button onclick="closeModal('clear-sos-modal')"
+                <button data-action="closeModal" data-action-args='["clear-sos-modal"]'
                     style="flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12);
                     background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.8); font-size:0.9rem;
                     font-weight:600; cursor:pointer; font-family:'Outfit',sans-serif;">
                     Cancel
                 </button>
-                <button onclick="confirmClearSOS()"
+                <button data-action="confirmClearSOS"
                     style="flex:1; padding:12px; border-radius:10px; border:none;
                     background:linear-gradient(135deg,#fb923c,#ea580c); color:white; font-size:0.9rem;
                     font-weight:700; cursor:pointer; font-family:'Outfit',sans-serif;
@@ -2075,7 +2350,7 @@
 
 
     <!-- ===== GLOBAL CONFIRM MODAL ===== -->
-    <div id="global-confirm-modal" class="hidden" onclick="if(event.target===this) closeConfirmModal()" style="
+    <div id="global-confirm-modal" class="hidden" data-action="closeConfirmModal" data-action-self="true" style="
         position:fixed; inset:0; z-index:20000;
         background:rgba(0,0,0,0.75); backdrop-filter:blur(6px);
         display:flex; align-items:center; justify-content:center; padding:20px;">
@@ -2088,13 +2363,13 @@
             <h3 id="global-confirm-title" style="font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:10px;" data-i18n="confirm_title">Potvrda</h3>
             <p id="global-confirm-message" style="font-size:0.875rem; color:rgba(255,255,255,0.65); margin-bottom:22px; line-height:1.6;"></p>
             <div style="display:flex; gap:12px;">
-                <button onclick="closeConfirmModal()" style="
+                <button data-action="closeConfirmModal" style="
                     flex:1; padding:12px; border-radius:10px; font-size:0.9rem; font-weight:600;
                     background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
                     color:rgba(255,255,255,0.75); cursor:pointer;" data-i18n="btn_cancel">
                     Otkazhi
                 </button>
-                <button id="global-confirm-yes" onclick="confirmModalYes()" style="
+                <button id="global-confirm-yes" data-action="confirmModalYes" style="
                     flex:1; padding:12px; border-radius:10px; font-size:0.9rem; font-weight:700;
                     background:linear-gradient(135deg,#dc2626,#b91c1c); border:none;
                     color:#fff; cursor:pointer; box-shadow:0 4px 14px rgba(220,38,38,0.35);" data-i18n="btn_yes">
@@ -2104,23 +2379,38 @@
         </div>
     </div>
 
-    <!-- SUPER ADMIN PIN MODAL -->
+    <!-- SUPER ADMIN MODAL -->
     <div id="superadmin-pin-modal" class="hidden" style="position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center;">
         <div style="background:#0f0f19; border:2px solid rgba(99,102,241,0.5); border-radius:20px; padding:32px 28px; width:92%; max-width:360px; text-align:center;">
             <h3 style="color:white; font-size:1.2rem; margin-bottom:16px;">&#x1F510; Super Admin Access</h3>
-            <input type="password" id="superadmin-pin-input" placeholder="Enter PIN" maxlength="10"
-                style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
-                background:rgba(255,255,255,0.05); color:white; font-size:1rem; text-align:center;
-                box-sizing:border-box; margin-bottom:8px; outline:none;"
-                onkeydown="if(event.key==='Enter') confirmSuperAdminPin()">
+            <!-- Demo: PIN -->
+            <div id="superadmin-demo-fields">
+                <input type="password" id="superadmin-pin-input" placeholder="Enter PIN" maxlength="10"
+                    style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
+                    background:rgba(255,255,255,0.05); color:white; font-size:1rem; text-align:center;
+                    box-sizing:border-box; margin-bottom:8px; outline:none;"
+                    onkeydown="if(event.key==='Enter') confirmSuperAdminPin()">
+            </div>
+            <!-- Produkcija: email + lozinka -->
+            <div id="superadmin-prod-fields" class="hidden">
+                <input type="email" id="superadmin-email-input" placeholder="admin@buscommand.com"
+                    style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
+                    background:rgba(255,255,255,0.05); color:white; font-size:0.95rem;
+                    box-sizing:border-box; margin-bottom:8px; outline:none;">
+                <input type="password" id="superadmin-pass-input" placeholder="Password"
+                    style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
+                    background:rgba(255,255,255,0.05); color:white; font-size:0.95rem;
+                    box-sizing:border-box; margin-bottom:8px; outline:none;"
+                    onkeydown="if(event.key==='Enter') confirmSuperAdminPin()">
+            </div>
             <p id="superadmin-pin-error" style="color:#ef4444; font-size:0.85rem; margin-bottom:16px; min-height:20px;"></p>
             <div style="display:flex; gap:12px;">
-                <button onclick="closeSuperAdminModal()"
+                <button data-action="closeSuperAdminModal"
                     style="flex:1; padding:12px; border-radius:10px; background:rgba(255,255,255,0.06);
                     border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); cursor:pointer; font-size:0.9rem;">
                     Cancel
                 </button>
-                <button onclick="confirmSuperAdminPin()"
+                <button data-action="confirmSuperAdminPin"
                     style="flex:1; padding:12px; border-radius:10px; background:linear-gradient(135deg,#6366f1,#4f46e5);
                     border:none; color:white; cursor:pointer; font-size:0.9rem; font-weight:700;">
                     Confirm
@@ -2131,27 +2421,23 @@
 
     <!-- ── MOBILNI BOTTOM NAV (vidljiv samo na mobilnom, ≤640px) ── -->
     <div id="fp-mobile-nav">
-        <button class="fp-nav-btn active" id="fp-nav-home" onclick="fpNavSwitch('home')">
+        <button class="fp-nav-btn active" id="fp-nav-home" data-action="fpNavSwitch" data-action-args='["home"]'>
             <span class="fp-nav-icon">🏠</span>
             <span class="fp-nav-label" data-i18n="nav_home">Početna</span>
         </button>
-        <button class="fp-nav-btn" id="fp-nav-shift" onclick="fpNavSwitch('shift')">
+        <button class="fp-nav-btn" id="fp-nav-shift" data-action="fpNavSwitch" data-action-args='["shift"]'>
             <span class="fp-nav-icon">📋</span>
             <span class="fp-nav-label" data-i18n="nav_monthly_plan_short">Smene</span>
         </button>
-        <button class="fp-nav-btn" id="fp-nav-reports" onclick="fpNavSwitch('reports')">
+        <button class="fp-nav-btn" id="fp-nav-reports" data-action="fpNavSwitch" data-action-args='["reports"]'>
             <span class="fp-nav-icon">⚠️</span>
             <span class="fp-nav-label" data-i18n="nav_report_short">Prijava</span>
         </button>
-        <button class="fp-nav-btn" id="fp-nav-vacation" onclick="fpNavSwitch('vacation')">
+        <button class="fp-nav-btn" id="fp-nav-vacation" data-action="fpNavSwitch" data-action-args='["vacation"]'>
             <span class="fp-nav-icon">📅</span>
             <span class="fp-nav-label" data-i18n="nav_vacation_short">Odmor</span>
         </button>
     </div>
 
-    <script src="translations.js"></script>
-    <script src="firebase-service.js"></script>
-    <script src="auth.js"></script>
-    <script src="app.js"></script>
 </body>
 </html>
