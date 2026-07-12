@@ -139,9 +139,9 @@ npm run build
 
 | Prioritet | Stavka |
 |-----------|--------|
-| 🟡 | Deploy buscommand.com (hosting, DNS, `CORS_ORIGINS`, `firebase-admin-key.json`) |
-| 🟢 | Inline boje u JS/HTML → tokeni (postepeno) |
-| 🟢 | Lazy i18n, a11y, ostalo (plan #13–18) |
+| 🟡 | **Deploy buscommand.com** — vidi `DEPLOY.md` (Docker, Render, VPS) |
+| 🟢 | Ukloniti `buscommand.zip` iz git istorije |
+| 🟢 | Inline boje → tokeni, i18n, a11y (plan #13–18) |
 
 **Ne dirati:** `*.legacy.js` (van bundle-a)
 

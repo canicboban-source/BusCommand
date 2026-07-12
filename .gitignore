@@ -23,6 +23,10 @@ desktop.ini
 # Env (tajne)
 .env
 .env.local
+NOTES-ACCESS.local.md
+NOTES*.local.md
+NOTES-secrets.local.json
+render-env-import.env
 
 # Temp / build
 dist/
@@ -30,3 +34,8 @@ build/
 .cache/
 test-results/
 playwright-report/
+*.zip
+buscommand.zip
+
+# Docker / deploy
+.docker/

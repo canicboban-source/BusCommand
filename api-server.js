@@ -29,7 +29,23 @@ const { version: APP_VERSION } = require("./package.json");
 
 const PORT = Number(process.env.PORT) || 8766;
 const SERVICE_ACCOUNT_PATH = path.join(__dirname, "firebase-admin-key.json");
-const HAS_FIREBASE = fs.existsSync(SERVICE_ACCOUNT_PATH);
+
+function loadFirebaseServiceAccount() {
+  if (fs.existsSync(SERVICE_ACCOUNT_PATH)) {
+    return require(SERVICE_ACCOUNT_PATH);
+  }
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (!raw || !String(raw).trim()) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    logger.error({ err: err.message }, "FIREBASE_SERVICE_ACCOUNT_JSON nije validan JSON");
+    return null;
+  }
+}
+
+const serviceAccount = loadFirebaseServiceAccount();
+const HAS_FIREBASE = !!serviceAccount;
 
 const DEFAULT_CORS_ORIGINS = [
   "http://localhost:8766",
@@ -41,7 +57,6 @@ let db    = null;
 
 if (HAS_FIREBASE) {
   admin = require("firebase-admin");
-  const serviceAccount = require(SERVICE_ACCOUNT_PATH);
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
   db = admin.firestore();
 }
@@ -559,7 +574,10 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log("===========================================");
   if (!HAS_FIREBASE) {
     console.log("  ℹ️  Za produkciju dodaj firebase-admin-key.json");
-    console.log("     (vidi SETUP-FIREBASE.md)");
+    console.log("     ili env FIREBASE_SERVICE_ACCOUNT_JSON (vidi DEPLOY.md)");
+  }
+  if (process.env.NODE_ENV === "production" && !process.env.CORS_ORIGINS) {
+    console.log("  ⚠️  NODE_ENV=production — postavi CORS_ORIGINS (vidi DEPLOY.md)");
   }
   console.log("");
 });

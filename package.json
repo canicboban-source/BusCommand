@@ -22,6 +22,8 @@
     "split-phase4": "node scripts/split-phase4.js",
     "split-phase5": "node scripts/split-phase5.js",
     "build": "vite build && node scripts/copy-static-to-dist.js",
+    "deploy:smoke": "node scripts/deploy-smoke.js",
+    "provision:admin": "node scripts/provision-prod-admin.js",
     "dev:ui": "vite",
     "esmify": "node scripts/esmify-modules.js",
     "build:legacy-bundle": "node scripts/build-buscommand-bundle.js",
