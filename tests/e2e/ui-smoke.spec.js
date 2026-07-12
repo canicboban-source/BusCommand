@@ -5,7 +5,9 @@ test.describe("UI smoke", () => {
   test("login screen loads", async ({ page }) => {
     await page.goto("/?mode=demo");
     await expect(page.locator("#login-screen")).toBeVisible();
-    await expect(page.locator("#app-branding-title")).toContainText("BusCommand");
+    await expect(page.locator("#login-logo")).toContainText("BusCommand");
+    await expect(page.locator("#login-logo")).not.toContainText("FleetPulse");
+    await expect(page.locator("#login-logo")).not.toContainText("Pulse");
   });
 
   test("quick demo dispatcher", async ({ page }) => {

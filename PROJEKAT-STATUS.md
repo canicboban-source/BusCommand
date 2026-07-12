@@ -61,7 +61,9 @@ npm run build
 - `api-server.js` — CORS whitelist, Helmet, trust proxy, status kodovi
 - `js/core/api-client.js`, `js/core/auth-client.js` — `!res.ok` handling
 
-### Rebrand FleetPulse → BusCommand ✅
+### Rebrand FleetPulse → BusCommand ✅ (kompletno jul 2026)
+- Login logo, `login-logo-container`, i18n branding, `saas_version` v30.1
+- Uklonjeni svi user-visible „FleetPulse“ / „Fleet Pulse“ stringovi
 - ~121 fajlova, `buscommand_*` storage keys + migracija
 - `BusCommandConfig`, verzija **30.1.0**
 - Cursor rules: `.cursor/rules/buscommand-*.mdc`

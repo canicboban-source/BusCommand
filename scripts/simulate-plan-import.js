@@ -89,7 +89,7 @@ function detectMonthFromFilename(fileName) {
 const wb = XLSX.readFile(filePath);
 const baseName = path.basename(filePath);
 
-console.log("\n=== FLEETPULSE IMPORT SIMULACIJA ===\n");
+console.log("\n=== BUSCOMMAND IMPORT SIMULACIJA ===\n");
 console.log("Fajl:", baseName);
 console.log("Detektovan mesec:", detectMonthFromFilename(baseName) || "(nije iz imena)");
 console.log("Sheet-ovi:", wb.SheetNames.join(", "));

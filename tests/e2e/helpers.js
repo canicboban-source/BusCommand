@@ -37,7 +37,7 @@ function minimalDemoState() {
     vacations: [],
     messages: [],
     lostItems: [],
-    branding: { name: "BusCommand Demo", primaryColor: "#3D7EF5", logo: null },
+    branding: { name: "BusCommand", primaryColor: "#3D7EF5", logo: null },
     schedules: [],
     tomorrowShifts: [],
     onboardingDone: true,

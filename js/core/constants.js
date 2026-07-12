@@ -92,7 +92,7 @@ export const DEMO_STATE = {
     messages: [],
     lostItems: [],
     branding: {
-        name: "BusCommand Online Demo",
+        name: "BusCommand",
         primaryColor: "#3D7EF5",
         logo: null
     },

@@ -117,6 +117,15 @@ function t(key, replacements = {}) {
 }
 
 // --- BRENDIRANJE ---
+
+function productLogoHtml(name) {
+    const n = String(name || "").trim();
+    if (!n || /^BusCommand(\s|$)/i.test(n)) {
+        return "Bus<span class=\"logo-dot\">Command</span>";
+    }
+    return n.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 function applyBrandingToUI() {
     const branding = window.state.branding || getBaseState().branding;
     
@@ -131,7 +140,7 @@ function applyBrandingToUI() {
     }
     
     const brandTitle = document.getElementById("app-branding-title");
-    if (brandTitle) brandTitle.innerText = branding.name;
+    if (brandTitle) brandTitle.innerText = branding.name.startsWith("BusCommand") ? "BusCommand" : branding.name;
     
     // Dinamički logo u zavisnosti od izabranog brenda
     const loginHeaderLogo = document.getElementById("login-logo-container");
@@ -152,9 +161,9 @@ function applyBrandingToUI() {
             `;
         } else {
             loginHeaderLogo.innerHTML = `
-                <div class="logo">
+                <div class="logo" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;">
                     <i data-lucide="bus"></i>
-                    <span>${branding.name}</span>
+                    <span>${productLogoHtml(branding.name)}</span>
                 </div>
                 <p data-i18n="login_subtitle" class="login-subtitle-text">${window.t("login_subtitle")}</p>
             `;
@@ -181,7 +190,7 @@ function applyBrandingToUI() {
             headerLogoContainer.innerHTML = `
                 <div class="logo">
                     <i data-lucide="bus"></i>
-                    <span id="app-branding-title">${branding.name}</span>
+                    <span id="app-branding-title">${branding.name.startsWith("BusCommand") ? "BusCommand" : branding.name}</span>
                 </div>
             `;
             lucide.createIcons();

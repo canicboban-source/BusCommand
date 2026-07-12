@@ -543,7 +543,7 @@ app.listen(PORT, "0.0.0.0", () => {
 
   console.log("");
   console.log("===========================================");
-  console.log("  BusCommand Server v9.4");
+  console.log("  BusCommand Server v30.1");
   console.log("  Frontend: " + (HAS_DIST ? "dist/ (Vite build)" : "js/main.js (dev bundle)"));
   console.log("  Režim: " + modeLabel);
   console.log("===========================================");
