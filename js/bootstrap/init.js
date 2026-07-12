@@ -78,8 +78,13 @@ async function bootstrapBusCommand() {
 
     const quickRole = BusCommandConfig.QUICK_DEMO_ROLE;
     if (quickRole === "driver") {
-        const demoDriver = window.state.drivers[0] || { name: "Demo Vozač", bus: "104", groupId: "105" };
-        const demoRoute  = window.state.routes.find(r => r.groupId === demoDriver.groupId) || window.state.routes[0];
+        const demoDriver = window.state.drivers[0];
+        if (!demoDriver) {
+            showLoginScreen(true);
+            lucide.createIcons();
+            return;
+        }
+        const demoRoute = window.state.routes.find(r => r.groupId === demoDriver.groupId) || window.state.routes[0];
         window.currentUser = {
             role: "driver", name: demoDriver.name, bus: demoDriver.bus || "104",
             routeId: demoRoute ? demoRoute.id : null, currentStopIndex: 0,
@@ -98,7 +103,9 @@ async function bootstrapBusCommand() {
             role: "dispatcher",
             name: demoDisp ? demoDisp.name : "Demo Dispečer",
             id: demoDisp ? demoDisp.id : "dispo-demo",
-            activeGroupId: (demoDisp && demoDisp.groups && demoDisp.groups[0]) || "105",
+            activeGroupId: (demoDisp && demoDisp.groups && demoDisp.groups[0])
+                || window.state.groups[0]?.id
+                || null,
             companyId: "demo", isDemo: true
         };
         persistUserSession(window.currentUser);

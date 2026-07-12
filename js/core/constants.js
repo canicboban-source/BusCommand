@@ -33,42 +33,79 @@ export const FRESH_STATE = {
 };
 
 // ============================================================
-// DEMO STATE — prazan dispečerski sandbox (uvoz iz fajlova)
+// DEMO STATE — jednostavan online test (Linija 101, 2 vozača)
+// Nalozi: vidi PROJEKAT-STATUS.md / README.md
 // ============================================================
 export const DEMO_STATE = {
-    language: "de",
+    language: "en",
     sosActive: false,
     sosDriver: "",
     sosBus: "",
-    groups: [],
+    groups: [
+        { id: "101", name: "Line 101", color: "#3D7EF5", active: true, companyId: "demo" }
+    ],
     dispatchers: [
         { id: "superadmin", name: "Super Admin", pin: "admin123", isSuperAdmin: true },
-        { id: "dispo-1", name: "dispo 1", email: "dispo1@demo.com", password: "dispo123", passwordChanged: true, groups: [], companyId: "demo", paymentStatus: "Trial", trialDaysLeft: 30 },
-        { id: "dispo-2", name: "dispo 2", email: "dispo2@demo.com", password: "dispo123", passwordChanged: true, groups: [], companyId: "demo", paymentStatus: "Trial", trialDaysLeft: 30 },
-        { id: "dispo-3", name: "dispo 3", email: "dispo3@demo.com", password: "dispo123", passwordChanged: true, groups: [], companyId: "demo", paymentStatus: "Trial", trialDaysLeft: 30 }
+        {
+            id: "dispo-1",
+            name: "Demo Dispatcher",
+            email: "demo@buscommand.com",
+            password: "demo123",
+            passwordChanged: true,
+            groups: ["101"],
+            companyId: "demo",
+            paymentStatus: "Trial",
+            trialDaysLeft: 30
+        }
     ],
-    drivers: [],
-    buses: [],
-    routes: [],
+    drivers: [
+        {
+            id: "drv-1",
+            name: "Alex Driver",
+            pin: "1234",
+            bus: "101",
+            groupId: "101",
+            lineId: "101",
+            active: false,
+            companyId: "demo"
+        },
+        {
+            id: "drv-2",
+            name: "Sam Driver",
+            pin: "1234",
+            bus: "102",
+            groupId: "101",
+            lineId: "101",
+            active: false,
+            companyId: "demo"
+        }
+    ],
+    buses: [
+        { id: "bus-101", number: "101", groupId: "101", lineId: "101", companyId: "demo" },
+        { id: "bus-102", number: "102", groupId: "101", lineId: "101", companyId: "demo" }
+    ],
+    routes: [
+        { id: "route-101", name: "Line 101", groupId: "101" }
+    ],
     reports: [],
     vacations: [],
     messages: [],
     lostItems: [],
     branding: {
-        name: "BusCommand Demo",
-        primaryColor: "#2DD4BF",
+        name: "BusCommand Online Demo",
+        primaryColor: "#3D7EF5",
         logo: null
     },
     schedules: [],
+    tomorrowShifts: [],
     onboardingDone: true,
-    companyAdminOnboardingDone: false,
+    companyAdminOnboardingDone: true,
     activeGroupFilter: null,
     shifts: [],
-    tomorrowShifts: [],
     companyAdmins: [
         {
             id: "ca-demo-1",
-            name: "Ana Kovačević",
+            name: "Demo Admin",
             email: "admin@demo.com",
             password: "demo123",
             companyId: "demo",

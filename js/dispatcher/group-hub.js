@@ -248,9 +248,6 @@ function renderGroupHub() {
         groupSelect.style.display = "none";
     }
 
-    const testBtn = document.querySelector("[onclick*='loadBlaguss310TestSeed']");
-    if (testBtn) testBtn.style.display = groupId === "310" ? "" : "none";
-
     renderDispatcherDataHub();
     renderHubPlanPreviews();
 

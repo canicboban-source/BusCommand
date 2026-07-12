@@ -8,10 +8,10 @@ test.describe("Line 310 / Group Hub", () => {
     await page.goto("/?mode=demo");
     await loginDispatcher(page);
 
-    await page.evaluate(() => window.openGroupHub("grp-1"));
+    await page.evaluate(() => window.openGroupHub("101"));
     await expect(page.locator("#dispatcher-group-hub")).toBeVisible();
-    await expect(page.locator("#group-hub-title")).toHaveText("310");
-    await expect(page.locator("#group-hub-id-badge")).toHaveText("grp-1");
+    await expect(page.locator("#group-hub-title")).toHaveText("Line 101");
+    await expect(page.locator("#group-hub-id-badge")).toHaveText("101");
     await expect(page.locator("#hub-stat-drivers")).not.toHaveText("0");
   });
 
@@ -20,7 +20,7 @@ test.describe("Line 310 / Group Hub", () => {
     await page.goto("/?mode=demo");
     await loginDispatcher(page);
 
-    await page.evaluate(() => window.openGroupHub("grp-1"));
+    await page.evaluate(() => window.openGroupHub("101"));
     await expect(page.locator("#dispatcher-group-hub")).toBeVisible();
 
     await page.getByRole("button", { name: /Daily plan|Dnevni plan/i }).first().click();

@@ -6,8 +6,9 @@ urađene manje/hitne popravke (vidi CHANGELOG.md / git log). Ovdje je popisano �
 dalji rad na kodu.
 
 > **Pravilo rada:** Sve izmjene idu po ovom planu — redoslijed faza ispod, bez
-> framework rewrite-a (React/Vue). Kanonski razvoj: `C:\Users\cane\buscommand`;
-> glavni git repozitorij: **`f:\fleet`** (merge skripta: `scripts/merge-to-fleet.ps1`).
+> framework rewrite-a (React/Vue). Prije većeg refaktora obavezno ESLint + smoke test
+> za dotični tok. Aktivni razvoj za Liniju 310 / Group Hub: ovaj repozitorij
+> (`fleet_v20.1`), dok se ne spoji u glavni `f:\fleet`.
 
 ---
 
@@ -29,7 +30,7 @@ dalji rad na kodu.
 **Status:** ✅ `tests/e2e/line-310.spec.js` (Group Hub, daily plan, empty hint)
 
 ### 0.6 Merge u `f:\fleet`
-**Status:** ✅ jul 2026 — `scripts/merge-to-fleet.ps1`, build + 19 unit + 14 E2E prolaze
+**Status:** ✅ jul 2026 — `scripts/merge-to-fleet.ps1`, verifikacija: build + 19 unit + 14 E2E u `f:\fleet`
 
 ---
 

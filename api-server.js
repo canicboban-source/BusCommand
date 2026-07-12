@@ -46,12 +46,10 @@ if (HAS_FIREBASE) {
   db = admin.firestore();
 }
 
-// Demo vozači — isti podaci kao DEMO_STATE u app.js
+// Demo vozači — usklađeno sa js/core/constants.js DEMO_STATE
 const DEMO_DRIVERS = [
-  { id: "drv-1", name: "Nikola Petrović", pin: "1234", bus: "104", companyId: "demo", active: true },
-  { id: "drv-2", name: "Marko Jovanović", pin: "1234", bus: "142", companyId: "demo", active: true },
-  { id: "drv-3", name: "Dejan Ilić",      pin: "1234", bus: "203", companyId: "demo", active: true },
-  { id: "drv-4", name: "Petar Lukić",     pin: "1234", bus: "307", companyId: "demo", active: true }
+  { id: "drv-1", name: "Alex Driver", pin: "1234", bus: "101", companyId: "demo", active: true },
+  { id: "drv-2", name: "Sam Driver", pin: "1234", bus: "102", companyId: "demo", active: true }
 ];
 
 const app = express();
@@ -550,7 +548,10 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log("  Režim: " + modeLabel);
   console.log("===========================================");
   console.log("  Lokalno:    http://localhost:" + PORT);
-  console.log("  Demo:       http://localhost:" + PORT + "/?mode=demo");
+  console.log("  Demo URL:   http://localhost:" + PORT + "/?mode=demo");
+  console.log("  Demo admin:  admin@demo.com / demo123");
+  console.log("  Demo dispo:  demo@buscommand.com / demo123");
+  console.log("  Demo driver: Alex Driver ili Sam Driver, PIN 1234");
   console.log("  Produkcija: http://localhost:" + PORT + "/?mode=production&company=ID");
   if (localIP !== "localhost") {
     console.log("  Telefon:    http://" + localIP + ":" + PORT);

@@ -24,6 +24,7 @@ function resetApp() {
     localStorage.removeItem(key);
     if (IS_DEMO_MODE) {
         localStorage.removeItem("buscommand_demo_state_v2");
+        localStorage.removeItem("buscommand_demo_state_v3");
     }
     sessionStorage.clear();
     signOutAllSessions();

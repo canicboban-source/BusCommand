@@ -1,22 +1,22 @@
 const { expect } = require("@playwright/test");
 
-/** Minimal demo state for E2E (dispatcher + driver + grupa). */
+/** Minimal demo state for E2E (aligned with js/core/constants.js DEMO_STATE). */
 function minimalDemoState() {
   return {
     language: "en",
     sosActive: false,
     sosDriver: "",
     sosBus: "",
-    groups: [{ id: "grp-1", name: "310", color: "#2DD4BF", active: true, companyId: "demo" }],
+    groups: [{ id: "101", name: "Line 101", color: "#3D7EF5", active: true, companyId: "demo" }],
     dispatchers: [
       { id: "superadmin", name: "Super Admin", pin: "admin123", isSuperAdmin: true },
       {
         id: "dispo-1",
-        name: "dispo 1",
-        email: "dispo1@demo.com",
-        password: "dispo123",
+        name: "Demo Dispatcher",
+        email: "demo@buscommand.com",
+        password: "demo123",
         passwordChanged: true,
-        groups: ["grp-1"],
+        groups: ["101"],
         companyId: "demo"
       }
     ],
@@ -25,18 +25,19 @@ function minimalDemoState() {
         id: "drv-e2e",
         name: "E2E Driver",
         pin: "1234",
-        bus: "104",
-        groupId: "grp-1",
+        bus: "101",
+        groupId: "101",
+        lineId: "101",
         active: false
       }
     ],
     buses: [],
-    routes: [{ id: "route-1", name: "Line 310", groupId: "grp-1" }],
+    routes: [{ id: "route-101", name: "Line 101", groupId: "101" }],
     reports: [],
     vacations: [],
     messages: [],
     lostItems: [],
-    branding: { name: "BusCommand Demo", primaryColor: "#2DD4BF", logo: null },
+    branding: { name: "BusCommand Demo", primaryColor: "#3D7EF5", logo: null },
     schedules: [],
     tomorrowShifts: [],
     onboardingDone: true,
@@ -46,7 +47,7 @@ function minimalDemoState() {
     companyAdmins: [
       {
         id: "ca-demo-1",
-        name: "Ana Kovačević",
+        name: "Demo Admin",
         email: "admin@demo.com",
         password: "demo123",
         companyId: "demo",
@@ -61,13 +62,16 @@ function minimalDemoState() {
 
 async function seedDemoState(page, state = minimalDemoState()) {
   await page.addInitScript((demoState) => {
-    localStorage.setItem("buscommand_demo_state_v2", JSON.stringify(demoState));
+    localStorage.removeItem("buscommand_demo_state_v2");
+    sessionStorage.removeItem("buscommand_demo_state_v2");
+    localStorage.setItem("buscommand_demo_state_v3", JSON.stringify(demoState));
+    sessionStorage.setItem("buscommand_demo_state_v3", JSON.stringify(demoState));
     localStorage.setItem("buscommand_lang", "en");
     sessionStorage.setItem("buscommand_pretrip_done", "true");
   }, state);
 }
 
-async function loginDispatcher(page, email = "dispo1@demo.com", password = "dispo123") {
+async function loginDispatcher(page, email = "demo@buscommand.com", password = "demo123") {
   await page.locator("#tab-dispatcher-btn").click();
   await page.locator("#login-dispatcher-email").fill(email);
   await page.locator("#login-dispatcher-password").fill(password);
@@ -79,7 +83,7 @@ async function loginDriver(page, name = "E2E Driver", pin = "1234") {
   await page.locator("#tab-driver-btn").click();
   await page.locator("#login-driver-select").selectOption({ label: name });
   await page.locator("#login-driver-pin").fill(pin);
-  await page.locator("#driver-login-form .btn-primary").click();
+  await page.getByRole("button", { name: /Sign on duty|Start Shift/i }).click();
   await page.waitForTimeout(300);
 
   const pretrip = page.locator("#pre-trip-modal");

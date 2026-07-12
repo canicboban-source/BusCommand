@@ -1,35 +1,40 @@
 # BusCommand — status projekta (v30.1.0)
 
-**Kanonski folder:** `C:\Users\cane\buscommand`  
-**Izvor kopije:** `C:\Users\cane\Desktop\fleet_v30.1` (jul 2026)  
+**Kanonski folder:** `C:\Users\cane\Desktop\buscommand`  
+**Rezervna kopija:** `F:\buscommand`  
+**Stare kopije (legacy):** `C:\Users\cane\buscommand`, `f:\fleet`, `Desktop\fleet_v30.1`  
 **Domen:** buscommand.com  
-**Plan refaktorisanja:** `f:\fleet\PLAN-REFAKTORISANJA.md`
+**Plan refaktorisanja:** `PLAN-REFAKTORISANJA.md` (u root-u projekta)
 
 ---
 
 ## Brzi start
 
 ```powershell
-cd C:\Users\cane\buscommand
+cd C:\Users\cane\Desktop\buscommand
 npm install
 npm run build
 npm start
 # http://localhost:8766/?mode=demo
 ```
 
-**Demo nalozi:**
-| Uloga | Email / PIN | Lozinka |
-|-------|-------------|---------|
+**Demo nalozi** (`/?mode=demo` ili localhost):
+
+| Uloga | Email / vozač | Lozinka / PIN |
+|-------|---------------|---------------|
 | Company admin | admin@demo.com | demo123 |
-| Dispečer | dispo1@demo.com | dispo123 |
-| Vozač | PIN vozača | 1234 |
+| Dispečer | demo@buscommand.com | demo123 |
+| Vozač | Alex Driver ili Sam Driver | 1234 |
+| Super Admin | Logo 5× klik | admin123 |
+
+**Online demo:** `https://buscommand.com/?mode=demo`
 
 **Brzi demo:** `http://localhost:8766/?demo=dispatcher`
 
 **Verifikacija:**
 ```powershell
 npm run lint
-npm run test    # 19 unit + 13 E2E
+npm run test    # 19 unit + 14 E2E
 npm run build
 ```
 
@@ -110,6 +115,11 @@ npm run build
 
 ---
 
+### Demo priprema ✅ (online test)
+- Novi `DEMO_STATE`: Linija **101**, 2 vozača, 1 dispečer, 1 admin
+- Storage ključ: `buscommand_demo_state_v3` (stari v2 se ignoriše)
+- Uklonjen Blaguss 310 test seed i dugme „Test 310“
+
 ### Deploy priprema ✅ (lokalno)
 - `.env.example` — `PORT`, `CORS_ORIGINS`, `LOG_LEVEL`
 - `GET /api/health` — uptime + mode (monitoring)
@@ -151,8 +161,10 @@ Server servira `dist/` ako postoji (`npm run build`), inače dev mod (`js/main.j
 
 | Putanja | Uloga |
 |---------|-------|
-| `C:\Users\cane\buscommand` | **Kanonski projekat** (ovaj folder) |
-| `C:\Users\cane\Desktop\fleet_v30.1` | Originalna radna kopija |
-| `f:\fleet\PLAN-REFAKTORISANJA.md` | Plan refaktorisanja |
+| `C:\Users\cane\Desktop\buscommand` | **Kanonski projekat** (glavni rad) |
+| `F:\buscommand` | **Rezervna kopija** (`scripts/sync-to-f-backup.ps1`) |
+| `C:\Users\cane\buscommand` | Legacy (home) — ne koristiti |
+| `f:\fleet` | Legacy git folder — zamenjen sa Desktop + F: |
+| `Desktop\fleet_v30.1` | Originalna radna kopija (jul 2026) |
 
-*Poslednje ažuriranje: jul 2026 — Faza 0 kompletna (0.1–0.6); sledeće: deploy.*
+*Poslednje ažuriranje: jul 2026 — premešteno na Desktop; demo cleanup; sledeće: deploy.*

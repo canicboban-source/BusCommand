@@ -13,7 +13,7 @@ function getBaseState() {
 
 function getStateStorageKey(companyId) {
     const cid = companyId || COMPANY_ID;
-    return IS_DEMO_MODE ? "buscommand_demo_state_v2" : ("buscommand_state_" + cid);
+    return IS_DEMO_MODE ? "buscommand_demo_state_v3" : ("buscommand_state_" + cid);
 }
 
 

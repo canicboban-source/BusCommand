@@ -74,7 +74,6 @@ import "./data/schedules.js";
 import "./layout/mobile-nav.js";
 import "./dispatcher/monthly-plans.js";
 import "./dispatcher/daily-plan.js";
-import "./demo/blaguss-310-seed.js";
 import "./bootstrap/init.js";
 
 export function installBusCommand() {

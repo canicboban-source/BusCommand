@@ -1,8 +1,8 @@
-# BusCommand v9.4
+# BusCommand v30.1
 
 SaaS platforma za upravljanje autobusnim flotama — vozači, dispečeri, admini.
 
-Frontend je **pravi ESM** — 63 modula sa `export`, Vite ih bundluje direktno (bez concat `fleet-bundle.js`).
+Frontend je **ESM** — Vite bundluje module iz `js/`.
 
 ## Brzi start (demo)
 
@@ -14,19 +14,21 @@ npm start
 
 Otvori: **http://localhost:8766** (localhost = demo mod automatski)
 
-### Demo login podaci
+### Demo login (online test)
 
 | Uloga | Pristup |
 |-------|---------|
-| Vozač | Dropdown → bilo koji vozač, PIN `1234` |
-| Dispečer L105 | `dispo1@demo.com` / `dispo123` |
-| Dispečer L110 | `dispo2@demo.com` / `dispo123` |
+| Vozač | Alex Driver ili Sam Driver, PIN `1234` |
+| Dispečer | `demo@buscommand.com` / `demo123` |
 | Company Admin | `admin@demo.com` / `demo123` |
 | Super Admin | Klik na logo 5× → PIN `admin123` |
 
-Brzi ulaz: `?demo=driver` ili `?demo=dispatcher`
+Linija: **101** (2 autobusa, 2 vozača)
 
-## Vite + ESM (v9.4)
+Brzi ulaz: `?demo=driver` ili `?demo=dispatcher`  
+Online: `https://buscommand.com/?mode=demo`
+
+## Vite + ESM
 
 | Komanda | Opis |
 |---------|------|

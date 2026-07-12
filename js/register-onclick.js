@@ -17,7 +17,6 @@ import { addBus, deleteBus, deleteRoute } from "./data/buses-routes.js";
 import { addDriver, deleteDriver, editDriver, importDriversBulk, importDriversFromFile } from "./data/drivers.js";
 import { deleteGroup, setGroupFilter } from "./data/groups.js";
 import { clearScheduleFile, clearScheduleText, deleteScheduleEntry, formatScheduleText, handleScheduleDrop, handleScheduleFileSelect, insertScheduleTable, sendScheduleToDrivers, switchScheduleTab } from "./data/schedules.js";
-import { loadBlaguss310TestSeed } from "./demo/blaguss-310-seed.js";
 import { updateDriverBusInline, updateDriverShiftInline } from "./dispatcher/dashboard.js";
 import { removeDispatcher } from "./dispatcher/dispatchers.js";
 import { backFromPlanFullPage, closeGroupHub, openDailyPlanFull, openGroupHub, openMonthlyPlansFull, scrollHubSection } from "./dispatcher/group-hub.js";
@@ -121,7 +120,6 @@ const __ONCLICK_HANDLERS = {
     importDriversBulk,
     importDriversFromFile,
     insertScheduleTable,
-    loadBlaguss310TestSeed,
     loadMonthlyPlanForDriver,
     loginAsDispatcher,
     loginAsDriver,

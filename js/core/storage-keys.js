@@ -8,7 +8,7 @@ export const STORAGE = {
     FORCE_LOGIN: "buscommand_force_login",
     LANG: "buscommand_lang",
     THEME: "buscommand_theme",
-    DEMO_STATE: "buscommand_demo_state_v2",
+    DEMO_STATE: "buscommand_demo_state_v3",
     SPOKEN_MESSAGES: "buscommand_spoken_messages",
     PRETRIP_DONE: "buscommand_pretrip_done"
 };
@@ -21,7 +21,7 @@ const LEGACY = {
     FORCE_LOGIN: "buscommand_force_login",
     LANG: "buscommand_lang",
     THEME: "buscommand_theme",
-    DEMO_STATE: "buscommand_demo_state_v2",
+    DEMO_STATE: "buscommand_demo_state_v3",
     SPOKEN_MESSAGES: "buscommand_spoken_messages",
     PRETRIP_DONE: "buscommand_pretrip_done"
 };
