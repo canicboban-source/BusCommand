@@ -1,0 +1,216 @@
+rules_version = '2';
+
+// ============================================================
+// TransitFlow — Firestore Security Rules
+// KRITIČNO: Ove rules osiguravaju da firme ne vide
+// jedne druge podatke (multi-tenant izolacija)
+// ============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── SUPERADMIN ─────────────────────────────────────────
+    // SuperAdmin ima pristup svemu
+
+    match /{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    // ─── FIRMA — SOPSTVENI PODACI ───────────────────────────
+    // Firma može čitati i pisati SAMO pod svojom companyId putanjom
+
+    match /companies/{companyId} {
+      allow read: if isCompanyMember(companyId);
+      allow write: if isCompanyAdmin(companyId);
+    }
+
+    // Profil i branding firme
+    match /companies/{companyId}/profile/{doc} {
+      allow read: if isCompanyMember(companyId);
+      allow write: if isCompanyAdmin(companyId);
+    }
+
+    match /companies/{companyId}/branding/{doc} {
+      allow read: if isCompanyMember(companyId);
+      allow write: if isCompanyAdmin(companyId);
+    }
+
+    match /companies/{companyId}/settings/{doc} {
+      allow read: if isCompanyMember(companyId);
+      allow write: if isCompanyAdmin(companyId);
+    }
+
+    match /companies/{companyId}/users/{userId} {
+      // Svaki user vidi vlastiti profil, admin vidi sve
+      allow read: if isCompanyAdmin(companyId)
+                  || (isCompanyMember(companyId) && request.auth.uid == userId);
+      allow create: if isCompanyAdmin(companyId) && isLicenseActive(companyId);
+      allow update: if (isCompanyAdmin(companyId) && isLicenseActive(companyId))
+                    || (isCompanyMember(companyId) && request.auth.uid == userId
+                        && onlyUpdatingOwnProfile());
+      allow delete: if isCompanyAdmin(companyId);
+    }
+
+    // ─── VOZAČI ─────────────────────────────────────────────
+
+    match /companies/{companyId}/drivers/{driverId} {
+      // Dispečer i admin vide sve vozače
+      // Vozač vidi SAMO vlastiti profil
+      allow read: if isCompanyStaff(companyId)
+                  || isOwnDriverProfile(companyId, driverId);
+      allow create: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      allow update: if (isCompanyStaff(companyId) && isLicenseActive(companyId))
+                    || (isDriver(companyId) && request.auth.uid == driverId
+                        && onlyUpdatingAllowedDriverFields());
+      allow delete: if isCompanyAdmin(companyId);
+    }
+
+    // ─── SMJENE ─────────────────────────────────────────────
+
+    match /companies/{companyId}/shifts/{shiftId} {
+      allow read: if isCompanyMember(companyId);
+      allow create: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      allow update: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      allow delete: if isCompanyAdmin(companyId);
+    }
+
+    // ─── PORUKE ─────────────────────────────────────────────
+
+    match /companies/{companyId}/messages/{msgId} {
+      allow read: if isCompanyMember(companyId);
+      allow create: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      // Vozač može samo markirati poruku kao pročitanu
+      allow update: if (isCompanyStaff(companyId) && isLicenseActive(companyId))
+                    || (isDriver(companyId) && onlyMarkingRead());
+      allow delete: if isCompanyAdmin(companyId);
+    }
+
+    // ─── SOS ALARMI ─────────────────────────────────────────
+
+    match /companies/{companyId}/sos/{sosId} {
+      allow read: if isCompanyMember(companyId);
+      // SOS ostaje dostupan bez obzira na status licence — sigurnosni alarm se ne smije blokirati
+      allow create: if isDriver(companyId);
+      // Samo dispečer/admin može riješiti SOS
+      allow update: if isCompanyStaff(companyId);
+      allow delete: if false; // SOS se nikad ne briše — evidencija
+    }
+
+    // ─── RASPORED ───────────────────────────────────────────
+
+    match /companies/{companyId}/schedules/{scheduleId} {
+      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow write: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+    }
+
+    match /companies/{companyId}/groups/{groupId} {
+      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow write: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+    }
+
+    match /companies/{companyId}/buses/{busId} {
+      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow write: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+    }
+
+    match /companies/{companyId}/routes/{routeId} {
+      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow write: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+    }
+
+    match /companies/{companyId}/reports/{reportId} {
+      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow create: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow update, delete: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+    }
+
+    match /companies/{companyId}/vacations/{vacId} {
+      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow create: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow update, delete: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+    }
+
+    match /companies/{companyId}/lost_items/{itemId} {
+      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow write: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+    }
+
+    match /companies/{companyId}/company_admins/{adminId} {
+      allow read: if isCompanyAdmin(companyId);
+      allow write: if isCompanyAdmin(companyId);
+    }
+
+    // ─── AUDIT LOG (GDPR — nepromjenjivo) ───────────────────
+
+    match /companies/{companyId}/audit_log/{logId} {
+      // Admin može čitati, svi mogu kreirati, niko ne može brisati ni mijenjati
+      allow read: if isCompanyAdmin(companyId);
+      allow create: if isCompanyMember(companyId);
+      allow update: if false;  // audit log je immutable
+      allow delete: if false;
+    }
+
+    // ─── HELPER FUNCTIONS ───────────────────────────────────
+
+    function isSuperAdmin() {
+      return request.auth != null
+        && request.auth.token.role == "superadmin";
+    }
+
+    function isCompanyMember(companyId) {
+      return request.auth != null
+        && request.auth.token.companyId == companyId;
+    }
+
+    function isCompanyAdmin(companyId) {
+      return isCompanyMember(companyId)
+        && request.auth.token.role == "company_admin";
+    }
+
+    function isDispatcher(companyId) {
+      return isCompanyMember(companyId)
+        && request.auth.token.role == "dispatcher";
+    }
+
+    function isCompanyStaff(companyId) {
+      return isCompanyMember(companyId)
+        && (request.auth.token.role == "dispatcher"
+            || request.auth.token.role == "company_admin");
+    }
+
+    function isDriver(companyId) {
+      return isCompanyMember(companyId)
+        && request.auth.token.role == "driver";
+    }
+
+    function isOwnDriverProfile(companyId, driverId) {
+      return isDriver(companyId)
+        && request.auth.uid == driverId;
+    }
+
+    function isLicenseActive(companyId) {
+      return get(/databases/$(database)/documents/companies/$(companyId)/settings/main).data.status != "suspended";
+    }
+
+    // Vozač može mijenjati samo lastSeen i slično — ne PIN, ne bus
+    function onlyUpdatingAllowedDriverFields() {
+      return request.resource.data.diff(resource.data)
+        .affectedKeys()
+        .hasOnly(["lastSeen", "lastLocation"]);
+    }
+
+    // User može mijenjati samo vlastiti display name
+    function onlyUpdatingOwnProfile() {
+      return request.resource.data.diff(resource.data)
+        .affectedKeys()
+        .hasOnly(["name", "language"]);
+    }
+
+    // Vozač može samo markirati poruku pročitanom
+    function onlyMarkingRead() {
+      return request.resource.data.diff(resource.data)
+        .affectedKeys()
+        .hasOnly(["read", "readAt"]);
+    }
+  }
+}

@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BusCommand v9 — Vizualni prijedlog dizajna</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:          #07070f;
+    --bg-2:        #0d0d1a;
+    --bg-3:        #12122a;
+    --bg-card:     #111127;
+    --border:      #1e1e3a;
+    --border-2:    #2d2d4e;
+    --text:        #f0f0f5;
+    --text-2:      #c0c0d0;
+    --text-muted:  #6b7280;
+    --accent:      #3b82f6;
+    --accent-glow: rgba(59,130,246,0.15);
+    --green:       #22c55e;
+    --green-dim:   rgba(34,197,94,0.12);
+    --amber:       #f59e0b;
+    --amber-dim:   rgba(245,158,11,0.12);
+    --red:         #ef4444;
+    --red-dim:     rgba(239,68,68,0.12);
+    --purple:      #a78bfa;
+    --purple-dim:  rgba(167,139,250,0.12);
+    --radius-sm:   6px;
+    --radius:      10px;
+    --radius-lg:   16px;
+    --radius-xl:   22px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    padding: 40px 20px 60px;
+  }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .page-header .badge {
+    display: inline-block;
+    background: var(--accent-glow);
+    border: 1px solid rgba(59,130,246,0.3);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+  .page-header h1 {
+    font-size: clamp(26px, 5vw, 42px);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    line-height: 1.15;
+    margin-bottom: 12px;
+  }
+  .page-header h1 span { color: var(--accent); }
+  .page-header p {
+    font-size: 15px;
+    color: var(--text-muted);
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* ── SECTION LABELS ── */
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .section-label .pill {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 12px;
+    border-radius: 20px;
+  }
+  .pill-mobile  { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+  .pill-desktop { background: rgba(34,197,94,0.12); color: #4ade80; border: 1px solid rgba(34,197,94,0.22); }
+  .section-label p { font-size: 13px; color: var(--text-muted); }
+
+  /* ── LAYOUT ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 48px;
+    align-items: start;
+    max-width: 1100px;
+    margin: 0 auto 64px;
+  }
+  @media (max-width: 720px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+
+  /* ══════════════════════════════════════════
+     MOBILE PHONE FRAME
+  ══════════════════════════════════════════ */
+  .phone-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .phone {
+    width: 228px;
+    height: 492px;
+    background: var(--bg-2);
+    border-radius: 36px;
+    border: 7px solid #1a1a2e;
+    box-shadow:
+      0 0 0 1px #0d0d1a,
+      0 32px 64px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.04);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  /* notch */
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 80px; height: 24px;
+    background: #1a1a2e;
+    border-radius: 0 0 16px 16px;
+    z-index: 10;
+  }
+
+  .ph-statusbar {
+    padding: 28px 18px 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .ph-statusbar span { font-size: 10px; color: var(--text-muted); font-weight: 600; }
+  .ph-statusbar .icons { display: flex; gap: 3px; align-items: center; }
+  .ph-statusbar .icons span { font-size: 10px; color: var(--text-muted); }
+
+  .ph-topbar {
+    padding: 4px 16px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    background: var(--bg-2);
+  }
+  .ph-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #1e3a5f;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .ph-scroll {
+    flex: 1;
+    overflow: hidden;
+    padding: 0 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .ph-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+  }
+  .ph-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .ph-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .ph-action-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+  .ph-action-btn .icon { font-size: 20px; }
+  .ph-action-btn span { font-size: 10px; color: var(--text-2); font-weight: 500; text-align: center; line-height: 1.3; }
+  .btn-sos {
+    background: #1c0909 !important;
+    border-color: #7f1d1d !important;
+  }
+  .btn-sos span { color: #fca5a5 !important; }
+
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .status-chip .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+  }
+  .chip-green  { background: var(--green-dim); border: 1px solid rgba(34,197,94,0.25); color: #4ade80; }
+  .chip-green .dot { background: var(--green); }
+
+  /* phone bottom nav */
+  .ph-bottomnav {
+    background: var(--bg-2);
+    border-top: 1px solid var(--border);
+    padding: 6px 4px 12px;
+    display: flex;
+    justify-content: space-around;
+    flex-shrink: 0;
+  }
+  .ph-nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 2px 10px;
+    cursor: pointer;
+  }
+  .ph-nav-item .icon { font-size: 18px; }
+  .ph-nav-item span { font-size: 9px; }
+  .ph-nav-active .icon { color: var(--accent); }
+  .ph-nav-active span { color: var(--accent); }
+  .ph-nav-item:not(.ph-nav-active) .icon { color: var(--text-muted); }
+  .ph-nav-item:not(.ph-nav-active) span { color: var(--text-muted); }
+
+  /* message preview */
+  .ph-msg {
+    background: #0d1f30;
+    border: 1px solid #1e3a5f;
+    border-radius: var(--radius);
+    padding: 8px 10px;
+  }
+
+  /* ══════════════════════════════════════════
+     DESKTOP FRAME
+  ══════════════════════════════════════════ */
+  .desktop-frame {
+    background: #080812;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow:
+      0 32px 64px rgba(0,0,0,0.5),
+      0 0 0 1px rgba(255,255,255,0.03);
+    overflow: hidden;
+  }
+
+  /* top bar */
+  .dt-topbar {
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .dt-logo {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; font-weight: 600; color: var(--text);
+  }
+  .dt-logo svg { width: 20px; height: 20px; color: var(--accent); fill: currentColor; }
+  .dt-trial {
+    font-size: 10px; padding: 2px 9px; border-radius: 20px;
+    background: rgba(250,204,21,0.1); border: 1px solid rgba(250,204,21,0.2);
+    color: #fde047;
+  }
+  .dt-topbar-right {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .dt-lang {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--bg-3); border: 1px solid var(--border-2);
+    border-radius: var(--radius-sm); padding: 4px 10px;
+    font-size: 11px; color: var(--text-2); cursor: pointer;
+  }
+  .dt-user {
+    display: flex; align-items: center; gap: 7px;
+  }
+  .dt-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #1e3a5f;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600; color: var(--accent);
+  }
+  .dt-user-info p { margin: 0; }
+  .dt-user-info .name { font-size: 12px; color: var(--text); font-weight: 500; }
+  .dt-user-info .role { font-size: 10px; color: var(--text-muted); }
+
+  /* sidebar + main */
+  .dt-body {
+    display: flex;
+    height: 440px;
+  }
+  .dt-sidebar {
+    width: 170px;
+    background: #0a0a18;
+    border-right: 1px solid var(--border);
+    padding: 12px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .dt-nav-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 12px;
+    margin: 0 8px;
+    border-radius: var(--radius-sm);
+    font-size: 12px; color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .dt-nav-item .icon { font-size: 15px; }
+  .dt-nav-active {
+    background: #1e2d4a;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .dt-nav-active .icon { color: var(--accent); }
+  .dt-nav-spacer { flex: 1; }
+
+  .dt-main {
+    flex: 1;
+    padding: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* stat cards */
+  .dt-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .dt-stat {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 11px 13px;
+  }
+  .dt-stat-label { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+  .dt-stat-value { font-size: 24px; font-weight: 600; color: var(--text); line-height: 1; }
+  .dt-stat-value.amber { color: var(--amber); }
+  .dt-stat-value.green { color: var(--green); }
+
+  /* main grid */
+  .dt-grid {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* driver table */
+  .dt-table-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .dt-table-head {
+    padding: 9px 13px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .dt-table-head span { font-size: 12px; font-weight: 500; color: var(--text); }
+  .dt-btn-sm {
+    font-size: 10px; padding: 3px 10px;
+    background: none;
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .dt-btn-sm:hover { color: var(--text); border-color: var(--accent); }
+
+  .dt-table-body { flex: 1; overflow: hidden; }
+  .dt-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .dt-row-left { display: flex; align-items: center; gap: 9px; }
+  .dt-indicator {
+    width: 6px; height: 6px; border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .ind-green  { background: var(--green); }
+  .ind-gray   { background: #374151; }
+  .ind-amber  { background: var(--amber); }
+  .dt-row-name { font-size: 12px; color: var(--text); font-weight: 500; }
+  .dt-row-sub  { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+  .dt-btn-danger {
+    font-size: 10px; padding: 2px 8px;
+    background: none;
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 5px;
+    color: #f87171;
+    cursor: pointer;
+  }
+
+  /* right panel */
+  .dt-right-panel {
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  /* confirm modal preview */
+  .dt-modal-preview {
+    background: var(--bg-card);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .dt-modal-title { font-size: 12px; font-weight: 600; color: var(--text); text-align: center; }
+  .dt-modal-msg   { font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.5; }
+  .dt-modal-btns  { display: flex; gap: 8px; }
+  .dt-modal-btn-cancel {
+    flex: 1; background: none; border: 1px solid var(--border-2);
+    border-radius: var(--radius-sm); padding: 7px;
+    font-size: 11px; color: var(--text-muted); cursor: pointer;
+  }
+  .dt-modal-btn-confirm {
+    flex: 1; background: #1e3a5f; border: 1px solid #2d5a8a;
+    border-radius: var(--radius-sm); padding: 7px;
+    font-size: 11px; color: var(--accent); font-weight: 600; cursor: pointer;
+  }
+
+  /* recent events */
+  .dt-events-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    flex: 1;
+  }
+  .dt-events-head {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px; font-weight: 500; color: var(--text);
+  }
+  .dt-event {
+    padding: 7px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+  .dt-event-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    margin-top: 4px; flex-shrink: 0;
+  }
+  .dt-event-text { font-size: 11px; color: var(--text-2); line-height: 1.4; }
+  .dt-event-time { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+
+  /* ══════════════════════════════════════════
+     DESIGN PRINCIPLES SECTION
+  ══════════════════════════════════════════ */
+  .principles {
+    max-width: 1100px;
+    margin: 0 auto 56px;
+  }
+  .principles-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 720px) {
+    .principles-grid { grid-template-columns: 1fr; }
+  }
+  .principle-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+  }
+  .principle-icon {
+    width: 40px; height: 40px; border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+  .principle-card h3 { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .principle-card p  { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ══════════════════════════════════════════
+     COLOR TOKENS
+  ══════════════════════════════════════════ */
+  .tokens-section {
+    max-width: 1100px;
+    margin: 0 auto 56px;
+  }
+  .tokens-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+  }
+  @media (max-width: 720px) {
+    .tokens-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  .token-swatch {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .swatch-color {
+    width: 100%; height: 44px;
+    border-radius: var(--radius);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .token-swatch span { font-size: 10px; color: var(--text-muted); text-align: center; }
+
+  /* ══════════════════════════════════════════
+     CONFIRM MODAL FULL-SIZE PREVIEW
+  ══════════════════════════════════════════ */
+  .modal-showcase {
+    max-width: 1100px;
+    margin: 0 auto 56px;
+  }
+  .modal-showcase-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 720px) {
+    .modal-showcase-grid { grid-template-columns: 1fr; }
+  }
+  .modal-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .modal-card-title { font-size: 14px; font-weight: 600; color: var(--text); text-align: center; }
+  .modal-card-msg   { font-size: 13px; color: var(--text-muted); text-align: center; line-height: 1.5; }
+  .modal-card-btns  { display: flex; gap: 10px; margin-top: 4px; }
+  .modal-btn-cancel {
+    flex: 1; background: none; border: 1px solid var(--border-2);
+    border-radius: var(--radius); padding: 10px;
+    font-size: 13px; color: var(--text-muted); cursor: pointer; font-family: var(--font);
+  }
+  .modal-btn-confirm {
+    flex: 1; padding: 10px;
+    border-radius: var(--radius);
+    font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font);
+    border: none;
+  }
+  .modal-btn-primary  { background: var(--accent); color: #fff; }
+  .modal-btn-danger   { background: var(--red); color: #fff; }
+  .modal-btn-warning  { background: var(--amber); color: #000; }
+
+  /* section headings */
+  .section-heading {
+    font-size: 13px; font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+
+  /* divider */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0 0 48px;
+  }
+
+  /* footer */
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .footer span { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════
+     PAGE HEADER
+═══════════════════════════ -->
+<div class="page-header">
+  <div class="badge">BusCommand · Vizualni prijedlog</div>
+  <h1>Dizajn koji <span>radi</span> za ljude</h1>
+  <p>Vozač na Samsung A54 dobija brzu, krupnu akcijsku ploču. Dispečer i admin na PC-u dobijaju čisti sidebar sa svime na jednom ekranu. Bez krugova. Bez ikseva. Samo modalni prozori.</p>
+</div>
+
+<!-- ═══════════════════════════
+     SCREEN MOCKUPS
+═══════════════════════════ -->
+<div class="two-col">
+
+  <!-- ─── MOBILE ─── -->
+  <div>
+    <div class="section-label">
+      <div class="pill pill-mobile">📱 Mobitel</div>
+      <p>Samsung A54 · Vozač</p>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone">
+
+        <!-- status bar -->
+        <div class="ph-statusbar">
+          <span>9:41</span>
+          <div class="icons">
+            <span>▲▲▲</span>
+            <span>🔋</span>
+          </div>
+        </div>
+
+        <!-- top bar -->
+        <div class="ph-topbar">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);">Nikola Petrović</div>
+            <div style="font-size:10px;color:var(--text-muted);">Linija 105 · Bus 142</div>
+          </div>
+          <div class="ph-avatar">NP</div>
+        </div>
+
+        <!-- scrollable content -->
+        <div class="ph-scroll">
+
+          <!-- status -->
+          <div style="padding: 2px 0 4px;">
+            <div class="status-chip chip-green">
+              <div class="dot"></div>
+              Na dužnosti
+            </div>
+          </div>
+
+          <!-- shift card -->
+          <div class="ph-card">
+            <div class="ph-label">Danas</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:13px;">🕐</span>
+                <span style="font-size:12px;font-weight:600;color:var(--text);">06:00 – 14:30</span>
+              </div>
+              <span style="font-size:10px;color:var(--text-muted);">8h 30min</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:12px;">📍</span>
+              <span style="font-size:10px;color:var(--text-muted);">Studentski Trg → Konjarnik</span>
+            </div>
+          </div>
+
+          <!-- quick actions -->
+          <div class="ph-actions">
+            <div class="ph-action-btn">
+              <div class="icon">⚠️</div>
+              <span>Prijavi kvar</span>
+            </div>
+            <div class="ph-action-btn">
+              <div class="icon">🗓️</div>
+              <span>Zahtjev odmor</span>
+            </div>
+            <div class="ph-action-btn">
+              <div class="icon">🔎</div>
+              <span>Izgubljena stvar</span>
+            </div>
+            <div class="ph-action-btn btn-sos">
+              <div class="icon">🆘</div>
+              <span>SOS</span>
+            </div>
+          </div>
+
+          <!-- message -->
+          <div class="ph-msg">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+              <span style="font-size:10px;color:var(--accent);font-weight:600;">Dispečer</span>
+              <span style="font-size:10px;color:var(--text-muted);">09:12</span>
+            </div>
+            <p style="font-size:11px;color:var(--text-2);line-height:1.4;margin:0;">Molim vas stanite na 2 minute na Trgu...</p>
+          </div>
+
+        </div>
+
+        <!-- bottom nav -->
+        <div class="ph-bottomnav">
+          <div class="ph-nav-item ph-nav-active">
+            <div class="icon">🏠</div>
+            <span>Početna</span>
+          </div>
+          <div class="ph-nav-item">
+            <div class="icon">📅</div>
+            <span>Smjena</span>
+          </div>
+          <div class="ph-nav-item">
+            <div class="icon">💬</div>
+            <span>Poruke</span>
+          </div>
+          <div class="ph-nav-item">
+            <div class="icon">👤</div>
+            <span>Profil</span>
+          </div>
+        </div>
+
+      </div><!-- /phone -->
+
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);line-height:1.7;">
+        ✦ Donja navigacija uvijek vidljiva<br>
+        ✦ Krupne akcije, lako tapanje palcem<br>
+        ✦ SOS uvijek u kutu
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── DESKTOP ─── -->
+  <div>
+    <div class="section-label">
+      <div class="pill pill-desktop">🖥️ Desktop</div>
+      <p>PC · Dispečer / Admin</p>
+    </div>
+
+    <div class="desktop-frame">
+
+      <!-- top bar -->
+      <div class="dt-topbar">
+        <div class="dt-logo">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+          BusCommand
+          <span class="dt-trial">Probni period · 29 dana</span>
+        </div>
+        <div class="dt-topbar-right">
+          <div class="dt-lang">🇷🇸 Srpski ▾</div>
+          <div class="dt-user">
+            <div class="dt-avatar">D1</div>
+            <div class="dt-user-info">
+              <p class="name">dispo 1</p>
+              <p class="role">Dispečer / Gr.105</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- body -->
+      <div class="dt-body">
+
+        <!-- sidebar -->
+        <div class="dt-sidebar">
+          <div class="dt-nav-item dt-nav-active">
+            <span class="icon">📊</span>
+            <span>Kontrolna tabla</span>
+          </div>
+          <div class="dt-nav-item">
+            <span class="icon">📅</span>
+            <span>Raspored smena</span>
+          </div>
+          <div class="dt-nav-item">
+            <span class="icon">📤</span>
+            <span>Uvoz planova</span>
+          </div>
+          <div class="dt-nav-item">
+            <span class="icon">⚠️</span>
+            <span>Kvarovi</span>
+          </div>
+          <div class="dt-nav-item">
+            <span class="icon">💬</span>
+            <span>Poruke</span>
+          </div>
+          <div class="dt-nav-item">
+            <span class="icon">🗓️</span>
+            <span>Zahtjevi odmor</span>
+          </div>
+          <div class="dt-nav-item">
+            <span class="icon">🔎</span>
+            <span>Izg. stvari</span>
+          </div>
+          <div class="dt-nav-spacer"></div>
+          <div class="dt-nav-item">
+            <span class="icon">⚙️</span>
+            <span>Podešavanja</span>
+          </div>
+        </div>
+
+        <!-- main -->
+        <div class="dt-main">
+
+          <!-- stats -->
+          <div class="dt-stats">
+            <div class="dt-stat">
+              <div class="dt-stat-label">Aktivna vozila</div>
+              <div class="dt-stat-value green">4</div>
+            </div>
+            <div class="dt-stat">
+              <div class="dt-stat-label">Kvarova danas</div>
+              <div class="dt-stat-value">0</div>
+            </div>
+            <div class="dt-stat">
+              <div class="dt-stat-label">Zahtjevi odmor</div>
+              <div class="dt-stat-value amber">2</div>
+            </div>
+            <div class="dt-stat">
+              <div class="dt-stat-label">Poruke</div>
+              <div class="dt-stat-value">5</div>
+            </div>
+          </div>
+
+          <!-- grid -->
+          <div class="dt-grid">
+
+            <!-- drivers table -->
+            <div class="dt-table-card">
+              <div class="dt-table-head">
+                <span>Vozači · Linija 105</span>
+                <button class="dt-btn-sm">+ Dodaj vozača</button>
+              </div>
+              <div class="dt-table-body">
+                <div class="dt-row">
+                  <div class="dt-row-left">
+                    <div class="dt-indicator ind-green"></div>
+                    <div>
+                      <div class="dt-row-name">Nikola Petrović</div>
+                      <div class="dt-row-sub">Bus 142 · aktivan · 06:00–14:30</div>
+                    </div>
+                  </div>
+                  <button class="dt-btn-danger">Obriši</button>
+                </div>
+                <div class="dt-row">
+                  <div class="dt-row-left">
+                    <div class="dt-indicator ind-gray"></div>
+                    <div>
+                      <div class="dt-row-name">Marko Đorđević</div>
+                      <div class="dt-row-sub">Bus 107 · neaktivan</div>
+                    </div>
+                  </div>
+                  <button class="dt-btn-danger">Obriši</button>
+                </div>
+                <div class="dt-row">
+                  <div class="dt-row-left">
+                    <div class="dt-indicator ind-green"></div>
+                    <div>
+                      <div class="dt-row-name">Ana Jovanović</div>
+                      <div class="dt-row-sub">Bus 115 · aktivna · 07:00–15:30</div>
+                    </div>
+                  </div>
+                  <button class="dt-btn-danger">Obriši</button>
+                </div>
+                <div class="dt-row">
+                  <div class="dt-row-left">
+                    <div class="dt-indicator ind-amber"></div>
+                    <div>
+                      <div class="dt-row-name">Stefan Milić</div>
+                      <div class="dt-row-sub">Bus — · zahtjev odmora</div>
+                    </div>
+                  </div>
+                  <button class="dt-btn-danger">Obriši</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- right panel -->
+            <div class="dt-right-panel">
+
+              <!-- confirm modal preview -->
+              <div class="dt-modal-preview">
+                <div class="dt-modal-title">Dodaj vozača</div>
+                <div class="dt-modal-msg">Dodati vozača:<br><strong style="color:var(--text);">"Stefan Milić"</strong>?</div>
+                <div class="dt-modal-btns">
+                  <button class="dt-modal-btn-cancel">Otkaži</button>
+                  <button class="dt-modal-btn-confirm">Da</button>
+                </div>
+              </div>
+
+              <!-- events -->
+              <div class="dt-events-card">
+                <div class="dt-events-head">Nedavni događaji</div>
+                <div class="dt-event">
+                  <div class="dt-event-dot" style="background:var(--amber);"></div>
+                  <div>
+                    <div class="dt-event-text">Bus 107 – kašnjenje 4 min</div>
+                    <div class="dt-event-time">09:43</div>
+                  </div>
+                </div>
+                <div class="dt-event">
+                  <div class="dt-event-dot" style="background:var(--purple);"></div>
+                  <div>
+                    <div class="dt-event-text">Stefan Milić – zahtjev odmora</div>
+                    <div class="dt-event-time">09:12</div>
+                  </div>
+                </div>
+                <div class="dt-event">
+                  <div class="dt-event-dot" style="background:var(--green);"></div>
+                  <div>
+                    <div class="dt-event-text">Pre-trip check · Bus 142 ✓</div>
+                    <div class="dt-event-time">05:58</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div><!-- /dt-main -->
+      </div><!-- /dt-body -->
+    </div><!-- /desktop-frame -->
+
+    <div style="margin-top:12px;font-size:11px;color:var(--text-muted);line-height:1.7;">
+      ✦ Sidebar uvijek vidljiv — sve sekcije na jednom kliku<br>
+      ✦ Statistike bez dekorativnih ikona ili krugova<br>
+      ✦ Kompaktna tabela vozača s akcijama inline<br>
+      ✦ Confirm modal — svaka akcija traži "Da" ili "Otkaži"
+    </div>
+  </div>
+
+</div><!-- /two-col -->
+
+<hr class="divider">
+
+<!-- ═══════════════════════════
+     CONFIRM MODAL SHOWCASE
+═══════════════════════════ -->
+<div class="modal-showcase">
+  <div class="section-heading">Modalni prozori — sve akcije</div>
+  <div class="modal-showcase-grid">
+
+    <div class="modal-card">
+      <div class="modal-card-title">Dodaj vozača</div>
+      <div class="modal-card-msg">Dodati vozača:<br><strong style="color:var(--text);">"Stefan Milić"</strong>?</div>
+      <div class="modal-card-btns">
+        <button class="modal-btn-cancel">Otkaži</button>
+        <button class="modal-btn-confirm modal-btn-primary">Da</button>
+      </div>
+    </div>
+
+    <div class="modal-card">
+      <div class="modal-card-title">Prijavi kvar</div>
+      <div class="modal-card-msg">Podnijeti prijavu kvara<br>za Bus 142?</div>
+      <div class="modal-card-btns">
+        <button class="modal-btn-cancel">Otkaži</button>
+        <button class="modal-btn-confirm modal-btn-warning">Da</button>
+      </div>
+    </div>
+
+    <div class="modal-card">
+      <div class="modal-card-title">Obriši grupu</div>
+      <div class="modal-card-msg">Obrisati grupu:<br><strong style="color:var(--text);">"Linija 105"</strong>?</div>
+      <div class="modal-card-btns">
+        <button class="modal-btn-cancel">Otkaži</button>
+        <button class="modal-btn-confirm modal-btn-danger">Da, obriši</button>
+      </div>
+    </div>
+
+    <div class="modal-card">
+      <div class="modal-card-title">Zahtjev za odmor</div>
+      <div class="modal-card-msg">Podnijeti zahtjev<br>za odmor?</div>
+      <div class="modal-card-btns">
+        <button class="modal-btn-cancel">Otkaži</button>
+        <button class="modal-btn-confirm modal-btn-primary">Da</button>
+      </div>
+    </div>
+
+    <div class="modal-card">
+      <div class="modal-card-title">Pre-Trip Pregled</div>
+      <div class="modal-card-msg">Potvrditi pre-trip<br>pregled?</div>
+      <div class="modal-card-btns">
+        <button class="modal-btn-cancel">Otkaži</button>
+        <button class="modal-btn-confirm modal-btn-primary">Da</button>
+      </div>
+    </div>
+
+    <div class="modal-card">
+      <div class="modal-card-title">Primijeni branding</div>
+      <div class="modal-card-msg">Primijeniti nova podešavanja<br>vizualnog identiteta?</div>
+      <div class="modal-card-btns">
+        <button class="modal-btn-cancel">Otkaži</button>
+        <button class="modal-btn-confirm modal-btn-primary">Da</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════
+     DESIGN PRINCIPLES
+═══════════════════════════ -->
+<div class="principles">
+  <div class="section-heading">Principi dizajna</div>
+  <div class="principles-grid">
+
+    <div class="principle-card">
+      <div class="principle-icon" style="background:var(--accent-glow);">📱</div>
+      <h3>Mobitel — palac na prvom mestu</h3>
+      <p>Sve glavne akcije su u donjem dijelu ekrana. Dugmad su krupna za lako tapanje. SOS je uvijek vidljiv u kutu. Karta smjene je odmah na početnoj.</p>
+    </div>
+
+    <div class="principle-card">
+      <div class="principle-icon" style="background:var(--green-dim);">🖥️</div>
+      <h3>Desktop — sve na jednom ekranu</h3>
+      <p>Sidebar daje pregled svih sekcija bez scrollanja. Statistike su kompaktne kartice bez dekoracija. Akcije su inline u tabelama — bez navigiranja po stranicama.</p>
+    </div>
+
+    <div class="principle-card">
+      <div class="principle-icon" style="background:var(--amber-dim);">✅</div>
+      <h3>Svaka akcija = modal "Da / Otkaži"</h3>
+      <p>Nema native browser confirm(). Nema alert(). Svaki gumb koji mijenja podatke otvori modalni prozor s jasnim pitanjem. Klik "Da" izvršava akciju i ostaje na istom ekranu.</p>
+    </div>
+
+    <div class="principle-card">
+      <div class="principle-icon" style="background:var(--red-dim);">🚫</div>
+      <h3>Bez krugova i ikseva</h3>
+      <p>Nema dekorativnih SVG ikona u toastovima. Nema border-radius:50% krugova u listama vozača ili grupa. Nema lucide ikona u modalima. Samo tekst i akcija.</p>
+    </div>
+
+    <div class="principle-card">
+      <div class="principle-icon" style="background:var(--purple-dim);">🎨</div>
+      <h3>Tamna paleta, čisti kontrast</h3>
+      <p>Pozadine u slojevima (#07070f → #0d0d1a → #12122a) daju dubinu bez dekoracija. Akcenti u plavoj, statusovi u zelenoj/žutoj/crvenoj. Sve čitljivo na suncu i u noći.</p>
+    </div>
+
+    <div class="principle-card">
+      <div class="principle-icon" style="background:rgba(99,102,241,0.12);">⚡</div>
+      <h3>Brzo i jasno</h3>
+      <p>Vozač vidi svoju smjenu za &lt;1 sekundu. Dispečer vidi status svih vozača na prvom ekranu. Nijedna akcija ne zahtjeva više od 2 klika (otvori akciju → Da).</p>
+    </div>
+
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════
+     COLOR TOKENS
+═══════════════════════════ -->
+<div class="tokens-section">
+  <div class="section-heading">Paleta boja</div>
+  <div class="tokens-grid">
+    <div class="token-swatch">
+      <div class="swatch-color" style="background:#07070f;"></div>
+      <span>Pozadina<br>#07070f</span>
+    </div>
+    <div class="token-swatch">
+      <div class="swatch-color" style="background:#12122a;"></div>
+      <span>Kartica<br>#12122a</span>
+    </div>
+    <div class="token-swatch">
+      <div class="swatch-color" style="background:#1e1e3a;"></div>
+      <span>Ivica<br>#1e1e3a</span>
+    </div>
+    <div class="token-swatch">
+      <div class="swatch-color" style="background:#3b82f6;"></div>
+      <span>Akcent<br>#3b82f6</span>
+    </div>
+    <div class="token-swatch">
+      <div class="swatch-color" style="background:#22c55e;"></div>
+      <span>Aktivan<br>#22c55e</span>
+    </div>
+    <div class="token-swatch">
+      <div class="swatch-color" style="background:#f59e0b;"></div>
+      <span>Upozorenje<br>#f59e0b</span>
+    </div>
+  </div>
+</div>
+
+<!-- footer -->
+<div class="footer">
+  BusCommand v9 · Vizualni prijedlog · <span>Boban Canic</span> · Juli 2026
+</div>
+
+</body>
+</html>
