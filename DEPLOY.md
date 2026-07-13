@@ -38,6 +38,9 @@ Kopiraj sadržaj `firebase-admin-key.json` (minifikovan, bez preloma linija).
 
 Bez Firebase-a server radi samo u **demo modu** (`?mode=demo`).
 
+**Render build greška `vite: not found`:** servis mora koristiti **Docker** (`Dockerfile`) ili build komanda:
+`npm ci --include=dev && npm run build` (ne `npm install` sa `NODE_ENV=production` pre build-a).
+
 ---
 
 ## 2. DNS
