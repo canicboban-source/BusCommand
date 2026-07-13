@@ -29,13 +29,49 @@ const { version: APP_VERSION } = require("./package.json");
 
 const PORT = Number(process.env.PORT) || 8766;
 
-// Firebase key: 1) Render Secret File, 2) lokalni fajl, 3) base64 env var
 const RENDER_SECRET_PATH = "/etc/secrets/firebase-admin-key.json";
 const LOCAL_SECRET_PATH  = path.join(__dirname, "firebase-admin-key.json");
-const SERVICE_ACCOUNT_PATH =
-  fs.existsSync(RENDER_SECRET_PATH) ? RENDER_SECRET_PATH :
-  fs.existsSync(LOCAL_SECRET_PATH)  ? LOCAL_SECRET_PATH  : null;
-const HAS_FIREBASE = !!(SERVICE_ACCOUNT_PATH || process.env.FIREBASE_SERVICE_ACCOUNT_BASE64);
+
+function parseServiceAccountJson(raw, sourceLabel) {
+  if (!raw || !String(raw).trim()) return null;
+  try {
+    return JSON.parse(String(raw).trim());
+  } catch (err) {
+    logger.warn({ err: err.message, source: sourceLabel }, "Firebase JSON parse failed");
+    return null;
+  }
+}
+
+function loadFirebaseServiceAccount() {
+  const fromEnvJson = parseServiceAccountJson(
+    process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
+    "FIREBASE_SERVICE_ACCOUNT_JSON"
+  );
+  if (fromEnvJson) return fromEnvJson;
+
+  const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+  if (b64 && String(b64).trim()) {
+    const fromB64 = parseServiceAccountJson(
+      Buffer.from(String(b64).trim(), "base64").toString("utf8"),
+      "FIREBASE_SERVICE_ACCOUNT_BASE64"
+    );
+    if (fromB64) return fromB64;
+  }
+
+  for (const filePath of [RENDER_SECRET_PATH, LOCAL_SECRET_PATH]) {
+    if (!filePath || !fs.existsSync(filePath)) continue;
+    const fromFile = parseServiceAccountJson(
+      fs.readFileSync(filePath, "utf8"),
+      filePath
+    );
+    if (fromFile) return fromFile;
+  }
+
+  return null;
+}
+
+const serviceAccount = loadFirebaseServiceAccount();
+const HAS_FIREBASE = !!serviceAccount;
 
 const DEFAULT_CORS_ORIGINS = [
   "http://localhost:8766",
@@ -47,15 +83,6 @@ let db    = null;
 
 if (HAS_FIREBASE) {
   admin = require("firebase-admin");
-  let serviceAccount;
-  if (SERVICE_ACCOUNT_PATH) {
-    serviceAccount = require(SERVICE_ACCOUNT_PATH);
-  } else {
-    // base64 env var fallback
-    serviceAccount = JSON.parse(
-      Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, "base64").toString("utf8")
-    );
-  }
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
   db = admin.firestore();
 }

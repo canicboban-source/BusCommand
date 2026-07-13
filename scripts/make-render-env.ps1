@@ -20,10 +20,16 @@ $outPath = Join-Path (Split-Path $PSScriptRoot -Parent) "render-env-import.env"
 # Clipboard (PowerShell 5+)
 Set-Clipboard -Value $compact
 
+# Base64 varijanta (Render Secret File problemi — ova je pouzdanija)
+$b64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($compact))
+$b64Path = Join-Path (Split-Path $PSScriptRoot -Parent) "render-env-base64.env"
+[System.IO.File]::WriteAllText($b64Path, "FIREBASE_SERVICE_ACCOUNT_BASE64=$b64", [System.Text.UTF8Encoding]::new($false))
+
 Write-Host ''
 Write-Host 'OK — uradjeno:'
-Write-Host '  1) Clipboard = samo JSON - Ctrl+V u Render Value polje'
-Write-Host '  2) Fajl: render-env-import.env - Render Import Env'
+Write-Host '  1) Clipboard = JSON za FIREBASE_SERVICE_ACCOUNT_JSON'
+Write-Host '  2) render-env-import.env'
+Write-Host '  3) render-env-base64.env (FIREBASE_SERVICE_ACCOUNT_BASE64 — preporuceno ako Secret File puca)'
 Write-Host ''
 Write-Host 'Render koraci:'
 Write-Host '  Environment -> Add Environment Variable'
