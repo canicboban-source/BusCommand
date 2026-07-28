@@ -17,7 +17,8 @@ test("dispatcher driver loading is constrained to assigned groups", () => {
 
   const block = source.slice(start, end);
   assert.match(block, /where\("groupId",\s*"==",\s*groupId\)/);
-  assert.match(block, /where\("lineId",\s*"==",\s*groupId\)/);
+  assert.doesNotMatch(block, /where\("lineId"/);
+  assert.doesNotMatch(block, /load_assigned_drivers_legacy/);
   assert.match(block, /new Map\(\)/);
   assert.match(block, /_docsToDriversList/);
   assert.doesNotMatch(block, /collection\(item\.col\)\.get\(\)/);

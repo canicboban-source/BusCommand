@@ -193,16 +193,12 @@ async function _loadAllowedCollection(companyRef, item) {
         )];
         if (assignedIds.length === 0) return [];
 
-        const snapshots = await Promise.all(assignedIds.flatMap(groupId => ([
+        const snapshots = await Promise.all(assignedIds.map(groupId =>
             _readFirestoreOperation(
                 "load_assigned_drivers", `${companyRef.path}/${item.col}?groupId=${groupId}`,
                 () => companyRef.collection(item.col).where("groupId", "==", groupId).get()
-            ),
-            _readFirestoreOperation(
-                "load_assigned_drivers_legacy", `${companyRef.path}/${item.col}?lineId=${groupId}`,
-                () => companyRef.collection(item.col).where("lineId", "==", groupId).get()
             )
-        ])));
+        ));
         const unique = new Map();
         snapshots.flatMap(snapshot => snapshot.docs).forEach(doc => unique.set(doc.id, doc));
         return _docsToDriversList([...unique.values()], companyId);
