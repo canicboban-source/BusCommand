@@ -6,6 +6,7 @@ import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import ApiClient from "../core/api-client.js";
 
 function renderBusesList() {
     const list = document.getElementById("settings-buses-list");
@@ -16,25 +17,20 @@ function renderBusesList() {
     const myBuses = activeGrp ? getBusesForLineGroup(activeGrp) : (window.state.buses || []);
     myBuses.forEach(b => {
         const li = document.createElement("li");
-        const deleteBtn = IS_DEMO_MODE
-            ? `<button ${actionAttr("deleteBus", [b.id])} style="background:rgba(239,68,68,0.08);color:#ef4444;border:1px solid rgba(239,68,68,0.2);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;">
-                ${t("btn_delete") || "Obriši"}
-            </button>`
-            : "";
+        const active = b.active !== false;
+        const deleteBtn = `<button ${actionAttr("deleteBus", [b.id])} style="background:rgba(239,68,68,0.08);color:${active ? "#ef4444" : "#16a34a"};border:1px solid currentColor;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;">
+                ${active ? (t("btn_deactivate") || "Deactivate") : (t("btn_activate") || "Activate")}
+            </button>`;
         li.innerHTML = `
-            <span>${t("vehicle")} ${b.number}</span>
+            <span>${t("vehicle")} ${b.number} <small style="color:var(--text-muted);">${active ? "" : `(${t("driver_status_inactive")})`}</small></span>
             ${deleteBtn}
         `;
         list.appendChild(li);
     });
 }
 
-function addBus(event) {
+async function addBus(event) {
     event.preventDefault();
-    if (!IS_DEMO_MODE) {
-        showToast(t("fleet_demo_only") || "Upravljanje vozilima u produkciji još nije dostupno preko ovog ekrana.", "info");
-        return;
-    }
     const input = document.getElementById("new-bus-num");
     const number = input.value.trim();
     if (!number) return;
@@ -48,9 +44,20 @@ function addBus(event) {
     };
     showConfirm(
         (t("confirm_add_bus") || "Add bus") + ': "' + number + '"?',
-        function() {
+        async function() {
+            if (!IS_DEMO_MODE) {
+                const result = await ApiClient.createStaffBus(number, activeGrp);
+                if (!result?.success) {
+                    showToast(t("bus_add_failed"), "error");
+                    return;
+                }
+                if (!window.state.buses.some((bus) => bus.id === result.bus.id)) {
+                    window.state.buses.push(result.bus);
+                }
+            } else {
             window.state.buses.push(newBus);
-            saveState();
+                saveState();
+            }
             input.value = "";
             renderBusesList();
             lucide.createIcons();
@@ -61,16 +68,24 @@ function addBus(event) {
 }
 
 function deleteBus(id) {
-    if (!IS_DEMO_MODE) {
-        showToast(t("fleet_demo_only") || "Upravljanje vozilima u produkciji još nije dostupno preko ovog ekrana.", "info");
-        return;
-    }
-    showConfirm(t("js_alert_delete_bus") || "Delete this bus?", function() {
-        window.state.buses = window.state.buses.filter(b => b.id !== id);
-        saveState();
+    const bus = window.state.buses.find((item) => item.id === id);
+    if (!bus) return;
+    const nextActive = bus.active === false;
+    showConfirm(nextActive ? t("confirm_activate_bus") : t("confirm_deactivate_bus"), async function() {
+        if (!IS_DEMO_MODE) {
+            const result = await ApiClient.setStaffBusActive(id, nextActive);
+            if (!result?.success) {
+                showToast(t("bus_status_failed"), "error");
+                return;
+            }
+            bus.active = result.active;
+        } else {
+            bus.active = nextActive;
+            saveState();
+        }
         renderBusesList();
         lucide.createIcons();
-    }, { danger: true });
+    }, { danger: !nextActive });
 }
 
 function renderRoutesList() {

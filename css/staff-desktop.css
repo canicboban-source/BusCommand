@@ -73,6 +73,17 @@ html[data-app-surface="staff"] .card {
     border-radius: 14px;
 }
 
+html[data-app-surface="staff"] button.dashboard-group-card {
+    color: var(--text-main);
+    font: inherit;
+}
+
+html[data-app-surface="staff"] button.dashboard-group-card:hover,
+html[data-app-surface="staff"] button.dashboard-group-card:focus-visible {
+    color: var(--text-main);
+    border-color: var(--panel-border-hover);
+}
+
 html[data-app-surface="staff"] .btn-primary {
     background: var(--staff-accent);
     border-color: var(--staff-accent);
@@ -484,6 +495,27 @@ html[data-app-surface="staff"] .daily-plan-table .ops-edit-select {
 html[data-app-surface="staff"] select option {
     background: var(--bg-darker);
     color: var(--text-main);
+}
+
+html[data-app-surface="staff"] select option:disabled {
+    color: var(--text-muted);
+}
+
+html[data-app-surface="staff"] .sidebar-nav {
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+html[data-app-surface="staff"] .hub-panel-target {
+    border-color: var(--staff-accent);
+    box-shadow: 0 0 0 3px var(--staff-accent-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html[data-app-surface="staff"] .hub-panel-target {
+        transition: none;
+    }
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-row-action,

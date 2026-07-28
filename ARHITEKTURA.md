@@ -1,4 +1,4 @@
-# TransitFlow — SaaS Platforma: Arhitekturalni Plan
+# BusCommand — SaaS platforma: arhitekturalni plan
 
 **Verzija:** 1.0  
 **Datum:** Juni 2026  
@@ -8,7 +8,7 @@
 
 ## 1. VIZIJA
 
-TransitFlow je B2B SaaS platforma za upravljanje bus flotama. Svaka transportna firma
+BusCommand je B2B SaaS platforma za operativno upravljanje autobuskim prevozom. Svaka transportna firma
 (klijent) dobija izolovano okruženje sa sopstvenim podacima, brandingom i korisnicima.
 Super Admin (ti) kontroliše sve firme, licence i plaćanje.
 

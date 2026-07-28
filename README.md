@@ -1,4 +1,4 @@
-# BusCommand v30.1
+# BusCommand v1.0.1
 
 Granice proizvoda su u [PRODUCT-SCOPE.md](PRODUCT-SCOPE.md). Finansije, gorivo, plate i dnevnice nisu dio preview aplikacije.
 
@@ -24,19 +24,10 @@ Otvori: **http://localhost:8766**
 
 Arhitektura splita: [docs/ADR-001-surface-split.md](docs/ADR-001-surface-split.md)
 
-### Demo login (online test)
+### Testiranje
 
-| Uloga | Pristup |
-|-------|---------|
-| Vozač | Alex Driver ili Sam Driver, PIN `1234` |
-| Dispečer | `demo@buscommand.com` / `demo123` |
-| Company Admin | `admin@demo.com` / `demo123` |
-| Super Admin | Klik na logo 5× → PIN `admin123` |
-
-Linija: **101** (2 autobusa, 2 vozača)
-
-Brzi ulaz: `?demo=driver` → vozač PWA · `?demo=dispatcher` → staff  
-Online: `https://buscommand.com/?mode=demo`
+Testni nalozi i podaci kreiraju se posebno za svaki QA ciklus i ne čuvaju se u repozitorijumu
+niti se ugrađuju u javni build.
 
 ## Vite + ESM
 

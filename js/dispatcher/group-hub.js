@@ -123,7 +123,13 @@ function closeGroupHub() {
 
 function scrollHubSection(sectionId) {
     const el = document.getElementById(sectionId);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.setAttribute("tabindex", "-1");
+    el.focus({ preventScroll: true });
+    el.classList.remove("hub-panel-target");
+    window.requestAnimationFrame(() => el.classList.add("hub-panel-target"));
+    window.setTimeout(() => el.classList.remove("hub-panel-target"), 1400);
 }
 
 function renderGroupOverviewDetail(groupId) {

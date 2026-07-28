@@ -88,7 +88,9 @@ export function showAppLayout() {
         const sub = document.getElementById("header-user-sub");
         if (sub) {
             const groupId = escapeHtml(String(window.currentUser.activeGroupId || ""));
-            sub.innerHTML = `${escapeHtml(t("active_group_label") || "Group")}: ${groupId} <button type="button" ${actionAttr("switchToGroupSetup")} style="background:rgba(255,255,255,0.1); border:none; color:var(--primary-color); border-radius:4px; padding:2px 8px; margin-left:8px; font-size:0.75rem; cursor:pointer;">${escapeHtml(t("btn_switch") || "Switch")}</button>`;
+            const activeGroup = (window.state.groups || []).find((group) => String(group.id) === String(window.currentUser.activeGroupId));
+            const groupName = escapeHtml(String(activeGroup?.name || groupId));
+            sub.innerHTML = `${escapeHtml(t("active_group_short") || "Active group")}: ${groupName} <button type="button" ${actionAttr("switchToGroupSetup")} style="background:rgba(255,255,255,0.1); border:none; color:var(--primary-color); border-radius:4px; padding:2px 8px; margin-left:8px; font-size:0.75rem; cursor:pointer;">${escapeHtml(t("btn_switch") || "Switch")}</button>`;
             if (window.currentUser.impersonated) {
                 sub.innerHTML += ` <button type="button" ${actionAttr("exitImpersonation")} style="background:var(--danger-color); border:none; color:#fff; border-radius:4px; padding:3px 12px; margin-left:8px; font-size:0.75rem; cursor:pointer; font-weight:600;">${escapeHtml(t("btn_exit_inspect") || "Exit inspect")}</button>`;
                 const readOnlyBanner = document.createElement("div");

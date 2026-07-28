@@ -64,7 +64,7 @@ function translateUI() {
         if (val) {
             if (key === "saas_version") {
                 const ver = (typeof BusCommandConfig !== "undefined" && BusCommandConfig.VERSION)
-                    ? BusCommandConfig.VERSION : "9.3.4";
+                    ? BusCommandConfig.VERSION : "1.0.1";
                 el.innerText = `BusCommand v${ver}`;
             } else if (key === "trial_badge_login") {
                 el.innerText = val.replace("{days}", "30");

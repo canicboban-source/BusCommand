@@ -56,6 +56,12 @@ const groupIdSchema = z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/)
 const importSchema = z.object({ companyId: companySchema, groupId: groupIdSchema, csv: z.string().min(1).max(1_000_000) });
 const driverIdSchema = z.string().uuid();
 const driverStatusSchema = z.object({ active: z.boolean() });
+const busIdSchema = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/);
+const busCreateSchema = z.object({
+  number: z.string().trim().min(1).max(32).regex(/^[\p{L}\p{N} ._/-]+$/u),
+  groupId: groupIdSchema
+});
+const busStatusSchema = z.object({ active: z.boolean() });
 const quickReportSchema = z.object({
   type: z.enum([
     "delay:5", "delay:10", "delay:15", "delay:20", "delay:30",
@@ -1144,6 +1150,71 @@ function registerDriverRoutes(app, deps) {
     } catch (error) {
       req.log?.error?.({ err: error }, "Rešavanje prijave nije uspelo");
       return res.status(500).json({ success: false, error: "Prijava nije mogla biti rešena." });
+    }
+  });
+
+  app.post("/api/staff/buses", requireStaff, async (req, res) => {
+    if (req.staff.role !== "dispatcher") {
+      return res.status(403).json({ success: false, error: "Samo disponent može upravljati autobusima." });
+    }
+    const parsed = busCreateSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: "Nevažeći podaci autobusa." });
+    if (!dispatcherCanAccessGroup(req.staff.groups, parsed.data.groupId)) {
+      return res.status(403).json({ success: false, error: "Grupa nije dodeljena ovom disponentu." });
+    }
+    try {
+      const companyRef = db().collection("companies").doc(req.staff.companyId);
+      const duplicate = await companyRef.collection("buses").where("number", "==", parsed.data.number).limit(1).get();
+      if (!duplicate.empty) return res.status(409).json({ success: false, error: "Autobus sa ovim brojem već postoji." });
+      const busRef = companyRef.collection("buses").doc();
+      const payload = {
+        number: parsed.data.number,
+        groupId: parsed.data.groupId,
+        lineId: parsed.data.groupId,
+        companyId: req.staff.companyId,
+        active: true,
+        createdAt: admin().firestore.FieldValue.serverTimestamp(),
+        createdBy: req.staff.uid
+      };
+      await busRef.set(payload);
+      await logAudit(req.staff.companyId, req.staff.uid, "bus_created", {
+        busId: busRef.id, number: parsed.data.number, groupId: parsed.data.groupId
+      });
+      return res.status(201).json({ success: true, bus: { id: busRef.id, ...payload, createdAt: null } });
+    } catch (error) {
+      req.log?.error?.({ err: error }, "Dodavanje autobusa nije uspelo");
+      return res.status(500).json({ success: false, error: "Autobus nije mogao biti dodat." });
+    }
+  });
+
+  app.put("/api/staff/buses/:busId/status", requireStaff, async (req, res) => {
+    if (req.staff.role !== "dispatcher") {
+      return res.status(403).json({ success: false, error: "Samo disponent može upravljati autobusima." });
+    }
+    const busId = busIdSchema.safeParse(req.params.busId);
+    const status = busStatusSchema.safeParse(req.body);
+    if (!busId.success || !status.success) return res.status(400).json({ success: false, error: "Nevažeći zahtev." });
+    try {
+      const busRef = db().collection("companies").doc(req.staff.companyId).collection("buses").doc(busId.data);
+      const snapshot = await busRef.get();
+      if (!snapshot.exists) return res.status(404).json({ success: false, error: "Autobus nije pronađen." });
+      const bus = snapshot.data() || {};
+      const groupId = bus.groupId || bus.lineId || null;
+      if (!groupId || !dispatcherCanAccessGroup(req.staff.groups, groupId)) {
+        return res.status(403).json({ success: false, error: "Autobus nije u dodeljenoj grupi." });
+      }
+      await busRef.update({
+        active: status.data.active,
+        statusChangedAt: admin().firestore.FieldValue.serverTimestamp(),
+        statusChangedBy: req.staff.uid
+      });
+      await logAudit(req.staff.companyId, req.staff.uid, status.data.active ? "bus_activated" : "bus_deactivated", {
+        busId: busId.data, groupId
+      });
+      return res.json({ success: true, active: status.data.active });
+    } catch (error) {
+      req.log?.error?.({ err: error }, "Promena statusa autobusa nije uspela");
+      return res.status(500).json({ success: false, error: "Status autobusa nije mogao biti promenjen." });
     }
   });
 

@@ -8,6 +8,7 @@ import { getWeekDates } from "./shift-utils.js";
 import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { switchSection } from "../layout/navigation.js";
 
 const pendingShiftAssignments = new Set();
 
@@ -97,6 +98,7 @@ function renderDispatcherShifts() {
 function openShiftCell(driverName, dateStr) {
     const driver = driverByName(driverName);
     if (!driver) return;
+    switchSection("dispatcher-shifts");
     const driverSelect = document.getElementById("shift-driver-select");
     const dateInput = document.getElementById("shift-date-input");
     if (driverSelect) driverSelect.value = driver.name;
@@ -110,7 +112,11 @@ function openShiftCell(driverName, dateStr) {
     if (nameInput) nameInput.value = shift?.routeCode || shift?.name || "";
     if (startInput) startInput.value = shift?.start || "";
     if (endInput) endInput.value = shift?.end || "";
-    document.querySelector(".shift-form-grid")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.setTimeout(() => {
+        const form = document.querySelector(".shift-form-grid");
+        form?.scrollIntoView({ behavior: "smooth", block: "center" });
+        form?.querySelector("select, input, button")?.focus();
+    }, 0);
 }
 
 async function assignShift() {

@@ -5,7 +5,7 @@ import { URL } from "node:url";
 
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
-test("buses and routes are demo-only client mutators with server-denied writes", async () => {
+test("fleet writes stay server-owned; buses use narrow APIs and routes remain local-only", async () => {
   const [firebase, rules, fleet, map] = await Promise.all([
     read("../../js/core/firebase-service.js"),
     read("../../firestore.rules"),
@@ -22,8 +22,8 @@ test("buses and routes are demo-only client mutators with server-denied writes",
   assert.match(routesBlock, /allow write: if false/);
 
   assert.match(fleet, /IS_DEMO_MODE/);
-  assert.match(fleet, /function addBus\(event\) \{[\s\S]*?if \(!IS_DEMO_MODE\)/);
-  assert.match(fleet, /function deleteBus\(id\) \{[\s\S]*?if \(!IS_DEMO_MODE\)/);
+  assert.match(fleet, /ApiClient\.createStaffBus/);
+  assert.match(fleet, /ApiClient\.setStaffBusActive/);
   assert.match(fleet, /function addRoute\(event\) \{[\s\S]*?if \(!IS_DEMO_MODE\)/);
   assert.match(fleet, /function deleteRoute\(id\) \{[\s\S]*?if \(!IS_DEMO_MODE\)/);
 

@@ -1,10 +1,10 @@
-# BusCommand v30.1
+# BusCommand v1.0.1
 
 Snapshot sačuvan: **9. jul 2026.**
 
 ## Lokacija
 
-`C:\Users\cane\Desktop\fleet_v30.1`
+BusCommand release kandidat `v1.0.1`
 
 ## Šta je u ovoj verziji
 
@@ -17,7 +17,7 @@ Snapshot sačuvan: **9. jul 2026.**
 ## Pokretanje
 
 ```powershell
-cd C:\Users\cane\Desktop\fleet_v30.1
+cd BusCommand
 npm install
 npm run build
 npm start

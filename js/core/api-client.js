@@ -286,6 +286,18 @@ const ApiClient = (() => {
             body: JSON.stringify({})
         });
     }
+    async function createStaffBus(number, groupId) {
+        return apiFetch("/api/staff/buses", {
+            method: "POST",
+            body: JSON.stringify({ number, groupId })
+        });
+    }
+    async function setStaffBusActive(busId, active) {
+        return apiFetch("/api/staff/buses/" + encodeURIComponent(busId) + "/status", {
+            method: "PUT",
+            body: JSON.stringify({ active })
+        });
+    }
     async function createStaffOperationalIncident(incident) {
         return apiFetch("/api/staff/operational-incidents", {
             method: "POST",
@@ -348,7 +360,7 @@ const ApiClient = (() => {
         updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode,
         createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage,
         createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, resolveStaffSos,
-        setLostItemStatus, assignStaffShift,
+        setLostItemStatus, createStaffBus, setStaffBusActive, assignStaffShift,
         sendStaffMessage, getDriverWorkSession, confirmDriverShifts, getStaffShiftConfirmations,
         startSupportSession, getActiveSupportSessionAdmin, endSupportSessionAdmin,
         getCompanySupportSession, endCompanySupportSession
