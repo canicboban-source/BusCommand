@@ -176,7 +176,12 @@ async function _readFirestoreOperation(operation, path, reader) {
     try {
         return await reader();
     } catch (error) {
-        console.warn("Firebase read denied or failed", { operation, path, code: error?.code || "unknown" });
+        const code = error?.code || "unknown";
+        console.warn(`Firebase read denied or failed | operation=${operation} | path=${path} | code=${code}`);
+        if (error && typeof error === "object") {
+            error.busCommandOperation = operation;
+            error.busCommandPath = path;
+        }
         throw error;
     }
 }
@@ -357,7 +362,10 @@ async function loadStateFromFirestore(companyId) {
         console.log("✅ Firebase: Granular State loaded for", companyId);
         return loadedState;
     } catch (err) {
-        console.warn("Firebase granular load failed", { code: err?.code || "unknown" });
+        console.warn(
+            `Firebase granular load failed | operation=${err?.busCommandOperation || "unknown"}`
+            + ` | path=${err?.busCommandPath || "unknown"} | code=${err?.code || "unknown"}`
+        );
         throw err;
     }
 }
