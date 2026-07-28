@@ -64,6 +64,11 @@ const GRANULAR_COLLECTIONS = [
     { key: "companyAdmins", col: "company_admins" }
 ];
 
+const DISPATCHER_GROUP_SCOPED_KEYS = new Set([
+    "drivers", "shifts", "messages", "buses", "routes",
+    "reports", "vacations", "lostItems", "schedules"
+]);
+
 function _baseState() {
     return getBaseState();
 }
@@ -84,6 +89,15 @@ function _currentRole() {
 
 function _staffUid() {
     return window.currentUser?.uid || window.currentUser?.id || null;
+}
+
+function _dispatcherAssignedGroupIds() {
+    return [...new Set(
+        (Array.isArray(window.currentUser?.groups) ? window.currentUser.groups : [])
+            .map(String)
+            .map(groupId => groupId.trim())
+            .filter(Boolean)
+    )];
 }
 
 async function _loadDispatcherProfileAndGroups(companyRef, companyId) {
@@ -189,34 +203,21 @@ async function _readFirestoreOperation(operation, path, reader) {
 async function _loadAllowedCollection(companyRef, item) {
     const companyId = companyRef.id;
     if (!isGranularCollectionAllowed(_currentRole(), item.key)) return [];
-    if (_isDispatcherSession() && item.key === "drivers") {
-        const assignedIds = [...new Set(
-            (Array.isArray(window.currentUser?.groups) ? window.currentUser.groups : [])
-                .map(String)
-                .map(groupId => groupId.trim())
-                .filter(Boolean)
-        )];
+    if (_isDispatcherSession() && DISPATCHER_GROUP_SCOPED_KEYS.has(item.key)) {
+        const assignedIds = _dispatcherAssignedGroupIds();
         if (assignedIds.length === 0) return [];
 
         const snapshots = await Promise.all(assignedIds.map(groupId =>
             _readFirestoreOperation(
-                "load_assigned_drivers", `${companyRef.path}/${item.col}?groupId=${groupId}`,
+                `load_assigned_${item.key}`, `${companyRef.path}/${item.col}?groupId=${groupId}`,
                 () => companyRef.collection(item.col).where("groupId", "==", groupId).get()
             )
         ));
         const unique = new Map();
         snapshots.flatMap(snapshot => snapshot.docs).forEach(doc => unique.set(doc.id, doc));
-        return _docsToDriversList([...unique.values()], companyId);
-    }
-    if (_isDispatcherSession() && item.key === "reports") {
-        const assignedIds = Array.isArray(window.currentUser?.groups) ? window.currentUser.groups : [];
-        const snapshots = await Promise.all(assignedIds.map(groupId => _readFirestoreOperation(
-            "load_assigned_reports", `${companyRef.path}/${item.col}?groupId=${groupId}`,
-            () => companyRef.collection(item.col).where("groupId", "==", groupId).get()
-        )));
-        const unique = new Map();
-        snapshots.flatMap(snapshot => snapshot.docs).forEach(doc => unique.set(doc.id, doc));
-        return _docsToList([...unique.values()], companyId);
+        return item.key === "drivers"
+            ? _docsToDriversList([...unique.values()], companyId)
+            : _docsToList([...unique.values()], companyId);
     }
     if (!_isDriverSession()) {
         const snapshot = await _readFirestoreOperation(
@@ -620,14 +621,14 @@ function startFirestoreSync(companyId) {
             _firestoreListeners.push(listener);
             return;
         }
-        if (_isDispatcherSession() && item.key === "reports") {
+        if (_isDispatcherSession() && DISPATCHER_GROUP_SCOPED_KEYS.has(item.key)) {
             const queryDocs = new Map();
             const refresh = () => {
                 const unique = new Map();
                 [...queryDocs.values()].flat().forEach(doc => unique.set(doc.id, doc));
                 _applyRemoteDocs(item, [...unique.values()], companyId);
             };
-            const assignedIds = Array.isArray(window.currentUser?.groups) ? window.currentUser.groups : [];
+            const assignedIds = _dispatcherAssignedGroupIds();
             assignedIds.forEach(groupId => {
                 const listener = companyRef.collection(item.col).where("groupId", "==", groupId).onSnapshot((snap) => {
                     if (snap.metadata.hasPendingWrites) return;

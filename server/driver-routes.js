@@ -518,6 +518,7 @@ function registerDriverRoutes(app, deps) {
         ...parsed.data,
         driverId: req.driver.uid,
         driver: safeDriver(profileSnap).name,
+        groupId: profileSnap.data().groupId || profileSnap.data().lineId || null,
         status: "in_depot",
         createdAt: admin().firestore.FieldValue.serverTimestamp()
       };
@@ -560,6 +561,7 @@ function registerDriverRoutes(app, deps) {
         ...parsed.data,
         driverId: req.driver.uid,
         driver: safeDriver(profileSnap).name,
+        groupId: profileSnap.data().groupId || profileSnap.data().lineId || null,
         days,
         status: "pending",
         createdAt: admin().firestore.FieldValue.serverTimestamp()
@@ -1406,6 +1408,7 @@ function registerDriverRoutes(app, deps) {
               id: scheduleIds.canonical,
               driverId: parsed.data.driverId,
               driverName,
+              groupId: driverGroupId,
               month: yearMonth,
               parsedShifts,
               revision: currentRevision(schedule) + 1,
@@ -1422,6 +1425,7 @@ function registerDriverRoutes(app, deps) {
         const shift = buildAssignedShift({
           data: parsed.data,
           driverName,
+          driverGroupId,
           staffUid: req.staff.uid,
           revision,
           assignedAt
@@ -1439,6 +1443,7 @@ function registerDriverRoutes(app, deps) {
             id: scheduleIds.canonical,
             driverId: parsed.data.driverId,
             driverName,
+            groupId: driverGroupId,
             month: yearMonth,
             parsedShifts,
             revision: currentRevision(base) + 1,

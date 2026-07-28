@@ -51,9 +51,10 @@ function assertExpectedRevision(existingData, expectedRevision) {
   return { ok: true, legacy: false, currentRevision: current };
 }
 
-function buildAssignedShift({ data, driverName, staffUid, revision, assignedAt }) {
+function buildAssignedShift({ data, driverName, driverGroupId, staffUid, revision, assignedAt }) {
   return {
     driverId: data.driverId,
+    groupId: driverGroupId,
     date: data.date,
     type: data.type,
     name: data.name || "",

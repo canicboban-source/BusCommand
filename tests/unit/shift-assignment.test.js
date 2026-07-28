@@ -57,11 +57,13 @@ test("assigned shift and schedule day builders keep revision and mirror fields",
       end: "12:30"
     },
     driverName: "Alex Driver",
+    driverGroupId: "31099",
     staffUid: "staff-1",
     revision: 4,
     assignedAt: "ts"
   });
   assert.equal(shift.revision, 4);
+  assert.equal(shift.groupId, "31099");
   assert.equal(shift.confirmedByDriver, false);
   assert.deepEqual(buildScheduleDayEntry(shift), {
     type: "morning",
@@ -82,6 +84,7 @@ test("assignment route wires revision conflict and schedule mirror", () => {
   assert.match(source, /buildScheduleDayEntry/);
   assert.match(source, /status\(409\)/);
   assert.match(source, /driver\.groupId \|\| driver\.lineId/);
+  assert.match(source, /groupId: driverGroupId/);
   assert.match(source, /expectedRevision: z\.number\(\)\.int\(\)\.min\(0\)/);
 });
 
