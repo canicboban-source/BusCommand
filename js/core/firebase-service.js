@@ -184,6 +184,29 @@ async function _readFirestoreOperation(operation, path, reader) {
 async function _loadAllowedCollection(companyRef, item) {
     const companyId = companyRef.id;
     if (!isGranularCollectionAllowed(_currentRole(), item.key)) return [];
+    if (_isDispatcherSession() && item.key === "drivers") {
+        const assignedIds = [...new Set(
+            (Array.isArray(window.currentUser?.groups) ? window.currentUser.groups : [])
+                .map(String)
+                .map(groupId => groupId.trim())
+                .filter(Boolean)
+        )];
+        if (assignedIds.length === 0) return [];
+
+        const snapshots = await Promise.all(assignedIds.flatMap(groupId => ([
+            _readFirestoreOperation(
+                "load_assigned_drivers", `${companyRef.path}/${item.col}?groupId=${groupId}`,
+                () => companyRef.collection(item.col).where("groupId", "==", groupId).get()
+            ),
+            _readFirestoreOperation(
+                "load_assigned_drivers_legacy", `${companyRef.path}/${item.col}?lineId=${groupId}`,
+                () => companyRef.collection(item.col).where("lineId", "==", groupId).get()
+            )
+        ])));
+        const unique = new Map();
+        snapshots.flatMap(snapshot => snapshot.docs).forEach(doc => unique.set(doc.id, doc));
+        return _docsToDriversList([...unique.values()], companyId);
+    }
     if (_isDispatcherSession() && item.key === "reports") {
         const assignedIds = Array.isArray(window.currentUser?.groups) ? window.currentUser.groups : [];
         const snapshots = await Promise.all(assignedIds.map(groupId => _readFirestoreOperation(
