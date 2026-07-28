@@ -51,7 +51,7 @@ import "./dispatcher/quick-view.js";
 import "./dispatcher/reports.js";
 import "./dispatcher/lost-items.js";
 import "./dispatcher/vacations.js";
-import "./dispatcher/settings.js";
+import "./admin/company-admin-settings.js";
 import "./data/groups.js";
 import "./data/drivers.js";
 import "./data/buses-routes.js";

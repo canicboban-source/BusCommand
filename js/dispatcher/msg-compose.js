@@ -1,10 +1,16 @@
-﻿// BusCommand ESM v9.5
+// BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
 import { escapeHtml, showToast } from "../core/utils.js";
 import { getGroupById } from "../data/groups.js";
 import { renderDispatcherDashboard } from "./dashboard.js";
 import { renderDispatcherMessagesPage } from "./sent-messages.js";
 import { t, translateUI } from "../ui/i18n.js";
+import { msgText } from "../core/message-text.js";
+import ApiClient from "../core/api-client.js";
+import { acknowledgeServerCreatedIds } from "../core/firebase-service.js";
+import { IS_DEMO_MODE } from "../core/runtime-config.js";
+
+export { msgText };
 
 export const MSG_TEMPLATES = [
     { cat: "tmpl_cat_delay",  items: ["tmpl_delay_5","tmpl_delay_10","tmpl_delay_15","tmpl_delay_20","tmpl_delay_30"] },
@@ -12,6 +18,8 @@ export const MSG_TEMPLATES = [
     { cat: "tmpl_cat_ops",    items: ["tmpl_bus_full","tmpl_slow_down","tmpl_pax_check","tmpl_pax_incident","tmpl_police"] },
     { cat: "tmpl_cat_driver", items: ["tmpl_shift_now","tmpl_take_break","tmpl_end_shift","tmpl_call_dispatch","tmpl_help_coming"] }
 ];
+
+let messageSubmitPending = false;
 
 function populateTemplateSelect(selectId) {
     const sel = document.getElementById(selectId);
@@ -30,21 +38,9 @@ function populateTemplateSelect(selectId) {
     });
 }
 
-// Helper — tekst poruke za prikaz (template + detalj), na datom jeziku
-function msgText(msg, lang) {
-    const dict = lang ? (window.TRANSLATIONS[lang] || window.TRANSLATIONS.en) : null;
-    const translated = dict ? (dict[msg.template] || window.TRANSLATIONS.en[msg.template]) : t(msg.template);
-    const base = translated || msg.text || msg.template || "";
-    return msg.detail ? `${base} — ${msg.detail}` : base;
-}
-
 // Pratimo koji scope je aktivan po formi
 const _msgScope = {};
 let _messagesPageTab = "personal";
-
-function _isGroupMessage(m) {
-    return m.scope === "group";
-}
 
 function getMessagesFormScope() {
     return _messagesPageTab === "group" ? "group" : "driver";
@@ -107,7 +103,7 @@ function populateMessageRecipients(formId) {
         (window.state.drivers || []).forEach(d => {
             const grp = getGroupById(d.groupId);
             const opt = document.createElement("option");
-            opt.value = d.name;
+            opt.value = d.id ? `driver:${d.id}` : d.name;
             opt.innerText = grp ? `👤 ${d.name}  [${grp.name}]` : `👤 ${d.name}`;
             select.appendChild(opt);
         });
@@ -144,13 +140,12 @@ function setMessageScope(scope, formId) {
         if (label) label.setAttribute("data-i18n", "recipient_label");
         select.innerHTML = `<option value="__all__">${t("msg_all_drivers") || "Svi vozači"}</option>` +
             (window.state.drivers || []).map(d =>
-                `<option value="${escapeHtml(d.name)}">${escapeHtml(d.name)}</option>`
+                `<option value="${escapeHtml(d.id ? `driver:${d.id}` : d.name)}">${escapeHtml(d.name)}</option>`
             ).join("");
     }
     translateUI();
 }
 
-// Ikone za tip poruke u istoriji
 function msgTypeIcon(type) {
     switch (type) {
         case "warning":  return "⚠️";
@@ -161,8 +156,78 @@ function msgTypeIcon(type) {
     }
 }
 
-function submitDispatcherMessage(event) {
+function buildLocalDemoMessages({ scope, recipient, template, detail }) {
+    const now = new Date();
+    const timeString = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+    const dateString = now.toISOString().slice(0, 10);
+    const senderName = window.currentUser ? window.currentUser.name : (t("dispatcher") || "Dispečer");
+    let recipients = [];
+
+    if (scope === "group" && recipient.startsWith("group:")) {
+        const gid = recipient.replace("group:", "");
+        const groupDrivers = (window.state.drivers || []).filter(d => d.groupId === gid);
+        recipients = groupDrivers.map(d => d.name);
+    } else if (recipient === "__all__") {
+        recipients = [t("msg_all_drivers") || "Svi vozači"];
+    } else if (recipient.startsWith("driver:")) {
+        const driver = (window.state.drivers || []).find(d => d.id === recipient.slice(7));
+        recipients = [driver?.name || recipient];
+    } else {
+        recipients = [recipient];
+    }
+
+    return recipients.map(rec => {
+        const recipientDriver = (window.state.drivers || []).find(d => d.name === rec);
+        const isBroadcast = recipient === "__all__";
+        return {
+            id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+            date: dateString,
+            time: timeString,
+            sender: senderName,
+            senderLang: window.state.language || "en",
+            recipient: rec,
+            recipientDriverId: recipientDriver?.id || null,
+            broadcast: isBroadcast,
+            template,
+            detail,
+            text: t(template) + (detail ? ` — ${detail}` : ""),
+            type: template.startsWith("tmpl_delay") ? "warning"
+                : template === "tmpl_call_dispatch" || template === "tmpl_pax_incident" ? "urgent"
+                : template.startsWith("tmpl_detour") || template.startsWith("tmpl_route") ? "detour" : "info",
+            scope,
+            read: false
+        };
+    });
+}
+
+function buildStaffMessagePayload({ scope, recipient, template, detail }) {
+    const base = {
+        template,
+        detail: detail || "",
+        senderLang: window.state.language || "en",
+        senderName: window.currentUser?.name || undefined,
+        displayScope: scope === "group" ? "group" : "driver"
+    };
+    if (recipient === "__all__") {
+        return { ...base, mode: "broadcast" };
+    }
+    if (recipient.startsWith("group:")) {
+        return { ...base, mode: "group", groupId: recipient.slice(6) };
+    }
+    if (recipient.startsWith("driver:")) {
+        return { ...base, mode: "driver", recipientDriverId: recipient.slice(7) };
+    }
+    const driver = (window.state.drivers || []).find(d => d.name === recipient);
+    if (driver?.id) {
+        return { ...base, mode: "driver", recipientDriverId: driver.id };
+    }
+    return null;
+}
+
+async function submitDispatcherMessage(event) {
     event.preventDefault();
+    if (messageSubmitPending) return;
+
     const formId  = event.target.id;
     const suf     = formId === "dispatcher-message-form" ? "" : "-messages";
     const scope = formId === "dispatcher-message-form-messages"
@@ -179,65 +244,52 @@ function submitDispatcherMessage(event) {
 
     if (!template) return;
 
-    const now = new Date();
-    const timeString = `${now.getHours().toString().padStart(2,"0")}:${now.getMinutes().toString().padStart(2,"0")}`;
-    const dateString = now.toISOString().slice(0, 10);
+    messageSubmitPending = true;
+    try {
+        let created = [];
+        if (IS_DEMO_MODE) {
+            created = buildLocalDemoMessages({ scope, recipient, template, detail });
+            if (!window.state.messages) window.state.messages = [];
+            created.forEach((message) => window.state.messages.unshift(message));
+            saveState();
+        } else {
+            const payload = buildStaffMessagePayload({ scope, recipient, template, detail });
+            if (!payload) {
+                showToast(t("msg_send_failed") || "Poruka nije poslata.", "error");
+                return;
+            }
+            const result = await ApiClient.sendStaffMessage(payload);
+            if (!result.success) {
+                showToast(result.error || t("msg_send_failed") || "Poruka nije poslata.", "error");
+                return;
+            }
+            created = Array.isArray(result.messages) ? result.messages : [];
+            if (!window.state.messages) window.state.messages = [];
+            created.forEach((message) => window.state.messages.unshift(message));
+            acknowledgeServerCreatedIds(
+              "messages",
+              created.map((message) => message?.id).filter(Boolean)
+            );
+        }
 
-    // Ako je group scope i izabrana konkretna grupa, šaljemo svim vozačima u grupi
-    let recipients = [];
-    if (scope === "group" && recipient.startsWith("group:")) {
-        const gid = recipient.replace("group:", "");
-        const grp = (window.state.groups || []).find(g => g.id === gid);
-        const groupDrivers = (window.state.drivers || []).filter(d => d.groupId === gid);
-        recipients = groupDrivers.length > 0
-            ? groupDrivers.map(d => d.name)
-            : [grp ? grp.name : t("msg_all_drivers") || "Svi vozači"];
-    } else if (recipient === "__all__") {
-        recipients = [t("msg_all_drivers") || "Svi vozači"];
-    } else {
-        recipients = [recipient];
+        if (detailEl) detailEl.value = "";
+        if (formId === "dispatcher-message-form-messages") {
+            setMessagesPageTab(_messagesPageTab);
+        } else {
+            setMessageScope("driver", formId);
+        }
+        populateTemplateSelect("message-template" + suf);
+
+        showToast(t("js_alert_msg_sent") || "✅ Message sent!", "success", 3000);
+        renderDispatcherDashboard();
+        renderAllMessagesList();
+    } finally {
+        messageSubmitPending = false;
     }
-
-    const senderName = window.currentUser ? window.currentUser.name : (t("dispatcher") || "Dispečer");
-
-    recipients.forEach(rec => {
-        const newMessage = {
-            id: `msg-${Date.now()}-${Math.random().toString(36).slice(2,5)}`,
-            date: dateString,
-            time: timeString,
-            sender: senderName,
-            senderLang: window.state.language || "en",
-            recipient: rec,
-            template: template,   // translation ključ npr. "tmpl_delay_15"
-            detail: detail,       // opcioni slobodni tekst (stanica, br. busa...)
-            text: t(template) + (detail ? ` — ${detail}` : ""), // fallback za stari kod
-            type: template.startsWith("tmpl_delay") ? "warning" :
-                  template === "tmpl_call_dispatch" || template === "tmpl_pax_incident" ? "urgent" :
-                  template.startsWith("tmpl_detour") || template.startsWith("tmpl_route") ? "detour" : "info",
-            scope: scope,
-            read: false
-        };
-        if (!window.state.messages) window.state.messages = [];
-        window.state.messages.unshift(newMessage);
-    });
-
-    saveState();
-    // Samo resetuj detalj polje, ne template select (dynamic options bi se izgubile s event.target.reset())
-    if (detailEl) detailEl.value = "";
-    if (formId === "dispatcher-message-form-messages") {
-        setMessagesPageTab(_messagesPageTab);
-    } else {
-        setMessageScope("driver", formId);
-    }
-    populateTemplateSelect("message-template" + suf);
-
-    showToast(t("js_alert_msg_sent") || "✅ Message sent!", "success", 3000);
-    renderDispatcherDashboard();
-    renderAllMessagesList();
 }
+
 export {
     populateTemplateSelect,
-    msgText,
     populateMessageRecipients,
     renderAllMessagesList,
     setMessageScope,

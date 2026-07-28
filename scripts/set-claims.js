@@ -3,8 +3,8 @@
 // BusCommand — Postavi Firebase custom claims
 // Upotreba:
 //   node scripts/set-claims.js <uid> superadmin
-//   node scripts/set-claims.js <uid> dispatcher blaguss "Hans Müller"
-//   node scripts/set-claims.js <uid> company_admin blaguss "Ana Kovač"
+//   node scripts/set-claims.js <uid> dispatcher acme "Hans Müller"
+//   node scripts/set-claims.js <uid> company_admin acme "Ana Kovač"
 // ============================================================
 
 const path = require("path");

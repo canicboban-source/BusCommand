@@ -5,7 +5,7 @@ const { seedDemoState, loginDispatcher } = require("./helpers.js");
 test.describe("Line 310 / Group Hub", () => {
   test("dispatcher opens Group Hub for line 310", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/?mode=demo");
+    await page.goto("/staff.html?mode=demo");
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openGroupHub("101"));
@@ -17,7 +17,7 @@ test.describe("Line 310 / Group Hub", () => {
 
   test("Group Hub navigates to daily plan and back", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/?mode=demo");
+    await page.goto("/staff.html?mode=demo");
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openGroupHub("101"));
@@ -38,7 +38,7 @@ test.describe("Line 310 / Group Hub", () => {
       buses: []
     };
     await seedDemoState(page, emptyLineState);
-    await page.goto("/?mode=demo");
+    await page.goto("/staff.html?mode=demo");
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openGroupHub("310"));

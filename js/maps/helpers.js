@@ -1,4 +1,4 @@
-﻿// BusCommand ESM v9.5
+// BusCommand ESM v9.5
 function dayseed(index) {
     const today = new Date();
     // Vraća determinističku vrednost na osnovu dana u mesecu i indeksa
@@ -14,7 +14,7 @@ function formatDate(dateStr) {
             return `${parseInt(parts[2])}.${parseInt(parts[1])}.`;
         }
         return dateStr;
-    } catch (_err) {
+    } catch {
         return dateStr;
     }
 }

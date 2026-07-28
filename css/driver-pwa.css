@@ -1,0 +1,346 @@
+/* ============================================================
+   Driver PWA surface — mobile-first home (mockup-aligned)
+   ============================================================ */
+
+html[data-app-surface="driver"] .sidebar,
+html[data-app-surface="driver"] .role-selector-container {
+    display: none !important;
+}
+
+html[data-app-surface="driver"] .app-layout {
+    display: block;
+    min-height: 100vh;
+    background: var(--bg-darker);
+}
+
+html[data-app-surface="driver"] .app-header {
+    display: none;
+}
+
+html[data-app-surface="driver"] .main-content,
+html[data-app-surface="driver"] main {
+    margin: 0;
+    padding: 0 16px calc(var(--mobile-nav-h) + 28px);
+    max-width: 480px;
+    margin-inline: auto;
+}
+
+html[data-app-surface="driver"] #mobile-bottom-nav {
+    display: flex !important;
+}
+
+html[data-app-surface="driver"] .mobile-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    height: var(--mobile-nav-h);
+    background: rgba(10, 16, 25, 0.96);
+    border-top: 1px solid var(--panel-border);
+    backdrop-filter: blur(10px);
+}
+
+.driver-pwa-home {
+    padding-top: 12px;
+}
+
+.driver-pwa-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.driver-pwa-brand {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-main);
+}
+
+.driver-pwa-userchip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.driver-pwa-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--panel-border);
+    background: var(--card-bg);
+    padding: 0;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+}
+
+.driver-pwa-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.driver-pwa-avatar-fallback {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.driver-pwa-userchip-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.2;
+}
+
+.driver-pwa-userchip-text strong {
+    font-size: 0.88rem;
+    color: var(--text-main);
+}
+
+.driver-pwa-status-dot {
+    font-size: 0.72rem;
+    color: var(--success-color);
+}
+
+.driver-pwa-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.driver-pwa-title-row h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+}
+
+.driver-pwa-date {
+    margin: 4px 0 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.driver-pwa-sos {
+    min-width: 68px;
+    height: 42px;
+    border-radius: var(--radius-md);
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    background: var(--danger-strong);
+    border: 1px solid rgba(248, 113, 113, 0.45);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.28);
+}
+
+.driver-pwa-sos:hover {
+    background: var(--danger-color);
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.35);
+}
+
+.driver-pwa-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), var(--card-bg));
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-lg);
+    padding: 18px 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+
+.driver-pwa-shift-today {
+    background: linear-gradient(160deg, rgba(var(--primary-rgb), 0.14) 0%, var(--card-bg) 42%, var(--panel-bg) 100%);
+    border-color: rgba(var(--primary-rgb), 0.32);
+    padding: 20px 16px;
+}
+
+.driver-pwa-card-kicker {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.driver-pwa-shift-headline h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 750;
+}
+
+.driver-pwa-shift-window {
+    margin: 4px 0 0;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.driver-pwa-confirm {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0;
+    font-size: 0.82rem;
+    color: var(--success-color);
+}
+
+.driver-pwa-confirm .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.driver-pwa-confirm.warn {
+    color: var(--warning-color);
+}
+
+.driver-pwa-confirm.muted {
+    color: var(--text-muted);
+}
+
+.driver-pwa-empty {
+    padding: 12px 4px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.driver-pwa-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.driver-pwa-metrics > div {
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: var(--radius-md);
+    padding: 12px 8px;
+    text-align: center;
+}
+
+.driver-pwa-metrics span {
+    display: block;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.driver-pwa-metrics strong {
+    font-size: 1rem;
+    color: var(--text-main);
+}
+
+.driver-pwa-checkin-hint,
+#driver-checkin-hint {
+    margin: 0 0 10px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.driver-pwa-checkin-btn {
+    width: 100%;
+    min-height: 48px;
+    border-radius: 12px;
+    font-weight: 700;
+    background: var(--success-strong);
+    border-color: var(--success-strong);
+    color: #fff;
+}
+
+.driver-pwa-checkin-btn:hover:not(:disabled) {
+    background: var(--success-strong-hover);
+    border-color: var(--success-strong-hover);
+}
+
+.driver-pwa-checkin-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.driver-pwa-next-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.driver-pwa-quick-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.driver-pwa-quick-grid .btn-quick-report {
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    min-height: 88px;
+    color: #fff;
+    font-weight: 750;
+    font-size: 0.82rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 14px 10px;
+    transition: var(--transition-fast);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+}
+
+.driver-pwa-quick-grid .btn-quick-report:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+}
+
+.driver-pwa-quick-grid .btn-quick-report i {
+    width: 26px;
+    height: 26px;
+}
+
+.driver-pwa-quick-grid .qr-traffic {
+    background: var(--warning-strong);
+    border-color: rgba(251, 191, 36, 0.35);
+}
+.driver-pwa-quick-grid .qr-break {
+    background: var(--danger-strong);
+    border-color: rgba(248, 113, 113, 0.35);
+}
+.driver-pwa-quick-grid .qr-full {
+    background: var(--primary-color);
+    border-color: rgba(var(--primary-rgb), 0.4);
+}
+.driver-pwa-quick-grid .qr-delay {
+    background: var(--info-violet);
+    border-color: rgba(var(--primary-rgb), 0.45);
+}
+
+.driver-pwa-archive-btn {
+    margin-top: 12px;
+}
+
+html[data-app-surface="driver"] .mob-nav-sos {
+    transform: translateY(-10px);
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: var(--danger-strong);
+    color: #fff;
+    border: 2px solid rgba(248, 113, 113, 0.55);
+    box-shadow: 0 10px 22px rgba(239, 68, 68, 0.32);
+}

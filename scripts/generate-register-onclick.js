@@ -8,7 +8,7 @@ const path = require("path");
 const ROOT = path.join(__dirname, "..");
 const HTML = path.join(ROOT, "index.html");
 
-const INLINE_EXTRA = ["t", "applyBrandingSettings", "deleteGroup", "deleteDriver", "deleteBus", "deleteRoute", "deleteReport", "addDriver", "getScheduleByKey", "clickElementById", "removeElementById"];
+const INLINE_EXTRA = ["t", "applyBrandingSettings", "deleteGroup", "deleteDriver", "deleteBus", "deleteRoute", "addDriver", "getScheduleByKey", "clickElementById", "removeElementById", "openDriverActivation", "handleVacation"];
 
 const IGNORE_NAMES = new Set(["this", "event", "return", "if", "getElementById", "document", "stopPropagation"]);
 
@@ -150,6 +150,7 @@ function main() {
 // onclick/onchange handleri + data-action delegacija (v30)
 
 ${importLines.join("\n")}
+import { canInvokeActionDuringDriverActivation } from "./auth/driver-access-gate.js";
 
 const __ONCLICK_HANDLERS = {
 ${handlerEntries.join(",\n")}
@@ -157,7 +158,9 @@ ${handlerEntries.join(",\n")}
 
 export function registerOnclickHandlers(win = window) {
     for (const [name, fn] of Object.entries(__ONCLICK_HANDLERS)) {
-        if (typeof fn === "function") win[name] = fn;
+        if (typeof fn === "function") {
+            win[name] = (...args) => canInvokeActionDuringDriverActivation(name) ? fn(...args) : false;
+        }
     }
     installActionDelegates(__ONCLICK_HANDLERS, document);
 }

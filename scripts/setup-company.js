@@ -31,7 +31,7 @@ const name      = process.argv[3] || companyId;
 
 if (!companyId) {
   console.error("Upotreba: node scripts/setup-company.js <companyId> <naziv>");
-  console.error("Primjer:  node scripts/setup-company.js blaguss \"Blaguss Reisen\"");
+  console.error("Primjer:  node scripts/setup-company.js acme \"Acme Transit\"");
   process.exit(1);
 }
 
@@ -101,7 +101,7 @@ async function setup() {
   console.log("   Otvori: http://localhost:8766/?mode=production&company=" + companyId);
   console.log("   Test vozač: Test Vozač / PIN 1234");
   console.log("");
-  console.log("   Sljedeći korak: kreiraj Firebase Auth korisnika (dispečer/admin)");
+  console.log("   Sledeći korak: kreiraj Firebase Auth korisnika (dispečer/admin)");
   console.log("   i postavi custom claims: { role, companyId }");
   console.log("");
 }

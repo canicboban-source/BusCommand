@@ -91,6 +91,10 @@ function ensureShiftCatalogForEdit(lineId) {
     if (!id) return null;
 
     const cat = getShiftCatalogForLine(id);
+    if (cat.locked === true) {
+        activateShiftCatalogForLine(id);
+        return cat;
+    }
     const fallback = buildFallbackCatalogEntries(id);
     cat.entries = { ...fallback, ...cat.entries };
     cat.line = id;
@@ -104,11 +108,11 @@ function persistCatalogForLine(lineId, entries, meta = {}) {
     if (!id) return null;
 
     ensureShiftCatalogsMap();
-    const fallback = buildFallbackCatalogEntries(id);
+    const fallback = meta.replace === true ? {} : buildFallbackCatalogEntries(id);
     const merged = { ...fallback, ...(entries || {}) };
 
     const brCode = getBereitschaftCode(id);
-    if (brCode && !merged[brCode]) {
+    if (meta.replace !== true && brCode && !merged[brCode]) {
         merged[brCode] = {
             code: brCode,
             label: "Bereitschaft",
@@ -127,6 +131,8 @@ function persistCatalogForLine(lineId, entries, meta = {}) {
         lineId: id,
         updatedAt: meta.updatedAt || new Date().toISOString(),
         version: meta.version || undefined,
+        source: meta.source || undefined,
+        locked: meta.locked === true,
         entries: merged
     };
 

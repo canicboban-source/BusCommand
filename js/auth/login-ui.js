@@ -1,6 +1,7 @@
 // BusCommand ESM v9.5
 import { isMobileDevice } from "../core/utils.js";
 import { t, translateUI } from "../ui/i18n.js";
+import { isDriverSurface, isStaffSurface } from "../core/app-surface.js";
 import { clearUserSession } from "./login-session.js";
 import { initializeLoginSelects } from "./login-selects.js";
 import {
@@ -9,27 +10,73 @@ import {
     clearAuthSetupFields,
     clearLoginFormFields
 } from "./password-fields.js";
+import { updateTrialBadge } from "../core/license.js";
 
 function showLoginScreen(preferDispatcherTab = false) {
     const hideIds = [
         "app-container",
         "dispatcher-password-setup-view",
         "dispatcher-group-setup-view",
+        "driver-activation-modal",
         "onboarding-wizard",
         "ca-onboarding-wizard",
-        "pre-trip-modal"
+        "mobile-bottom-nav",
+        "fp-mobile-nav",
+        "pre-trip-modal",
+        "msg-fullscreen-alert",
+        "clear-sos-modal",
+        "factory-reset-modal",
+        "monthly-day-edit-modal",
+        "sos-confirm-modal",
+        "sos-trigger-modal",
+        "global-confirm-modal"
     ];
+    const overlayIds = new Set([
+        "driver-activation-modal",
+        "onboarding-wizard",
+        "ca-onboarding-wizard",
+        "pre-trip-modal",
+        "msg-fullscreen-alert",
+        "clear-sos-modal",
+        "factory-reset-modal",
+        "monthly-day-edit-modal",
+        "sos-confirm-modal",
+        "sos-trigger-modal",
+        "global-confirm-modal"
+    ]);
     hideIds.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.classList.add("hidden");
+        if (el) {
+            el.classList.add("hidden");
+            if (overlayIds.has(id)) {
+                el.style.display = "none";
+                if (el.hasAttribute("aria-hidden") || el.getAttribute("role") === "dialog") {
+                    el.setAttribute("aria-hidden", "true");
+                }
+            }
+        }
     });
+
+    const msgAlert = document.getElementById("msg-fullscreen-alert");
+    if (msgAlert) delete msgAlert.dataset.msgId;
 
     const loginScreen = document.getElementById("login-screen");
     if (loginScreen) loginScreen.classList.remove("hidden");
 
     clearAllSensitiveAuthFields();
 
-    if (preferDispatcherTab) {
+    // Surface-locked login: driver PWA never shows staff tab, staff never shows driver tab
+    if (isDriverSurface()) {
+        switchLoginTab("driver");
+        document.getElementById("tab-dispatcher-btn")?.classList.add("hidden");
+        document.getElementById("tab-driver-btn")?.classList.add("active");
+        document.querySelector(".login-tabs")?.classList.add("surface-single-tab");
+    } else if (isStaffSurface()) {
+        switchLoginTab("dispatcher");
+        document.getElementById("tab-driver-btn")?.classList.add("hidden");
+        document.getElementById("tab-dispatcher-btn")?.classList.add("active");
+        document.querySelector(".login-tabs")?.classList.add("surface-single-tab");
+    } else if (preferDispatcherTab) {
         switchLoginTab("dispatcher");
     } else {
         switchLoginTab("driver");
@@ -37,6 +84,7 @@ function showLoginScreen(preferDispatcherTab = false) {
 
     translateUI();
     initializeLoginSelects();
+    updateTrialBadge();
 }
 
 function rejectDispatcherWithoutGroups(disp) {
@@ -64,6 +112,9 @@ function getCleanLoginUrl() {
 }
 
 function switchLoginTab(role) {
+    if (isDriverSurface() && role !== "driver") return;
+    if (isStaffSurface() && role === "driver") return;
+
     const driverTab = document.getElementById("tab-driver-btn");
     const dispTab = document.getElementById("tab-dispatcher-btn");
     const driverForm = document.getElementById("driver-login-form");
@@ -73,19 +124,19 @@ function switchLoginTab(role) {
     clearAuthSetupFields();
 
     if (role === "driver") {
-        driverTab.classList.add("active");
-        dispTab.classList.remove("active");
-        driverForm.classList.remove("hidden");
-        dispForm.classList.add("hidden");
+        driverTab?.classList.add("active");
+        dispTab?.classList.remove("active");
+        driverForm?.classList.remove("hidden");
+        dispForm?.classList.add("hidden");
         const passInput = document.getElementById("login-dispatcher-password");
         const emailInput = document.getElementById("login-dispatcher-email");
         if (passInput) passInput.value = "";
         if (emailInput) emailInput.value = "";
     } else {
-        driverTab.classList.remove("active");
-        dispTab.classList.add("active");
-        driverForm.classList.add("hidden");
-        dispForm.classList.remove("hidden");
+        driverTab?.classList.remove("active");
+        dispTab?.classList.add("active");
+        driverForm?.classList.add("hidden");
+        dispForm?.classList.remove("hidden");
 
         const pinInput = document.getElementById("login-driver-pin");
         if (pinInput) pinInput.value = "";

@@ -1,0 +1,32 @@
+%PDF-1.4
+1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj
+2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj
+3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources<< /Font<< /F1 5 0 R >> >> >>endobj
+4 0 obj<< /Length 584 >>stream
+BT
+/F1 9 Tf
+50 780 Td
+12 TL
+(BUSCOMMAND-DIENSTPLAN-START BUSCOMMAND-DIENSTPLAN-1 META:template_versio) Tj
+T* (n=BUSCOMMAND-DIENSTPLAN-1 META:plan_code=310 META:plan_version=66 META:v) Tj
+T* (alid_from=2026-02-09 META:timezone=Europe/Vienna DUTY:310.S01|SCHOOL_WEE) Tj
+T* (KDAY|04:02|04:33|14:00|14:35|Depot|Depot ACT:310.S01|1|ARBEIT|04:02|04:1) Tj
+T* (7|||| ACT:310.S01|2|DEPOT|04:17|04:33|||| ACT:310.S01|3|FAHRT|04:33|14:0) Tj
+T* (0|310|101|| ACT:310.S01|4|DEPOT|14:00|14:25|||| ACT:310.S01|5|ARBEIT|14:) Tj
+T* (25|14:35|||| BUSCOMMAND-DIENSTPLAN-END BUSCOMMAND-DIENSTPLAN-1) Tj
+ET
+endstream
+endobj
+5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000056 00000 n 
+0000000111 00000 n 
+0000000233 00000 n 
+0000000866 00000 n 
+trailer<< /Size 6 /Root 1 0 R >>
+startxref
+934
+%%EOF

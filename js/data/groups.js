@@ -1,11 +1,11 @@
-﻿// BusCommand ESM v9.5
+// BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
-import { getVisibleDrivers as _getVisibleDrivers, showToast } from "../core/utils.js";
+import { showToast } from "../core/utils.js";
 import { countDriversForLineGroup, countBusesForLineGroup } from "./group-membership.js";
 import { scheduleRefreshObservedSections } from "../core/state-observer.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
-import { actionAttr, changeAttr as _changeAttr } from "../core/action-delegate.js";
+import { actionAttr } from "../core/action-delegate.js";
 
 function getGroupById(id) {
     if (!window.state.groups) return null;

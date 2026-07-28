@@ -1,5 +1,6 @@
 // BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
+import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import { renderDispatcherDashboard } from "../dispatcher/dashboard.js";
 import { t } from "../ui/i18n.js";
 import { mapState, ROUTE_GPS_PATHS } from "./map-data.js";
@@ -74,7 +75,7 @@ function startGpsSimulation() {
             drv.currentStopIndex = stopIdx;
         });
         
-        saveState();
+        if (IS_DEMO_MODE) saveState();
         
         // Osveži tabelu i markere ako smo na dispečerskom dashboard-u
         if (window.currentUser && window.currentUser.role === "dispatcher") {

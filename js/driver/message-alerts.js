@@ -1,9 +1,30 @@
 // BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
 import { escapeHtml, formatDateTime, showToast } from "../core/utils.js";
-import { msgText } from "../dispatcher/msg-compose.js";
+import { msgText } from "../core/message-text.js";
 import { markMessageAsRead, renderDriverMessages } from "./messages-inbox.js";
 import { t } from "../ui/i18n.js";
+import ApiClient from "../core/api-client.js";
+import { IS_DEMO_MODE } from "../core/runtime-config.js";
+
+const archivePending = new Set();
+
+function messageTargetsCurrentDriver(message) {
+    const user = window.currentUser;
+    if (!message || !user) return false;
+    return message.broadcast === true
+        || message.recipientDriverId === (user.id || user.uid)
+        || message.recipient === user.name
+        || ["Svi", "all", "__all__", "All drivers"].includes(message.recipient);
+}
+
+function isArchivedForCurrentDriver(message) {
+    const user = window.currentUser;
+    return Boolean(message && user && (
+        message.archivedByIds?.includes(user.id || user.uid)
+        || message.archivedBy?.includes(user.name)
+    ));
+}
 
 // Reprodukcija zvuka obaveštenja pomoću Web Audio API-ja (ne zahteva preuzimanje audio fajlova)
 function playNotificationSound() {
@@ -40,6 +61,12 @@ function playNotificationSound() {
 
 // Prikazivanje full-screen panela za hitne/nove poruke dispečera
 function showFullscreenMessageAlert(msg, totalCount) {
+    if (!window.currentUser || window.currentUser.role !== "driver") return;
+    const login = document.getElementById("login-screen");
+    if (login && !login.classList.contains("hidden")) return;
+    const app = document.getElementById("app-container");
+    if (!app || app.classList.contains("hidden")) return;
+
     const modal = document.getElementById("msg-fullscreen-alert");
     const sender = document.getElementById("msg-alert-sender");
     const text = document.getElementById("msg-alert-text");
@@ -49,7 +76,7 @@ function showFullscreenMessageAlert(msg, totalCount) {
     if (!modal) return;
 
     modal.dataset.msgId = msg.id;
-    if (sender) sender.textContent = msg.sender || "Dispečer";
+    if (sender) sender.textContent = msg.sender || "Dispe\u010der";
     if (text) text.textContent = msgText(msg, window.state.language);
     
     if (time) {
@@ -74,6 +101,8 @@ function showFullscreenMessageAlert(msg, totalCount) {
     }
 
     modal.classList.remove("hidden");
+    modal.style.display = "flex";
+    modal.setAttribute("aria-hidden", "false");
     if (window.lucide) {
         lucide.createIcons();
     }
@@ -88,38 +117,49 @@ function confirmMessageRead() {
         markMessageAsRead(msgId);
     }
     modal.classList.add("hidden");
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden", "true");
 }
 
 // Arhiviraj jednu poruku (vozačka strana)
-function archiveMessage(id) {
+async function archiveMessage(id) {
+    if (archivePending.has(id)) return;
     const msg = window.state.messages.find(m => m.id === id);
-    if (!msg) return;
-    if (!msg.archivedBy) msg.archivedBy = [];
-    if (!msg.archivedBy.includes(window.currentUser.name)) {
-        msg.archivedBy.push(window.currentUser.name);
+    if (!msg || !messageTargetsCurrentDriver(msg)) return;
+    archivePending.add(id);
+    try {
+        if (!IS_DEMO_MODE) {
+            const result = await ApiClient.archiveDriverMessage(id);
+            if (!result.success) {
+                showToast(result.error || t("driver_message_archive_failed"), "error");
+                return;
+            }
+            if (!Array.isArray(msg.archivedByIds)) msg.archivedByIds = [];
+            const uid = window.currentUser.id || window.currentUser.uid;
+            if (uid && !msg.archivedByIds.includes(uid)) msg.archivedByIds.push(uid);
+        } else {
+            if (!Array.isArray(msg.archivedBy)) msg.archivedBy = [];
+            if (!msg.archivedBy.includes(window.currentUser.name)) msg.archivedBy.push(window.currentUser.name);
+            saveState();
+        }
+        renderDriverMessages();
+        renderDriverMessageArchive();
+        if (typeof lucide !== "undefined") lucide.createIcons();
+    } finally {
+        archivePending.delete(id);
     }
-    saveState();
-    renderDriverMessages();
-    renderDriverMessageArchive();
-    lucide.createIcons();
 }
 
 // Arhiviraj sve pročitane poruke vozača odjednom
-function archiveReadMessages() {
-    const myRead = window.state.messages.filter(m =>
-        (m.recipient === window.currentUser.name || m.recipient === "Svi" || m.recipient === "all") &&
-        m.read && !(m.archivedBy && m.archivedBy.includes(window.currentUser.name))
+async function archiveReadMessages() {
+    const myRead = (window.state.messages || []).filter(m =>
+        messageTargetsCurrentDriver(m) && (m.read || m.readBy?.includes(window.currentUser.name)
+            || m.readBy?.includes(window.currentUser.id || window.currentUser.uid))
+        && !isArchivedForCurrentDriver(m)
     );
     if (myRead.length === 0) return;
-    myRead.forEach(msg => {
-        if (!msg.archivedBy) msg.archivedBy = [];
-        msg.archivedBy.push(window.currentUser.name);
-    });
-    saveState();
-    renderDriverMessages();
-    renderDriverMessageArchive();
+    await Promise.all(myRead.map(msg => archiveMessage(msg.id)));
     showToast(t("messages_archived") || "Messages archived", "success");
-    lucide.createIcons();
 }
 
 // Prikaži arhiv poruka (sklopivi accordion ispod aktivnih poruka)
@@ -127,10 +167,7 @@ function renderDriverMessageArchive() {
     let archiveSection = document.getElementById("driver-messages-archive");
     if (!archiveSection) return; // HTML element mora postojati
 
-    const archived = window.state.messages.filter(m =>
-        (m.recipient === window.currentUser.name || m.recipient === "Svi" || m.recipient === "all") &&
-        m.archivedBy && m.archivedBy.includes(window.currentUser.name)
-    );
+    const archived = (window.state.messages || []).filter(m => messageTargetsCurrentDriver(m) && isArchivedForCurrentDriver(m));
 
     if (archived.length === 0) {
         archiveSection.innerHTML = "";
@@ -151,7 +188,7 @@ function renderDriverMessageArchive() {
                         border-radius:6px; padding:8px 10px; opacity:0.65;">
                         <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-muted); margin-bottom:4px;">
                             <span>📨 ${t("msg_from_dispatcher") || "Dispatcher"}</span>
-                            <span>${formatDateTime(msg.date, msg.time)}</span>
+                            <span>${escapeHtml(formatDateTime(msg.date, msg.time))}</span>
                         </div>
                         <div style="font-size:0.8rem; color:var(--text-muted);">${escapeHtml(msgText(msg, window.state.language))}</div>
                     </div>

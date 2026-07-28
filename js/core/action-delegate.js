@@ -1,5 +1,7 @@
 // BusCommand — delegirani data-action / data-change handleri (CSP-friendly)
 
+import { canInvokeActionDuringDriverActivation } from "../auth/driver-access-gate.js";
+
 export function clickElementById(id) {
     document.getElementById(id)?.click();
 }
@@ -19,6 +21,7 @@ function parseActionArgs(raw) {
 }
 
 function invokeHandler(handlers, name, args, event) {
+    if (!canInvokeActionDuringDriverActivation(name)) return false;
     const fn = handlers[name];
     if (typeof fn !== "function") {
         console.warn("[data-action] Nepoznat handler:", name);
@@ -75,6 +78,16 @@ export function installActionDelegates(handlers, root = document) {
         if (pass === "event") invokeHandler(handlers, name, [event], event);
         else if (pass === "element") invokeHandler(handlers, name, [el], event);
         else if (pass === "args-value") invokeHandler(handlers, name, [...args, el.value], event);
+        else invokeHandler(handlers, name, [el.value], event);
+    });
+
+    root.addEventListener("input", (event) => {
+        const el = event.target.closest("[data-input-action]");
+        if (!el) return;
+        const name = el.dataset.inputAction;
+        if (!name) return;
+        const args = parseActionArgs(el.dataset.inputActionArgs);
+        if (args.length > 0) invokeHandler(handlers, name, args, event);
         else invokeHandler(handlers, name, [el.value], event);
     });
 

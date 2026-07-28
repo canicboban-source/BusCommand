@@ -3,7 +3,7 @@ import { saveState } from "../core/state.js";
 import { escapeHtml, showToast } from "../core/utils.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
-import { actionAttr, changeAttr as _changeAttr } from "../core/action-delegate.js";
+import { actionAttr } from "../core/action-delegate.js";
 
 function switchScheduleTab(tab) {
     window.scheduleCurrentTab = tab;
@@ -170,7 +170,6 @@ function renderDriverSchedule(sch) {
     card.style.display = 'block';
     if (dateEl) dateEl.textContent = sch.date || '';
     var data = sch.data || '';
-
     var type = sch.type || (data.indexOf('data:image') === 0 ? 'image' :
                data.indexOf('data:application/pdf') === 0 ? 'pdf' : 'text');
     if (type === 'image' || data.indexOf('data:image') === 0) {
@@ -208,7 +207,7 @@ function renderScheduleHistory() {
         const title = isDaily 
             ? `Dnevni raspored: ${s.date}`
             : `Mesečni plan: ${s.driverName} (${s.month})`;
-        const _filename = s.filename || s.fileName || "Fajl";
+        const filename = s.filename || s.fileName || "Fajl";
         const fileTypeLabel = isDaily ? "Dnevni" : "Mesečni";
         const badgeColor = isDaily ? "var(--primary-color)" : "var(--success-color)";
         
@@ -216,10 +215,10 @@ function renderScheduleHistory() {
             <div style="text-align:left;">
                 <span style="background:${badgeColor}22; border:1px solid ${badgeColor}55; color:${badgeColor}; font-size:10px; font-weight:700; padding:2px 8px; border-radius:12px; margin-right:8px;">${fileTypeLabel}</span>
                 <span style="font-weight:600; color:var(--text-main); font-size:0.88rem;">${title}</span>
-                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:3px;">📄 ${_filename}</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:3px;">📄 ${filename}</div>
             </div>
             <div style="display:flex; gap:8px;">
-                <a href="${s.data || s.fileData}" download="${_filename}" class="btn-secondary" style="padding:4px 8px; font-size:0.75rem; height:auto; text-decoration:none; display:flex; align-items:center; gap:4px;">
+                <a href="${s.data || s.fileData}" download="${filename}" class="btn-secondary" style="padding:4px 8px; font-size:0.75rem; height:auto; text-decoration:none; display:flex; align-items:center; gap:4px;">
                     Preuzmi
                 </a>
                 <button ${actionAttr("deleteScheduleEntry", [s.id])} style="background:rgba(239,68,68,0.08); color:#ef4444; border:1px solid rgba(239,68,68,0.2); padding:4px 8px; border-radius:6px; cursor:pointer; font-size:0.75rem; font-weight:600;">

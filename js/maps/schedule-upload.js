@@ -6,6 +6,15 @@ import { renderDispatcherDataHub } from "../dispatcher/data-hub.js";
 import { extractTextFromScheduleFile, parseExtractedScheduleText } from "./schedule-import-utils.js";
 import { t } from "../ui/i18n.js";
 
+const MAX_SCHEDULE_FILE_BYTES = 600 * 1024;
+const ALLOWED_SCHEDULE_EXTENSIONS = new Set(["xlsx", "xls", "pdf", "csv", "txt"]);
+
+function validateScheduleFile(file) {
+    if (!file || file.size < 1 || file.size > MAX_SCHEDULE_FILE_BYTES) return false;
+    const extension = String(file.name || "").toLowerCase().split(".").pop();
+    return ALLOWED_SCHEDULE_EXTENSIONS.has(extension);
+}
+
 async function uploadDriverSchedule(event) {
     event.preventDefault();
     const driverName = document.getElementById("upload-schedule-driver").value;
@@ -15,6 +24,10 @@ async function uploadDriverSchedule(event) {
     if (!fileInput.files || fileInput.files.length === 0) return;
 
     const file = fileInput.files[0];
+    if (!validateScheduleFile(file)) {
+        showToast(t("schedule_file_invalid"), "error", 5000);
+        return;
+    }
     const submitBtn = event.target.querySelector("button[type='submit']");
     const originalBtnHtml = submitBtn.innerHTML;
     submitBtn.innerHTML = `<span>${t("js_analyzing_plan")}</span> <i class="active-pulse" data-lucide="loader"></i>`;
@@ -54,5 +67,7 @@ async function uploadDriverSchedule(event) {
 }
 
 export {
+    MAX_SCHEDULE_FILE_BYTES,
+    validateScheduleFile,
     uploadDriverSchedule
 };

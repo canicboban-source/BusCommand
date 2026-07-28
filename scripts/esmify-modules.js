@@ -61,7 +61,7 @@ const MODULE_ORDER = [
   "js/dispatcher/reports.js",
   "js/dispatcher/lost-items.js",
   "js/dispatcher/vacations.js",
-  "js/dispatcher/settings.js",
+  "js/admin/company-admin-settings.js",
   "js/data/groups.js",
   "js/data/drivers.js",
   "js/data/buses-routes.js",

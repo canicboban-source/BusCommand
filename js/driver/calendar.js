@@ -1,228 +1,209 @@
-﻿// BusCommand ESM v9.5
+// BusCommand ESM v9.5
+import { getScheduleByKey, showToast } from "../core/utils.js";
+import { getShiftForDriverDate, getTomorrowDutySummary } from "../core/shift-plan.js";
 import { saveState } from "../core/state.js";
-import { showToast } from "../core/utils.js";
+import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import { t } from "../ui/i18n.js";
-import { actionAttr, changeAttr as _changeAttr } from "../core/action-delegate.js";
+import { driverWorkPolicy, confirmUpcomingShifts } from "./work-session.js";
+
+const VALID_SHIFT_TYPES = new Set(["morning", "afternoon", "night", "bereitschaft", "off", "vacation", "sick"]);
+
+function currentDriver() {
+    if (!window.currentUser || window.currentUser.role !== "driver") return null;
+    return {
+        id: window.currentUser.id || window.currentUser.uid || "",
+        name: window.currentUser.name || ""
+    };
+}
+
+function activeCalendarMonth() {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(window.currentCalendarMonth || "")) {
+        window.currentCalendarMonth = new Date().toISOString().slice(0, 7);
+    }
+    return window.currentCalendarMonth;
+}
+
+function scheduleForDriver(driver, month) {
+    const schedules = window.state.schedules || [];
+    return schedules.find(schedule => schedule.month === month && schedule.driverId && schedule.driverId === driver.id)
+        || getScheduleByKey(`${driver.name}_${month}`)
+        || null;
+}
+
+function approvedVacationOn(driver, date) {
+    return (window.state.vacations || []).some(vacation =>
+        (vacation.driverId ? vacation.driverId === driver.id : vacation.driver === driver.name)
+        && ["approved", "Odobreno"].includes(vacation.status)
+        && date >= vacation.start && date <= vacation.end
+    );
+}
+
+function translatedShiftName(shift) {
+    if (!shift) return t("no_data");
+    if (shift.type === "off") return t("shift_off");
+    if (shift.type === "vacation") return t("shift_vacation");
+    if (shift.type === "sick") return t("shift_type_sick");
+    return shift.routeCode || shift.name || t(`shift_${shift.type}`) || t("no_data");
+}
+
+function appendCalendarDay(container, day, date, shift, isToday) {
+    const cell = document.createElement("div");
+    const type = VALID_SHIFT_TYPES.has(shift?.type) ? shift.type : "off";
+    cell.className = `calendar-day${isToday ? " today" : ""}`;
+    cell.dataset.date = date;
+    cell.setAttribute("role", "gridcell");
+    cell.setAttribute("aria-label", `${date}: ${translatedShiftName(shift)}`);
+
+    const number = document.createElement("span");
+    number.className = "day-number";
+    number.textContent = String(day);
+    const info = document.createElement("div");
+    info.className = `day-info ${type}`;
+    info.style.fontSize = "0.7rem";
+    info.style.lineHeight = "1.2";
+    info.style.padding = "3px";
+    info.textContent = translatedShiftName(shift);
+    cell.append(number, info);
+    container.appendChild(cell);
+}
+
+function renderDriverCalendar() {
+    const container = document.getElementById("calendar-days-container");
+    const driver = currentDriver();
+    if (!container || !driver) return;
+    container.replaceChildren();
+
+    const month = activeCalendarMonth();
+    const [year, monthNumber] = month.split("-").map(Number);
+    const totalDays = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+    const firstWeekday = new Date(Date.UTC(year, monthNumber - 1, 1)).getUTCDay();
+    const offset = firstWeekday === 0 ? 6 : firstWeekday - 1;
+    const today = new Date().toISOString().slice(0, 10);
+    const language = window.state.language || "sr";
+
+    const heading = document.getElementById("calendar-month-year");
+    if (heading) {
+        heading.textContent = new Intl.DateTimeFormat(language, { month: "long", year: "numeric", timeZone: "UTC" })
+            .format(new Date(Date.UTC(year, monthNumber - 1, 1)));
+    }
+
+    const schedule = scheduleForDriver(driver, month);
+    const downloadCard = document.getElementById("driver-schedule-download-card");
+    const filenameLabel = document.getElementById("driver-schedule-filename");
+    const hasDocument = Boolean(schedule?.fileData && schedule?.fileName);
+    if (downloadCard) downloadCard.style.display = hasDocument ? "flex" : "none";
+    if (filenameLabel && hasDocument) filenameLabel.textContent = schedule.fileName;
+
+    for (let index = 0; index < offset; index++) {
+        const empty = document.createElement("div");
+        empty.className = "calendar-day empty-day";
+        empty.setAttribute("aria-hidden", "true");
+        container.appendChild(empty);
+    }
+
+    for (let day = 1; day <= totalDays; day++) {
+        const date = `${month}-${String(day).padStart(2, "0")}`;
+        let shift = getShiftForDriverDate(driver.name, date);
+        if (approvedVacationOn(driver, date)) shift = { type: "vacation" };
+        appendCalendarDay(container, day, date, shift, date === today);
+    }
+}
 
 function renderTomorrowShiftForDriver() {
     const container = document.getElementById("driver-next-shift-container");
-    if (!container) return;
-    
-    const myShift = (window.state.tomorrowShifts || []).find(s => s.driver === window.currentUser.name);
-    if (!myShift) {
-        container.innerHTML = `<div style="color:var(--text-muted); font-size:0.9rem;">${t("no_shift_tomorrow") || "No shift scheduled for tomorrow."}</div>`;
+    const driver = currentDriver();
+    if (!container || !driver) return;
+    container.replaceChildren();
+    const targets = !IS_DEMO_MODE ? (driverWorkPolicy()?.confirmationTargets || []) : [];
+    if (targets.length) {
+        const heading = document.createElement("strong");
+        heading.textContent = t("upcoming_shifts_confirmation_title");
+        const list = document.createElement("div");
+        list.className = "driver-shift-confirmation-list";
+        targets.forEach((target) => {
+            const row = document.createElement("div");
+            row.className = "driver-shift-confirmation-row";
+            row.dataset.requestId = target.requestId || target.date;
+            const label = document.createElement("span");
+            const dayLabel = target.label && target.label !== "next_shift"
+                ? t(`confirm_label_${target.label}`)
+                : t("confirm_label_next_shift");
+            label.textContent = `${dayLabel} · ${target.date} · ${target.name || target.routeCode || t(`shift_${target.type}`)} · ${target.start}–${target.end}`;
+            const status = document.createElement("strong");
+            status.textContent = target.confirmed ? t("status_confirmed") : t("js_status_pending");
+            status.className = target.confirmed ? "text-success" : "text-warning";
+            row.append(label, status);
+            if (!target.confirmed) {
+                const one = document.createElement("button");
+                one.type = "button";
+                one.className = "btn-secondary btn-sm";
+                one.textContent = t("btn_confirm_shift");
+                one.addEventListener("click", async () => {
+                    one.disabled = true;
+                    await confirmUpcomingShifts([target.date]);
+                    renderTomorrowShiftForDriver();
+                });
+                row.appendChild(one);
+            }
+            list.appendChild(row);
+        });
+        container.append(heading, list);
+        if (targets.some((target) => !target.confirmed)) {
+            const button = document.createElement("button");
+            button.className = "btn-primary";
+            button.textContent = t("confirm_all_shifts");
+            button.addEventListener("click", async () => {
+                button.disabled = true;
+                await confirmUpcomingShifts();
+                renderTomorrowShiftForDriver();
+            });
+            container.appendChild(button);
+        }
         return;
     }
-    
-    const isConfirmed = myShift.confirmed;
-    
-    container.innerHTML = `
-        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius-md); padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">${t("duty_number")}:</span>
-                <span style="font-weight: 700; color: var(--primary-color); font-size: 1.1rem; background: rgba(var(--primary-rgb), 0.1); padding: 2px 8px; border-radius: 4px;">${myShift.shift}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">${t("vehicle")}:</span>
-                <span style="font-weight: 600; color: var(--text-main);"><i data-lucide="bus" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i>${myShift.bus}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05);">
-                <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Status:</span>
-                ${isConfirmed 
-                    ? `<span style="font-size: 0.85rem; color: var(--success-color); font-weight: 600; display: flex; align-items: center; gap: 4px;">
-                        <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i> ${t("status_confirmed")}
-                       </span>`
-                    : `<span style="font-size: 0.85rem; color: var(--warning-color); font-weight: 600; display: flex; align-items: center; gap: 4px;">
-                        <i data-lucide="clock" style="width: 14px; height: 14px;"></i> ${t("status_pending_confirmation")}
-                       </span>`
-                }
-            </div>
-            ${!isConfirmed 
-                ? `<button ${actionAttr("confirmTomorrowShift", [window.currentUser.name])} class="btn-primary" style="margin-top: 5px; font-size: 0.9rem; padding: 8px 12px; height: auto; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                    <i data-lucide="check-square" style="width: 14px; height: 14px;"></i> ${t("btn_confirm_shift")}
-                   </button>`
-                : ''
-            }
-        </div>
-    `;
-    lucide.createIcons();
+
+    const summary = getTomorrowDutySummary(driver.name);
+    const wrapper = document.createElement("div");
+    wrapper.className = "driver-next-shift-summary";
+    const title = document.createElement("strong");
+    title.textContent = summary.type === "off" ? t("no_shift_tomorrow") : summary.shift;
+    const details = document.createElement("span");
+    details.textContent = summary.type === "off" ? summary.date : `${summary.date} · ${t("vehicle")}: ${summary.bus}`;
+    wrapper.append(title, details);
+    container.appendChild(wrapper);
 }
 
-function confirmTomorrowShift(driverName) {
-    const shift = (window.state.tomorrowShifts || []).find(s => s.driver === driverName);
-    if (shift) {
-        shift.confirmed = true;
-        saveState();
-        if (window.currentUser && window.currentUser.role === "driver") {
-            renderTomorrowShiftForDriver();
-        } else if (window.currentUser && window.currentUser.role === "dispatcher") {
-            renderDispatcherShiftsConfirmation();
-        }
-        showToast(t("status_confirmed") || "Shift confirmed!", "success", 3000);
+async function confirmTomorrowShift(driverName) {
+    if (!window.currentUser || window.currentUser.role !== "driver" || driverName !== window.currentUser.name) return;
+    if (!IS_DEMO_MODE) {
+        await confirmUpcomingShifts();
+        renderTomorrowShiftForDriver();
+        return;
     }
+    const shift = (window.state.tomorrowShifts || []).find(item => item.driver === driverName);
+    if (!shift) return;
+    shift.confirmed = true;
+    saveState();
+    renderTomorrowShiftForDriver();
+    showToast(t("status_confirmed"), "success", 3000);
 }
+
 function renderDispatcherShiftsConfirmation() {
     const container = document.getElementById("dispatcher-confirm-shifts-list");
     if (!container) return;
-    container.innerHTML = "";
-    
+    container.replaceChildren();
     (window.state.tomorrowShifts || []).forEach(shift => {
-        const div = document.createElement("div");
-        div.className = "confirm-shift-item";
-        div.style.cssText = "background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius-md); padding: 12px; display: flex; justify-content: space-between; align-items: center;";
-        
-        const isConfirmed = shift.confirmed;
-        
-        div.innerHTML = `
-            <div>
-                <div style="font-weight:600; color:var(--text-main);">${shift.driver}</div>
-                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">
-                    ${t("shift")}: <strong style="color:var(--primary-color);">${shift.shift}</strong> | ${t("label_bus")}: <strong>${shift.bus}</strong>
-                </div>
-            </div>
-            <div>
-                ${isConfirmed 
-                    ? `<span style="color:var(--success-color); font-weight:600; font-size:0.85rem; display:flex; align-items:center; gap:4px;">
-                        <i data-lucide="check-circle" style="width:14px; height:14px;"></i> ${t("status_confirmed")}
-                       </span>`
-                    : `<button ${actionAttr("confirmTomorrowShift", [shift.driver])} class="btn-table-action" style="padding: 4px 8px; font-size: 0.8rem;">
-                        <i data-lucide="check" style="width:12px; height:12px; margin-right:4px;"></i> ${t("btn_confirm_shift")}
-                       </button>`
-                }
-            </div>
-        `;
-        container.appendChild(div);
+        const row = document.createElement("div");
+        row.className = "confirm-shift-item";
+        row.textContent = `${shift.driver || "—"} · ${shift.shift || "—"} · ${shift.bus || "—"}`;
+        container.appendChild(row);
     });
-    lucide.createIcons();
 }
 
-// --- KALENDAR VOZAČA ---
-function renderDriverCalendar() {
-    const container = document.getElementById("calendar-days-container");
-    container.innerHTML = "";
-    
-    // Proveri da li postoji okačeni plan rada za ovog vozača za Jun 2026
-    const downloadCard = document.getElementById("driver-schedule-download-card");
-    const filenameLabel = document.getElementById("driver-schedule-filename");
-    
-    if (downloadCard && filenameLabel) {
-        const scheduleKey = `${window.currentUser.name}_2026-06`;
-        const schedule = getScheduleByKey(scheduleKey);
-        
-        if (schedule) {
-            downloadCard.style.display = "flex";
-            filenameLabel.innerText = `${schedule.fileName} (${(schedule.fileData.length / 1024 * 0.75).toFixed(1)} KB)`;
-        } else {
-            downloadCard.style.display = "none";
-        }
-    }
-
-    const totalDays = 30;
-    
-    const lang = window.state.language || "sr";
-    const monthNames = {
-        sr: "Jun 2026", hr: "Lipanj 2026", en: "June 2026", de: "Juni 2026",
-        fr: "Juin 2026", it: "Giugno 2026", es: "Junio 2026", pl: "Czerwiec 2026",
-        cs: "Červen 2026", sk: "Jún 2026", nl: "Juni 2026", tr: "Haziran 2026",
-        pt: "Junho 2026", ro: "Iunie 2026", hu: "Június 2026", bg: "Юни 2026"
-    };
-    document.getElementById("calendar-month-year").innerText = monthNames[lang] || "June 2026";
-    
-    const approvedVacations = window.state.vacations.filter(v => v.driver === window.currentUser.name && (v.status === "approved" || v.status === "Odobreno"));
-    
-    // Izračunaj pomeraj za prvi dan u mesecu (evropska sedmica: Ponedeljak = 1, Nedelja = 7)
-    const firstDayDate = new Date(`${currentCalendarMonth}-01`);
-    let startDayOfWeek = firstDayDate.getDay(); 
-    if (startDayOfWeek === 0) startDayOfWeek = 7;
-    const offset = startDayOfWeek - 1;
-    
-    // Dodaj prazne ćelije za dane koji pripadaju prvoj nepotpunoj sedmici
-    for (let i = 0; i < offset; i++) {
-        const emptyDiv = document.createElement("div");
-        emptyDiv.className = "calendar-day empty-day";
-        emptyDiv.style.opacity = "0.2";
-        emptyDiv.style.pointerEvents = "none";
-        emptyDiv.innerHTML = `<span class="day-number" style="opacity:0.2;">-</span>`;
-        container.appendChild(emptyDiv);
-    }
-    
-    for (let day = 1; day <= totalDays; day++) {
-        const div = document.createElement("div");
-        div.className = "calendar-day";
-        
-        const dateStr = `2026-06-${day.toString().padStart(2, '0')}`;
-        
-        let isOnVacation = false;
-        approvedVacations.forEach(v => {
-            if (dateStr >= v.start && dateStr <= v.end) {
-                isOnVacation = true;
-            }
-        });
-        
-        let shiftClass = "";
-        let shiftName = "";
-        
-        if (window.currentUser.name === "Canic Boban") {
-            const bobanShifts = {
-                2: { type: "vacation", name: "Urlaub" },
-                4: { type: "morning", name: "320.S08 (Bus 91103)" },
-                5: { type: "morning", name: "320.S06 (Bus 91105)" },
-                6: { type: "morning", name: "320.S08 (Bus 91103)" },
-                7: { type: "morning", name: "320.S06 (Bus 91105)" },
-                8: { type: "morning", name: "320.S08 (Bus 91103)" },
-                9: { type: "off", name: "Abwesenheit (unbez.)" },
-                11: { type: "morning", name: "320.S09 (Bus 91103)" },
-                12: { type: "afternoon", name: "320.S05 (Bus 91104)" },
-                13: { type: "morning", name: "320.S07 (Bus 91105)" },
-                15: { type: "vacation", name: "Urlaub" },
-                16: { type: "off", name: "Abwesenheit (unbez.)" },
-                18: { type: "afternoon", name: "320.S05 (Bus 91103)" },
-                19: { type: "afternoon", name: "320.S07 (Bus 91104)" },
-                20: { type: "morning", name: "320.S09 (Bus 91105)" },
-                21: { type: "afternoon", name: "320.S05 (Bus 91103)" },
-                22: { type: "afternoon", name: "320.S07 (Bus 91104)" },
-                24: { type: "morning", name: "320.701 (Bus 91103)" },
-                26: { type: "afternoon", name: "320.S08 (Bus 91104)" },
-                27: { type: "morning", name: "320.S06 (Bus 91103)" },
-                28: { type: "afternoon", name: "320.S08 (Bus 91104)" },
-                29: { type: "morning", name: "320.S06 (Bus 91103)" },
-                30: { type: "vacation", name: "Urlaub" }
-            };
-            
-            const shift = bobanShifts[day];
-            if (shift) {
-                shiftClass = shift.type;
-                shiftName = shift.name;
-            } else {
-                shiftClass = "off";
-                shiftName = t("shift_off");
-            }
-        } else if (isOnVacation) {
-            shiftClass = "vacation";
-            shiftName = t("shift_vacation");
-        } else {
-            const patternIndex = day % 5;
-            if (patternIndex === 1 || patternIndex === 2) {
-                shiftClass = "morning";
-                shiftName = t("shift_morning");
-            } else if (patternIndex === 3 || patternIndex === 4) {
-                shiftClass = "afternoon";
-                shiftName = t("shift_afternoon");
-            } else {
-                shiftClass = "off";
-                shiftName = t("shift_off");
-            }
-        }
-        
-        div.innerHTML = `
-            <span class="day-number">${day}</span>
-            <div class="day-info ${shiftClass}" style="font-size:0.7rem; line-height:1.1; padding:2px;">${shiftName}</div>
-        `;
-        
-        container.appendChild(div);
-    }
-}
 export {
+    activeCalendarMonth,
+    approvedVacationOn,
+    scheduleForDriver,
     renderTomorrowShiftForDriver,
     confirmTomorrowShift,
     renderDispatcherShiftsConfirmation,

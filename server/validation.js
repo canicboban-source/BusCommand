@@ -38,12 +38,17 @@ const createCompanyBody = z.object({
   contactEmail: z.string().trim().email().max(254).optional()
 });
 
+const deleteCompanyBody = z.object({
+  confirmCompanyId: z.string().trim().min(1).max(64)
+});
+
 const createUserBody = z.object({
   email: z.string().trim().email().max(254),
   password: z.string().min(6).max(128),
   name: z.string().trim().max(200).optional(),
   role: z.enum(["superadmin", "company_admin", "dispatcher"]),
-  companyId: z.string().trim().max(64).optional()
+  companyId: z.string().trim().max(64).optional(),
+  groups: z.array(z.string().trim().min(1).max(64)).max(100).optional().default([])
 }).superRefine((data, ctx) => {
   if (data.role !== "superadmin" && !data.companyId) {
     ctx.addIssue({
@@ -52,7 +57,116 @@ const createUserBody = z.object({
       path: ["companyId"]
     });
   }
+  if (data.role === "superadmin" && data.companyId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Superadmin ne smije imati companyId.",
+      path: ["companyId"]
+    });
+  }
 });
+
+const updateUserGroupsBody = z.object({
+  companyId: z.string().trim().min(1).max(64),
+  groups: z.array(z.string().trim().min(1).max(64)).max(100)
+});
+
+const companyDispatcherBody = z.object({
+  companyId: z.string().trim().min(1).max(64),
+  email: z.string().trim().toLowerCase().email().max(254),
+  password: z.string().min(6).max(128)
+    .refine(value => /[A-Za-z]/.test(value) && /\d/.test(value), "Lozinka mora sadrzati slovo i broj."),
+  name: z.string().trim().min(2).max(80),
+  groups: z.array(z.string().trim().min(1).max(64)).min(1).max(100)
+});
+
+const companyDispatcherStatusBody = z.object({
+  companyId: z.string().trim().min(1).max(64),
+  active: z.boolean()
+});
+
+const companyDispatcherActionBody = z.object({
+  companyId: z.string().trim().min(1).max(64)
+});
+
+const companyAdminStatusBody = z.object({
+  active: z.boolean()
+});
+
+const companyProfileSettingsBody = z.object({
+  companyId: z.string().trim().min(1).max(64),
+  country: z.enum(["AT", "RS"]),
+  defaultLanguage: z.enum(["de", "sr", "en"]),
+  contactEmail: z.string().trim().toLowerCase().email().max(254)
+});
+
+const httpsLogoUrl = z.string().trim().max(350000).superRefine((value, ctx) => {
+  if (!value) return;
+  if (value.startsWith("data:")) {
+    if (!/^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(value)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Logo fajl mora biti PNG, JPG, WEBP ili GIF." });
+    }
+    if (value.length > 350000) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Logo fajl je prevelik." });
+    }
+    return;
+  }
+  if (value.length > 2048) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Logo URL je predugacak." });
+    return;
+  }
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "https:") {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Logo URL mora koristiti HTTPS." });
+    }
+    if (parsed.username || parsed.password) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Logo URL ne sme sadrzati pristupne podatke." });
+    }
+  } catch {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Logo URL nije validan." });
+  }
+});
+
+const companyBrandingBody = z.object({
+  companyId: z.string().trim().min(1).max(64),
+  name: z.string().trim().min(2).max(80),
+  primaryColor: z.string().trim().toUpperCase().regex(/^#[0-9A-F]{6}$/, "Primarna boja mora biti u #RRGGBB formatu."),
+  logoUrl: httpsLogoUrl.optional().default("")
+});
+
+const companyGroupFields = {
+  name: z.string().trim().min(2).max(80),
+  description: z.string().trim().max(200).optional().default(""),
+  color: z.string().trim().toUpperCase().regex(/^#[0-9A-F]{6}$/, "Boja grupe mora biti u #RRGGBB formatu.")
+};
+
+const companyGroupBody = z.object({
+  companyId: z.string().trim().min(1).max(64),
+  id: z.string().trim().regex(/^\d{1,6}$/, "ID linije mora imati od 1 do 6 cifara."),
+  ...companyGroupFields
+});
+
+const companyGroupUpdateBody = z.object({
+  companyId: z.string().trim().min(1).max(64),
+  ...companyGroupFields
+});
+
+/** Profile-only driver update — never accepts eid/pin/company_code/credentials. */
+const companyDriverProfileBody = z.object({
+  companyId: z.string().trim().min(1).max(64),
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(80),
+  phone: z.string().trim().min(3).max(40),
+  email: z.string().trim().toLowerCase().email().max(254),
+  groupId: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/)
+}).strict();
+
+/** CA-only: set a new personal login code (PIN) — plaintext returned once. Must match driver login rules. */
+const companyDriverPersonalCodeBody = z.object({
+  companyId: z.string().trim().min(1).max(64),
+  companyCode: z.string().trim().regex(/^\d{5,12}$/, "Lični kod mora imati 5–12 cifara.")
+}).strict();
 
 function validateBody(schema) {
   return (req, res, next) => {
@@ -93,5 +207,17 @@ module.exports = {
   companyStatusBody,
   hashPinBody,
   createCompanyBody,
-  createUserBody
+  deleteCompanyBody,
+  createUserBody,
+  updateUserGroupsBody,
+  companyDispatcherBody,
+  companyDispatcherStatusBody,
+  companyDispatcherActionBody,
+  companyAdminStatusBody,
+  companyProfileSettingsBody,
+  companyBrandingBody,
+  companyGroupBody,
+  companyGroupUpdateBody,
+  companyDriverProfileBody,
+  companyDriverPersonalCodeBody
 };

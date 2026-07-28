@@ -1,14 +1,14 @@
 // BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
-import { activateShiftCatalogForLine, persistCatalogForLine as _persistCatalogForLine } from "../core/line-shift-catalog.js";
+import { activateShiftCatalogForLine } from "../core/line-shift-catalog.js";
 import { showToast } from "../core/utils.js";
 import { rejectDispatcherWithoutGroups } from "../auth/login-ui.js";
 import { persistUserSession, syncUserSession } from "../auth/login-session.js";
 import { clearAllPasswordFields, clearAuthSetupFields } from "../auth/password-fields.js";
 import { openGroupHub } from "../dispatcher/group-hub.js";
 import { showAppLayout } from "../layout/shell.js";
-import { openDataImportHub as _openDataImportHub } from "../layout/navigation.js";
 import { t } from "../ui/i18n.js";
+import { IS_DEMO_MODE } from "../core/runtime-config.js";
 
 function exitImpersonation() {
     // Remove read-only banner
@@ -17,12 +17,12 @@ function exitImpersonation() {
     
     window.currentUser = {
         role: "superadmin",
-        name: "Super Admin",
+        name: t("role_superadmin"),
         id: "superadmin"
     };
     persistUserSession(window.currentUser);
     showAppLayout();
-    showToast("Returned to Super Admin mode");
+    showToast(t("sa_returned_to_mode"));
 }
 
 function saveNewDispatcherPassword() {
@@ -94,6 +94,10 @@ function populateGroupSetupSelect(dispId) {
 }
 
 function createDispatcherGroup() {
+    if (!IS_DEMO_MODE) {
+        showToast(t("error_access_denied"), "error");
+        return false;
+    }
     const idInput = document.getElementById("setup-new-group-id");
     const nameInput = document.getElementById("setup-new-group-name");
     if (!idInput || !nameInput) return;

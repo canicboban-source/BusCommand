@@ -51,7 +51,7 @@ const MODULE_ORDER = [
   "js/dispatcher/reports.js",
   "js/dispatcher/lost-items.js",
   "js/dispatcher/vacations.js",
-  "js/dispatcher/settings.js",
+  "js/admin/company-admin-settings.js",
   "js/data/groups.js",
   "js/data/drivers.js",
   "js/data/buses-routes.js",
@@ -134,7 +134,7 @@ function transformSource(raw, fileRel) {
   return out.join("\n");
 }
 
-/** Spriječi ASI: `}\n(function` se parsira kao poziv funkcije */
+/** Spreči ASI: `}\n(function` se parsira kao poziv funkcije */
 function fixAsiBeforeIife(code) {
   return code.replace(/\}\n(\s*)\(function/g, "};\n$1(function");
 }

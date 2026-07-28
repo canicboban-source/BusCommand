@@ -5,166 +5,251 @@ import { switchSection } from "../layout/navigation.js";
 import { formatDate } from "../maps/helpers.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
+import ApiClient from "../core/api-client.js";
+import { IS_DEMO_MODE } from "../core/runtime-config.js";
 
-function submitDelayReport(event) {
-    event.preventDefault();
-    const time = document.getElementById("delay-time").value;
-    const reason = document.getElementById("delay-reason").value;
-    const desc = document.getElementById("delay-desc").value.trim();
-    
-    const now = new Date();
-    const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-    
-    const newReport = {
-        id: `rep-${Date.now()}`,
-        time: timeString,
-        driver: window.currentUser.name,
-        bus: window.currentUser.bus,
-        type: `Kašnjenje: ${time} minuta`,
-        reason: `${reason}${desc ? ' - ' + desc : ''}`,
-        severity: time >= 20 ? "Srednja" : "Niska",
-        status: "Aktivno"
+const pendingForms = new Set();
+
+function currentDriverIdentity() {
+    if (!window.currentUser || window.currentUser.role !== "driver") return null;
+    return {
+        driverId: window.currentUser.id || window.currentUser.uid || "",
+        driver: window.currentUser.name || "",
+        bus: window.currentUser.bus || "",
+        groupId: window.currentUser.groupId || window.currentUser.lineId || ""
     };
-    
-    window.state.reports.unshift(newReport);
-    saveState();
-    
-    document.getElementById("delay-report-form").reset();
+}
+
+async function persistReport(formId, payload, localReport) {
+    if (pendingForms.has(formId)) return false;
+    pendingForms.add(formId);
+    try {
+        if (!IS_DEMO_MODE) {
+            const result = await ApiClient.createDriverReport(payload);
+            if (!result.success) {
+                showToast(result.error || t("driver_report_failed"), "error");
+                return false;
+            }
+            Object.assign(localReport, result.report || {});
+        }
+        if (!Array.isArray(window.state.reports)) window.state.reports = [];
+        window.state.reports.unshift(localReport);
+        if (IS_DEMO_MODE) saveState();
+        return true;
+    } finally {
+        pendingForms.delete(formId);
+    }
+}
+
+async function submitDelayReport(event) {
+    event.preventDefault();
+    const identity = currentDriverIdentity();
+    if (!identity) return;
+    const minutes = Number(document.getElementById("delay-time")?.value);
+    const reasonCode = document.getElementById("delay-reason")?.value || "";
+    const description = String(document.getElementById("delay-desc")?.value || "").trim();
+    if (![5, 10, 15, 20, 30].includes(minutes) || !/^reason_[a-z]+$/.test(reasonCode)
+        || description.length > 1000) {
+        showToast(t("driver_report_invalid"), "error");
+        return;
+    }
+    const now = new Date();
+    const report = {
+        id: `rep-${Date.now()}`,
+        time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+        ...identity,
+        type: `delay:${minutes}`,
+        reason: t(reasonCode),
+        description,
+        severity: minutes >= 20 ? "sev_medium" : "sev_low",
+        status: "active"
+    };
+    const saved = await persistReport("delay-report-form", {
+        type: report.type, reason: report.reason, description,
+        severity: report.severity, bus: identity.bus
+    }, report);
+    if (!saved) return;
+    document.getElementById("delay-report-form")?.reset();
     showToast(t("js_alert_delay_sent"), "success");
     switchSection("driver-dashboard");
 }
 
-function submitBreakdownReport(event) {
+async function submitBreakdownReport(event) {
     event.preventDefault();
-    const type = document.getElementById("breakdown-type").value;
-    const severity = document.getElementById("breakdown-severity").value;
-    const desc = document.getElementById("breakdown-desc").value.trim();
-    
+    const identity = currentDriverIdentity();
+    if (!identity) return;
+    const breakdownType = document.getElementById("breakdown-type")?.value || "";
+    const severity = document.getElementById("breakdown-severity")?.value || "";
+    const description = String(document.getElementById("breakdown-desc")?.value || "").trim();
+    const validTypes = ["bd_engine", "bd_brakes", "bd_tyre", "bd_doors", "bd_ac", "bd_other"];
+    const validSeverities = ["sev_low", "sev_medium", "sev_critical"];
+    if (!validTypes.includes(breakdownType) || !validSeverities.includes(severity)
+        || description.length < 2 || description.length > 1000) {
+        showToast(t("driver_report_invalid"), "error");
+        return;
+    }
     const now = new Date();
-    const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-    
-    const newReport = {
+    const report = {
         id: `rep-${Date.now()}`,
-        time: timeString,
-        driver: window.currentUser.name,
-        bus: window.currentUser.bus,
-        type: `KVAR: ${type}`,
-        reason: desc,
-        severity: severity,
+        time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+        ...identity,
+        type: `breakdown:${breakdownType}`,
+        reason: t(breakdownType),
+        description,
+        severity,
         status: "active"
     };
-    
-    window.state.reports.unshift(newReport);
-    saveState();
-    
-    document.getElementById("breakdown-report-form").reset();
+    const saved = await persistReport("breakdown-report-form", {
+        type: report.type, reason: report.reason, description,
+        severity, bus: identity.bus
+    }, report);
+    if (!saved) return;
+    document.getElementById("breakdown-report-form")?.reset();
     showToast(t("js_alert_breakdown_sent"), "success");
     switchSection("driver-dashboard");
 }
 
-// --- PRIJAVA IZGUBLJENIH STVARI ---
-function submitLostItem(event) {
+async function submitLostItem(event) {
     event.preventDefault();
-    const type = document.getElementById("lost-item-type").value; // već je ključ (lost_wallet itd.)
-    const location = document.getElementById("lost-item-location").value.trim();
-    const desc = document.getElementById("lost-item-desc").value.trim();
-
+    const identity = currentDriverIdentity();
+    if (!identity || pendingForms.has("lost-item-form")) return;
+    const type = document.getElementById("lost-item-type")?.value || "";
+    const location = String(document.getElementById("lost-item-location")?.value || "").trim();
+    const description = String(document.getElementById("lost-item-desc")?.value || "").trim();
+    const validTypes = ["lost_tech", "lost_wallet", "lost_keys", "lost_bag", "lost_clothes", "lost_other"];
+    if (!validTypes.includes(type) || location.length < 2 || location.length > 200
+        || description.length < 2 || description.length > 1000) {
+        showToast(t("driver_lost_item_invalid") || t("driver_report_invalid"), "error");
+        return;
+    }
     const now = new Date();
-    const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
-    const newItem = {
+    const item = {
         id: `lost-${Date.now()}`,
-        time: timeString,
-        driver: window.currentUser.name,
-        bus: window.currentUser.bus,
-        type: type,           // translation ključ: "lost_wallet", "lost_tech", itd.
-        location: location,
-        desc: desc,
-        status: "status_in_depot"  // translation ključ
+        time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+        ...identity,
+        type, location, description,
+        desc: description,
+        status: "in_depot"
     };
-    
-    window.state.lostItems.unshift(newItem);
-    saveState();
-    
-    document.getElementById("lost-item-form").reset();
-    showToast(t("js_alert_lost_sent"), "success");
-    switchSection("driver-dashboard");
+    pendingForms.add("lost-item-form");
+    try {
+        if (!IS_DEMO_MODE) {
+            const result = await ApiClient.createDriverLostItem({ type, location, description, bus: identity.bus });
+            if (!result.success) {
+                showToast(result.error || t("driver_lost_item_failed"), "error");
+                return;
+            }
+            Object.assign(item, result.item || {});
+        }
+        if (!Array.isArray(window.state.lostItems)) window.state.lostItems = [];
+        window.state.lostItems.unshift(item);
+        if (IS_DEMO_MODE) saveState();
+        document.getElementById("lost-item-form")?.reset();
+        showToast(t("js_alert_lost_sent"), "success");
+        switchSection("driver-dashboard");
+    } finally {
+        pendingForms.delete("lost-item-form");
+    }
 }
 
-// --- GODIŠNJI ODMORI ---
+function vacationDays(start, end) {
+    return Math.floor((Date.parse(`${end}T00:00:00.000Z`) - Date.parse(`${start}T00:00:00.000Z`)) / 86400000) + 1;
+}
+
 function submitVacationRequest(event) {
     event.preventDefault();
-    const startVal = document.getElementById("vacation-start").value;
-    const endVal = document.getElementById("vacation-end").value;
-    const type = document.getElementById("vacation-type").value;
-    const reason = document.getElementById("vacation-reason").value.trim();
-    
-    if (new Date(startVal) > new Date(endVal)) {
+    const identity = currentDriverIdentity();
+    if (!identity || pendingForms.has("vacation-form")) return;
+    const startVal = document.getElementById("vacation-start")?.value || "";
+    const endVal = document.getElementById("vacation-end")?.value || "";
+    const type = document.getElementById("vacation-type")?.value || "";
+    const reason = String(document.getElementById("vacation-reason")?.value || "").trim();
+    const days = vacationDays(startVal, endVal);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startVal) || !/^\d{4}-\d{2}-\d{2}$/.test(endVal)
+        || !["lt_vacation", "lt_paid", "lt_days"].includes(type)
+        || !Number.isInteger(days) || days < 1 || days > 366 || reason.length > 1000) {
         showToast(t("js_alert_date_err"), "error");
         return;
     }
-    
-    const diffTime = Math.abs(new Date(endVal) - new Date(startVal));
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    
-    const newRequest = {
+    const request = {
         id: `vac-${Date.now()}`,
-        driver: window.currentUser.name,
-        type: type,
-        start: startVal,
-        end: endVal,
-        days: diffDays,
-        reason: reason || "Bez dodatnog obrazloženja",
-        status: "Na čekanju"
+        ...identity,
+        type, start: startVal, end: endVal, days,
+        reason,
+        status: "pending"
     };
-    
-    showConfirm(
-        t("confirm_vacation_request") || "Submit vacation request?",
-        function() {
-            window.state.vacations.unshift(newRequest);
-            saveState();
-            document.getElementById("vacation-form").reset();
+    showConfirm(t("confirm_vacation_request"), async function() {
+        if (pendingForms.has("vacation-form")) return;
+        pendingForms.add("vacation-form");
+        try {
+            if (!IS_DEMO_MODE) {
+                const result = await ApiClient.createDriverVacation({ type, start: startVal, end: endVal, reason });
+                if (!result.success) {
+                    showToast(result.error || t("driver_vacation_failed"), "error");
+                    return;
+                }
+                Object.assign(request, result.vacation || {});
+            } else {
+                const overlap = (window.state.vacations || []).some(vacation =>
+                    (vacation.driverId ? vacation.driverId === identity.driverId : vacation.driver === identity.driver)
+                    && ["pending", "approved", "Na čekanju", "Odobreno"].includes(vacation.status)
+                    && startVal <= vacation.end && endVal >= vacation.start
+                );
+                if (overlap) {
+                    showToast(t("driver_vacation_overlap"), "error");
+                    return;
+                }
+            }
+            if (!Array.isArray(window.state.vacations)) window.state.vacations = [];
+            window.state.vacations.unshift(request);
+            if (IS_DEMO_MODE) saveState();
+            document.getElementById("vacation-form")?.reset();
             showToast(t("js_alert_vacation_sent"), "success");
             renderDriverVacationHistory();
-        },
-        { danger: false, title: t("nav_vacation") || "Odmor", confirmText: t("btn_yes") || "Da" }
-    );
+        } finally {
+            pendingForms.delete("vacation-form");
+        }
+    }, { danger: false, title: t("nav_vacation"), confirmText: t("btn_yes") });
 }
 
 function renderDriverVacationHistory() {
     const tbody = document.getElementById("driver-vacation-history");
-    tbody.innerHTML = "";
-    
-    const myRequests = window.state.vacations.filter(v => v.driver === window.currentUser.name);
-    
-    if (myRequests.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">${t("js_no_history")}</td></tr>`;
+    if (!tbody) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const startInput = document.getElementById("vacation-start");
+    const endInput = document.getElementById("vacation-end");
+    if (startInput) startInput.min = today;
+    if (endInput) endInput.min = startInput?.value || today;
+    tbody.replaceChildren();
+    const requests = (window.state.vacations || []).filter(v =>
+        v.driverId ? v.driverId === (window.currentUser.id || window.currentUser.uid) : v.driver === window.currentUser.name
+    );
+    if (requests.length === 0) {
+        const row = tbody.insertRow();
+        const cell = row.insertCell();
+        cell.colSpan = 4;
+        cell.style.textAlign = "center";
+        cell.style.color = "var(--text-muted)";
+        cell.textContent = t("js_no_history");
         return;
     }
-    
-    myRequests.forEach(req => {
-        const tr = document.createElement("tr");
-        
-        let statusBadge = "";
-        if (req.status === "Na čekanju") statusBadge = `<span class="badge pending">${t("js_status_pending")}</span>`;
-        else if (req.status === "Odobreno") statusBadge = `<span class="badge approved">${t("js_status_approved")}</span>`;
-        else statusBadge = `<span class="badge rejected">${t("js_status_rejected")}</span>`;
-        
-        let translatedType = t(req.type);
-        
-        tr.innerHTML = `
-            <td><strong>${translatedType}</strong></td>
-            <td>${formatDate(req.start)} - ${formatDate(req.end)}</td>
-            <td>${req.days} ${t("table_days").toLowerCase()}</td>
-            <td>${statusBadge}</td>
-        `;
-        tbody.appendChild(tr);
+    requests.forEach(request => {
+        const row = tbody.insertRow();
+        const typeCell = row.insertCell();
+        const typeStrong = document.createElement("strong");
+        typeStrong.textContent = t(request.type);
+        typeCell.appendChild(typeStrong);
+        row.insertCell().textContent = `${formatDate(request.start)} - ${formatDate(request.end)}`;
+        row.insertCell().textContent = `${request.days} ${t("table_days").toLowerCase()}`;
+        const statusCell = row.insertCell();
+        const badge = document.createElement("span");
+        const status = request.status === "Na čekanju" ? "pending"
+            : request.status === "Odobreno" ? "approved"
+                : request.status === "Odbijeno" ? "rejected" : request.status;
+        badge.className = `badge ${["pending", "approved", "rejected"].includes(status) ? status : "pending"}`;
+        badge.textContent = t(`js_status_${["pending", "approved", "rejected"].includes(status) ? status : "pending"}`);
+        statusCell.appendChild(badge);
     });
 }
-export {
-    submitDelayReport,
-    submitBreakdownReport,
-    submitLostItem,
-    submitVacationRequest,
-    renderDriverVacationHistory
-};
+
+export { submitDelayReport, submitBreakdownReport, submitLostItem, submitVacationRequest, renderDriverVacationHistory };

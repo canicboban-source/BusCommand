@@ -5,6 +5,10 @@ import { getScheduleByKey, todayDateStr } from "./utils.js";
 
 const BEREITSCHAFT_SLOT = 1;
 
+function driverIdForName(driverName) {
+    return window.state.drivers?.find(driver => driver.name === driverName)?.id || null;
+}
+
 function getActiveBereitschaftCode() {
     return getBereitschaftCode(getActiveLineId());
 }
@@ -67,6 +71,7 @@ function applyBereitschaftForMonth(driverName, month) {
     if (!schedule) {
         schedule = {
             id: scheduleKey,
+            driverId: driverIdForName(driverName),
             driverName,
             month,
             fileName: "",
@@ -184,24 +189,39 @@ function findRouteForDriver(driver, routeCode) {
 function getShiftForDriverDate(driverName, dateStr) {
     ensureShiftsArray();
 
-    const direct = window.state.shifts.find(s => s.driverName === driverName && s.date === dateStr);
-    if (direct) return { ...direct, source: "override" };
+    const driverId = driverIdForName(driverName);
+    const direct = window.state.shifts.find(s =>
+        s.date === dateStr
+        && (s.driverName === driverName || (driverId && s.driverId === driverId))
+    );
+    if (direct) {
+        return {
+            ...direct,
+            revision: Number.isInteger(direct.revision) ? direct.revision : 0,
+            source: "override"
+        };
+    }
 
     const parts = dateStr.split("-").map(Number);
     if (parts.length !== 3) return null;
     const [year, month, day] = parts;
     const yearMonth = `${year}-${String(month).padStart(2, "0")}`;
-    const schedule = getScheduleByKey(`${driverName}_${yearMonth}`);
+    const schedule = (driverId && getScheduleByKey(`${driverId}_${yearMonth}`))
+        || getScheduleByKey(`${driverName}_${yearMonth}`);
 
     if (schedule?.parsedShifts?.[day]) {
         const s = schedule.parsedShifts[day];
         return {
+            driverId: driverId || schedule.driverId || null,
             driverName,
             date: dateStr,
             type: s.type || "off",
             name: s.name || "",
             bus: s.bus || parseBusFromText(s.name),
             routeCode: s.routeCode || parseRouteCodeFromText(s.name),
+            start: s.start || null,
+            end: s.end || null,
+            revision: 0,
             source: "schedule"
         };
     }
@@ -215,7 +235,7 @@ function getCurrentShiftForDriver(driverName, yearMonthStr, dayNum) {
     return { type: "off", name: "Frei" };
 }
 
-function setShiftForDriverDate(driverName, dateStr, { type, name, bus, routeCode, syncSchedule = true }) {
+function setShiftForDriverDate(driverName, dateStr, { type, name, bus, routeCode, start, end, revision, syncSchedule = true }) {
     ensureShiftsArray();
 
     window.state.shifts = window.state.shifts.filter(s => !(s.driverName === driverName && s.date === dateStr));
@@ -223,13 +243,17 @@ function setShiftForDriverDate(driverName, dateStr, { type, name, bus, routeCode
     if (type && type !== "clear") {
         const label = name || SHIFT_TYPE_LABELS[type] || type;
         window.state.shifts.push({
-            id: `shf-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            id: `shf-${driverIdForName(driverName) || "x"}-${dateStr}`,
+            driverId: driverIdForName(driverName),
             driverName,
             date: dateStr,
             type,
             name: label,
             bus: bus || parseBusFromText(label) || null,
             routeCode: routeCode || parseRouteCodeFromText(label) || null,
+            start: start || null,
+            end: end || null,
+            revision: Number.isInteger(revision) ? revision : 0,
             confirmedByDriver: false,
             assignedBy: window.currentUser?.name || "Dispečer",
             assignedAt: todayDateStr()
@@ -237,19 +261,22 @@ function setShiftForDriverDate(driverName, dateStr, { type, name, bus, routeCode
     }
 
     if (syncSchedule) {
-        syncShiftToMonthlyPlan(driverName, dateStr, type, name);
+        syncShiftToMonthlyPlan(driverName, dateStr, type, name, start, end, bus, routeCode);
     }
 }
 
-function syncShiftToMonthlyPlan(driverName, dateStr, type, name) {
+function syncShiftToMonthlyPlan(driverName, dateStr, type, name, start, end, bus = null, routeCode = null) {
     const parts = dateStr.split("-").map(Number);
     if (parts.length !== 3) return;
     const [year, month, day] = parts;
     const yearMonth = `${year}-${String(month).padStart(2, "0")}`;
-    const scheduleKey = `${driverName}_${yearMonth}`;
+    const driverId = driverIdForName(driverName);
+    const scheduleKeyById = driverId ? `${driverId}_${yearMonth}` : null;
+    const scheduleKeyByName = `${driverName}_${yearMonth}`;
 
     if (!Array.isArray(window.state.schedules)) window.state.schedules = [];
-    let schedule = window.state.schedules.find(s => s.id === scheduleKey && s.parsedShifts);
+    let schedule = (scheduleKeyById && window.state.schedules.find(s => s.id === scheduleKeyById && s.parsedShifts))
+        || window.state.schedules.find(s => s.id === scheduleKeyByName && s.parsedShifts);
 
     if (!type || type === "clear") {
         if (schedule?.parsedShifts) delete schedule.parsedShifts[day];
@@ -258,7 +285,8 @@ function syncShiftToMonthlyPlan(driverName, dateStr, type, name) {
 
     if (!schedule) {
         schedule = {
-            id: scheduleKey,
+            id: scheduleKeyById || scheduleKeyByName,
+            driverId,
             driverName,
             month: yearMonth,
             fileName: "",
@@ -267,14 +295,19 @@ function syncShiftToMonthlyPlan(driverName, dateStr, type, name) {
             parsedShifts: {}
         };
         window.state.schedules.push(schedule);
+    } else if (scheduleKeyById && schedule.id !== scheduleKeyById) {
+        schedule.id = scheduleKeyById;
+        schedule.driverId = driverId;
     }
 
     const label = name || SHIFT_TYPE_LABELS[type] || type;
     schedule.parsedShifts[day] = {
         type,
         name: label,
-        bus: parseBusFromText(label),
-        routeCode: parseRouteCodeFromText(label)
+        bus: bus || parseBusFromText(label),
+        routeCode: routeCode || parseRouteCodeFromText(label),
+        start: start || null,
+        end: end || null
     };
 }
 
@@ -374,6 +407,7 @@ function saveMonthlyPlan(driverName, month, parsedShifts, fileMeta = {}) {
     const scheduleKey = `${driverName}_${month}`;
     const entry = {
         id: scheduleKey,
+        driverId: driverIdForName(driverName),
         driverName,
         month,
         fileName: fileMeta.fileName || `plan-${driverName}-${month}`,

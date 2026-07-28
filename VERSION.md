@@ -11,7 +11,7 @@ Snapshot sačuvan: **9. jul 2026.**
 - **Group Hub** — upravljanje po formiranoj liniji/grupi (310, 105, bilo koja nova)
 - **Mesečni planovi** — pregled i modal „Uredi dan“ (dan, tip smene, šifra, autobus)
 - **Per-line shift catalog** (`js/core/line-shift-catalog.js`) — svaka grupa ima svoj šifarnik (`{linija}.F01`, `{linija}.X2`, …)
-- **Blaguss uvoz** — CSV vozači + Excel Dienstplan, dinamički po aktivnoj liniji
+- **Paket uvoz** — CSV vozači + Excel mesečni plan, dinamički po aktivnoj liniji
 - **Group membership** — vozači, autobusi, podgrupe po liniji
 
 ## Pokretanje

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BusCommand — Promo reel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0A1019;
+      --panel: #141D2E;
+      --text: #F1F5F9;
+      --muted: #94A3B8;
+      --blue: #2563EB;
+      --blue-soft: rgba(37, 99, 235, 0.16);
+      --line: rgba(148, 163, 184, 0.14);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Outfit, system-ui, sans-serif;
+      overflow: hidden;
+    }
+    body {
+      background:
+        radial-gradient(ellipse at 20% 10%, rgba(37, 99, 235, 0.18), transparent 45%),
+        radial-gradient(ellipse at 80% 90%, rgba(30, 64, 175, 0.14), transparent 40%),
+        var(--bg);
+    }
+    .stage {
+      height: 100%;
+      width: 100%;
+      position: relative;
+      display: grid;
+      place-items: center;
+      padding: 48px 24px 96px;
+    }
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 48px 24px 96px;
+      opacity: 0;
+      transform: translateY(18px);
+      pointer-events: none;
+      transition: opacity .55s ease, transform .55s ease;
+    }
+    .slide.is-active {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .card {
+      width: min(920px, 94vw);
+      background: linear-gradient(160deg, rgba(26, 36, 56, 0.92), rgba(20, 29, 46, 0.88));
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: clamp(28px, 4vw, 48px);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    }
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      text-align: center;
+    }
+    .brand img {
+      width: 88px;
+      height: 88px;
+      border-radius: 18px;
+      object-fit: contain;
+    }
+    .brand h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+    .eyebrow {
+      color: var(--blue);
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    h2 {
+      font-size: clamp(1.55rem, 3.5vw, 2.2rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+    p.lead {
+      color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.15rem);
+      line-height: 1.55;
+      max-width: 46ch;
+    }
+    .hero p.lead { text-align: center; margin-inline: auto; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 28px;
+    }
+    .pill {
+      background: var(--blue-soft);
+      border: 1px solid rgba(37, 99, 235, 0.28);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .pill span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 0.82rem;
+    }
+    .chrome {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      padding: 16px 20px 20px;
+      background: linear-gradient(transparent, rgba(10, 16, 25, 0.92) 35%);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 20;
+      transition: opacity .25s ease, transform .25s ease;
+    }
+    body.recording .chrome {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+    }
+    .progress {
+      height: 3px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress > i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: var(--blue);
+      border-radius: inherit;
+      transition: width .05s linear;
+    }
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .dots { display: flex; gap: 8px; align-items: center; }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+    }
+    .dot.is-on { background: var(--blue); }
+    .controls { display: flex; gap: 8px; align-items: center; }
+    button {
+      font: inherit;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+    button:hover { border-color: rgba(37,99,235,0.45); }
+    button.primary {
+      background: var(--blue);
+      border-color: transparent;
+    }
+    .hint {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .cta-url {
+      margin-top: 22px;
+      font-weight: 700;
+      color: #93C5FD;
+      font-size: 1.05rem;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .slide { transition: none; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" id="stage" aria-live="polite">
+    <section class="slide is-active" data-duration="5500">
+      <div class="card brand hero">
+        <img src="../brand/logo-hero.png" width="88" height="88" alt="BusCommand">
+        <h1>BusCommand</h1>
+        <p class="lead">Operativna platforma za autobuske firme — plan, ljudi, akcija.</p>
+      </div>
+    </section>
+
+    <section class="slide" data-duration="7000">
+      <div class="card">
+        <div class="eyebrow">Company Admin</div>
+        <h2>Firma pod kontrolom</h2>
+        <p class="lead">Grupe, tim dispečera, vozači, brending i uvoz zvaničnog plana smena — jedan tenant, jedna istina.</p>
+        <div class="grid">
+          <div class="pill">Grupe / linije<span>Organizacija voznog rada</span></div>
+          <div class="pill">Tim<span>Dispečeri i dozvole</span></div>
+          <div class="pill">Vozači<span>Nalozi i aktivacija</span></div>
+          <div class="pill">Plan smena<span>Uvoz i verzije</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-duration="7500">
+      <div class="card">
+        <div class="eyebrow">Dispečer</div>
+        <h2>Šta čeka akciju — odmah</h2>
+        <p class="lead">Dnevni plan linije, dodela smena, poruke, prijave i odsustva. Fokus na operativu, ne na administraciju.</p>
+        <div class="grid">
+          <div class="pill">Ops centar<span>Pending stavke</span></div>
+          <div class="pill">Group Hub<span>Linija i plan</span></div>
+          <div class="pill">Poruke<span>Do vozača</span></div>
+          <div class="pill">Prijave<span>Kašnjenja, kvarovi</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-duration="7000">
+      <div class="card">
+        <div class="eyebrow">Vozač PWA</div>
+        <h2>Jedan dodir. Bez buke.</h2>
+        <p class="lead">Današnja smena, potvrda, poruka dispečera, brze prijave i SOS — na telefonu, jasno i brzo.</p>
+        <div class="grid">
+          <div class="pill">Plan dana<span>Šta vozim</span></div>
+          <div class="pill">Potvrda<span>Jedan tap</span></div>
+          <div class="pill">Prijave<span>Kvar / kašnjenje</span></div>
+          <div class="pill">SOS<span>Hitna pomoć</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-duration="6500">
+      <div class="card">
+        <div class="eyebrow">Bezbednost</div>
+        <h2>Uloge. Tenant. Zaštita.</h2>
+        <p class="lead">Svako vidi samo svoje. Login kodovi nisu javni. Nema liste vozača na otvorenom API-ju.</p>
+        <div class="grid">
+          <div class="pill">RBAC<span>SA / CA / Dispo / Vozač</span></div>
+          <div class="pill">Tenant<span>Izolacija firmi</span></div>
+          <div class="pill">Aktivacija<span>OTP tok</span></div>
+          <div class="pill">Audit<span>Trag aktivnosti</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-duration="8000">
+      <div class="card brand hero">
+        <img src="../brand/logo-hero.png" width="88" height="88" alt="">
+        <h1>BusCommand</h1>
+        <p class="lead">Brže do odluke. Mirnije kroz smenu.</p>
+        <p class="cta-url">buscommand.com</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="chrome" id="chrome">
+    <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+    <div class="bar">
+      <div class="dots" id="dots"></div>
+      <div class="controls">
+        <span class="hint">R = sakrij kontrole (za snimanje) · Space = pauza · ← →</span>
+        <button type="button" id="prev" aria-label="Prethodni">←</button>
+        <button type="button" id="play" class="primary">Pauza</button>
+        <button type="button" id="next" aria-label="Sledeći">→</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const slides = [...document.querySelectorAll(".slide")];
+    const dotsEl = document.getElementById("dots");
+    const bar = document.getElementById("bar");
+    const playBtn = document.getElementById("play");
+    let i = 0;
+    let playing = true;
+    let started = performance.now();
+    let elapsedBeforePause = 0;
+    let raf = 0;
+
+    slides.forEach((_, idx) => {
+      const d = document.createElement("span");
+      d.className = "dot" + (idx === 0 ? " is-on" : "");
+      dotsEl.appendChild(d);
+    });
+    const dots = [...dotsEl.children];
+
+    function duration() {
+      return Number(slides[i].dataset.duration || 6000);
+    }
+
+    function show(index) {
+      i = (index + slides.length) % slides.length;
+      slides.forEach((s, n) => s.classList.toggle("is-active", n === i));
+      dots.forEach((d, n) => d.classList.toggle("is-on", n === i));
+      started = performance.now();
+      elapsedBeforePause = 0;
+      bar.style.width = "0%";
+    }
+
+    function tick(now) {
+      if (!playing) return;
+      const t = now - started + elapsedBeforePause;
+      const d = duration();
+      const p = Math.min(1, t / d);
+      bar.style.width = (p * 100).toFixed(2) + "%";
+      if (p >= 1) {
+        show(i + 1);
+      }
+      raf = requestAnimationFrame(tick);
+    }
+
+    function play() {
+      playing = true;
+      playBtn.textContent = "Pauza";
+      started = performance.now();
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(tick);
+    }
+
+    function pause() {
+      playing = false;
+      playBtn.textContent = "Play";
+      elapsedBeforePause += performance.now() - started;
+      cancelAnimationFrame(raf);
+    }
+
+    playBtn.addEventListener("click", () => (playing ? pause() : play()));
+    document.getElementById("prev").addEventListener("click", () => { show(i - 1); if (playing) play(); });
+    document.getElementById("next").addEventListener("click", () => { show(i + 1); if (playing) play(); });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === " ") { e.preventDefault(); playing ? pause() : play(); }
+      if (e.key === "ArrowRight") { show(i + 1); if (playing) play(); }
+      if (e.key === "ArrowLeft") { show(i - 1); if (playing) play(); }
+      if (e.key === "r" || e.key === "R") {
+        document.body.classList.toggle("recording");
+      }
+    });
+
+    play();
+  </script>
+</body>
+</html>

@@ -44,7 +44,7 @@ writeModule("js/dispatcher/msg-compose.js", slice(dispMsg, 2, 218));
 writeModule("js/dispatcher/reports.js", slice(dispMsg, 220, 309));
 writeModule("js/dispatcher/lost-items.js", slice(dispMsg, 311, 365));
 writeModule("js/dispatcher/vacations.js", slice(dispMsg, 367, 417));
-writeModule("js/dispatcher/settings.js", slice(dispMsg, 419, 438));
+writeModule("js/admin/company-admin-settings.js", slice(dispMsg, 419, 438));
 archive(dispMsg);
 
 // --- dispatcher/dashboard.js ---

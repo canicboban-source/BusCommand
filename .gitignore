@@ -17,12 +17,18 @@ desktop.ini
 # Editor
 .vscode/
 .idea/
+.claude/
+.cursor/
+!.cursor/rules/
+!.cursor/rules/**
 *.swp
 *.swo
 
 # Env (tajne)
 .env
 .env.local
+.env.*
+!.env.example
 
 # Temp / build
 dist/
@@ -30,3 +36,7 @@ build/
 .cache/
 test-results/
 playwright-report/
+/buscommand.zip
+firestore-debug.log
+firebase-debug.log
+.firebase/

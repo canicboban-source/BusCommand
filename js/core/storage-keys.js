@@ -10,7 +10,9 @@ export const STORAGE = {
     THEME: "buscommand_theme",
     DEMO_STATE: "buscommand_demo_state_v3",
     SPOKEN_MESSAGES: "buscommand_spoken_messages",
-    PRETRIP_DONE: "buscommand_pretrip_done"
+    PRETRIP_DONE: "buscommand_pretrip_done",
+    /** Device-local last successful driver tenant (login bootstrap only). */
+    LAST_DRIVER_COMPANY: "buscommand_last_driver_company"
 };
 
 const LEGACY = {

@@ -68,7 +68,7 @@ export default [
       }
     },
     rules: {
-      "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }],
+      "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
       "no-console": "off",
       "no-empty": ["error", { allowEmptyCatch: true }],
       "no-constant-condition": "warn",
@@ -110,16 +110,6 @@ export default [
     files: ["tests/e2e/**/*.js"],
     rules: {
       "no-undef": "off"
-    }
-  },
-  {
-    files: ["tests/**/*.mjs"],
-    languageOptions: {
-      sourceType: "module",
-      globals: {
-        ...globals.node,
-        window: "writable"
-      }
     }
   }
 ];
