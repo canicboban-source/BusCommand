@@ -179,13 +179,17 @@ test("Firestore does not permit bypassing validated driver write endpoints", () 
   const reportsBlock = rules.match(/match \/companies\/\{companyId\}\/reports\/\{reportId\}[\s\S]*?\n {4}}/)[0];
   const sosBlock = rules.match(/match \/companies\/\{companyId\}\/sos\/\{sosId\}[\s\S]*?\n {4}}/)[0];
   const vacationsBlock = rules.match(/match \/companies\/\{companyId\}\/vacations\/\{vacId\}[\s\S]*?\n {4}}/)[0];
+  const messagesBlock = rules.match(/match \/companies\/\{companyId\}\/messages\/\{msgId\}[\s\S]*?\n {4}}/)[0];
+  const legacyAdminsBlock = rules.match(/match \/companies\/\{companyId\}\/company_admins\/\{adminId\}[\s\S]*?\n {4}}/)[0];
   assert.match(reportsBlock, /allow create, update, delete: if false/);
   assert.match(reportsBlock, /isDispatcherAssignedGroup/);
   assert.match(sosBlock, /allow create, update, delete: if false/);
   assert.doesNotMatch(sosBlock, /allow create: if isDriver\(companyId\)/);
   assert.doesNotMatch(sosBlock, /allow create: if isCompanyStaff\(companyId\)/);
-  assert.match(vacationsBlock, /allow create: if isCompanyStaff\(companyId\)/);
-  assert.doesNotMatch(vacationsBlock, /allow create: if isCompanyMember\(companyId\)/);
+  assert.match(vacationsBlock, /allow create, update, delete: if false/);
+  assert.match(messagesBlock, /allow delete: if false/);
+  assert.doesNotMatch(messagesBlock, /isCompanyStaff\(companyId\).*allow update/);
+  assert.match(legacyAdminsBlock, /allow write: if false/);
 });
 
 test("missing credentials fail closed even when the public profile contains legacy secrets", async () => {
