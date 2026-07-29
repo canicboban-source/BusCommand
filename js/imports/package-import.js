@@ -12,6 +12,7 @@ import { renderDispatcherDataHub } from "../dispatcher/data-hub.js";
 import { renderGroupHub } from "../dispatcher/group-hub.js";
 import { parseDriverCsv } from "./driver-csv-import.js";
 import { parseMonthlyPlanWorkbook, readExcelWorkbook } from "./monthly-plan-excel.js";
+import { isMonthlyPlanCsv, parseMonthlyPlanCsv } from "./monthly-plan-csv.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
 import ApiClient from "../core/api-client.js";
@@ -21,6 +22,47 @@ import { loadStateFromFirestore } from "../core/firebase-service.js";
 let _pendingPackage = null;
 
 const GROUP_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#ec4899", "#14b8a6"];
+
+function normalizePersonName(value) {
+    return String(value || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
+}
+
+function validatePlanBatch(plans, knownDriverNames = []) {
+    const errors = [];
+    const months = new Set();
+    const assignments = new Set();
+    const known = new Set(knownDriverNames.map(normalizePersonName).filter(Boolean));
+
+    for (const item of plans || []) {
+        const parsed = item?.parsed || item;
+        if (!parsed?.month || !parsed?.rowCount) {
+            errors.push("Plan nema ispravan mesec ili smene.");
+            continue;
+        }
+        months.add(parsed.month);
+        for (const [driverName, data] of Object.entries(parsed.byDriver || {})) {
+            const normalizedName = normalizePersonName(driverName);
+            if (!normalizedName) {
+                errors.push("Plan sadrži smenu bez imena vozača.");
+                continue;
+            }
+            if (known.size && !known.has(normalizedName)) {
+                errors.push(`Vozač iz plana nije pronađen: ${driverName}.`);
+            }
+            for (const day of Object.keys(data?.parsedShifts || {})) {
+                const key = `${parsed.month}|${normalizedName}|${day}`;
+                if (assignments.has(key)) {
+                    errors.push(`Dupla smena u paketu: ${driverName}, ${parsed.month}-${String(day).padStart(2, "0")}.`);
+                }
+                assignments.add(key);
+            }
+        }
+    }
+    if (months.size > 1) {
+        errors.push(`Jedan paket može sadržati samo jedan mesec: ${[...months].sort().join(", ")}.`);
+    }
+    return [...new Set(errors)];
+}
 
 function ensureGroupByName(name, lineId) {
     const lid = lineId || getActiveLineId();
@@ -168,7 +210,7 @@ function renderPackageImportPreview() {
             ${p.errors.length ? `<p style="color:#fcd34d;font-size:0.8rem;margin-top:12px;">${p.errors.join(" · ")}</p>` : ""}
             ${p.driverNames.length ? `<p style="font-size:0.78rem;color:var(--text-muted);margin-top:10px;">${p.driverNames.join(", ")}</p>` : ""}
             <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
-                <button type="button" class="btn-primary" ${actionAttr("confirmPackageImport")}>
+                <button type="button" class="btn-primary" ${p.errors.length ? "disabled aria-disabled=\"true\"" : actionAttr("confirmPackageImport")}>
                     <i data-lucide="save"></i> ${t("btn_save_package") || "Save package"}
                 </button>
                 <button type="button" class="btn-secondary" ${actionAttr("clearPackageImport")}>${t("btn_clear_preview") || "Clear"}</button>
@@ -192,7 +234,7 @@ async function processPackageFiles(fileList) {
 
     const pkg = {
         drivers: null,
-        plan: null,
+        plans: [],
         driverCount: 0,
         planRows: 0,
         planDrivers: 0,
@@ -209,31 +251,47 @@ async function processPackageFiles(fileList) {
         try {
             if (name.endsWith(".csv")) {
                 const text = await file.text();
-                pkg.driverCsvText = text;
-                if (IS_DEMO_MODE) {
+                if (isMonthlyPlanCsv(text)) {
+                    const parsed = parseMonthlyPlanCsv(text, getActiveLineId());
+                    pkg.plans.push({
+                        parsed,
+                        fileMeta: { fileName: file.name, fileType: file.type, fileData: "" }
+                    });
+                    pkg.planRows += parsed.rowCount;
+                    pkg.planDrivers += Object.keys(parsed.byDriver || {}).length;
+                    pkg.month = pkg.month || parsed.month;
+                    pkg.driverNames.push(...Object.keys(parsed.byDriver || {}));
+                } else if (window.currentUser?.role !== "company-admin" && !IS_DEMO_MODE) {
+                    pkg.errors.push(t("pkg_driver_csv_admin_only"));
+                } else if (pkg.driverCsvText) {
+                    pkg.errors.push(t("pkg_only_one_driver_csv") || `Only one driver CSV is allowed: ${file.name}`);
+                } else if (IS_DEMO_MODE) {
+                    pkg.driverCsvText = text;
                     const parsed = parseDriverCsv(text);
                     if (parsed.errors?.length) pkg.errors.push(...parsed.errors);
                     pkg.drivers = parsed;
                     pkg.driverCount = parsed.drivers.length;
                 } else {
+                    pkg.driverCsvText = text;
                     pkg.driverCount = Math.max(0, text.split(/\r?\n/).filter(line => line.trim()).length - 1);
                     pkg.drivers = { drivers: pkg.driverCount ? [{ secureServerImport: true }] : [] };
                 }
-            } else if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+            } else if (name.endsWith(".xlsx")) {
                 const wb = await readExcelWorkbook(file);
                 const parsed = parseMonthlyPlanWorkbook(wb, getActiveLineId());
                 if (parsed.errors?.length) pkg.errors.push(...parsed.errors);
-                pkg.plan = parsed;
-                pkg.planRows = parsed.rowCount;
-                pkg.planDrivers = Object.keys(parsed.byDriver || {}).length;
-                pkg.catalogCount = Object.keys(parsed.shiftCatalog || {}).length;
-                pkg.month = parsed.month;
-                pkg.driverNames = Object.keys(parsed.byDriver || {});
-                pkg.fileMeta = {
+                if (!parsed.rowCount) continue;
+                const fileMeta = {
                     fileName: file.name,
                     fileType: file.type,
                     fileData: await readFileAsDataURL(file)
                 };
+                pkg.plans.push({ parsed, fileMeta });
+                pkg.planRows += parsed.rowCount;
+                pkg.planDrivers += Object.keys(parsed.byDriver || {}).length;
+                pkg.catalogCount += Object.keys(parsed.shiftCatalog || {}).length;
+                pkg.month = pkg.month || parsed.month;
+                pkg.driverNames.push(...Object.keys(parsed.byDriver || {}));
             } else {
                 pkg.errors.push(t("pkg_fmt_skipped", { file: file.name }));
             }
@@ -242,6 +300,9 @@ async function processPackageFiles(fileList) {
             pkg.errors.push(`${file.name}: ${err.message}`);
         }
     }
+
+    pkg.errors.push(...validatePlanBatch(pkg.plans));
+    pkg.driverNames = [...new Set(pkg.driverNames)];
 
     if (!pkg.driverCount && !pkg.planRows) {
         showToast(t("pkg_not_recognized"), "error");
@@ -279,6 +340,11 @@ async function confirmPackageImport() {
     const p = _pendingPackage;
     const msg = [];
 
+    if (p.errors?.length) {
+        showToast(t("pkg_fix_errors"), "error", 6000);
+        return;
+    }
+
     if (p.drivers?.drivers?.length) {
         if (IS_DEMO_MODE) {
             const n = applyDriversFromCsv(p.drivers);
@@ -300,12 +366,25 @@ async function confirmPackageImport() {
         }
     }
 
-    if (p.plan?.byDriver && Object.keys(p.plan.byDriver).length) {
-        const r = applyDienstplanFromExcel(p.plan, p.fileMeta);
-        msg.push(t("pkg_saved_plan", { month: r.month, drivers: r.driverPlans, days: r.totalDays }));
+    if (p.plans?.length) {
+        const planErrors = validatePlanBatch(p.plans, (window.state.drivers || []).map((driver) => driver.name));
+        if (planErrors.length) {
+            p.errors.push(...planErrors);
+            renderPackageImportPreview();
+            showToast(planErrors[0], "error", 7000);
+            return;
+        }
+        const totals = { month: p.month, driverPlans: 0, totalDays: 0 };
+        for (const item of p.plans) {
+            const result = applyDienstplanFromExcel(item.parsed, item.fileMeta);
+            totals.month ||= result.month;
+            totals.driverPlans += result.driverPlans;
+            totals.totalDays += result.totalDays;
+        }
+        msg.push(t("pkg_saved_plan", { month: totals.month, drivers: totals.driverPlans, days: totals.totalDays }));
         window.state.activeGroupFilter = getActiveLineId();
         const br = getBereitschaftDriverName();
-        if (br && r.month) applyBereitschaftForMonth(br, r.month);
+        if (br && totals.month) applyBereitschaftForMonth(br, totals.month);
     }
 
     saveState();
@@ -329,5 +408,6 @@ export {
     handlePackageImportDrop,
     clearPackageImport,
     confirmPackageImport,
-    processPackageFiles
+    processPackageFiles,
+    validatePlanBatch
 };

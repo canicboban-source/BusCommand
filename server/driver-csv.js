@@ -9,7 +9,7 @@ const HEADER_ALIASES = {
     "company_code", "companycode", "firmencode", "firmen_code", "firmin_kod", "firmin kod", "kod_firme",
     "licni_kod_za_app", "licni_kod", "kod_za_app", "pin", "login_code"
   ],
-  group: ["grupa", "group", "group_id", "groupid", "linie", "line"]
+  group: ["grupa", "grupa_csv", "group", "group_id", "groupid", "linie", "line", "linija"]
 };
 const MAX_IMPORT_ROWS = 250;
 
@@ -69,16 +69,18 @@ function splitFullName(name) {
 }
 
 function uniquifyCompanyCodes(drivers) {
-  const counts = new Map();
-  drivers.forEach((driver) => {
-    const key = String(driver.company_code || "").trim().toLowerCase();
-    counts.set(key, (counts.get(key) || 0) + 1);
-  });
-  drivers.forEach((driver) => {
-    const key = String(driver.company_code || "").trim().toLowerCase();
-    if ((counts.get(key) || 0) > 1) {
-      driver.company_code = `${driver.company_code}-${driver.eid}`;
-    }
+    const counts = new Map();
+    drivers.forEach((driver) => {
+      const key = String(driver.company_code || "").trim().toLowerCase();
+      if (!key) return;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    drivers.forEach((driver) => {
+      const key = String(driver.company_code || "").trim().toLowerCase();
+      if (!key) return;
+      if ((counts.get(key) || 0) > 1) {
+        driver.company_code = `${driver.company_code}-${driver.eid}`;
+      }
   });
 }
 
@@ -96,7 +98,7 @@ function parseDriverCsv(text) {
   const headers = rows[0].map((header) => lookup.get(normalizeHeader(header)) || null);
   const hasNames = headers.includes("first_name") && headers.includes("last_name");
   const hasFullName = headers.includes("full_name");
-  const required = ["eid", "phone", "email", "company_code"];
+  const required = ["eid", "phone", "email"];
   const missing = required.filter((key) => !headers.includes(key));
   if (!hasNames && !hasFullName) missing.push("first_name/last_name or ime_prezime");
   if (missing.length) throw new Error(`Nedostaju CSV kolone: ${missing.join(", ")}.`);
@@ -125,7 +127,7 @@ function parseDriverCsv(text) {
       group: raw.group || ""
     };
 
-    for (const key of ["eid", "first_name", "last_name", "phone", "email", "company_code"]) {
+    for (const key of ["eid", "first_name", "last_name", "phone", "email"]) {
       if (!driver[key]) throw new Error(`Red ${index + 2}: ${key} je obavezan.`);
     }
     if (!/^\S+@\S+\.\S+$/.test(driver.email)) throw new Error(`Red ${index + 2}: email nije ispravan.`);
@@ -142,6 +144,7 @@ function assertUniqueDrivers(drivers) {
     const seen = new Set();
     drivers.forEach((driver, index) => {
       const value = String(driver[field]).trim().toLowerCase();
+      if (!value) return;
       if (seen.has(value)) throw new Error(`Duplikat ${field} u redu ${index + 2}.`);
       seen.add(value);
     });

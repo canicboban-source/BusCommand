@@ -40,6 +40,13 @@ function renderShiftCatalogStatus() {
 }
 
 function renderDispatcherDataHub() {
+    const isCompanyAdmin = window.currentUser?.role === "company-admin";
+    const title = document.querySelector("#group-hub-step-import [data-i18n='import_all_title']");
+    const subtitle = document.querySelector("#group-hub-step-import [data-i18n='import_all_subtitle']");
+    const dropMain = document.querySelector("#package-import-dropzone [data-i18n='import_drop_main']");
+    if (title) title.textContent = t(isCompanyAdmin ? "import_all_title" : "import_plan_only_title");
+    if (subtitle) subtitle.textContent = t(isCompanyAdmin ? "import_all_subtitle" : "import_plan_only_subtitle");
+    if (dropMain) dropMain.textContent = t(isCompanyAdmin ? "import_drop_main" : "import_plan_only_drop");
     renderShiftCatalogStatus();
     renderDriversList();
     renderBusesList();

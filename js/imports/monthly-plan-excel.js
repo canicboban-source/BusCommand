@@ -1,4 +1,4 @@
-// BusCommand � Monthly plan Excel parser (Detaljno + Baza smena)
+// BusCommand — Monthly plan Excel parser (Detaljno + Baza smena)
 import {
     excelValueToDateStr,
     enrichShiftFromRow,
@@ -109,6 +109,58 @@ function parseBazaSmenaSheet(rows, lineId) {
     return catalog;
 }
 
+function inferTypeFromDayPart(value, fallback) {
+    const part = String(value || "").trim().toLowerCase();
+    if (/popodne|afternoon|nachmittag|spät/.test(part)) return "afternoon";
+    if (/noć|noc|night|nacht/.test(part)) return "night";
+    if (/pre podne|morning|vormittag|früh|subota|samstag|nedelja|sonntag|praznik|feiertag/.test(part)) return "morning";
+    return fallback;
+}
+
+function parseDienstplanSheet(rows, lineId) {
+    const headerIdx = rows.findIndex((row) => {
+        const headers = row.map((cell) => String(cell).trim().toLowerCase());
+        return headers.some((cell) => cell === "tag" || cell === "datum")
+            && headers.some((cell) => cell.includes("linie/dienst") || cell === "dienst" || cell === "smena");
+    });
+    if (headerIdx < 0) return null;
+
+    const headers = rows[headerIdx].map((cell) => String(cell).trim().toLowerCase());
+    const iDate = colIndex(headers, ["tag", "datum"]);
+    const iBus = colIndex(headers, ["bus", "autobus"]);
+    const iShift = colIndex(headers, ["linie/dienst", "dienst", "smena"]);
+    const iDayPart = colIndex(headers, ["deo dana", "day part", "tageszeit"]);
+    if (iDate < 0 || iShift < 0) return null;
+
+    const titleRow = rows.find((row) => row.some((cell) => /dienstplan\s+f(?:ü|u)r\s*:/i.test(String(cell))));
+    const titleIndex = titleRow?.findIndex((cell) => /dienstplan\s+f(?:ü|u)r\s*:/i.test(String(cell))) ?? -1;
+    const driverName = titleIndex >= 0 ? String(titleRow[titleIndex + 1] || "").trim() : "";
+    if (!driverName) return null;
+
+    const parsedShifts = {};
+    let month = null;
+    let rowCount = 0;
+    for (let i = headerIdx + 1; i < rows.length; i += 1) {
+        const row = rows[i];
+        const dateStr = excelValueToDateStr(row[iDate]);
+        if (!dateStr) continue;
+        const base = normalizeShiftCode(row[iShift], lineId);
+        if (!base) continue;
+        month ||= dateStr.slice(0, 7);
+        if (dateStr.slice(0, 7) !== month) continue;
+        const day = Number(dateStr.slice(8));
+        parsedShifts[day] = {
+            ...base,
+            type: inferTypeFromDayPart(row[iDayPart], base.type),
+            bus: iBus >= 0 ? String(row[iBus] || "").trim() || null : null
+        };
+        rowCount += 1;
+    }
+    return month && rowCount
+        ? { month, byDriver: { [driverName]: { groupName: "", parsedShifts } }, rowCount }
+        : null;
+}
+
 function parseMonthlyPlanWorkbook(workbook, lineId) {
     const sheetNames = workbook.SheetNames || [];
     const detaljnoName = findSheetName(sheetNames, ["detaljno", "detail"]);
@@ -132,10 +184,21 @@ function parseMonthlyPlanWorkbook(workbook, lineId) {
             result.byDriver = parsed.byDriver;
             result.rowCount = parsed.rowCount;
         } else {
-            result.errors.push("Sheet Detaljno � header nije prepoznat.");
+            result.errors.push("Sheet Detaljno — header nije prepoznat.");
         }
     } else {
-        result.errors.push("Nedostaje sheet 'Detaljno'.");
+        const dienstplanName = findSheetName(sheetNames, ["dienstplan"]);
+        const parsed = dienstplanName
+            ? parseDienstplanSheet(sheetToRows(workbook.Sheets[dienstplanName]), lineId)
+            : null;
+        if (parsed) {
+            result.format = "driver-dienstplan-excel";
+            result.month = parsed.month;
+            result.byDriver = parsed.byDriver;
+            result.rowCount = parsed.rowCount;
+        } else {
+            result.errors.push("Fajl nije BusCommand 'Detaljno' niti pojedinačni Dienstplan sa kolonama Tag i Linie/Dienst.");
+        }
     }
 
     if (bazaName) {
@@ -155,5 +218,6 @@ export {
     parseMonthlyPlanWorkbook,
     readExcelWorkbook,
     parseDetaljnoSheet,
-    parseBazaSmenaSheet
+    parseBazaSmenaSheet,
+    parseDienstplanSheet
 };

@@ -25,6 +25,19 @@ test("parses pilot pack ime_prezime;firma_id;licni_kod and uniquifies shared cod
   assert.equal(drivers[1].company_code, "12345-100602");
 });
 
+test("accepts the secure activation format without a plaintext personal/company code", () => {
+  const csv = [
+    "ime_prezime;email;firma_id;telefon;grupa_csv;linija;status",
+    "Marko Petrović;marko.petrovic@example.com;100601;+43 000 000 1001;G1;320;Aktivan",
+    "Nikola Jovanović;nikola.jovanovic@example.com;100602;+43 000 000 1002;G1;320;Aktivan"
+  ].join("\n");
+  const drivers = parseDriverCsv(csv);
+  assert.equal(drivers.length, 2);
+  assert.equal(drivers[0].eid, "100601");
+  assert.equal(drivers[0].company_code, "");
+  assert.equal(drivers[1].company_code, "");
+});
+
 test("rejects duplicate EID; shared company codes are uniquified instead of rejected", () => {
   assert.throws(() => parseDriverCsv("eid,first_name,last_name,phone,email,company_code\nE1,A,A,1,a@a.com,C1\nE1,B,B,2,b@b.com,C2"), /Duplikat eid/);
   const shared = parseDriverCsv("eid,first_name,last_name,phone,email,company_code\nE1,A,A,1,a@a.com,C1\nE2,B,B,2,b@b.com,c1");

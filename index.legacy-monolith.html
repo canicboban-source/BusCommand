@@ -133,7 +133,7 @@
                                 <input type="password" id="login-dispatcher-password"
                                     placeholder="••••••••"
                                     autocomplete="new-password"
-                                    onkeydown="if(event.key==='Enter') loginAsDispatcher()">
+                                    data-enter-action="loginAsDispatcher">
                             </div>
                         </div>
                         <div id="login-error-dispatcher" class="login-error hidden"></div>
@@ -296,7 +296,7 @@
                     </select>
                 </div>
 
-                <div class="role-selector-container">
+                <div id="legacy-role-selector" class="role-selector-container">
                     <span class="role-label" data-i18n="role_label">Aktivna uloga:</span>
                     <div class="role-toggle" data-action="toggleRoleDirectly">
                         <span id="current-role-badge">Vozač</span>
@@ -1518,9 +1518,7 @@
                     <div id="sched-panel-upload">
                         <div class="card" id="schedule-dropzone" data-action="clickElementById" data-action-args='["schedule-file-input"]'
                             style="border:2px dashed var(--panel-border);text-align:center;padding:48px;cursor:pointer;transition:all .2s;background:rgba(61,126,245,0.02);"
-                            ondragover="event.preventDefault();this.style.borderColor='var(--primary-color)'"
-                            ondragleave="this.style.borderColor='var(--panel-border)'"
-                            ondrop="handleScheduleDrop(event)">
+                            data-drop-action="handleScheduleDrop">
                             <i data-lucide="file-up" style="width:48px;height:48px;color:var(--text-muted);margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;"></i>
                             <p style="font-size:15px;font-weight:600;color:var(--text-main);margin-bottom:6px;" data-i18n="schedule_drop_hint">Prevuci fajl ovdje ili klikni za odabir</p>
                             <p style="font-size:12px;color:var(--text-muted);" data-i18n="schedule_drop_types">PDF, JPG, PNG, DOCX — maks. 10 MB</p>
@@ -1761,14 +1759,12 @@
                         </h3>
                         <p class="subtitle" style="font-size:0.85rem;margin-bottom:12px;" data-i18n="import_all_subtitle">CSV vozača + Excel mesečni plan — jedan drop, jedan klik Snimi.</p>
                         <div id="package-import-dropzone" class="hub-dropzone hub-dropzone--primary" data-action="clickElementById" data-action-args='["package-import-files"]'
-                            ondragover="event.preventDefault();this.classList.add('is-dragover')"
-                            ondragleave="this.classList.remove('is-dragover')"
-                            ondrop="this.classList.remove('is-dragover');handlePackageImportDrop(event)">
+                            data-drop-action="handlePackageImportDrop">
                             <i data-lucide="package-open" style="width:40px;height:40px;color:var(--primary-color);"></i>
                             <p style="font-weight:700;margin:10px 0 4px;" data-i18n="import_drop_main">Prevuci ovde: vozaci.csv + mesecni_plan.xlsx</p>
                             <p style="font-size:0.78rem;color:var(--text-muted);margin:0;" data-i18n="import_drop_sub">ili klikni za odabir fajlova</p>
                         </div>
-                        <input type="file" id="package-import-files" multiple accept=".csv,.xlsx,.xls" style="display:none;" data-change-action="handlePackageImportInput" data-change-pass="event">
+                        <input type="file" id="package-import-files" multiple accept=".csv,.xlsx" style="display:none;" data-change-action="handlePackageImportInput" data-change-pass="event">
                         <div id="package-import-preview" class="hub-import-preview"></div>
                     </div>
 
@@ -1797,7 +1793,7 @@
                         <div class="card hub-panel" id="hub-section-extra-import">
                             <h3 class="hub-section-title hub-section-title--sm"><i data-lucide="file-up"></i> <span data-i18n="hub_extra_plans_title">Extra plans</span></h3>
                             <div id="plan-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bulk-plan-import-files"]'
-                                ondragover="event.preventDefault()" ondrop="handleBulkPlanDrop(event)" data-i18n="hub_plan_drop_hint">Drop PDF/Excel plans here</div>
+                                data-drop-action="handleBulkPlanDrop" data-i18n="hub_plan_drop_hint">Drop PDF/Excel plans here</div>
                             <input type="file" id="bulk-plan-import-files" multiple accept=".xlsx,.xls,.pdf,.csv,.txt" style="display:none;" data-change-action="handleBulkPlanFileInput" data-change-pass="event">
                             <div id="plan-import-preview"></div>
                         </div>
@@ -2348,7 +2344,7 @@
                     <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="wizard_company_name">Naziv firme</label>
                     <input id="wizard-company-name" type="text" placeholder="e.g. City Transit GmbH"
                         style="width:100%;padding:12px 16px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-main);font-size:0.95rem;font-family:'Outfit',sans-serif;outline:none;box-sizing:border-box;margin-bottom:20px;"
-                        oninput="wizardPreviewBranding()" />
+                        data-input-action="wizardPreviewBranding" />
 
                     <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="wizard_logo_label">Logo firme <span style="font-weight:400;opacity:0.6;" data-i18n="wizard_optional">(opcionalno)</span></label>
                     <div id="wizard-logo-drop" data-action="clickElementById" data-action-args='["wizard-logo-input"]'
@@ -2390,7 +2386,7 @@
                     <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:8px;" data-i18n="wizard_custom_color">Ili odaberite prilagođenu boju</label>
                     <div style="display:flex;align-items:center;gap:12px;">
                         <input type="color" id="wizard-color-picker" value="#29ABE2"
-                            oninput="wizardSelectColor(this.value)"
+                            data-input-action="wizardSelectColor"
                             style="width:52px;height:52px;border:none;border-radius:10px;cursor:pointer;padding:2px;background:none;" />
                         <div style="flex:1;">
                             <div id="wizard-color-preview" style="height:52px;border-radius:10px;background:#29ABE2;transition:background 0.2s;display:flex;align-items:center;justify-content:center;">
@@ -2458,7 +2454,7 @@
                     <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="wizard_company_name">Naziv firme</label>
                     <input id="ca-wizard-company-name" type="text" maxlength="80" autocomplete="organization" placeholder="e.g. City Transit"
                         style="width:100%;padding:12px 16px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-main);font-size:0.95rem;font-family:'Outfit',sans-serif;outline:none;box-sizing:border-box;margin-bottom:16px;"
-                        oninput="caWizardPreviewName()" />
+                        data-input-action="caWizardPreviewName" />
 
                     <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:8px;" data-i18n="wizard_color_title">Boja brenda</label>
                     <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:12px;">
@@ -2598,7 +2594,7 @@
                     <option value="" data-i18n="med_code_none">— Bez šifre / slobodno —</option>
                 </select>
                 <input type="text" id="med-shift-code-custom" class="med-control med-control--follow" data-i18n-placeholder="med_code_placeholder" placeholder="ili ukucajte šifru, npr. 310.F08"
-                    oninput="onMedShiftCodeCustomInput()">
+                    data-input-action="onMedShiftCodeCustomInput">
             </div>
 
             <div class="form-group monthly-day-edit-field monthly-day-edit-field--last">
@@ -2791,7 +2787,7 @@
                     style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
                     background:rgba(255,255,255,0.05); color:white; font-size:1rem; text-align:center;
                     box-sizing:border-box; margin-bottom:8px; outline:none;"
-                    onkeydown="if(event.key==='Enter') confirmSuperAdminPin()">
+                    data-enter-action="confirmSuperAdminPin">
             </div>
             <!-- Produkcija: email + lozinka only -->
             <div id="superadmin-prod-fields" class="hidden" style="display:none;" aria-hidden="true">
@@ -2803,7 +2799,7 @@
                     style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
                     background:rgba(255,255,255,0.05); color:white; font-size:0.95rem;
                     box-sizing:border-box; margin-bottom:8px; outline:none;"
-                    onkeydown="if(event.key==='Enter') confirmSuperAdminPin()">
+                    data-enter-action="confirmSuperAdminPin">
             </div>
             <p id="superadmin-pin-error" style="color:#ef4444; font-size:0.85rem; margin-bottom:16px; min-height:20px;"></p>
             <div style="display:flex; gap:12px;">
