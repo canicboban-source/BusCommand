@@ -17,6 +17,7 @@ const DIRS = [
   "icons",
   "brand",
   "promo",
+  "dispatcher",
 ];
 
 if (!fs.existsSync(DIST)) {
@@ -44,7 +45,9 @@ DIRS.forEach((dir) => {
   if (!fs.existsSync(srcDir)) return;
   fs.mkdirSync(destDir, { recursive: true });
   for (const name of fs.readdirSync(srcDir)) {
-    fs.copyFileSync(path.join(srcDir, name), path.join(destDir, name));
+    const source = path.join(srcDir, name);
+    if (!fs.statSync(source).isFile()) continue;
+    fs.copyFileSync(source, path.join(destDir, name));
     console.log("COPY", path.join(dir, name));
   }
 });
