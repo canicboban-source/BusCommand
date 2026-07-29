@@ -54,7 +54,7 @@ test.describe("UI smoke", () => {
   });
 
   test("quick demo dispatcher", async ({ page }) => {
-    await page.goto("/?demo=dispatcher", { waitUntil: "networkidle" });
+    await page.goto("/staff.html?demo=dispatcher", { waitUntil: "networkidle" });
     await expect(page.locator("#app-container")).toBeVisible({ timeout: 15000 });
     await expect(page.locator("#login-screen")).toBeHidden();
     await expect(page.locator("#dispatcher-nav [data-action-args*='settings']")).toHaveCount(0);
@@ -263,20 +263,19 @@ test.describe("UI smoke", () => {
     expect(overflow).toBeLessThanOrEqual(1);
   });
 
-  test("company admin reviews and filters the immutable activity log", async ({ page }) => {
+  test("company admin activity log stays truthful when no server events exist", async ({ page }) => {
     await seedDemoState(page);
     await page.goto("/staff.html?mode=demo");
     await loginDispatcher(page, "admin@demo.com", "demo123");
     expect(await page.evaluate(() => window.switchSection("company-admin-audit"))).toBe(true);
 
     await expect(page.locator("#company-admin-audit")).toBeVisible();
-    await expect(page.locator(".company-audit-table tbody tr")).toHaveCount(5);
-    await expect(page.locator(".company-audit-source.is-server")).toHaveCount(5);
+    await expect(page.locator(".company-audit-table tbody tr")).toHaveCount(0);
+    await expect(page.locator("#ca-audit-list")).toContainText(/No activity|Nema aktivnosti/i);
     await page.locator("#ca-audit-category").selectOption("plans");
-    await expect(page.locator(".company-audit-table tbody tr")).toHaveCount(1);
-    await expect(page.locator("#ca-audit-list")).toContainText(/Service plan published/i);
+    await expect(page.locator(".company-audit-table tbody tr")).toHaveCount(0);
     await page.locator("[data-action='resetCompanyAuditFilters']").click();
-    await expect(page.locator(".company-audit-table tbody tr")).toHaveCount(5);
+    await expect(page.locator(".company-audit-table tbody tr")).toHaveCount(0);
 
     await page.setViewportSize({ width: 390, height: 844 });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -332,9 +331,15 @@ test.describe("UI smoke", () => {
     await expect(page.locator("#company-admin-drivers")).toBeVisible();
     await expect(page.locator("#ca-drivers-stat-total")).toHaveText("1");
     await page.locator("#ca-drivers-import-group").selectOption("101");
-    await page.locator("#ca-drivers-import-file").setInputFiles(
-      path.resolve(__dirname, "../../public/templates/BusCommand_Drivers_Import_v1.csv")
-    );
+    await page.locator("#ca-drivers-import-file").setInputFiles({
+      name: "drivers-e2e.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from([
+        "eid,first_name,last_name,phone,email,company_code",
+        "E2E-001,Ana,Jovanovic,+43660000001,ana.jovanovic@example.com,TEST-001",
+        "E2E-002,Marko,Petrovic,+43660000002,marko.petrovic@example.com,TEST-002"
+      ].join("\n"))
+    });
     await expect(page.locator("#ca-drivers-import-preview tbody tr")).toHaveCount(2);
     await expect(page.locator("#ca-drivers-import-preview")).not.toContainText("BC-ANA-2026");
     await page.locator("#ca-drivers-import-preview .company-drivers-import-button").click();
