@@ -11,7 +11,7 @@ import { t, tp } from "../ui/i18n.js";
 const MAX_FILE_BYTES = 1_000_000;
 const MAX_IMPORT_ROWS = 250;
 const PAGE_SIZE = 25;
-const REQUIRED_CORE = ["eid", "phone", "email", "company_code"];
+const REQUIRED_CORE = ["eid", "phone", "email"];
 const HEADER_ALIASES = Object.freeze({
     eid: ["eid", "employee_id", "employeeid", "personalnummer", "mitarbeiternummer", "maticni_broj", "maticni broj", "broj_zaposlenog", "firma_id", "firm_id"],
     first_name: ["first_name", "firstname", "vorname", "ime"],
@@ -23,7 +23,7 @@ const HEADER_ALIASES = Object.freeze({
         "company_code", "companycode", "firmencode", "firmen_code", "firmin_kod", "firmin kod", "kod_firme",
         "licni_kod_za_app", "licni_kod", "kod_za_app", "pin", "login_code"
     ],
-    group: ["grupa", "group", "group_id", "groupid", "linie", "line"]
+    group: ["grupa", "grupa_csv", "group", "group_id", "groupid", "linie", "line", "linija"]
 });
 
 let pendingImport = null;
@@ -93,10 +93,12 @@ function uniquifyCompanyCodes(drivers) {
     const counts = new Map();
     drivers.forEach((driver) => {
         const key = String(driver.company_code || "").trim().toLowerCase();
+        if (!key) return;
         counts.set(key, (counts.get(key) || 0) + 1);
     });
     drivers.forEach((driver) => {
         const key = String(driver.company_code || "").trim().toLowerCase();
+        if (!key) return;
         if ((counts.get(key) || 0) > 1) {
             driver.company_code = `${driver.company_code}-${driver.eid}`;
         }
@@ -142,7 +144,7 @@ function parseCompanyDriversCsv(text) {
             company_code: raw.company_code || "",
             group: raw.group || ""
         };
-        const missingValue = ["eid", "first_name", "last_name", "phone", "email", "company_code"]
+        const missingValue = ["eid", "first_name", "last_name", "phone", "email"]
             .find((key) => !driver[key]);
         if (missingValue) throw new Error(t("ca_drivers_error_required", { row: rowIndex + 2, field: missingValue }));
         if (!/^\S+@\S+\.\S+$/.test(driver.email)) throw new Error(t("ca_drivers_error_email", { row: rowIndex + 2 }));
@@ -154,6 +156,7 @@ function parseCompanyDriversCsv(text) {
         const seen = new Set();
         drivers.forEach((driver, index) => {
             const value = driver[field].toLowerCase();
+            if (!value) return;
             if (seen.has(value)) throw new Error(t("ca_drivers_error_duplicate", { field, row: index + 2 }));
             seen.add(value);
         });
@@ -242,7 +245,7 @@ function renderImportPreview() {
             <td><strong>${escapeHtml(`${driver.first_name} ${driver.last_name}`)}</strong></td>
             <td>${escapeHtml(driver.email)}</td>
             <td>${escapeHtml(driver.phone)}</td>
-            <td><span class="company-driver-code-ready"><i data-lucide="lock"></i>${t("ca_drivers_code_ready")}</span></td>
+            <td><span class="company-driver-code-ready"><i data-lucide="message-square-lock"></i>${t("ca_drivers_activation_ready")}</span></td>
         </tr>`).join("");
     container.innerHTML = `
         <div class="company-drivers-preview-header">
@@ -251,7 +254,7 @@ function renderImportPreview() {
         </div>
         <div class="company-drivers-table-wrap">
             <table class="company-drivers-table">
-                <thead><tr><th>EID</th><th>${t("ca_drivers_name")}</th><th>Email</th><th>${t("ca_drivers_phone")}</th><th>${t("ca_drivers_company_code")}</th></tr></thead>
+                <thead><tr><th>EID</th><th>${t("ca_drivers_name")}</th><th>Email</th><th>${t("ca_drivers_phone")}</th><th>${t("ca_drivers_activation")}</th></tr></thead>
                 <tbody>${rows}</tbody>
             </table>
         </div>
