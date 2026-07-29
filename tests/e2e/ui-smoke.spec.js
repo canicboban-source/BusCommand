@@ -54,6 +54,9 @@ test.describe("UI smoke", () => {
   });
 
   test("quick demo dispatcher", async ({ page }) => {
+    // Quick demo is a local QA entry point only. Production/demo state remains
+    // intentionally empty, so the test must provide its own isolated fixture.
+    await seedDemoState(page);
     await page.goto("/staff.html?demo=dispatcher", { waitUntil: "networkidle" });
     await expect(page.locator("#app-container")).toBeVisible({ timeout: 15000 });
     await expect(page.locator("#login-screen")).toBeHidden();
@@ -271,7 +274,9 @@ test.describe("UI smoke", () => {
 
     await expect(page.locator("#company-admin-audit")).toBeVisible();
     await expect(page.locator(".company-audit-table tbody tr")).toHaveCount(0);
-    await expect(page.locator("#ca-audit-list")).toContainText(/No activity|Nema aktivnosti/i);
+    await expect(page.locator("#ca-audit-list")).toContainText(
+      /No matching activity|Nema odgovarajuće aktivnosti/i
+    );
     await page.locator("#ca-audit-category").selectOption("plans");
     await expect(page.locator(".company-audit-table tbody tr")).toHaveCount(0);
     await page.locator("[data-action='resetCompanyAuditFilters']").click();
