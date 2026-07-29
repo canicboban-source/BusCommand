@@ -41,6 +41,9 @@ test.before(async () => {
     await doc(db, "alpha", "drivers", "driver-a").set({ firstName: "Ana", lastName: "Alpha" });
     await doc(db, "alpha", "drivers", "driver-b").set({ firstName: "Ben", lastName: "Alpha" });
     await doc(db, "beta", "drivers", "driver-c").set({ firstName: "Cora", lastName: "Beta" });
+    await doc(db, "alpha", "driver_sessions", "driver-a").set({
+      notificationsUntil: new Date("2100-01-01T00:00:00.000Z")
+    });
     await doc(db, "alpha", "driver_credentials", "driver-a").set({ eid: "private", loginCodeHash: "private" });
     await doc(db, "alpha", "messages", "for-a").set({ recipientDriverId: "driver-a", broadcast: false, text: "Private A" });
     await doc(db, "alpha", "messages", "for-b").set({ recipientDriverId: "driver-b", broadcast: false, text: "Private B" });
@@ -76,6 +79,9 @@ test.beforeEach(async () => {
     await doc(db, "alpha", "drivers", "driver-a").set({ firstName: "Ana", lastName: "Alpha" });
     await doc(db, "alpha", "drivers", "driver-b").set({ firstName: "Ben", lastName: "Alpha" });
     await doc(db, "beta", "drivers", "driver-c").set({ firstName: "Cora", lastName: "Beta" });
+    await doc(db, "alpha", "driver_sessions", "driver-a").set({
+      notificationsUntil: new Date("2100-01-01T00:00:00.000Z")
+    });
     await doc(db, "alpha", "driver_credentials", "driver-a").set({ eid: "private", loginCodeHash: "private" });
     await doc(db, "alpha", "messages", "for-a").set({ recipientDriverId: "driver-a", broadcast: false, text: "Private A" });
     await doc(db, "alpha", "messages", "for-b").set({ recipientDriverId: "driver-b", broadcast: false, text: "Private B" });
