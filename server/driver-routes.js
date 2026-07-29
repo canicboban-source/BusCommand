@@ -105,6 +105,12 @@ const vacationSchema = z.object({
 const vacationIdSchema = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/);
 const vacationStatusSchema = z.object({ status: z.enum(["approved", "rejected"]) });
 const reportIdSchema = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/);
+const reportResolutionSchema = z.object({
+  type: z.enum(["replacement", "restored", "cancelled"]),
+  summary: z.string().trim().min(3).max(1000),
+  replacementDriverId: driverIdSchema.optional(),
+  replacementBus: z.string().trim().min(1).max(32).optional()
+});
 const shiftAssignmentSchema = z.object({
   driverId: driverIdSchema,
   date: isoDateSchema,
