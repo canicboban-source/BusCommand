@@ -280,10 +280,10 @@ const ApiClient = (() => {
             body: JSON.stringify({ status })
         });
     }
-    async function resolveStaffReport(reportId) {
+    async function resolveStaffReport(reportId, resolution) {
         return apiFetch("/api/staff/reports/" + encodeURIComponent(reportId) + "/resolve", {
             method: "PUT",
-            body: JSON.stringify({})
+            body: JSON.stringify(resolution || {})
         });
     }
     async function createStaffBus(number, groupId) {
