@@ -69,16 +69,19 @@ export function installActionDelegates(handlers, root = document) {
         if (!name) return;
 
         const args = parseActionArgs(el.dataset.changeActionArgs);
-        if (args.length > 0) {
-            invokeHandler(handlers, name, args, event);
-            return;
-        }
-
         const pass = el.dataset.changePass || "value";
-        if (pass === "event") invokeHandler(handlers, name, [event], event);
-        else if (pass === "element") invokeHandler(handlers, name, [el], event);
-        else if (pass === "args-value") invokeHandler(handlers, name, [...args, el.value], event);
-        else invokeHandler(handlers, name, [el.value], event);
+
+        if (pass === "args-value") {
+            invokeHandler(handlers, name, [...args, el.value], event);
+        } else if (args.length > 0) {
+            invokeHandler(handlers, name, args, event);
+        } else if (pass === "event") {
+            invokeHandler(handlers, name, [event], event);
+        } else if (pass === "element") {
+            invokeHandler(handlers, name, [el], event);
+        } else {
+            invokeHandler(handlers, name, [el.value], event);
+        }
     });
 
     root.addEventListener("input", (event) => {
