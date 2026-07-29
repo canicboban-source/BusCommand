@@ -7,6 +7,7 @@ import ApiClient from "./core/api-client.js";
 import "./core/store.js";
 import { installStaffSurface } from "./install-staff.js";
 import { registerOnclickHandlers } from "./register-onclick-staff.js";
+import { installOperationsHealthConsistency } from "./dispatcher/operations-health-consistency.js";
 import { bootstrapBusCommand } from "./bootstrap/init.js";
 import { migrateLegacyStorage } from "./core/storage-keys.js";
 import "./core/state-observer-setup.js";
@@ -21,6 +22,7 @@ window.ApiClient = ApiClient;
 migrateLegacyStorage();
 installStaffSurface();
 registerOnclickHandlers();
+installOperationsHealthConsistency();
 
 function startBusCommand() {
     bootstrapBusCommand();
