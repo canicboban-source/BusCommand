@@ -1118,7 +1118,12 @@ function registerDriverRoutes(app, deps) {
 
   app.put("/api/staff/reports/:reportId/resolve", rateLimit(30, 60_000), requireStaff, async (req, res) => {
     const reportId = reportIdSchema.safeParse(req.params.reportId);
+    const resolution = reportResolutionSchema.safeParse(req.body);
     if (!reportId.success) return res.status(400).json({ success: false, error: "Nevažeća prijava." });
+    if (!resolution.success) return res.status(400).json({
+      success: false, code: "RESOLUTION_REQUIRED",
+      error: "Problem nije rešen klikom. Izaberite provereno rešenje i unesite kratak zapis."
+    });
     if (req.staff.role !== "dispatcher") {
       return res.status(403).json({ success: false, error: "Samo disponent može rešavati operativne prijave." });
     }
@@ -1142,16 +1147,30 @@ function registerDriverRoutes(app, deps) {
       if (!isActiveReportStatus(report.status)) {
         return res.status(409).json({ success: false, error: "Prijava nema aktivan status." });
       }
+      const normalizedType = String(report.type || report.reason || "").toLowerCase();
+      const coverageIncident = normalizedType.includes("coverage") || normalizedType.includes("uncovered")
+        || normalizedType.includes("driver_missing") || normalizedType.includes("no_driver");
+      if (coverageIncident) return res.status(409).json({
+        success: false, code: "GUIDED_REASSIGNMENT_REQUIRED",
+        error: "Nepokrivena smena ostaje otvorena dok Resolver transakcija stvarno ne promeni vozača, autobus i plan."
+      });
       const resolvedAt = admin().firestore.FieldValue.serverTimestamp();
-      await reportRef.update({ status: "resolved", groupId, resolvedAt, resolvedBy: req.staff.uid });
+      const resolutionRecord = {
+        type: resolution.data.type,
+        summary: resolution.data.summary,
+        verifiedBy: req.staff.uid,
+        verifiedAt: resolvedAt
+      };
+      await reportRef.update({ status: "resolved", groupId, resolution: resolutionRecord, resolvedAt, resolvedBy: req.staff.uid });
       await logAudit(req.staff.companyId, req.staff.uid, "driver_report_resolved", {
         reportId: reportId.data,
         driverId: report.driverId || null,
-        groupId
+        groupId,
+        resolutionType: resolution.data.type
       });
       return res.json({
         success: true,
-        report: { id: reportId.data, status: "resolved", groupId, resolvedAt: null, resolvedBy: req.staff.uid }
+        report: { id: reportId.data, status: "resolved", groupId, resolution: { ...resolutionRecord, verifiedAt: null }, resolvedAt: null, resolvedBy: req.staff.uid }
       });
     } catch (error) {
       req.log?.error?.({ err: error }, "Rešavanje prijave nije uspelo");
