@@ -12,7 +12,11 @@ const PROJECT_ID = "buscommand-preview";
 let env;
 
 function claims(role, companyId, extra = {}) {
-  return { role, companyId, mustChangeLoginCode: false, ...extra };
+  // Firebase ID tokens always contain auth_time. The rules intentionally compare
+  // it with sessionsValidAfterEpoch so "sign out all devices" also invalidates an
+  // already-issued token. The rules emulator does not synthesize this standard
+  // claim for authenticatedContext(), therefore the fixture must provide it.
+  return { role, companyId, mustChangeLoginCode: false, auth_time: 1, ...extra };
 }
 
 function doc(db, companyId, collection, id) {
@@ -112,13 +116,13 @@ test("driver reads only their own driver profile", async () => {
   await assertFails(doc(db, "beta", "drivers", "driver-c").get());
 });
 
-test("only company admin can create or change driver master profiles", async () => {
+test("driver master profile writes are server-only for every browser role", async () => {
   const dispatcher = env.authenticatedContext("dispatcher-a", claims("dispatcher", "alpha")).firestore();
   const companyAdmin = env.authenticatedContext("admin-a", claims("company_admin", "alpha")).firestore();
   await assertFails(doc(dispatcher, "alpha", "drivers", "driver-new").set({ firstName: "Blocked" }));
   await assertFails(doc(dispatcher, "alpha", "drivers", "driver-a").update({ active: false }));
-  await assertSucceeds(doc(companyAdmin, "alpha", "drivers", "driver-new").set({ firstName: "Allowed" }));
-  await assertSucceeds(doc(companyAdmin, "alpha", "drivers", "driver-a").update({ active: false }));
+  await assertFails(doc(companyAdmin, "alpha", "drivers", "driver-new").set({ firstName: "Blocked" }));
+  await assertFails(doc(companyAdmin, "alpha", "drivers", "driver-a").update({ active: false }));
 });
 
 test("driver reads own and broadcast messages, never another driver's private message", async () => {
@@ -150,6 +154,29 @@ test("company claims cannot cross tenant boundaries", async () => {
 test("driver cannot update another driver's private message", async () => {
   const db = env.authenticatedContext("driver-a", claims("driver", "alpha")).firestore();
   await assertFails(doc(db, "alpha", "messages", "for-b").update({ read: true }));
+});
+
+test("staff cannot rewrite or delete sent messages directly", async () => {
+  const dispatcher = env.authenticatedContext("dispatcher-a", claims("dispatcher", "alpha")).firestore();
+  const companyAdmin = env.authenticatedContext("admin-a", claims("company_admin", "alpha")).firestore();
+  await assertFails(doc(dispatcher, "alpha", "messages", "for-a").update({ text: "Forged" }));
+  await assertFails(doc(companyAdmin, "alpha", "messages", "for-a").delete());
+});
+
+test("vacation and legacy company-admin writes are server-only", async () => {
+  await env.withSecurityRulesDisabled(async (context) => {
+    await doc(context.firestore(), "alpha", "vacations", "vac-1").set({
+      driverId: "driver-a", status: "pending"
+    });
+    await doc(context.firestore(), "alpha", "company_admins", "legacy-admin").set({
+      role: "company_admin"
+    });
+  });
+  const dispatcher = env.authenticatedContext("dispatcher-a", claims("dispatcher", "alpha")).firestore();
+  const companyAdmin = env.authenticatedContext("admin-a", claims("company_admin", "alpha")).firestore();
+  await assertFails(doc(dispatcher, "alpha", "vacations", "vac-1").update({ status: "approved" }));
+  await assertFails(doc(companyAdmin, "alpha", "vacations", "vac-2").set({ status: "pending" }));
+  await assertFails(doc(companyAdmin, "alpha", "company_admins", "legacy-admin").update({ active: false }));
 });
 
 test("driver credentials are inaccessible to every client role", async () => {
