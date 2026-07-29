@@ -2,7 +2,6 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { Timestamp } = require("firebase-admin/firestore");
 const {
   initializeTestEnvironment,
   assertFails,
@@ -43,7 +42,7 @@ test.before(async () => {
     await doc(db, "alpha", "drivers", "driver-b").set({ firstName: "Ben", lastName: "Alpha" });
     await doc(db, "beta", "drivers", "driver-c").set({ firstName: "Cora", lastName: "Beta" });
     await doc(db, "alpha", "driver_sessions", "driver-a").set({
-      notificationsUntil: Timestamp.fromDate(new Date("2100-01-01T00:00:00.000Z"))
+      notificationsUntil: new Date("2100-01-01T00:00:00.000Z")
     });
     await doc(db, "alpha", "driver_credentials", "driver-a").set({ eid: "private", loginCodeHash: "private" });
     await doc(db, "alpha", "messages", "for-a").set({ recipientDriverId: "driver-a", broadcast: false, text: "Private A" });
@@ -81,7 +80,7 @@ test.beforeEach(async () => {
     await doc(db, "alpha", "drivers", "driver-b").set({ firstName: "Ben", lastName: "Alpha" });
     await doc(db, "beta", "drivers", "driver-c").set({ firstName: "Cora", lastName: "Beta" });
     await doc(db, "alpha", "driver_sessions", "driver-a").set({
-      notificationsUntil: Timestamp.fromDate(new Date("2100-01-01T00:00:00.000Z"))
+      notificationsUntil: new Date("2100-01-01T00:00:00.000Z")
     });
     await doc(db, "alpha", "driver_credentials", "driver-a").set({ eid: "private", loginCodeHash: "private" });
     await doc(db, "alpha", "messages", "for-a").set({ recipientDriverId: "driver-a", broadcast: false, text: "Private A" });
