@@ -182,7 +182,15 @@ function visibleOperationalReports() {
 }
 
 function dashboardReportWhen(report) {
-    if (report.date || report.time) return formatDateTime(report.date, report.time);
+    if (report.date && report.time) return formatDateTime(report.date, report.time);
+    if (report.date) {
+        const dateOnly = new Date(`${report.date}T00:00:00`);
+        if (!Number.isNaN(dateOnly.getTime())) {
+            return new Intl.DateTimeFormat(window.state.language || "en", { dateStyle: "short" }).format(dateOnly);
+        }
+        return String(report.date);
+    }
+    if (report.time) return String(report.time);
     const value = report.createdAt;
     const date = typeof value?.toDate === "function" ? value.toDate()
         : Number.isFinite(value?.seconds) ? new Date(value.seconds * 1000)
