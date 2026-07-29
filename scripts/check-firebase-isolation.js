@@ -10,7 +10,7 @@ const textExtensions = new Set([
   ".map", ".rules", ".txt", ".yaml", ".yml"
 ]);
 const forbidden = [
-  ["transitflow", "prod"].join("-"),
+  [["transit", "flow"].join(""), "prod"].join("-"),
   ["AIzaSyBHW2NyhdXhg48", "tuzOhUsDJns4m2a6obQE"].join(""),
   ["902", "580", "554", "748"].join(""),
   ["f122ad5654e0c3", "ff16c079"].join(""),
@@ -54,11 +54,32 @@ function scan(files, label) {
 
 scan(collectFiles(root, false), "Source");
 const dist = path.join(root, "dist");
+
+const forbiddenPublishedPaths = [
+  path.join(dist, "promo"),
+  path.join(dist, "dispatcher"),
+];
+
+for (const forbiddenPath of forbiddenPublishedPaths) {
+  if (fs.existsSync(forbiddenPath)) {
+    throw new Error(`Build output contains internal-only path: ${path.relative(root, forbiddenPath)}`);
+  }
+}
+
+const publishedSourceMaps = fs.existsSync(dist)
+  ? collectFiles(dist, true).filter((file) => file.endsWith(".map"))
+  : [];
+if (publishedSourceMaps.length) {
+  throw new Error(
+    `Build output contains source maps: ${publishedSourceMaps.map((file) => path.relative(root, file)).join(", ")}`
+  );
+}
 if (fs.existsSync(dist)) scan(collectFiles(dist, true), "Build output");
 if (fs.existsSync(dist)) {
-  const legacyBrandFiles = collectFiles(dist, true).filter((file) => fs.readFileSync(file, "utf8").includes("TransitFlow"));
+  const legacyBrand = ["Transit", "Flow"].join("");
+  const legacyBrandFiles = collectFiles(dist, true).filter((file) => fs.readFileSync(file, "utf8").includes(legacyBrand));
   if (legacyBrandFiles.length) {
-    throw new Error(`Build output contains legacy TransitFlow branding: ${legacyBrandFiles.map((file) => path.relative(root, file)).join(", ")}`);
+    throw new Error(`Build output contains forbidden legacy branding: ${legacyBrandFiles.map((file) => path.relative(root, file)).join(", ")}`);
   }
 }
 if (fs.existsSync(dist)) {

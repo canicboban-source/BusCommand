@@ -86,12 +86,14 @@ test("SMS activation portalUrl includes ?company=", () => {
     assert.equal([...routes.matchAll(/portalUrl:\s*"\/driver\.html"/g)].length, 0);
 });
 
-test("CA driver import hint has no Serbian 'CSV grupa' in EN/DE", () => {
+test("CA driver import hint is translated and describes secure SMS activation", () => {
     const tr = readFileSync(join(root, "translations.js"), "utf8");
     assert.doesNotMatch(tr, /CSV grupa is used/);
     assert.doesNotMatch(tr, /CSV-grupa wird/);
     assert.match(tr, /CSV group column is used/);
-    assert.match(tr, /CSV-Spalte Gruppe wird genutzt/);
+    assert.match(tr, /CSV-Gruppenspalte wird verwendet/);
+    assert.match(tr, /one-time six-digit activation code and sends it by SMS/);
+    assert.match(tr, /einmaligen sechsstelligen Aktivierungscode und sendet ihn per SMS/);
 });
 
 test("CA wizard placeholders are i18n keys not hard Serbian", () => {

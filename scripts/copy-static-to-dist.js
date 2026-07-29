@@ -16,8 +16,6 @@ const FILES = [
 const DIRS = [
   "icons",
   "brand",
-  "promo",
-  "dispatcher",
 ];
 
 if (!fs.existsSync(DIST)) {

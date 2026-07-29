@@ -78,14 +78,15 @@ service cloud.firestore {
     // ─── PORUKE ─────────────────────────────────────────────
 
     match /companies/{companyId}/messages/{msgId} {
-      allow read: if isCompanyStaff(companyId)
-                  || (canDriverReadMessage(companyId) && isDriverNotificationWindow(companyId));
+      allow read: if isCompanyStaff(companyId);
+      allow read: if isDriverNotificationWindow(companyId)
+                  && (resource.data.broadcast == true
+                      || resource.data.recipientDriverId == request.auth.uid);
       // Create only via Admin SDK (POST /api/staff/messages)
       allow create: if false;
       // Vozač može samo markirati poruku kao pročitanu
-      allow update: if (isCompanyStaff(companyId) && isLicenseActive(companyId))
-                    || (canDriverReadMessage(companyId) && onlyMarkingRead());
-      allow delete: if isCompanyAdmin(companyId);
+      allow update: if canDriverReadMessage(companyId) && onlyMarkingRead();
+      allow delete: if false;
     }
 
     // ─── SOS ALARMI ─────────────────────────────────────────
@@ -162,9 +163,8 @@ service cloud.firestore {
 
     match /companies/{companyId}/vacations/{vacId} {
       allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
-      // Driver requests are validated, identity-bound and overlap-checked by the server.
-      allow create: if isCompanyStaff(companyId) && isLicenseActive(companyId);
-      allow update, delete: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      // Creation and review are validated, identity-bound and audited by the server.
+      allow create, update, delete: if false;
     }
 
     match /companies/{companyId}/lost_items/{itemId} {
@@ -175,7 +175,8 @@ service cloud.firestore {
 
     match /companies/{companyId}/company_admins/{adminId} {
       allow read: if isCompanyAdmin(companyId);
-      allow write: if isCompanyAdmin(companyId);
+      // Legacy read-only compatibility collection. Lifecycle writes are server-only.
+      allow write: if false;
     }
 
     // ─── AUDIT LOG (GDPR — nepromjenjivo) ───────────────────
