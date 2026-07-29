@@ -26,7 +26,8 @@ export default defineConfig({
         },
       },
     },
-    sourcemap: true,
+    // Do not publish source maps with embedded application source in production.
+    sourcemap: false,
     target: "es2020",
   },
   server: {
