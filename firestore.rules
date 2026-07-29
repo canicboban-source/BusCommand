@@ -78,8 +78,10 @@ service cloud.firestore {
     // ─── PORUKE ─────────────────────────────────────────────
 
     match /companies/{companyId}/messages/{msgId} {
-      allow read: if isCompanyStaff(companyId)
-                  || (canDriverReadMessage(companyId) && isDriverNotificationWindow(companyId));
+      allow read: if isCompanyStaff(companyId);
+      allow read: if isDriverNotificationWindow(companyId)
+                  && (resource.data.broadcast == true
+                      || resource.data.recipientDriverId == request.auth.uid);
       // Create only via Admin SDK (POST /api/staff/messages)
       allow create: if false;
       // Vozač može samo markirati poruku kao pročitanu
