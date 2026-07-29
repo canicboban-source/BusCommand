@@ -53,6 +53,10 @@ function syncOperationsHealth() {
     const hint = health.querySelector("span:not(.dot)");
     if (!title || !hint) return;
 
+    // The dashboard owns richer states (reports, delivery failures, stale data).
+    // Only replace its incorrect "healthy" state when visible shifts still need attention.
+    if (health.classList.contains("is-attention") && title.textContent !== t("ops_plan_healthy")) return;
+
     if (!health.classList.contains("is-attention")) health.classList.add("is-attention");
     setText(title, t("ops_plan_attention"));
 
