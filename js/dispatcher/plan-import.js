@@ -2,7 +2,7 @@
 import { saveState } from "../core/state.js";
 import { getVisibleDrivers, showToast } from "../core/utils.js";
 import { detectDriverFromFilename, detectMonthFromFilename, saveMonthlyPlan } from "../core/shift-plan.js";
-import { extractTextFromScheduleFile, parseExtractedScheduleText } from "../maps/schedule-import-utils.js";
+import { extractTextFromScheduleFile, parseExtractedScheduleText, validateScheduleFile } from "../maps/schedule-import-utils.js";
 import { renderMonthlyPlansView } from "./monthly-plans.js";
 import { renderDispatcherDataHub } from "./data-hub.js";
 import { t } from "../ui/i18n.js";
@@ -80,7 +80,11 @@ async function handleBulkPlanFiles(fileList) {
 
     for (const file of files) {
         try {
-            const { text, fileData } = await extractTextFromScheduleFile(file);
+            if (!validateScheduleFile(file)) {
+                showToast(t("schedule_file_invalid"), "error", 5000);
+                continue;
+            }
+            const { text } = await extractTextFromScheduleFile(file);
             const parseResult = parseExtractedScheduleText(text);
             const parsedShifts = parseResult.shifts;
             const dayCount = Object.keys(parsedShifts).length;
@@ -105,8 +109,7 @@ async function handleBulkPlanFiles(fileList) {
                 parsedShifts,
                 dayCount,
                 parseQuality: parseResult.quality,
-                fileType: file.type || "application/octet-stream",
-                fileData
+                fileType: file.type || "application/octet-stream"
             });
             added++;
         } catch (err) {
@@ -161,7 +164,6 @@ function confirmBulkPlanImport() {
         saveMonthlyPlan(item.driverName, item.month, item.parsedShifts, {
             fileName: item.fileName,
             fileType: item.fileType,
-            fileData: item.fileData,
             parseQuality: item.parseQuality
         });
     });

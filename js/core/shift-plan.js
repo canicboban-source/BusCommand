@@ -412,7 +412,7 @@ function saveMonthlyPlan(driverName, month, parsedShifts, fileMeta = {}) {
         month,
         fileName: fileMeta.fileName || `plan-${driverName}-${month}`,
         fileType: fileMeta.fileType || "application/octet-stream",
-        fileData: fileMeta.fileData || "",
+        fileData: "",
         parsedShifts,
         importedAt: new Date().toISOString(),
         parseQuality: fileMeta.parseQuality || "ok"

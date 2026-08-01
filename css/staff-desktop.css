@@ -2128,3 +2128,152 @@ html[data-app-surface="staff"] select option:disabled {
         transform: none;
     }
 }
+
+/* Responsive import and plan controls */
+html[data-app-surface="staff"] .group-hub-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+html[data-app-surface="staff"] .monthly-plan-filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    align-items: end;
+}
+
+html[data-app-surface="staff"] .monthly-plan-filters > div,
+html[data-app-surface="staff"] .service-plan-import-fields > *,
+html[data-app-surface="staff"] .hub-workspace > * {
+    min-width: 0;
+}
+
+html[data-app-surface="staff"] .monthly-plan-filters select,
+html[data-app-surface="staff"] .service-plan-import-fields select,
+html[data-app-surface="staff"] .service-plan-file-control {
+    width: 100%;
+    max-width: 100%;
+}
+
+html[data-app-surface="staff"] .daily-schedule-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+html[data-app-surface="staff"] .daily-schedule-actions input[type="date"] {
+    min-height: 42px;
+    max-width: 100%;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+}
+
+html[data-app-surface="staff"] .hub-bus-import-controls {
+    display: grid;
+    gap: 6px;
+    margin: 0 0 12px;
+}
+
+html[data-app-surface="staff"] .hub-bus-import-button {
+    display: inline-flex;
+    width: fit-content;
+    max-width: 100%;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+html[data-app-surface="staff"] .hub-bus-import-controls small,
+html[data-app-surface="staff"] .bus-import-preview__sample {
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+
+html[data-app-surface="staff"] .bus-import-preview {
+    min-width: 0;
+    margin-bottom: 12px;
+}
+
+html[data-app-surface="staff"] .bus-import-preview__summary {
+    margin: 0 0 6px;
+    font-weight: 700;
+}
+
+html[data-app-surface="staff"] .bus-import-preview__sample {
+    margin: 0 0 10px;
+    font-size: 0.78rem;
+}
+
+html[data-app-surface="staff"] .bus-import-preview__actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+html[data-app-surface="staff"] #header-logo-container .bc-co-brand {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 8px;
+}
+
+html[data-app-surface="staff"] #header-logo-container .bc-co-brand__separator {
+    color: var(--text-muted);
+}
+
+html[data-app-surface="staff"] #header-logo-container .bc-tenant-brand {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 8px;
+}
+
+html[data-app-surface="staff"] #header-logo-container .bc-tenant-brand img {
+    max-width: 110px;
+    max-height: 32px;
+    object-fit: contain;
+    border-radius: 2px;
+}
+
+html[data-app-surface="staff"] #header-logo-container .bc-tenant-brand span {
+    overflow: hidden;
+    max-width: 180px;
+    color: var(--text-main);
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bc-product-signature {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+@media (max-width: 900px) {
+    html[data-app-surface="staff"] .group-hub-stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    html[data-app-surface="staff"] .monthly-plan-filters,
+    html[data-app-surface="staff"] .group-hub-stats-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    html[data-app-surface="staff"] .daily-schedule-actions,
+    html[data-app-surface="staff"] .daily-schedule-actions > * {
+        width: 100%;
+    }
+
+    html[data-app-surface="staff"] #header-logo-container .bc-tenant-brand span,
+    html[data-app-surface="staff"] #header-logo-container .bc-co-brand__separator {
+        display: none;
+    }
+}

@@ -790,7 +790,7 @@
                                     <label class="service-plan-file-control" for="ca-service-plan-file">
                                         <i data-lucide="sheet"></i>
                                         <span data-i18n="ca_plan_choose_file">Izaberi .xlsx, .csv ili .pdf</span>
-                                        <small data-i18n="ca_plan_file_limit">Najviše 2 MB</small>
+                                        <small data-i18n="ca_plan_file_limit">Najviše 10 MB</small>
                                     </label>
                                     <input type="file" id="ca-service-plan-file" accept=".xlsx,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/pdf" hidden
                                         data-change-action="handleCompanyServicePlanFile" data-change-pass="event">
@@ -1107,13 +1107,13 @@
                 <section id="dispatcher-daily-schedule" class="content-section hidden">
                     <div class="section-header">
                         <div>
-                            <h2 data-i18n="upload_schedule_title">Dnevni raspored</h2>
-                            <p class="section-subtitle" data-i18n="upload_schedule_subtitle">Uploaduj ili unesi dnevni raspored — vozači ga odmah vide na telefonu</p>
+                            <h2 data-i18n="daily_schedule_title">Dnevni raspored</h2>
+                            <p class="section-subtitle" data-i18n="daily_schedule_subtitle">Otpremite ili unesite dnevni plan rada.</p>
                         </div>
-                        <div style="display:flex;gap:10px;align-items:center;">
-                            <input type="date" id="schedule-date-picker" style="padding:8px 12px;border-radius:var(--radius-sm);">
+                        <div class="daily-schedule-actions">
+                            <input type="date" id="schedule-date-picker">
                             <button data-action="sendScheduleToDrivers" class="btn-primary">
-                                <i data-lucide="send"></i> <span data-i18n="btn_send_message">Pošalji svim vozačima</span>
+                                <i data-lucide="save"></i> <span data-i18n="btn_save_daily_schedule">Sačuvaj dnevni plan</span>
                             </button>
                         </div>
                     </div>
@@ -1358,7 +1358,7 @@
                         </div>
                     </div>
 
-                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;">
+                    <div class="group-hub-stats-grid">
                         <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="scrollHubSection" data-action-args='["group-hub-overview-detail"]'><span id="hub-stat-drivers" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_drivers" style="font-size:0.75rem;">Vozači</label></div>
                         <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="scrollHubSection" data-action-args='["hub-section-buses"]'><span id="hub-stat-buses" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_buses" style="font-size:0.75rem;">Autobusi</label></div>
                         <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="openMonthlyPlansFull"><span id="hub-stat-plans" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_plans" style="font-size:0.75rem;">Planovi</label></div>
@@ -1399,23 +1399,33 @@
                         </div>
 
                         <div class="card hub-panel" id="hub-section-buses">
-                            <h3 class="hub-section-title"><i data-lucide="bus"></i> <span data-i18n="hub_stat_buses">Buses</span></h3>
+                            <h3 class="hub-section-title"><i data-lucide="bus"></i> <span data-i18n="hub_stat_buses">Autobusi</span></h3>
                             <form id="add-bus-form" data-submit-action="addBus" class="crud-form hub-bus-form" style="margin-bottom:10px;">
                                 <input type="text" id="new-bus-num" required placeholder="npr. 91103" aria-label="Bus number" data-i18n-aria-label="hub_add_bus_label" data-i18n-placeholder="hub_add_bus_placeholder">
                                 <button type="submit" class="btn-icon-only btn-primary" aria-label="Add bus" data-i18n-aria-label="hub_add_bus_aria"><i data-lucide="plus"></i></button>
                             </form>
+                            <div class="hub-bus-import-controls">
+                                <label for="bus-import-file" class="btn-secondary hub-bus-import-button">
+                                    <i data-lucide="file-up"></i>
+                                    <span data-i18n="bus_import_button">Uvezi CSV/TXT</span>
+                                </label>
+                                <input type="file" id="bus-import-file" accept=".csv,.txt,text/csv,text/plain" hidden
+                                    data-change-action="handleBusImportFile" data-change-pass="event">
+                                <small data-i18n="bus_import_hint">Jedan broj autobusa po redu; uvoz važi samo za izabranu grupu.</small>
+                            </div>
+                            <div id="bus-import-preview" class="bus-import-preview" aria-live="polite"></div>
                             <ul class="crud-list" id="settings-buses-list" style="max-height:280px;overflow-y:auto;"></ul>
                         </div>
 
                         <div class="card hub-panel" id="hub-section-catalog">
-                            <h3 class="hub-section-title hub-section-title--sm"><i data-lucide="book-open"></i> <span data-i18n="hub_catalog_title">Shift catalog V66</span></h3>
+                            <h3 class="hub-section-title hub-section-title--sm"><i data-lucide="book-open"></i> <span data-i18n="hub_catalog_title">Katalog smena V66</span></h3>
                             <div id="shift-catalog-status"></div>
                         </div>
 
                         <div class="card hub-panel" id="hub-section-extra-import">
-                            <h3 class="hub-section-title hub-section-title--sm"><i data-lucide="file-up"></i> <span data-i18n="hub_extra_plans_title">Extra plans</span></h3>
+                            <h3 class="hub-section-title hub-section-title--sm"><i data-lucide="file-up"></i> <span data-i18n="hub_extra_plans_title">Dodatni planovi</span></h3>
                             <div id="plan-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bulk-plan-import-files"]'
-                                ondragover="event.preventDefault()" ondrop="handleBulkPlanDrop(event)" data-i18n="hub_plan_drop_hint">Drop PDF/Excel plans here</div>
+                                ondragover="event.preventDefault()" ondrop="handleBulkPlanDrop(event)" data-i18n="hub_plan_drop_hint">Spustite PDF/Excel planove ovde</div>
                             <input type="file" id="bulk-plan-import-files" multiple accept=".xlsx,.xls,.pdf,.csv,.txt" style="display:none;" data-change-action="handleBulkPlanFileInput" data-change-pass="event">
                             <div id="plan-import-preview"></div>
                         </div>
@@ -1468,7 +1478,7 @@
                     </div>
 
                     <div class="card full-width-card" style="margin-bottom:16px;">
-                        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;flex-wrap:wrap;">
+                        <div class="monthly-plan-filters">
                             <div>
                                 <label data-i18n="monthly_label_driver" style="font-size:0.75rem;color:var(--text-muted);">Vozač</label>
                                 <select id="monthly-driver-select" data-change-action="loadMonthlyPlanForDriver" style="width:100%;padding:10px;font-size:0.9rem;"></select>

@@ -15,7 +15,7 @@ import { closeSuperAdminModal, confirmSuperAdminPin, handleLogoClick } from "./a
 import { clickElementById, installActionDelegates, removeElementById } from "./core/action-delegate.js";
 import { exportDriversCSV, exportLostItemsCSV, exportReportsCSV } from "./core/export-csv.js";
 import { getScheduleByKey } from "./core/utils.js";
-import { addBus, deleteBus, deleteRoute } from "./data/buses-routes.js";
+import { addBus, clearBusImport, confirmBusImport, deleteBus, deleteRoute, handleBusImportFile } from "./data/buses-routes.js";
 import { addDriver, editDriver, toggleDriverActive } from "./data/drivers.js";
 import { deleteGroup, setGroupFilter } from "./data/groups.js";
 import { clearScheduleFile, clearScheduleText, deleteScheduleEntry, formatScheduleText, handleScheduleDrop, handleScheduleFileSelect, insertScheduleTable, sendScheduleToDrivers, switchScheduleTab } from "./data/schedules.js";
@@ -49,6 +49,8 @@ import { canInvokeActionDuringDriverActivation } from "./auth/driver-access-gate
 const HANDLERS = {
     addBus,
     addCompanyDispatcher,
+    clearBusImport,
+    confirmBusImport,
     addDriver,
     applyBrandingSettings,
     archiveAllDispatcherMessages,
@@ -124,6 +126,7 @@ const HANDLERS = {
     handleCompanySettingsCountry,
     handleCompanySettingsInput,
     handleLogoClick,
+    handleBusImportFile,
     handlePackageImportDrop,
     handlePackageImportInput,
     handleScheduleDrop,
