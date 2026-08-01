@@ -555,14 +555,22 @@ app.post(
         return res.status(404).json({ success: false, error: "Firma nije pronađena." });
       }
 
-      await companyRef.collection("settings").doc("main").update({
-        status,
-        suspendedAt: status === "suspended" ? admin.firestore.FieldValue.serverTimestamp() : null,
-        suspendReason: status === "suspended" ? (reason || null) : null
-      });
-
-      await _logAuditEvent("superadmin", req.adminUser.uid, "company_status_changed", {
-        companyId, status, reason
+      const timestamp = admin.firestore.FieldValue.serverTimestamp();
+      await db.runTransaction(async transaction => {
+        transaction.update(companyRef.collection("settings").doc("main"), {
+          status,
+          suspendedAt: status === "suspended" ? timestamp : null,
+          suspendReason: status === "suspended" ? (reason || null) : null
+        });
+        transaction.set(companyRef.collection("audit_log").doc(), {
+          action: "company_status_changed",
+          actorId: req.adminUser.uid,
+          actorRole: "superadmin",
+          actorName: req.adminUser.name || null,
+          source: "server",
+          details: { status, reason: reason || null },
+          timestamp
+        });
       });
 
       return res.json({ success: true });

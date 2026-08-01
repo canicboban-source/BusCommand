@@ -18,8 +18,13 @@ test("P7.3 driver plan confirm status reacts to pending targets and off days", a
 test("P7.3 ops health and confirmation fetch failures are surfaced", async () => {
   const dash = await read("../../js/dispatcher/dashboard.js");
   const inbox = await read("../../js/driver/messages-inbox.js");
+  const translations = await read("../../translations.js");
   assert.match(dash, /updateOpsPlanHealth/);
   assert.match(dash, /ops_plan_attention/);
+  assert.match(dash, /detectDailyPlanCoverageGaps/);
+  assert.match(dash, /coverageGapCount\s*>\s*0/);
+  assert.match(dash, /ops_plan_attention_gaps/);
+  assert.equal((translations.match(/ops_plan_attention_gaps:/g) || []).length, 3);
   assert.match(dash, /ops_plan_stale/);
   assert.match(dash, /_confirmFetchFailed/);
   assert.match(dash, /ops_confirmations_load_failed/);
