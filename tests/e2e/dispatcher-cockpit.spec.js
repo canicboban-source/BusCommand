@@ -161,24 +161,33 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     }));
   });
 
-  test("desktop native select options remain readable without hover", async ({ page }) => {
+  test("desktop native select options remain readable on a light Windows-style popup", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "light" });
     await seedDemoState(page, cockpitState());
     await page.goto("/staff.html?mode=demo");
     await loginDispatcher(page);
 
     const colors = await page.locator(".ops-edit-select").first().evaluate((select) => {
       const option = select.options[0];
+      const disabledOption = Array.from(select.options).find(item => item.disabled);
       const selectStyle = getComputedStyle(select);
       const optionStyle = getComputedStyle(option);
+      const disabledStyle = disabledOption ? getComputedStyle(disabledOption) : null;
       return {
         colorScheme: selectStyle.colorScheme,
         optionColor: optionStyle.color,
-        optionBackground: optionStyle.backgroundColor
+        optionBackground: optionStyle.backgroundColor,
+        disabledColor: disabledStyle?.color || null,
+        disabledBackground: disabledStyle?.backgroundColor || null
       };
     });
     expect(colors.colorScheme).toContain("dark");
+    expect(colors.optionColor).toBe("rgb(15, 23, 42)");
+    expect(colors.optionBackground).toBe("rgb(255, 255, 255)");
     expect(colors.optionColor).not.toBe(colors.optionBackground);
-    expect(colors.optionColor).toBe("rgb(248, 250, 252)");
-    expect(colors.optionBackground).toBe("rgb(11, 20, 36)");
+    if (colors.disabledColor) {
+      expect(colors.disabledColor).toBe("rgb(100, 116, 139)");
+      expect(colors.disabledBackground).toBe("rgb(241, 245, 249)");
+    }
   });
 });
