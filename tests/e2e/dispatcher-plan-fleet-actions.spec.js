@@ -35,8 +35,9 @@ test.describe("dispatcher plan and fleet actions", () => {
     await page.evaluate(() => window.openGroupHub("101"));
     const row = page.locator("#settings-buses-list li").filter({ hasText: "91504" });
     await row.getByRole("button", { name: /Edit|Uredi|Bearbeiten/i }).click();
-    await row.locator('input[name="number"]').fill("91505");
-    await row.getByRole("button", { name: /Save|Sačuvaj|Speichern/i }).click();
+    const editForm = page.locator('[data-submit-action="saveBusEdit"][data-bus-id="bus-1"]');
+    await editForm.locator('input[name="number"]').fill("91505");
+    await editForm.getByRole("button", { name: /Save|Sačuvaj|Speichern/i }).click();
 
     await expect(page.locator("#settings-buses-list")).toContainText("91505");
     await expect(page.locator("#settings-buses-list")).not.toContainText("91504");
