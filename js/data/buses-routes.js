@@ -1,6 +1,6 @@
 // BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
-import { showToast } from "../core/utils.js";
+import { escapeHtml, showToast } from "../core/utils.js";
 import { getBusesForLineGroup } from "./group-membership.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
@@ -10,6 +10,7 @@ import ApiClient from "../core/api-client.js";
 import { parseBusImportText, validateBusImportFile } from "../imports/bus-csv-import.js";
 
 let pendingBusImport = null;
+let editingBusId = null;
 
 function activeBusGroupId() {
     return window.state.activeGroupHubId || window.currentUser?.activeGroupId || "";
@@ -25,15 +26,78 @@ function renderBusesList() {
     myBuses.forEach(b => {
         const li = document.createElement("li");
         const active = b.active !== false;
-        const deleteBtn = `<button ${actionAttr("deleteBus", [b.id])} style="background:rgba(239,68,68,0.08);color:${active ? "#ef4444" : "#16a34a"};border:1px solid currentColor;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;">
+        const statusBtn = `<button type="button" ${actionAttr("deleteBus", [b.id])} style="background:rgba(239,68,68,0.08);color:${active ? "#ef4444" : "#16a34a"};border:1px solid currentColor;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;">
                 ${active ? (t("btn_deactivate") || "Deactivate") : (t("btn_activate") || "Activate")}
             </button>`;
-        li.innerHTML = `
-            <span>${t("vehicle")} ${b.number} <small style="color:var(--text-muted);">${active ? "" : `(${t("driver_status_inactive")})`}</small></span>
-            ${deleteBtn}
-        `;
+        if (editingBusId === b.id) {
+            li.innerHTML = `<form class="hub-bus-edit-form" data-submit-action="saveBusEdit" data-bus-id="${escapeHtml(b.id)}">
+                <label class="sr-only" for="edit-bus-${escapeHtml(b.id)}">${escapeHtml(t("bus_edit_number"))}</label>
+                <input id="edit-bus-${escapeHtml(b.id)}" name="number" value="${escapeHtml(b.number)}" maxlength="32" required>
+                <button type="submit" class="btn-primary">${escapeHtml(t("btn_save"))}</button>
+                <button type="button" class="btn-secondary" ${actionAttr("cancelBusEdit")}>${escapeHtml(t("btn_cancel"))}</button>
+            </form>`;
+        } else {
+            li.innerHTML = `
+                <span>${escapeHtml(t("vehicle"))} ${escapeHtml(b.number)} <small style="color:var(--text-muted);">${active ? "" : `(${escapeHtml(t("driver_status_inactive"))})`}</small></span>
+                <span class="hub-bus-row-actions">
+                    <button type="button" class="btn-secondary" ${actionAttr("startEditBus", [b.id])}>${escapeHtml(t("btn_edit"))}</button>
+                    ${statusBtn}
+                </span>
+            `;
+        }
         list.appendChild(li);
     });
+}
+
+function startEditBus(id) {
+    if (!window.state.buses.some(bus => bus.id === id)) return;
+    editingBusId = id;
+    renderBusesList();
+    document.querySelector(`[data-bus-id="${CSS.escape(id)}"] input[name="number"]`)?.focus();
+}
+
+function cancelBusEdit() {
+    editingBusId = null;
+    renderBusesList();
+}
+
+async function saveBusEdit(event) {
+    event.preventDefault();
+    const form = event.target?.closest?.('[data-submit-action="saveBusEdit"]') || event.target;
+    const id = form?.dataset?.busId || "";
+    const bus = window.state.buses.find(item => item.id === id);
+    const number = String(form?.elements?.number?.value || "").trim();
+    if (!bus || !number) {
+        showToast(t("bus_edit_invalid"), "error");
+        return;
+    }
+    const duplicate = window.state.buses.some(item =>
+        item.id !== id && String(item.number || "").toLocaleLowerCase() === number.toLocaleLowerCase()
+    );
+    if (duplicate) {
+        showToast(t("bus_edit_duplicate"), "error");
+        return;
+    }
+
+    if (!IS_DEMO_MODE) {
+        const result = await ApiClient.updateStaffBus(id, number);
+        if (!result?.success || !result.bus) {
+            const errorKey = result?.code === "bus_number_duplicate"
+                ? "bus_edit_duplicate"
+                : "bus_edit_failed";
+            showToast(t(errorKey), "error");
+            return;
+        }
+        Object.assign(bus, result.bus);
+    } else {
+        bus.number = number;
+        saveState();
+    }
+
+    editingBusId = null;
+    renderBusesList();
+    if (typeof lucide !== "undefined") lucide.createIcons();
+    showToast(t("bus_edit_saved", { number }), "success");
 }
 
 async function addBus(event) {
@@ -314,9 +378,12 @@ export {
     addBus,
     clearBusImport,
     confirmBusImport,
+    cancelBusEdit,
     deleteBus,
     handleBusImportFile,
     renderBusImportPreview,
+    saveBusEdit,
+    startEditBus,
     renderRoutesList,
     addRoute,
     deleteRoute
