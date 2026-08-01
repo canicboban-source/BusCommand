@@ -731,6 +731,33 @@ async function superadminConfirmDeleteCompany() {
 }
 
 let _pendingSupportCompanyId = null;
+let _supportMutationPending = false;
+
+function acquireSupportMutationLock() {
+    if (_supportMutationPending) return null;
+    _supportMutationPending = true;
+    const buttons = Array.from(document.querySelectorAll(
+        '[data-action="superadminStartSupport"], [data-action="superadminEndSupport"], #sa-support-confirm-btn'
+    ));
+    const states = buttons.map((button) => ({
+        button,
+        disabled: button.disabled,
+        ariaBusy: button.getAttribute("aria-busy")
+    }));
+    buttons.forEach((button) => {
+        button.disabled = true;
+        button.setAttribute("aria-busy", "true");
+    });
+    return () => {
+        states.forEach(({ button, disabled, ariaBusy }) => {
+            if (!button.isConnected) return;
+            button.disabled = disabled;
+            if (ariaBusy == null) button.removeAttribute("aria-busy");
+            else button.setAttribute("aria-busy", ariaBusy);
+        });
+        _supportMutationPending = false;
+    };
+}
 
 function superadminStartSupport(companyId) {
     _pendingSupportCompanyId = companyId;
@@ -769,37 +796,50 @@ async function superadminConfirmSupportStart() {
         }
         return;
     }
-    const res = await ApiClient.startSupportSession(companyId, { category, reason });
-    if (!res.success) {
-        if (error) {
-            error.textContent = res.error || t("error_generic");
-            error.classList.remove("hidden");
-        }
-        showToast(res.error || t("error_generic"), "error");
-        return;
-    }
-    superadminCancelSupportModal();
-    showToast(t("sa_support_started"), "success");
-    await renderSuperAdminDashboard();
-    await superadminRefreshCompanyDetail();
-}
-
-async function superadminEndSupport(companyId) {
-    const active = await ApiClient.getActiveSupportSessionAdmin(companyId);
-    if (!active.success || !active.session?.id) {
-        showToast(t("sa_support_none"), "info");
-        await renderSuperAdminDashboard();
-        return;
-    }
-    showConfirm(t("sa_support_end_confirm"), async () => {
-        const res = await ApiClient.endSupportSessionAdmin(active.session.id, companyId);
+    const release = acquireSupportMutationLock();
+    if (!release) return;
+    try {
+        const res = await ApiClient.startSupportSession(companyId, { category, reason });
         if (!res.success) {
+            if (error) {
+                error.textContent = res.error || t("error_generic");
+                error.classList.remove("hidden");
+            }
             showToast(res.error || t("error_generic"), "error");
             return;
         }
-        showToast(t("sa_support_ended"), "success");
+        superadminCancelSupportModal();
+        showToast(t("sa_support_started"), "success");
         await renderSuperAdminDashboard();
         await superadminRefreshCompanyDetail();
+    } finally {
+        release();
+    }
+}
+
+function superadminEndSupport(companyId) {
+    showConfirm(t("sa_support_end_confirm"), async () => {
+        const release = acquireSupportMutationLock();
+        if (!release) return;
+        try {
+            const active = await ApiClient.getActiveSupportSessionAdmin(companyId);
+            if (!active.success || !active.session?.id) {
+                showToast(t("sa_support_none"), "info");
+                await renderSuperAdminDashboard();
+                await superadminRefreshCompanyDetail();
+                return;
+            }
+            const res = await ApiClient.endSupportSessionAdmin(active.session.id, companyId);
+            if (!res.success) {
+                showToast(res.error || t("error_generic"), "error");
+                return;
+            }
+            showToast(t("sa_support_ended"), "success");
+            await renderSuperAdminDashboard();
+            await superadminRefreshCompanyDetail();
+        } finally {
+            release();
+        }
     });
 }
 
