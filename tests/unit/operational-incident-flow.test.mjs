@@ -26,7 +26,7 @@ test("operations center requires a reason and keeps the shift until replacement"
     assert.match(dashboard, /ApiClient\.createStaffOperationalIncident/);
     const submit = dashboard.slice(
         dashboard.indexOf("async function submitOperationalIncident"),
-        dashboard.indexOf("/** Reši \/ Dodeli")
+        dashboard.indexOf("/** Reši / Dodeli")
     );
     assert.doesNotMatch(submit, /persistShift\(driver, today, "clear"\)/);
 });
