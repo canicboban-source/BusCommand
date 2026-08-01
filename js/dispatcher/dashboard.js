@@ -1,6 +1,6 @@
 // BusCommand ESM v9.5 — Operativni centar (editable)
 import { formatDateTime, getVisibleDrivers, showToast, escapeHtml, todayDateStr } from "../core/utils.js";
-import { getDriverDutySummary, getShiftForDriverDate } from "../core/shift-plan.js";
+import { getDriverDutySummary, getShiftForDriverDate, setShiftForDriverDate } from "../core/shift-plan.js";
 import { actionAttr, changeAttr } from "../core/action-delegate.js";
 import { t } from "../ui/i18n.js";
 import { renderDashboardGroupsGrid } from "./group-hub.js";
@@ -361,9 +361,12 @@ function renderDispatcherDashboard() {
             });
             filteredReports.slice(0, 5).forEach(rep => {
                 const div = document.createElement("article");
-                const isBreakdown = reportKind(rep).kind === "breakdown";
-                div.className = `ops-action-card alert-item ${isBreakdown ? "alert-breakdown is-critical" : "alert-delay is-warning"}`;
+                const kind = reportKind(rep);
+                const isBreakdown = kind.kind === "breakdown";
+                const isCoverage = kind.kind === "coverage";
+                div.className = `ops-action-card alert-item ${isBreakdown || isCoverage ? "alert-breakdown is-critical" : "alert-delay is-warning"}`;
                 const displayReason = [t(rep.reason) || rep.reason || "", rep.description || ""].filter(Boolean).join(" · ");
+                const resolveAction = isCoverage ? "openCoverageResolver" : "openReportResolution";
 
                 div.innerHTML = `
                     <div class="ops-action-rail" aria-hidden="true"></div>
@@ -374,7 +377,7 @@ function renderDispatcherDashboard() {
                         </div>
                         <span class="alert-item-desc">${escapeHtml(displayReason)}</span>
                         <span class="alert-item-meta">${escapeHtml(t("driver") || "Vozač")}: <strong>${escapeHtml(rep.driver || "—")}</strong> · ${escapeHtml(t("vehicle") || "Vozilo")}: <strong>${escapeHtml(rep.bus || "—")}</strong></span>
-                        <button type="button" class="btn-table-action alert-item-resolve" ${actionAttr("resolveReport", [rep.id])}><i data-lucide="check-check"></i> ${escapeHtml(t("btn_resolve") || "Reši")}</button>
+                        <button type="button" class="btn-table-action alert-item-resolve urgent-action" ${actionAttr(resolveAction, [rep.id])}><i data-lucide="wrench"></i> ${escapeHtml(t("ops_btn_resolve"))}</button>
                     </div>
                 `;
                 alertsContainer.appendChild(div);
@@ -405,9 +408,9 @@ function renderDispatcherDashboard() {
                         : (t("status_pending_confirmation") || "Čeka potvrdu"));
                 const rowClass = uncovered ? "is-uncovered" : (confirmStatus === "confirmed" ? "is-ok" : "is-pending");
                 const actionBtn = incident
-                    ? `<button type="button" class="btn-primary ops-row-action" ${actionAttr("openDailyPlanForGroup", [drv.groupId || drv.lineId || ""])}>${escapeHtml(t("ops_btn_resolve") || "Reši")}</button>`
+                    ? `<button type="button" class="ops-row-action urgent-action" ${actionAttr("openCoverageResolver", [incident.id])}><i data-lucide="wrench"></i> ${escapeHtml(t("ops_btn_resolve"))}</button>`
                     : uncovered
-                    ? `<button type="button" class="btn-primary ops-row-action" ${actionAttr("opsAssignDriver", [drv.name, "morning"])}>${escapeHtml(t("ops_btn_resolve") || "Reši")}</button>`
+                    ? `<button type="button" class="ops-row-action urgent-action" ${actionAttr("opsAssignDriver", [drv.name, "morning"])}><i data-lucide="user-plus"></i> ${escapeHtml(t("ops_btn_resolve"))}</button>`
                     : `<button type="button" class="btn-danger-ghost ops-row-action" ${actionAttr("openOperationalIncident", [drv.name])} aria-label="${escapeHtml(t("ops_incident_open") || "Prijavi problem")}"><i data-lucide="user-x"></i> ${escapeHtml(t("ops_incident_open") || "Problem")}</button>`;
                 return `<tr class="${rowClass}">
                     <td><strong>${escapeHtml(drv.name || "")}</strong></td>
@@ -534,6 +537,210 @@ function activeCoverageIncident(driver, date) {
     ) || null;
 }
 
+
+const AVAILABLE_REPLACEMENT_TYPES = new Set(["off", "clear", "bereitschaft", "standby"]);
+
+function coverageDriverCandidates(report) {
+    const groupId = String(report?.groupId || report?.lineId || "");
+    return getVisibleDrivers().filter(driver => {
+        if (driver.active === false || driverUid(driver) === report.driverId) return false;
+        if (String(driver.groupId || driver.lineId || "") !== groupId) return false;
+        const duty = getShiftForDriverDate(driver.name, report.date);
+        return !duty || AVAILABLE_REPLACEMENT_TYPES.has(String(duty.type || "").toLowerCase());
+    });
+}
+
+function coverageBusCandidates(report) {
+    const groupId = String(report?.groupId || report?.lineId || "");
+    const used = new Set();
+    getVisibleDrivers().forEach(driver => {
+        if (driverUid(driver) === report.driverId) return;
+        const duty = getShiftForDriverDate(driver.name, report.date);
+        if (duty && !AVAILABLE_REPLACEMENT_TYPES.has(String(duty.type || "").toLowerCase()) && duty.bus) {
+            used.add(String(duty.bus));
+        }
+    });
+    return (window.state.buses || []).filter(bus => {
+        const number = String(bus.number || "");
+        return bus.active !== false
+            && String(bus.groupId || bus.lineId || "") === groupId
+            && (!used.has(number) || number === String(report.bus || ""));
+    });
+}
+
+function ensureCoverageResolverModal() {
+    let modal = document.getElementById("ops-coverage-resolver-modal");
+    if (modal) return modal;
+    modal = document.createElement("div");
+    modal.id = "ops-coverage-resolver-modal";
+    modal.className = "ops-modal-layer hidden";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-labelledby", "ops-coverage-resolver-title");
+    modal.setAttribute("aria-hidden", "true");
+    modal.innerHTML = `
+        <form class="ops-incident-dialog ops-resolution-dialog">
+            <div class="ops-incident-heading">
+                <span class="ops-incident-icon is-amber"><i data-lucide="wrench"></i></span>
+                <div>
+                    <h2 id="ops-coverage-resolver-title">${escapeHtml(t("ops_coverage_resolver_title"))}</h2>
+                    <p id="ops-coverage-resolver-original"></p>
+                </div>
+            </div>
+            <p class="ops-resolution-intro">${escapeHtml(t("ops_coverage_resolver_effect"))}</p>
+            <label for="ops-coverage-driver">${escapeHtml(t("ops_coverage_replacement_driver"))}</label>
+            <select id="ops-coverage-driver" required></select>
+            <label for="ops-coverage-bus">${escapeHtml(t("ops_coverage_replacement_bus"))}</label>
+            <select id="ops-coverage-bus" required></select>
+            <p id="ops-coverage-resolver-status" class="ops-resolution-status" role="status" aria-live="polite"></p>
+            <div class="ops-incident-actions">
+                <button type="button" class="btn-secondary" ${actionAttr("closeCoverageResolver")}>${escapeHtml(t("btn_cancel"))}</button>
+                <button type="submit" class="urgent-action ops-resolution-submit"><i data-lucide="wrench"></i> ${escapeHtml(t("ops_coverage_confirm"))}</button>
+            </div>
+        </form>`;
+    document.body.appendChild(modal);
+    modal.addEventListener("click", event => {
+        if (event.target === modal) closeCoverageResolver();
+    });
+    modal.querySelector("form").addEventListener("submit", submitCoverageResolution);
+    if (typeof lucide !== "undefined") lucide.createIcons();
+    return modal;
+}
+
+function openCoverageResolver(reportId, preferredReplacementDriverId = "") {
+    const report = visibleOperationalReports().find(item =>
+        item.id === reportId && reportKind(item).kind === "coverage"
+    );
+    if (!report) return false;
+    const modal = ensureCoverageResolverModal();
+    const drivers = coverageDriverCandidates(report);
+    const buses = coverageBusCandidates(report);
+    const driverSelect = modal.querySelector("#ops-coverage-driver");
+    const busSelect = modal.querySelector("#ops-coverage-bus");
+    const preferred = String(preferredReplacementDriverId || "");
+    driverSelect.innerHTML = drivers.length
+        ? drivers.map(driver => `<option value="${escapeHtml(driverUid(driver))}" ${driverUid(driver) === preferred ? "selected" : ""}>${escapeHtml(driver.name)}</option>`).join("")
+        : `<option value="" disabled selected>${escapeHtml(t("ops_coverage_no_drivers"))}</option>`;
+    busSelect.innerHTML = buses.length
+        ? buses.map(bus => {
+            const number = String(bus.number || "");
+            return `<option value="${escapeHtml(number)}" ${number === String(report.bus || "") ? "selected" : ""}>${escapeHtml(number)}</option>`;
+        }).join("")
+        : `<option value="" disabled selected>${escapeHtml(t("ops_coverage_no_buses"))}</option>`;
+    modal.dataset.reportId = report.id;
+    modal.querySelector("#ops-coverage-resolver-original").textContent =
+        t("ops_coverage_original_driver", { driver: report.driver || "—" });
+    modal.querySelector("#ops-coverage-resolver-status").textContent =
+        !drivers.length ? t("ops_coverage_no_drivers") : (!buses.length ? t("ops_coverage_no_buses") : "");
+    modal.querySelector("button[type='submit']").disabled = !drivers.length || !buses.length;
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+    modal.setAttribute("aria-hidden", "false");
+    setTimeout(() => driverSelect.focus(), 0);
+    return true;
+}
+
+function closeCoverageResolver() {
+    const modal = document.getElementById("ops-coverage-resolver-modal");
+    if (!modal || modal.dataset.pending === "true") return;
+    modal.classList.add("hidden");
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden", "true");
+    delete modal.dataset.reportId;
+}
+
+async function submitCoverageResolution(event) {
+    event.preventDefault();
+    const modal = document.getElementById("ops-coverage-resolver-modal");
+    const report = (window.state.reports || []).find(item =>
+        item.id === modal?.dataset.reportId && isActiveReport(item)
+    );
+    const replacementDriverId = String(modal?.querySelector("#ops-coverage-driver")?.value || "");
+    const replacementBus = String(modal?.querySelector("#ops-coverage-bus")?.value || "");
+    const replacement = getVisibleDrivers().find(driver => driverUid(driver) === replacementDriverId);
+    const original = getVisibleDrivers().find(driver => driverUid(driver) === report?.driverId);
+    const status = modal?.querySelector("#ops-coverage-resolver-status");
+    if (!report || !replacement || !original || !replacementBus) {
+        if (status) status.textContent = t("ops_coverage_selection_required");
+        return;
+    }
+    const originalShift = getShiftForDriverDate(original.name, report.date);
+    const replacementShift = getShiftForDriverDate(replacement.name, report.date);
+    const submit = modal.querySelector("button[type='submit']");
+    modal.dataset.pending = "true";
+    submit.disabled = true;
+    if (status) status.textContent = t("report_resolving");
+    try {
+        let result;
+        if (IS_DEMO_MODE) {
+            result = {
+                success: true,
+                report: {
+                    id: report.id,
+                    status: "resolved",
+                    resolution: {
+                        type: "replacement",
+                        summary: `${replacement.name} / ${replacementBus}`,
+                        replacementDriverId,
+                        replacementBus
+                    }
+                },
+                shift: {
+                    type: report.shiftType || originalShift?.type || "morning",
+                    name: report.shiftName || originalShift?.name || "",
+                    routeCode: originalShift?.routeCode || report.shiftName || "",
+                    start: originalShift?.start || null,
+                    end: originalShift?.end || null,
+                    bus: replacementBus,
+                    revision: Number(replacementShift?.revision || 0) + 1
+                }
+            };
+        } else {
+            result = await ApiClient.resolveStaffOperationalIncident(report.id, {
+                replacementDriverId,
+                replacementBus,
+                expectedOriginalRevision: Number(originalShift?.revision || 0),
+                expectedReplacementRevision: Number(replacementShift?.revision || 0)
+            });
+        }
+        if (!result?.success) {
+            const message = result?.error || t("ops_resolver_failed");
+            if (status) status.textContent = message;
+            showToast(message, "error");
+            return;
+        }
+        setShiftForDriverDate(original.name, report.date, { type: "clear" });
+        const assigned = result.shift || {};
+        setShiftForDriverDate(replacement.name, report.date, {
+            type: assigned.type || report.shiftType || originalShift?.type || "morning",
+            name: assigned.name || report.shiftName || originalShift?.name || "",
+            bus: assigned.bus || replacementBus,
+            routeCode: assigned.routeCode || originalShift?.routeCode || "",
+            start: assigned.start || originalShift?.start || null,
+            end: assigned.end || originalShift?.end || null,
+            revision: Number.isInteger(assigned.revision) ? assigned.revision : Number(replacementShift?.revision || 0) + 1
+        });
+        Object.assign(report, result.report || {}, {
+            status: "resolved",
+            resolvedAt: result.report?.resolvedAt || new Date().toISOString(),
+            resolvedBy: result.report?.resolvedBy || window.currentUser?.uid || window.currentUser?.id
+        });
+        if (IS_DEMO_MODE) saveState();
+        delete modal.dataset.pending;
+        closeCoverageResolver();
+        showToast(t("ops_resolver_success", { driver: replacement.name, bus: replacementBus }), "success");
+        window.dispatchEvent(new CustomEvent("buscommand:plan-updated", { detail: { date: report.date } }));
+        renderDispatcherDashboard();
+    } catch (error) {
+        const message = error?.message || t("ops_resolver_failed");
+        if (status) status.textContent = message;
+        showToast(message, "error");
+    } finally {
+        delete modal.dataset.pending;
+        submit.disabled = false;
+    }
+}
+
 function ensureIncidentModal() {
     let modal = document.getElementById("ops-incident-modal");
     if (modal) return modal;
@@ -572,21 +779,22 @@ function ensureIncidentModal() {
     return modal;
 }
 
-function openOperationalIncident(driverName) {
+function openOperationalIncident(driverName, preferredReplacementDriverId = "") {
     const driver = driverByName(driverName);
     if (!driver) return;
     const today = todayDateStr();
-    const duplicate = visibleOperationalReports().some(report =>
+    const duplicate = visibleOperationalReports().find(report =>
         reportKind(report).kind === "coverage"
         && report.driverId === driverUid(driver)
         && report.date === today
     );
     if (duplicate) {
-        showToast(t("ops_incident_already_open") || "Za ovog vozača već postoji otvoren incident.", "warning");
+        openCoverageResolver(duplicate.id, preferredReplacementDriverId);
         return;
     }
     const modal = ensureIncidentModal();
     modal.dataset.driverName = driverName;
+    modal.dataset.preferredReplacementDriverId = String(preferredReplacementDriverId || "");
     modal.querySelector("#ops-incident-driver").textContent = driverName;
     modal.querySelector("form").reset();
     modal.classList.remove("hidden");
@@ -602,6 +810,7 @@ function closeOperationalIncident() {
     modal.style.display = "none";
     modal.setAttribute("aria-hidden", "true");
     delete modal.dataset.driverName;
+    delete modal.dataset.preferredReplacementDriverId;
 }
 
 async function submitOperationalIncident(event) {
@@ -636,9 +845,11 @@ async function submitOperationalIncident(event) {
         window.state.reports = Array.isArray(window.state.reports) ? window.state.reports : [];
         window.state.reports.push(result.report);
         if (IS_DEMO_MODE) saveState();
+        const preferredReplacementDriverId = String(modal.dataset.preferredReplacementDriverId || "");
         closeOperationalIncident();
-        showToast(t("ops_incident_created") || "Incident je evidentiran. Potrebna je zamena.", "success");
+        showToast(t("ops_incident_created"), "success");
         renderDispatcherDashboard();
+        openCoverageResolver(result.report.id, preferredReplacementDriverId);
     } finally {
         submit.disabled = false;
     }
@@ -669,5 +880,7 @@ export {
     updateDriverShiftInline,
     opsAssignDriver,
     openOperationalIncident,
-    closeOperationalIncident
+    closeOperationalIncident,
+    openCoverageResolver,
+    closeCoverageResolver
 };
