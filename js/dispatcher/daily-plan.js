@@ -261,7 +261,7 @@ async function dailyPlanAssignDriver(dateStr, shiftType, routeCode, driverName) 
     if (typeof window.renderDispatcherDashboard === "function") window.renderDispatcherDashboard();
 }
 
-if (!window.__buscommandPlanUpdatedListener) {
+if (typeof window.addEventListener === "function" && !window.__buscommandPlanUpdatedListener) {
     window.__buscommandPlanUpdatedListener = true;
     window.addEventListener("buscommand:plan-updated", (event) => {
         const date = event.detail?.date || todayDateStr();
