@@ -16,10 +16,12 @@ import { actionAttr } from "../core/action-delegate.js";
 import { saveState } from "../core/state.js";
 import { loadActiveServicePlanForLine } from "../core/service-plan.js";
 import { renderDispatcherDataHub } from "./data-hub.js";
-import { renderHubDailyPreview } from "./daily-plan.js";
-import { renderHubMonthlyPreview } from "./monthly-plans.js";
+import { renderDailyPlanFullPage, renderHubDailyPreview } from "./daily-plan.js";
+import { renderHubMonthlyPreview, renderMonthlyPlansFullPage } from "./monthly-plans.js";
 import { switchSection } from "../layout/navigation.js";
-import { escapeHtml } from "../core/utils.js";
+import { escapeHtml, showToast } from "../core/utils.js";
+
+const PLAN_CATALOG_TIMEOUT_MS = 8_000;
 
 function getHubGroupId() {
     return window.state.activeGroupHubId || null;
@@ -84,28 +86,59 @@ function openDailyPlanFull() {
     switchSection("dispatcher-daily-plan-full");
 }
 
-async function openDailyPlanForGroup(groupId) {
-    if (!groupId) return;
-    window.state.activeGroupHubId = groupId;
-    window.state.activeGroupFilter = groupId;
-    migrateLineMembership(groupId);
-    activateShiftCatalogForLine(groupId);
-    ensureShiftCatalogForEdit(groupId);
-    await loadActiveServicePlanForLine(groupId).catch(error => console.warn("Published service plan could not be loaded", error));
-    window._planFullReturnSection = "dispatcher-daily-plan-pick";
-    switchSection("dispatcher-daily-plan-full");
+function setPlanSectionBusy(sectionId, busy) {
+    if (typeof document === "undefined") return;
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    if (busy) section.setAttribute("aria-busy", "true");
+    else section.removeAttribute("aria-busy");
 }
 
-async function openMonthlyPlanForGroup(groupId) {
-    if (!groupId) return;
+async function refreshPlanCatalog(groupId, sectionId, render) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), PLAN_CATALOG_TIMEOUT_MS);
+    setPlanSectionBusy(sectionId, true);
+    try {
+        await loadActiveServicePlanForLine(groupId, { signal: controller.signal });
+        if (getHubGroupId() === groupId) render();
+    } catch (error) {
+        console.warn("Published service plan could not be loaded", error);
+        if (getHubGroupId() === groupId) {
+            const key = error?.name === "AbortError" ? "plan_catalog_load_timeout" : "plan_catalog_load_failed";
+            showToast(t(key), "info", 5000);
+        }
+    } finally {
+        clearTimeout(timeoutId);
+        setPlanSectionBusy(sectionId, false);
+    }
+}
+
+function openPlanForGroup(groupId, { sectionId, returnSection, render }) {
+    if (!groupId) return Promise.resolve(null);
     window.state.activeGroupHubId = groupId;
     window.state.activeGroupFilter = groupId;
     migrateLineMembership(groupId);
     activateShiftCatalogForLine(groupId);
     ensureShiftCatalogForEdit(groupId);
-    await loadActiveServicePlanForLine(groupId).catch(error => console.warn("Published service plan could not be loaded", error));
-    window._planFullReturnSection = "dispatcher-monthly-plan-pick";
-    switchSection("dispatcher-monthly-plans-full");
+    window._planFullReturnSection = returnSection;
+    if (!switchSection(sectionId)) return Promise.resolve(null);
+    return refreshPlanCatalog(groupId, sectionId, render);
+}
+
+function openDailyPlanForGroup(groupId) {
+    return openPlanForGroup(groupId, {
+        sectionId: "dispatcher-daily-plan-full",
+        returnSection: "dispatcher-daily-plan-pick",
+        render: renderDailyPlanFullPage
+    });
+}
+
+function openMonthlyPlanForGroup(groupId) {
+    return openPlanForGroup(groupId, {
+        sectionId: "dispatcher-monthly-plans-full",
+        returnSection: "dispatcher-monthly-plan-pick",
+        render: renderMonthlyPlansFullPage
+    });
 }
 
 function backFromPlanFullPage() {
