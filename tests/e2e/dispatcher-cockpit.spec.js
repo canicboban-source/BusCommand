@@ -78,7 +78,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await page.getByRole("button", { name: "View drivers" }).click();
     await expect(page.locator("#hub-section-drivers")).toBeFocused();
 
-    await page.getByRole("button", { name: /Edit buses/i }).click();
+    await page.locator('.hub-overview-actions [data-action="scrollHubSection"]').nth(1).click();
     await expect(page.locator("#hub-section-buses")).toBeFocused();
   });
 
