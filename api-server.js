@@ -1045,16 +1045,19 @@ app.put(
 
     const { name, primaryColor, logoUrl } = req.validatedBody;
     try {
-      await db.collection("companies").doc(companyId)
-        .collection("branding").doc("main")
-        .set({ name, primaryColor, logoUrl });
-      await _logAuditEvent(companyId, req.staffUser.uid, "branding_updated", {
-        name,
-        primaryColor,
-        hasLogo: Boolean(logoUrl)
-      }, {
-        actorRole: req.staffUser.role,
-        actorName: req.staffUser.name || null
+      const companyRef = db.collection("companies").doc(companyId);
+      const timestamp = admin.firestore.FieldValue.serverTimestamp();
+      await db.runTransaction(async transaction => {
+        transaction.set(companyRef.collection("branding").doc("main"), { name, primaryColor, logoUrl });
+        transaction.set(companyRef.collection("audit_log").doc(), {
+          action: "branding_updated",
+          actorId: req.staffUser.uid,
+          actorRole: req.staffUser.role,
+          actorName: req.staffUser.name || null,
+          source: "server",
+          details: { name, primaryColor, hasLogo: Boolean(logoUrl) },
+          timestamp
+        });
       });
       return res.json({ success: true, branding: { name, primaryColor, logoUrl } });
     } catch (err) {
@@ -1074,6 +1077,7 @@ app.post(
     if (!companyId) return;
     const { id, name, description, color } = req.validatedBody;
     const groupRef = db.collection("companies").doc(companyId).collection("groups").doc(id);
+    const auditRef = db.collection("companies").doc(companyId).collection("audit_log").doc();
     const timestamp = admin.firestore.FieldValue.serverTimestamp();
     try {
       await db.runTransaction(async transaction => {
@@ -1093,12 +1097,12 @@ app.post(
           createdAt: timestamp,
           updatedAt: timestamp
         });
+        transaction.set(auditRef, {
+          action: "company_group_created", actorId: req.staffUser.uid,
+          actorRole: req.staffUser.role, actorName: req.staffUser.name || null,
+          source: "server", details: { groupId: id, name, color }, timestamp
+        });
       });
-      await _logAuditEvent(companyId, req.staffUser.uid, "company_group_created", {
-        groupId: id,
-        name,
-        color
-      }, { actorRole: req.staffUser.role, actorName: req.staffUser.name || null });
       return res.status(201).json({
         success: true,
         group: { id, lineId: id, name, description, color, active: true, companyId }
@@ -1127,25 +1131,37 @@ app.put(
     }
     const { name, description, color } = req.validatedBody;
     const groupRef = db.collection("companies").doc(companyId).collection("groups").doc(groupId);
+    const auditRef = db.collection("companies").doc(companyId).collection("audit_log").doc();
+    const timestamp = admin.firestore.FieldValue.serverTimestamp();
     try {
-      if (!(await groupRef.get()).exists) return res.status(404).json({ success: false, error: "Grupa nije pronađena." });
-      await groupRef.set({
-        name,
-        description,
-        color,
-        companyId,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-      await _logAuditEvent(companyId, req.staffUser.uid, "company_group_updated", {
-        groupId,
-        name,
-        color
-      }, { actorRole: req.staffUser.role, actorName: req.staffUser.name || null });
+      await db.runTransaction(async transaction => {
+        const current = await transaction.get(groupRef);
+        if (!current.exists) {
+          const error = new Error("group-not-found");
+          error.code = "group-not-found";
+          throw error;
+        }
+        transaction.set(groupRef, {
+          name,
+          description,
+          color,
+          companyId,
+          updatedAt: timestamp
+        }, { merge: true });
+        transaction.set(auditRef, {
+          action: "company_group_updated", actorId: req.staffUser.uid,
+          actorRole: req.staffUser.role, actorName: req.staffUser.name || null,
+          source: "server", details: { groupId, name, color }, timestamp
+        });
+      });
       return res.json({
         success: true,
         group: { id: groupId, lineId: groupId, name, description, color, active: true, companyId }
       });
     } catch (err) {
+      if (err.code === "group-not-found") {
+        return res.status(404).json({ success: false, error: "Grupa nije pronađena." });
+      }
       req.log?.error({ err }, "Company group update failed");
       return res.status(500).json({ success: false, error: "Grupa nije ažurirana." });
     }
@@ -1177,11 +1193,15 @@ app.delete(
           details: { references }
         });
       }
-      await groupRef.delete();
-      await _logAuditEvent(companyId, req.staffUser.uid, "company_group_deleted", { groupId }, {
-        actorRole: req.staffUser.role,
-        actorName: req.staffUser.name || null
+      const timestamp = admin.firestore.FieldValue.serverTimestamp();
+      const batch = db.batch();
+      batch.delete(groupRef);
+      batch.set(companyRef.collection("audit_log").doc(), {
+        action: "company_group_deleted", actorId: req.staffUser.uid,
+        actorRole: req.staffUser.role, actorName: req.staffUser.name || null,
+        source: "server", details: { groupId }, timestamp
       });
+      await batch.commit();
       return res.json({ success: true, groupId });
     } catch (err) {
       req.log?.error({ err }, "Company group delete failed");
