@@ -19,14 +19,14 @@ import { addBus, deleteBus, deleteRoute } from "./data/buses-routes.js";
 import { addDriver, editDriver, toggleDriverActive } from "./data/drivers.js";
 import { deleteGroup, setGroupFilter } from "./data/groups.js";
 import { clearScheduleFile, clearScheduleText, deleteScheduleEntry, formatScheduleText, handleScheduleDrop, handleScheduleFileSelect, insertScheduleTable, sendScheduleToDrivers, switchScheduleTab } from "./data/schedules.js";
-import { updateDriverBusInline, updateDriverShiftInline, opsAssignDriver, openOperationalIncident, closeOperationalIncident } from "./dispatcher/dashboard.js";
+import { updateDriverBusInline, updateDriverShiftInline, opsAssignDriver, openOperationalIncident, closeOperationalIncident, openCoverageResolver, closeCoverageResolver } from "./dispatcher/dashboard.js";
 import { removeDispatcher } from "./dispatcher/dispatchers.js";
 import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlansFull, scrollHubSection } from "./dispatcher/group-hub.js";
 import { returnLostItem } from "./dispatcher/lost-items.js";
 import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, saveMonthlyDayEdit, selectMonthlyPlanGroup } from "./dispatcher/monthly-plans.js";
 import { setMessagesPageTab, submitDispatcherMessage } from "./dispatcher/msg-compose.js";
 import { clearPendingPlanImports, confirmBulkPlanImport, handleBulkPlanDrop, handleBulkPlanFileInput, removePendingImport, updatePendingImportDriver, updatePendingImportMonth } from "./dispatcher/plan-import.js";
-import { resolveReport } from "./dispatcher/reports.js";
+import { resolveReport, openReportResolution, closeReportResolution } from "./dispatcher/reports.js";
 import { archiveAllDispatcherMessages, archiveDispatcherMessage } from "./dispatcher/sent-messages.js";
 import { shiftWeekNav } from "./dispatcher/shift-utils.js";
 import { assignShift, openShiftCell, removeShift } from "./dispatcher/shifts.js";
@@ -83,6 +83,8 @@ const HANDLERS = {
     closeModal,
     closeMonthlyDayEditModal,
     closeOperationalIncident,
+    closeCoverageResolver,
+    closeReportResolution,
     closeSosConfirmModal,
     closeSuperAdminModal,
     confirmBulkPlanImport,
@@ -143,6 +145,8 @@ const HANDLERS = {
     openGroupHub,
     openMonthlyDayEdit,
     openOperationalIncident,
+    openCoverageResolver,
+    openReportResolution,
     openMonthlyPlanForGroup,
     openMonthlyPlansFull,
     openShiftCell,

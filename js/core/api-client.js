@@ -304,6 +304,12 @@ const ApiClient = (() => {
             body: JSON.stringify(incident)
         });
     }
+    async function resolveStaffOperationalIncident(reportId, resolution) {
+        return apiFetch("/api/staff/operational-incidents/" + encodeURIComponent(reportId) + "/resolve", {
+            method: "PUT",
+            body: JSON.stringify(resolution)
+        });
+    }
     async function assignStaffShift(shift) {
         return apiFetch("/api/staff/shifts/assignment", {
             method: "PUT",
@@ -359,7 +365,7 @@ const ApiClient = (() => {
         createCompanyGroup, updateCompanyGroup, deleteCompanyGroup, reportStateSync, importDriversCsv, setDriverActive,
         updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode,
         createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage,
-        createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, resolveStaffSos,
+        createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, resolveStaffOperationalIncident, resolveStaffSos,
         setLostItemStatus, createStaffBus, setStaffBusActive, assignStaffShift,
         sendStaffMessage, getDriverWorkSession, confirmDriverShifts, getStaffShiftConfirmations,
         startSupportSession, getActiveSupportSessionAdmin, endSupportSessionAdmin,

@@ -492,15 +492,6 @@ html[data-app-surface="staff"] .daily-plan-table .ops-edit-select {
     width: 100%;
 }
 
-html[data-app-surface="staff"] select option {
-    background: var(--bg-darker);
-    color: var(--text-main);
-}
-
-html[data-app-surface="staff"] select option:disabled {
-    color: var(--text-muted);
-}
-
 html[data-app-surface="staff"] .sidebar-nav {
     min-height: 0;
     overflow-y: auto;
@@ -1993,5 +1984,147 @@ html[data-app-surface="staff"] .sa-detail-reset-link {
     html[data-app-surface="staff"] .sa-detail-admin-row {
         flex-direction: column;
         align-items: stretch;
+    }
+}
+
+
+/* Dispatcher cockpit: semantic urgent actions and accessible resolution dialogs */
+html[data-app-surface="staff"] .urgent-action {
+    display: inline-flex;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid #fbbf24;
+    border-radius: 9px;
+    color: #1c1300;
+    background: #f59e0b;
+    box-shadow: 0 8px 20px rgba(245, 158, 11, .18);
+    font: inherit;
+    font-weight: 800;
+    line-height: 1.15;
+    cursor: pointer;
+}
+
+html[data-app-surface="staff"] .urgent-action:hover:not(:disabled) {
+    border-color: #fde68a;
+    background: #fbbf24;
+    box-shadow: 0 10px 26px rgba(245, 158, 11, .28);
+    transform: translateY(-1px);
+}
+
+html[data-app-surface="staff"] .urgent-action:focus-visible {
+    outline: 3px solid rgba(251, 191, 36, .42);
+    outline-offset: 2px;
+}
+
+html[data-app-surface="staff"] .urgent-action:disabled {
+    opacity: .56;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+html[data-app-surface="staff"] .urgent-action svg {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 17px;
+}
+
+html[data-app-surface="staff"] .ops-modal-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(2, 8, 23, .84);
+    backdrop-filter: blur(8px);
+}
+
+html[data-app-surface="staff"] .ops-modal-layer.hidden {
+    display: none;
+}
+
+html[data-app-surface="staff"] .ops-resolution-dialog {
+    border-color: rgba(251, 191, 36, .46);
+}
+
+html[data-app-surface="staff"] .ops-incident-icon.is-amber {
+    color: #fbbf24;
+    background: rgba(245, 158, 11, .14);
+}
+
+html[data-app-surface="staff"] .ops-resolution-intro {
+    margin: 0 0 14px;
+    color: #cbd5e1;
+    line-height: 1.5;
+}
+
+html[data-app-surface="staff"] .ops-resolution-dialog select,
+html[data-app-surface="staff"] .ops-resolution-dialog textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: 11px 13px;
+    border: 1px solid #475569;
+    border-radius: 10px;
+    color: #f8fafc;
+    background: #0b1424;
+    color-scheme: dark;
+}
+
+html[data-app-surface="staff"] .ops-resolution-dialog select:focus,
+html[data-app-surface="staff"] .ops-resolution-dialog textarea:focus {
+    border-color: #60a5fa;
+    outline: 3px solid rgba(59, 130, 246, .2);
+}
+
+html[data-app-surface="staff"] .ops-resolution-status {
+    min-height: 22px;
+    margin: 12px 0 0;
+    color: #fde68a;
+    font-size: .86rem;
+}
+
+html[data-app-surface="staff"] select {
+    color-scheme: dark;
+}
+
+/*
+ * Windows Chromium can keep the native popup surface light while still
+ * applying author-defined option text colors. Pair a light popup fallback
+ * with a dark foreground so every option remains readable without hover.
+ * The closed select control keeps the dark BusCommand styling above.
+ */
+html[data-app-surface="staff"] select option,
+html[data-app-surface="staff"] select optgroup {
+    color: #0f172a !important;
+    background-color: #ffffff !important;
+}
+
+html[data-app-surface="staff"] select option:disabled {
+    color: #64748b !important;
+    background-color: #f1f5f9 !important;
+}
+
+@media (forced-colors: active) {
+    html[data-app-surface="staff"] select option,
+    html[data-app-surface="staff"] select optgroup,
+    html[data-app-surface="staff"] select option:disabled {
+        color: CanvasText !important;
+        background-color: Canvas !important;
+        forced-color-adjust: auto;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html[data-app-surface="staff"] .urgent-action {
+        transition: none;
+    }
+    html[data-app-surface="staff"] .urgent-action:hover:not(:disabled) {
+        transform: none;
     }
 }

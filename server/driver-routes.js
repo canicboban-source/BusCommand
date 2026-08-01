@@ -465,7 +465,7 @@ function registerDriverRoutes(app, deps) {
     } catch { return res.status(401).json({ success: false, code: "INVALID_TOKEN", error: "Nevažeći token." }); }
   });
 
-  // Legacy path — company-code-as-login activation removed (shared 123456 era).
+  // Legacy path — shared company-code activation is permanently removed.
   app.post("/api/auth/driver/activate-company-code", rateLimit(8, 10 * 60_000), async (_req, res) => {
     return res.status(410).json({
       success: false,
@@ -1415,7 +1415,14 @@ function registerDriverRoutes(app, deps) {
           error.code = "revision_conflict";
           throw error;
         }
-        if (replacementShiftSnap.exists && !["clear", "off"].includes(replacementShiftSnap.data().type)) {
+        const replacementScheduleDay = day != null
+          ? replacementScheduleSnap.data()?.parsedShifts?.[day]
+          : null;
+        const replacementDutyType = replacementShiftSnap.exists
+          ? replacementShiftSnap.data().type
+          : replacementScheduleDay?.type;
+        const availableReplacementTypes = new Set(["clear", "off", "bereitschaft", "standby"]);
+        if (replacementDutyType && !availableReplacementTypes.has(replacementDutyType)) {
           const error = new Error("driver_conflict");
           error.code = "driver_conflict";
           throw error;
