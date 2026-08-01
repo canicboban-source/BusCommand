@@ -17,16 +17,28 @@ test("daily plan is constrained to today and directs future changes to monthly p
   assert.match(html, /id="daily-plan-date-picker"/);
 });
 
-test("daily driver replacement assigns the substitute and clears the previous driver", async () => {
+test("daily driver replacement opens the guided incident flow before changing the plan", async () => {
   const source = await read("../../js/dispatcher/daily-plan.js");
   const start = source.indexOf("async function dailyPlanAssignDriver");
-  const end = source.indexOf("\nexport {", start);
+  const end = source.indexOf("\nif (typeof window.addEventListener", start);
   const handler = source.slice(start, end);
   assert.ok(start > -1 && end > start);
   assert.match(handler, /planBeforeChange\.slots\.find/);
-  assert.match(handler, /persistShift\(\s*nextDriver/);
-  assert.match(handler, /persistShift\(previousDriver,\s*today,\s*"clear"\)/);
-  assert.match(handler, /await persistShift\(nextDriver,\s*today,\s*"clear"\)/);
+  assert.match(handler, /window\.openCoverageResolver\(incident\.id, preferredReplacementDriverId\)/);
+  assert.match(handler, /window\.openOperationalIncident\(previousDriver\.name, preferredReplacementDriverId\)/);
+  assert.match(handler, /if \(previousDriver\)[\s\S]*return;[\s\S]*persistShift\(/);
+  assert.doesNotMatch(handler, /persistShift\(previousDriver/);
+  assert.doesNotMatch(handler, /resolveReport\(/);
+});
+
+test("truly empty daily slot still supports a direct single assignment", async () => {
+  const source = await read("../../js/dispatcher/daily-plan.js");
+  const start = source.indexOf("async function dailyPlanAssignDriver");
+  const end = source.indexOf("\nif (typeof window.addEventListener", start);
+  const handler = source.slice(start, end);
+  assert.match(handler, /if \(!nextDriver\) return;/);
+  assert.match(handler, /const assigned = await persistShift\(\s*nextDriver/);
+  assert.match(handler, /if \(!assigned\) return;/);
 });
 
 test("daily replacement guidance exists in EN SR and DE", async () => {
