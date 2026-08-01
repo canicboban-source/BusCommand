@@ -148,9 +148,11 @@ const ApiClient = (() => {
             body: JSON.stringify({ companyId, groupId, plan })
         });
     }
-    async function getActiveServicePlan(companyId, groupId) {
+    async function getActiveServicePlan(companyId, groupId, options = {}) {
         const query = new URLSearchParams({ companyId, groupId });
-        return apiFetch("/api/staff/service-plans/active?" + query.toString());
+        return apiFetch("/api/staff/service-plans/active?" + query.toString(), {
+            signal: options.signal
+        });
     }
     async function getServicePlanHistory(companyId, groupId) {
         const query = new URLSearchParams({ companyId, groupId });
@@ -298,6 +300,12 @@ const ApiClient = (() => {
             body: JSON.stringify({ active })
         });
     }
+    async function updateStaffBus(busId, number) {
+        return apiFetch("/api/staff/buses/" + encodeURIComponent(busId), {
+            method: "PUT",
+            body: JSON.stringify({ number })
+        });
+    }
     async function createStaffOperationalIncident(incident) {
         return apiFetch("/api/staff/operational-incidents", {
             method: "POST",
@@ -366,7 +374,7 @@ const ApiClient = (() => {
         updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode,
         createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage,
         createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, resolveStaffOperationalIncident, resolveStaffSos,
-        setLostItemStatus, createStaffBus, setStaffBusActive, assignStaffShift,
+        setLostItemStatus, createStaffBus, setStaffBusActive, updateStaffBus, assignStaffShift,
         sendStaffMessage, getDriverWorkSession, confirmDriverShifts, getStaffShiftConfirmations,
         startSupportSession, getActiveSupportSessionAdmin, endSupportSessionAdmin,
         getCompanySupportSession, endCompanySupportSession
