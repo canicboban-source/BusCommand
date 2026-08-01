@@ -7,8 +7,8 @@ const api = (await readFile(new URL("../../api-server.js", import.meta.url), "ut
   .replace(/\r\n/g, "\n");
 
 test("Super Admin company status and tenant audit commit atomically", () => {
-  const start = api.indexOf('"\/api\/admin\/company\/:companyId\/status"'.replaceAll("\\/", "/"));
-  const end = api.indexOf('app.post(\n  "\/api\/admin\/hash-pin"'.replaceAll("\\/", "/"), start);
+  const start = api.indexOf('"/api/admin/company/:companyId/status"');
+  const end = api.indexOf('app.post(\\n  "/api/admin/hash-pin"', start);
   assert.ok(start >= 0 && end > start, "company status route was not found");
   const route = api.slice(start, end);
 
