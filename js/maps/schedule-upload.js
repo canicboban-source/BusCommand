@@ -3,17 +3,14 @@ import { saveState } from "../core/state.js";
 import { showToast } from "../core/utils.js";
 import { saveMonthlyPlan } from "../core/shift-plan.js";
 import { renderDispatcherDataHub } from "../dispatcher/data-hub.js";
-import { extractTextFromScheduleFile, parseExtractedScheduleText } from "./schedule-import-utils.js";
+import {
+    MAX_SCHEDULE_FILE_BYTES,
+    extractTextFromScheduleFile,
+    parseExtractedScheduleText,
+    validateScheduleFile
+} from "./schedule-import-utils.js";
 import { t } from "../ui/i18n.js";
 
-const MAX_SCHEDULE_FILE_BYTES = 600 * 1024;
-const ALLOWED_SCHEDULE_EXTENSIONS = new Set(["xlsx", "xls", "pdf", "csv", "txt"]);
-
-function validateScheduleFile(file) {
-    if (!file || file.size < 1 || file.size > MAX_SCHEDULE_FILE_BYTES) return false;
-    const extension = String(file.name || "").toLowerCase().split(".").pop();
-    return ALLOWED_SCHEDULE_EXTENSIONS.has(extension);
-}
 
 async function uploadDriverSchedule(event) {
     event.preventDefault();
@@ -34,7 +31,7 @@ async function uploadDriverSchedule(event) {
     submitBtn.disabled = true;
 
     try {
-        const { text, fileData } = await extractTextFromScheduleFile(file);
+        const { text } = await extractTextFromScheduleFile(file);
         const parseResult = parseExtractedScheduleText(text);
 
         if (parseResult.quality === "empty") {
@@ -49,7 +46,6 @@ async function uploadDriverSchedule(event) {
         saveMonthlyPlan(driverName, month, parseResult.shifts, {
             fileName: file.name,
             fileType: file.type || "application/octet-stream",
-            fileData,
             parseQuality: parseResult.quality
         });
 

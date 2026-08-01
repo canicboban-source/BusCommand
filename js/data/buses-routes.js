@@ -7,6 +7,13 @@ import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import ApiClient from "../core/api-client.js";
+import { parseBusImportText, validateBusImportFile } from "../imports/bus-csv-import.js";
+
+let pendingBusImport = null;
+
+function activeBusGroupId() {
+    return window.state.activeGroupHubId || window.currentUser?.activeGroupId || "";
+}
 
 function renderBusesList() {
     const list = document.getElementById("settings-buses-list");
@@ -86,6 +93,138 @@ function deleteBus(id) {
         renderBusesList();
         lucide.createIcons();
     }, { danger: !nextActive });
+}
+
+function renderBusImportPreview() {
+    const container = document.getElementById("bus-import-preview");
+    if (!container) return;
+    container.replaceChildren();
+    if (!pendingBusImport) return;
+
+    const summary = document.createElement("p");
+    summary.className = "bus-import-preview__summary";
+    summary.textContent = t("bus_import_preview", { count: pendingBusImport.numbers.length });
+    container.appendChild(summary);
+
+    const sample = document.createElement("p");
+    sample.className = "bus-import-preview__sample";
+    sample.textContent = pendingBusImport.numbers.slice(0, 12).join(", ");
+    container.appendChild(sample);
+
+    const actions = document.createElement("div");
+    actions.className = "bus-import-preview__actions";
+
+    const confirm = document.createElement("button");
+    confirm.type = "button";
+    confirm.className = "btn-primary";
+    confirm.dataset.action = "confirmBusImport";
+    confirm.textContent = t("bus_import_confirm");
+
+    const clear = document.createElement("button");
+    clear.type = "button";
+    clear.className = "btn-secondary";
+    clear.dataset.action = "clearBusImport";
+    clear.textContent = t("btn_clear_preview") || t("btn_cancel");
+
+    actions.append(confirm, clear);
+    container.appendChild(actions);
+}
+
+async function handleBusImportFile(event) {
+    const input = event?.target;
+    const file = input?.files?.[0];
+    if (input) input.value = "";
+    if (!validateBusImportFile(file)) {
+        pendingBusImport = null;
+        renderBusImportPreview();
+        showToast(t("bus_import_invalid_file"), "error", 5000);
+        return;
+    }
+
+    try {
+        const parsed = parseBusImportText(await file.text());
+        if (parsed.errors.length) {
+            const first = parsed.errors[0];
+            const key = first.code === "too_many_rows" ? "bus_import_too_many_rows" : "bus_import_invalid_rows";
+            showToast(t(key, { line: first.line || "—" }), "error", 5000);
+            pendingBusImport = null;
+            renderBusImportPreview();
+            return;
+        }
+
+        const existing = new Set((window.state.buses || []).map(bus => String(bus.number || "").toLocaleLowerCase()));
+        const numbers = parsed.numbers.filter(number => !existing.has(number.toLocaleLowerCase()));
+        if (!numbers.length) {
+            showToast(t("bus_import_no_new"), "info", 5000);
+            pendingBusImport = null;
+            renderBusImportPreview();
+            return;
+        }
+
+        pendingBusImport = { numbers, skippedExisting: parsed.numbers.length - numbers.length };
+        renderBusImportPreview();
+    } catch (error) {
+        console.error("Bus import read error", error);
+        pendingBusImport = null;
+        renderBusImportPreview();
+        showToast(t("bus_import_read_failed"), "error", 5000);
+    }
+}
+
+function clearBusImport() {
+    pendingBusImport = null;
+    renderBusImportPreview();
+}
+
+async function confirmBusImport() {
+    if (!pendingBusImport?.numbers?.length) return;
+    const groupId = activeBusGroupId();
+    if (!groupId) {
+        showToast(t("bus_import_group_required"), "error", 5000);
+        return;
+    }
+    if (!IS_DEMO_MODE && window.currentUser?.role !== "dispatcher") {
+        showToast(t("bus_import_dispatcher_only"), "error", 5000);
+        return;
+    }
+
+    const numbers = [...pendingBusImport.numbers];
+    let added = 0;
+    let skipped = pendingBusImport.skippedExisting || 0;
+    let failed = 0;
+
+    for (const number of numbers) {
+        try {
+            if (IS_DEMO_MODE) {
+                window.state.buses.push({
+                    id: `bus-import-${Date.now()}-${added}`,
+                    number,
+                    groupId,
+                    active: true
+                });
+                added += 1;
+                continue;
+            }
+
+            const result = await ApiClient.createStaffBus(number, groupId);
+            if (!result?.success || !result.bus) {
+                failed += 1;
+                continue;
+            }
+            if (!window.state.buses.some(bus => bus.id === result.bus.id)) window.state.buses.push(result.bus);
+            added += 1;
+        } catch (error) {
+            if (Number(error?.status) === 409) skipped += 1;
+            else failed += 1;
+        }
+    }
+
+    if (IS_DEMO_MODE) saveState();
+    pendingBusImport = null;
+    renderBusImportPreview();
+    renderBusesList();
+    if (typeof lucide !== "undefined") lucide.createIcons();
+    showToast(t("bus_import_result", { added, skipped, failed }), failed ? "info" : "success", 6000);
 }
 
 function renderRoutesList() {
@@ -173,7 +312,11 @@ function deleteRoute(id) {
 export {
     renderBusesList,
     addBus,
+    clearBusImport,
+    confirmBusImport,
     deleteBus,
+    handleBusImportFile,
+    renderBusImportPreview,
     renderRoutesList,
     addRoute,
     deleteRoute

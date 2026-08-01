@@ -12,6 +12,7 @@ import { renderDispatcherDataHub } from "../dispatcher/data-hub.js";
 import { renderGroupHub } from "../dispatcher/group-hub.js";
 import { parseDriverCsv } from "./driver-csv-import.js";
 import { parseMonthlyPlanWorkbook, readExcelWorkbook } from "./monthly-plan-excel.js";
+import { validateScheduleFile } from "../maps/schedule-import-utils.js";
 import { isMonthlyPlanCsv, parseMonthlyPlanCsv } from "./monthly-plan-csv.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
@@ -152,7 +153,6 @@ function applyDienstplanFromExcel(parsed, fileMeta) {
         saveMonthlyPlan(driverName, month, data.parsedShifts, {
             fileName: fileMeta.fileName,
             fileType: fileMeta.fileType,
-            fileData: fileMeta.fileData || "",
             parseQuality: dayCount >= 20 ? "ok" : "partial",
             source: "package-import"
         });
@@ -219,15 +219,6 @@ function renderPackageImportPreview() {
     if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
-async function readFileAsDataURL(file) {
-    return new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = e => resolve(e.target.result);
-        r.onerror = reject;
-        r.readAsDataURL(file);
-    });
-}
-
 async function processPackageFiles(fileList) {
     const files = Array.from(fileList || []);
     if (!files.length) return;
@@ -277,14 +268,17 @@ async function processPackageFiles(fileList) {
                     pkg.drivers = { drivers: pkg.driverCount ? [{ secureServerImport: true }] : [] };
                 }
             } else if (name.endsWith(".xlsx")) {
+                if (!validateScheduleFile(file)) {
+                    pkg.errors.push(t("schedule_file_invalid"));
+                    continue;
+                }
                 const wb = await readExcelWorkbook(file);
                 const parsed = parseMonthlyPlanWorkbook(wb, getActiveLineId());
                 if (parsed.errors?.length) pkg.errors.push(...parsed.errors);
                 if (!parsed.rowCount) continue;
                 const fileMeta = {
                     fileName: file.name,
-                    fileType: file.type,
-                    fileData: await readFileAsDataURL(file)
+                    fileType: file.type
                 };
                 pkg.plans.push({ parsed, fileMeta });
                 pkg.planRows += parsed.rowCount;

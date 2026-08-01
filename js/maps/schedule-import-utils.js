@@ -1,5 +1,14 @@
 // BusCommand — ekstrakcija teksta iz planova (Excel, PDF, CSV, TXT)
 
+const MAX_SCHEDULE_FILE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_SCHEDULE_EXTENSIONS = new Set(["xlsx", "xls", "pdf", "csv", "txt"]);
+
+function validateScheduleFile(file) {
+    if (!file || file.size < 1 || file.size > MAX_SCHEDULE_FILE_BYTES) return false;
+    const extension = String(file.name || "").toLowerCase().split(".").pop();
+    return ALLOWED_SCHEDULE_EXTENSIONS.has(extension);
+}
+
 async function readFileAsArrayBuffer(file) {
     return new Promise((resolve, reject) => {
         const r = new FileReader();
@@ -18,18 +27,8 @@ async function readFileAsText(file) {
     });
 }
 
-async function readFileAsDataURL(file) {
-    return new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = (e) => resolve(e.target.result);
-        r.onerror = reject;
-        r.readAsDataURL(file);
-    });
-}
-
 async function extractTextFromScheduleFile(file) {
     const name = file.name.toLowerCase();
-    const fileData = await readFileAsDataURL(file);
     let extractedText = "";
 
     if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
@@ -56,7 +55,7 @@ async function extractTextFromScheduleFile(file) {
         extractedText = await readFileAsText(file);
     }
 
-    return { text: extractedText, fileData };
+    return { text: extractedText };
 }
 
 function parseExtractedScheduleText(text) {
@@ -121,6 +120,9 @@ function parseExtractedScheduleText(text) {
 }
 
 export {
+    ALLOWED_SCHEDULE_EXTENSIONS,
+    MAX_SCHEDULE_FILE_BYTES,
     extractTextFromScheduleFile,
-    parseExtractedScheduleText
+    parseExtractedScheduleText,
+    validateScheduleFile
 };

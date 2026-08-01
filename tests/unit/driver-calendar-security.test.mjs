@@ -4,10 +4,13 @@ import test from "node:test";
 import { URL } from "node:url";
 
 const read = path => readFile(new URL(path, import.meta.url), "utf8");
-const [calendar, viewer, upload, sync, shiftPlan, rules, driverHtml, staffHtml] = await Promise.all([
+const [calendar, viewer, upload, scheduleImportUtils, planImport, packageImport, sync, shiftPlan, rules, driverHtml, staffHtml] = await Promise.all([
     read("../../js/driver/calendar.js"),
     read("../../js/maps/schedule-viewer.js"),
     read("../../js/maps/schedule-upload.js"),
+    read("../../js/maps/schedule-import-utils.js"),
+    read("../../js/dispatcher/plan-import.js"),
+    read("../../js/imports/package-import.js"),
     read("../../js/core/firebase-service.js"),
     read("../../js/core/shift-plan.js"),
     read("../../firestore.rules"),
@@ -31,10 +34,16 @@ test("calendar and document viewer render untrusted schedule values as text", ()
     assert.doesNotMatch(viewer, /innerHTML/);
 });
 
-test("schedule upload code stays bounded while dispatcher monthly UI has no duplicate uploader", () => {
-    assert.match(upload, /MAX_SCHEDULE_FILE_BYTES = 600 \* 1024/);
-    assert.match(upload, /ALLOWED_SCHEDULE_EXTENSIONS/);
+test("schedule upload accepts up to 10 MB without persisting raw file payloads", () => {
+    assert.match(scheduleImportUtils, /MAX_SCHEDULE_FILE_BYTES = 10 \* 1024 \* 1024/);
+    assert.match(scheduleImportUtils, /ALLOWED_SCHEDULE_EXTENSIONS/);
     assert.match(upload, /validateScheduleFile\(file\)/);
+    assert.match(planImport, /validateScheduleFile\(file\)/);
+    assert.doesNotMatch(scheduleImportUtils, /readAsDataURL|fileData/);
+    assert.doesNotMatch(upload, /\bfileData\b/);
+    assert.doesNotMatch(planImport, /\bfileData\b/);
+    assert.doesNotMatch(packageImport, /readAsDataURL|fileMeta\.fileData/);
+    assert.match(shiftPlan, /fileData: ""/);
     assert.doesNotMatch(staffHtml, /id="upload-schedule-form"/);
 });
 

@@ -180,6 +180,7 @@ function applyBrandingToUI() {
                     <img src="${escapeAttr(logoUrl)}" alt="${safeName}" referrerpolicy="no-referrer" style="max-height: 60px; max-width: 220px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3)); border-radius: var(--radius-sm);">
                     <span style="font-weight:700; color:var(--text-main); font-size:1.4rem; margin-top:8px;">${safeName}</span>
                 </div>
+                <div class="bc-product-signature">${productBrandMarkHtml({ size: "sm", name: "BusCommand" })}</div>
             `;
         } else {
             loginHeaderLogo.innerHTML = `
@@ -196,9 +197,13 @@ function applyBrandingToUI() {
     if (headerLogoContainer) {
         if (logoUrl) {
             headerLogoContainer.innerHTML = `
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <img src="${escapeAttr(logoUrl)}" alt="${safeName}" referrerpolicy="no-referrer" style="max-height: 32px; max-width: 110px; object-fit: contain; border-radius: 2px;">
-                    <span style="font-weight:700; color:var(--text-main); font-size:1.1rem; letter-spacing:-0.2px;">${safeName}</span>
+                <div class="bc-co-brand">
+                    ${productBrandMarkHtml({ size: "sm", name: "BusCommand" })}
+                    <span class="bc-co-brand__separator" aria-hidden="true">·</span>
+                    <div class="bc-tenant-brand">
+                        <img src="${escapeAttr(logoUrl)}" alt="${safeName}" referrerpolicy="no-referrer">
+                        <span id="app-branding-title">${safeName}</span>
+                    </div>
                 </div>
             `;
         } else {
