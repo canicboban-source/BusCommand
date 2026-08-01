@@ -53,36 +53,60 @@ function createSupportSessionHandlers({
   db,
   admin,
   hasFirebase,
-  logAudit,
   parseCompanyParam
 }) {
-  async function loadSettingsMain(companyRef) {
-    const snap = await companyRef.collection("settings").doc("main").get();
-    return snap.exists ? snap.data() : {};
+  function supportMarker(active, values = {}) {
+    return {
+      active,
+      sessionId: active ? values.sessionId : null,
+      expiresAt: active ? values.expiresAt : null,
+      category: active ? values.category : null,
+      reasonPreview: active ? values.reasonPreview : null,
+      startedByUid: active ? values.startedByUid : null,
+      updatedAt: admin().firestore.FieldValue.serverTimestamp()
+    };
+  }
+
+  function writeAudit(transaction, companyRef, actorId, action, details, metadata = {}) {
+    transaction.set(companyRef.collection("audit_log").doc(), {
+      action,
+      actorId,
+      details,
+      actorRole: metadata.actorRole || null,
+      actorName: metadata.actorName || null,
+      source: metadata.source || "server",
+      timestamp: admin().firestore.FieldValue.serverTimestamp()
+    });
   }
 
   async function expireSession(companyRef, sessionId, data, now = new Date()) {
-    const batch = db().batch();
-    batch.update(companyRef.collection("support_sessions").doc(sessionId), {
-      status: "expired",
-      endedAt: admin().firestore.Timestamp.fromDate(now),
-      endedByUid: "system",
-      endedByRole: "system"
+    const sessionRef = companyRef.collection("support_sessions").doc(sessionId);
+    const supportRef = companyRef.collection("settings").doc("support");
+    return db().runTransaction(async (transaction) => {
+      const [sessionSnap, supportSnap] = await Promise.all([
+        transaction.get(sessionRef),
+        transaction.get(supportRef)
+      ]);
+      if (!sessionSnap.exists || sessionSnap.data().status !== "active") return false;
+      const current = sessionSnap.data();
+      const expiresAt = toDate(current.expiresAt);
+      if (!expiresAt || expiresAt.getTime() > now.getTime()) return false;
+
+      transaction.update(sessionRef, {
+        status: "expired",
+        endedAt: admin().firestore.Timestamp.fromDate(now),
+        endedByUid: "system",
+        endedByRole: "system"
+      });
+      if (supportSnap.exists && supportSnap.data().sessionId === sessionId) {
+        transaction.set(supportRef, supportMarker(false), { merge: true });
+      }
+      writeAudit(transaction, companyRef, "system", "support_session_expired", {
+        sessionId,
+        category: current.category || data?.category || null
+      }, { actorRole: "system", source: "server" });
+      return true;
     });
-    batch.set(companyRef.collection("settings").doc("support"), {
-      active: false,
-      sessionId: null,
-      expiresAt: null,
-      category: null,
-      reasonPreview: null,
-      startedByUid: null,
-      updatedAt: admin().firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-    await batch.commit();
-    await logAudit(companyRef.id, "system", "support_session_expired", {
-      sessionId,
-      category: data.category || null
-    }, { actorRole: "system", source: "server" });
   }
 
   async function findActiveSession(companyRef, now = new Date()) {
@@ -102,29 +126,42 @@ function createSupportSessionHandlers({
     return null;
   }
 
-  async function endSession({ companyRef, sessionId, data, endedByUid, endedByRole, now = new Date() }) {
-    const batch = db().batch();
-    batch.update(companyRef.collection("support_sessions").doc(sessionId), {
-      status: "ended",
-      endedAt: admin().firestore.Timestamp.fromDate(now),
-      endedByUid,
-      endedByRole
+  async function endSession({ companyRef, sessionId, endedByUid, endedByRole, now = new Date() }) {
+    const sessionRef = companyRef.collection("support_sessions").doc(sessionId);
+    const supportRef = companyRef.collection("settings").doc("support");
+    return db().runTransaction(async (transaction) => {
+      const [sessionSnap, supportSnap] = await Promise.all([
+        transaction.get(sessionRef),
+        transaction.get(supportRef)
+      ]);
+      if (!sessionSnap.exists) return { kind: "not_found" };
+      const data = sessionSnap.data();
+      if (data.status !== "active") return { kind: "not_active", data };
+
+      const expiresAt = toDate(data.expiresAt);
+      const expired = expiresAt && expiresAt.getTime() <= now.getTime();
+      const status = expired ? "expired" : "ended";
+      const actorId = expired ? "system" : endedByUid;
+      const actorRole = expired ? "system" : endedByRole;
+      transaction.update(sessionRef, {
+        status,
+        endedAt: admin().firestore.Timestamp.fromDate(now),
+        endedByUid: actorId,
+        endedByRole: actorRole
+      });
+      if (supportSnap.exists && supportSnap.data().sessionId === sessionId) {
+        transaction.set(supportRef, supportMarker(false), { merge: true });
+      }
+      writeAudit(
+        transaction,
+        companyRef,
+        actorId,
+        expired ? "support_session_expired" : "support_session_ended",
+        { sessionId, category: data.category || null, ...(expired ? {} : { endedByRole }) },
+        { actorRole, source: "server" }
+      );
+      return { kind: status, data: { ...data, status, endedAt: now, endedByUid: actorId, endedByRole: actorRole } };
     });
-    batch.set(companyRef.collection("settings").doc("support"), {
-      active: false,
-      sessionId: null,
-      expiresAt: null,
-      category: null,
-      reasonPreview: null,
-      startedByUid: null,
-      updatedAt: admin().firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-    await batch.commit();
-    await logAudit(companyRef.id, endedByUid, "support_session_ended", {
-      sessionId,
-      category: data.category || null,
-      endedByRole
-    }, { actorRole: endedByRole, source: "server" });
   }
 
   async function startSupportSession(req, res) {
@@ -141,28 +178,8 @@ function createSupportSessionHandlers({
 
     try {
       const companyRef = db().collection("companies").doc(parsedCompany.id);
-      const companySnap = await companyRef.get();
-      if (!companySnap.exists) return res.status(404).json({ success: false, error: "Firma nije pronađena." });
-
-      const settings = await loadSettingsMain(companyRef);
-      if (!isFeatureEnabled(settings)) {
-        return res.status(403).json({
-          success: false,
-          code: "SUPPORT_SESSION_DISABLED",
-          error: "Support session nije uključen za ovu firmu (feature flag)."
-        });
-      }
-
-      const existing = await findActiveSession(companyRef);
-      if (existing) {
-        return res.status(409).json({
-          success: false,
-          code: "SUPPORT_SESSION_ACTIVE",
-          error: "Već postoji aktivna support sesija. Završite je pre nove.",
-          session: publicSessionView(existing.data, existing.id)
-        });
-      }
-
+      const settingsRef = companyRef.collection("settings").doc("main");
+      const supportRef = companyRef.collection("settings").doc("support");
       const now = new Date();
       const expiresAt = new Date(now.getTime() + SUPPORT_TTL_MS);
       const sessionId = newSupportSessionId();
@@ -180,27 +197,84 @@ function createSupportSessionHandlers({
         endedByRole: null
       };
 
-      const batch = db().batch();
-      batch.set(companyRef.collection("support_sessions").doc(sessionId), sessionDoc);
-      batch.set(companyRef.collection("settings").doc("support"), {
-        active: true,
-        sessionId,
-        expiresAt: admin().firestore.Timestamp.fromDate(expiresAt),
-        category: body.data.category,
-        reasonPreview: reason.slice(0, 80),
-        startedByUid: req.adminUser.uid,
-        updatedAt: admin().firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-      await batch.commit();
+      const outcome = await db().runTransaction(async (transaction) => {
+        const [companySnap, settingsSnap, supportSnap] = await Promise.all([
+          transaction.get(companyRef),
+          transaction.get(settingsRef),
+          transaction.get(supportRef)
+        ]);
+        if (!companySnap.exists) return { kind: "company_not_found" };
+        const settings = settingsSnap.exists ? settingsSnap.data() : {};
+        if (!isFeatureEnabled(settings)) return { kind: "disabled" };
 
-      await logAudit(parsedCompany.id, req.adminUser.uid, "support_session_started", {
-        sessionId,
-        category: body.data.category,
-        reasonPreview: reason.slice(0, 80),
-        expiresAt: expiresAt.toISOString(),
-        scope: "read_only"
-      }, { actorRole: "superadmin", source: "server" });
+        const support = supportSnap.exists ? supportSnap.data() : {};
+        const markerExpiresAt = toDate(support.expiresAt);
+        const markerActive = support.active === true && Boolean(support.sessionId);
+        if (markerActive && (!markerExpiresAt || markerExpiresAt.getTime() > now.getTime())) {
+          const activeRef = companyRef.collection("support_sessions").doc(support.sessionId);
+          const activeSnap = await transaction.get(activeRef);
+          return {
+            kind: "active",
+            session: activeSnap.exists ? publicSessionView(activeSnap.data(), activeSnap.id) : null
+          };
+        }
 
+        let expiredSnap = null;
+        if (markerActive && markerExpiresAt && markerExpiresAt.getTime() <= now.getTime()) {
+          expiredSnap = await transaction.get(
+            companyRef.collection("support_sessions").doc(support.sessionId)
+          );
+        }
+
+        if (expiredSnap?.exists && expiredSnap.data().status === "active") {
+          transaction.update(expiredSnap.ref, {
+            status: "expired",
+            endedAt: admin().firestore.Timestamp.fromDate(now),
+            endedByUid: "system",
+            endedByRole: "system"
+          });
+          writeAudit(transaction, companyRef, "system", "support_session_expired", {
+            sessionId: expiredSnap.id,
+            category: expiredSnap.data().category || null
+          }, { actorRole: "system", source: "server" });
+        }
+
+        transaction.set(companyRef.collection("support_sessions").doc(sessionId), sessionDoc);
+        transaction.set(supportRef, supportMarker(true, {
+          sessionId,
+          expiresAt: admin().firestore.Timestamp.fromDate(expiresAt),
+          category: body.data.category,
+          reasonPreview: reason.slice(0, 80),
+          startedByUid: req.adminUser.uid
+        }), { merge: true });
+        writeAudit(transaction, companyRef, req.adminUser.uid, "support_session_started", {
+          sessionId,
+          category: body.data.category,
+          reasonPreview: reason.slice(0, 80),
+          expiresAt: expiresAt.toISOString(),
+          scope: "read_only"
+        }, { actorRole: "superadmin", source: "server" });
+        return { kind: "created" };
+      });
+
+      if (outcome.kind === "company_not_found") {
+        return res.status(404).json({ success: false, error: "Firma nije pronađena." });
+      }
+      if (outcome.kind === "disabled") {
+        return res.status(403).json({
+          success: false,
+          code: "SUPPORT_SESSION_DISABLED",
+          error: "Support session nije uključen za ovu firmu (feature flag)."
+        });
+      }
+      if (outcome.kind === "active") {
+        return res.status(409).json({
+          success: false,
+          code: "SUPPORT_SESSION_ACTIVE",
+          error: "Već postoji aktivna support sesija. Završite je pre nove.",
+          session: outcome.session
+        });
+      }
       return res.status(201).json({
         success: true,
         session: publicSessionView(sessionDoc, sessionId)
@@ -238,26 +312,22 @@ function createSupportSessionHandlers({
     }
     try {
       const companyRef = db().collection("companies").doc(companyParsed.id);
-      const sessionRef = companyRef.collection("support_sessions").doc(sessionId);
-      const sessionSnap = await sessionRef.get();
-      if (!sessionSnap.exists) return res.status(404).json({ success: false, error: "Sesija nije pronađena." });
-      const data = sessionSnap.data();
-      if (data.status !== "active") {
-        return res.status(409).json({ success: false, error: "Sesija nije aktivna." });
-      }
-      const expiresAt = toDate(data.expiresAt);
-      if (expiresAt && expiresAt.getTime() <= Date.now()) {
-        await expireSession(companyRef, sessionId, data);
-        return res.status(409).json({ success: false, error: "Sesija je istekla." });
-      }
-      await endSession({
+      const outcome = await endSession({
         companyRef,
         sessionId,
-        data,
         endedByUid: req.adminUser.uid,
         endedByRole: "superadmin"
       });
-      return res.json({ success: true, session: publicSessionView({ ...data, status: "ended" }, sessionId) });
+      if (outcome.kind === "not_found") {
+        return res.status(404).json({ success: false, error: "Sesija nije pronađena." });
+      }
+      if (outcome.kind === "not_active") {
+        return res.status(409).json({ success: false, error: "Sesija nije aktivna." });
+      }
+      if (outcome.kind === "expired") {
+        return res.status(409).json({ success: false, error: "Sesija je istekla." });
+      }
+      return res.json({ success: true, session: publicSessionView(outcome.data, sessionId) });
     } catch (error) {
       req.log?.error?.({ err: error }, "Support session end (SA) failed");
       return res.status(500).json({ success: false, error: "Support sesija nije završena." });
@@ -287,14 +357,19 @@ function createSupportSessionHandlers({
       if (!active) {
         return res.status(404).json({ success: false, error: "Nema aktivne support sesije." });
       }
-      await endSession({
+      const outcome = await endSession({
         companyRef,
         sessionId: active.id,
-        data: active.data,
         endedByUid: req.staffUser.uid,
         endedByRole: "company_admin"
       });
-      return res.json({ success: true, session: publicSessionView({ ...active.data, status: "ended" }, active.id) });
+      if (outcome.kind === "not_found") {
+        return res.status(404).json({ success: false, error: "Nema aktivne support sesije." });
+      }
+      if (outcome.kind === "not_active" || outcome.kind === "expired") {
+        return res.status(409).json({ success: false, error: "Support sesija više nije aktivna." });
+      }
+      return res.json({ success: true, session: publicSessionView(outcome.data, active.id) });
     } catch (error) {
       req.log?.error?.({ err: error }, "CA support session end failed");
       return res.status(500).json({ success: false, error: "Support sesija nije završena." });
