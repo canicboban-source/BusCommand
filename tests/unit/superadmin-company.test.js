@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   getCompanyDetail,
+  updateCompanyDetails,
   listAllCompanyAdmins,
   setCompanyAdminActive,
   requestCompanyAdminPasswordReset
@@ -57,10 +58,11 @@ function fakeFirestore({ initial = {} } = {}) {
           staged.push([documentRef.path, value, options]);
         }
       };
-      await callback(transaction);
+      const result = await callback(transaction);
       staged.forEach(([path, value, options]) => {
         store.set(path, options?.merge ? { ...(store.get(path) || {}), ...value } : value);
       });
+      return result;
     }
   };
 }
@@ -86,7 +88,10 @@ function fakeAdmin() {
     updated,
     revoked,
     auth() { return auth; },
-    firestore: { FieldValue: { serverTimestamp: () => "ts" } }
+    firestore: {
+      FieldValue: { serverTimestamp: () => "ts" },
+      Timestamp: { fromDate: value => new Date(value) }
+    }
   };
 }
 
@@ -116,6 +121,56 @@ test("getCompanyDetail returns tenant summary and company admins", async () => {
   assert.equal(company.counts.dispatchers, 1);
   assert.equal(company.counts.companyAdmins, 1);
   assert.equal(company.admins[0].email, "ca@alpha.test");
+});
+
+test("updateCompanyDetails atomically updates platform fields and writes one audit event", async () => {
+  const db = fakeFirestore({
+    initial: {
+      "companies/alpha": { name: "Old Alpha", status: "active" },
+      "companies/alpha/profile/main": { name: "Old Alpha", country: "AT", contactEmail: "old@alpha.test" },
+      "companies/alpha/settings/main": {
+        status: "active",
+        plan: "trial",
+        features: { supportSession: true },
+        maxDrivers: 20,
+        maxDispatchers: 3,
+        trialEndsAt: new Date("2026-08-31T23:59:59.999Z")
+      }
+    }
+  });
+  const result = await updateCompanyDetails({
+    db,
+    admin: fakeAdmin(),
+    companyId: "alpha",
+    actorId: "sa-1",
+    input: {
+      name: "Alpha Transit",
+      country: "RS",
+      contactEmail: "office@alpha.test",
+      plan: "paid",
+      maxDrivers: 80,
+      maxDispatchers: 8,
+      trialEndsAt: null
+    }
+  });
+
+  assert.equal(result.company.name, "Alpha Transit");
+  assert.deepEqual(result.changedFields.sort(), [
+    "contactEmail", "country", "maxDispatchers", "maxDrivers", "name", "plan", "trialEndsAt"
+  ]);
+  assert.equal(db.store.get("companies/alpha").name, "Alpha Transit");
+  assert.equal(db.store.get("companies/alpha/profile/main").country, "RS");
+  const settings = db.store.get("companies/alpha/settings/main");
+  assert.equal(settings.plan, "paid");
+  assert.equal(settings.maxDrivers, 80);
+  assert.equal(settings.status, "active");
+  assert.deepEqual(settings.features, { supportSession: true });
+  const audits = [...db.store.entries()].filter(([path, value]) =>
+    path.startsWith("companies/alpha/audit_log/") && value.action === "company_details_updated"
+  );
+  assert.equal(audits.length, 1);
+  assert.equal(audits[0][1].actorId, "sa-1");
+  assert.ok(!Object.hasOwn(audits[0][1].details, "contactEmail"));
 });
 
 test("listAllCompanyAdmins returns admins across companies from users/", async () => {
@@ -198,3 +253,5 @@ test("company admin helpers reject foreign tenant users", async () => {
     error => error.code === "user-not-found"
   );
 });
+
+

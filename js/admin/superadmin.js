@@ -238,6 +238,29 @@ async function superadminToggleStatus(companyId, status) {
 }
 
 let _pendingDetailCompanyId = null;
+let _companyDetailCache = null;
+
+function companyDetailDateValue(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+}
+
+function setCompanyDetailEditMode(editing) {
+    const editBtn = document.getElementById("sa-detail-edit-btn");
+    const cancelBtn = document.getElementById("sa-detail-edit-cancel-btn");
+    const supportBtn = document.getElementById("sa-detail-support-action-btn");
+    const closeBtn = document.getElementById("sa-detail-close-btn");
+    if (editBtn) {
+        editBtn.disabled = !_companyDetailCache;
+        editBtn.setAttribute("data-action", editing ? "superadminSaveCompanyDetail" : "superadminEditCompanyDetail");
+        editBtn.removeAttribute("data-i18n");
+        editBtn.innerHTML = `<span data-i18n="${editing ? "btn_save" : "btn_edit"}">${escapeHtml(t(editing ? "btn_save" : "btn_edit") || (editing ? "Save" : "Edit"))}</span>`;
+    }
+    if (cancelBtn) cancelBtn.classList.toggle("hidden", !editing);
+    if (supportBtn) supportBtn.classList.toggle("hidden", editing);
+    if (closeBtn) closeBtn.classList.toggle("hidden", editing);
+}
 
 function formatSaDate(value) {
     if (!value) return "—";
@@ -283,6 +306,7 @@ function renderCompanyDetailAdmins(company) {
 }
 
 function fillCompanyDetailModal(company) {
+    _companyDetailCache = company;
     const title = document.getElementById("sa-detail-title");
     const nameEl = document.getElementById("sa-detail-name");
     const idEl = document.getElementById("sa-detail-company-id");
@@ -357,20 +381,12 @@ function fillCompanyDetailModal(company) {
     }
     if (copyBtn) copyBtn.setAttribute("data-action-args", JSON.stringify([company.id]));
     renderCompanyDetailAdmins(company);
+    setCompanyDetailEditMode(false);
 }
 
-async function superadminOpenCompanyDetail(companyId) {
-    const id = String(companyId || "").trim();
-    if (!id) return;
-    _pendingDetailCompanyId = id;
-    const modal = document.getElementById("sa-company-detail-modal");
+function renderCompanyDetailView(company) {
     const body = document.getElementById("sa-detail-body");
-    const errorEl = document.getElementById("sa-detail-error");
-    if (!modal || !body) return;
-    if (errorEl) {
-        errorEl.textContent = "";
-        errorEl.classList.add("hidden");
-    }
+    if (!body) return;
     body.innerHTML = `
         <div class="sa-detail-grid">
             <div><span data-i18n="company_name_label">Company</span><strong id="sa-detail-name">—</strong></div>
@@ -395,7 +411,22 @@ async function superadminOpenCompanyDetail(companyId) {
         <div id="sa-detail-admins"></div>
         <div id="sa-detail-reset-link-box" class="sa-detail-reset-box hidden"></div>
     `;
+    fillCompanyDetailModal(company);
+    if (typeof lucide !== "undefined") lucide.createIcons();
+}
 
+async function superadminOpenCompanyDetail(companyId) {
+    const id = String(companyId || "").trim();
+    if (!id) return;
+    _pendingDetailCompanyId = id;
+    const modal = document.getElementById("sa-company-detail-modal");
+    const body = document.getElementById("sa-detail-body");
+    const errorEl = document.getElementById("sa-detail-error");
+    if (!modal || !body) return;
+    if (errorEl) {
+        errorEl.textContent = "";
+        errorEl.classList.add("hidden");
+    }
     function showDetailModal() {
         modal.classList.remove("hidden");
         modal.style.display = "flex";
@@ -403,18 +434,20 @@ async function superadminOpenCompanyDetail(companyId) {
     }
 
     if (IS_DEMO_MODE) {
-        fillCompanyDetailModal({
+        renderCompanyDetailView({
             id,
             name: id,
             status: "active",
             plan: "trial",
-            country: "—",
-            contactEmail: null,
+            country: "AT",
+            contactEmail: "demo@buscommand.test",
+            maxDrivers: 50,
+            maxDispatchers: 5,
+            trialEndsAt: new Date(Date.now() + 30 * 86400000).toISOString(),
             counts: { companyAdmins: 0, dispatchers: 0, drivers: 0, groups: 0 },
             admins: []
         });
         showDetailModal();
-        lucide.createIcons();
         return;
     }
 
@@ -427,13 +460,110 @@ async function superadminOpenCompanyDetail(companyId) {
         showDetailModal();
         return;
     }
-    fillCompanyDetailModal(res.company);
+    renderCompanyDetailView(res.company);
     showDetailModal();
-    lucide.createIcons();
+}
+
+function superadminEditCompanyDetail() {
+    const company = _companyDetailCache;
+    const body = document.getElementById("sa-detail-body");
+    if (!company || !body) return;
+    const maxDrivers = Number.isInteger(Number(company.maxDrivers)) ? Number(company.maxDrivers) : 50;
+    const maxDispatchers = Number.isInteger(Number(company.maxDispatchers)) ? Number(company.maxDispatchers) : 5;
+    body.innerHTML = `
+        <form id="sa-company-detail-edit-form" class="sa-detail-edit-form" novalidate>
+            <div class="sa-detail-grid">
+                <div class="form-group">
+                    <label for="sa-edit-company-name">${escapeHtml(t("company_name_label") || "Company")}</label>
+                    <input id="sa-edit-company-name" type="text" minlength="2" maxlength="200" required value="${escapeHtml(company.name || "")}">
+                </div>
+                <div class="form-group">
+                    <label>${escapeHtml(t("company_id_label") || "Company ID")}</label>
+                    <code class="sa-company-id-code">${escapeHtml(company.id || "")}</code>
+                </div>
+                <div class="form-group">
+                    <label for="sa-edit-company-country">${escapeHtml(t("sa_col_country") || "Country")}</label>
+                    <select id="sa-edit-company-country" required>
+                        <option value="AT" ${company.country === "AT" ? "selected" : ""}>AT</option>
+                        <option value="RS" ${company.country === "RS" ? "selected" : ""}>RS</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="sa-edit-company-email">${escapeHtml(t("email_label") || "Email")}</label>
+                    <input id="sa-edit-company-email" type="email" maxlength="254" required value="${escapeHtml(company.contactEmail || "")}">
+                </div>
+                <div class="form-group">
+                    <label for="sa-edit-company-plan">${escapeHtml(t("sa_col_plan") || "Plan")}</label>
+                    <select id="sa-edit-company-plan" required>
+                        <option value="trial" ${company.plan === "trial" ? "selected" : ""}>Trial</option>
+                        <option value="paid" ${company.plan === "paid" ? "selected" : ""}>Paid</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="sa-edit-company-trial">${escapeHtml(t("sa_detail_trial") || "Trial ends")}</label>
+                    <input id="sa-edit-company-trial" type="date" value="${companyDetailDateValue(company.trialEndsAt)}">
+                </div>
+                <div class="form-group">
+                    <label for="sa-edit-company-max-drivers">${escapeHtml(t("ca_settings_driver_limit") || "Max. drivers")}</label>
+                    <input id="sa-edit-company-max-drivers" type="number" min="1" max="100000" step="1" required value="${maxDrivers}">
+                </div>
+                <div class="form-group">
+                    <label for="sa-edit-company-max-dispatchers">${escapeHtml(t("ca_settings_dispatcher_limit") || "Max. dispatchers")}</label>
+                    <input id="sa-edit-company-max-dispatchers" type="number" min="1" max="10000" step="1" required value="${maxDispatchers}">
+                </div>
+            </div>
+            <p class="sa-detail-edit-note">${escapeHtml(t("ca_settings_license_hint") || "Only BusCommand administration can change the plan and limits.")}</p>
+        </form>
+    `;
+    setCompanyDetailEditMode(true);
+    document.getElementById("sa-edit-company-name")?.focus();
+}
+
+function superadminCancelCompanyDetailEdit() {
+    if (_companyDetailCache) renderCompanyDetailView(_companyDetailCache);
+}
+
+async function superadminSaveCompanyDetail() {
+    const form = document.getElementById("sa-company-detail-edit-form");
+    const button = document.getElementById("sa-detail-edit-btn");
+    const errorEl = document.getElementById("sa-detail-error");
+    if (!form || !button || !_companyDetailCache || !form.reportValidity()) return;
+    const payload = {
+        name: document.getElementById("sa-edit-company-name").value.trim(),
+        country: document.getElementById("sa-edit-company-country").value,
+        contactEmail: document.getElementById("sa-edit-company-email").value.trim().toLowerCase(),
+        plan: document.getElementById("sa-edit-company-plan").value,
+        maxDrivers: Number(document.getElementById("sa-edit-company-max-drivers").value),
+        maxDispatchers: Number(document.getElementById("sa-edit-company-max-dispatchers").value),
+        trialEndsAt: document.getElementById("sa-edit-company-trial").value || null
+    };
+    const submission = await runSingleSubmission(button, t("ca_settings_saving") || "Saving…", async () => {
+        if (errorEl) {
+            errorEl.textContent = "";
+            errorEl.classList.add("hidden");
+        }
+        const result = IS_DEMO_MODE
+            ? { success: true, company: { ..._companyDetailCache, ...payload } }
+            : await ApiClient.updateCompanyDetails(_companyDetailCache.id, payload);
+        if (!result.success || !result.company) {
+            if (errorEl) {
+                errorEl.textContent = result.error || t("error_generic");
+                errorEl.classList.remove("hidden");
+            }
+            showToast(result.error || t("error_generic"), "error");
+            return false;
+        }
+        renderCompanyDetailView(result.company);
+        showToast(t("ca_settings_saved") || "Saved", "success");
+        await renderSuperAdminDashboard();
+        return true;
+    });
+    return submission.started && submission.value;
 }
 
 function superadminCloseCompanyDetail() {
     _pendingDetailCompanyId = null;
+    _companyDetailCache = null;
     const modal = document.getElementById("sa-company-detail-modal");
     if (modal) {
         modal.classList.add("hidden");
@@ -849,6 +979,9 @@ export {
     _renderSuperAdminDashboardDemo,
     superadminToggleStatus,
     superadminOpenCompanyDetail,
+    superadminEditCompanyDetail,
+    superadminCancelCompanyDetailEdit,
+    superadminSaveCompanyDetail,
     superadminCloseCompanyDetail,
     superadminSetCompanyAdminStatus,
     superadminResetCompanyAdminPassword,
@@ -869,3 +1002,5 @@ export {
     superadminConfirmSupportStart,
     superadminEndSupport
 };
+
+

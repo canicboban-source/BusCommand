@@ -9,6 +9,11 @@ function toIso(value) {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
+function toDateKey(value) {
+  const iso = toIso(value);
+  return iso ? iso.slice(0, 10) : null;
+}
+
 function isSupportActive(support = {}) {
   if (support.active !== true || !support.expiresAt) return false;
   const expiresMs = typeof support.expiresAt.toDate === "function"
@@ -119,6 +124,84 @@ async function getCompanyDetail({ db, companyId }) {
   };
 }
 
+async function updateCompanyDetails({ db, admin, companyId, input, actorId }) {
+  const companyRef = db.collection("companies").doc(companyId);
+  const profileRef = companyRef.collection("profile").doc("main");
+  const settingsRef = companyRef.collection("settings").doc("main");
+  const auditRef = companyRef.collection("audit_log").doc();
+  const timestamp = admin.firestore.FieldValue.serverTimestamp();
+  const trialEndsAt = input.trialEndsAt
+    ? admin.firestore.Timestamp.fromDate(new Date(`${input.trialEndsAt}T23:59:59.999Z`))
+    : null;
+
+  const changedFields = await db.runTransaction(async transaction => {
+    const [companySnap, profileSnap, settingsSnap] = await Promise.all([
+      transaction.get(companyRef),
+      transaction.get(profileRef),
+      transaction.get(settingsRef)
+    ]);
+    if (!companySnap.exists) {
+      throw new ProvisioningError("company-not-found", "Firma nije pronađena.");
+    }
+    if (!settingsSnap.exists) {
+      throw new ProvisioningError("license-unavailable", "Licenca firme nije dostupna.");
+    }
+
+    const root = companySnap.data() || {};
+    const profile = profileSnap.exists ? profileSnap.data() : {};
+    const settings = settingsSnap.data() || {};
+    const before = {
+      name: profile.name || root.name || companyId,
+      country: profile.country || null,
+      contactEmail: String(profile.contactEmail || "").toLowerCase() || null,
+      plan: settings.plan || "trial",
+      maxDrivers: Number(settings.maxDrivers),
+      maxDispatchers: Number(settings.maxDispatchers),
+      trialEndsAt: toDateKey(settings.trialEndsAt)
+    };
+    const after = {
+      name: input.name,
+      country: input.country,
+      contactEmail: input.contactEmail,
+      plan: input.plan,
+      maxDrivers: input.maxDrivers,
+      maxDispatchers: input.maxDispatchers,
+      trialEndsAt: input.trialEndsAt
+    };
+    const fields = Object.keys(after).filter(field => before[field] !== after[field]);
+    if (!fields.length) return fields;
+
+    transaction.set(companyRef, { name: input.name, updatedAt: timestamp }, { merge: true });
+    transaction.set(profileRef, {
+      name: input.name,
+      country: input.country,
+      contactEmail: input.contactEmail,
+      updatedAt: timestamp
+    }, { merge: true });
+    transaction.set(settingsRef, {
+      plan: input.plan,
+      maxDrivers: input.maxDrivers,
+      maxDispatchers: input.maxDispatchers,
+      trialEndsAt,
+      updatedAt: timestamp
+    }, { merge: true });
+    transaction.set(auditRef, {
+      action: "company_details_updated",
+      actorId,
+      actorRole: "superadmin",
+      source: "server",
+      details: { companyId, fields },
+      timestamp
+    });
+    return fields;
+  });
+
+  return {
+    company: await getCompanyDetail({ db, companyId }),
+    changedFields
+  };
+}
+
 async function setCompanyAdminActive({ db, admin, companyId, uid, active, actorId }) {
   const staff = await readCompanyAdmin({ db, companyId, uid });
   const { companyRef, userRef } = staff;
@@ -198,8 +281,11 @@ async function requestCompanyAdminPasswordReset({ db, admin, companyId, uid, act
 
 module.exports = {
   getCompanyDetail,
+  updateCompanyDetails,
   listAllCompanyAdmins,
   readCompanyAdmin,
   setCompanyAdminActive,
   requestCompanyAdminPasswordReset
 };
+
+

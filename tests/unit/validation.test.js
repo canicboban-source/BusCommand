@@ -9,6 +9,7 @@ const {
   companyGroupUpdateBody,
   companyDispatcherBody,
   companyDispatcherStatusBody,
+  superAdminCompanyDetailsBody,
   companyProfileSettingsBody,
   assertCompanyIdUsable,
   sanitizeCompanyId
@@ -134,3 +135,23 @@ test("company profile settings schema supports only pilot headquarters and langu
     companyId: "alpha", country: "US", defaultLanguage: "fr", contactEmail: "bad"
   }).success, false);
 });
+
+test("Super Admin company detail schema accepts only platform-owned editable fields", () => {
+  const valid = {
+    name: "Alpha Transit",
+    country: "AT",
+    contactEmail: "Office@Alpha.test",
+    plan: "trial",
+    maxDrivers: 50,
+    maxDispatchers: 5,
+    trialEndsAt: "2026-08-31"
+  };
+  const result = superAdminCompanyDetailsBody.safeParse(valid);
+  assert.equal(result.success, true);
+  assert.equal(result.data.contactEmail, "office@alpha.test");
+  assert.equal(superAdminCompanyDetailsBody.safeParse({ ...valid, status: "suspended" }).success, false);
+  assert.equal(superAdminCompanyDetailsBody.safeParse({ ...valid, features: { supportSession: true } }).success, false);
+  assert.equal(superAdminCompanyDetailsBody.safeParse({ ...valid, maxDrivers: 0 }).success, false);
+  assert.equal(superAdminCompanyDetailsBody.safeParse({ ...valid, trialEndsAt: "31.08.2026" }).success, false);
+});
+
