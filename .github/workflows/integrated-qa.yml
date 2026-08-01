@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - preview/dispatcher-cockpit-qa
+      - agent/v101-secure-plan-integration
   pull_request:
   workflow_dispatch:
 
