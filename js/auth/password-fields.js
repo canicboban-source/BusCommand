@@ -37,6 +37,7 @@ function clearAuthSetupFields() {
     [
         "setup-new-pin",
         "setup-confirm-pin",
+        "driver-activation-code",
         "superadmin-pin-input",
         "superadmin-pass-input"
     ].forEach((id) => {

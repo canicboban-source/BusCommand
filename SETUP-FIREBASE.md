@@ -1,148 +1,35 @@
-# TransitFlow — Firebase Setup Uputstvo
+# BusCommand Preview — Firebase podešavanje
 
-Radi jednom, traje zauvijek.
+Ova kopija aplikacije smije koristiti isključivo Firebase projekat
+`buscommand-preview`. Firestore lokacija je `eur3`, a Email/Password prijava mora
+biti uključena.
 
----
+## Browser konfiguracija
 
-## KORAK 1 — Novi Firebase projekat (EU region)
+Frontend konfiguracija se ne upisuje u JavaScript izvor. Vite je učitava tokom
+builda iz sljedećih varijabli:
 
-1. Idi na https://console.firebase.google.com
-2. Klikni **"Add project"**
-3. Naziv: `transitflow-prod`
-4. Google Analytics: možeš uključiti
-5. Klikni **Create project**
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
 
----
+Dozvoljene Preview vrijednosti nalaze se u `.env.example` i `render.yaml`.
+Aplikacija u non-demo načinu odbija pokretanje ako neka vrijednost nedostaje ili
+ako domen, bucket ili project ID ne pripadaju projektu `buscommand-preview`.
+Demo način ne inicijalizuje Firebase SDK.
 
-## KORAK 2 — Firestore baza (Frankfurt = EU)
+## Serverska konfiguracija
 
-1. U lijevom meniju: **Build → Firestore Database**
-2. Klikni **Create database**
-3. **VAŽNO — Location:** odaberi `europe-west3 (Frankfurt)` ← EU, GDPR OK
-4. Security mode: **Start in production mode** (mi ćemo uploadovati naše rules)
-5. Klikni **Enable**
+`FIREBASE_SERVICE_ACCOUNT_JSON` je zasebna serverska tajna i postavlja se samo u
+secret store hostinga. Ne pripada browser konfiguraciji i nikada se ne commituje.
+Za lokalni razvoj server podržava gitignored `firebase-admin-key.json`; ne treba ga
+preuzimati niti koristiti za frontend.
 
----
+## Rules
 
-## KORAK 3 — Firebase Authentication
-
-1. U lijevom meniju: **Build → Authentication**
-2. Klikni **Get started**
-3. **Sign-in method** tab → Omogući:
-   - ✅ **Email/Password** (za dispečere i admine)
-   - ✅ **Custom** (za PIN login vozača — automatski dostupan)
-4. Klikni Save
-
----
-
-## KORAK 4 — Firebase Storage (za logo upload)
-
-1. U lijevom meniju: **Build → Storage**
-2. Klikni **Get started**
-3. Location: `europe-west3` (isti region kao Firestore)
-4. Start in production mode
-
----
-
-## KORAK 5 — Web App Config (za frontend)
-
-1. Klikni zupčanik ⚙️ pored "Project Overview"
-2. **Project settings**
-3. Skroli dole do **"Your apps"**
-4. Klikni `</>` (Web ikona)
-5. Naziv: `transitflow-web`
-6. **Ne** uključuj Firebase Hosting zasad
-7. Kopiraj config objekt koji dobiješ:
-
-```javascript
-const firebaseConfig = {
-  apiKey: "...",
-  authDomain: "transitflow-prod.firebaseapp.com",
-  projectId: "transitflow-prod",
-  storageBucket: "transitflow-prod.appspot.com",
-  messagingSenderId: "...",
-  appId: "..."
-};
-```
-
-8. Zamijeni ovaj config u fajlu `firebase-service.js`
-
----
-
-## KORAK 6 — Admin SDK Key (za backend server)
-
-1. Klikni zupčanik ⚙️ → **Project settings**
-2. Tab: **Service accounts**
-3. Klikni **"Generate new private key"**
-4. Klikni **Generate key** u dijalogu
-5. Preuzme se JSON fajl — preimenuj ga u **`firebase-admin-key.json`**
-6. **Stavi ga u tvoj TransitFlow folder** (isti folder kao api-server.js)
-
-⚠️ **NIKAD ne stavljaj `firebase-admin-key.json` na GitHub ili javno!**
-   Dodaj u `.gitignore`:
-   ```
-   firebase-admin-key.json
-   node_modules/
-   ```
-
----
-
-## KORAK 7 — Postavi Firestore Security Rules
-
-1. U Firebase Console: **Firestore → Rules** tab
-2. Izbrišite sve i zalijepite sadržaj fajla `firestore.rules`
-3. Klikni **Publish**
-
----
-
-## KORAK 8 — Instaliraj Node.js pakete
-
-Otvori Command Prompt u TransitFlow folderu:
-
-```cmd
-cd C:\Users\cane\Desktop\TransitFlow
-npm install
-```
-
-Ovo instalira: express, firebase-admin, bcrypt, cors
-
----
-
-## KORAK 9 — Kreiraj prvog SuperAdmin korisnika
-
-1. Idi u Firebase Console → **Authentication → Users**
-2. Klikni **Add user**
-3. Email: `admin@transitflow.app` (ili tvoj email)
-4. Lozinka: jaka lozinka
-5. Kopiraj **User UID** koji se pojavi
-
-Zatim postavi custom claims za SuperAdmin.
-Privremeno uradi ovo jednom putem Firebase Console → Functions ili kopiraj UID i javi mi — kreiram ti setup skriptu.
-
----
-
-## KORAK 10 — Pokreni server
-
-```cmd
-cd C:\Users\cane\Desktop\TransitFlow
-npm start
-```
-
-Otvori browser: http://localhost:8765
-
----
-
-## Provjera da je sve OK
-
-- ✅ Firebase projekat je kreiran
-- ✅ Firestore baza je u `europe-west3` (Frankfurt)
-- ✅ Email/Password auth je uključen
-- ✅ `firebase-admin-key.json` je u TransitFlow folderu
-- ✅ `firebase-service.js` ima novi config
-- ✅ Firestore rules su publishani
-- ✅ `npm install` je završen
-- ✅ Server se pokreće bez grešaka
-
----
-
-*Nakon ovoga radimo: kreiranje prve firme i prvog dispečera.*
+Lokalna konfiguracija u `.firebaserc` cilja `buscommand-preview`. Pravila se prvo
+provjeravaju emulator testovima. Deploy se radi samo uz posebno odobrenje i
+eksplicitni `--project buscommand-preview` parametar.

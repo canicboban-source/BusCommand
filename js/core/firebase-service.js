@@ -1,8 +1,13 @@
-﻿// BusCommand ESM — Firebase Firestore sync
+// BusCommand ESM — Firebase Firestore sync
 
-import { getBaseState, getStateStorageKey } from "./state.js";
+import { getBaseState, getStateStorageKey, clearAllTenantStateCaches, applyUiLanguagePreference } from "./state.js";
 import { showToast } from "./utils.js";
 import { IS_DEMO_MODE } from "./runtime-config.js";
+import {
+    EXPECTED_FIREBASE_PROJECT_ID,
+    readFirebaseWebConfig,
+    validateFirebaseWebConfig
+} from "./firebase-web-config.js";
 import {
     diffCollectionOps,
     chunkArray,
@@ -10,26 +15,39 @@ import {
     hasAuditActivity,
     idsFromList
 } from "./firestore-sync.js";
+import { resolveDispatcherGroupIds, filterAssignedGroups } from "./dispatcher-scope.js";
+import { isGranularCollectionAllowed } from "./firestore-load-policy.js";
+import ApiClient from "./api-client.js";
+import { checkSOSStatus } from "../maps/sos-siren.js";
 
-const firebaseConfig = {
-    apiKey:            "AIzaSyBHW2NyhdXhg48tuzOhUsDJns4m2a6obQE",
-    authDomain:        "transitflow-prod.firebaseapp.com",
-    projectId:         "transitflow-prod",
-    storageBucket:     "transitflow-prod.firebasestorage.app",
-    messagingSenderId: "902580554748",
-    appId:             "1:902580554748:web:f122ad5654e0c3ff16c079",
-    measurementId:     "G-XZ7W37K4SM"
-};
+let db = null;
 
-firebase.initializeApp(firebaseConfig);
-const db   = firebase.firestore();
-const _auth = firebase.auth();
+function initializeFirebaseClient() {
+    if (IS_DEMO_MODE) return null;
+
+    const firebaseConfig = readFirebaseWebConfig();
+    const validation = validateFirebaseWebConfig(firebaseConfig);
+    if (!validation.valid) throw new Error(validation.error);
+    if (typeof firebase === "undefined") throw new Error("Firebase browser SDK is unavailable.");
+
+    if (firebase.apps.length) {
+        const activeProjectId = firebase.app().options.projectId;
+        if (activeProjectId !== EXPECTED_FIREBASE_PROJECT_ID) {
+            throw new Error(`Refusing to use Firebase project ${activeProjectId || "unknown"}.`);
+        }
+    } else {
+        firebase.initializeApp(firebaseConfig);
+    }
+    db = firebase.firestore();
+    return db;
+}
 
 let _firestoreListeners = [];
 let _firebaseReady     = false;
 let _collectionBaselines = {};
 let _baselineReady = {};
 let _lastSosSnapshot = null;
+let _dispatcherGroupListeners = [];
 
 const GRANULAR_COLLECTIONS = [
     { key: "groups",        col: "groups" },
@@ -46,11 +64,192 @@ const GRANULAR_COLLECTIONS = [
     { key: "companyAdmins", col: "company_admins" }
 ];
 
+const DISPATCHER_GROUP_SCOPED_KEYS = new Set([
+    "drivers", "shifts", "messages", "buses", "routes",
+    "reports", "vacations", "lostItems", "schedules"
+]);
+
 function _baseState() {
     return getBaseState();
 }
 
 function isFirebaseReady() { return _firebaseReady; }
+
+function _isDriverSession() {
+    return window.currentUser?.role === "driver";
+}
+
+function _isDispatcherSession() {
+    return window.currentUser?.role === "dispatcher";
+}
+
+function _currentRole() {
+    return window.currentUser?.role || null;
+}
+
+function _staffUid() {
+    return window.currentUser?.uid || window.currentUser?.id || null;
+}
+
+function _dispatcherAssignedGroupIds() {
+    return [...new Set(
+        (Array.isArray(window.currentUser?.groups) ? window.currentUser.groups : [])
+            .map(String)
+            .map(groupId => groupId.trim())
+            .filter(Boolean)
+    )];
+}
+
+async function _loadDispatcherProfileAndGroups(companyRef, companyId) {
+    const uid = _staffUid();
+    if (!uid) throw new Error("Dispatcher UID is missing.");
+    const profilePath = `${companyRef.path}/users/${uid}`;
+    const profileSnap = await _readFirestoreOperation(
+        "load_own_user_profile", profilePath,
+        () => companyRef.collection("users").doc(uid).get()
+    );
+    const profile = profileSnap.exists ? profileSnap.data() : null;
+    const assignedIds = resolveDispatcherGroupIds({
+        profileExists: profileSnap.exists,
+        profileGroups: profile?.groups,
+        claimGroups: window.currentUser?.groups
+    });
+    const groupSnaps = await Promise.all(assignedIds.map(id => _readFirestoreOperation(
+        "load_assigned_group", `${companyRef.path}/groups/${id}`,
+        () => companyRef.collection("groups").doc(id).get()
+    )));
+    const groups = filterAssignedGroups(groupSnaps
+        .filter(snapshot => snapshot.exists)
+        .map(snapshot => ({ ...snapshot.data(), id: snapshot.id, companyId })), assignedIds, companyId);
+    window.currentUser.groups = groups.map(group => group.id);
+    window.currentUser.activeGroupId = window.currentUser.groups.includes(window.currentUser.activeGroupId)
+        ? window.currentUser.activeGroupId
+        : (window.currentUser.groups[0] || null);
+    return {
+        dispatchers: profile ? [{ ...profile, id: uid, companyId, groups: window.currentUser.groups }] : [],
+        groups
+    };
+}
+
+function _driverUid() {
+    return window.currentUser?.uid || window.currentUser?.id || null;
+}
+
+function _docsToList(docs, companyId = null) {
+    return docs.map(doc => {
+        const data = { ...doc.data(), id: doc.data().id || doc.id };
+        // Tenant collections are stored under companies/{companyId}/... and often omit
+        // companyId in the document body. Stamp it so CA team/group filters work after reload.
+        if (companyId) data.companyId = companyId;
+        return data;
+    });
+}
+
+const DISPATCHER_DRIVER_SENSITIVE = Object.freeze([
+    "eid", "pin", "password", "passwordHash", "companyId", "company_code", "companyCode",
+    "personalCode", "loginCode", "activationCode", "otp"
+]);
+
+/** Dispatcher may only keep contact + assignment fields — never EID/PIN. */
+function sanitizeDriverRecordForClient(driver, role) {
+    const raw = driver && typeof driver === "object" ? driver : {};
+    const name = String(raw.name || [raw.firstName, raw.lastName].filter(Boolean).join(" ")).trim();
+    if (role !== "dispatcher") {
+        return name && !raw.name ? { ...raw, name } : raw;
+    }
+    const firstName = String(raw.firstName || "").trim();
+    const lastName = String(raw.lastName || "").trim();
+    return {
+        id: raw.id,
+        name: name || [firstName, lastName].filter(Boolean).join(" ") || "—",
+        firstName,
+        lastName,
+        phone: String(raw.phone || "").trim(),
+        email: String(raw.email || "").trim(),
+        groupId: raw.groupId || raw.lineId || "",
+        lineId: raw.lineId || raw.groupId || "",
+        bus: raw.bus || "",
+        active: raw.active !== false
+    };
+}
+
+function _docsToDriversList(docs, companyId = null) {
+    const role = _currentRole();
+    return _docsToList(docs, companyId).map((driver) => {
+        const sanitized = sanitizeDriverRecordForClient(driver, role);
+        if (role === "dispatcher") {
+            DISPATCHER_DRIVER_SENSITIVE.forEach((field) => {
+                if (Object.hasOwn(sanitized, field)) delete sanitized[field];
+            });
+        }
+        return sanitized;
+    });
+}
+
+async function _readFirestoreOperation(operation, path, reader) {
+    try {
+        return await reader();
+    } catch (error) {
+        const code = error?.code || "unknown";
+        console.warn(`Firebase read denied or failed | operation=${operation} | path=${path} | code=${code}`);
+        if (error && typeof error === "object") {
+            error.busCommandOperation = operation;
+            error.busCommandPath = path;
+        }
+        throw error;
+    }
+}
+
+async function _loadAllowedCollection(companyRef, item) {
+    const companyId = companyRef.id;
+    if (!isGranularCollectionAllowed(_currentRole(), item.key)) return [];
+    if (_isDispatcherSession() && DISPATCHER_GROUP_SCOPED_KEYS.has(item.key)) {
+        const assignedIds = _dispatcherAssignedGroupIds();
+        if (assignedIds.length === 0) return [];
+
+        const snapshots = await Promise.all(assignedIds.map(groupId =>
+            _readFirestoreOperation(
+                `load_assigned_${item.key}`, `${companyRef.path}/${item.col}?groupId=${groupId}`,
+                () => companyRef.collection(item.col).where("groupId", "==", groupId).get()
+            )
+        ));
+        const unique = new Map();
+        snapshots.flatMap(snapshot => snapshot.docs).forEach(doc => unique.set(doc.id, doc));
+        return item.key === "drivers"
+            ? _docsToDriversList([...unique.values()], companyId)
+            : _docsToList([...unique.values()], companyId);
+    }
+    if (!_isDriverSession()) {
+        const snapshot = await _readFirestoreOperation(
+            `load_${item.key}`, `${companyRef.path}/${item.col}`,
+            () => companyRef.collection(item.col).get()
+        );
+        return item.key === "drivers"
+            ? _docsToDriversList(snapshot.docs, companyId)
+            : _docsToList(snapshot.docs, companyId);
+    }
+    const uid = _driverUid();
+    if (item.key === "drivers") {
+        const snap = await companyRef.collection("drivers").doc(uid).get();
+        return snap.exists ? _docsToDriversList([snap], companyId) : [];
+    }
+    if (item.key === "messages") {
+        const messages = companyRef.collection("messages");
+        const [privateSnap, broadcastSnap] = await Promise.all([
+            messages.where("recipientDriverId", "==", uid).get(),
+            messages.where("broadcast", "==", true).get()
+        ]);
+        const unique = new Map();
+        [...privateSnap.docs, ...broadcastSnap.docs].forEach(doc => unique.set(doc.id, doc));
+        return _docsToList([...unique.values()], companyId);
+    }
+    if (item.key === "reports") {
+        const snapshot = await companyRef.collection(item.col).where("driverId", "==", uid).get();
+        return _docsToList(snapshot.docs, companyId);
+    }
+    if (item.key === "dispatchers" || item.key === "companyAdmins") return [];
+    return _docsToList((await companyRef.collection(item.col).get()).docs, companyId);
+}
 
 function _resetSyncBaselines(stateObj) {
     _collectionBaselines = {};
@@ -65,24 +264,25 @@ function _markBaselineFromList(itemKey, list) {
     _baselineReady[itemKey] = true;
 }
 
+/** Mark server-created docs so later client updates (e.g. soft-archive) can sync. */
+function acknowledgeServerCreatedIds(itemKey, ids) {
+    const next = new Set(_baselineReady[itemKey] ? _collectionBaselines[itemKey] : []);
+    for (const id of ids || []) {
+        if (id) next.add(String(id));
+    }
+    _collectionBaselines[itemKey] = next;
+    _baselineReady[itemKey] = true;
+}
+
 function _baselineFor(itemKey) {
     return _baselineReady[itemKey] ? _collectionBaselines[itemKey] : null;
 }
 
 async function logClientAuditEvent(companyId, action, details = {}) {
-    if (!companyId || IS_DEMO_MODE) return;
-    const user = window.currentUser;
-    const actorId = user?.uid || user?.id || user?.email || "unknown";
+    if (!companyId || IS_DEMO_MODE || action !== "state_sync") return;
     try {
-        await db.collection("companies").doc(companyId).collection("audit_log").add({
-            action,
-            actorId,
-            actorRole: user?.role || null,
-            actorName: user?.name || null,
-            details,
-            source: "client",
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        const result = await ApiClient.reportStateSync(details);
+        if (!result.success) throw new Error(result.error || "Audit endpoint failed");
     } catch (err) {
         console.warn("Audit log failed:", err.message);
     }
@@ -108,9 +308,9 @@ async function loadStateFromFirestore(companyId) {
     try {
         const companyRef = db.collection("companies").doc(companyId);
 
-        const profileSnap = await companyRef.collection("profile").doc("main").get();
-        const brandingSnap = await companyRef.collection("branding").doc("main").get();
-        const settingsSnap = await companyRef.collection("settings").doc("main").get();
+        const profileSnap = await _readFirestoreOperation("load_company_profile", `${companyRef.path}/profile/main`, () => companyRef.collection("profile").doc("main").get());
+        const brandingSnap = await _readFirestoreOperation("load_branding", `${companyRef.path}/branding/main`, () => companyRef.collection("branding").doc("main").get());
+        const settingsSnap = await _readFirestoreOperation("load_settings", `${companyRef.path}/settings/main`, () => companyRef.collection("settings").doc("main").get());
 
         const loadedState = {
             branding: brandingSnap.exists ? brandingSnap.data() : {},
@@ -118,13 +318,33 @@ async function loadStateFromFirestore(companyId) {
             profile: profileSnap.exists ? profileSnap.data() : {}
         };
 
+        const dispatcherAccess = _isDispatcherSession()
+            ? await _loadDispatcherProfileAndGroups(companyRef, companyId)
+            : null;
+
         for (const item of GRANULAR_COLLECTIONS) {
-            const colSnap = await companyRef.collection(item.col).get();
-            loadedState[item.key] = colSnap.docs.map(doc => {
-                const data = doc.data();
-                if (!data.id) data.id = doc.id;
-                return data;
-            });
+            if (dispatcherAccess && (item.key === "groups" || item.key === "dispatchers")) {
+                loadedState[item.key] = dispatcherAccess[item.key];
+            } else if (!isGranularCollectionAllowed(_currentRole(), item.key)) {
+                loadedState[item.key] = [];
+            } else if (item.key === "companyAdmins") {
+                // Real company admins live in users/ with role company_admin.
+                // The legacy company_admins collection is unused — filled below from users.
+                loadedState[item.key] = [];
+            } else {
+                loadedState[item.key] = await _loadAllowedCollection(companyRef, item);
+            }
+        }
+
+        // users/ holds both dispatchers and company admins — split after load so KPI/team match.
+        if (Array.isArray(loadedState.dispatchers)) {
+            const staffUsers = loadedState.dispatchers;
+            loadedState.companyAdmins = staffUsers.filter((user) =>
+                user.role === "company_admin" || user.role === "company-admin"
+            );
+            loadedState.dispatchers = staffUsers.filter((user) =>
+                user.role !== "company_admin" && user.role !== "company-admin"
+            );
         }
 
         const sosSnap = await companyRef.collection("settings").doc("sos").get();
@@ -143,8 +363,11 @@ async function loadStateFromFirestore(companyId) {
         console.log("✅ Firebase: Granular State loaded for", companyId);
         return loadedState;
     } catch (err) {
-        console.warn("⚠️ Firebase: Firestore granular load failed:", err);
-        return null;
+        console.warn(
+            `Firebase granular load failed | operation=${err?.busCommandOperation || "unknown"}`
+            + ` | path=${err?.busCommandPath || "unknown"} | code=${err?.code || "unknown"}`
+        );
+        throw err;
     }
 }
 
@@ -156,49 +379,32 @@ async function saveStateToFirestore(stateObj, companyId) {
     const auditByKey = {};
 
     try {
-        if (stateObj.branding) {
-            writeOps.push({
-                type: "set",
-                ref: companyRef.collection("branding").doc("main"),
-                data: stateObj.branding
-            });
-        }
-        if (stateObj.settings) {
-            writeOps.push({
-                type: "set",
-                ref: companyRef.collection("settings").doc("main"),
-                data: stateObj.settings
-            });
-        }
-        if (stateObj.profile) {
-            writeOps.push({
-                type: "set",
-                ref: companyRef.collection("profile").doc("main"),
-                data: stateObj.profile
-            });
-        }
-
-        const sosPayload = {
-            sosActive: stateObj.sosActive || false,
-            sosDriver: stateObj.sosDriver || "",
-            sosBus: stateObj.sosBus || ""
-        };
-        writeOps.push({
-            type: "set",
-            ref: companyRef.collection("settings").doc("sos"),
-            data: sosPayload
-        });
-
-        const sosChanged = !_lastSosSnapshot ||
-            _lastSosSnapshot.sosActive !== sosPayload.sosActive ||
-            _lastSosSnapshot.sosDriver !== sosPayload.sosDriver ||
-            _lastSosSnapshot.sosBus !== sosPayload.sosBus;
+        // Company profile, branding, license/settings, SOS and reports are server-owned.
+        // Their dedicated APIs validate tenant, payload, lifecycle and audit trail.
+        const sosChanged = false;
 
         for (const item of GRANULAR_COLLECTIONS) {
+            // Company groups are written only through the validated Company Admin API.
+            // Dispatcher accounts are provisioned and changed only through the server.
+            // Driver profiles/credentials: import + status APIs only (never client PIN/CRUD).
+            // Shifts/schedules: only PUT /api/staff/shifts/assignment (revision + Admin SDK).
+            if (item.key === "groups" || item.key === "dispatchers" || item.key === "reports" || item.key === "drivers" || item.key === "lostItems" || item.key === "buses" || item.key === "routes" || item.key === "shifts" || item.key === "schedules") continue;
             const localList = stateObj[item.key] || [];
             const collectionRef = companyRef.collection(item.col);
             const baseline = _baselineFor(item.key);
-            const { sets, deletes, localIds, audit } = diffCollectionOps(localList, baseline);
+            let { sets, deletes, localIds, audit } = diffCollectionOps(localList, baseline);
+
+            // Message creates go only through POST /api/staff/messages (Rules deny client create).
+            // Keep update/delete ops so dispatcher soft-archive (dispArchivedBy) still syncs.
+            if (item.key === "messages" && baseline) {
+                const allowed = new Set(baseline);
+                sets = sets.filter((entry) => allowed.has(entry.id));
+                audit = {
+                    ...audit,
+                    added: [],
+                    updated: audit.updated.filter((id) => allowed.has(id))
+                };
+            }
 
             for (const entry of sets) {
                 writeOps.push({
@@ -224,8 +430,6 @@ async function saveStateToFirestore(stateObj, companyId) {
         if (writeOps.length === 0) return;
 
         await _commitWriteOps(writeOps);
-
-        _lastSosSnapshot = { ...sosPayload };
 
         const auditSummary = summarizeAuditChanges(auditByKey);
         if (hasAuditActivity(auditSummary, { sosChanged })) {
@@ -275,6 +479,73 @@ function _handleRemoteCollectionUpdate(itemKey) {
             _invokeRender("../dispatcher/dashboard.js", "renderDispatcherDashboard");
         }
     }
+    if (itemKey === "reports" && user.role === "dispatcher") {
+        const active = document.querySelector(".content-section:not(.hidden)");
+        if (active?.id === "dispatcher-dashboard") {
+            _invokeRender("../dispatcher/dashboard.js", "renderDispatcherDashboard");
+        } else if (active?.id === "dispatcher-reports") {
+            _invokeRender("../dispatcher/reports.js", "renderDispatcherReports");
+        }
+    }
+    if (itemKey === "drivers" && user.role === "company-admin") {
+        const active = document.querySelector(".content-section:not(.hidden)");
+        if (active?.id === "company-admin-drivers") {
+            _invokeRender("../admin/company-admin-drivers.js", "renderCompanyAdminDrivers");
+        } else if (active?.id === "company-admin-dashboard") {
+            _invokeRender("../admin/company-admin.js", "renderCompanyAdminDashboard");
+        }
+    }
+}
+
+function _applyRemoteDocs(item, docs, companyId) {
+    const updatedList = item.key === "drivers"
+        ? _docsToDriversList(docs, companyId)
+        : _docsToList(docs, companyId);
+    if (JSON.stringify(window.state[item.key]) === JSON.stringify(updatedList)) return;
+    window.state[item.key] = updatedList;
+    _markBaselineFromList(item.key, updatedList);
+    _handleRemoteCollectionUpdate(item.key);
+    localStorage.setItem(getStateStorageKey(companyId), JSON.stringify(window.state));
+}
+
+function _startDispatcherAccessSync(companyRef, companyId) {
+    const uid = _staffUid();
+    if (!uid) return;
+    const profileRef = companyRef.collection("users").doc(uid);
+    const unsubscribeProfile = profileRef.onSnapshot(async (profileSnap) => {
+        _dispatcherGroupListeners.forEach(unsubscribe => unsubscribe());
+        _dispatcherGroupListeners = [];
+        const profile = profileSnap.exists ? profileSnap.data() : null;
+        const assignedIds = resolveDispatcherGroupIds({
+            profileExists: profileSnap.exists,
+            profileGroups: profile?.groups,
+            claimGroups: window.currentUser?.groups
+        });
+        window.currentUser.groups = assignedIds;
+        window.currentUser.activeGroupId = assignedIds.includes(window.currentUser.activeGroupId)
+            ? window.currentUser.activeGroupId
+            : (assignedIds[0] || null);
+        window.state.dispatchers = profile ? [{ ...profile, id: uid, companyId, groups: assignedIds }] : [];
+        window.state.groups = [];
+        assignedIds.forEach(groupId => {
+            const unsubscribe = companyRef.collection("groups").doc(groupId).onSnapshot(groupSnap => {
+                window.state.groups = window.state.groups.filter(group => group.id !== groupId);
+                if (groupSnap.exists) {
+                    window.state.groups.push({ ...groupSnap.data(), id: groupSnap.id, companyId });
+                }
+                _markBaselineFromList("groups", window.state.groups);
+                localStorage.setItem(getStateStorageKey(companyId), JSON.stringify(window.state));
+                _handleRemoteCollectionUpdate("groups");
+            });
+            _dispatcherGroupListeners.push(unsubscribe);
+        });
+        persistDispatcherAccess(companyId);
+    });
+    _firestoreListeners.push(unsubscribeProfile);
+}
+
+function persistDispatcherAccess(companyId) {
+    localStorage.setItem(getStateStorageKey(companyId), JSON.stringify(window.state));
 }
 
 function startFirestoreSync(companyId) {
@@ -282,6 +553,7 @@ function startFirestoreSync(companyId) {
     if (!companyId) return;
 
     const companyRef = db.collection("companies").doc(companyId);
+    if (_isDispatcherSession()) _startDispatcherAccessSync(companyRef, companyId);
 
     const sosListener = companyRef.collection("settings").doc("sos").onSnapshot(async (snap) => {
         if (!snap.exists) return;
@@ -298,7 +570,6 @@ function startFirestoreSync(companyId) {
         };
 
         if (sosChanged && window.currentUser) {
-            const { checkSOSStatus } = await import("../maps/sos-siren.js");
             checkSOSStatus();
             if (window.state.sosActive && window.currentUser.role === "dispatcher") {
                 showToast("🚨 SOS ALARM primljen!", "error", 8000);
@@ -308,6 +579,66 @@ function startFirestoreSync(companyId) {
     _firestoreListeners.push(sosListener);
 
     GRANULAR_COLLECTIONS.forEach(item => {
+        if (_isDispatcherSession() && (item.key === "groups" || item.key === "dispatchers")) return;
+        if (!isGranularCollectionAllowed(_currentRole(), item.key)) return;
+        if (_isDriverSession() && item.key === "drivers") {
+            _firestoreListeners.push(companyRef.collection("drivers").doc(_driverUid()).onSnapshot((snap) => {
+                _applyRemoteDocs(item, snap.exists ? [snap] : [], companyId);
+            }));
+            return;
+        }
+        if (_isDriverSession() && item.key === "messages") {
+            const queryDocs = { private: [], broadcast: [] };
+            const refresh = () => {
+                const unique = new Map();
+                [...queryDocs.private, ...queryDocs.broadcast].forEach(doc => unique.set(doc.id, doc));
+                _applyRemoteDocs(item, [...unique.values()], companyId);
+            };
+            const messages = companyRef.collection("messages");
+            _firestoreListeners.push(messages.where("recipientDriverId", "==", _driverUid()).onSnapshot((snap) => {
+                if (!snap.metadata.hasPendingWrites) { queryDocs.private = snap.docs; refresh(); }
+            }));
+            _firestoreListeners.push(messages.where("broadcast", "==", true).onSnapshot((snap) => {
+                if (!snap.metadata.hasPendingWrites) { queryDocs.broadcast = snap.docs; refresh(); }
+            }));
+            return;
+        }
+        if (_isDriverSession() && (item.key === "shifts" || item.key === "schedules")) {
+            const listener = companyRef.collection(item.col)
+                .where("driverId", "==", _driverUid())
+                .onSnapshot((snap) => {
+                    if (!snap.metadata.hasPendingWrites) _applyRemoteDocs(item, snap.docs, companyId);
+                });
+            _firestoreListeners.push(listener);
+            return;
+        }
+        if (_isDriverSession() && item.key === "reports") {
+            const listener = companyRef.collection(item.col)
+                .where("driverId", "==", _driverUid())
+                .onSnapshot((snap) => {
+                    if (!snap.metadata.hasPendingWrites) _applyRemoteDocs(item, snap.docs, companyId);
+                });
+            _firestoreListeners.push(listener);
+            return;
+        }
+        if (_isDispatcherSession() && DISPATCHER_GROUP_SCOPED_KEYS.has(item.key)) {
+            const queryDocs = new Map();
+            const refresh = () => {
+                const unique = new Map();
+                [...queryDocs.values()].flat().forEach(doc => unique.set(doc.id, doc));
+                _applyRemoteDocs(item, [...unique.values()], companyId);
+            };
+            const assignedIds = _dispatcherAssignedGroupIds();
+            assignedIds.forEach(groupId => {
+                const listener = companyRef.collection(item.col).where("groupId", "==", groupId).onSnapshot((snap) => {
+                    if (snap.metadata.hasPendingWrites) return;
+                    queryDocs.set(groupId, snap.docs);
+                    refresh();
+                });
+                _firestoreListeners.push(listener);
+            });
+            return;
+        }
         const listener = companyRef.collection(item.col).onSnapshot((snap) => {
             if (snap.metadata.hasPendingWrites) return;
 
@@ -344,6 +675,8 @@ function stopFirestoreSync() {
     _collectionBaselines = {};
     _baselineReady = {};
     _lastSosSnapshot = null;
+    _dispatcherGroupListeners.forEach(unsubscribe => unsubscribe());
+    _dispatcherGroupListeners = [];
 }
 
 function showFirebaseStatus(status) {
@@ -363,34 +696,55 @@ function showFirebaseStatus(status) {
         document.body.appendChild(indicator);
     }
 
+    if (status === "loading") {
+        indicator.remove();
+        return;
+    }
+    const statusText = status === "online"
+        ? (window.t?.("firebase_ready") || "Firebase ready")
+        : (window.t?.("firebase_load_error") || "Cloud data unavailable");
     indicator.innerHTML = status === "online"
         ? `<span style="width:8px;height:8px;border-radius:50%;background:#10b981;
                box-shadow:0 0 6px rgba(16,185,129,0.8);display:inline-block;"></span>
-           <span style="color:rgba(255,255,255,0.7);">Firebase sync</span>`
+           <span style="color:rgba(255,255,255,0.7);">${statusText}</span>`
         : `<span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;
                box-shadow:0 0 6px rgba(245,158,11,0.8);display:inline-block;"></span>
-           <span style="color:rgba(255,255,255,0.7);">Offline mode</span>`;
+           <span style="color:rgba(255,255,255,0.7);">${statusText}</span>`;
 }
 
 async function initFirebase(companyId) {
+    if (IS_DEMO_MODE) return window.state;
+    if (!companyId || companyId === EXPECTED_FIREBASE_PROJECT_ID) {
+        throw new Error("Confirmed tenant companyId is required before Firestore initialization.");
+    }
+    // Drop caches for other tenants so stale branding / license IDs cannot leak across logins.
+    clearAllTenantStateCaches({ keepCompanyId: companyId });
+    initializeFirebaseClient();
     _firebaseReady = false;
-    showFirebaseStatus("offline");
 
     try {
         const cloudState = await loadStateFromFirestore(companyId);
 
         if (cloudState) {
             window.state = { ..._baseState(), ...cloudState };
+            applyUiLanguagePreference();
             _resetSyncBaselines(window.state);
+        } else if (_isDispatcherSession()) {
+            window.state = { ..._baseState() };
+            applyUiLanguagePreference();
+            _resetSyncBaselines(window.state);
+            showFirebaseStatus("offline");
+            return window.state;
         } else {
             const localKey   = getStateStorageKey(companyId);
             const localSaved = localStorage.getItem(localKey);
             if (localSaved) {
                 try { window.state = { ..._baseState(), ...JSON.parse(localSaved) }; }
-                catch (_err) { window.state = { ..._baseState() }; }
+                catch { window.state = { ..._baseState() }; }
             } else {
                 window.state = { ..._baseState() };
             }
+            applyUiLanguagePreference();
             _resetSyncBaselines(window.state);
             await saveStateToFirestore(window.state, companyId);
         }
@@ -400,25 +754,35 @@ async function initFirebase(companyId) {
 
     } catch (err) {
         console.error("❌ Firebase init error:", err);
+        if (_isDispatcherSession()) {
+            window.state = { ..._baseState() };
+            applyUiLanguagePreference();
+            _resetSyncBaselines(window.state);
+            showFirebaseStatus("error");
+            throw err;
+        }
         const localKey = getStateStorageKey(companyId);
         const localSaved = localStorage.getItem(localKey);
         if (localSaved) {
             try { window.state = { ..._baseState(), ...JSON.parse(localSaved) }; }
-            catch (_err) { window.state = { ..._baseState() }; }
+            catch { window.state = { ..._baseState() }; }
         } else {
             window.state = { ..._baseState() };
         }
+        applyUiLanguagePreference();
         _resetSyncBaselines(window.state);
-        showFirebaseStatus("offline");
+        showFirebaseStatus("error");
     }
 
     return window.state;
 }
 
 export {
+    initializeFirebaseClient,
     isFirebaseReady,
     loadStateFromFirestore,
     saveStateToFirestore,
+    acknowledgeServerCreatedIds,
     logClientAuditEvent,
     startFirestoreSync,
     stopFirestoreSync,

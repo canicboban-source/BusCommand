@@ -26,6 +26,14 @@ export default defineConfig({
     command: "node api-server.js",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000
+    timeout: 120_000,
+    env: {
+      ...process.env,
+      PORT: String(PORT),
+      BUSCOMMAND_DEMO_OTP: process.env.BUSCOMMAND_DEMO_OTP || "482913",
+      // Isolate E2E from a local firebase-admin-key.json so demo API smoke stays deterministic
+      BUSCOMMAND_FORCE_LOCAL_DEMO: "1",
+      FIREBASE_SERVICE_ACCOUNT_JSON: ""
+    }
   }
 });

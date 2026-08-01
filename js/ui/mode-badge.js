@@ -13,7 +13,7 @@ function showModeBadge() {
         badge.style.color = "#fbbf24";
         badge.style.border = "1px solid rgba(245,158,11,0.4)";
     } else {
-        badge.textContent = "PRODUCTION";
+        badge.textContent = "PREVIEW";
         badge.style.background = "rgba(16,185,129,0.15)";
         badge.style.color = "#34d399";
         badge.style.border = "1px solid rgba(16,185,129,0.35)";

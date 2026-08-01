@@ -1,11 +1,17 @@
 // AUTO-GENERATED — node scripts/generate-register-onclick.js
 // onclick/onchange handleri + data-action delegacija (v30)
 
-import { addCompanyGroup, deleteCompanyGroup } from "./admin/company-admin-groups.js";
+import { handleCompanyAuditFilters, loadMoreCompanyAudit, refreshCompanyAudit, resetCompanyAuditFilters } from "./admin/company-admin-audit.js";
+import { applyBrandingSettings, clearCompanyBrandingLogo } from "./admin/company-admin-branding.js";
+import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriverEdit, confirmCompanyDriversImport, handleCompanyDriversFile, handleCompanyDriversFilter, openCompanyDriverEdit, saveCompanyDriverEdit, toggleCompanyDriverStatus } from "./admin/company-admin-drivers.js";
+import { cancelCompanyGroupEdit, deleteCompanyGroup, focusCompanyGroupForm, saveCompanyGroup, startEditCompanyGroup } from "./admin/company-admin-groups.js";
 import { caWizardBack, caWizardNext, caWizardSelectColor, caWizardSkip } from "./admin/company-admin-onboarding.js";
-import { addCompanyDispatcher, removeCompanyDispatcher, resetCompanyDispatcherPassword, saveCompanyDispatcherGroups, toggleCaDispGroupsEdit } from "./admin/company-admin-team.js";
+import { clearCompanyServicePlanPreview, closeCompanyServicePlanDuty, closeCompanyServicePlanHistory, handleCompanyServicePlanFile, handleCompanyServicePlanGroupChange, openCompanyServicePlanDuty, openCompanyServicePlanHistory, publishCompanyServicePlan } from "./admin/company-admin-service-plan.js";
+import { handleCompanySettingsCountry, handleCompanySettingsInput, resetCompanySettingsForm, saveCompanyProfileSettings } from "./admin/company-admin-settings.js";
+import { addCompanyDispatcher, focusCompanyDispatcherForm, resetCompanyDispatcherPassword, revokeCompanyDispatcherSessions, saveCompanyDispatcherGroups, toggleCaDispGroupsEdit, toggleCompanyDispatcherStatus } from "./admin/company-admin-team.js";
 import { createDispatcherGroup, enterDispatcherActiveGroup, exitImpersonation, saveNewDispatcherPassword, switchToGroupSetup } from "./admin/dispatcher-setup.js";
-import { superadminCreateCompany, superadminCreateCompanyAdmin, superadminDeleteCompany, superadminDeleteCompanyAdmin, superadminImpersonate, superadminOpenCompany, superadminResetPin, superadminToggleStatus } from "./admin/superadmin.js";
+import { superadminCreateCompany, superadminCreateCompanyAdmin, superadminDeleteCompany, superadminCancelDeleteCompanyModal, superadminConfirmDeleteCompany, superadminDeleteCompanyAdmin, superadminFocusCompanies, superadminCopyCompanyId, superadminCopyText, superadminImpersonate, superadminOpenCompany, superadminOpenCompanyDetail, superadminCloseCompanyDetail, superadminSetCompanyAdminStatus, superadminResetCompanyAdminPassword, superadminResetPin, superadminToggleStatus } from "./admin/superadmin.js";
+import { cancelDriverActivation, openDriverActivation, submitDriverActivation } from "./auth/driver-activation.js";
 import { forgotDispatcherPassword, loginAsDispatcher, logout } from "./auth/login-dispatcher.js";
 import { loginAsDriver } from "./auth/login-driver.js";
 import { switchLoginTab } from "./auth/login-ui.js";
@@ -14,31 +20,32 @@ import { clickElementById, installActionDelegates, removeElementById } from "./c
 import { exportDriversCSV, exportLostItemsCSV, exportReportsCSV } from "./core/export-csv.js";
 import { getScheduleByKey } from "./core/utils.js";
 import { addBus, deleteBus, deleteRoute } from "./data/buses-routes.js";
-import { addDriver, deleteDriver, editDriver, importDriversBulk, importDriversFromFile } from "./data/drivers.js";
+import { addDriver, editDriver, toggleDriverActive } from "./data/drivers.js";
 import { deleteGroup, setGroupFilter } from "./data/groups.js";
 import { clearScheduleFile, clearScheduleText, deleteScheduleEntry, formatScheduleText, handleScheduleDrop, handleScheduleFileSelect, insertScheduleTable, sendScheduleToDrivers, switchScheduleTab } from "./data/schedules.js";
 import { updateDriverBusInline, updateDriverShiftInline } from "./dispatcher/dashboard.js";
 import { removeDispatcher } from "./dispatcher/dispatchers.js";
-import { backFromPlanFullPage, closeGroupHub, openDailyPlanFull, openGroupHub, openMonthlyPlansFull, scrollHubSection } from "./dispatcher/group-hub.js";
+import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlansFull, scrollHubSection } from "./dispatcher/group-hub.js";
 import { returnLostItem } from "./dispatcher/lost-items.js";
 import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, saveMonthlyDayEdit, selectMonthlyPlanGroup } from "./dispatcher/monthly-plans.js";
 import { setMessagesPageTab, submitDispatcherMessage } from "./dispatcher/msg-compose.js";
 import { clearPendingPlanImports, confirmBulkPlanImport, handleBulkPlanDrop, handleBulkPlanFileInput, removePendingImport, updatePendingImportDriver, updatePendingImportMonth } from "./dispatcher/plan-import.js";
-import { deleteReport, resolveReport } from "./dispatcher/reports.js";
+import { resolveReport } from "./dispatcher/reports.js";
 import { archiveAllDispatcherMessages, archiveDispatcherMessage } from "./dispatcher/sent-messages.js";
 import { shiftWeekNav } from "./dispatcher/shift-utils.js";
 import { assignShift, openShiftCell, removeShift } from "./dispatcher/shifts.js";
 import { handleVacation } from "./dispatcher/vacations.js";
 import { handleAvatarUpload, triggerAvatarUpload } from "./driver/avatar.js";
 import { confirmTomorrowShift } from "./driver/calendar.js";
-import { closeSosTriggerModal, confirmSOSTrigger, resolveSOS, triggerSOSAlert } from "./driver/dashboard.js";
-import { confirmMessageRead } from "./driver/message-alerts.js";
+import { resolveSOS } from "./maps/sos-siren.js";
+import { closeSosTriggerModal, confirmSOSTrigger, triggerSOSAlert } from "./driver/dashboard.js";
+import { archiveMessage, archiveReadMessages, confirmMessageRead } from "./driver/message-alerts.js";
 import { markMessageAsRead } from "./driver/messages-inbox.js";
 import { sendQuickReport } from "./driver/quick-reports.js";
 import { submitBreakdownReport, submitDelayReport, submitLostItem, submitVacationRequest } from "./driver/reports.js";
 import { wizardAddDriverRow, wizardBack, wizardHandleLogo, wizardNext, wizardSelectColor, wizardSkip } from "./features/onboarding.js";
 import { changeCalendarMonth } from "./features/print-calendar.js";
-import { clearBlagussPackageImport, confirmBlagussPackageImport, handleBlagussPackageDrop, handleBlagussPackageInput } from "./imports/blaguss-package-import.js";
+import { clearPackageImport, confirmPackageImport, handlePackageImportDrop, handlePackageImportInput } from "./imports/package-import.js";
 import { fpNavSwitch } from "./layout/mobile-nav.js";
 import { switchSection } from "./layout/navigation.js";
 import { submitPreTripCheck } from "./layout/pretrip.js";
@@ -47,31 +54,42 @@ import { viewDamagePhoto } from "./maps/damage-photo.js";
 import { uploadDriverSchedule } from "./maps/schedule-upload.js";
 import { viewUploadedSchedule } from "./maps/schedule-viewer.js";
 import { closeConfirmModal, confirmModalYes } from "./ui/confirm-modal.js";
-import { applyBrandingSettings, changeLanguage, t } from "./ui/i18n.js";
-import { closeModal, closeSosConfirmModal, confirmClearSOS, confirmFactoryReset, confirmResolveSOS, resetApp, showModal } from "./ui/modals.js";
+import { changeLanguage, t } from "./ui/i18n.js";
+import { closeModal, closeSosConfirmModal, confirmClearSOS, confirmFactoryReset, confirmResolveSOS, showModal } from "./ui/modals.js";
 import { toggleTheme } from "./ui/theme.js";
+import { canInvokeActionDuringDriverActivation } from "./auth/driver-access-gate.js";
 
 const __ONCLICK_HANDLERS = {
     addBus,
     addCompanyDispatcher,
-    addCompanyGroup,
     addDriver,
     applyBrandingSettings,
     archiveAllDispatcherMessages,
     archiveDispatcherMessage,
+    archiveMessage,
+    archiveReadMessages,
     assignShift,
     backFromPlanFullPage,
     caWizardBack,
     caWizardNext,
     caWizardSelectColor,
     caWizardSkip,
+    cancelCompanyGroupEdit,
+    cancelDriverActivation,
     changeCalendarMonth,
+    changeCompanyDriversPage,
     changeLanguage,
-    clearBlagussPackageImport,
+    clearCompanyBrandingLogo,
+    clearCompanyDriversImport,
+    clearCompanyServicePlanPreview,
+    clearPackageImport,
     clearPendingPlanImports,
     clearScheduleFile,
     clearScheduleText,
     clickElementById,
+    closeCompanyDriverEdit,
+    closeCompanyServicePlanDuty,
+    closeCompanyServicePlanHistory,
     closeConfirmModal,
     closeGroupHub,
     closeModal,
@@ -79,12 +97,13 @@ const __ONCLICK_HANDLERS = {
     closeSosConfirmModal,
     closeSosTriggerModal,
     closeSuperAdminModal,
-    confirmBlagussPackageImport,
     confirmBulkPlanImport,
     confirmClearSOS,
+    confirmCompanyDriversImport,
     confirmFactoryReset,
     confirmMessageRead,
     confirmModalYes,
+    confirmPackageImport,
     confirmResolveSOS,
     confirmSOSTrigger,
     confirmSuperAdminPin,
@@ -93,9 +112,7 @@ const __ONCLICK_HANDLERS = {
     createEmptyMonthlyPlan,
     deleteBus,
     deleteCompanyGroup,
-    deleteDriver,
     deleteGroup,
-    deleteReport,
     deleteRoute,
     deleteScheduleEntry,
     editDriver,
@@ -104,23 +121,31 @@ const __ONCLICK_HANDLERS = {
     exportDriversCSV,
     exportLostItemsCSV,
     exportReportsCSV,
+    focusCompanyDispatcherForm,
+    focusCompanyGroupForm,
     forgotDispatcherPassword,
     formatScheduleText,
     fpNavSwitch,
     getScheduleByKey,
     handleAvatarUpload,
-    handleBlagussPackageDrop,
-    handleBlagussPackageInput,
     handleBulkPlanDrop,
     handleBulkPlanFileInput,
+    handleCompanyAuditFilters,
+    handleCompanyDriversFile,
+    handleCompanyDriversFilter,
+    handleCompanyServicePlanFile,
+    handleCompanyServicePlanGroupChange,
+    handleCompanySettingsCountry,
+    handleCompanySettingsInput,
     handleLogoClick,
+    handlePackageImportDrop,
+    handlePackageImportInput,
     handleScheduleDrop,
     handleScheduleFileSelect,
     handleVacation,
-    importDriversBulk,
-    importDriversFromFile,
     insertScheduleTable,
     loadMonthlyPlanForDriver,
+    loadMoreCompanyAudit,
     loginAsDispatcher,
     loginAsDriver,
     logout,
@@ -128,22 +153,34 @@ const __ONCLICK_HANDLERS = {
     onMedCatalogSelectChange,
     onMedDaySelectChange,
     onMedShiftTypeChange,
+    openCompanyDriverEdit,
+    openCompanyServicePlanDuty,
+    openCompanyServicePlanHistory,
+    openDailyPlanForGroup,
     openDailyPlanFull,
+    openDriverActivation,
     openGroupHub,
     openMonthlyDayEdit,
+    openMonthlyPlanForGroup,
     openMonthlyPlansFull,
     openShiftCell,
-    removeCompanyDispatcher,
+    publishCompanyServicePlan,
+    refreshCompanyAudit,
     removeDispatcher,
     removeElementById,
     removePendingImport,
     removeShift,
-    resetApp,
+    resetCompanyAuditFilters,
     resetCompanyDispatcherPassword,
+    resetCompanySettingsForm,
     resolveReport,
     resolveSOS,
     returnLostItem,
+    revokeCompanyDispatcherSessions,
     saveCompanyDispatcherGroups,
+    saveCompanyDriverEdit,
+    saveCompanyGroup,
+    saveCompanyProfileSettings,
     saveMonthlyDayEdit,
     saveNewDispatcherPassword,
     scrollHubSection,
@@ -154,18 +191,29 @@ const __ONCLICK_HANDLERS = {
     setMessagesPageTab,
     shiftWeekNav,
     showModal,
+    startEditCompanyGroup,
     submitBreakdownReport,
     submitDelayReport,
     submitDispatcherMessage,
+    submitDriverActivation,
     submitLostItem,
     submitPreTripCheck,
     submitVacationRequest,
     superadminCreateCompany,
     superadminCreateCompanyAdmin,
     superadminDeleteCompany,
+    superadminCancelDeleteCompanyModal,
+    superadminConfirmDeleteCompany,
     superadminDeleteCompanyAdmin,
+    superadminFocusCompanies,
+    superadminCopyCompanyId,
+    superadminCopyText,
     superadminImpersonate,
     superadminOpenCompany,
+    superadminOpenCompanyDetail,
+    superadminCloseCompanyDetail,
+    superadminSetCompanyAdminStatus,
+    superadminResetCompanyAdminPassword,
     superadminResetPin,
     superadminToggleStatus,
     switchLoginTab,
@@ -174,6 +222,9 @@ const __ONCLICK_HANDLERS = {
     switchToGroupSetup,
     t,
     toggleCaDispGroupsEdit,
+    toggleCompanyDispatcherStatus,
+    toggleCompanyDriverStatus,
+    toggleDriverActive,
     toggleRoleDirectly,
     toggleTheme,
     triggerAvatarUpload,
@@ -195,7 +246,9 @@ const __ONCLICK_HANDLERS = {
 
 export function registerOnclickHandlers(win = window) {
     for (const [name, fn] of Object.entries(__ONCLICK_HANDLERS)) {
-        if (typeof fn === "function") win[name] = fn;
+        if (typeof fn === "function") {
+            win[name] = (...args) => canInvokeActionDuringDriverActivation(name) ? fn(...args) : false;
+        }
     }
     installActionDelegates(__ONCLICK_HANDLERS, document);
 }

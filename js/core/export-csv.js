@@ -1,6 +1,24 @@
 // BusCommand ESM v9.5
 import { showToast } from "./utils.js";
 import { t } from "../ui/i18n.js";
+import { canRunCompanyAdminAction } from "./ui-permissions.js";
+import { safeDriverExportRows } from "./export-policy.js";
+import { IS_DEMO_MODE } from "./runtime-config.js";
+import ApiClient from "./api-client.js";
+
+const activeExports = new Set();
+
+function companyScoped(records) {
+    const companyId = window.currentUser?.companyId;
+    if (!companyId) return [];
+    return (records || []).filter(record => record.companyId === companyId || (IS_DEMO_MODE && !record.companyId));
+}
+
+function assertExportAllowed() {
+    if (canRunCompanyAdminAction(window.currentUser?.role) && window.currentUser?.companyId) return true;
+    showToast(t("error_access_denied"), "error");
+    return false;
+}
 
 function downloadCSV(filename, headers, rows) {
     const escape = v => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
@@ -12,25 +30,52 @@ function downloadCSV(filename, headers, rows) {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-    showToast("✅ " + filename + " downloaded", "success", 3000);
+    showToast(t("export_downloaded", { filename }), "success", 3000);
 }
 
-function exportReportsCSV() {
-    const headers = [t("table_time") || "Time", t("table_driver") || "Driver", t("table_bus") || "Bus", t("table_type") || "Type", t("table_reason") || "Reason", t("table_severity") || "Severity", t("table_status") || "Status"];
-    const rows = (window.state.reports || []).map(r => [r.time, r.driver, r.bus, r.type, r.reason, r.severity, r.status]);
+async function runCompanyExport(dataset, demoExport) {
+    if (!assertExportAllowed()) return false;
+    if (activeExports.has(dataset)) return false;
+    activeExports.add(dataset);
+    try {
+        if (IS_DEMO_MODE) return demoExport();
+        const result = await ApiClient.downloadCompanyExport(window.currentUser.companyId, dataset);
+        if (!result.success) {
+            showToast(result.error || t("export_failed"), "error");
+            return false;
+        }
+        showToast(t("export_downloaded", { filename: result.filename }), "success", 3000);
+        return true;
+    } finally {
+        activeExports.delete(dataset);
+    }
+}
+
+async function exportReportsCSV() {
+    return runCompanyExport("reports", () => {
+    const headers = [t("table_time"), t("table_driver"), t("table_bus"), t("table_type"), t("table_reason"), t("table_severity"), t("table_status")];
+    const rows = companyScoped(window.state.reports).map(r => [r.time, r.driver, r.bus, r.type, r.reason, r.severity, r.status]);
     downloadCSV("buscommand_reports.csv", headers, rows);
+    return true;
+    });
 }
 
-function exportDriversCSV() {
-    const headers = [t("table_driver") || "Driver", t("table_bus") || "Bus", "PIN", "Group ID"];
-    const rows = (window.state.drivers || []).map(d => [d.name, d.bus, d.pin, d.groupId || ""]);
+async function exportDriversCSV() {
+    return runCompanyExport("drivers", () => {
+    const headers = [t("table_driver"), t("table_bus"), t("group_id_label")];
+    const rows = safeDriverExportRows(window.state.drivers, window.currentUser.companyId, true);
     downloadCSV("buscommand_drivers.csv", headers, rows);
+    return true;
+    });
 }
 
-function exportLostItemsCSV() {
-    const headers = [t("table_time") || "Time", t("table_driver") || "Driver", t("table_bus") || "Bus", t("table_type") || "Type", "Location", t("table_status") || "Status"];
-    const rows = (window.state.lostItems || []).map(i => [i.time, i.driver, i.bus, i.type, i.location || "", i.status]);
+async function exportLostItemsCSV() {
+    return runCompanyExport("lost_items", () => {
+    const headers = [t("table_time"), t("table_driver"), t("table_bus"), t("table_type"), t("location_label"), t("table_status")];
+    const rows = companyScoped(window.state.lostItems).map(i => [i.time, i.driver, i.bus, i.type, i.location || "", i.status]);
     downloadCSV("buscommand_lost_items.csv", headers, rows);
+    return true;
+    });
 }
 export {
     downloadCSV,

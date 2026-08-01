@@ -1,4 +1,5 @@
 // BusCommand ESM — Auth (email/lozinka + PIN login)
+import { staffAuthErrorKey } from "../auth/staff-login-errors.js";
 
 const Auth = (() => {
     let _currentUser = null;
@@ -21,7 +22,9 @@ const Auth = (() => {
                         role: normalizeRoleClaim(claims.role || "driver"),
                         companyId: claims.companyId || null,
                         bus: claims.bus || null,
-                        permissions: claims.permissions || {}
+                        permissions: claims.permissions || {},
+                        groups: Array.isArray(claims.groups) ? claims.groups : [],
+                        mustChangeLoginCode: claims.mustChangeLoginCode === true
                     };
                 } catch (err) {
                     console.warn("Auth: ne mogu čitati claims:", err);
@@ -47,32 +50,40 @@ const Auth = (() => {
                     email: credential.user.email,
                     name: claims.name || credential.user.displayName || credential.user.email,
                     role: normalizeRoleClaim(claims.role || "dispatcher"),
-                    companyId: claims.companyId || null
+                    companyId: claims.companyId || null,
+                    groups: Array.isArray(claims.groups) ? claims.groups : []
                 }
             };
         } catch (err) {
-            return { success: false, error: _mapFirebaseError(err.code) };
+            return {
+                success: false,
+                code: err.code || "",
+                errorKey: staffAuthErrorKey(err.code)
+            };
         }
     }
 
     async function loginWithPin(companyId, driverId, pin) {
         if (!companyId || !driverId || !pin) {
-            return { success: false, error: "Popunite sva polja." };
+            return { success: false, code: "MISSING_FIELDS" };
         }
         try {
             const response = await fetch("/api/auth/driver-login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ companyId, driverId, pin })
+                body: JSON.stringify({ companyId, driverId, loginCode: pin })
             });
             let data;
             try {
                 data = await response.json();
             } catch {
-                return { success: false, error: "Server greška. Provjerite da li je server pokrenut." };
+                return { success: false, code: "SERVER_ERROR" };
             }
             if (!response.ok || !data.success) {
-                return { success: false, error: data.error || "Greška pri prijavi." };
+                return {
+                    success: false,
+                    code: data.code || "INVALID_LOGIN"
+                };
             }
             if (data.demo || !data.token) {
                 return {
@@ -87,6 +98,13 @@ const Auth = (() => {
                 };
             }
             await firebase.auth().signInWithCustomToken(data.token);
+            if (data.mustChangeLoginCode) {
+                return {
+                    success: true,
+                    requiresActivation: true,
+                    user: { id: driverId, name: data.user.name, role: "driver", companyId, bus: data.user.bus }
+                };
+            }
             return {
                 success: true,
                 user: {
@@ -99,8 +117,36 @@ const Auth = (() => {
             };
         } catch (err) {
             console.error("PIN login greška:", err);
-            return { success: false, error: "Server greška. Provjerite da li je server pokrenut." };
+            return { success: false, code: "SERVER_ERROR" };
         }
+    }
+
+    async function activatePersonalLoginCode(personalLoginCode) {
+        if (!personalLoginCode || !firebase.auth().currentUser) return { success: false };
+        try {
+            const idToken = await firebase.auth().currentUser.getIdToken(true);
+            const response = await fetch("/api/auth/driver/activate-personal-code", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+                body: JSON.stringify({ personalLoginCode })
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success || !data.token) return { success: false };
+            await firebase.auth().signInWithCustomToken(data.token);
+            const tokenResult = await firebase.auth().currentUser.getIdTokenResult(true);
+            if (tokenResult.claims.mustChangeLoginCode === true) {
+                await firebase.auth().signOut();
+                return { success: false };
+            }
+            return { success: true, user: data.user };
+        } catch {
+            return { success: false };
+        }
+    }
+
+    /** @deprecated Use activatePersonalLoginCode */
+    async function activateCompanyCode(code) {
+        return activatePersonalLoginCode(code);
     }
 
     async function logout() {
@@ -143,21 +189,8 @@ const Auth = (() => {
         return role;
     }
 
-    function _mapFirebaseError(code) {
-        const map = {
-            "auth/user-not-found": "Email adresa nije pronađena.",
-            "auth/wrong-password": "Pogrešna lozinka.",
-            "auth/invalid-email": "Neispravna email adresa.",
-            "auth/user-disabled": "Nalog je deaktiviran. Kontaktirajte administratora.",
-            "auth/too-many-requests": "Previše neuspjelih pokušaja. Pokušajte za nekoliko minuta.",
-            "auth/network-request-failed": "Bez internet konekcije.",
-            "auth/invalid-credential": "Pogrešan email ili lozinka."
-        };
-        return map[code] || "Greška pri prijavi (" + code + ").";
-    }
-
     return {
-        init, loginWithEmail, loginWithPin, logout,
+        init, loginWithEmail, loginWithPin, activatePersonalLoginCode, activateCompanyCode, logout,
         getCurrentUser, isLoggedIn, hasRole, hasPermission,
         onAuthStateChanged, refreshToken, getIdToken
     };

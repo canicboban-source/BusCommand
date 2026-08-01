@@ -15,7 +15,7 @@ function toggleRoleDirectly() {
         sessionStorage.removeItem("buscommand_pretrip_done");
         window.currentUser.role = "dispatcher";
         window.currentUser.name = "disp_center";
-        window.currentCalendarMonth = "2026-06"; // Resetuj kalendar na jun pri promeni uloge
+        window.currentCalendarMonth = new Date().toISOString().slice(0, 7);
     } else {
         window.currentUser.role = "driver";
         window.currentUser.name = window.state.drivers[0].name;

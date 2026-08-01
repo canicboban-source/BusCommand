@@ -1,7 +1,7 @@
 rules_version = '2';
 
 // ============================================================
-// TransitFlow — Firestore Security Rules
+// BusCommand — Firestore Security Rules
 // KRITIČNO: Ove rules osiguravaju da firme ne vide
 // jedne druge podatke (multi-tenant izolacija)
 // ============================================================
@@ -12,43 +12,43 @@ service cloud.firestore {
     // ─── SUPERADMIN ─────────────────────────────────────────
     // SuperAdmin ima pristup svemu
 
-    match /{document=**} {
-      allow read, write: if isSuperAdmin();
+    match /companies/{companyId}/{companyCollection}/{document=**} {
+      allow read, write: if isSuperAdmin()
+                         && companyCollection != "driver_credentials";
     }
 
     // ─── FIRMA — SOPSTVENI PODACI ───────────────────────────
     // Firma može čitati i pisati SAMO pod svojom companyId putanjom
 
     match /companies/{companyId} {
-      allow read: if isCompanyMember(companyId);
-      allow write: if isCompanyAdmin(companyId);
+      allow read: if isSuperAdmin() || isCompanyMember(companyId);
+      allow write: if isSuperAdmin() || isCompanyAdmin(companyId);
     }
 
     // Profil i branding firme
     match /companies/{companyId}/profile/{doc} {
       allow read: if isCompanyMember(companyId);
-      allow write: if isCompanyAdmin(companyId);
+      allow write: if false;
     }
 
     match /companies/{companyId}/branding/{doc} {
       allow read: if isCompanyMember(companyId);
-      allow write: if isCompanyAdmin(companyId);
+      allow write: if false;
     }
 
     match /companies/{companyId}/settings/{doc} {
       allow read: if isCompanyMember(companyId);
-      allow write: if isCompanyAdmin(companyId);
+      allow write: if false;
     }
 
     match /companies/{companyId}/users/{userId} {
       // Svaki user vidi vlastiti profil, admin vidi sve
       allow read: if isCompanyAdmin(companyId)
                   || (isCompanyMember(companyId) && request.auth.uid == userId);
-      allow create: if isCompanyAdmin(companyId) && isLicenseActive(companyId);
-      allow update: if (isCompanyAdmin(companyId) && isLicenseActive(companyId))
-                    || (isCompanyMember(companyId) && request.auth.uid == userId
-                        && onlyUpdatingOwnProfile());
-      allow delete: if isCompanyAdmin(companyId);
+      // Kreiranje, status, grupe i uklanjanje naloga idu isključivo kroz server.
+      allow create, delete: if false;
+      allow update: if isCompanyMember(companyId) && request.auth.uid == userId
+                    && onlyUpdatingOwnProfile();
     }
 
     // ─── VOZAČI ─────────────────────────────────────────────
@@ -58,86 +58,126 @@ service cloud.firestore {
       // Vozač vidi SAMO vlastiti profil
       allow read: if isCompanyStaff(companyId)
                   || isOwnDriverProfile(companyId, driverId);
-      allow create: if isCompanyStaff(companyId) && isLicenseActive(companyId);
-      allow update: if (isCompanyStaff(companyId) && isLicenseActive(companyId))
-                    || (isDriver(companyId) && request.auth.uid == driverId
-                        && onlyUpdatingAllowedDriverFields());
-      allow delete: if isCompanyAdmin(companyId);
+      // Create/delete only via Admin SDK (CSV import / lifecycle APIs)
+      allow create, delete: if false;
+      // Client update: only the driver may touch lastSeen/lastLocation
+      allow update: if isDriver(companyId) && request.auth.uid == driverId
+                    && onlyUpdatingAllowedDriverFields()
+                    && isDriverLocationWriteAllowed(companyId);
     }
 
     // ─── SMJENE ─────────────────────────────────────────────
 
     match /companies/{companyId}/shifts/{shiftId} {
-      allow read: if isCompanyMember(companyId);
-      allow create: if isCompanyStaff(companyId) && isLicenseActive(companyId);
-      allow update: if isCompanyStaff(companyId) && isLicenseActive(companyId);
-      allow delete: if isCompanyAdmin(companyId);
+      allow read: if isCompanyStaff(companyId)
+                  || (isDriver(companyId) && resource.data.driverId == request.auth.uid
+                      && isDriverNotificationWindow(companyId));
+      // Writes only via Admin SDK (PUT /api/staff/shifts/assignment)
+      allow create, update, delete: if false;
     }
 
     // ─── PORUKE ─────────────────────────────────────────────
 
     match /companies/{companyId}/messages/{msgId} {
-      allow read: if isCompanyMember(companyId);
-      allow create: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow read: if isCompanyStaff(companyId);
+      allow read: if isDriverNotificationWindow(companyId)
+                  && (resource.data.broadcast == true
+                      || resource.data.recipientDriverId == request.auth.uid);
+      // Create only via Admin SDK (POST /api/staff/messages)
+      allow create: if false;
       // Vozač može samo markirati poruku kao pročitanu
-      allow update: if (isCompanyStaff(companyId) && isLicenseActive(companyId))
-                    || (isDriver(companyId) && onlyMarkingRead());
-      allow delete: if isCompanyAdmin(companyId);
+      allow update: if canDriverReadMessage(companyId) && onlyMarkingRead();
+      allow delete: if false;
     }
 
     // ─── SOS ALARMI ─────────────────────────────────────────
 
     match /companies/{companyId}/sos/{sosId} {
       allow read: if isCompanyMember(companyId);
-      // SOS ostaje dostupan bez obzira na status licence — sigurnosni alarm se ne smije blokirati
-      allow create: if isDriver(companyId);
-      // Samo dispečer/admin može riješiti SOS
-      allow update: if isCompanyStaff(companyId);
-      allow delete: if false; // SOS se nikad ne briše — evidencija
+      // Create/update only via Admin SDK (driver create + staff resolve)
+      allow create, update, delete: if false;
     }
 
     // ─── RASPORED ───────────────────────────────────────────
 
     match /companies/{companyId}/schedules/{scheduleId} {
-      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
-      allow write: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      allow read: if isLicenseActive(companyId)
+                  && (isCompanyStaff(companyId)
+                      || (isDriver(companyId) && resource.data.driverId == request.auth.uid
+                          && isDriverNotificationWindow(companyId)));
+      // Writes only via Admin SDK (assignment mirrors schedule day)
+      allow write: if false;
+    }
+
+    match /companies/{companyId}/service_plans/{planId} {
+      allow read: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      allow write: if false;
+    }
+
+    match /companies/{companyId}/service_plans/{planId}/duties/{dutyId} {
+      allow read: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      allow write: if false;
+    }
+
+    match /companies/{companyId}/driver_sessions/{driverId} {
+      allow read: if isCompanyStaff(companyId)
+                  || (isDriver(companyId) && request.auth.uid == driverId);
+      allow write: if false;
+    }
+
+    match /companies/{companyId}/shift_confirmations/{confirmationId} {
+      allow read: if isCompanyStaff(companyId);
+      allow write: if false;
+    }
+
+    match /companies/{companyId}/confirmation_outbox/{outboxId} {
+      allow read: if isCompanyStaff(companyId)
+                  || (isDriver(companyId) && resource.data.driverId == request.auth.uid);
+      allow write: if false;
     }
 
     match /companies/{companyId}/groups/{groupId} {
       allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
-      allow write: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      // Server-only: API validates identity, tenant, dependencies and writes audit events.
+      allow write: if false;
     }
 
     match /companies/{companyId}/buses/{busId} {
       allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
-      allow write: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      // Fleet CRUD not productized via client; Admin SDK later if needed
+      allow write: if false;
     }
 
     match /companies/{companyId}/routes/{routeId} {
       allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
-      allow write: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      allow write: if false;
     }
 
     match /companies/{companyId}/reports/{reportId} {
-      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
-      allow create: if isCompanyMember(companyId) && isLicenseActive(companyId);
-      allow update, delete: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      allow read: if isLicenseActive(companyId)
+                  && (isCompanyAdmin(companyId)
+                      || (isDispatcher(companyId) && isDispatcherAssignedGroup(companyId, resource.data.groupId))
+                      || (isDriver(companyId) && resource.data.driverId == request.auth.uid));
+      // Creation and resolution are validated, identity/group-bound and audited by the server.
+      allow create, update, delete: if false;
     }
 
     match /companies/{companyId}/vacations/{vacId} {
       allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
-      allow create: if isCompanyMember(companyId) && isLicenseActive(companyId);
-      allow update, delete: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      // Creation and review are validated, identity-bound and audited by the server.
+      allow create, update, delete: if false;
     }
 
     match /companies/{companyId}/lost_items/{itemId} {
       allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
-      allow write: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      // Create/status only via Admin SDK
+      allow write: if false;
     }
 
     match /companies/{companyId}/company_admins/{adminId} {
       allow read: if isCompanyAdmin(companyId);
-      allow write: if isCompanyAdmin(companyId);
+      // Legacy read-only compatibility collection. Lifecycle writes are server-only.
+      allow write: if false;
     }
 
     // ─── AUDIT LOG (GDPR — nepromjenjivo) ───────────────────
@@ -145,31 +185,41 @@ service cloud.firestore {
     match /companies/{companyId}/audit_log/{logId} {
       // Admin može čitati, svi mogu kreirati, niko ne može brisati ni mijenjati
       allow read: if isCompanyAdmin(companyId);
-      allow create: if isCompanyMember(companyId);
+      allow create: if false; // server-only: clients cannot forge audit records
       allow update: if false;  // audit log je immutable
       allow delete: if false;
+    }
+
+    // ─── SUPPORT SESSIONS (L7 — Admin SDK only) ─────────────
+
+    match /companies/{companyId}/support_sessions/{sessionId} {
+      allow read: if isCompanyAdmin(companyId) || isSuperAdmin();
+      allow create, update, delete: if false;
     }
 
     // ─── HELPER FUNCTIONS ───────────────────────────────────
 
     function isSuperAdmin() {
       return request.auth != null
+        && request.auth.token.mustChangeLoginCode != true
         && request.auth.token.role == "superadmin";
     }
 
     function isCompanyMember(companyId) {
       return request.auth != null
-        && request.auth.token.companyId == companyId;
+        && request.auth.token.companyId == companyId
+        && request.auth.token.mustChangeLoginCode != true
+        && ((request.auth.token.role == "driver"
+             && get(/databases/$(database)/documents/companies/$(companyId)/drivers/$(request.auth.uid)).data.get("active", true) != false)
+            || ((request.auth.token.role == "dispatcher" || request.auth.token.role == "company_admin")
+                && exists(/databases/$(database)/documents/companies/$(companyId)/users/$(request.auth.uid))
+                && get(/databases/$(database)/documents/companies/$(companyId)/users/$(request.auth.uid)).data.get("active", true) != false
+                && get(/databases/$(database)/documents/companies/$(companyId)/users/$(request.auth.uid)).data.get("sessionsValidAfterEpoch", 0) < request.auth.token.auth_time));
     }
 
     function isCompanyAdmin(companyId) {
       return isCompanyMember(companyId)
         && request.auth.token.role == "company_admin";
-    }
-
-    function isDispatcher(companyId) {
-      return isCompanyMember(companyId)
-        && request.auth.token.role == "dispatcher";
     }
 
     function isCompanyStaff(companyId) {
@@ -188,8 +238,41 @@ service cloud.firestore {
         && request.auth.uid == driverId;
     }
 
+    function isDispatcher(companyId) {
+      return isCompanyMember(companyId)
+        && request.auth.token.role == "dispatcher";
+    }
+
+    function isDispatcherAssignedGroup(companyId, groupId) {
+      return groupId is string
+        && get(/databases/$(database)/documents/companies/$(companyId)/users/$(request.auth.uid)).data.groups.hasAny([groupId]);
+    }
+
+    function isDriverNotificationWindow(companyId) {
+      return isDriver(companyId)
+        && exists(/databases/$(database)/documents/companies/$(companyId)/driver_sessions/$(request.auth.uid))
+        && get(/databases/$(database)/documents/companies/$(companyId)/driver_sessions/$(request.auth.uid)).data.notificationsUntil >= request.time;
+    }
+
+    // Server-only driver authentication material. Firebase Admin SDK bypasses Rules.
+    match /companies/{companyId}/driver_credentials/{driverId} {
+      allow read, write: if false;
+    }
+
+    function canDriverReadMessage(companyId) {
+      return isDriver(companyId)
+        && (resource.data.broadcast == true
+            || resource.data.recipientDriverId == request.auth.uid);
+    }
+
     function isLicenseActive(companyId) {
       return get(/databases/$(database)/documents/companies/$(companyId)/settings/main).data.status != "suspended";
+    }
+
+    // Lokacija i lastSeen važe samo dok server potvrđuje aktivnu/grace radnu sesiju.
+    function isDriverLocationWriteAllowed(companyId) {
+      return exists(/databases/$(database)/documents/companies/$(companyId)/driver_sessions/$(request.auth.uid))
+        && get(/databases/$(database)/documents/companies/$(companyId)/driver_sessions/$(request.auth.uid)).data.sessionEndsAt >= request.time;
     }
 
     // Vozač može mijenjati samo lastSeen i slično — ne PIN, ne bus

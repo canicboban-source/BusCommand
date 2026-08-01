@@ -1,4 +1,4 @@
-# TransitFlow — SaaS Platforma: Arhitekturalni Plan
+# BusCommand — SaaS platforma: arhitekturalni plan
 
 **Verzija:** 1.0  
 **Datum:** Juni 2026  
@@ -8,7 +8,7 @@
 
 ## 1. VIZIJA
 
-TransitFlow je B2B SaaS platforma za upravljanje bus flotama. Svaka transportna firma
+BusCommand je B2B SaaS platforma za operativno upravljanje autobuskim prevozom. Svaka transportna firma
 (klijent) dobija izolovano okruženje sa sopstvenim podacima, brandingom i korisnicima.
 Super Admin (ti) kontroliše sve firme, licence i plaćanje.
 
@@ -19,7 +19,7 @@ Super Admin (ti) kontroliše sve firme, licence i plaćanje.
 ```
 SuperAdmin (Boban)
 │
-├── Company Admin (npr. Blaguss, FlixBus, Arriva...)
+├── Company Admin (npr. Acme Transit, FlixBus, Arriva...)
 │   ├── Dispatcher (dispečer u firmi)
 │   └── Driver (vozač u firmi)
 └── (buduće: Support Agent)
@@ -71,12 +71,12 @@ međusobni pristup. Firme A i B **nikad ne vide jedne druge podatke**.
 ### /companies/{companyId}/profile
 ```json
 {
-  "name": "Blaguss Reisen GmbH",
-  "slug": "blaguss",
+  "name": "Acme Transit GmbH",
+  "slug": "acme",
   "country": "AT",
   "vatNumber": "ATU12345678",
   "address": "Laxenburger Str. 246, 1230 Wien",
-  "contactEmail": "admin@blaguss.com",
+  "contactEmail": "admin@acme-transit.example",
   "phone": "+43 1 610 90",
   "timezone": "Europe/Vienna",
   "defaultLanguage": "de",
@@ -90,13 +90,13 @@ međusobni pristup. Firme A i B **nikad ne vide jedne druge podatke**.
 ### /companies/{companyId}/branding
 ```json
 {
-  "logoUrl": "https://storage.../blaguss/logo.png",
+  "logoUrl": "https://storage.../acme/logo.png",
   "primaryColor": "#C8102E",
   "secondaryColor": "#1A1A2E",
   "accentColor": "#FFD700",
-  "appTitle": "BLAGUSS Fleet",
-  "loginSubtitle": "Bringt Sie weiter",
-  "favicon": "https://storage.../blaguss/favicon.ico"
+  "appTitle": "Acme Fleet",
+  "loginSubtitle": "Your fleet, in command",
+  "favicon": "https://storage.../acme/favicon.ico"
 }
 ```
 
@@ -116,9 +116,9 @@ međusobni pristup. Firme A i B **nikad ne vide jedne druge podatke**.
     "reports": true
   },
   "gdpr": {
-    "dpoEmail": "dpo@blaguss.com",
+    "dpoEmail": "dpo@acme-transit.example",
     "dataRetentionDays": 365,
-    "privacyPolicyUrl": "https://blaguss.com/datenschutz"
+    "privacyPolicyUrl": "https://acme-transit.example/privacy"
   },
   "billing": {
     "stripeCustomerId": "cus_xxx",
@@ -132,10 +132,10 @@ međusobni pristup. Firme A i B **nikad ne vide jedne druge podatke**.
 ```json
 {
   "firebaseUid": "uid_abc123",
-  "email": "dispatcher@blaguss.com",
+  "email": "dispatcher@acme-transit.example",
   "name": "Hans Müller",
   "role": "dispatcher",
-  "companyId": "blaguss",
+  "companyId": "acme",
   "active": true,
   "createdAt": "2026-01-15T10:00:00Z",
   "lastLoginAt": "2026-06-26T08:30:00Z",
@@ -157,7 +157,7 @@ međusobni pristup. Firme A i B **nikad ne vide jedne druge podatke**.
   "bus": "W-1234",
   "phone": "+43 676 123 456",
   "email": "nikola@example.com",
-  "companyId": "blaguss",
+  "companyId": "acme",
   "active": true,
   "createdAt": "2026-02-01T09:00:00Z",
   "gdprConsent": {
@@ -171,8 +171,8 @@ međusobni pristup. Firme A i B **nikad ne vide jedne druge podatke**.
 ### /superadmin/licenses/{licenseId}
 ```json
 {
-  "licenseId": "lic-blaguss-2026",
-  "companyId": "blaguss",
+  "licenseId": "lic-acme-2026",
+  "companyId": "acme",
   "plan": "pro",
   "status": "active",
   "startDate": "2026-01-15T00:00:00Z",
@@ -219,7 +219,7 @@ Driver:
 ```json
 {
   "role": "dispatcher",
-  "companyId": "blaguss",
+  "companyId": "acme",
   "permissions": ["read_shifts", "write_messages", "read_drivers"]
 }
 ```
@@ -359,7 +359,7 @@ SuperAdmin može manualno extend/override
 10. SuperAdmin: impersonacija, reports
 
 ### Faza 3 — Growth
-11. Custom domain po firmi (blaguss.transitflow.app)
+11. Custom domain po firmi (acme.buscommand.com)
 12. Mobile app (React Native ili PWA)
 13. API za integracije (GPS, HR sistemi)
 14. White-label (firma ima potpuno vlastiti branding)

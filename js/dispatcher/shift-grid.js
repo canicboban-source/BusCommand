@@ -1,10 +1,9 @@
-﻿// BusCommand ESM v9.5
+// BusCommand ESM v9.5
 import { getVisibleDrivers, todayDateStr } from "../core/utils.js";
 import { getGroupById } from "../data/groups.js";
 import { dateToStr, getShiftForDriverDate } from "./shift-utils.js";
-import { openShiftCell as _openShiftCell, removeShift as _removeShift } from "./shifts.js";
 import { t } from "../ui/i18n.js";
-import { actionAttr, changeAttr as _changeAttr } from "../core/action-delegate.js";
+import { actionAttr } from "../core/action-delegate.js";
 
 function renderShiftsWeeklyGrid(weekDays) {
     const container = document.getElementById("shifts-weekly-grid");

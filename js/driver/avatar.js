@@ -46,6 +46,8 @@ function updateAvatarUI() {
             } else {
                 dashImg.classList.add("hidden");
                 dashPlaceholder.classList.remove("hidden");
+                const initial = String(window.currentUser.name || "V").trim().charAt(0).toUpperCase() || "V";
+                dashPlaceholder.textContent = initial;
             }
         }
     }

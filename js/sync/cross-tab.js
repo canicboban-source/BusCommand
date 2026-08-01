@@ -1,6 +1,6 @@
-﻿// BusCommand ESM v9.5
+// BusCommand ESM v9.5
 import { scheduleRefreshObservedSections } from "../core/state-observer.js";
-import { getBaseState, getStateStorageKey } from "../core/state.js";
+import { getBaseState, getStateStorageKey, resolveAuthenticatedCompanyId, applyUiLanguagePreference } from "../core/state.js";
 import { isSessionValid } from "../auth/login-session.js";
 import { showLoginScreen } from "../auth/login-ui.js";
 import { checkSOSStatus } from "../driver/dashboard.js";
@@ -10,16 +10,18 @@ import { renderDriverMessages } from "../driver/messages-inbox.js";
 // Kada se window.state promeni u drugoj kartici (npr. vozač pošalje SOS),
 // dispečerska kartica automatski prima obaveštenje i ažurira se.
 window.addEventListener("storage", (event) => {
-    const key = getStateStorageKey(COMPANY_ID);
+    const companyId = resolveAuthenticatedCompanyId();
+    const key = companyId ? getStateStorageKey(companyId) : null;
     if (event.key === "buscommand_active_session" && window.currentUser && !isSessionValid()) {
         window.currentUser = null;
         showLoginScreen(true);
         return;
     }
-    if (event.key === key && event.newValue) {
+    if (key && event.key === key && event.newValue) {
         try {
             const newState = JSON.parse(event.newValue);
             window.state = { ...getBaseState(), ...newState };
+            applyUiLanguagePreference();
             
             if (window.currentUser) {
                 checkSOSStatus();
@@ -38,7 +40,9 @@ window.addEventListener("storage", (event) => {
 
 setInterval(() => {
     if (!window.currentUser) return;
-    const key = getStateStorageKey(COMPANY_ID);
+    const companyId = resolveAuthenticatedCompanyId();
+    const key = companyId ? getStateStorageKey(companyId) : null;
+    if (!key) return;
     const saved = localStorage.getItem(key);
     if (!saved) return;
     try {
@@ -58,5 +62,5 @@ setInterval(() => {
                 renderDriverMessages();
             }
         }
-    } catch(_e) {}
+    } catch {}
 }, 1500);

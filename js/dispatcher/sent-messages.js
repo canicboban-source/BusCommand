@@ -1,6 +1,7 @@
-﻿// BusCommand ESM v9.5 — prikaz i arhiva dispečerskih poruka
+// BusCommand ESM v9.5 — prikaz i arhiva dispečerskih poruka
 import { escapeHtml, formatDateTime, showToast } from "../core/utils.js";
-import { msgText, msgTypeIcon } from "./msg-compose.js";
+import { msgText } from "../core/message-text.js";
+import { msgTypeIcon, renderAllMessagesList } from "./msg-compose.js";
 import { t } from "../ui/i18n.js";
 import {
     ACTIVE_MSG_LIMIT,
@@ -122,14 +123,8 @@ function renderDispatcherMessagesPage(tab = "personal") {
 
 async function refreshDispatcherMessageViews() {
     renderDispatcherSentMessages();
-    try {
-        const { renderAllMessagesList } = await import("./msg-compose.js");
-        renderAllMessagesList();
-    } catch (_err) { /* noop */ }
-    try {
-        const { renderDispatcherDashboard } = await import("./dashboard.js");
-        renderDispatcherDashboard();
-    } catch (_err) { /* noop */ }
+    renderAllMessagesList();
+    window.renderDispatcherDashboard?.();
 }
 
 function renderDispatcherSentMessages() {

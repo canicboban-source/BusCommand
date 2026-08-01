@@ -8,12 +8,12 @@ const BusCommandConfig = (() => {
     const isLocal  = host === "localhost" || host === "127.0.0.1" ||
                      /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
 
-    const quickDemo = params.get("demo"); // "driver" | "dispatcher" — brzi demo login
+    const quickDemo = isLocal ? params.get("demo") : null; // lokalni QA prečac; nikada na javnom hostu
     const modeParam = params.get("mode"); // "demo" | "production"
 
     const IS_DEMO_MODE = (() => {
         if (quickDemo === "driver" || quickDemo === "dispatcher") return true;
-        if (modeParam === "demo") return true;
+        if (isLocal && modeParam === "demo") return true;
         if (modeParam === "production") return false;
         if (isLocal) return true;
         return false;
@@ -22,9 +22,9 @@ const BusCommandConfig = (() => {
     const COMPANY_ID = (() => {
         const companyParam = params.get("company");
         if (companyParam) return companyParam.toLowerCase();
-        if (IS_DEMO_MODE) return "demo";
+        if (IS_DEMO_MODE) return "local-qa";
         const sub = host.split(".")[0];
-        return (sub && sub !== "www" && sub !== "localhost") ? sub.toLowerCase() : "demo";
+        return (sub && sub !== "www" && sub !== "localhost") ? sub.toLowerCase() : "";
     })();
 
     return {
@@ -33,8 +33,7 @@ const BusCommandConfig = (() => {
         IS_LOCAL: isLocal,
         IS_QUICK_DEMO: quickDemo === "driver" || quickDemo === "dispatcher",
         QUICK_DEMO_ROLE: quickDemo === "driver" || quickDemo === "dispatcher" ? quickDemo : null,
-        VERSION: "30.1.0",
-        DEMO_SA_PIN: "admin123"
+        VERSION: "1.0.1"
     };
 })();
 

@@ -1,4 +1,6 @@
-# BusCommand v30.1
+# BusCommand v1.0.1
+
+Granice proizvoda su u [PRODUCT-SCOPE.md](PRODUCT-SCOPE.md). Finansije, gorivo, plate i dnevnice nisu dio preview aplikacije.
 
 SaaS platforma za upravljanje autobusnim flotama — vozači, dispečeri, admini.
 
@@ -12,21 +14,20 @@ npm run build
 npm start
 ```
 
-Otvori: **http://localhost:8766** (localhost = demo mod automatski)
+Otvori: **http://localhost:8766**
 
-### Demo login (online test)
+| Površina | URL | Ko |
+|----------|-----|-----|
+| Izbor / landing | `/` | Chooser (demo linkovi auto-usmeravaju) |
+| **Vozač PWA** | `/driver.html` ili `/driver` | samo vozač |
+| **Staff desktop** | `/staff.html` ili `/staff` | SuperAdmin, CA, dispečer |
 
-| Uloga | Pristup |
-|-------|---------|
-| Vozač | Alex Driver ili Sam Driver, PIN `1234` |
-| Dispečer | `demo@buscommand.com` / `demo123` |
-| Company Admin | `admin@demo.com` / `demo123` |
-| Super Admin | Klik na logo 5× → PIN `admin123` |
+Arhitektura splita: [docs/ADR-001-surface-split.md](docs/ADR-001-surface-split.md)
 
-Linija: **101** (2 autobusa, 2 vozača)
+### Testiranje
 
-Brzi ulaz: `?demo=driver` ili `?demo=dispatcher`  
-Online: `https://buscommand.com/?mode=demo`
+Testni nalozi i podaci kreiraju se posebno za svaki QA ciklus i ne čuvaju se u repozitorijumu
+niti se ugrađuju u javni build.
 
 ## Vite + ESM
 
@@ -34,7 +35,8 @@ Online: `https://buscommand.com/?mode=demo`
 |---------|------|
 | `npm start` | Pokreni `api-server.js` (servira postojeći `dist/`) |
 | `npm run start:built` | `npm run build` pa pokreni server |
-| `npm run build` | `vite build` + kopira statičke fajlove u `dist/` |
+| `npm run build` | Generiše surface HTML + `vite build` + static copy + Firebase isolation |
+| `npm run build:surfaces` | Samo `driver.html` / `staff.html` / landing |
 | `npm run dev:ui` | Vite dev server na **:5173** (proxy `/api` → 8766) |
 | `npm run esmify` | Regeneriše `export` blokove + `js/install.js` (nakon split-a) |
 
@@ -82,7 +84,7 @@ Badge u gornjem lijevom uglu pokazuje trenutni režim (DEMO / PRODUCTION).
 2. Dodaj `firebase-admin-key.json` u root folder
 3. Kreiraj firmu:
    ```bash
-   npm run setup -- blaguss "Blaguss Reisen"
+   npm run setup -- acme "Acme Transit"
    ```
 4. Hash PIN za vozača:
    ```bash
@@ -91,12 +93,12 @@ Badge u gornjem lijevom uglu pokazuje trenutni režim (DEMO / PRODUCTION).
 5. Postavi custom claims za korisnike:
    ```bash
    npm run set-claims -- <UID> superadmin
-   npm run set-claims -- <UID> company_admin blaguss "Ana Kovač"
-   npm run set-claims -- <UID> dispatcher blaguss "Hans Müller"
+   npm run set-claims -- <UID> company_admin acme "Ana Kovač"
+   npm run set-claims -- <UID> dispatcher acme "Hans Müller"
    ```
 6. Pokreni server i otvori:
    ```
-   http://localhost:8766/?mode=production&company=blaguss
+   http://localhost:8766/?mode=production&company=acme
    ```
 
 ### API endpointi

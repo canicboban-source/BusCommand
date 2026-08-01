@@ -3,6 +3,7 @@
 const MAX_TRACKED_IPS = 10000;
 
 const _buckets = new Map();
+let _limiterSequence = 0;
 
 function getClientIp(req) {
   return req.ip || req.socket?.remoteAddress || "unknown";
@@ -15,10 +16,12 @@ function pruneIfNeeded() {
 }
 
 function rateLimit(maxAttempts = 5, windowMs = 5 * 60 * 1000) {
+  const limiterId = ++_limiterSequence;
   return (req, res, next) => {
     const ip = getClientIp(req);
+    const bucketKey = `${limiterId}:${ip}`;
     const now = Date.now();
-    const rec = _buckets.get(ip);
+    const rec = _buckets.get(bucketKey);
 
     if (rec && now < rec.resetAt) {
       if (rec.count >= maxAttempts) {
@@ -31,7 +34,7 @@ function rateLimit(maxAttempts = 5, windowMs = 5 * 60 * 1000) {
       rec.count += 1;
     } else {
       pruneIfNeeded();
-      _buckets.set(ip, { count: 1, resetAt: now + windowMs });
+      _buckets.set(bucketKey, { count: 1, resetAt: now + windowMs });
     }
     next();
   };
@@ -39,7 +42,9 @@ function rateLimit(maxAttempts = 5, windowMs = 5 * 60 * 1000) {
 
 function clearRateLimit(reqOrIp) {
   const ip = typeof reqOrIp === "string" ? reqOrIp : getClientIp(reqOrIp);
-  _buckets.delete(ip);
+  for (const key of _buckets.keys()) {
+    if (key.endsWith(`:${ip}`)) _buckets.delete(key);
+  }
 }
 
 module.exports = { rateLimit, clearRateLimit, getClientIp };

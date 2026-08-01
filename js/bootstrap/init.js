@@ -7,20 +7,59 @@ import {
     restoreUserSession
 } from "../auth/login-session.js";
 import { initPasswordFieldGuards } from "../auth/password-fields.js";
-import { initFirebase } from "../core/firebase-service.js";
+import { initFirebase, initializeFirebaseClient } from "../core/firebase-service.js";
 import { checkCompanyLicense } from "../core/license.js";
-import { getBaseState, loadStateFromStorage } from "../core/state.js";
+import { getBaseState, loadStateFromStorage, clearTenantStateCache, resetInMemoryTenantState, applyUiLanguagePreference } from "../core/state.js";
 import { showToast } from "../core/utils.js";
 import { showAppLayout } from "../layout/shell.js";
-import { applyBrandingToUI, translateUI } from "../ui/i18n.js";
+import { applyBrandingToUI, t, translateUI } from "../ui/i18n.js";
 import { showModeBadge } from "../ui/mode-badge.js";
 import { applyStoredTheme } from "../ui/theme.js";
+import { EXPECTED_FIREBASE_PROJECT_ID } from "../core/firebase-web-config.js";
+import { createProductionAuthGate } from "../core/production-auth-gate.js";
+import { closeDriverActivationForSignedOut, openDriverActivation } from "../auth/driver-activation.js";
+import { setDriverActivationPending } from "../auth/driver-access-gate.js";
+import { prepareDriverWorkSession } from "../driver/work-session.js";
+import { isDriverSurface, isStaffSurface } from "../core/app-surface.js";
+
+function setAuthLoading(visible, errorKey = null) {
+    let overlay = document.getElementById("production-auth-loading");
+    if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "production-auth-loading";
+        overlay.className = "login-screen hidden";
+        overlay.innerHTML = `<div class="login-card" style="text-align:center;"><div class="logo bc-brand" style="justify-content:center;"><img class="bc-brand-mark bc-brand-mark--lg" src="/brand/logo-mark.png" width="48" height="48" alt="BusCommand"><span class="bc-brand-text">BusCommand</span></div><p id="production-auth-loading-text"></p></div>`;
+        document.body.appendChild(overlay);
+    }
+    const text = overlay.querySelector("#production-auth-loading-text");
+    if (text) text.textContent = t(errorKey || "auth_loading");
+    overlay.classList.toggle("hidden", !visible);
+    document.getElementById("login-screen")?.classList.toggle("hidden", visible);
+    document.getElementById("app-container")?.classList.add("hidden");
+    ["mobile-bottom-nav", "fp-mobile-nav"].forEach((id) => {
+        const navigation = document.getElementById(id);
+        if (!navigation) return;
+        navigation.classList.add("hidden");
+        navigation.style.display = visible ? "none" : "";
+    });
+}
 
 function handleSessionInvalidated() {
     window.currentUser = null;
     clearUserSession();
     showLoginScreen(true);
     showToast("Sesija je istekla ili je prijava aktivna na drugom tabu.", "info", 5000);
+}
+
+function showFirebaseConfigurationError(error) {
+    showLoginScreen(false);
+    const message = `Preview Firebase configuration error: ${error.message}`;
+    ["login-error-driver", "login-error-dispatcher"].forEach((id) => {
+        const element = document.getElementById(id);
+        if (!element) return;
+        element.textContent = message;
+        element.classList.remove("hidden");
+    });
 }
 
 async function bootstrapBusCommand() {
@@ -34,10 +73,19 @@ async function bootstrapBusCommand() {
 
     if (IS_DEMO_MODE) {
         loadStateFromStorage(COMPANY_ID);
-        window.state.language = savedLang;
+        applyUiLanguagePreference(savedLang);
     } else {
         window.state = { ...getBaseState(), language: savedLang };
-        Auth.init();
+        applyUiLanguagePreference(savedLang);
+        try {
+            initializeFirebaseClient();
+            Auth.init();
+        } catch (error) {
+            console.error("Firebase preview configuration rejected.");
+            showFirebaseConfigurationError(error);
+            lucide.createIcons();
+            return;
+        }
     }
 
     const forceLogin = localStorage.getItem("buscommand_force_login")
@@ -46,6 +94,11 @@ async function bootstrapBusCommand() {
     window.currentUser = null;
     if (!forceLogin) {
         window.currentUser = restoreUserSession();
+        // Drivers must always pass login — never auto-enter on message/pretrip overlays
+        if (window.currentUser?.role === "driver") {
+            clearUserSession();
+            window.currentUser = null;
+        }
     }
 
     applyBrandingToUI();
@@ -68,15 +121,24 @@ async function bootstrapBusCommand() {
         } else {
             window.state = { ...getBaseState(), language: savedLang };
         }
+        applyUiLanguagePreference(savedLang);
         applyBrandingToUI();
         initializeLoginSelects();
         translateUI();
-        showLoginScreen(true);
+        showLoginScreen(false);
         lucide.createIcons();
         return;
     }
 
     const quickRole = BusCommandConfig.QUICK_DEMO_ROLE;
+    if (quickRole === "driver" && isStaffSurface()) {
+        window.location.replace("/driver.html" + window.location.search);
+        return;
+    }
+    if ((quickRole === "dispatcher" || quickRole === "admin") && isDriverSurface()) {
+        window.location.replace("/staff.html" + window.location.search);
+        return;
+    }
     if (quickRole === "driver") {
         const demoDriver = window.state.drivers[0];
         if (!demoDriver) {
@@ -116,34 +178,68 @@ async function bootstrapBusCommand() {
     }
 
     if (!IS_DEMO_MODE) {
-        await checkCompanyLicense(COMPANY_ID);
-        try {
-            await initFirebase(COMPANY_ID);
-            applyBrandingToUI();
-            initializeLoginSelects();
-            translateUI();
-        } catch (e) {
-            console.warn("Firebase init failed:", e);
-        }
-        Auth.onAuthStateChanged(async (authUser) => {
-            if (!authUser) return;
-            if (window.currentUser && window.currentUser.uid === authUser.uid) return;
-            window.currentUser = {
-                uid: authUser.uid, email: authUser.email, name: authUser.name,
-                role: authUser.role, companyId: authUser.companyId || COMPANY_ID,
-                id: authUser.uid,
-                activeGroupId: authUser.permissions?.groups?.[0] || null
-            };
-            persistUserSession(window.currentUser);
-            await initFirebase(window.currentUser.companyId || COMPANY_ID);
-            showAppLayout();
+        const handleAuthState = createProductionAuthGate({
+            firebaseProjectId: EXPECTED_FIREBASE_PROJECT_ID,
+            onPending: () => setAuthLoading(true),
+            onSignedOut: () => {
+                const companyId = window.currentUser?.companyId || null;
+                window.currentUser = null;
+                clearTenantStateCache(companyId);
+                resetInMemoryTenantState();
+                closeDriverActivationForSignedOut();
+                setAuthLoading(false);
+                showLoginScreen(false);
+            },
+            onInvalidTenant: () => {
+                const companyId = window.currentUser?.companyId || null;
+                window.currentUser = null;
+                clearTenantStateCache(companyId);
+                resetInMemoryTenantState();
+                setAuthLoading(true, "auth_company_invalid");
+            },
+            onActivationRequired: () => {
+                window.currentUser = null;
+                clearUserSession();
+                setAuthLoading(false);
+                openDriverActivation();
+            },
+            onAuthenticated: async (authUser, confirmedCompanyId) => {
+                setDriverActivationPending(false);
+                window.currentUser = {
+                    uid: authUser.uid, email: authUser.email, name: authUser.name,
+                    role: authUser.role, companyId: confirmedCompanyId,
+                    id: authUser.uid, groups: authUser.groups || [],
+                    activeGroupId: authUser.groups?.[0] || null
+                };
+                if (authUser.role === "superadmin") {
+                    setAuthLoading(false);
+                    showAppLayout();
+                    return;
+                }
+                try {
+                    await checkCompanyLicense(confirmedCompanyId);
+                    if (authUser.role === "driver" && !(await prepareDriverWorkSession())) {
+                        setAuthLoading(false);
+                        return;
+                    }
+                    await initFirebase(confirmedCompanyId);
+                    persistUserSession(window.currentUser);
+                    applyBrandingToUI();
+                    setAuthLoading(false);
+                    showAppLayout();
+                } catch (error) {
+                    console.warn("Authenticated company initialization failed.", error);
+                    setAuthLoading(true, "auth_cloud_load_failed");
+                }
+            }
         });
+        Auth.onAuthStateChanged(handleAuthState);
     }
 
-    if (window.currentUser) {
+    if (window.currentUser && IS_DEMO_MODE) {
         showAppLayout();
-    } else {
-        showLoginScreen(true);
+    } else if (IS_DEMO_MODE) {
+        showLoginScreen(false);
     }
     lucide.createIcons();
 }

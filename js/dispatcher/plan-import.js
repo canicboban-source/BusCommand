@@ -15,7 +15,7 @@ function renderPlanImportPreview() {
     if (!container) return;
 
     if (_pendingImports.length === 0) {
-        container.innerHTML = `<p style="color:var(--text-muted);font-size:13px;padding:12px 0;">${t("plan_import_empty") || "Otpremite jedan ili više fajlova — sistem automatski prepoznaje vozača i mesec."}</p>`;
+        container.innerHTML = `<p style="color:var(--text-muted);font-size:13px;padding:12px 0;">${t("plan_import_empty")}</p>`;
         return;
     }
 
@@ -23,11 +23,11 @@ function renderPlanImportPreview() {
         <table class="app-table" style="margin-top:12px;">
             <thead>
                 <tr>
-                    <th>Fajl</th>
-                    <th>Vozač</th>
-                    <th>Mesec</th>
-                    <th>Dana parsirano</th>
-                    <th>Status</th>
+                    <th>${t("plan_import_file")}</th>
+                    <th>${t("plan_import_driver")}</th>
+                    <th>${t("plan_import_month")}</th>
+                    <th>${t("plan_import_days")}</th>
+                    <th>${t("plan_import_status")}</th>
                     <th></th>
                 </tr>
             </thead>
@@ -49,12 +49,12 @@ function renderPlanImportPreview() {
                             <span style="font-size:0.75rem;padding:3px 8px;border-radius:12px;font-weight:700;
                                 background:${item.parseQuality === "ok" ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)"};
                                 color:${item.parseQuality === "ok" ? "#6ee7b7" : "#fcd34d"};">
-                                ${item.parseQuality === "ok" ? "OK" : "Proveri ručno"}
+                                ${item.parseQuality === "ok" ? t("plan_import_ok") : t("plan_import_review")}
                             </span>
                         </td>
                         <td>
                             <button type="button" ${actionAttr("removePendingImport", [idx])} style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;">
-                                Ukloni
+                                ${t("btn_remove")}
                             </button>
                         </td>
                     </tr>
@@ -63,9 +63,9 @@ function renderPlanImportPreview() {
         </table>
         <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
             <button type="button" class="btn-primary" ${actionAttr("confirmBulkPlanImport")}>
-                <i data-lucide="save"></i> Snimi sve planove (${_pendingImports.length})
+                <i data-lucide="save"></i> ${t("plan_import_save_all")} (${_pendingImports.length})
             </button>
-            <button type="button" class="btn-secondary" ${actionAttr("clearPendingPlanImports")}>Obriši pregled</button>
+            <button type="button" class="btn-secondary" ${actionAttr("clearPendingPlanImports")}>${t("plan_import_clear")}</button>
         </div>
     `;
     if (typeof lucide !== "undefined") lucide.createIcons();
@@ -94,7 +94,7 @@ async function handleBulkPlanFiles(fileList) {
                 month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
             }
             if (!driver) {
-                showToast(`Nije prepoznat vozač za: ${file.name}`, "error");
+                showToast(t("plan_import_driver_unknown", { file: file.name }), "error");
                 continue;
             }
 
@@ -111,12 +111,12 @@ async function handleBulkPlanFiles(fileList) {
             added++;
         } catch (err) {
             console.error("Import error:", file.name, err);
-            showToast(`Greška pri čitanju: ${file.name}`, "error");
+            showToast(t("plan_import_read_error", { file: file.name }), "error");
         }
     }
 
     if (added > 0) {
-        showToast(`${added} fajl(a) spremno za pregled — proverite i snimite.`, "success");
+        showToast(t("plan_import_ready_count", { n: added }), "success");
         renderPlanImportPreview();
     }
 }

@@ -20,7 +20,7 @@ dalji rad na kodu.
 ### 0.2 Model pripadnosti: `lineId` + podgrupe
 **Status:** ✅ Urađeno (`js/data/group-membership.js`)
 
-### 0.3 Blaguss paket uvoz
+### 0.3 Paket uvoz (CSV + Excel)
 **Status:** ✅ UI + parseri; ⬜ provjera pravim fajlovima korisnika
 
 ### 0.4 Settings vs Group Hub

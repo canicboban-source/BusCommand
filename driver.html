@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en" data-app-surface="driver">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BusCommand — Driver</title>
+    <!-- Google Font: Outfit (Moderan i premium izgled) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide ikone -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- ✅ Firebase compat SDK (v10) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+
+    <!-- Runtime (mora biti pre Vite modula) -->
+    <script type="module" src="translations.js"></script>
+    <link rel="stylesheet" href="css/design-tokens.css">
+    <link rel="stylesheet" href="css/brand.css">
+    <link rel="stylesheet" href="style.css">
+        <link rel="manifest" href="/manifest-driver.webmanifest">
+    <meta name="theme-color" content="#0b1220">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BusCommand">
+<link rel="stylesheet" href="css/driver-pwa.css">
+    <script type="module" src="js/main-driver.js"></script>
+</head>
+<body>
+    <a class="bc-skip-link" href="#main-content" data-i18n="skip_to_main">Skip to main content</a>
+
+    <!-- 1. EKRAN ZA PRIJAVU (LOGIN) -->
+    <div id="login-screen" class="login-container">
+        <div class="login-card">
+
+            <!-- Selektor jezika (gore desno) -->
+            <div class="login-lang-selector">
+                <select id="login-lang-select" data-change-action="changeLanguage" aria-label="Language" data-i18n-aria-label="language_select_aria">
+                    <option value="en">🇬🇧 English</option>
+                    <option value="de">🇩🇪 Deutsch</option>
+                    <option value="sr">🇷🇸 Srpski</option>
+                </select>
+            </div>
+
+            <!-- Logo / Header -->
+            <div class="login-header">
+                <div class="logo bc-brand" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;">
+                    <img class="bc-brand-mark bc-brand-mark--hero" src="/brand/logo-hero.png" width="80" height="80" alt="BusCommand">
+                    <span class="bc-brand-text">BusCommand</span>
+                </div>
+                <p data-i18n="login_subtitle">Fleet Management Platform</p>
+                <div class="trial-badge-login hidden" id="login-trial-badge">
+                    <i data-lucide="clock" style="width:11px;height:11px;"></i>
+                    <span data-i18n="trial_badge_login">30 DAYS TRIAL</span>
+                </div>
+            </div>
+
+            <!-- ── Driver / Dispatcher tabovi — direktno bez Company ID ── -->
+            <div id="login-tabs-section" class="login-step">
+
+                <!-- Tabovi -->
+                <div class="login-tabs">
+                    <button id="tab-driver-btn" class="login-tab active" data-action="switchLoginTab" data-action-args='["driver"]'>
+                        <i data-lucide="user"></i>
+                        <span data-i18n="driver">Driver</span>
+                    </button>
+                    <button id="tab-dispatcher-btn" class="login-tab hidden" hidden class="login-tab" data-action="switchLoginTab" data-action-args='["dispatcher"]'>
+                        <i data-lucide="shield"></i>
+                        <span data-i18n="dispatcher">Dispatcher</span>
+                    </button>
+                </div>
+
+                <!-- Forma za vozača -->
+                <div id="driver-login-form" class="login-form-content">
+                    <div class="form-group">
+                        <label for="login-driver-company" data-i18n="login_company_label">Company ID</label>
+                        <input type="text" id="login-driver-company" maxlength="64" autocomplete="organization"
+                            data-i18n-placeholder="login_company_placeholder" placeholder="e.g. city-transit">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-driver-select" data-i18n="select_driver">Select Driver</label>
+                        <select id="login-driver-select"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-driver-eid">EID</label>
+                        <input type="text" id="login-driver-eid" maxlength="128" autocomplete="off" placeholder="EID (optional)">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-driver-pin" data-i18n="driver_login_code_label">Login code</label>
+                        <div class="input-icon-wrapper">
+                            <i data-lucide="lock"></i>
+                            <input type="password" id="login-driver-pin"
+                                placeholder="•••••" minlength="5" maxlength="12" inputmode="numeric"
+                                autocomplete="off"
+                                onkeydown="if(event.key==='Enter') loginAsDriver()">
+                        </div>
+                    </div>
+                    <div id="login-error-driver" class="login-error hidden"></div>
+                    <button class="btn-primary btn-full-width" data-action="loginAsDriver">
+                        <span data-i18n="login_btn_driver">Start Shift</span>
+                        <i data-lucide="arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Forma za dispečera — samo desktop/PC -->
+                <div id="dispatcher-login-form" class="login-form-content hidden">
+
+                    <!-- Blokada mobilnih uređaja -->
+                    <div id="dispatcher-mobile-block" class="login-error hidden" style="margin-bottom:14px; text-align:center; padding:14px; border-radius:10px;">
+                        <i data-lucide="monitor-x" style="width:24px;height:24px;display:block;margin:0 auto 8px; opacity:0.7;"></i>
+                        <strong data-i18n="dispatcher_desktop_only_title">Desktop access only</strong><br>
+                        <small data-i18n="dispatcher_desktop_only">Dispatcher login is restricted to authorized desktop computers.</small>
+                    </div>
+
+                    <div id="dispatcher-login-fields">
+                        <div class="form-group">
+                            <label for="login-dispatcher-email" data-i18n="email">Email</label>
+                            <div class="input-icon-wrapper">
+                                <i data-lucide="mail"></i>
+                                <input type="email" id="login-dispatcher-email"
+                                    data-i18n-placeholder="email_placeholder"
+                                    placeholder="dispatcher@company.com"
+                                    autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-dispatcher-password" data-i18n="password">Password</label>
+                            <div class="input-icon-wrapper">
+                                <i data-lucide="lock"></i>
+                                <input type="password" id="login-dispatcher-password"
+                                    placeholder="••••••••"
+                                    autocomplete="new-password"
+                                    onkeydown="if(event.key==='Enter') loginAsDispatcher()">
+                            </div>
+                        </div>
+                        <div id="login-error-dispatcher" class="login-error hidden"></div>
+                        <button class="btn-primary btn-full-width" id="dispatcher-login-btn" data-action="loginAsDispatcher">
+                            <span data-i18n="login_btn_disp">Login</span>
+                            <i data-lucide="arrow-right"></i>
+                        </button>
+                        <div style="text-align:center; margin-top:10px;">
+                            <button data-action="forgotDispatcherPassword" class="btn-reset-subtle" data-i18n="forgot_password">Forgot password?</button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div><!-- /login-tabs-section -->
+
+            <!-- Reset link (diskretan) -->
+            <div style="text-align:center; margin-top:24px;">
+            </div>
+
+        </div><!-- /login-card -->
+    </div><!-- /login-screen -->
+
+    <!-- MODAL / VIEW ZA PROMENU LOZINKE NA PRVOM LOGOVANJU -->
+    
+
+    <div id="driver-activation-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="driver-activation-title" style="display:none;">
+        <div class="modal-content">
+            <h3 id="driver-activation-title" data-i18n="driver_activation_title">Activate account</h3>
+            <p data-i18n="driver_activation_explanation">Choose a personal login code (5-12 digits). You already signed in with the one-time SMS code.</p>
+            <form id="driver-activation-form" data-submit-action="submitDriverActivation">
+                <div class="form-group">
+                    <label for="driver-activation-code" data-i18n="driver_activation_field">Personal login code</label>
+                    <input id="driver-activation-code" type="password" inputmode="numeric" autocomplete="new-password" maxlength="12" required>
+                </div>
+                <div class="form-group">
+                    <label for="driver-activation-code-confirm" data-i18n="driver_activation_confirm_field">Confirm personal code</label>
+                    <input id="driver-activation-code-confirm" type="password" inputmode="numeric" autocomplete="new-password" maxlength="12" required>
+                </div>
+                <p id="driver-activation-error" class="error-message hidden" role="alert"></p>
+                <div class="driver-activation-actions">
+                    <button id="driver-activation-cancel" type="button" class="btn-secondary" data-action="cancelDriverActivation" data-i18n="btn_cancel">Cancel</button>
+                    <button id="driver-activation-submit" type="submit" class="btn-primary" data-i18n="driver_activation_activate">Activate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- GROUP SETUP & SWITCH PANEL -->
+    
+
+    <!-- 2. GLAVNI KONTEJNER APLIKACIJE (NAKON PRIJAVE) -->
+    <div id="app-container" class="app-layout hidden">
+        
+        <!-- Hitan SOS alarm za dispečera -->
+        
+
+        <!-- ZAGLAVLJE (HEADER) -->
+        <header class="app-header">
+            <div class="header-left">
+                <div id="header-logo-container">
+                    <div class="logo bc-brand">
+                        <img class="bc-brand-mark bc-brand-mark--sm" src="/brand/logo-mark.png" width="28" height="28" alt="">
+                        <span class="bc-brand-text" id="app-branding-title">BusCommand</span>
+                    </div>
+                </div>
+                <div class="trial-indicator hidden" id="app-trial-badge">
+                    <i data-lucide="clock"></i> <span data-i18n="trial_indicator_text">Probni period: 29 dana preostalo</span>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <!-- Selektor jezika u zaglavlju -->
+                <div class="header-lang-selector">
+                    <select id="header-lang-select" data-change-action="changeLanguage" aria-label="Language" data-i18n-aria-label="language_select_aria">
+                        <option value="en">🇬🇧 EN</option>
+                        <option value="de">🇩🇪 DE</option>
+                        <option value="sr">🇷🇸 SR</option>
+                    </select>
+                </div>
+
+                <div class="role-selector-container">
+                    <span class="role-label" data-i18n="role_label">Aktivna uloga:</span>
+                    <div class="role-toggle" data-action="toggleRoleDirectly">
+                        <span id="current-role-badge">Vozač</span>
+                        <i data-lucide="refresh-cw"></i>
+                    </div>
+                </div>
+                
+                <div class="user-profile-info">
+                    <div class="user-avatar" style="overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative;">
+                        <img id="header-user-avatar-img" src="" class="hidden" style="width: 100%; height: 100%; object-fit: cover;">
+                        <i data-lucide="user" id="header-user-avatar-placeholder"></i>
+                    </div>
+                    <div class="user-details">
+                        <span id="header-user-name">Ime Prezime</span>
+                        <span id="header-user-sub">Autobus 102</span>
+                    </div>
+                </div>
+                
+                <!-- Dark/Light mode toggle -->
+                <button id="theme-toggle-btn" class="btn-logout" type="button" data-action="toggleTheme" title="Toggle dark/light mode" data-i18n-title="theme_toggle_aria" aria-label="Toggle dark/light mode" data-i18n-aria-label="theme_toggle_aria" style="margin-right:4px;">
+                    <i data-lucide="moon" id="theme-icon" aria-hidden="true"></i>
+                </button>
+
+                <button class="btn-logout" type="button" data-action="logout" title="Logout" data-i18n-title="logout_aria" aria-label="Logout" data-i18n-aria-label="logout_aria">
+                    <i data-lucide="log-out" aria-hidden="true"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="app-body">
+            <!-- BOČNA NAVIGACIJA (SIDEBAR) -->
+            <aside class="app-sidebar">
+                <nav class="sidebar-nav">
+                    <!-- Navigacija za vozača -->
+                    <ul id="driver-nav" class="nav-list">
+                        <li>
+                            <a href="#" class="nav-item active" data-action="switchSection" data-action-args='["driver-dashboard"]' style="position:relative;">
+                                <i data-lucide="layout-dashboard"></i> <span data-i18n="nav_daily_plan">Dnevni plan vožnje</span>
+                                <span id="nav-badge-driver-msgs" class="nav-notification-badge hidden"></span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["driver-calendar"]'>
+                                <i data-lucide="calendar"></i> <span data-i18n="nav_monthly_plan">Mesečni plan (Smene)</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["driver-reports"]'>
+                                <i data-lucide="alert-triangle"></i> <span data-i18n="nav_report_issue">Prijava kašnjenja/kvara</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["driver-vacation"]'>
+                                <i data-lucide="calendar-days"></i> <span data-i18n="nav_vacation">Godišnji odmor</span>
+                            </a>
+                        </li>
+                    </ul>
+
+                    
+
+                    
+
+                    
+                </nav>
+                <div class="sidebar-footer">
+                    <p data-i18n="saas_version">BusCommand v1.0.1</p>
+                </div>
+            </aside>
+
+            <!-- GLAVNI SADRŽAJ (MAIN CONTENT) -->
+            <main id="main-content" class="app-main" tabindex="-1">
+                
+                <!-- =============== SEKCIJE VOZAČA =============== -->
+
+                <!-- DNEVNI PLAN VOŽNJE -->
+                <section id="driver-dashboard" class="content-section driver-pwa-home">
+                    <div id="driver-sos-banner" class="sos-banner-driver hidden">
+                        <i data-lucide="alert-octagon"></i> <span data-i18n="driver_sos_active">SOS ALARM JE POSLAT FIRMI! POMOĆ JE NA PUTU.</span>
+                    </div>
+
+                    <header class="driver-pwa-topbar">
+                        <div class="driver-pwa-brand bc-brand">
+                            <img class="bc-brand-mark bc-brand-mark--sm" src="/brand/logo-mark.png" width="28" height="28" alt="">
+                            <span class="bc-brand-text">BusCommand</span>
+                        </div>
+                        <div class="driver-pwa-userchip">
+                            <button type="button" class="driver-pwa-avatar" data-action="triggerAvatarUpload" aria-label="Profile" data-i18n-aria-label="driver_profile_aria">
+                                <img id="driver-dashboard-avatar-img" src="" class="hidden" alt="">
+                                <span id="driver-dashboard-avatar-placeholder" class="driver-pwa-avatar-fallback">V</span>
+                                <input type="file" id="driver-avatar-file-input" accept="image/jpeg,image/jpg" class="hidden" data-change-action="handleAvatarUpload" data-change-pass="event">
+                            </button>
+                            <div class="driver-pwa-userchip-text">
+                                <strong id="driver-profile-name">…</strong>
+                                <span id="driver-duty-status" class="driver-pwa-status-dot" data-i18n="driver_status_active">Aktivna</span>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div class="driver-pwa-title-row">
+                        <div>
+                            <h2 data-i18n="driver_dashboard_title">Dnevni plan</h2>
+                            <p id="current-date-badge" class="driver-pwa-date">—</p>
+                        </div>
+                        <button type="button" id="sos-btn" class="btn-sos-emergency driver-pwa-sos" data-action="triggerSOSAlert" aria-label="SOS emergency" data-i18n-aria-label="sos_button_aria">
+                            <span aria-hidden="true">SOS</span>
+                        </button>
+                    </div>
+
+                    <article class="driver-pwa-card driver-pwa-shift-today" aria-labelledby="driver-today-shift-label">
+                        <div class="driver-pwa-card-kicker" id="driver-today-shift-label" data-i18n="driver_today_shift">Današnja smena</div>
+                        <div class="driver-pwa-shift-headline">
+                            <h3 id="driver-shift-headline">—</h3>
+                            <p id="driver-shift-window" class="driver-pwa-shift-window">—</p>
+                        </div>
+                        <p id="driver-plan-confirm-status" class="driver-pwa-confirm ok">
+                            <span class="dot"></span>
+                            <span data-i18n="driver_plan_confirmed">Plan potvrđen</span>
+                        </p>
+                        <div class="driver-pwa-metrics">
+                            <div>
+                                <span data-i18n="vehicle">Autobus</span>
+                                <strong id="driver-bus-num">—</strong>
+                            </div>
+                            <div>
+                                <span data-i18n="driver_shift_start">Početak</span>
+                                <strong id="driver-shift-start">—</strong>
+                            </div>
+                            <div>
+                                <span data-i18n="driver_shift_end">Kraj</span>
+                                <strong id="driver-shift-end">—</strong>
+                            </div>
+                        </div>
+                        <!-- legacy hooks kept for existing JS -->
+                        <span id="driver-profile-bus" class="hidden"></span>
+                        <span id="driver-route-num" class="hidden"></span>
+                        <span id="driver-route-name" class="hidden"></span>
+                        <span id="driver-shift-type" class="hidden"></span>
+                        <span id="driver-next-departure" class="hidden"></span>
+                        <span id="driver-delay-status" class="hidden status-ok"></span>
+                        <div class="driver-pwa-checkin">
+                            <p id="driver-checkin-hint" data-i18n="driver_checkin_hint">Prijava je dostupna 30 min pre početka</p>
+                            <button type="button" id="driver-checkin-btn" class="btn-primary driver-pwa-checkin-btn" data-action="driverCheckIn" disabled>
+                                <span data-i18n="driver_checkin_btn">Prijavi se</span>
+                            </button>
+                        </div>
+                    </article>
+
+                    <article class="driver-pwa-card driver-pwa-shift-next">
+                        <div class="driver-pwa-card-kicker" data-i18n="driver_next_shift">Sledeća smena</div>
+                        <div id="driver-next-shift-container" class="driver-pwa-next-body">
+                            <!-- filled by calendar/tomorrow JS -->
+                        </div>
+                    </article>
+
+                    <article class="driver-pwa-card driver-pwa-dispatch-msg">
+                        <div class="driver-pwa-card-kicker">
+                            <span data-i18n="messages_title">Poruka dispečera</span>
+                            <span id="unread-message-badge" class="badge-dot hidden"></span>
+                        </div>
+                        <div class="driver-messages-list" id="driver-messages-list-container"></div>
+                        <button type="button" class="btn-mark-read driver-pwa-archive-btn" data-action="archiveReadMessages">
+                            <i data-lucide="archive"></i> <span data-i18n="archive_read_messages">Arhiviraj pročitane</span>
+                        </button>
+                        <div id="driver-messages-archive"></div>
+                    </article>
+
+                    <article class="driver-pwa-card driver-pwa-quick">
+                        <div class="driver-pwa-card-kicker" data-i18n="quick_reports_title">Brze prijave</div>
+                        <div class="driver-pwa-quick-grid">
+                            <button type="button" data-action="sendQuickReport" data-action-args='["Stau"]' class="btn-quick-report qr-traffic">
+                                <i data-lucide="clock"></i>
+                                <span data-i18n="qr_traffic">Gužva (+10 min)</span>
+                            </button>
+                            <button type="button" data-action="sendQuickReport" data-action-args='["Panne"]' class="btn-quick-report qr-break">
+                                <i data-lucide="alert-octagon"></i>
+                                <span data-i18n="qr_breakdown">Kvar autobusa</span>
+                            </button>
+                            <button type="button" data-action="sendQuickReport" data-action-args='["Bus Voll"]' class="btn-quick-report qr-full">
+                                <i data-lucide="users"></i>
+                                <span data-i18n="qr_full_bus">Autobus pun</span>
+                            </button>
+                            <button type="button" data-action="sendQuickReport" data-action-args='["Verspatung"]' class="btn-quick-report qr-delay">
+                                <i data-lucide="timer"></i>
+                                <span data-i18n="qr_delay">Kašnjenje (+5 min)</span>
+                            </button>
+                        </div>
+                    </article>
+
+                    <div id="driver-schedule-card" class="driver-pwa-card" style="display:none;">
+                        <div class="driver-pwa-card-kicker" data-i18n="official_schedule_title">Službeni dnevni raspored</div>
+                        <span id="driver-schedule-date" class="driver-pwa-date"></span>
+                        <div id="driver-schedule-content"></div>
+                    </div>
+                </section>
+
+                <!-- MESEČNI PLAN -->
+                <section id="driver-calendar" class="content-section hidden">
+                    <div class="section-header">
+                        <h2 data-i18n="calendar_title">Mesečni plan rada</h2>
+                        <div class="calendar-controls" style="display:flex; align-items:center; gap:8px;">
+                            <button type="button" data-action="changeCalendarMonth" data-action-args='[-1]' aria-label="Prethodni mesec" data-i18n-aria-label="calendar_previous_month" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; cursor:pointer;">
+                                <i data-lucide="chevron-left" style="width:16px; height:16px;"></i>
+                            </button>
+                            <span class="current-month" id="calendar-month-year" style="font-weight:700;" aria-live="polite">Jun 2026</span>
+                            <button type="button" data-action="changeCalendarMonth" data-action-args='[1]' aria-label="Sledeći mesec" data-i18n-aria-label="calendar_next_month" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; cursor:pointer;">
+                                <i data-lucide="chevron-right" style="width:16px; height:16px;"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Kontejner za preuzimanje službenog plana rada -->
+                    <div id="driver-schedule-download-card" class="card" style="margin-bottom: 20px; display: none; align-items: center; justify-content: space-between; padding: 15px 20px; background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.15) 0%, rgba(255,255,255,0.02) 100%); border: 1px dashed var(--primary-color);">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <i data-lucide="file-text" style="color:var(--primary-color); width:28px; height:28px;"></i>
+                            <div>
+                                <h4 style="font-size:0.95rem; font-weight:700; color:var(--text-main);" data-i18n="official_schedule_title">Zvanični mesečni plan (Dienstplan)</h4>
+                                <p style="font-size:0.8rem; color:var(--text-muted);" id="driver-schedule-filename">dienstplan.pdf</p>
+                            </div>
+                        </div>
+                        <button class="btn-primary" data-action="viewUploadedSchedule" style="padding: 8px 16px; font-size: 0.85rem; height: auto;">
+                            <span data-i18n="btn_view_document">Pogledaj dokument</span> <i data-lucide="eye"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="card calendar-card">
+                        <div class="calendar-legend">
+                            <span class="legend-item"><span class="legend-dot morning"></span> <span data-i18n="legend_morning">Prva smena</span></span>
+                            <span class="legend-item"><span class="legend-dot afternoon"></span> <span data-i18n="legend_afternoon">Druga smena</span></span>
+                            <span class="legend-item"><span class="legend-dot off"></span> <span data-i18n="legend_off">Slobodan dan</span></span>
+                            <span class="legend-item"><span class="legend-dot vacation"></span> <span data-i18n="legend_vacation">Odmor</span></span>
+                        </div>
+                        
+                        <div class="calendar-grid">
+                            <div class="calendar-day-header" data-i18n="calendar_mon">Pon</div>
+                            <div class="calendar-day-header" data-i18n="calendar_tue">Uto</div>
+                            <div class="calendar-day-header" data-i18n="calendar_wed">Sre</div>
+                            <div class="calendar-day-header" data-i18n="calendar_thu">Čet</div>
+                            <div class="calendar-day-header" data-i18n="calendar_fri">Pet</div>
+                            <div class="calendar-day-header" data-i18n="calendar_sat">Sub</div>
+                            <div class="calendar-day-header" data-i18n="calendar_sun">Ned</div>
+                            <!-- Dinamički kalendarski dani iz JS -->
+                            <div class="calendar-days-container" id="calendar-days-container" role="grid" aria-label="Mesečni plan rada" data-i18n-aria-label="calendar_title"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PRIJAVA PROBLEM / KAŠNJENJA / IZGUBLJENE STVARI -->
+                <section id="driver-reports" class="content-section hidden">
+                    <div class="section-header">
+                        <h2 data-i18n="report_issue_title">Prijavi problem firmi</h2>
+                        <p data-i18n="report_issue_subtitle">Brzo obavestite dispečerski centar o problemu na putu</p>
+                    </div>
+
+                    <div class="reports-grid-three">
+                        <!-- Kartica za prijavu kašnjenja -->
+                        <div class="card report-card">
+                            <div class="card-title-icon delay-color">
+                                <i data-lucide="clock"></i>
+                                <h3 data-i18n="report_delay_title">Prijavi kašnjenje</h3>
+                            </div>
+                            <form id="delay-report-form" data-submit-action="submitDelayReport">
+                                <div class="form-group">
+                                    <label for="delay-time" data-i18n="delay_time_label">Vreme kašnjenja (minuti)</label>
+                                    <select id="delay-time" required>
+                                        <option value="5" data-i18n="min_5">5 minuta</option>
+                                        <option value="10" data-i18n="min_10">10 minuta</option>
+                                        <option value="15" data-i18n="min_15">15 minuta</option>
+                                        <option value="20" data-i18n="min_20">20 minuta</option>
+                                        <option value="30" data-i18n="min_30">30+ minuta (Zastoj)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="delay-reason" data-i18n="delay_reason_label">Razlog kašnjenja</label>
+                                    <select id="delay-reason" required>
+                                        <option value="reason_traffic" data-i18n="reason_traffic">Saobraćajna gužva</option>
+                                        <option value="reason_accident" data-i18n="reason_accident">Udes na trasi</option>
+                                        <option value="reason_roadworks" data-i18n="reason_roadworks">Radovi na putu</option>
+                                        <option value="reason_weather" data-i18n="reason_weather">Loši vremenski uslovi</option>
+                                        <option value="reason_passengers" data-i18n="reason_passengers">Zadržavanje putnika</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="delay-desc" data-i18n="delay_desc_label">Dodatni opis (opciono)</label>
+                                    <textarea id="delay-desc" maxlength="1000"></textarea>
+                                </div>
+                                <button type="submit" class="btn-delay-submit btn-full-width">
+                                    <i data-lucide="send"></i> <span data-i18n="btn_send_delay">Pošalji prijavu kašnjenja</span>
+                                </button>
+                            </form>
+                            <div id="dispatcher-sent-messages-container" style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.05); padding-top:15px;">
+                                <h4 style="font-size:0.9rem; font-weight:600; color:var(--text-main); margin-bottom:10px; display:flex; align-items:center; gap:6px;"><i data-lucide="history" style="width:14px;height:14px;"></i> <span data-i18n="sent_messages_title">Poslate poruke (Status)</span></h4>
+                                <div id="dispatcher-sent-messages-list" style="display:flex; flex-direction:column; gap:8px; max-height:150px; overflow-y:auto; padding-right:5px;">
+                                    <!-- Dinamički se generiše iz JS -->
+                                </div>
+                                <!-- Arhiv dispečerskih poruka -->
+                                <div id="dispatcher-messages-archive"></div>
+                            </div>
+                        </div>
+
+                        <!-- Kartica za prijavu kvara -->
+                        <div class="card report-card">
+                            <div class="card-title-icon breakdown-color">
+                                <i data-lucide="wrench"></i>
+                                <h3 data-i18n="report_breakdown_title">Prijavi kvar na vozilu</h3>
+                            </div>
+                            <form id="breakdown-report-form" data-submit-action="submitBreakdownReport">
+                                <div class="form-group">
+                                    <label for="breakdown-type" data-i18n="breakdown_type_label">Kategorija kvara</label>
+                                    <select id="breakdown-type" required>
+                                        <option value="bd_engine" data-i18n="bd_engine">Kvar na motoru / Pogon</option>
+                                        <option value="bd_brakes" data-i18n="bd_brakes">Problem sa kočnicama</option>
+                                        <option value="bd_tyre" data-i18n="bd_tyre">Probušena / Oštećena guma</option>
+                                        <option value="bd_doors" data-i18n="bd_doors">Elektrika / Vrata se ne zatvaraju</option>
+                                        <option value="bd_ac" data-i18n="bd_ac">Kvar klime / Grejanja</option>
+                                        <option value="bd_other" data-i18n="bd_other">Ostalo</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="breakdown-severity" data-i18n="breakdown_severity_label">Ozbiljnost kvara</label>
+                                    <select id="breakdown-severity" required>
+                                        <option value="sev_low" data-i18n="sev_low">Manji kvar (Mogu da nastavim vožnju)</option>
+                                        <option value="sev_medium" data-i18n="sev_medium">Srednji kvar (Potreban servis na okretnici)</option>
+                                        <option value="sev_critical" data-i18n="sev_critical">Kritičan kvar (Vozilo mora odmah da stane)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="breakdown-desc" data-i18n="breakdown_desc_label">Opis kvara i lokacija</label>
+                                    <textarea id="breakdown-desc" required minlength="2" maxlength="1000"></textarea>
+                                </div>
+                                <button type="submit" class="btn-breakdown-submit btn-full-width">
+                                    <i data-lucide="alert-octagon"></i> <span data-i18n="btn_send_breakdown">Pošalji hitnu prijavu kvara</span>
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- KARTICA ZA PRIJAVU IZGUBLJENIH STVARI -->
+                        <div class="card report-card">
+                            <div class="card-title-icon lost-found-color">
+                                <i data-lucide="package-open"></i>
+                                <h3 data-i18n="report_lost_title">Prijavi izgubljenu stvar</h3>
+                            </div>
+                            <form id="lost-item-form" data-submit-action="submitLostItem">
+                                <div class="form-group">
+                                    <label for="lost-item-type" data-i18n="lost_type_label">Pronađeni predmet</label>
+                                    <select id="lost-item-type" required>
+                                        <option value="lost_tech" data-i18n="lost_tech">Telefon / Tehnički uređaj</option>
+                                        <option value="lost_wallet" data-i18n="lost_wallet">Novčanik / Lična dokumenta</option>
+                                        <option value="lost_keys" data-i18n="lost_keys">Ključevi</option>
+                                        <option value="lost_bag" data-i18n="lost_bag">Torba / Ranac</option>
+                                        <option value="lost_clothes" data-i18n="lost_clothes">Kišobran / Komad odeće</option>
+                                        <option value="lost_other" data-i18n="lost_other">Ostalo</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="lost-item-location" data-i18n="lost_loc_label">Gde je predmet pronađen?</label>
+                                    <input type="text" id="lost-item-location" required minlength="2" maxlength="200" data-i18n-placeholder="ph_lost_loc" placeholder="npr. kod zadnjih vrata, sedište 12">
+                                </div>
+                                <div class="form-group">
+                                    <label for="lost-item-desc" data-i18n="lost_desc_label">Opis predmeta (boja, marka, detalji)</label>
+                                    <textarea id="lost-item-desc" required minlength="2" maxlength="1000" data-i18n-placeholder="ph_lost_desc" placeholder="npr. Crveni kožni novčanik, Samsung telefon..."></textarea>
+                                </div>
+                                <button type="submit" class="btn-lost-submit btn-full-width">
+                                    <i data-lucide="package-plus"></i> <span data-i18n="btn_send_lost">Prijavi pronađeni predmet</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- GODIŠNJI ODMOR -->
+                <section id="driver-vacation" class="content-section hidden">
+                    <div class="section-header">
+                        <h2 data-i18n="vacation_title">Zahtevi za godišnji odmor</h2>
+                    </div>
+
+                    <div class="vacation-grid">
+                        <div class="card request-vacation-card">
+                            <h3 data-i18n="new_request_title">Kreiraj novi zahtev</h3>
+                            <form id="vacation-form" data-submit-action="submitVacationRequest">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="vacation-start" data-i18n="start_date_label">Datum početka</label>
+                                        <input type="date" id="vacation-start" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="vacation-end" data-i18n="end_date_label">Datum završetka</label>
+                                        <input type="date" id="vacation-end" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="vacation-type" data-i18n="leave_type_label">Tip odsustva</label>
+                                    <select id="vacation-type" required>
+                                        <option value="lt_vacation" data-i18n="lt_vacation">Godišnji odmor</option>
+                                        <option value="lt_paid" data-i18n="lt_paid">Plaćeno odsustvo</option>
+                                        <option value="lt_days" data-i18n="lt_days">Slobodni dani</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="vacation-reason" data-i18n="reason_label">Obrazloženje (opciono)</label>
+                                    <textarea id="vacation-reason" maxlength="1000"></textarea>
+                                </div>
+                                <button type="submit" class="btn-primary btn-full-width">
+                                    <i data-lucide="calendar-plus"></i> <span data-i18n="btn_send_vacation">Podnesi zahtev firmi</span>
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="card history-vacation-card">
+                            <h3 data-i18n="history_title">Istorija zahteva</h3>
+                            <div class="table-container">
+                                <table class="app-table">
+                                    <thead>
+                                        <tr>
+                                            <th data-i18n="table_type">Tip</th>
+                                            <th data-i18n="table_period">Period</th>
+                                            <th data-i18n="table_days">Dana</th>
+                                            <th data-i18n="table_status">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="driver-vacation-history">
+                                        <!-- Dinamički podaci iz JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- =============== SEKCIJE DISPEČERA (FIRME) =============== -->
+
+                <!-- SUPER ADMIN DASHBOARD -->
+                
+
+                <!-- COMPANY ADMIN — FIRMA & PREGLED -->
+                
+
+                <!-- COMPANY ADMIN — BRENDING (Faza 1) -->
+                
+
+                <!-- COMPANY ADMIN — GRUPE / LINIJE (Faza 3) -->
+                
+
+                <!-- COMPANY ADMIN — TIM DISPEČERA (Faza 2) -->
+                
+
+                <!-- COMPANY ADMIN — VOZAČKI NALOZI -->
+                
+
+                
+
+                
+
+                <!-- RASPORED SMENA (NOVI) -->
+                
+
+
+                <!-- ══ DNEVNI RASPORED ══════════════════════════════════════════ -->
+                
+
+                <!-- KONTROLNA TABLA — Operativni centar -->
+                
+
+                <!-- IZBOR GRUPE — DNEVNI PLAN -->
+                
+
+                <!-- IZBOR GRUPE — MESEČNI PLAN -->
+                
+
+                <!-- MAPA UŽIVO -->
+                
+
+                <!-- GROUP HUB — upravljanje podacima po grupi -->
+                
+
+                <!-- MESEČNI PLAN — pun ekran -->
+                
+
+                <!-- DNEVNI PLAN — pun ekran -->
+                
+
+                <!-- UŽIVO PRIJAVE KVAROVA I KAŠNJENJA -->
+                
+
+                <!-- IZGUBLJENE STVARI (DISPEČERSKI PANEL) -->
+                
+
+                <!-- ZAHTEVI ZA ODMOR -->
+                
+
+
+                <!-- PORUKE (DISPATCHER MESSAGES) -->
+                
+
+                <!-- COMPANY ADMIN — PODEŠAVANJA FIRME -->
+                
+
+            </main>
+
+            <!-- MOBILNA BOTTOM NAVIGACIJA (samo za vozača, samo na telefonu) -->
+            <nav id="mobile-bottom-nav" class="mobile-bottom-nav hidden">
+                <button class="mob-nav-btn active" data-action="switchSection" data-action-args='["driver-dashboard"]' id="mobnav-dashboard" style="position:relative;">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span data-i18n="nav_daily_plan_short">Plan</span>
+                    <span id="mobnav-badge-msgs" class="mob-nav-badge hidden"></span>
+                </button>
+                <button class="mob-nav-btn" data-action="switchSection" data-action-args='["driver-calendar"]' id="mobnav-calendar">
+                    <i data-lucide="calendar"></i>
+                    <span data-i18n="nav_monthly_plan_short">Smene</span>
+                </button>
+                <button class="mob-nav-btn mob-nav-sos" data-action="triggerSOSAlert" id="mobnav-sos">
+                    <i data-lucide="phone-call"></i>
+                    <span>SOS</span>
+                </button>
+                <button class="mob-nav-btn" data-action="switchSection" data-action-args='["driver-reports"]' id="mobnav-reports">
+                    <i data-lucide="alert-triangle"></i>
+                    <span data-i18n="nav_report_short">Prijavi</span>
+                </button>
+                <button class="mob-nav-btn" data-action="switchSection" data-action-args='["driver-vacation"]' id="mobnav-vacation">
+                    <i data-lucide="calendar-days"></i>
+                    <span data-i18n="nav_vacation_short">Odmor</span>
+                </button>
+            </nav>
+
+        </div>
+    </div>
+
+    <!-- FULL-SCREEN PORUKA OD DISPEČERA -->
+    <div id="msg-fullscreen-alert" class="hidden" aria-hidden="true" style="
+        position: fixed; inset: 0; z-index: 99999;
+        background: rgba(0,0,0,0.92);
+        backdrop-filter: blur(12px);
+        display: none; align-items: center; justify-content: center;
+        padding: 20px;">
+        <div id="msg-alert-card" style="
+            background: linear-gradient(145deg, #0f0f1e, #1a1a2e);
+            border: 2px solid rgba(99,102,241,0.6);
+            border-radius: 24px;
+            padding: 36px 28px;
+            max-width: 440px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(99,102,241,0.3), 0 0 120px rgba(99,102,241,0.1);
+            animation: pulseBorderMsg 2s infinite;">
+
+            <!-- Ikona -->
+            <div style="
+                width: 72px; height: 72px; border-radius: 50%;
+                background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(139,92,246,0.2));
+                border: 2px solid rgba(99,102,241,0.5);
+                display: flex; align-items: center; justify-content: center;
+                margin: 0 auto 20px; font-size: 32px;
+                box-shadow: 0 0 20px rgba(99,102,241,0.4);">
+                📨
+            </div>
+
+            <!-- Naslov -->
+            <div style="font-size: 0.8rem; font-weight: 600; letter-spacing: 0.15em;
+                color: rgba(99,102,241,0.9); text-transform: uppercase; margin-bottom: 8px;">
+                <i data-lucide="shield" style="width:13px;height:13px;vertical-align:middle;margin-right:4px;"></i>
+                <span id="msg-alert-sender">Dispatcher</span>
+            </div>
+            <h2 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 20px;">
+                <span data-i18n="msg_new_incoming">New Message</span>
+            </h2>
+
+            <!-- Tekst poruke -->
+            <div id="msg-alert-text" style="
+                background: rgba(255,255,255,0.04);
+                border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 14px;
+                padding: 18px 20px;
+                font-size: 1.05rem;
+                color: #e2e8f0;
+                line-height: 1.6;
+                margin-bottom: 10px;
+                word-break: break-word;
+                text-align: left;">
+                ...
+            </div>
+
+            <!-- Vreme -->
+            <div id="msg-alert-time" style="
+                font-size: 0.75rem; color: rgba(255,255,255,0.35);
+                margin-bottom: 28px;">
+            </div>
+
+            <!-- Dugme potvrde -->
+            <button data-action="confirmMessageRead" style="
+                width: 100%;
+                padding: 16px;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                border: none;
+                border-radius: 14px;
+                color: #fff;
+                font-size: 1rem;
+                font-weight: 700;
+                font-family: 'Outfit', sans-serif;
+                cursor: pointer;
+                display: flex; align-items: center; justify-content: center; gap: 10px;
+                box-shadow: 0 8px 24px rgba(99,102,241,0.4);
+                transition: all 0.2s; letter-spacing: 0.03em;"
+                onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 12px 32px rgba(99,102,241,0.6)'"
+                onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 8px 24px rgba(99,102,241,0.4)'">
+                <i data-lucide="check-circle" style="width:20px;height:20px;"></i>
+                <span data-i18n="btn_mark_read">Confirmed – Read</span>
+            </button>
+
+            <!-- Ako ima više poruka -->
+            <div id="msg-alert-more" class="hidden" style="
+                margin-top: 12px; font-size: 0.78rem;
+                color: rgba(255,255,255,0.4);">
+            </div>
+        </div>
+    </div>
+
+    <!-- SOS TRIGGER MODAL (driver activates SOS) -->
+    <div id="sos-trigger-modal" class="modal-backdrop bc-overlay-modal hidden" data-action="closeSosTriggerModal" data-action-self="true" aria-hidden="true" style="position:fixed;inset:0;z-index:19000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);">
+        <div style="background:#0f0f19;border:2px solid rgba(239,68,68,0.7);border-radius:20px;padding:32px 28px;width:92%;max-width:380px;text-align:center;animation:sosModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;box-shadow:0 0 60px rgba(239,68,68,0.25);">
+            <div style="width:72px;height:72px;border-radius:50%;background:rgba(239,68,68,0.15);border:2px solid rgba(239,68,68,0.5);margin:0 auto 20px;display:flex;align-items:center;justify-content:center;animation:sosPulse 0.8s ease-in-out infinite;">
+                <i data-lucide="phone-call" style="width:34px;height:34px;color:#ef4444;"></i>
+            </div>
+            <h3 style="font-size:1.3rem;font-weight:800;color:#ef4444;margin-bottom:10px;" data-i18n="sos_trigger_title">SOS ALARM</h3>
+            <p style="font-size:0.9rem;color:rgba(255,255,255,0.7);margin-bottom:24px;line-height:1.6;" data-i18n="js_confirm_sos">Möchten Sie wirklich den NOTFALL SOS-ALARM aktivieren?</p>
+            <div style="display:flex;gap:12px;">
+                <button data-action="closeSosTriggerModal" style="flex:1;padding:13px;border-radius:10px;font-size:0.9rem;font-weight:600;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);cursor:pointer;" data-i18n="btn_cancel">Cancel</button>
+                <button data-action="confirmSOSTrigger" style="flex:1;padding:13px;border-radius:10px;font-size:0.9rem;font-weight:800;background:linear-gradient(135deg,#dc2626,#b91c1c);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 16px rgba(239,68,68,0.4);" data-i18n="sos_trigger_btn">🚨 SEND SOS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SOS CONFIRM MODAL -->
+    <div id="sos-confirm-modal" class="modal-backdrop bc-overlay-modal hidden" data-action="closeSosConfirmModal" data-action-self="true" aria-hidden="true" style="display:none;">
+        <div style="
+            background: #0f0f19;
+            border: 2px solid rgba(239,68,68,0.5);
+            border-radius: 20px;
+            padding: 32px 28px;
+            width: 92%;
+            max-width: 400px;
+            box-shadow: 0 0 60px rgba(239,68,68,0.2), 0 20px 40px rgba(0,0,0,0.6);
+            text-align: center;
+            animation: sosModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+        ">
+            <!-- Ikona -->
+            <div style="width:72px; height:72px; border-radius:50%; background:rgba(239,68,68,0.15);
+                 border:2px solid rgba(239,68,68,0.4); margin:0 auto 20px; display:flex;
+                 align-items:center; justify-content:center;">
+                <i data-lucide="shield-check" style="width:34px; height:34px; color:#ef4444;"></i>
+            </div>
+
+            <h3 style="font-size:1.25rem; font-weight:700; color:#fff; margin-bottom:8px;"
+                data-i18n="sos_confirm_title">Potvrdi rešavanje SOS alarma</h3>
+
+            <p style="font-size:0.875rem; color:rgba(255,255,255,0.6); margin-bottom:8px; line-height:1.5;"
+               data-i18n="sos_confirm_body">Da li ste kontaktirali vozača i proverili situaciju?</p>
+
+            <div id="sos-confirm-driver-info" style="
+                background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2);
+                border-radius:10px; padding:12px 16px; margin:16px 0; font-size:0.85rem;
+                color:rgba(255,255,255,0.85); font-weight:500;">
+            </div>
+
+            <div style="display:flex; gap:12px; margin-top:8px;">
+                <button data-action="closeSosConfirmModal" style="
+                    flex:1; padding:13px; border-radius:10px; font-size:0.9rem; font-weight:600;
+                    background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+                    color:rgba(255,255,255,0.7); cursor:pointer;" data-i18n="btn_cancel">
+                    Otkaži
+                </button>
+                <button data-action="confirmResolveSOS" style="
+                    flex:1; padding:13px; border-radius:10px; font-size:0.9rem; font-weight:700;
+                    background:linear-gradient(135deg,#10b981,#059669); border:none;
+                    color:#fff; cursor:pointer; box-shadow:0 4px 16px rgba(16,185,129,0.3);"
+                    data-i18n="sos_btn_confirm_resolve">
+                    ✓ Potvrdi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. MODAL ZA PROVERU VOZILA PRE SMENE (WAGENÜBERGABE) -->
+    <div id="pre-trip-modal" class="modal-backdrop hidden">
+        <div class="modal-content" style="background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: var(--radius-lg); padding: 30px; width: 90%; max-width: 480px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); text-align: center;">
+            <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;" data-i18n="pretrip_title">Pre-Trip Pregled</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 25px;" data-i18n="pretrip_subtitle">Molimo potvrdite ispravnost vozila pre pokretanja smene:</p>
+
+            <form id="pre-trip-form" data-submit-action="submitPreTripCheck" autocomplete="off" style="text-align: left; display: flex; flex-direction: column; gap: 15px;">
+                <label style="display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 12px 15px; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition-fast);">
+                    <input type="checkbox" name="pt1" autocomplete="off" required style="width: 20px; height: 20px; accent-color: var(--primary-color); cursor: pointer;">
+                    <span style="font-size: 0.95rem; color: var(--text-main); font-weight: 500;" data-i18n="pretrip_check_1">Gume i felne proverene (pritisak i profil)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 12px 15px; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition-fast);">
+                    <input type="checkbox" name="pt2" autocomplete="off" required style="width: 20px; height: 20px; accent-color: var(--primary-color); cursor: pointer;">
+                    <span style="font-size: 0.95rem; color: var(--text-main); font-weight: 500;" data-i18n="pretrip_check_2">Svetla i migavci provereni (rad)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 12px 15px; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition-fast);">
+                    <input type="checkbox" name="pt3" autocomplete="off" required style="width: 20px; height: 20px; accent-color: var(--primary-color); cursor: pointer;">
+                    <span style="font-size: 0.95rem; color: var(--text-main); font-weight: 500;" data-i18n="pretrip_check_3">Unutrašnjost proverena (čistoća i oštećenja)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 12px 15px; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition-fast);">
+                    <input type="checkbox" name="pt4" autocomplete="off" required style="width: 20px; height: 20px; accent-color: var(--primary-color); cursor: pointer;">
+                    <span style="font-size: 0.95rem; color: var(--text-main); font-weight: 500;" data-i18n="pretrip_check_4">Pritisak kočnica i nivo tečnosti u redu</span>
+                </label>
+                <div class="form-group" style="margin-top: 5px;">
+                    <label for="pre-trip-damage-file" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 6px;" data-i18n="report_damage_optional">Prijavi oštećenja na vozilu (opciono - slika):</label>
+                    <input type="file" id="pre-trip-damage-file" accept="image/*" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 8px; color: white; width: 100%; font-size: 14px; outline: none; cursor:pointer;">
+                </div>
+
+                <button type="submit" class="btn-primary" style="margin-top: 15px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700;">
+                    <span data-i18n="pretrip_btn_start">Pošalji protokol i započni smenu</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Povezivanje JS logike -->
+
+    <!-- TOAST NOTIFICATION SISTEM -->
+    <div id="toast-container" style="
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+        max-width: 360px;
+        width: calc(100vw - 48px);
+    "></div>
+
+
+    <!-- ===== ONBOARDING WIZARD ===== -->
+    
+
+    <!-- ===== COMPANY ADMIN ONBOARDING WIZARD ===== -->
+    
+
+    <!-- ===== MESEČNI PLAN — UREĐIVANJE DANA ===== -->
+    <div id="monthly-day-edit-modal" class="bc-overlay-modal monthly-day-edit-modal hidden" aria-hidden="true" style="
+        position:fixed; inset:0; z-index:9999;
+        background:rgba(0,0,0,0.75); backdrop-filter:blur(8px);
+        display:none; align-items:center; justify-content:center; padding:20px;">
+        <div class="monthly-day-edit-panel">
+            <h3 class="monthly-day-edit-title">
+                <i data-lucide="calendar-cog" style="width:20px;height:20px;color:var(--primary-color);"></i>
+                <span data-i18n="med_edit_title">Izmena smene za dan</span>
+            </h3>
+            <p class="monthly-day-edit-meta">
+                <span data-i18n="med_edit_driver">Vozač</span>: <strong id="med-driver-label">—</strong>
+                · <span data-i18n="med_edit_month">Mesec</span>: <strong id="med-month-label">—</strong>
+            </p>
+            <p class="monthly-day-edit-hint" data-i18n="med_edit_hint">
+                Za svaki dan: izaberite tip (slobodno / odmor / bolovanje / radna smena), zatim šifru i autobus ako treba.
+            </p>
+
+            <div class="form-group monthly-day-edit-field">
+                <label data-i18n="med_label_day">Dan / datum</label>
+                <select id="med-day-select" class="med-control" data-change-action="onMedDaySelectChange"></select>
+                <div id="med-date-hint" class="med-date-hint"></div>
+            </div>
+
+            <div class="form-group monthly-day-edit-field">
+                <label data-i18n="med_label_type">Tip smene</label>
+                <select id="med-shift-type" class="med-control" data-change-action="onMedShiftTypeChange">
+                    <option value="morning" data-i18n="shift_type_morning">🌅 Prepodne (Frühdienst)</option>
+                    <option value="afternoon" data-i18n="shift_type_afternoon">🌇 Popodne (Spätdienst)</option>
+                    <option value="night" data-i18n="shift_type_night">🌙 Noćna (Nachtdienst)</option>
+                    <option value="bereitschaft" data-i18n="shift_type_bereitschaft">x2 Bereitschaft</option>
+                    <option value="off" data-i18n="shift_type_off">💤 Slobodan dan</option>
+                    <option value="vacation" data-i18n="shift_type_vacation">🏖️ Godišnji odmor</option>
+                    <option value="sick" data-i18n="shift_type_sick">🤒 Bolovanje</option>
+                </select>
+            </div>
+
+            <div class="form-group monthly-day-edit-field">
+                <label data-i18n="med_label_code">Šifra smene / plan (V66)</label>
+                <select id="med-shift-code-select" class="med-control" data-change-action="onMedCatalogSelectChange">
+                    <option value="" data-i18n="med_code_none">— Bez šifre / slobodno —</option>
+                </select>
+                <input type="text" id="med-shift-code-custom" class="med-control med-control--follow" data-i18n-placeholder="med_code_placeholder" placeholder="ili ukucajte šifru, npr. 310.F08"
+                    oninput="onMedShiftCodeCustomInput()">
+            </div>
+
+            <div class="form-group monthly-day-edit-field monthly-day-edit-field--last">
+                <label data-i18n="med_label_bus">Autobus</label>
+                <select id="med-bus-select" class="med-control">
+                    <option value="" data-i18n="med_bus_none">— Bez autobusa —</option>
+                </select>
+                <input type="text" id="med-bus-custom" class="med-control med-control--follow" data-i18n-placeholder="med_bus_placeholder" placeholder="ili ukucajte broj autobusa, npr. 91103" inputmode="numeric">
+            </div>
+
+            <div class="monthly-day-edit-actions">
+                <button type="button" data-action="closeMonthlyDayEditModal" class="btn-secondary monthly-day-edit-cancel"><span data-i18n="btn_cancel">Otkaži</span></button>
+                <button type="button" data-action="saveMonthlyDayEdit" class="btn-primary monthly-day-edit-save">
+                    <i data-lucide="save"></i> <span data-i18n="btn_save">Sačuvaj</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== FACTORY RESET CUSTOM MODAL ===== -->
+    
+
+    <!-- ===== CLEAR SOS CUSTOM MODAL ===== -->
+    
+
+
+    <!-- ===== GLOBAL CONFIRM MODAL ===== -->
+    <div id="global-confirm-modal" class="hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="global-confirm-title" data-action="closeConfirmModal" data-action-self="true" style="display:none;">
+        <div role="document" style="
+            background:linear-gradient(145deg,var(--panel-bg),var(--card-bg));
+            border:1px solid var(--panel-border);
+            border-radius:18px; padding:30px 28px; max-width:400px; width:100%;
+            box-shadow:var(--shadow-main);
+            text-align:center; animation:sosModalIn 0.25s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+            <h3 id="global-confirm-title" style="font-size:1.1rem; font-weight:700; color:var(--text-main); margin-bottom:10px;" data-i18n="confirm_title">Potvrda</h3>
+            <p id="global-confirm-message" style="font-size:0.875rem; color:var(--text-muted); margin-bottom:22px; line-height:1.6;"></p>
+            <div style="display:flex; gap:12px;">
+                <button type="button" data-action="closeConfirmModal" style="
+                    flex:1; padding:12px; border-radius:10px; font-size:0.9rem; font-weight:600;
+                    background:rgba(255,255,255,0.06); border:1px solid var(--panel-border);
+                    color:var(--text-secondary); cursor:pointer;" data-i18n="btn_cancel">
+                    Otkazhi
+                </button>
+                <button type="button" id="global-confirm-yes" data-action="confirmModalYes" style="
+                    flex:1; padding:12px; border-radius:10px; font-size:0.9rem; font-weight:700;
+                    background:linear-gradient(135deg,var(--danger-color),#b91c1c); border:none;
+                    color:#fff; cursor:pointer; box-shadow:0 4px 14px rgba(220,38,38,0.35);" data-i18n="btn_yes">
+                    Da
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SA COMPANY DETAIL -->
+    <div id="sa-company-detail-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sa-detail-title" style="display:none;">
+        <div class="modal-content sa-detail-modal">
+            <div class="sa-detail-header">
+                <h3 id="sa-detail-title" data-i18n="sa_detail_title">Company details</h3>
+                <button type="button" class="btn-secondary" data-action="superadminCloseCompanyDetail" aria-label="Close">
+                    <i data-lucide="x" style="width:16px;height:16px;"></i>
+                </button>
+            </div>
+            <p id="sa-detail-error" class="error-message hidden" role="alert"></p>
+            <div id="sa-detail-body"></div>
+            <div class="sa-detail-footer">
+                <button type="button" id="sa-detail-open-app-btn" class="btn-secondary" data-action="superadminOpenCompany" data-action-args='[]' data-i18n="btn_open">Open</button>
+                <button type="button" class="btn-primary" data-action="superadminCloseCompanyDetail" data-i18n="btn_close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SA SUPPORT SESSION (L7) -->
+    <div id="sa-support-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sa-support-title" style="display:none;">
+        <div class="modal-content" style="max-width:440px;">
+            <h3 id="sa-support-title" data-i18n="sa_support_title">Start support session</h3>
+            <p data-i18n="sa_support_hint">Read-only help for this company. 1 hour max. Never shows login secrets.</p>
+            <div class="form-group">
+                <label for="sa-support-category" data-i18n="sa_support_category">Category</label>
+                <select id="sa-support-category">
+                    <option value="incident" data-i18n="sa_support_cat_incident">Incident</option>
+                    <option value="onboarding" data-i18n="sa_support_cat_onboarding">Onboarding</option>
+                    <option value="billing" data-i18n="sa_support_cat_billing">Billing</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="sa-support-reason" data-i18n="sa_support_reason">Reason (min. 20 characters)</label>
+                <textarea id="sa-support-reason" rows="3" maxlength="500" required></textarea>
+            </div>
+            <p id="sa-support-error" class="error-message hidden" role="alert"></p>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;">
+                <button type="button" class="btn-secondary" data-action="superadminCancelSupportModal" data-i18n="btn_cancel">Cancel</button>
+                <button type="button" class="btn-primary" data-action="superadminConfirmSupportStart" data-i18n="sa_support_confirm">Start session</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SA DELETE COMPANY -->
+    <div id="sa-delete-company-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sa-delete-company-title" style="display:none;">
+        <div class="modal-content" style="max-width:440px;">
+            <h3 id="sa-delete-company-title" data-i18n="sa_delete_company_title">Delete company</h3>
+            <p data-i18n="sa_delete_company_hint">This permanently deletes the company, groups, drivers, plans and staff accounts. Type the company ID to confirm.</p>
+            <p style="margin:8px 0;"><code id="sa-delete-company-id-hint" style="font-size:0.95rem;"></code></p>
+            <div class="form-group">
+                <label for="sa-delete-company-confirm" data-i18n="sa_delete_company_confirm_label">Confirm company ID</label>
+                <input type="text" id="sa-delete-company-confirm" autocomplete="off" maxlength="64">
+            </div>
+            <p id="sa-delete-company-error" class="error-message hidden" role="alert"></p>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;">
+                <button type="button" class="btn-secondary" data-action="superadminCancelDeleteCompanyModal" data-i18n="btn_cancel">Cancel</button>
+                <button type="button" class="btn-primary" data-action="superadminConfirmDeleteCompany" data-i18n="sa_delete_company" style="background:#7f1d1d;border:none;">Delete forever</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUPER ADMIN MODAL -->
+    <div id="superadmin-pin-modal" class="bc-overlay-modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="superadmin-modal-title" style="display:none;">
+        <div style="background:#0f0f19; border:2px solid rgba(99,102,241,0.5); border-radius:20px; padding:32px 28px; width:92%; max-width:360px; text-align:center;">
+            <h3 id="superadmin-modal-title" style="color:white; font-size:1.2rem; margin-bottom:16px;">&#x1F510; Super Admin Access</h3>
+            <!-- Demo: PIN only -->
+            <div id="superadmin-demo-fields" class="hidden" style="display:none;" aria-hidden="true">
+                <input type="password" id="superadmin-pin-input" placeholder="Enter PIN" maxlength="10" autocomplete="off"
+                    style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
+                    background:rgba(255,255,255,0.05); color:white; font-size:1rem; text-align:center;
+                    box-sizing:border-box; margin-bottom:8px; outline:none;"
+                    onkeydown="if(event.key==='Enter') confirmSuperAdminPin()">
+            </div>
+            <!-- Produkcija: email + lozinka only -->
+            <div id="superadmin-prod-fields" class="hidden" style="display:none;" aria-hidden="true">
+                <input type="email" id="superadmin-email-input" placeholder="sa@example.com" autocomplete="username"
+                    style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
+                    background:rgba(255,255,255,0.05); color:white; font-size:0.95rem;
+                    box-sizing:border-box; margin-bottom:8px; outline:none;">
+                <input type="password" id="superadmin-pass-input" placeholder="Password" autocomplete="current-password"
+                    style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
+                    background:rgba(255,255,255,0.05); color:white; font-size:0.95rem;
+                    box-sizing:border-box; margin-bottom:8px; outline:none;"
+                    onkeydown="if(event.key==='Enter') confirmSuperAdminPin()">
+            </div>
+            <p id="superadmin-pin-error" style="color:#ef4444; font-size:0.85rem; margin-bottom:16px; min-height:20px;"></p>
+            <div style="display:flex; gap:12px;">
+                <button type="button" data-action="closeSuperAdminModal"
+                    style="flex:1; padding:12px; border-radius:10px; background:rgba(255,255,255,0.06);
+                    border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); cursor:pointer; font-size:0.9rem;">
+                    Cancel
+                </button>
+                <button type="button" data-action="confirmSuperAdminPin"
+                    style="flex:1; padding:12px; border-radius:10px; background:linear-gradient(135deg,#6366f1,#4f46e5);
+                    border:none; color:white; cursor:pointer; font-size:0.9rem; font-weight:700;">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MOBILNI BOTTOM NAV (vidljiv samo na mobilnom, ≤640px) ── -->
+    <div id="fp-mobile-nav">
+        <button class="fp-nav-btn active" id="fp-nav-home" data-action="fpNavSwitch" data-action-args='["home"]'>
+            <span class="fp-nav-icon">🏠</span>
+            <span class="fp-nav-label" data-i18n="nav_home">Početna</span>
+        </button>
+        <button class="fp-nav-btn" id="fp-nav-shift" data-action="fpNavSwitch" data-action-args='["shift"]'>
+            <span class="fp-nav-icon">📋</span>
+            <span class="fp-nav-label" data-i18n="nav_monthly_plan_short">Smene</span>
+        </button>
+        <button class="fp-nav-btn" id="fp-nav-reports" data-action="fpNavSwitch" data-action-args='["reports"]'>
+            <span class="fp-nav-icon">⚠️</span>
+            <span class="fp-nav-label" data-i18n="nav_report_short">Prijava</span>
+        </button>
+        <button class="fp-nav-btn" id="fp-nav-vacation" data-action="fpNavSwitch" data-action-args='["vacation"]'>
+            <span class="fp-nav-icon">📅</span>
+            <span class="fp-nav-label" data-i18n="nav_vacation_short">Odmor</span>
+        </button>
+    </div>
+
+</body>
+</html>

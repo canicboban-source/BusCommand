@@ -1,4 +1,4 @@
-﻿// BusCommand — mesečni plan: pregled po vozaču, izmena po danu
+// BusCommand — mesečni plan: pregled po vozaču, izmena po danu
 import { parseBusFromText, parseRouteCodeFromText } from "../core/shift-plan.js";
 import { ensureShiftCatalogForEdit } from "../core/line-shift-catalog.js";
 import { saveState } from "../core/state.js";
@@ -7,7 +7,8 @@ import { getBusesForLineGroup, getDriversForLineGroup, countPlansForLineGroup } 
 import { getActiveLineId, getGroupById } from "../data/groups.js";
 import { closeModal, showModal } from "../ui/modals.js";
 import { t } from "../ui/i18n.js";
-import { actionAttr, changeAttr as _changeAttr } from "../core/action-delegate.js";
+import { actionAttr } from "../core/action-delegate.js";
+import { persistShift } from "./shifts.js";
 
 let _selectedGroupId = null;
 let _editCtx = null;
@@ -40,10 +41,6 @@ function formatPlanDate(year, monthNum, day) {
     return `${String(day).padStart(2, "0")}.${String(monthNum).padStart(2, "0")}.${year}. (${wd})`;
 }
 
-function _formatPlanDateIso(year, monthNum, day) {
-    return `${year}-${String(monthNum).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
-
 function getShiftTypeLabel(type) {
     const key = SHIFT_TYPES[type];
     return (key ? t(key) : null) || t(`shift_${type}`) || type || "—";
@@ -64,6 +61,34 @@ function getShiftBus(shift) {
 function getHubBuses() {
     const hubId = window.state.activeGroupHubId || _selectedGroupId;
     return hubId ? getBusesForLineGroup(hubId) : (window.state.buses || []);
+}
+
+function currentMonthKey(date = new Date()) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function ensureMonthlyMonthOptions() {
+    const select = document.getElementById("monthly-month-select");
+    if (!select) return null;
+    const selected = /^\d{4}-\d{2}$/.test(select.value) ? select.value : currentMonthKey();
+    const base = new Date();
+    base.setDate(1);
+    const language = window.state.language || "en";
+    const formatter = new Intl.DateTimeFormat(language, { month: "long", year: "numeric" });
+    const months = [];
+    for (let offset = -2; offset <= 9; offset += 1) {
+        const date = new Date(base.getFullYear(), base.getMonth() + offset, 1);
+        months.push({ value: currentMonthKey(date), label: formatter.format(date) });
+    }
+    select.innerHTML = "";
+    for (const month of months) {
+        const option = document.createElement("option");
+        option.value = month.value;
+        option.textContent = month.label;
+        select.appendChild(option);
+    }
+    select.value = months.some(month => month.value === selected) ? selected : currentMonthKey();
+    return select.value;
 }
 
 function getScheduleContext() {
@@ -120,6 +145,7 @@ function selectMonthlyPlanGroup(groupId) {
 function populateMonthlyPlanDrivers() {
     const driverSelect = document.getElementById("monthly-driver-select");
     if (!driverSelect) return;
+    ensureMonthlyMonthOptions();
 
     const prev = driverSelect.value;
     driverSelect.innerHTML = "";
@@ -183,7 +209,7 @@ function loadMonthlyPlanForDriver() {
 
     const ctx = getScheduleContext();
     if (!ctx) {
-        container.innerHTML = `<p style="text-align:center;color:var(--text-muted);padding:30px;">${t("monthly_select_prompt")}</p>`;
+        container.innerHTML = `<p class="plan-empty-state">${t("monthly_select_prompt")}</p>`;
         updateMonthlyPlanSummary(null);
         return;
     }
@@ -194,10 +220,10 @@ function loadMonthlyPlanForDriver() {
 
     if (!schedule) {
         container.innerHTML = `
-            <div style="text-align:center;padding:30px 20px;color:var(--text-muted);">
-                <p style="margin-bottom:12px;">${t("monthly_no_plan_for", { driver: escapeHtml(driverName), month })}</p>
-                <p style="font-size:0.85rem;">${t("monthly_import_hint")}</p>
-                <button type="button" class="btn-secondary" style="margin-top:14px;" ${actionAttr("createEmptyMonthlyPlan", [scheduleKey, escapeHtml(driverName), month, totalDays])}>
+            <div class="plan-empty-state plan-empty-state--action">
+                <p class="plan-empty-title">${t("monthly_no_plan_for", { driver: escapeHtml(driverName), month })}</p>
+                <p class="plan-empty-hint">${t("monthly_import_hint")}</p>
+                <button type="button" class="btn-primary plan-empty-cta" ${actionAttr("createEmptyMonthlyPlan", [scheduleKey, escapeHtml(driverName), month, totalDays])}>
                     ${t("monthly_create_empty")}
                 </button>
             </div>`;
@@ -545,7 +571,7 @@ function closeMonthlyDayEditModal() {
     _editCtx = null;
 }
 
-function saveMonthlyDayEdit() {
+async function saveMonthlyDayEdit() {
     if (!_editCtx) return;
 
     const daySelect = document.getElementById("med-day-select");
@@ -570,7 +596,13 @@ function saveMonthlyDayEdit() {
         return;
     }
 
-    if (!schedule.parsedShifts) schedule.parsedShifts = {};
+    const driver = window.state.drivers?.find(d =>
+        d.name === _editCtx.driverName || (schedule.driverId && d.id === schedule.driverId)
+    );
+    if (!driver?.id) {
+        showToast(t("med_driver_missing") || "Vozač za ovaj plan nije pronađen.", "error");
+        return;
+    }
 
     const catalog = code ? window.state.shiftCatalog?.entries?.[code] : null;
 
@@ -586,24 +618,21 @@ function saveMonthlyDayEdit() {
         else name = getShiftTypeLabel(type);
     }
 
-    const entry = {
-        type,
-        name: bus ? `${name} (Bus ${bus})` : name,
-        routeCode: code || parseRouteCodeFromText(name) || null,
-        bus: bus || parseBusFromText(name) || null
-    };
-    if (catalog?.start) entry.start = catalog.start;
-    if (catalog?.end) entry.end = catalog.end;
-    if (catalog?.shortName) entry.shortName = catalog.shortName;
-
-    schedule.parsedShifts[day] = entry;
-
-    const driver = window.state.drivers?.find(d => d.name === _editCtx.driverName);
-    if (driver && bus) driver.bus = bus;
-
+    const displayName = bus ? `${name} (Bus ${bus})` : name;
+    const dateStr = `${_editCtx.year}-${String(_editCtx.monthNum).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const toastDate = formatPlanDate(_editCtx.year, _editCtx.monthNum, day);
 
-    saveState();
+    const saved = await persistShift(
+        driver,
+        dateStr,
+        type,
+        displayName,
+        catalog?.start || null,
+        catalog?.end || null,
+        bus || null
+    );
+    if (!saved) return;
+
     closeMonthlyDayEditModal();
     loadMonthlyPlanForDriver();
     showToast(t("med_shift_saved", { date: toastDate }), "success");
@@ -649,7 +678,7 @@ function renderHubMonthlyPreview() {
     if (!el) return;
 
     const hubId = window.state.activeGroupHubId;
-    const month = document.getElementById("monthly-month-select")?.value || "2026-08";
+    const month = document.getElementById("monthly-month-select")?.value || currentMonthKey();
     if (monthLabel) monthLabel.textContent = month;
 
     const drivers = hubId ? getDriversForLineGroup(hubId) : [];
@@ -723,6 +752,7 @@ export {
     renderHubMonthlyPreview,
     populateUploadScheduleDrivers,
     selectMonthlyPlanGroup,
+    ensureMonthlyMonthOptions,
     populateMonthlyPlanDrivers,
     loadMonthlyPlanForDriver,
     createEmptyMonthlyPlan,

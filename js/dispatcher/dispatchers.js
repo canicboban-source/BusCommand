@@ -1,11 +1,9 @@
-﻿// BusCommand ESM v9.5
-import { superadminResetPin as _superadminResetPin } from "../admin/superadmin.js";
+// BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
 import { escapeHtml, showToast } from "../core/utils.js";
-import { renderDispatcherSettings } from "./settings.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
-import { actionAttr, changeAttr as _changeAttr } from "../core/action-delegate.js";
+import { actionAttr } from "../core/action-delegate.js";
 
 function addDispatcher() {
     const nameInput  = document.getElementById("new-disp-name");
@@ -44,7 +42,6 @@ function addDispatcher() {
             saveState();
             if (nameInput) nameInput.value = "";
             if (pinInput)  pinInput.value  = "";
-            renderDispatcherSettings();
             showToast((t("dispatcher") || "Dispatcher") + " " + name + " " + (t("added") || "added"), "success");
         },
         { danger: false, title: t("dispatcher") || "Dispatcher", confirmText: t("btn_yes") || "Da" }
@@ -100,7 +97,6 @@ function removeDispatcher(id) {
     showConfirm(t("confirm_delete") || "Remove this dispatcher?", function() {
         window.state.dispatchers = (window.state.dispatchers || []).filter(d => d.id !== id);
         saveState();
-        renderDispatcherSettings();
         showToast(t("dispatcher") + " " + (t("removed") || "removed"), "info");
     }, { danger: true });
 }

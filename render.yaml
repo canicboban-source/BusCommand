@@ -1,18 +1,50 @@
-# Render.com — Blueprint (Web Service)
-# Dashboard: New > Blueprint > connect repo BusCommand
 services:
   - type: web
-    name: buscommand
-    runtime: docker
-    dockerfilePath: ./Dockerfile
-    plan: starter
+    name: buscommand-preview
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: npm ci --include=dev && npm run build && npm prune --omit=dev
+    startCommand: npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: LOG_LEVEL
-        value: info
-      - key: CORS_ORIGINS
-        value: https://buscommand.com,https://www.buscommand.com
+      - key: NODE_VERSION
+        value: "22"
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
         sync: false
+      - key: CONFIRMATION_JOB_SECRET
+        sync: false
+      - key: VITE_FIREBASE_API_KEY
+        value: AIzaSyCr9Q8b36nRRX_JIEmYgbLGaS7LEG1LRIo
+      - key: VITE_FIREBASE_AUTH_DOMAIN
+        value: buscommand-preview.firebaseapp.com
+      - key: VITE_FIREBASE_PROJECT_ID
+        value: buscommand-preview
+      - key: VITE_FIREBASE_STORAGE_BUCKET
+        value: buscommand-preview.firebasestorage.app
+      - key: VITE_FIREBASE_MESSAGING_SENDER_ID
+        value: "475316242257"
+      - key: VITE_FIREBASE_APP_ID
+        value: 1:475316242257:web:5782bb509578f28ac6b570
+      - key: CORS_ORIGINS
+        value: https://buscommand.com,https://www.buscommand.com,https://buscommand-preview.onrender.com
+
+  - type: cron
+    name: buscommand-confirm-dispatch
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    schedule: "*/15 * * * *"
+    buildCommand: npm ci --omit=dev
+    startCommand: node scripts/run-confirmation-dispatch.js
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: CONFIRMATION_JOB_SECRET
+        sync: false
+      - key: CONFIRMATION_DISPATCH_URL
+        value: https://buscommand.com/api/internal/jobs/confirmation-dispatch

@@ -1,10 +1,12 @@
-﻿// BusCommand ESM v9.5
+// BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
 import { showToast } from "../core/utils.js";
 import { getBusesForLineGroup } from "./group-membership.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
-import { actionAttr, changeAttr as _changeAttr } from "../core/action-delegate.js";
+import { actionAttr } from "../core/action-delegate.js";
+import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import ApiClient from "../core/api-client.js";
 
 function renderBusesList() {
     const list = document.getElementById("settings-buses-list");
@@ -15,17 +17,19 @@ function renderBusesList() {
     const myBuses = activeGrp ? getBusesForLineGroup(activeGrp) : (window.state.buses || []);
     myBuses.forEach(b => {
         const li = document.createElement("li");
+        const active = b.active !== false;
+        const deleteBtn = `<button ${actionAttr("deleteBus", [b.id])} style="background:rgba(239,68,68,0.08);color:${active ? "#ef4444" : "#16a34a"};border:1px solid currentColor;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;">
+                ${active ? (t("btn_deactivate") || "Deactivate") : (t("btn_activate") || "Activate")}
+            </button>`;
         li.innerHTML = `
-            <span>${t("vehicle")} ${b.number}</span>
-            <button ${actionAttr("deleteBus", [b.id])} style="background:rgba(239,68,68,0.08);color:#ef4444;border:1px solid rgba(239,68,68,0.2);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;">
-                ${t("btn_delete") || "Obriši"}
-            </button>
+            <span>${t("vehicle")} ${b.number} <small style="color:var(--text-muted);">${active ? "" : `(${t("driver_status_inactive")})`}</small></span>
+            ${deleteBtn}
         `;
         list.appendChild(li);
     });
 }
 
-function addBus(event) {
+async function addBus(event) {
     event.preventDefault();
     const input = document.getElementById("new-bus-num");
     const number = input.value.trim();
@@ -40,9 +44,20 @@ function addBus(event) {
     };
     showConfirm(
         (t("confirm_add_bus") || "Add bus") + ': "' + number + '"?',
-        function() {
+        async function() {
+            if (!IS_DEMO_MODE) {
+                const result = await ApiClient.createStaffBus(number, activeGrp);
+                if (!result?.success) {
+                    showToast(t("bus_add_failed"), "error");
+                    return;
+                }
+                if (!window.state.buses.some((bus) => bus.id === result.bus.id)) {
+                    window.state.buses.push(result.bus);
+                }
+            } else {
             window.state.buses.push(newBus);
-            saveState();
+                saveState();
+            }
             input.value = "";
             renderBusesList();
             lucide.createIcons();
@@ -53,22 +68,40 @@ function addBus(event) {
 }
 
 function deleteBus(id) {
-    showConfirm(t("js_alert_delete_bus") || "Delete this bus?", function() {
-        window.state.buses = window.state.buses.filter(b => b.id !== id);
-        saveState();
+    const bus = window.state.buses.find((item) => item.id === id);
+    if (!bus) return;
+    const nextActive = bus.active === false;
+    showConfirm(nextActive ? t("confirm_activate_bus") : t("confirm_deactivate_bus"), async function() {
+        if (!IS_DEMO_MODE) {
+            const result = await ApiClient.setStaffBusActive(id, nextActive);
+            if (!result?.success) {
+                showToast(t("bus_status_failed"), "error");
+                return;
+            }
+            bus.active = result.active;
+        } else {
+            bus.active = nextActive;
+            saveState();
+        }
         renderBusesList();
         lucide.createIcons();
-    }, { danger: true });
+    }, { danger: !nextActive });
 }
 
 function renderRoutesList() {
     const list = document.getElementById("settings-routes-list");
+    if (!list) return;
     list.innerHTML = "";
     const hubId = window.state.activeGroupHubId;
     const activeGrp = hubId || (window.currentUser && window.currentUser.activeGroupId);
     const myRoutes = window.state.routes.filter(r => !r.groupId || r.groupId === activeGrp);
     myRoutes.forEach(r => {
         const li = document.createElement("li");
+        const deleteBtn = IS_DEMO_MODE
+            ? `<button ${actionAttr("deleteRoute", [r.id])} style="align-self:center;background:rgba(239,68,68,0.08);color:#ef4444;border:1px solid rgba(239,68,68,0.2);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;">
+                ${t("btn_delete") || "Obriši"}
+            </button>`
+            : "";
         li.innerHTML = `
             <div class="crud-route-info">
                 <div class="crud-route-header">
@@ -77,9 +110,7 @@ function renderRoutesList() {
                 </div>
                 <span class="crud-route-stops">${t("stops_plan")}: ${r.stops.join(" ➔ ")}</span>
             </div>
-            <button ${actionAttr("deleteRoute", [r.id])} style="align-self:center;background:rgba(239,68,68,0.08);color:#ef4444;border:1px solid rgba(239,68,68,0.2);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;">
-                ${t("btn_delete") || "Obriši"}
-            </button>
+            ${deleteBtn}
         `;
         list.appendChild(li);
     });
@@ -87,6 +118,10 @@ function renderRoutesList() {
 
 function addRoute(event) {
     event.preventDefault();
+    if (!IS_DEMO_MODE) {
+        showToast(t("fleet_demo_only") || "Upravljanje linijama u produkciji još nije dostupno preko ovog ekrana.", "info");
+        return;
+    }
     const num = document.getElementById("new-route-num").value.trim();
     const name = document.getElementById("new-route-name").value.trim();
     const stopsStr = document.getElementById("new-route-stops").value.trim();
@@ -120,6 +155,10 @@ function addRoute(event) {
 }
 
 function deleteRoute(id) {
+    if (!IS_DEMO_MODE) {
+        showToast(t("fleet_demo_only") || "Upravljanje linijama u produkciji još nije dostupno preko ovog ekrana.", "info");
+        return;
+    }
     if (window.state.routes.length <= 1) {
         showToast(t("js_alert_min_route_err") || "Cannot delete last route", "error");
         return;

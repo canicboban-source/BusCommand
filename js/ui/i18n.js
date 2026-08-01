@@ -1,10 +1,10 @@
 // BusCommand ESM v9.5
-import { getBaseState, saveState } from "../core/state.js";
-import { showToast } from "../core/utils.js";
+import { getBaseState, saveState, resolveUiLanguage, applyUiLanguagePreference } from "../core/state.js";
+import { DEFAULT_BRAND_COLOR, normalizeBrandColor, normalizeBrandLogoUrl } from "../admin/company-admin-branding-model.js";
 import { populateTemplateSelect } from "../dispatcher/msg-compose.js";
 import { initializeLoginSelects } from "../auth/login-selects.js";
 import { switchSection } from "../layout/navigation.js";
-import { showConfirm } from "./confirm-modal.js";
+import { tp } from "./i18n-plural.js";
 
 function changeLanguage(lang) {
     if (!window.TRANSLATIONS[lang]) {
@@ -12,17 +12,8 @@ function changeLanguage(lang) {
         return;
     }
     
-    window.state.language = lang;
+    applyUiLanguagePreference(lang);
     saveState();
-    localStorage.setItem("buscommand_lang", lang); // čuva jezik odvojeno, preživljava reset
-    
-    const loginSel  = document.getElementById("login-lang-select");
-    const headerSel = document.getElementById("header-lang-select");
-    if (loginSel)  loginSel.value  = lang;
-    if (headerSel) headerSel.value = lang;
-
-    // Ažuriraj HTML lang atribut (pristupačnost)
-    document.documentElement.lang = lang;
 
     translateUI();
 
@@ -35,7 +26,7 @@ function changeLanguage(lang) {
             const role = window.currentUser.role;
             if (role === "driver") roleBadge.innerText = window.t("driver");
             else if (role === "company-admin") roleBadge.innerText = window.t("role_company_admin");
-            else if (role === "superadmin") roleBadge.innerText = "Super Admin";
+            else if (role === "superadmin") roleBadge.innerText = window.t("role_superadmin");
             else roleBadge.innerText = window.t("dispatcher");
         }
 
@@ -47,7 +38,7 @@ function changeLanguage(lang) {
             } else if (role === "company-admin") {
                 subEl.innerText = window.t("role_company_admin");
             } else if (role === "superadmin") {
-                subEl.innerText = "Super Admin";
+                subEl.innerText = window.t("role_superadmin");
             } else {
                 subEl.innerText = window.t("dispatcher");
             }
@@ -61,7 +52,7 @@ function changeLanguage(lang) {
 }
 
 function translateUI() {
-    const lang = window.state.language || "en";
+    const lang = resolveUiLanguage();
     const dict = window.TRANSLATIONS[lang] || window.TRANSLATIONS["en"];
     const fallback = window.TRANSLATIONS["en"] || {};
 
@@ -73,7 +64,7 @@ function translateUI() {
         if (val) {
             if (key === "saas_version") {
                 const ver = (typeof BusCommandConfig !== "undefined" && BusCommandConfig.VERSION)
-                    ? BusCommandConfig.VERSION : "9.3.4";
+                    ? BusCommandConfig.VERSION : "1.0.1";
                 el.innerText = `BusCommand v${ver}`;
             } else if (key === "trial_badge_login") {
                 el.innerText = val.replace("{days}", "30");
@@ -92,6 +83,16 @@ function translateUI() {
         const val = dict[key] || fallback[key];
         if (val) el.setAttribute("placeholder", val);
     });
+    document.querySelectorAll("[data-i18n-title]").forEach(el => {
+        const key = el.getAttribute("data-i18n-title");
+        const val = dict[key] || fallback[key];
+        if (val) el.setAttribute("title", val);
+    });
+    document.querySelectorAll("[data-i18n-aria-label]").forEach(el => {
+        const key = el.getAttribute("data-i18n-aria-label");
+        const val = dict[key] || fallback[key];
+        if (val) el.setAttribute("aria-label", val);
+    });
 
     // Obnovi template selectove na novom jeziku
     populateTemplateSelect("message-template");
@@ -104,7 +105,7 @@ function translateUI() {
 }
 
 function t(key, replacements = {}) {
-    const lang = window.state.language || "en";
+    const lang = resolveUiLanguage();
     let text = (window.TRANSLATIONS[lang] && window.TRANSLATIONS[lang][key])
         || (window.TRANSLATIONS["en"] && window.TRANSLATIONS["en"][key])
         || key;
@@ -121,121 +122,103 @@ function t(key, replacements = {}) {
 function productLogoHtml(name) {
     const n = String(name || "").trim();
     if (!n || /^BusCommand(\s|$)/i.test(n)) {
-        return "Bus<span class=\"logo-dot\">Command</span>";
+        return "BusCommand";
     }
-    return n.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return escapeAttr(n);
+}
+
+/** Official BusCommand mark — concept 3D BC monogram (PNG). */
+function productBrandMarkHtml({ size = "sm", titleId = null, name = "BusCommand" } = {}) {
+    const sizeClass = size === "lg" ? "bc-brand-mark--lg" : "bc-brand-mark--sm";
+    const px = size === "lg" ? 48 : 28;
+    const titleAttrs = titleId ? ` id="${escapeAttr(titleId)}"` : "";
+    return `<div class="logo bc-brand">
+        <img class="bc-brand-mark ${sizeClass}" src="/brand/logo-mark.png" width="${px}" height="${px}" alt="">
+        <span class="bc-brand-text"${titleAttrs}>${productLogoHtml(name)}</span>
+    </div>`;
+}
+
+function escapeAttr(str) {
+    return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function safeLogoUrl(url) {
+    return normalizeBrandLogoUrl(url).value;
 }
 
 function applyBrandingToUI() {
     const branding = window.state.branding || getBaseState().branding;
+    const safeName = escapeAttr(branding.name || "BusCommand");
+    const displayName = branding.name?.startsWith("BusCommand") ? "BusCommand" : (branding.name || "BusCommand");
+    const logoUrl = safeLogoUrl(branding.logoUrl);
     
-    document.documentElement.style.setProperty('--primary-color', branding.primaryColor);
+    const primaryColor = normalizeBrandColor(branding.primaryColor) || DEFAULT_BRAND_COLOR;
+    document.documentElement.style.setProperty('--primary-color', primaryColor);
     
-    const hoverColor = adjustColorBrightness(branding.primaryColor, -20);
+    const hoverColor = adjustColorBrightness(primaryColor, -20);
     document.documentElement.style.setProperty('--primary-hover', hoverColor);
     
-    const rgb = hexToRgb(branding.primaryColor);
+    const rgb = hexToRgb(primaryColor);
     if (rgb) {
         document.documentElement.style.setProperty('--primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
     }
     
     const brandTitle = document.getElementById("app-branding-title");
-    if (brandTitle) brandTitle.innerText = branding.name.startsWith("BusCommand") ? "BusCommand" : branding.name;
+    if (brandTitle) brandTitle.innerText = displayName;
     
     // Dinamički logo u zavisnosti od izabranog brenda
     const loginHeaderLogo = document.getElementById("login-logo-container");
     if (loginHeaderLogo) {
-        if (branding.logoUrl) {
+        if (logoUrl) {
             loginHeaderLogo.innerHTML = `
                 <div class="custom-brand-logo" style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-bottom: 1.5rem;">
-                    <img src="${branding.logoUrl}" alt="${branding.name}" style="max-height: 60px; max-width: 220px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3)); border-radius: var(--radius-sm);">
-                    <span style="font-weight:700; color:var(--text-main); font-size:1.4rem; margin-top:8px;">${branding.name}</span>
-                </div>
-            `;
-        } else if (branding.name.toLowerCase().includes("blaguss")) {
-            loginHeaderLogo.innerHTML = `
-                <div class="blaguss-logo-display">
-                    <span class="blaguss-brand-text">BLAGUSS</span>
-                    <span class="blaguss-subtext">Bringt Sie weiter</span>
+                    <img src="${escapeAttr(logoUrl)}" alt="${safeName}" referrerpolicy="no-referrer" style="max-height: 60px; max-width: 220px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3)); border-radius: var(--radius-sm);">
+                    <span style="font-weight:700; color:var(--text-main); font-size:1.4rem; margin-top:8px;">${safeName}</span>
                 </div>
             `;
         } else {
             loginHeaderLogo.innerHTML = `
-                <div class="logo" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;">
-                    <i data-lucide="bus"></i>
-                    <span>${productLogoHtml(branding.name)}</span>
+                <div class="logo bc-brand" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;">
+                    <img class="bc-brand-mark bc-brand-mark--hero" src="/brand/logo-hero.png" width="80" height="80" alt="BusCommand">
+                    <span class="bc-brand-text">${productLogoHtml(branding.name)}</span>
                 </div>
                 <p data-i18n="login_subtitle" class="login-subtitle-text">${window.t("login_subtitle")}</p>
             `;
-            lucide.createIcons();
         }
     }
 
     const headerLogoContainer = document.getElementById("header-logo-container");
     if (headerLogoContainer) {
-        if (branding.logoUrl) {
+        if (logoUrl) {
             headerLogoContainer.innerHTML = `
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <img src="${branding.logoUrl}" alt="${branding.name}" style="max-height: 32px; max-width: 110px; object-fit: contain; border-radius: 2px;">
-                    <span style="font-weight:700; color:var(--text-main); font-size:1.1rem; letter-spacing:-0.2px;">${branding.name}</span>
-                </div>
-            `;
-        } else if (branding.name.toLowerCase().includes("blaguss")) {
-            headerLogoContainer.innerHTML = `
-                <div class="blaguss-logo-display header-version">
-                    <span class="blaguss-brand-text">BLAGUSS</span>
+                    <img src="${escapeAttr(logoUrl)}" alt="${safeName}" referrerpolicy="no-referrer" style="max-height: 32px; max-width: 110px; object-fit: contain; border-radius: 2px;">
+                    <span style="font-weight:700; color:var(--text-main); font-size:1.1rem; letter-spacing:-0.2px;">${safeName}</span>
                 </div>
             `;
         } else {
-            headerLogoContainer.innerHTML = `
-                <div class="logo">
-                    <i data-lucide="bus"></i>
-                    <span id="app-branding-title">${branding.name.startsWith("BusCommand") ? "BusCommand" : branding.name}</span>
-                </div>
-            `;
-            lucide.createIcons();
+            headerLogoContainer.innerHTML = productBrandMarkHtml({
+                size: "sm",
+                titleId: "app-branding-title",
+                name: displayName
+            });
         }
     }
 
     const brandInput = document.getElementById("settings-brand-name");
     const colorInput = document.getElementById("settings-primary-color");
-    const logoInput = document.getElementById("settings-brand-logo");
-    const hexLabel = document.getElementById("color-hex-display");
+    const logoData = document.getElementById("settings-brand-logo-data");
+    const hexLabel = document.getElementById("settings-primary-color-hex");
     
-    if (brandInput) brandInput.value = branding.name;
-    if (colorInput) colorInput.value = branding.primaryColor;
-    if (logoInput) logoInput.value = branding.logoUrl || "";
-    if (hexLabel) hexLabel.innerText = branding.primaryColor.toUpperCase();
-}
-
-function applyBrandingSettings() {
-    const nameEl = document.getElementById("settings-brand-name");
-    const colorEl = document.getElementById("settings-primary-color");
-    const logoEl = document.getElementById("settings-brand-logo");
-    if (!nameEl || !colorEl || !logoEl) return;
-
-    const name = nameEl.value.trim();
-    const color = colorEl.value;
-    const logoUrl = logoEl.value.trim();
-    
-    if (!name) return;
-    
-    showConfirm(
-        window.t("confirm_apply_branding") || "Apply branding settings?",
-        function() {
-            window.state.branding = {
-                name: name,
-                primaryColor: color,
-                logoUrl: logoUrl
-            };
-            saveState();
-            applyBrandingToUI();
-            showToast(window.t("js_alert_branding_applied"), "success");
-            const hint = document.getElementById("ca-branding-first-run");
-            if (hint) hint.style.display = "none";
-        },
-        { danger: false, title: window.t("btn_apply_branding") || "Primeni brendiranje", confirmText: window.t("btn_yes") || "Da" }
-    );
+    if (brandInput) brandInput.value = branding.name || "";
+    if (colorInput) colorInput.value = primaryColor;
+    if (logoData && branding.logoUrl) logoData.value = branding.logoUrl;
+    if (hexLabel) hexLabel.value = primaryColor;
 }
 
 function adjustColorBrightness(hex, percent) {
@@ -271,19 +254,12 @@ function hexToRgb(hex) {
     } : null;
 }
 
-const colorPicker = document.getElementById("settings-primary-color");
-if (colorPicker) {
-    colorPicker.addEventListener("input", (e) => {
-        const hexDisplay = document.getElementById("color-hex-display");
-        if (hexDisplay) hexDisplay.innerText = e.target.value.toUpperCase();
-    });
-}
 export {
     changeLanguage,
     translateUI,
     t,
+    tp,
     applyBrandingToUI,
-    applyBrandingSettings,
     adjustColorBrightness,
     hexToRgb
 };

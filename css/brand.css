@@ -1,0 +1,83 @@
+/* BusCommand brand — owner concept icon (blue B mark) */
+.bc-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-main);
+    line-height: 1;
+}
+
+.bc-brand-mark {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    display: block;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.bc-brand-mark--sm {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+}
+
+.bc-brand-mark--lg {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+}
+
+.bc-brand-mark--hero {
+    width: 72px;
+    height: 72px;
+    border-radius: 14px;
+}
+
+.bc-brand-text {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.login-header .bc-brand {
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.login-header .bc-brand-mark {
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+}
+
+.login-header .bc-brand-text {
+    font-size: 1.55rem;
+}
+
+#header-logo-container .bc-brand,
+.app-header .bc-brand {
+    gap: 8px;
+}
+
+#header-logo-container .bc-brand-text {
+    font-size: 1.05rem;
+}
+
+.driver-pwa-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.driver-pwa-brand .bc-brand-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+}

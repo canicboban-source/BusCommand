@@ -1,13 +1,15 @@
-﻿// BusCommand ESM v9.5
+// BusCommand ESM v9.5
 import { initializeLoginSelects } from "../auth/login-ui.js";
 import { saveState } from "../core/state.js";
-import { getVisibleDrivers, showToast } from "../core/utils.js";
+import { escapeHtml, getVisibleDrivers, showToast } from "../core/utils.js";
 import { getGroupById, renderGroupsList } from "./groups.js";
 import { assignDriverToLine, getDriversForLineGroup } from "./group-membership.js";
 import { getActiveLineId } from "./groups.js";
 import { showConfirm } from "../ui/confirm-modal.js";
-import { t } from "../ui/i18n.js";
-import { actionAttr, changeAttr as _changeAttr } from "../core/action-delegate.js";
+import { t, tp } from "../ui/i18n.js";
+import { actionAttr } from "../core/action-delegate.js";
+import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import ApiClient from "../core/api-client.js";
 
 window.editingDriverId = null;
 
@@ -19,26 +21,39 @@ function renderDriversList() {
     const hubId = window.state.activeGroupHubId;
     let myDrivers = hubId ? getDriversForLineGroup(hubId) : getVisibleDrivers();
     
+    const canDeleteDrivers = IS_DEMO_MODE || window.currentUser?.role === "company-admin";
+
     myDrivers.forEach(d => {
         const grp = getGroupById(d.groupId);
+        const driverName = d.name || [d.firstName, d.lastName].filter(Boolean).join(" ") || t("driver");
+        const groupColor = /^#[0-9a-f]{6}$/i.test(String(grp?.color || ""))
+            ? grp.color
+            : "var(--primary-color)";
+        const isDispatcher = window.currentUser?.role === "dispatcher";
         const li = document.createElement("li");
-        li.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); border-left: 3px solid " + (grp ? grp.color : "var(--primary-color)") + "; border-radius: var(--radius-md); margin-bottom: 8px;";
+        const active = d.active !== false;
+        const statusLabel = t(active ? "driver_status_active" : "driver_status_inactive");
+        const statusAction = t(active ? "driver_deactivate" : "driver_activate");
+        li.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); border-left: 3px solid " + groupColor + "; border-radius: var(--radius-md); margin-bottom: 8px;";
+        const idBadge = isDispatcher
+            ? ""
+            : `<span style="color: var(--primary-color); font-size: 12px; font-weight: normal; margin-left: 8px;">(${escapeHtml(t("label_company_id") || "ID")}: ${escapeHtml(d.companyId || "N/A")})</span>`;
         li.innerHTML = `
             <div style="display: flex; flex-direction: column; gap: 4px; text-align: left;">
-                <span style="font-weight: 600; color: var(--text-main);">${d.name}
-                    <span style="color: var(--primary-color); font-size: 12px; font-weight: normal; margin-left: 8px;">(${t("label_company_id") || "ID"}: ${d.companyId || 'N/A'})</span>
-                    ${grp ? `<span style="background:${grp.color}22;border:1px solid ${grp.color}55;color:${grp.color};font-size:10px;font-weight:700;padding:1px 8px;border-radius:12px;margin-left:6px;">${grp.name}</span>` : ""}
+                <span style="font-weight: 600; color: var(--text-main);">${escapeHtml(driverName)}
+                    ${idBadge}
+                    ${grp ? `<span style="background:${groupColor}22;border:1px solid ${groupColor}55;color:${groupColor};font-size:10px;font-weight:700;padding:1px 8px;border-radius:12px;margin-left:6px;">${escapeHtml(grp.name)}</span>` : ""}
+                    <span style="font-size:10px;font-weight:700;margin-left:6px;color:${active ? "var(--success-color, #16a34a)" : "var(--text-muted)"};">${escapeHtml(statusLabel)}</span>
                 </span>
-                <span style="font-size: 12px; color: var(--text-muted);">🔑 PIN: ${d.pin}</span>
-                <span style="font-size: 12px; color: var(--text-muted);">📞 ${d.phone || t("no_phone")} | ✉️ ${d.email || t("no_email")}</span>
+                <span style="font-size: 12px; color: var(--text-muted);">${escapeHtml(d.phone || t("no_phone"))} | ${escapeHtml(d.email || t("no_email"))}</span>
             </div>
             <div style="display:flex; gap:6px;">
-                <button class="btn-edit-item" ${actionAttr("editDriver", [d.id])} style="background:rgba(59,130,246,0.08);color:#3b82f6;border:1px solid rgba(59,130,246,0.2);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;white-space:nowrap;">
+                ${IS_DEMO_MODE ? `<button class="btn-edit-item" ${actionAttr("editDriver", [d.id])} style="background:rgba(59,130,246,0.08);color:#3b82f6;border:1px solid rgba(59,130,246,0.2);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;white-space:nowrap;">
                     ${t("btn_edit")}
-                </button>
-                <button class="btn-delete-item" ${actionAttr("deleteDriver", [d.id])} style="background:rgba(239,68,68,0.08);color:#ef4444;border:1px solid rgba(239,68,68,0.2);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;white-space:nowrap;">
-                    ${t("btn_delete") || "Obriši"}
-                </button>
+                </button>` : ""}
+                ${canDeleteDrivers ? `<button class="btn-delete-item" ${actionAttr("toggleDriverActive", [d.id])} aria-label="${escapeHtml(statusAction)}" title="${escapeHtml(statusAction)}" style="background:rgba(239,68,68,0.08);color:${active ? "#ef4444" : "#16a34a"};border:1px solid currentColor;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;white-space:nowrap;">
+                    ${escapeHtml(statusAction)}
+                </button>` : ""}
             </div>
         `;
         list.appendChild(li);
@@ -46,6 +61,7 @@ function renderDriversList() {
 }
 
 function editDriver(id) {
+    if (!IS_DEMO_MODE) return;
     const d = window.state.drivers.find(drv => drv.id === id);
     if (!d) return;
 
@@ -79,6 +95,7 @@ function editDriver(id) {
 
 function addDriver(event) {
     event.preventDefault();
+    if (!IS_DEMO_MODE) return;
     const nameInput = document.getElementById("new-driver-name");
     const companyIdInput = document.getElementById("new-driver-company-id");
     const pinInput = document.getElementById("new-driver-pin");
@@ -163,14 +180,27 @@ function addDriver(event) {
     );
 }
 
-function deleteDriver(id) {
-    showConfirm(t("js_alert_delete_driver") || "Obriši ovog vozača?", function() {
-        window.state.drivers = window.state.drivers.filter(d => d.id !== id);
-        saveState();
+function toggleDriverActive(id) {
+    const driver = window.state.drivers.find(d => d.id === id);
+    if (!driver) return;
+    const nextActive = driver.active === false;
+    const driverName = driver.name || [driver.firstName, driver.lastName].filter(Boolean).join(" ") || t("driver");
+    const message = t(nextActive ? "driver_confirm_activate" : "driver_confirm_deactivate", { name: driverName });
+    showConfirm(message, async function() {
+        if (!IS_DEMO_MODE) {
+            const result = await ApiClient.setDriverActive(id, nextActive);
+            if (!result.success) {
+                showToast(result.error || t("driver_status_failed"), "error");
+                return;
+            }
+        }
+        driver.active = nextActive;
+        if (IS_DEMO_MODE) saveState();
         renderDriversList();
         initializeLoginSelects();
-        lucide.createIcons();
-    }, { danger: true });
+        showToast(t(nextActive ? "driver_activated" : "driver_deactivated"), "success");
+        if (typeof lucide !== "undefined") lucide.createIcons();
+    }, { danger: !nextActive });
 }
 
 function importDriversExcel(event) {
@@ -179,6 +209,7 @@ function importDriversExcel(event) {
 }
 
 function importDriversBulk() {
+    if (!IS_DEMO_MODE) return;
     const textarea = document.getElementById("bulk-drivers-input");
     if (!textarea) return;
     const text = textarea.value.trim();
@@ -262,11 +293,7 @@ function importDriversBulk() {
     renderDriversList();
     initializeLoginSelects();
     textarea.value = "";
-    if (window.state.activeGroupHubId) {
-        import("../dispatcher/group-hub.js").then(m => m.renderGroupHub());
-    }
-    
-    showToast(t("driver_import_success", { count: importCount }), "success");
+    showToast(tp("driver_import_success", importCount, { count: importCount }), "success");
     if (newGroupsCount > 0) {
         showToast(t("groups_created_on_import", { count: newGroupsCount }), "info");
         renderGroupsList();
@@ -289,7 +316,7 @@ function importDriversFromFile(input) {
 export {
     renderDriversList,
     addDriver,
-    deleteDriver,
+    toggleDriverActive,
     editDriver,
     importDriversExcel,
     importDriversBulk,

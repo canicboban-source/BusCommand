@@ -37,7 +37,7 @@ function minimalDemoState() {
     vacations: [],
     messages: [],
     lostItems: [],
-    branding: { name: "BusCommand", primaryColor: "#3D7EF5", logo: null },
+    branding: { name: "BusCommand Demo", primaryColor: "#3D7EF5", logo: null },
     schedules: [],
     tomorrowShifts: [],
     onboardingDone: true,
@@ -56,6 +56,7 @@ function minimalDemoState() {
     ],
     shiftCatalog: null,
     shiftCatalogs: {},
+    servicePlans: [],
     bereitschaftDriver: null
   };
 }
@@ -72,7 +73,13 @@ async function seedDemoState(page, state = minimalDemoState()) {
 }
 
 async function loginDispatcher(page, email = "demo@buscommand.com", password = "demo123") {
-  await page.locator("#tab-dispatcher-btn").click();
+  if (!/staff\.html/i.test(page.url())) {
+    await page.goto("/staff.html?mode=demo");
+  }
+  const tab = page.locator("#tab-dispatcher-btn");
+  if (await tab.isVisible().catch(() => false)) {
+    await tab.click();
+  }
   await page.locator("#login-dispatcher-email").fill(email);
   await page.locator("#login-dispatcher-password").fill(password);
   await page.locator("#dispatcher-login-btn").click();
@@ -80,7 +87,13 @@ async function loginDispatcher(page, email = "demo@buscommand.com", password = "
 }
 
 async function loginDriver(page, name = "E2E Driver", pin = "1234") {
-  await page.locator("#tab-driver-btn").click();
+  if (!/driver\.html/i.test(page.url())) {
+    await page.goto("/driver.html?mode=demo");
+  }
+  const tab = page.locator("#tab-driver-btn");
+  if (await tab.isVisible().catch(() => false)) {
+    await tab.click();
+  }
   await page.locator("#login-driver-select").selectOption({ label: name });
   await page.locator("#login-driver-pin").fill(pin);
   await page.getByRole("button", { name: /Sign on duty|Start Shift/i }).click();

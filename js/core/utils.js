@@ -37,7 +37,7 @@ function getVisibleDrivers() {
 
         return myGroups.length
             ? all.filter(d => myGroups.some(gId => driverBelongsToLine(d, gId)))
-            : all;
+            : [];
     }
     return all;
 }
@@ -54,7 +54,7 @@ function getVisibleGroups() {
     if (window.currentUser.role === 'dispatcher') {
         const disp = (window.state.dispatchers || []).find(d => d.id === window.currentUser.id);
         const myGroups = disp ? (disp.groups || []) : [window.currentUser.activeGroupId].filter(Boolean);
-        return myGroups.length ? all.filter(g => myGroups.includes(g.id)) : all;
+        return myGroups.length ? all.filter(g => myGroups.includes(g.id)) : [];
     }
     return all;
 }

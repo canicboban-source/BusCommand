@@ -1,4 +1,9 @@
 // BusCommand — login dropdowns (bez circular importa sa i18n)
+import { IS_DEMO_MODE, COMPANY_ID } from "../core/runtime-config.js";
+import {
+    normalizeCompanyId,
+    readRememberedDriverCompany
+} from "./driver-company.js";
 
 function loginT(key) {
     const lang = window.state?.language || localStorage.getItem("buscommand_lang") || "en";
@@ -6,14 +11,69 @@ function loginT(key) {
     return dict[key] || key;
 }
 
-function initializeLoginSelects() {
+function configureProductionDriverLoginFields() {
+    const select = document.getElementById("login-driver-select");
+    const selectGroup = select?.closest(".form-group");
+    const eidInput = document.getElementById("login-driver-eid");
+    const eidLabel = document.querySelector("label[for='login-driver-eid']");
+    const companyInput = document.getElementById("login-driver-company");
+    const companyGroup = companyInput?.closest(".form-group");
+    const companyLabel = document.querySelector("label[for='login-driver-company']");
+
+    if (selectGroup) selectGroup.classList.add("hidden");
+    if (select) {
+        select.required = false;
+        select.innerHTML = "";
+        select.value = "";
+    }
+    if (companyGroup) companyGroup.classList.remove("hidden");
+    if (companyInput) {
+        companyInput.required = true;
+        companyInput.placeholder = loginT("login_company_placeholder") || "company-id";
+        companyInput.setAttribute("autocomplete", "organization");
+        const prefill = normalizeCompanyId(COMPANY_ID) || readRememberedDriverCompany();
+        if (prefill && !companyInput.value.trim()) companyInput.value = prefill;
+    }
+    if (companyLabel) {
+        companyLabel.textContent = loginT("login_company_label") || loginT("company_id_label") || "Company ID";
+    }
+    if (eidInput) {
+        eidInput.required = true;
+        eidInput.placeholder = loginT("login_eid_required_ph") || "EID (required)";
+        eidInput.setAttribute("autocomplete", "username");
+    }
+    if (eidLabel) {
+        eidLabel.textContent = loginT("login_eid_required") || "EID";
+    }
+}
+
+function configureDemoDriverLoginFields() {
+    const companyInput = document.getElementById("login-driver-company");
+    const companyGroup = companyInput?.closest(".form-group");
+    if (companyGroup) companyGroup.classList.add("hidden");
+    if (companyInput) {
+        companyInput.required = false;
+        companyInput.value = "demo";
+    }
+}
+
+async function initializeLoginSelects() {
     const driverSelect = document.getElementById("login-driver-select");
     if (!driverSelect) return;
+
+    // Production: no unauthenticated roster dump — identify by company + EID.
+    if (!IS_DEMO_MODE) {
+        configureProductionDriverLoginFields();
+        return;
+    }
+
+    configureDemoDriverLoginFields();
 
     const selectedName = driverSelect.value;
     driverSelect.innerHTML = "";
 
-    if (!window.state?.drivers || window.state.drivers.length === 0) {
+    const drivers = window.state?.drivers || [];
+    if (drivers.length === 0) {
         const opt = document.createElement("option");
         opt.value = "";
         opt.disabled = true;
@@ -23,11 +83,11 @@ function initializeLoginSelects() {
         return;
     }
 
-    window.state.drivers.forEach((d) => {
+    drivers.forEach((d) => {
         const opt = document.createElement("option");
-        opt.value = d.name;
+        opt.value = d.id;
         opt.innerText = d.name;
-        if (d.name === selectedName) opt.selected = true;
+        if (d.id === selectedName) opt.selected = true;
         driverSelect.appendChild(opt);
     });
 

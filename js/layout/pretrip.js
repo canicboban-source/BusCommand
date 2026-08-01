@@ -4,8 +4,10 @@ import { showToast } from "../core/utils.js";
 import { showAppLayout } from "./shell.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
+import { canUseDriverOperationalUi } from "../auth/driver-access-gate.js";
 
 function showPreTripModal() {
+    if (!canUseDriverOperationalUi()) return false;
     document.getElementById("login-screen").classList.add("hidden");
     document.getElementById("app-container").classList.add("hidden");
     const modal = document.getElementById("pre-trip-modal");
@@ -26,10 +28,12 @@ function showPreTripModal() {
         if (fileInput) fileInput.value = "";
     }
     lucide.createIcons();
+    return true;
 }
 
 function submitPreTripCheck(event) {
     event.preventDefault();
+    if (!canUseDriverOperationalUi()) return false;
     const modal = document.getElementById("pre-trip-modal");
     const fileInput = document.getElementById("pre-trip-damage-file");
 

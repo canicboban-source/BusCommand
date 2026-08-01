@@ -1,8 +1,9 @@
-﻿// BusCommand ESM v9.5
+// BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
 import { showToast } from "../core/utils.js";
 import { applyBrandingToUI, t, translateUI } from "../ui/i18n.js";
-import { actionAttr, changeAttr as _changeAttr } from "../core/action-delegate.js";
+import { actionAttr } from "../core/action-delegate.js";
+import { IS_DEMO_MODE } from "../core/runtime-config.js";
 
 let _wizardStep = 1;
 let _wizardDriverRows = 0;
@@ -15,13 +16,19 @@ function showOnboardingWizard() {
     document.getElementById("wizard-drivers-list").innerHTML = "";
     wizardAddDriverRow(); // dodaj jedan red odmah
     wizardRenderStep();
+    wiz.style.display = "flex";
+    wiz.removeAttribute("aria-hidden");
     wiz.classList.remove("hidden");
     lucide.createIcons();
 }
 
 function closeOnboardingWizard() {
     const wiz = document.getElementById("onboarding-wizard");
-    if (wiz) wiz.classList.add("hidden");
+    if (wiz) {
+        wiz.classList.add("hidden");
+        wiz.style.display = "none";
+        wiz.setAttribute("aria-hidden", "true");
+    }
     window.state.onboardingDone = true;
     saveState();
 }
@@ -175,6 +182,10 @@ function wizardAddDriverRow() {
 }
 
 function wizardSaveDrivers() {
+    if (!IS_DEMO_MODE) {
+        showToast(t("ca_drivers_admin_only") || "Vozačke naloge uvozi Company Admin (CSV).", "info");
+        return;
+    }
     const rows = document.querySelectorAll("#wizard-drivers-list > div");
     rows.forEach((row, i) => {
         const inputs = row.querySelectorAll("input");
