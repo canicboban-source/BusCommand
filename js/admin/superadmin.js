@@ -237,10 +237,6 @@ async function superadminToggleStatus(companyId, status) {
     }, { danger: status === "suspended" });
 }
 
-function superadminOpenCompany(companyId) {
-    window.open("/?mode=production&company=" + encodeURIComponent(companyId), "_blank");
-}
-
 let _pendingDetailCompanyId = null;
 
 function formatSaDate(value) {
@@ -299,7 +295,7 @@ function fillCompanyDetailModal(company) {
     const countsEl = document.getElementById("sa-detail-counts");
     const errorEl = document.getElementById("sa-detail-error");
     const resetBox = document.getElementById("sa-detail-reset-link-box");
-    const openBtn = document.getElementById("sa-detail-open-app-btn");
+    const supportActionBtn = document.getElementById("sa-detail-support-action-btn");
     const copyBtn = document.getElementById("sa-detail-copy-id-btn");
 
     if (errorEl) {
@@ -340,7 +336,25 @@ function fillCompanyDetailModal(company) {
             <div><span>${escapeHtml(t("sa_detail_count_groups") || "Groups")}</span><strong>${Number(counts.groups) || 0}</strong></div>
         `;
     }
-    if (openBtn) openBtn.setAttribute("data-action-args", JSON.stringify([company.id]));
+    if (supportActionBtn) {
+        supportActionBtn.disabled = false;
+        supportActionBtn.setAttribute("data-action-args", JSON.stringify([company.id]));
+        if (company.supportSessionActive) {
+            supportActionBtn.textContent = t("sa_support_end") || "End support";
+            supportActionBtn.setAttribute("data-i18n", "sa_support_end");
+            supportActionBtn.setAttribute("data-action", "superadminEndSupport");
+        } else if (company.supportSessionEnabled) {
+            supportActionBtn.textContent = t("sa_support_start") || "Start support";
+            supportActionBtn.setAttribute("data-i18n", "sa_support_start");
+            supportActionBtn.setAttribute("data-action", "superadminStartSupport");
+        } else {
+            supportActionBtn.textContent = t("sa_detail_support_off") || "Support off";
+            supportActionBtn.setAttribute("data-i18n", "sa_detail_support_off");
+            supportActionBtn.disabled = true;
+            supportActionBtn.removeAttribute("data-action");
+            supportActionBtn.setAttribute("data-action-args", "[]");
+        }
+    }
     if (copyBtn) copyBtn.setAttribute("data-action-args", JSON.stringify([company.id]));
     renderCompanyDetailAdmins(company);
 }
@@ -767,6 +781,7 @@ async function superadminConfirmSupportStart() {
     superadminCancelSupportModal();
     showToast(t("sa_support_started"), "success");
     await renderSuperAdminDashboard();
+    await superadminRefreshCompanyDetail();
 }
 
 async function superadminEndSupport(companyId) {
@@ -784,6 +799,7 @@ async function superadminEndSupport(companyId) {
         }
         showToast(t("sa_support_ended"), "success");
         await renderSuperAdminDashboard();
+        await superadminRefreshCompanyDetail();
     });
 }
 
@@ -792,7 +808,6 @@ export {
     renderSuperAdminDashboardProduction,
     _renderSuperAdminDashboardDemo,
     superadminToggleStatus,
-    superadminOpenCompany,
     superadminOpenCompanyDetail,
     superadminCloseCompanyDetail,
     superadminSetCompanyAdminStatus,
