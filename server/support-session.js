@@ -10,6 +10,7 @@ const SUPPORT_TTL_MS = 60 * 60 * 1000;
 const SUPPORT_CATEGORIES = Object.freeze(["incident", "onboarding", "billing"]);
 const REASON_MIN = 20;
 const REASON_MAX = 500;
+const SUPPORT_SESSION_ACTIVE = "SUPPORT_SESSION_ACTIVE";
 
 const startSupportSessionBody = z.object({
   category: z.enum(SUPPORT_CATEGORIES),
@@ -30,6 +31,37 @@ function toDate(value) {
 
 function isFeatureEnabled(settingsMain) {
   return settingsMain?.features?.supportSession === true;
+}
+
+function isActiveSupportMarker(marker, now = new Date()) {
+  const expiresAt = toDate(marker?.expiresAt);
+  return marker?.active === true
+    && Boolean(marker?.sessionId)
+    && Boolean(expiresAt)
+    && expiresAt.getTime() > now.getTime();
+}
+
+async function claimSupportSession({
+  database,
+  companyRef,
+  sessionId,
+  sessionDoc,
+  supportDoc,
+  now = new Date()
+}) {
+  const supportRef = companyRef.collection("settings").doc("support");
+  const sessionRef = companyRef.collection("support_sessions").doc(sessionId);
+  await database.runTransaction(async transaction => {
+    const current = await transaction.get(supportRef);
+    const currentData = current.exists ? current.data() : {};
+    if (isActiveSupportMarker(currentData, now)) {
+      const error = new Error("Već postoji aktivna support sesija. Završite je pre nove.");
+      error.code = SUPPORT_SESSION_ACTIVE;
+      throw error;
+    }
+    transaction.set(sessionRef, sessionDoc);
+    transaction.set(supportRef, supportDoc, { merge: true });
+  });
 }
 
 function publicSessionView(session, sessionId) {
@@ -180,18 +212,22 @@ function createSupportSessionHandlers({
         endedByRole: null
       };
 
-      const batch = db().batch();
-      batch.set(companyRef.collection("support_sessions").doc(sessionId), sessionDoc);
-      batch.set(companyRef.collection("settings").doc("support"), {
-        active: true,
+      await claimSupportSession({
+        database: db(),
+        companyRef,
         sessionId,
-        expiresAt: admin().firestore.Timestamp.fromDate(expiresAt),
-        category: body.data.category,
-        reasonPreview: reason.slice(0, 80),
-        startedByUid: req.adminUser.uid,
-        updatedAt: admin().firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-      await batch.commit();
+        sessionDoc,
+        supportDoc: {
+          active: true,
+          sessionId,
+          expiresAt: admin().firestore.Timestamp.fromDate(expiresAt),
+          category: body.data.category,
+          reasonPreview: reason.slice(0, 80),
+          startedByUid: req.adminUser.uid,
+          updatedAt: admin().firestore.FieldValue.serverTimestamp()
+        },
+        now
+      });
 
       await logAudit(parsedCompany.id, req.adminUser.uid, "support_session_started", {
         sessionId,
@@ -206,6 +242,13 @@ function createSupportSessionHandlers({
         session: publicSessionView(sessionDoc, sessionId)
       });
     } catch (error) {
+      if (error?.code === SUPPORT_SESSION_ACTIVE) {
+        return res.status(409).json({
+          success: false,
+          code: SUPPORT_SESSION_ACTIVE,
+          error: error.message
+        });
+      }
       req.log?.error?.({ err: error }, "Support session start failed");
       return res.status(500).json({ success: false, error: "Support sesija nije pokrenuta." });
     }
@@ -313,11 +356,14 @@ function createSupportSessionHandlers({
 module.exports = {
   SUPPORT_TTL_MS,
   SUPPORT_CATEGORIES,
+  SUPPORT_SESSION_ACTIVE,
   REASON_MIN,
   REASON_MAX,
   startSupportSessionBody,
   newSupportSessionId,
   isFeatureEnabled,
+  isActiveSupportMarker,
+  claimSupportSession,
   publicSessionView,
   createSupportSessionHandlers
 };
