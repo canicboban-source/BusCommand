@@ -492,15 +492,6 @@ html[data-app-surface="staff"] .daily-plan-table .ops-edit-select {
     width: 100%;
 }
 
-html[data-app-surface="staff"] select option {
-    background: var(--bg-darker);
-    color: var(--text-main);
-}
-
-html[data-app-surface="staff"] select option:disabled {
-    color: var(--text-muted);
-}
-
 html[data-app-surface="staff"] .sidebar-nav {
     min-height: 0;
     overflow-y: auto;
@@ -2102,15 +2093,31 @@ html[data-app-surface="staff"] select {
     color-scheme: dark;
 }
 
+/*
+ * Windows Chromium can keep the native popup surface light while still
+ * applying author-defined option text colors. Pair a light popup fallback
+ * with a dark foreground so every option remains readable without hover.
+ * The closed select control keeps the dark BusCommand styling above.
+ */
 html[data-app-surface="staff"] select option,
 html[data-app-surface="staff"] select optgroup {
-    color: #f8fafc;
-    background: #0b1424;
+    color: #0f172a !important;
+    background-color: #ffffff !important;
 }
 
 html[data-app-surface="staff"] select option:disabled {
-    color: #94a3b8;
-    background: #111c30;
+    color: #64748b !important;
+    background-color: #f1f5f9 !important;
+}
+
+@media (forced-colors: active) {
+    html[data-app-surface="staff"] select option,
+    html[data-app-surface="staff"] select optgroup,
+    html[data-app-surface="staff"] select option:disabled {
+        color: CanvasText !important;
+        background-color: Canvas !important;
+        forced-color-adjust: auto;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
