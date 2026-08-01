@@ -6,9 +6,12 @@ const path = require("node:path");
 const {
   SUPPORT_TTL_MS,
   SUPPORT_CATEGORIES,
+  SUPPORT_SESSION_ACTIVE,
   REASON_MIN,
   startSupportSessionBody,
+  claimSupportSession,
   isFeatureEnabled,
+  isActiveSupportMarker,
   publicSessionView,
   newSupportSessionId
 } = require("../../server/support-session");
@@ -55,6 +58,65 @@ test("public session view never invents secrets fields", () => {
   assert.equal(view.password, undefined);
   assert.equal(view.loginCodeHash, undefined);
   assert.match(newSupportSessionId(), /^sup_/);
+});
+
+
+test("support-session claim is a tenant-scoped transaction lock", async () => {
+  const documents = new Map();
+  const companyRef = {
+    collection(name) {
+      return {
+        doc(id) {
+          return { path: `companies/alpha/${name}/${id}` };
+        }
+      };
+    }
+  };
+  const database = {
+    async runTransaction(callback) {
+      const writes = [];
+      const transaction = {
+        async get(ref) {
+          return {
+            exists: documents.has(ref.path),
+            data: () => documents.get(ref.path)
+          };
+        },
+        set(ref, value, options) {
+          writes.push([ref.path, value, options]);
+        }
+      };
+      await callback(transaction);
+      for (const [path, value, options] of writes) {
+        documents.set(path, options?.merge
+          ? { ...(documents.get(path) || {}), ...value }
+          : value);
+      }
+    }
+  };
+  const now = new Date("2026-08-01T10:00:00Z");
+  const expiresAt = new Date("2026-08-01T11:00:00Z");
+  const input = {
+    database,
+    companyRef,
+    sessionId: "sup_first",
+    sessionDoc: { status: "active", expiresAt },
+    supportDoc: { active: true, sessionId: "sup_first", expiresAt },
+    now
+  };
+
+  await claimSupportSession(input);
+  assert.equal(isActiveSupportMarker(documents.get("companies/alpha/settings/support"), now), true);
+  await assert.rejects(
+    () => claimSupportSession({
+      ...input,
+      sessionId: "sup_second",
+      sessionDoc: { status: "active", expiresAt },
+      supportDoc: { active: true, sessionId: "sup_second", expiresAt }
+    }),
+    error => error.code === SUPPORT_SESSION_ACTIVE
+  );
+  assert.equal(documents.has("companies/alpha/support_sessions/sup_second"), false);
 });
 
 test("support session audit actions map to access category", () => {
