@@ -1,6 +1,6 @@
 // BusCommand ESM v9.5 — Operativni centar (editable)
 import { formatDateTime, getVisibleDrivers, showToast, escapeHtml, todayDateStr } from "../core/utils.js";
-import { getDriverDutySummary, getShiftForDriverDate, setShiftForDriverDate } from "../core/shift-plan.js";
+import { getDailyPlanForDate, getDriverDutySummary, getShiftForDriverDate, setShiftForDriverDate } from "../core/shift-plan.js";
 import { actionAttr, changeAttr } from "../core/action-delegate.js";
 import { t } from "../ui/i18n.js";
 import { renderDashboardGroupsGrid } from "./group-hub.js";
@@ -16,6 +16,7 @@ import {
 import { persistShift } from "./shifts.js";
 import { ApiClient } from "../core/api-client.js";
 import { saveState } from "../core/state.js";
+import { detectDailyPlanCoverageGaps } from "./daily-plan-coverage.js";
 
 const SHIFT_TYPE_OPTIONS = Object.freeze([
     { value: "morning", labelKey: "shift_type_morning", fallback: "Prepodne" },
@@ -137,12 +138,13 @@ function toastConfirmFetchFailureOnce() {
     showToast(t("ops_confirmations_load_failed") || "Potvrde smena nisu mogle biti učitane.", "error");
 }
 
-function updateOpsPlanHealth({ openReportsCount, pendingConfirms, failedDeliveries }) {
+function updateOpsPlanHealth({ openReportsCount, pendingConfirms, failedDeliveries, coverageGapCount = 0 }) {
     const health = document.getElementById("ops-plan-health");
     if (!health) return;
     const needsAttention = openReportsCount > 0
         || pendingConfirms.length > 0
         || failedDeliveries > 0
+        || coverageGapCount > 0
         || _confirmFetchFailed;
     health.classList.toggle("is-attention", needsAttention);
     health.classList.toggle("is-loading", _confirmFetchInFlight);
@@ -163,6 +165,7 @@ function updateOpsPlanHealth({ openReportsCount, pendingConfirms, failedDeliveri
         if (openReportsCount > 0) parts.push(`${openReportsCount} ${t("ops_plan_attention_reports") || "prijava"}`);
         if (pendingConfirms.length > 0) parts.push(`${pendingConfirms.length} ${t("ops_plan_attention_confirms") || "potvrda"}`);
         if (failedDeliveries > 0) parts.push(`${failedDeliveries} ${t("ops_plan_attention_failed") || "neuspelo slanje"}`);
+        if (coverageGapCount > 0) parts.push(`${coverageGapCount} ${t("ops_plan_attention_gaps") || "rupa u planu"}`);
         hintEl.textContent = parts.join(" · ") || (t("ops_plan_attention_hint") || "Otvorite kolonu „Čeka akciju“.");
         return;
     }
@@ -305,6 +308,17 @@ function renderDispatcherDashboard() {
     const unreadCount = countUnreadMessages();
     const pendingConfirms = confirmationAttentionRows();
     const failedDeliveries = pendingConfirms.filter((row) => row.kind === "delivery_failed").length;
+    const todayStr = todayDateStr();
+    const dailyPlan = getDailyPlanForDate(todayStr);
+    const coverageGaps = detectDailyPlanCoverageGaps({
+        date: todayStr,
+        isWeekday: dailyPlan.isWeekday,
+        slots: dailyPlan.slots,
+        catalogEntries: window.state.shiftCatalog?.entries || {},
+        servicePlanActive: window.state.shiftCatalog?.source === "company-service-plan",
+        vacations: window.state.vacations || [],
+        getShift: getShiftForDriverDate
+    });
 
     const elActiveDrivers = document.getElementById("stat-active-drivers-count");
     const elActiveBuses = document.getElementById("stat-active-buses-count");
@@ -317,7 +331,7 @@ function renderDispatcherDashboard() {
     if (elUnread) elUnread.innerText = unreadCount;
     updateMessagesNavBadge(unreadCount);
 
-    updateOpsPlanHealth({ openReportsCount, pendingConfirms, failedDeliveries });
+    updateOpsPlanHealth({ openReportsCount, pendingConfirms, failedDeliveries, coverageGapCount: coverageGaps.length });
 
     const alertsContainer = document.getElementById("dispatcher-live-alerts");
     if (alertsContainer) {
@@ -387,7 +401,6 @@ function renderDispatcherDashboard() {
 
     renderMessagesPreview();
 
-    const todayStr = todayDateStr();
     const dailyRows = document.getElementById("ops-daily-plan-rows");
     if (dailyRows) {
         const planDrivers = allDrivers.slice(0, 10);
