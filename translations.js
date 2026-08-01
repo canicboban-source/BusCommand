@@ -5618,3 +5618,38 @@ for (const lang of Object.keys(TRANSLATIONS)) {
 }
 
 window.TRANSLATIONS = TRANSLATIONS;
+
+ 
+// Dispatcher plan navigation, fleet editing and monthly shift validation.
+Object.assign(TRANSLATIONS.sr, {
+    bus_edit_number: "Broj autobusa",
+    bus_edit_invalid: "Unesite ispravan broj autobusa.",
+    bus_edit_duplicate: "Autobus sa ovim brojem već postoji.",
+    bus_edit_failed: "Autobus nije mogao biti izmenjen.",
+    bus_edit_saved: "Autobus {number} je sačuvan.",
+    plan_catalog_load_timeout: "Plan je otvoren, ali učitavanje službenog kataloga traje predugo. Pokušajte ponovo.",
+    plan_catalog_load_failed: "Plan je otvoren, ali službeni katalog trenutno nije moguće osvežiti.",
+    med_shift_times_missing: "Ova radna smena nema ispravno vreme početka i završetka. Administrator firme mora prvo uvesti ili ispraviti službeni katalog."
+});
+
+Object.assign(TRANSLATIONS.en, {
+    bus_edit_number: "Bus number",
+    bus_edit_invalid: "Enter a valid bus number.",
+    bus_edit_duplicate: "A bus with this number already exists.",
+    bus_edit_failed: "The bus could not be updated.",
+    bus_edit_saved: "Bus {number} was saved.",
+    plan_catalog_load_timeout: "The plan is open, but loading the official catalog is taking too long. Try again.",
+    plan_catalog_load_failed: "The plan is open, but the official catalog cannot be refreshed right now.",
+    med_shift_times_missing: "This duty has no valid start and end time. The Company Admin must import or correct the official catalog first."
+});
+
+Object.assign(TRANSLATIONS.de, {
+    bus_edit_number: "Busnummer",
+    bus_edit_invalid: "Geben Sie eine gültige Busnummer ein.",
+    bus_edit_duplicate: "Ein Bus mit dieser Nummer ist bereits vorhanden.",
+    bus_edit_failed: "Der Bus konnte nicht geändert werden.",
+    bus_edit_saved: "Bus {number} wurde gespeichert.",
+    plan_catalog_load_timeout: "Der Plan ist geöffnet, aber das Laden des offiziellen Katalogs dauert zu lange. Versuchen Sie es erneut.",
+    plan_catalog_load_failed: "Der Plan ist geöffnet, aber der offizielle Katalog kann derzeit nicht aktualisiert werden.",
+    med_shift_times_missing: "Für diesen Dienst fehlen gültige Anfangs- und Endzeiten. Der Firmenadministrator muss zuerst den offiziellen Katalog importieren oder korrigieren."
+});
