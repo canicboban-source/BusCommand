@@ -1,7 +1,5 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
 
 const {
   PlanImportValidationError,
@@ -62,6 +60,20 @@ test("rejects rows outside the selected month and stale revisions", () => {
   assert.throws(() => buildPlanImportPreview(input), (error) => {
     assert.ok(error.errors.some((item) => item.code === "DATE_OUTSIDE_MONTH"));
     assert.ok(error.errors.some((item) => item.code === "REVISION_CONFLICT"));
+    return true;
+  });
+});
+
+test("validation reports the original source row before canonical sorting", () => {
+  const input = validInput();
+  input.payload.rows.unshift({
+    ...input.payload.rows[0],
+    date: "2026-09-20",
+    expectedRevision: 0
+  });
+  assert.throws(() => buildPlanImportPreview(input), (error) => {
+    const monthError = error.errors.find((item) => item.code === "DATE_OUTSIDE_MONTH");
+    assert.equal(monthError.row, 1);
     return true;
   });
 });
