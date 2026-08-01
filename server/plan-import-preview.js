@@ -31,11 +31,9 @@ function canonicalRow(row) {
 function buildPlanImportPreview({ companyId, staffUid, payload, driversById, shiftsById }) {
   const errors = [];
   const seen = new Set();
-  const rows = payload.rows.map(canonicalRow).sort((left, right) => {
-    return left.date.localeCompare(right.date) || left.driverId.localeCompare(right.driverId);
-  });
+  const inputRows = payload.rows.map(canonicalRow);
 
-  rows.forEach((row, index) => {
+  inputRows.forEach((row, index) => {
     const rowNumber = index + 1;
     const key = `${row.driverId}|${row.date}`;
     if (seen.has(key)) {
@@ -75,6 +73,10 @@ function buildPlanImportPreview({ companyId, staffUid, payload, driversById, shi
   });
 
   if (errors.length) throw new PlanImportValidationError(errors);
+
+  const rows = [...inputRows].sort((left, right) => {
+    return left.date.localeCompare(right.date) || left.driverId.localeCompare(right.driverId);
+  });
 
   const fingerprintPayload = {
     companyId,
