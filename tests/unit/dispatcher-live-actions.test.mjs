@@ -28,8 +28,11 @@ test("daily plan Edit opens the visible shift editor before focusing its form", 
   assert.match(shifts, /shift-form-grid[\s\S]*scrollIntoView/);
 });
 
-test("staff dashboard cards and native options keep explicit dark-theme contrast", async () => {
+test("staff controls keep contrast when Windows renders a light native select popup", async () => {
   const css = await read("../../css/staff-desktop.css");
   assert.match(css, /button\.dashboard-group-card\s*\{[\s\S]*color:\s*var\(--text-main\)/);
-  assert.match(css, /select option\s*\{[\s\S]*background:\s*var\(--bg-darker\)[\s\S]*color:\s*var\(--text-main\)/);
+  assert.match(css, /select\s*\{[\s\S]*color-scheme:\s*dark/);
+  assert.match(css, /select option,[\s\S]*select optgroup\s*\{[\s\S]*color:\s*#0f172a\s*!important;[\s\S]*background-color:\s*#ffffff\s*!important/);
+  assert.match(css, /select option:disabled\s*\{[\s\S]*color:\s*#64748b\s*!important;[\s\S]*background-color:\s*#f1f5f9\s*!important/);
+  assert.match(css, /@media \(forced-colors: active\)[\s\S]*color:\s*CanvasText\s*!important;[\s\S]*background-color:\s*Canvas\s*!important/);
 });

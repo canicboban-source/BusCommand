@@ -5,7 +5,6 @@ import { getGroupById } from "../data/groups.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr, changeAttr } from "../core/action-delegate.js";
 import { persistShift } from "./shifts.js";
-import { resolveReport } from "./reports.js";
 
 function getActiveHubGroupId() {
     return window.state.activeGroupHubId || null;
@@ -226,43 +225,49 @@ async function dailyPlanAssignDriver(dateStr, shiftType, routeCode, driverName) 
     if (driverName && !nextDriver) return;
     if (previousDriver?.id === nextDriver?.id) return;
 
-    if (!nextDriver) {
-        if (!previousDriver) return;
-        const cleared = await persistShift(previousDriver, today, "clear");
-        if (!cleared) return;
-        showToast(t("shift_removed"), "info");
-    } else {
-        const assigned = await persistShift(
-            nextDriver,
-            today,
-            type,
-            routeCode || "",
-            currentSlot?.start || null,
-            currentSlot?.end || null,
-            nextDriver.bus || ""
+    if (previousDriver) {
+        const previousDriverId = previousDriver.id || previousDriver.uid;
+        const incident = (window.state.reports || []).find(report =>
+            report.status === "active"
+            && report.type === "coverage:disruption"
+            && report.driverId === previousDriverId
+            && report.date === today
         );
-        if (!assigned) return;
-
-        if (previousDriver) {
-            const cleared = await persistShift(previousDriver, today, "clear");
-            if (!cleared) {
-                await persistShift(nextDriver, today, "clear");
-                showToast(t("shift_save_failed"), "error");
-                return;
-            }
-            const incident = (window.state.reports || []).find(report =>
-                report.status === "active"
-                && report.type === "coverage:disruption"
-                && report.driverId === (previousDriver.id || previousDriver.uid)
-                && report.date === today
-            );
-            if (incident) await resolveReport(incident.id);
+        const preferredReplacementDriverId = nextDriver ? (nextDriver.id || nextDriver.uid || "") : "";
+        if (incident && typeof window.openCoverageResolver === "function") {
+            window.openCoverageResolver(incident.id, preferredReplacementDriverId);
+        } else if (typeof window.openOperationalIncident === "function") {
+            window.openOperationalIncident(previousDriver.name, preferredReplacementDriverId);
         }
-        showToast(t("ops_assigned_toast", { driver: nextDriver.name, type }), "success");
+        renderDailyPlanFullPage();
+        renderDailyPlanPanel(today);
+        return;
     }
+
+    if (!nextDriver) return;
+    const assigned = await persistShift(
+        nextDriver,
+        today,
+        type,
+        routeCode || "",
+        currentSlot?.start || null,
+        currentSlot?.end || null,
+        nextDriver.bus || ""
+    );
+    if (!assigned) return;
+    showToast(t("ops_assigned_toast", { driver: nextDriver.name, type }), "success");
     renderDailyPlanFullPage();
     renderDailyPlanPanel(today);
     if (typeof window.renderDispatcherDashboard === "function") window.renderDispatcherDashboard();
+}
+
+if (typeof window.addEventListener === "function" && !window.__buscommandPlanUpdatedListener) {
+    window.__buscommandPlanUpdatedListener = true;
+    window.addEventListener("buscommand:plan-updated", (event) => {
+        const date = event.detail?.date || todayDateStr();
+        renderDailyPlanFullPage();
+        renderDailyPlanPanel(date);
+    });
 }
 
 export {

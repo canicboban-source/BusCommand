@@ -68,6 +68,102 @@ function severityBadge(report) {
     return `<span class="badge ${className}">${escapeHtml(t(labelKey))}</span>`;
 }
 
+
+function ensureReportResolutionModal() {
+    let modal = document.getElementById("report-resolution-modal");
+    if (modal) return modal;
+    modal = document.createElement("div");
+    modal.id = "report-resolution-modal";
+    modal.className = "ops-modal-layer hidden";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-labelledby", "report-resolution-title");
+    modal.setAttribute("aria-hidden", "true");
+    modal.innerHTML = `
+        <form class="ops-incident-dialog ops-resolution-dialog">
+            <div class="ops-incident-heading">
+                <span class="ops-incident-icon is-amber"><i data-lucide="clipboard-check"></i></span>
+                <div>
+                    <h2 id="report-resolution-title">${escapeHtml(t("report_resolution_title"))}</h2>
+                    <p id="report-resolution-context"></p>
+                </div>
+            </div>
+            <p class="ops-resolution-intro">${escapeHtml(t("report_resolution_effect"))}</p>
+            <label for="report-resolution-type">${escapeHtml(t("report_resolution_type"))}</label>
+            <select id="report-resolution-type" required>
+                <option value="restored">${escapeHtml(t("report_resolution_restored"))}</option>
+                <option value="replacement">${escapeHtml(t("report_resolution_replacement"))}</option>
+                <option value="cancelled">${escapeHtml(t("report_resolution_cancelled"))}</option>
+            </select>
+            <label for="report-resolution-summary">${escapeHtml(t("report_resolution_summary"))}</label>
+            <textarea id="report-resolution-summary" minlength="3" maxlength="1000" rows="4" required
+                placeholder="${escapeHtml(t("report_resolution_summary_placeholder"))}"></textarea>
+            <p id="report-resolution-status" class="ops-resolution-status" role="status" aria-live="polite"></p>
+            <div class="ops-incident-actions">
+                <button type="button" class="btn-secondary" ${actionAttr("closeReportResolution")}>${escapeHtml(t("btn_cancel"))}</button>
+                <button type="submit" class="urgent-action ops-resolution-submit"><i data-lucide="clipboard-check"></i> ${escapeHtml(t("report_resolution_confirm"))}</button>
+            </div>
+        </form>`;
+    document.body.appendChild(modal);
+    modal.addEventListener("click", event => {
+        if (event.target === modal) closeReportResolution();
+    });
+    modal.querySelector("form").addEventListener("submit", submitReportResolution);
+    if (typeof lucide !== "undefined") lucide.createIcons();
+    return modal;
+}
+
+function openReportResolution(id) {
+    const report = visibleReports().find(item => item.id === id && isActiveReport(item));
+    if (!report) return false;
+    if (reportKind(report).kind === "coverage") {
+        return typeof window.openCoverageResolver === "function"
+            ? window.openCoverageResolver(id)
+            : false;
+    }
+    const modal = ensureReportResolutionModal();
+    modal.dataset.reportId = id;
+    modal.querySelector("#report-resolution-context").textContent =
+        `${report.driver || "—"} · ${reportTypeLabel(report)}`;
+    modal.querySelector("form").reset();
+    modal.querySelector("#report-resolution-status").textContent = "";
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+    modal.setAttribute("aria-hidden", "false");
+    setTimeout(() => modal.querySelector("#report-resolution-type")?.focus(), 0);
+    return true;
+}
+
+function closeReportResolution() {
+    const modal = document.getElementById("report-resolution-modal");
+    if (!modal || modal.dataset.pending === "true") return;
+    modal.classList.add("hidden");
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden", "true");
+    delete modal.dataset.reportId;
+}
+
+async function submitReportResolution(event) {
+    event.preventDefault();
+    const modal = document.getElementById("report-resolution-modal");
+    const id = String(modal?.dataset.reportId || "");
+    const type = String(modal?.querySelector("#report-resolution-type")?.value || "");
+    const summary = String(modal?.querySelector("#report-resolution-summary")?.value || "").trim();
+    const status = modal?.querySelector("#report-resolution-status");
+    if (!id || summary.length < 3) {
+        if (status) status.textContent = t("report_resolution_required");
+        return;
+    }
+    modal.dataset.pending = "true";
+    modal.querySelector("button[type='submit']").disabled = true;
+    if (status) status.textContent = t("report_resolving");
+    const resolved = await resolveReport(id, { type, summary });
+    delete modal.dataset.pending;
+    modal.querySelector("button[type='submit']").disabled = false;
+    if (resolved) closeReportResolution();
+    else if (status) status.textContent = t("report_resolve_failed");
+}
+
 function renderDispatcherReports() {
     const tbody = document.getElementById("dispatcher-all-reports-table");
     if (!tbody) return;
@@ -89,8 +185,8 @@ function renderDispatcherReports() {
         const resolved = isResolvedReport(report);
         const pending = pendingReportResolutions.has(report.id);
         const action = active
-            ? `<button class="btn-table-action" ${pending ? "disabled aria-disabled=\"true\"" : actionAttr("resolveReport", [report.id])}>
-                <i data-lucide="${pending ? "loader-circle" : "check-check"}"></i> ${escapeHtml(t(pending ? "report_resolving" : "btn_resolve"))}
+            ? `<button class="btn-table-action urgent-action" ${pending ? "disabled aria-disabled=\"true\"" : actionAttr(reportKind(report).kind === "coverage" ? "openCoverageResolver" : "openReportResolution", [report.id])}>
+                <i data-lucide="${pending ? "loader-circle" : "wrench"}"></i> ${escapeHtml(t(pending ? "report_resolving" : "ops_btn_resolve"))}
                </button>`
             : `<span class="text-success dispatcher-report-resolved"><i data-lucide="check"></i> ${escapeHtml(t(resolved ? "status_resolved" : "report_status_unavailable"))}</span>`;
         const row = tbody.insertRow();
@@ -106,15 +202,16 @@ function renderDispatcherReports() {
     if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
-async function resolveReport(id) {
+async function resolveReport(id, resolution = null) {
+    if (!resolution) return openReportResolution(id);
     if (!id || pendingReportResolutions.has(id) || window.currentUser?.role !== "dispatcher") return false;
     const report = visibleReports().find(item => item.id === id);
     if (!report || !isActiveReport(report)) return false;
     pendingReportResolutions.add(id);
     renderDispatcherReports();
     try {
-        let result = { success: true, report: { status: "resolved" } };
-        if (!IS_DEMO_MODE) result = await ApiClient.resolveStaffReport(id);
+        let result = { success: true, report: { status: "resolved", resolution } };
+        if (!IS_DEMO_MODE) result = await ApiClient.resolveStaffReport(id, resolution);
         if (!result.success) {
             showToast(result.error || t("report_resolve_failed"), "error");
             return false;
@@ -127,6 +224,9 @@ async function resolveReport(id) {
         if (IS_DEMO_MODE) saveState();
         showToast(t("report_resolved_toast"), "success", 3000);
         return true;
+    } catch (error) {
+        showToast(error?.message || t("report_resolve_failed"), "error");
+        return false;
     } finally {
         pendingReportResolutions.delete(id);
         renderDispatcherReports();
@@ -140,6 +240,8 @@ export {
     reportReasonLabel,
     reportTypeLabel,
     reportWhen,
+    openReportResolution,
+    closeReportResolution,
     resolveReport,
     visibleReports
 };

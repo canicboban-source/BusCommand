@@ -5467,6 +5467,78 @@ Object.assign(TRANSLATIONS.de, {
     ops_resolver_success: "Problem gelöst: {driver} und Bus {bus} wurden zugewiesen."
 });
 
+Object.assign(TRANSLATIONS.sr, {
+    ops_btn_resolve: "Reši problem",
+    hub_edit_drivers: "Prikaži vozače",
+    report_resolution_title: "Zatvori prijavu",
+    report_resolution_effect: "Izaberite provereno rešenje i unesite kratak zapis. Zapis se čuva u istoriji izmena.",
+    report_resolution_type: "Vrsta rešenja",
+    report_resolution_restored: "Rad je nastavljen",
+    report_resolution_replacement: "Obezbeđena je zamena",
+    report_resolution_cancelled: "Vožnja je otkazana",
+    report_resolution_summary: "Kratko objašnjenje",
+    report_resolution_summary_placeholder: "Šta je provereno i kako je problem rešen?",
+    report_resolution_required: "Unesite najmanje tri znaka objašnjenja.",
+    report_resolution_confirm: "Potvrdi rešenje",
+    ops_coverage_resolver_title: "Reši nepokrivenu smenu",
+    ops_coverage_resolver_effect: "Izaberite stvarno dostupnog vozača i autobus. Plan se menja tek nakon bezbedne potvrde.",
+    ops_coverage_original_driver: "Vozač van plana: {driver}",
+    ops_coverage_replacement_driver: "Dostupan vozač",
+    ops_coverage_replacement_bus: "Dostupan autobus",
+    ops_coverage_no_drivers: "Nema dostupnog vozača u ovoj grupi.",
+    ops_coverage_no_buses: "Nema dostupnog autobusa u ovoj grupi.",
+    ops_coverage_selection_required: "Izaberite dostupnog vozača i autobus.",
+    ops_coverage_confirm: "Primeni zamenu"
+});
+
+Object.assign(TRANSLATIONS.en, {
+    ops_btn_resolve: "Resolve issue",
+    hub_edit_drivers: "View drivers",
+    report_resolution_title: "Close report",
+    report_resolution_effect: "Select the verified outcome and enter a short record. The record is retained in the change history.",
+    report_resolution_type: "Resolution type",
+    report_resolution_restored: "Service restored",
+    report_resolution_replacement: "Replacement provided",
+    report_resolution_cancelled: "Service cancelled",
+    report_resolution_summary: "Short explanation",
+    report_resolution_summary_placeholder: "What was verified and how was the issue resolved?",
+    report_resolution_required: "Enter at least three characters of explanation.",
+    report_resolution_confirm: "Confirm resolution",
+    ops_coverage_resolver_title: "Resolve uncovered shift",
+    ops_coverage_resolver_effect: "Choose an actually available driver and bus. The plan changes only after a safe confirmation.",
+    ops_coverage_original_driver: "Driver removed from plan: {driver}",
+    ops_coverage_replacement_driver: "Available driver",
+    ops_coverage_replacement_bus: "Available bus",
+    ops_coverage_no_drivers: "No available driver in this group.",
+    ops_coverage_no_buses: "No available bus in this group.",
+    ops_coverage_selection_required: "Select an available driver and bus.",
+    ops_coverage_confirm: "Apply replacement"
+});
+
+Object.assign(TRANSLATIONS.de, {
+    ops_btn_resolve: "Problem lösen",
+    hub_edit_drivers: "Fahrer anzeigen",
+    report_resolution_title: "Meldung abschließen",
+    report_resolution_effect: "Wählen Sie das geprüfte Ergebnis und erfassen Sie einen kurzen Vermerk. Der Vermerk bleibt im Änderungsverlauf erhalten.",
+    report_resolution_type: "Art der Lösung",
+    report_resolution_restored: "Betrieb wiederhergestellt",
+    report_resolution_replacement: "Ersatz bereitgestellt",
+    report_resolution_cancelled: "Fahrt abgesagt",
+    report_resolution_summary: "Kurze Erläuterung",
+    report_resolution_summary_placeholder: "Was wurde geprüft und wie wurde das Problem gelöst?",
+    report_resolution_required: "Geben Sie mindestens drei Zeichen als Erläuterung ein.",
+    report_resolution_confirm: "Lösung bestätigen",
+    ops_coverage_resolver_title: "Unbesetzte Schicht lösen",
+    ops_coverage_resolver_effect: "Wählen Sie einen tatsächlich verfügbaren Fahrer und Bus. Der Plan wird erst nach sicherer Bestätigung geändert.",
+    ops_coverage_original_driver: "Fahrer aus dem Plan: {driver}",
+    ops_coverage_replacement_driver: "Verfügbarer Fahrer",
+    ops_coverage_replacement_bus: "Verfügbarer Bus",
+    ops_coverage_no_drivers: "In dieser Gruppe ist kein Fahrer verfügbar.",
+    ops_coverage_no_buses: "In dieser Gruppe ist kein Bus verfügbar.",
+    ops_coverage_selection_required: "Wählen Sie einen verfügbaren Fahrer und Bus.",
+    ops_coverage_confirm: "Ersatz anwenden"
+});
+
 // Propagate new EN keys to all languages (after MISSING_* merges)
 for (const lang of Object.keys(TRANSLATIONS)) {
     if (lang === "en") continue;

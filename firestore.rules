@@ -62,7 +62,8 @@ service cloud.firestore {
       allow create, delete: if false;
       // Client update: only the driver may touch lastSeen/lastLocation
       allow update: if isDriver(companyId) && request.auth.uid == driverId
-                    && onlyUpdatingAllowedDriverFields();
+                    && onlyUpdatingAllowedDriverFields()
+                    && isDriverLocationWriteAllowed(companyId);
     }
 
     // ─── SMJENE ─────────────────────────────────────────────
@@ -266,6 +267,12 @@ service cloud.firestore {
 
     function isLicenseActive(companyId) {
       return get(/databases/$(database)/documents/companies/$(companyId)/settings/main).data.status != "suspended";
+    }
+
+    // Lokacija i lastSeen važe samo dok server potvrđuje aktivnu/grace radnu sesiju.
+    function isDriverLocationWriteAllowed(companyId) {
+      return exists(/databases/$(database)/documents/companies/$(companyId)/driver_sessions/$(request.auth.uid))
+        && get(/databases/$(database)/documents/companies/$(companyId)/driver_sessions/$(request.auth.uid)).data.sessionEndsAt >= request.time;
     }
 
     // Vozač može mijenjati samo lastSeen i slično — ne PIN, ne bus

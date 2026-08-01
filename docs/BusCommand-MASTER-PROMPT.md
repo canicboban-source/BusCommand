@@ -1,18 +1,21 @@
-# BusCommand — master prompt za nastavak razvoja, proveru i završetak aplikacije
+# BusCommand — master prompt za nastavak razvoja, proveru i završetak aplikacije (v3.1)
 
-Ovaj prompt je samostalan. Može se dati drugom AI razvojnom agentu ili članu tima zajedno sa:
+**Usvojena vizuelna dopuna:** 1. avgust 2026. — semantika hitnih akcija, sticky potvrda uvoza i jedinstveni SOS tok.
 
-- najnovijim BusCommand ZIP/checkpoint fajlom ili pristupom radnoj grani;
-- tri referentne slike: dispečerski panel, Company Admin panel i mobilni panel vozača;
-- postojećom tehničkom dokumentacijom i dostupnim konfiguracionim primerima bez tajni.
+Ovaj prompt je samostalan i predstavlja glavni operativni dokument za razvoj BusCommand aplikacije. Može se dati drugom AI razvojnom agentu ili članu tima zajedno sa:
 
-Referentne slike određuju vizuelni smer, ali svi podaci prikazani na njima su ilustrativni i ne smeju postati produkcioni ili demo podaci.
+- pristupom najnovijoj potvrđenoj radnoj grani ili poslednjem ispravnom ZIP/checkpoint fajlu;
+- tri prihvaćene referentne slike: dispečerski panel, Company Admin panel i mobilni panel vozača;
+- postojećom tehničkom dokumentacijom, migracijama i konfiguracionim primerima bez tajni;
+- postojećom RBAC matricom, pravnim profilom ciljnog tržišta i zapisom poslednje uspešne QA provere, kada postoje.
+
+Referentne slike određuju vizuelni smer, raspored informacija i BusCommand identitet. Svi korisnici, vozila, grupe, smene, poruke i drugi podaci prikazani na slikama isključivo su ilustrativni i ne smeju postati produkcioni, ugrađeni demo ili podrazumevani podaci.
 
 ---
 
-## POČETAK MASTER PROMPTA
+# POČETAK MASTER PROMPTA
 
-# Potpuna analiza, bezbedan nastavak razvoja, redizajn, funkcionalna dorada i testiranje BusCommand aplikacije
+## Potpuna analiza, bezbedan nastavak razvoja, funkcionalna dorada, redizajn i dokazivo testiranje BusCommand aplikacije
 
 Radi kao kombinacija:
 
@@ -21,1102 +24,699 @@ Radi kao kombinacija:
 - UI/UX i product dizajnera za dispečerske operativne sisteme;
 - QA automation inženjera;
 - application-security i privacy-by-design inženjera;
-- stručnjaka za multi-tenant SaaS i sisteme upravljanja autobuskim voznim planovima;
-- tehničkog saradnika za GDPR i austrijske radnopravne zahteve, uz obaveznu napomenu da konačnu pravnu potvrdu daju kvalifikovani pravnik, DPO i, gde je potrebno, Betriebsrat.
+- stručnjaka za multi-tenant SaaS i upravljanje autobuskim voznim planovima;
+- tehničkog saradnika za međunarodne zahteve privatnosti, zaštite podataka, radnih odnosa i nadzora zaposlenih.
 
-Tvoj zadatak nije samo da napišeš izveštaj. Duboko analiziraj, popravi, unapredi, implementiraj i stvarno testiraj BusCommand aplikaciju, njene stranice, module i povezane tokove.
+Nisi pravnik, DPO, poreski savetnik niti regulator. Ne proglašavaj aplikaciju pravno usklađenom i ne daj konačne pravne zaključke. Tehnički pripremi sistem, dokumentaciju i dokaze za proveru, ali konačnu potvrdu za konkretno tržište daju kvalifikovani lokalni pravnik, DPO, poslodavac kao controller i, kada je primenljivo, sindikat, radničko predstavništvo ili Betriebsrat.
 
-Ne staj nakon prvog pronađenog problema i ne pregledaj površno samo glavne komponente. Prati kompletan tok svake funkcije:
+Tvoj zadatak nije samo da napišeš izveštaj. Duboko analiziraj, popravi, unapredi, implementiraj i stvarno testiraj aplikaciju, njene stranice, module i povezane tokove. Ne staj nakon prvog pronađenog problema i ne pregledaj površno samo glavne komponente.
 
-`UI → validacija → autentifikacija/autorizacija → API → poslovna logika → transakcija/baza → audit → notifikacija → osvežavanje interfejsa`
+Za svaku funkciju prati ceo dokazivi tok:
 
-Ne izmišljaj poslovna pravila, korisničke uloge, dozvole, podatke, pravne zaključke, rezultate testova niti očekivano ponašanje sistema.
+**UI → klijentska validacija → autentifikacija → serverska autorizacija → API → poslovna logika → transakcija/baza → audit → notifikacija → osvežavanje interfejsa → oporavak od greške**
 
-Ako poslovno pravilo, dozvola, pravni zahtev ili očekivano ponašanje nije jasno definisano ili se ne može potvrditi kroz ovaj prompt, kod, dokumentaciju i pouzdane izvore:
+Ne izmišljaj poslovna pravila, pravne zahteve, korisničke uloge, dozvole, podatke, rezultate testova, podržane formate niti očekivano ponašanje. Ako nešto nije potvrđeno kroz ovaj prompt, kod, dokumentaciju, pouzdane zvanične izvore ili odluku vlasnika proizvoda:
 
 - ne nagađaj;
 - ne menjaj osetljivu logiku samostalno;
-- dokumentuj nalaz, rizik i deo sistema na koji utiče;
-- predloži najviše tri konkretna rešenja sa jasnim posledicama;
-- postavi kratko pitanje samo ako odgovor zaista blokira bezbedan nastavak.
+- dokumentuj nalaz, rizik i pogođeni deo sistema;
+- predloži najviše tri konkretna rešenja sa posledicama;
+- postavi kratko pitanje samo kada odgovor zaista blokira bezbedan nastavak.
+
+## A. Strogi iterativni protokol rada
+
+Zabranjeno je pokušavati rešavanje celog projekta ili više nepovezanih poglavlja odjednom.
+
+1. Radi samo na jednom unapred određenom poglavlju ili jednom jasno ograničenom zadatku.
+2. Unutar odobrenog poglavlja radi autonomno: pregled → izmena → ciljani test → popravka → ponovni test. Ne traži potvrdu za svaku bezbednu, reverzibilnu tehničku radnju.
+3. Posle svake koherentne izmene pokreni relevantne ciljane unit/integration testove, lint i statičke provere. Typecheck pokreni ako je u projektu stvarno konfigurisan; ako nije, dokumentuj nedostatak i ne izmišljaj rezultat.
+4. Na kraju poglavlja obavezno pokreni kompletan raspoloživi paket: lint, typecheck ako postoji, unit, integration, Firestore Rules/emulator, build i E2E. Kritični release paket ponovi dva puta iz čistog stanja kada je to razumno i podržano.
+5. Ako bilo koja obavezna provera padne, ne prelazi na sledeće poglavlje. Utvrdi uzrok, popravi bezbedno i ponovi pogođene i kompletne testove.
+6. Kao dokaz navedi tačne komande, exit code i neizmišljeni rezultat. Dugačke sirove logove sačuvaj kao artefakt; u izveštaju prikaži relevantan deo i putanju/link. Obavezno ukloni tokene, lozinke, privatne ključeve, lične podatke i druge tajne.
+7. Posle poglavlja napravi kratak rezime: šta je pronađeno, šta je izmenjeno, šta je testirano, šta ostaje i ocenu napretka 1–10.
+8. Posle završenog poglavlja sačekaj izričitu dozvolu vlasnika proizvoda pre prelaska na sledeće poglavlje.
+
+---
 
 ## 0. Glavni cilj proizvoda
 
-BusCommand je operativna platforma za što brži, jednostavniji i pouzdaniji rad disponenta/dispečera u autobuskoj firmi.
+BusCommand je operativna platforma za što brži, jednostavniji, bezbedniji i pouzdaniji rad disponenta/dispečera u autobuskoj firmi.
 
-Najvažniji korisnik je disponent. Njegov ekran mora u najviše tri sekunde da odgovori:
+Najvažniji korisnik je disponent. Njegov glavni ekran mora u najviše tri sekunde da odgovori:
 
-1. Šta trenutno nije u redu?
-2. Kada problem utiče na plan?
-3. Ko ili šta nedostaje?
-4. Koje je najbrže bezbedno rešenje?
-5. Da li je rešenje uspešno primenjeno i potvrđeno?
+- Šta trenutno nije u redu?
+- Kada problem utiče na plan?
+- Ko ili šta nedostaje?
+- Koje je najbrže operativno bezbedno rešenje?
+- Da li je rešenje stvarno primenjeno, sačuvano i potvrđeno?
 
-Sve četiri uloge moraju biti potpuno i kvalitetno završene za svoju odgovornost:
+Sve četiri uloge moraju biti potpuno završene:
 
-- Super Admin dobija maksimalnu legitimnu kontrolu platforme;
-- Company Admin dobija sve funkcije potrebne za potpunu kontrolu sopstvene firme;
-- disponent dobija najjači i najbrži operativni cockpit, kao glavno oružje BusCommand-a;
-- vozač dobija najjednostavniji, najjasniji i najkorisniji mobilni panel.
+- **Platform administrator / Super Admin:** maksimalna legitimna kontrola platforme, tenant lifecycle-a, podrške i bezbednosti;
+- **Company Admin:** potpuna kontrola sopstvene firme, grupa, ljudi, vozila, kataloga smena, brendinga i podešavanja;
+- **Disponent/dispečer:** najbrži operativni cockpit i glavno oružje BusCommand-a;
+- **Vozač:** najjednostavniji, najjasniji i najkorisniji mobilni PWA za smenu, potvrde, poruke i prijave.
 
-Prioritet disponenta ne sme biti izgovor da bilo koja druga uloga ostane placeholder, nepotpuna ili nebezbedna.
+Prioritet disponenta nije izgovor da druge uloge ostanu placeholder, nepotpune ili nebezbedne.
 
-Prvo se završava jedna pouzdana aplikacija. Ne deli sistem na mikroservise i posebne aplikacije, ne povećavaj obim i ne uvodi novu infrastrukturu bez dokazane potrebe.
+Prvo završi jednu pouzdanu modularnu aplikaciju. Ne uvodi mikroservise, novu cloud infrastrukturu, dodatne proizvode ili finansijske module bez dokazane potrebe i odobrenja.
 
 ## 1. Nepromenljive odluke projekta
-
-Sledeće odluke su zaključane i ne menjaju se bez izričite poslovne odluke vlasnika proizvoda.
 
 ### 1.1 Uređaji
 
 - Vozač koristi mobilni PWA.
-- Disponent, Company Admin i platform administrator koriste samo desktop/laptop interfejs.
-- Desktop funkcije ne moraju biti optimizovane za precizno operativno upravljanje sa telefona.
-- Kritične akcije moraju biti potpuno upotrebljive tastaturom i mišem.
+- Disponent, Company Admin i Super Admin koriste desktop/laptop.
+- Operativni desktop interfejs ne mora omogućavati precizno upravljanje sa telefona.
+- Kritične desktop akcije moraju biti upotrebljive tastaturom i mišem.
+- Vozački PWA mora imati velike touch targete, čitljive statuse, jasnu povratnu informaciju i kontrolisano ponašanje pri nestabilnoj mreži.
 
-### 1.2 Jezici
+### 1.2 Jezici i i18n
 
-Aplikacija mora potpuno podržavati:
+Aplikacija potpuno podržava:
 
-- srpski;
+- srpski, ekavica;
 - nemački;
 - engleski.
 
-Nijedan korisnički tekst ne sme biti hardkodovan u produkcionim komponentama. Koristi centralizovane prevodne ključeve. Svaki ključ mora postojati na sva tri jezika, uz prirodan prevod i bez mašinskih ostataka, mešanja jezika ili prikaza sirovog ključa.
+Nijedan korisnički tekst ne sme biti hardkodovan u produkcionim UI komponentama. Koristi centralizovane prevodne ključeve. Svaki ključ mora postojati na sva tri jezika, uz prirodan prevod, bez mešanja jezika, mašinskih ostataka i prikaza sirovog ključa.
+
+Serverski API vraća stabilan bezbedan kod greške i strukturirane detalje. UI prevodi kod u korisničku poruku. Server ne sme otkrivati stack trace, strukturu baze, postojanje tuđeg naloga ili osetljive detalje.
 
 ### 1.3 Čist projekat
 
-Produkcioni projekat mora biti potpuno čist od:
+Produkcioni kod, bundle, konfiguracija i baza moraju biti čisti od:
 
 - demo korisnika, vozila, grupa, planova i poruka;
-- Transit Flow naziva, podataka, vizuelnih tragova ili drugih stranih projekata;
-- ugrađenih test naloga i javnih listi korisnika;
-- zajedničkih inicijalnih kodova kao što su `123456`;
-- test lozinki, API ključeva, Firebase tajni ili Render/GitHub podataka;
-- primera službenog plana koji je trajno ubačen u kod ili produkcioni bundle;
-- placeholder funkcija koje izgledaju aktivno, a ne rade.
+- Transit Flow naziva, podataka, vizuelnih tragova i ostataka drugih projekata;
+- ugrađenih test naloga i javnih lista korisnika;
+- zajedničkih inicijalnih kodova poput `123456`;
+- test lozinki, API ključeva, Firebase/Render/GitHub tajni;
+- službenog primera plana trajno ubačenog u kod;
+- placeholder dugmadi ili funkcija koje izgledaju aktivno, ali ne rade;
+- lažnih success poruka pre potvrđenog serverskog upisa.
 
-Testiranje se obavlja novim sintetičkim nalozima kreiranim posebno za kontrolisani test. Testni podaci se ne ugrađuju u produkcioni kod i posle testa moraju moći kontrolisano da se uklone.
+Testiranje se vrši novim sintetičkim podacima kreiranim za kontrolisani test. Testni podaci ne ulaze u produkcioni kod. Za njih mora postojati tenant-scoped, auditovan i bezbedan postupak uklanjanja sa dry-run pregledom pre brisanja.
 
-### 1.4 Stroga granica proizvoda
+### 1.4 Granica proizvoda
 
-BusCommand je isključivo operativna aplikacija za disponente, sa nužnim Company Admin funkcijama i jednostavnim vozačkim PWA.
+BusCommand je operativna aplikacija za planiranje, kontrolu i rešavanje poremećaja.
 
-Ne razvijaj module koji nisu neposredno potrebni da disponent:
+Van trenutnog obima su:
 
-- napravi i kontroliše plan;
-- vidi dostupnost vozača i vozila;
-- brzo reši poremećaj;
-- komunicira sa vozačima;
-- dobije potvrdu smene;
-- prati aktivnu smenu u zakonski dozvoljenom obimu;
-- zadrži pouzdan audit svake važne promene.
+- računovodstvo i fakturisanje;
+- obračun plata i zarada;
+- servisno održavanje kao poseban sistem;
+- gorivo i potrošnja;
+- automatsko pravno odobravanje rasporeda;
+- zamena za Almex ili drugi uređaj za navigaciju po stanicama.
 
-Stanice i navigacija trase nisu potrebne jer ih vozač dobija preko Almex uređaja. Vozila postoje samo koliko je potrebno za raspoloživost, dodelu smeni, brzu zamenu i operativni pregled.
+Podaci o početku i kraju smene koriste se za operativnu prijavu/odjavu, dostupnost, potvrde i privatnost lokacije. BusCommand nije autoritativni payroll ili zakonski sistem evidencije radnog vremena dok poseban pravni profil, dokumentacija i odobrenje to izričito ne omoguće.
 
-Uvezeni početak i kraj smene služe isključivo za operativni plan, prijavu/odjavu, dostupnost i notifikacije. Ne predstavljaj ih kao zvaničnu evidenciju radnog vremena.
+## 2. Obavezan početak rada i zaštita napretka
 
-## 2. Obavezan početak rada i zaštita postojećeg napretka
+Pre izmene koda:
 
-Pre bilo kakve izmene:
+1. Utvrdi tačnu lokaciju i autoritativni izvor projekta.
+2. Pronađi i pročitaj AGENTS.md, README, dokumentaciju, checkpoint zapise, migracije i vizuelne smernice.
+3. Prikaži git status, aktivnu granu, remote, poslednjih najmanje deset commit-a i relevantne poslednje izmene.
+4. Proveri nezavršene, necommitovane ili tuđe izmene. Ne prisvajaj ih, ne briši i ne prepisuj.
+5. Mapiraj strukturu projekta, UI površine, rute, API, model baze, Rules, testove i deployment konfiguraciju.
+6. Pokreni samo read-only i dijagnostičke komande dok ne potvrdiš stanje.
+7. Ne resetuj, ne briši i ne ponavljaj raniji posao bez dokaza da je potrebno.
+8. Radi u zasebnoj grani, worktree-u ili jasno izdvojenoj radnoj kopiji. Original, `main`, produkcija i poslednji dobar checkpoint ostaju netaknuti dok release gate nije prošao.
+9. Napravi početni izveštaj: šta postoji, šta radi, šta je nepotpuno, šta je rizično, trenutno dokazano stanje testova i sledeći logičan korak.
 
-1. Utvrdi tačnu lokaciju projekta i pronađi `AGENTS.md`, README, dokumentaciju, checkpoint zapise i vizuelne smernice.
-2. Prikaži `git status`, aktivnu granu, poslednjih najmanje deset commit-a i relevantne poslednje izmene.
-3. Proveri postoje li nezavršene, necommitovane ili tuđe izmene.
-4. Mapiraj strukturu projekta, rute, module, API-je, bazu, testove i deployment konfiguraciju.
-5. Pokreni samo bezbedne read-only ili dijagnostičke komande dok ne utvrdiš šta je već završeno.
-6. Ne briši, ne resetuj, ne prepisuj i ne ponavljaj raniji posao dok dokazima ne utvrdiš trenutno stanje.
-7. Radi u zasebnoj grani, worktree-u ili jasno izdvojenoj radnoj kopiji. Original i poslednji dobar checkpoint moraju ostati netaknuti.
-8. Napravi kratak početni izveštaj: šta postoji, šta radi, šta je nepotpuno, šta je rizično i koji je sledeći logičan korak.
+## 3. Uloge, RBAC i granice podataka
 
-Ne tvrdi da poznaješ prethodni rad ako ga nisi pročitao iz dostupnog koda, istorije i dokumentacije.
+Sprovesti četiri uloge:
 
-Ako se približava ograničenje vremena, konteksta ili resursa, stani dovoljno rano da:
+1. Super Admin;
+2. Company Admin;
+3. disponent/dispečer;
+4. vozač.
 
-- sačuvaš konzistentan checkpoint;
-- zabeležiš sve izmenjene fajlove;
-- zapišeš izvršene komande i stvarne rezultate;
-- navedeš tačan sledeći korak;
-- ne ostaviš poluzavršenu migraciju, nesiguran deployment ili neobjašnjenu radnu kopiju.
+Održavaj eksplicitnu RBAC matricu:
 
-## 3. Korisničke uloge i granice podataka
+**uloga × resurs × akcija × dozvoljena polja × tenant/group scope × uređaj × audit zahtev**
 
-Potvrdi u postojećem kodu, pa sprovedi najmanje sledeće uloge.
+Autorizacija mora postojati na serveru i u pravilima baze. Sakrivanje dugmeta nije autorizacija.
 
-### 3.1 Platform administrator
+Minimalne granice:
 
-Super Admin upravlja platformom i mora imati centralni pregled i maksimalnu legitimnu kontrolu nad:
+- Super Admin pristupa tenantima samo legitimno i auditovano; support impersonation zahteva jasno označen, vremenski ograničen i auditovan tok.
+- Company Admin upravlja samo sopstvenom firmom i jedini kreira novog vozača i njegove inicijalne identitetske podatke.
+- Disponent radi samo sa dodeljenim grupama. Može videti ime, grupu, telefon i email vozača, ali ne EID, firmin login broj, aktivacioni kod, hash, lični PIN ili druge credential podatke.
+- Vozač vidi samo sopstveni profil, smene, potvrde, poruke i dozvoljene operativne podatke.
+- Nijedan tenant ne može čitati, menjati, pretraživati, brojati ili zaključiti postojanje podataka drugog tenanta.
 
-- kreiranjem, aktiviranjem, suspenzijom i bezbednim zatvaranjem tenant-a/firme;
-- platformskim ulogama i drugim Super Admin nalozima;
-- statusom svih firmi, grupa i aktivnih korisnika kroz minimalne operativne pokazatelje;
-- platformskim feature flag-ovima i tenant mogućnostima;
-- globalnim i tenant konfiguracionim podrazumevanim vrednostima;
-- integracijama, provider adapterima i statusom njihovog rada, bez prikaza tajni;
-- scheduler/job redovima, neuspelim poslovima, retry akcijama i statusom notifikacija;
-- sistemskim zdravljem, incidentima, verzijama i release informacijama;
-- centralnim auditom i bezbednosnim upozorenjima;
-- politikama čuvanja, izvoza i kontrolisanog brisanja podataka;
-- lokalizacijama i nepromenljivim BusCommand identitetom;
-- kontrolisanim backup, restore i recovery operacijama.
-
-Super Admin panel mora nuditi filtere, pretragu, statusne preglede, detalje greške, bezbedne administrativne akcije i jasne potvrde destruktivnih operacija.
-
-„Maksimalna kontrola“ ne znači čitanje lozinki, ličnih login kodova, aktivacionih kodova ili nekontrolisan uvid u sve lične i lokacijske podatke. Svaki opravdani support pristup tenant-u mora:
-
-- imati konkretan razlog;
-- biti vremenski ograničen;
-- imati najmanji potreban obim;
-- prikazati jasno da je support režim aktivan;
-- biti potpuno auditovan;
-- nikada ne omogućiti prikaz postojećih tajni za prijavu.
-
-### 3.2 Company Admin
-
-Company Admin ima punu administrativnu kontrolu unutar svoje firme i može:
-
-- uređivati firmu i dozvoljeni brending;
-- kreirati i uređivati grupe/linije;
-- kreirati i upravljati nalozima dispečera;
-- jedini kreirati novog vozača i unositi njegove pune potrebne podatke;
-- uređivati, deaktivirati, arhivirati i kontrolisano ponovo aktivirati vozača;
-- pokrenuti novu bezbednu aktivaciju ili oporavak pristupa bez uvida u postojeći tajni kod;
-- raditi validiran grupni unos kada je potreban, sa pregledom pre potvrde;
-- upravljati vozilima u operativnom obimu;
-- uvoziti zvanični plan smena posebno za svaku grupu;
-- pregledati rezultat parsiranja pre potvrde uvoza;
-- upravljati verzijama kataloga smena i datumom njihovog važenja;
-- podešavati dozvoljene tenant opcije, vremensku zonu, jezik i pravila notifikacija;
-- pregledati tenant audit, neuspele pozive/integracije i operativne greške za koje ima dozvolu;
-- upravljati šablonima poruka i dozvoljenim quick-report opcijama;
-- izvoziti samo dozvoljene administrativne podatke uz audit i zaštitu ličnih podataka;
-- upravljati pravilima firme koja su predviđena kao tenant konfiguracija.
-
-Company Admin ne sme zavisiti od Super Admina za normalno svakodnevno upravljanje sopstvenom firmom. Ipak, ne sme pristupati drugom tenant-u niti videti postojeće lozinke, login kodove i druge tajne korisnika.
-
-### 3.3 Disponent/dispečer
-
-Disponent je centralni operativni korisnik i njegov panel je glavno oružje BusCommand-a. Disponent:
-
-- ima sopstvene podatke za prijavu;
-- u zaglavlju vidi sve grupe firme kojima sme pristupiti;
-- može brzo menjati aktivnu grupu uz audit pristupa i svake promene;
-- vidi operativne podatke potrebne za rad;
-- za vozača vidi ime, grupu, telefon i e-mail;
-- nikada ne vidi lični login kod vozača, jednokratni aktivacioni kod, firmin identifikator koji služi prijavi, lozinke, hash vrednosti niti nepotrebne osetljive personalne brojeve;
-- može uređivati operativni plan, rešavati probleme, dodeljivati zamene, upravljati porukama i pratiti aktivnu smenu;
-- ne kreira novi identitet vozača i ne menja njegove tajne za prijavu.
-
-### 3.4 Vozač
-
-Vozački panel mora biti maksimalno jednostavan, brz i koristan u realnoj smeni. Vozač vidi samo svoje:
-
-- trenutne i naredne smene;
-- zahteve za potvrdu;
-- poruke;
-- prijavu i odjavu sa smene;
-- dozvoljene brze prijave problema;
-- SOS funkciju;
-- pronađene predmete koje je prijavio ili za koje mu je dozvoljen uvid;
-- status relevantan za sopstveni rad.
-
-Vozač ne sme pristupiti drugim vozačima, drugim tenantima, celom mesečnom planu ili administrativnim podacima promenom URL-a ili direktnim API pozivom.
-
-Svaki osnovni vozački zadatak treba, gde je realno, završiti jednim jasnim dodirom. Panel mora jasno raditi na slabijem telefonu, sporijoj mreži i u uslovima dnevnog svetla, bez sitnih meta, komplikovanih tabela i dugih formi.
-
-### 3.5 Obavezna RBAC matrica
-
-Napravi i održavaj eksplicitnu matricu za sve četiri uloge:
-
-`uloga × resurs × akcija × polja × tenant scope × audit zahtev`
-
-Autorizacija mora postojati na serveru i u pravilima baze. Skrivanje dugmeta u interfejsu nije bezbednosna kontrola.
+Svaka važna promena beleži: tenant, actor ID, ulogu, vreme, resurs, prethodno stanje ili bezbedan diff, novo stanje, razlog, request/correlation ID i rezultat. Audit zapis ne sme sadržati tajne.
 
 ## 4. Identitet, prijava i aktivacija vozača
 
-Staff portal i driver portal moraju imati jasno odvojene tokove.
+Staff portal i driver portal imaju odvojene tokove.
 
 Kada Company Admin kreira vozača:
 
-1. Sistem kreira nalog bez javnog prikaza tajnih podataka.
-2. Sistem generiše kriptografski bezbedan, jedinstven jednokratni aktivacioni kod od šest cifara.
-3. Kod važi 24 sata, čuva se bezbedno i ne zapisuje se u obične logove.
-4. Vozač dobija SMS sa linkom ka driver portalu i jednokratnim kodom.
-5. Vozač unosi svoj firmin ID i jednokratni kod.
-6. Nakon uspešne identifikacije postavlja svoj pravi lični kod firme od najmanje pet cifara.
-7. Jednokratni kod se odmah i nepovratno označava iskorišćenim i nikada se više ne može koristiti.
-8. Aktivne sesije, pokušaji, rate limit, zaključavanje i oporavak naloga moraju imati bezbedno i auditovano ponašanje.
+- unosi potrebne podatke i dodeljuje grupu;
+- sistem generiše kriptografski nasumičan jednokratni šestocifreni aktivacioni kod;
+- kod važi najviše 24 sata ili kraće prema tenant profilu;
+- kod se nikada ne čuva kao plaintext; koristi se server-side keyed HMAC ili ekvivalentna zaštićena verifikaciona vrednost, uz strogu kontrolu pristupa, i postaje nevažeći nakon prve uspešne upotrebe;
+- ponovno izdavanje poništava sve prethodne kodove;
+- SMS se šalje kroz provider adapter, uz praćenje statusa bez čuvanja nepotrebnog sadržaja;
+- neuspešna isporuka ima jasan retry/reissue tok;
+- rate limiting, ograničenje pokušaja, privremeno zaključavanje i audit su obavezni;
+- ni Company Admin ni disponent nakon generisanja ne vide puni aktivacioni kod u listama ili logovima.
 
-Nikada ne koristi zajednički produkcioni kod `123456`. Ne šalji postojeći lični kod vozača SMS-om. Ne čuvaj login kod u čitljivom obliku. Razdvoji javni profil vozača od privatnih autentifikacionih zapisa.
+Posle uspešne aktivacije vozač postavlja sopstveni login kod prema tenant login profilu. Podržati konfigurabilne načine prijave za buduće firme, ali ne uvoditi ih pre potrebe. Lični numerički kod mora imati najmanje pet cifara samo gde je takav tenant profil odobren, uz rate limiting, lockout i bezbedno hashovanje.
 
-SMS implementiraj kroz provider adapter, tako da se konkretan provajder može izabrati pri pilot-projektu. Ako provajder još nije izabran, pripremi interfejs, retry/idempotency ponašanje, statuse isporuke i bezbedan development stub koji nije aktivan u produkciji.
+Staff lozinke sprovodi centralni identity provider. Ne oslabiti njegovu politiku i ne koristiti podrazumevane lozinke. Ranije definisani minimum od šest znakova tretirati samo kao privremeni kompatibilni prag, ne kao dokaz jake zaštite. Pre produkcionog release-a uskladiti politiku sa aktuelnim smernicama identitetskog providera i bezbednosnom procenom: preferirati duge passphrase vrednosti, proveru kompromitovanih lozinki i MFA za privilegovane uloge. Ako minimum od šest znakova ostane, release gate zahteva dokumentovano prihvatanje rizika i kompenzacione kontrole.
 
-PWA instalacija mora biti jasna, ali instaliranje na početni ekran ne sme biti uslov da vozač prvi put završi bezbednu prijavu.
+Reset, deaktivacija, sign-out-all-devices i promena uloge moraju odmah poništiti ili osvežiti relevantne tokene i biti auditovani.
 
 ## 5. Jedan kanonski model plana
 
-Dnevni i mesečni plan ne smeju biti dve nepovezane kopije istih podataka.
+Dnevni i mesečni plan nisu dve nezavisne kopije.
 
-Projektuj jedan kanonski model koji najmanje razdvaja:
+Projektuj kanonski model koji razdvaja:
 
-- tenant/firmu;
+- tenant;
 - grupu/liniju;
-- verzionisani katalog zvaničnih smena;
+- verzionisani katalog smena;
 - šablon smene;
-- datum;
+- kalendarski datum i tenant vremensku zonu;
 - dodelu vozača;
 - dodelu vozila;
 - operativni status;
-- potvrdu vozača;
-- problem/incident;
-- rešenje;
-- audit događaj.
+- problem i rezoluciju;
+- potvrdu vezanu za konkretnu reviziju;
+- audit i notifikacioni outbox.
 
-Dnevni i mesečni plan su različiti prikazi i načini uređivanja istog kanonskog stanja. Svaka promena mora:
+Mesečni i dnevni ekran čitaju isti kanonski izvor ili strogo kontrolisanu projekciju/mirror koju menja samo server. Svaka izmena povećava reviziju. Paralelne izmene koriste optimistic concurrency; zastarela izmena vraća jasan conflict odgovor i ne prepisuje noviji rad.
 
-- validirati prava, tenant i verziju zapisa;
-- izbeći konflikt sa izmenom drugog disponenta;
-- biti primenjena atomski/transakciono;
-- odmah osvežiti oba prikaza;
-- ažurirati relevantne statuse;
-- invalidirati zastarelu potvrdu;
-- poslati novu potvrdu kada je potrebno;
-- zapisati ko je, kada, odakle i šta promenio;
-- omogućiti kontrolisano poništavanje samo kada je bezbedno.
+Potvrda vozača važi samo za tačnu reviziju smene. Svaka relevantna promena automatski poništava staru potvrdu i generiše novu obavezu potvrđivanja.
 
-Ne dozvoli da dva disponenta tiho prepišu jedan drugom plan. Koristi optimistic concurrency, verziju zapisa ili drugi dokazano bezbedan mehanizam.
+## 6. Uvoz zvaničnog kataloga smena
 
-## 6. Uvoz zvaničnog plana smena
+Company Admin uvozi zvanični plan/katalog posebno za svaku grupu.
 
-Company Admin uvozi zvanični PDF plan zasebno za svaku grupu.
+Podržani format se ne pretpostavlja. PDF primer je referenca, ne ugrađuje se u kod. Za svaki parser definiši podržanu strukturu, verziju, testne fixture fajlove bez ličnih podataka i jasan fallback na ručnu korekciju.
 
-Iz PDF-a su potrebni samo:
+Tok:
 
-- grupa/linija;
-- oznaka smene;
-- početak radnog vremena;
-- kraj radnog vremena;
-- režim/dan važenja, na primer radni dan, subota, nedelja/praznik;
-- verzija plana;
-- datum od kada plan važi.
+1. upload u karantin/staging;
+2. proveriti tip, veličinu, MIME/signaturu, malware rizik i tenant scope;
+3. izračunati hash izvora;
+4. parsirati oznaku smene, početak, kraj, režim rada i važenje;
+5. prikazati preview, upozorenja i neprepoznate redove;
+6. omogućiti Company Adminu korekciju pre potvrde;
+7. sačuvati novu nepromenljivu verziju kataloga;
+8. aktivirati je jednim kontrolisanim prelaskom `activeVersionId`;
+9. zadržati prethodnu verziju i auditovan rollback.
 
-Stanice, trasa i podaci koje vozač već dobija preko Almex uređaja nisu potrebni.
+Tokom pregleda duge tabele koristi jednu sticky traku za aktivaciju koja ostaje vidljiva. Traka prikazuje grupu, novu verziju, datum važenja, broj smena, upozorenja i blokirajuće greške. Postoji samo jedna primarna akcija **„Aktiviraj katalog“**; ne duplirati isto dugme na vrhu i dnu. Akcija je onemogućena dok postoje blokirajuće greške, zaštićena od dvostrukog slanja i završava se tek nakon potvrđenog serverskog rezultata.
 
-Obavezni tok:
+Veliki uvoz može se pripremati u idempotentnim paketima zbog ograničenja baze. Ne tvrditi da je hiljade dokumenata jedna transakcija. Korisnički vidljiva aktivacija mora biti logički atomska: korisnici vide ili staru ili potpuno pripremljenu novu verziju, nikada pola plana.
 
-1. izbor grupe;
-2. upload PDF-a;
-3. bezbedna validacija fajla;
-4. parsiranje u staging zonu;
-5. pregled pronađenih smena i upozorenja;
-6. detekcija duplikata, nelogičnih vremena, smene preko ponoći i konflikta verzije;
-7. eksplicitna potvrda Company Admina;
-8. atomsko aktiviranje nove verzije;
-9. čuvanje porekla i audita;
-10. bezbedan rollback na prethodnu verziju ako aktivacija ne uspe.
+## 7. Mesečni plan
 
-Nikada ne pretpostavljaj da svaki PDF ima isti raspored. Parser mora prijaviti nesiguran rezultat i tražiti pregled umesto da tiho napravi pogrešne smene. Referentni PDF služi samo za razumevanje formata i ne sme biti ugrađen u aplikaciju.
+Disponent pravi mesečne dodele vozača i vozila koristeći aktivni katalog smena.
 
-Obradi:
+Obavezno:
 
-- smene koje završavaju posle ponoći;
-- vremensku zonu tenant-a;
-- letnje/zimsko računanje vremena;
-- različite režime rada;
-- novu verziju koja važi od budućeg datuma;
-- postojeće mesečne dodele koje koriste prethodnu verziju.
+- izbor meseca i grupe;
+- pregledan grid sa jasnim sticky zaglavljima;
+- uređivanje svake dozvoljene ćelije;
+- dodela, uklanjanje, zamena smene, vozača ili vozila;
+- odsustvo, odmor, bolovanje i drugi neutralni razlog neraspoloživosti bez nepotrebnog medicinskog detalja;
+- masovne operacije samo uz preview, broj pogođenih zapisa i potvrdu;
+- konflikt kontrola;
+- audit i kontrolisani undo nove revizije, ne brisanje istorije;
+- nema „sačuvano“ dok server ne potvrdi upis.
 
-## 7. Mesečni i dnevni plan
+Opcioni uvoz pripremljenih mesečnih dodela ne uključuj u UI dok serverski preview, validacija, idempotentna potvrda, oporavak od partial failure-a i audit ne budu završeni i testirani.
 
-Disponent u mesečnom planu dodeljuje vozače zvaničnim šablonima smena. Svako opravdano operativno polje mora imati jasan edit tok.
+## 8. Dnevni plan i operativne izmene
 
-Podrži najmanje:
+Dnevni plan je prikaz kanonskih dodela za izabrani dan, obogaćen trenutnim operativnim stanjem.
 
-- dodelu i uklanjanje vozača;
-- zamenu dve smene;
-- promenu smene pre podne/popodne;
-- zamenu vozača;
-- promenu vozila;
-- označavanje vozača ili vozila kao neraspoloživog;
-- pregled konflikta i nepotpune dodele;
-- istoriju i razlog promene;
-- kontrolisani undo poslednje promene kada nema kasnijih zavisnih događaja.
+Podržati:
 
-Ako Marko više ne radi dodeljenu smenu, razlog može biti bolovanje, odmor, slobodan dan, kašnjenje ili drugi problem. Razlog je audit oznaka, ali ne sme komplikovati glavni tok. Najvažnije je brzo i bezbedno rešavanje nepokrivene smene.
+- trenutni plan po grupi;
+- brzo označavanje da je vozač ili vozilo ispalo iz operacije;
+- obavezno kratko operativno objašnjenje za kritičnu promenu, zbog kontrole, oporavka i audita;
+- crveni/amber/neutralni status dok problem nije rešen;
+- izbor raspoložive zamene;
+- transakcionu promenu dodele;
+- automatsko osvežavanje mesečnog i dnevnog prikaza;
+- poništavanje prethodne potvrde smene;
+- novu notifikaciju relevantnim vozačima;
+- jasan zeleni status tek kada su upis i potrebne potvrde zaista završeni.
 
-## 8. Univerzalni tok rešavanja problema
+Za unapred poznate promene koristi mesečni plan. Dnevni ekran prvenstveno služi hitnim operativnim problemima istog dana ili neposredno pred smenu.
 
-Implementiraj generički problem-resolution tok:
+## 9. Univerzalni tok rešavanja problema
 
-1. Disponent jednim jasnim potezom označava vozača, vozilo ili dodelu kao problematičnu.
-2. Plan odmah prikazuje nerešen operativni problem, uz status koji se ne oslanja samo na boju.
-3. Sistem prikazuje šta je pogođeno i od kada.
-4. Sistem nudi samo stvarno raspoložive i dozvoljene zamene.
-5. Disponent dodeljuje zamenu ili unosi drugo rešenje u nekoliko klikova.
-6. Sistem transakciono ažurira plan.
-7. Prethodna potvrda pogođenog vozača postaje nevažeća.
-8. Pogođeni vozač dobija ažuriranje i novi zahtev za potvrdu kada je potreban.
-9. Audit zapis sadrži staro stanje, novo stanje, autora i razlog.
-10. Plan dobija status „zdrav“ tek kada više nema nerešenog uticaja.
+Ne praviti poseban hardkodovan tok za svaki mogući razlog.
 
-Statusi moraju imati tekst, ikonicu i boju. Ne koristi treperenje, zvuk ili agresivnu animaciju kao podrazumevanu kontrolu. Kritična upozorenja moraju biti primećena, ali pristupačna i proporcionalna.
+Koristi generički lifecycle:
 
-## 9. Automatska potvrda naredne smene
+`open → acknowledged → solution proposed → applying → resolved` ili `cancelled`.
 
-Vozač jednim klikom potvrđuje narednu smenu, a disponent rezultat vidi odmah.
+Problem sadrži: tip, pogođenu smenu, vozača/vozilo, vreme, grupu, kratak razlog, opis, ozbiljnost, reporter, assignee, reviziju i audit.
 
-Zahtev se šalje tokom poslednje prethodne aktivne smene vozača, nikada proizvoljno posle radnog vremena.
+Sistem prikazuje samo operativno raspoložive zamene prema pouzdanim podacima sistema. Ne proglašava automatski da je zamena pravno dozvoljena niti preuzima odgovornost za radnopravnu odluku.
 
-Posebno pravilo:
+## 10. Automatska potvrda naredne smene
 
-- ako je poslednji radni dan petak, a vozač radi subotu, potvrdu za subotu dobija u petak;
-- ako radi nedelju i ponedeljak, u petak dobija dva odvojena i jasno označena zahteva;
-- nema generičkog „vikend plana“.
+Vozač jednim klikom potvrđuje narednu smenu tokom poslednje prethodne aktivne smene.
 
-Planer notifikacija mora biti:
+Obavezna pravila:
 
-- tenant-timezone aware;
-- otporan na restart;
-- idempotentan;
-- bez duplih poruka;
-- testiran za petak, vikend, praznike, smene preko ponoći i DST;
-- sposoban da ponovo zakaže zahtev nakon promene plana;
-- sposoban da prikaže status slanja, prijema i potvrde.
+- potvrda sutrašnje smene stiže tokom trenutne aktivne smene;
+- ako je petak poslednja prethodna smena, smena za ponedeljak potvrđuje se u petak;
+- nema posebnog „vikend plana“;
+- ako vozač radi subotu ili nedelju i zatim ponedeljak, može dobiti dve jasno odvojene potvrde;
+- slanje posle dozvoljenog radnog prozora nije dozvoljeno;
+- promena smene posle potvrde poništava potvrdu stare revizije;
+- scheduler je tenant-timezone aware, restart-safe i idempotentan;
+- outbox ima status, retry politiku, deduplikacioni ključ i monitoring;
+- disponent u realnom vremenu vidi potvrđeno, čeka potvrdu, isteklo i neuspešna isporuka.
 
-## 10. Dispečerski operativni centar
+## 11. Dispečerski operativni centar
 
-Referentna slika dispečerskog panela određuje vizuelni cilj.
+Glavni desktop cockpit prati prihvaćenu vizuelnu referencu i sadrži:
 
-Desktop raspored:
-
-- stalna leva navigacija;
-- zaglavlje sa grupama, datumom, pretragom, upozorenjima i identitetom prijavljenog disponenta;
-- leva kolona „Čeka akciju“;
+- stalni levi sidebar;
+- izbor svih dodeljenih grupa u zaglavlju;
+- datum i brzo kretanje kroz dane;
+- „čeka akciju“ prioritizovanu kolonu;
 - centralni dnevni plan;
-- desna kolona raspoloživih vozača ili kontekstualnih zamena;
-- donji audit/nedavne aktivnosti i bezbedan undo;
-- jasan globalni status zdravlja plana.
+- raspoložive vozače/vozila;
+- zdravlje plana;
+- nedavne aktivnosti i auditovane izmene;
+- brze akcije bez skrivanja kritičnih koraka u dubokim menijima.
 
-Najvažnije funkcije:
+Svaka kartica i dugme mora imati stvarnu funkciju. Prazna stanja moraju objasniti da podataka nema i ponuditi sledeću dozvoljenu akciju. Izbegni ogromne prazne površine, prevelike kartice, nečitljive dropdown liste i horizontalno prelivanje na podržanim desktop rezolucijama.
 
-- operativni centar;
-- dnevni plan;
-- mesečni plan;
-- poruke;
-- mapa uživo;
-- vozila;
-- vozači;
-- istorija promena.
+Problematičan red koristi crveni status i jasnu tekstualnu oznaku, dok njegova primarna akcija koristi zaseban jak amber/narandžasti semantički stil `urgent-action`, sa ikonom i nazivom **„Reši problem“**. Ne koristiti crveno dugme za ovu akciju: crvena je rezervisana za problem, opasnost ili destruktivnu radnju; amber označava hitnu operativnu akciju; zeleno označava potvrđeno rešeno stanje.
 
-Optimizuj za:
-
-- nekoliko klikova do rešenja;
-- drag-and-drop samo ako ima jednako jasan i pristupačan alternativni tok;
-- pretragu i keyboard shortcut-e za česte akcije;
-- jasne konflikte i predloge zamene;
-- potvrdu kritične promene bez nepotrebnih modalnih koraka;
-- real-time osvežavanje bez ručnog reload-a;
-- rad više disponentenata bez tihog prepisivanja;
-- prazna, loading, offline, stale, error i reconnect stanja.
-
-## 11. Poruke
+## 12. Poruke
 
 Disponent može slati:
 
-- pojedinačnu poruku vozaču;
-- poruku izabranoj grupi;
-- poruku svim trenutno relevantnim/aktivnim vozačima firme;
-- hitnu poruku koja se vozaču prikazuje jasno i zahteva potvrdu čitanja.
+- pojedinačnu poruku jednom vozaču;
+- grupnu poruku jednoj ili više dozvoljenih grupa;
+- unapred definisanu šablonsku poruku sa dopunom;
+- kritičnu poruku koja zahteva potvrdu prijema kada je poslovno opravdano.
 
-Svaka poruka mora imati:
+Primalac u dropdown listi mora biti čitljiv bez hover-a. Lična i grupna poruka su jasno razdvojene. Server ponovo proverava tenant i group scope. Beleže se statusi queued/sent/delivered/read/failed prema mogućnostima providera, uz retry i audit. Ne dozvoli klijentu da menja istoriju poruka ili lažno postavi delivery status.
 
-- autora;
-- tenant i dozvoljeni krug primalaca;
-- vreme slanja;
-- status isporuke;
-- status čitanja/potvrde gde je potrebno;
-- audit i istoriju;
-- lokalizovan sistemski tekst;
-- zaštitu od duplog slanja.
+## 13. Mapa i lokacija vozača
 
-Ne dozvoli curenje poruke u drugi tenant ili pogrešnu grupu. Pre grupnog slanja jasno prikaži kome se poruka šalje.
+GPS lokacija je dostupna samo za legitimnu operativnu svrhu i samo tokom aktivne smene, uz najviše 30 minuta tehničkog grace perioda nakon kraja smene.
 
-## 12. Mapa i lokacija vozača
+Obavezno:
 
-Lokacija vozača sme se obrađivati samo u opravdanom operativnom prozoru aktivne smene.
+- aktivna serverska radna sesija;
+- server-owned početak/kraj sesije;
+- jasna obaveštenost vozača;
+- minimizacija učestalosti i preciznosti prema svrsi;
+- zabrana lokacije van smene;
+- automatsko brisanje ili agregiranje prema odobrenoj retention politici;
+- tenant/group scope;
+- audit pristupa lokaciji za privilegovane slučajeve;
+- bez trajnog praćenja u pozadini kada nije potrebno.
 
-Dogovoreno funkcionalno ponašanje:
+Pravna osnova, radničko saodlučivanje, retention i dozvoljena svrha definišu se po tržištu pre aktiviranja GPS funkcije.
 
-- lokacija počinje tek u vezi sa aktivnom smenom i odgovarajućom prijavom/dozvolom;
-- disponent vidi samo vozače čija smena trenutno opravdava prikaz;
-- nakon završetka smene postoji najviše konfigurisan grace period, trenutno planiran do 30 minuta;
-- zatim se praćenje automatski zaustavlja i vozač se operativno odjavljuje;
-- stara lokacija nikada se ne prikazuje kao „uživo“;
-- prikaz sadrži vreme poslednjeg podatka, tačnost i status veze;
-- pristup mapi i pregled lokacije moraju biti auditovani;
-- rok čuvanja istorije mora biti minimalan, eksplicitno odobren i tehnički sproveden.
+## 14. Prijava, odjava i radna sesija vozača
 
-Pre produkcije GPS funkcije obavezno uradi pravnu procenu neophodnosti i proporcionalnosti, DPIA procenu i proveru zahteva za Betriebsrat. Employee consent ne koristi kao automatsku ili jedinu pravnu osnovu.
+Početak i kraj smene dolaze iz aktivnog kataloga i konkretne dodele.
 
-## 13. Prijava i odjava sa smene
+- Pred početak smene vozač dobija push podsetnik za prijavu.
+- Prijava, aktivna sesija, završetak i 30-minutni grace period vode se na serveru.
+- Nakon grace perioda vozač se automatski odjavljuje iz operativne sesije i GPS prestaje.
+- Stanice i navigacija nisu potrebne jer vozač koristi Almex ili drugi sistem u vozilu.
+- Svi timestamp-ovi čuvaju se pouzdano i prikazuju prema tenant vremenskoj zoni.
 
-Na početku operativnog prozora vozač dobija push obaveštenje da se prijavi. Interfejs prikazuje:
+## 15. Mobilni PWA vozača i kontrolisani offline rad
 
-- trenutnu smenu;
-- vozilo;
-- početak i kraj;
-- kada je prijava dozvoljena;
-- uspeh ili razlog neuspeha;
-- jasan status odjave.
+Vozački panel prikazuje samo najvažnije:
 
-Ova funkcija služi operativnoj prisutnosti i kontroli pristupa funkcijama tokom smene. Ne nazivati je zakonskom evidencijom radnog vremena bez posebne pravne i tehničke validacije.
+- trenutnu smenu, početak, kraj, grupu i vozilo;
+- sledeću smenu i potvrdu;
+- prijavu/odjavu;
+- poruke;
+- brze prijave kašnjenja, kvara, popunjenosti ili drugog definisanog problema;
+- SOS tok sa zaštitom od slučajnog aktiviranja;
+- pronađene predmete;
+- jasan status mreže i sinhronizacije.
 
-## 14. Panel vozača
+SOS se prikazuje samo jednom: kao stalna centralna stavka donje navigacije na autentifikovanim vozačkim ekranima. Ne prikazivati drugi SOS u gornjem desnom uglu. Donja navigacija je: **Plan · Smene · SOS · Prijavi · Poruke**. Odmor, profil, pronađeni predmeti i podešavanja dostupni su kroz profil, kontekstualni meni ili odgovarajuće sekundarne ekrane.
 
-Mobilni PWA prati referentnu sliku i mora ostati izrazito jednostavan.
+SOS zahteva press-and-hold ili kontrolisanu potvrdu prevlačenjem, daje neposrednu povratnu informaciju i sprečava duplo slanje. Ne sme biti toliko komplikovan da uspori stvaran hitan slučaj. Interfejs jasno upozorava da se aplikacijom ne rukuje tokom vožnje.
 
-Početni ekran sadrži:
+Offline pravila:
 
-- stalni mali BusCommand plavi znak;
-- identitet/tenant brend u dozvoljenom delu;
-- današnju smenu;
-- sledeću smenu i potvrdu jednim klikom;
-- važnu poruku dispečera;
-- velike quick-report akcije;
-- SOS;
-- jednostavnu donju navigaciju.
+- dozvoli čitanje poslednje bezbedno keširane trenutne/sledeće smene i ranije preuzetih poruka;
+- lokalno queued prijave dobijaju idempotency key, originalno vreme i status „čeka slanje“;
+- kritični upisi i potvrde nisu prikazani kao završeni dok ih server ne potvrdi;
+- konflikt ili zastarela revizija ne smeju biti tiho prepisani;
+- osetljivi keš je minimalan, vremenski ograničen i očišćen pri odjavi/deaktivaciji;
+- service worker ne sme keširati tajne, privatne API odgovore kao javne resurse ili zastareli app shell bez kontrole verzije.
 
-Quick reports najmanje obuhvataju:
+## 16. Pronađeni predmeti
 
-- kašnjenje;
-- kvar autobusa;
-- autobus pun;
-- drugi unapred odobren operativni problem.
+Vozač može kreirati zapis sa:
 
-Svaka akcija mora:
+- kategorijom;
+- opisom;
+- autobusom;
+- mestom i vremenom pronalaska;
+- opcionom fotografijom;
+- statusom.
 
-- biti moguća velikim touch targetom;
-- imati jasnu potvrdu;
-- sprečiti duplo slanje;
-- raditi na sporoj mreži uz transparentan status;
-- biti lokalizovana;
-- poslati disponentu dovoljno informacija bez nepotrebnog teksta vozača.
-
-SOS mora imati zaštitu od slučajnog aktiviranja, ali ne sme biti zakopan u više koraka. Jasno dokumentuj šta SOS u ovoj verziji radi i kome šalje obaveštenje; ne predstavljaj ga kao zamenu za javni hitni broj.
-
-## 15. Pronađeni predmeti
-
-Vozač može prijaviti pronađeni predmet i dodati fotografiju.
-
-Minimalna polja:
-
-- opis;
-- datum/vreme;
-- autobus ili relevantna smena;
-- fotografija, opciono;
-- status.
-
-Dozvoljeni statusi:
+Statusi najmanje:
 
 - vraćeno vlasniku;
 - ostaje u autobusu;
 - nalazi se u depou.
 
-Upload mora proveriti pravi tip sadržaja, veličinu, ekstenziju i dozvole; ukloniti EXIF/metapodatke koji nisu potrebni; generisati bezbedno ime; sprečiti izvršavanje fajla; ograničiti pristup tenantom i ulogom; imati jasno pravilo čuvanja i brisanja.
-
-## 16. Super Admin panel
-
-Super Admin koristi desktop panel koji daje snažnu kontrolu bez mešanja sa svakodnevnim dispečerskim radom.
-
-Obavezne oblasti:
-
-- pregled zdravlja platforme;
-- firme/tenant-i i njihovi statusi;
-- platformski administratori i bezbednost pristupa;
-- feature flag-ovi i tenant mogućnosti;
-- integracije i provider statusi;
-- scheduler, redovi poslova i neuspele isporuke;
-- bezbednosna upozorenja i centralni audit;
-- backup/restore i recovery status;
-- sistemske verzije, release i konfiguracioni status;
-- lokalizacije i stalni BusCommand identitet.
-
-Dashboard mora prvo prikazati probleme koji zahtevaju akciju, njihov uticaj i bezbednu sledeću akciju. Masovne i destruktivne radnje zahtevaju tačan pregled obima, ponovnu autentifikaciju kada je opravdano i potpun audit.
-
-Super Admin mora moći da pomogne firmi bez preuzimanja identiteta njenog korisnika. Ako se implementira support access, koristi poseban vremenski ograničen support session, vidljivu oznaku i nepromenljiv audit — nikada deljenje lozinke ili skriveno impersoniranje.
+Fotografija se validira po tipu, veličini i sigurnosti, čuva tenant-scoped i prikazuje samo ovlašćenim ulogama. EXIF i nepotrebni metapodaci uklanjaju se kada je moguće. Promena statusa je auditovana.
 
 ## 17. Company Admin panel
 
-Referentna slika određuje vizuelni smer:
+Company Admin mora imati funkcionalne celine:
 
-- stalna leva navigacija;
-- širok desktop radni prostor;
-- čist pregled firme;
-- brending;
+- pregled firme i licence;
+- brending firme;
 - grupe/linije;
-- tim dispečera;
-- vozači;
-- planovi smena;
-- podešavanja.
-
-Kod uvoza plana prikaži:
-
-- izabranu grupu;
-- naziv i status fajla;
-- aktivni katalog;
-- verziju;
-- datum važenja;
-- broj pronađenih smena;
-- tabelarni preview;
-- upozorenja i greške;
-- jasno „Potvrdi uvoz“ tek kada je rezultat dovoljno pouzdan.
-
-Company Admin nije glavni operativni cockpit. Ne opterećuj ga dispečerskim funkcijama koje ne pripadaju njegovoj ulozi.
-
-## 18. Stalni BusCommand identitet i tenant brending
-
-Mali plavi BusCommand znak mora zauvek ostati vidljiv u uglu aplikacije i ne može ga ukloniti tenant brending.
-
-Firma kupac može:
-
-- zameniti tekst „BusCommand“ svojim nazivom u predviđenom prostoru;
-- dodati svoj logo gde je dozvoljeno;
-- birati dozvoljene površinske/brand boje;
-- dobiti preview i proveru kontrasta pre čuvanja.
-
-Firma ne može:
-
-- ukloniti stalni BusCommand znak;
-- promeniti semantiku statusnih boja;
-- učiniti tekst nečitljivim;
-- zameniti kritično crveno, upozoravajuće amber, potvrđujuće zeleno i akcijsko plavo bojama koje menjaju značenje;
-- ubaciti nebezbedan SVG, skriptu ili udaljeni resurs.
-
-Brending mora biti tenant-scope, validiran, auditovan i imati bezbedne podrazumevane vrednosti.
-
-## 19. Vizuelni sistem
-
-Zadrži identitet sa referentnih slika:
-
-- moderan tamno-teget interfejs;
-- prepoznatljiva plava BusCommand akcent boja;
-- čist premium SaaS izgled;
-- čitljive tabele i statusi;
-- umerene ivice, senke i gradijenti;
-- semantičko zeleno, amber, crveno i plavo;
-- dovoljno visok kontrast;
-- kompaktan desktop raspored bez ogromnih praznih kartica.
-
-Ne kopiraj ilustrativna imena, registracije, smene i brojeve sa slika. Slike su vizuelna referenca, ne izvor podataka.
-
-Ne redizajniraj samo bojama. Poboljšaj hijerarhiju, tok akcije, gustinu informacija, čitljivost i brzinu donošenja odluke.
-
-Za svaku glavnu stranicu proveri:
-
-- default;
-- empty;
-- loading/skeleton;
-- error;
-- offline/reconnect;
-- stale data;
-- success;
-- warning;
-- critical;
-- disabled/read-only;
-- hover, focus, active i selected;
-- duga imena i prevode;
-- 100%, 125% i 150% browser zoom.
-
-## 20. Arhitektura i izvor istine
-
-Prvo potvrdi postojeći stack. Ako projekat već koristi Node/Express, Vite, Firebase Auth/Firestore/Storage, Render i GitHub, poštuj tu arhitekturu dok nema dokaza da ona blokira zahtev.
-
-Ne radi tehnološki rewrite radi ličnog ukusa.
-
-Obavezni principi:
-
-- stroga multi-tenant izolacija;
-- server-side autorizacija;
-- Firestore Security Rules koje sprečavaju direktni bypass;
-- osetljive operacije samo kroz pouzdani server;
-- razdvojeni javni profil i autentifikacioni podaci;
-- transakcije/batch za povezane promene;
-- optimistic concurrency za paralelne dispečere;
-- idempotency za poruke, aktivaciju, uvoz i scheduler;
-- append-only ili dokazano zaštićen audit za kritične akcije;
-- token/session revocation;
-- rate limiting i zaštita od brute force-a;
-- bez tajni i PII u logovima;
-- vremenske zone na nivou tenant-a;
-- pouzdan job/scheduler sloj;
-- push i SMS provider adapteri;
-- backup, restore i dokumentovan recovery test;
-- observability bez curenja ličnih podataka.
-
-Service worker/PWA ne sme keširati:
-
-- autentifikacione odgovore;
-- API odgovore sa ličnim ili operativno osetljivim podacima;
-- aktivacione kodove;
-- lokacije;
-- privatne poruke.
-
-Definiši offline ponašanje eksplicitno. Kritična promena plana ne sme izgledati uspešno dok server nije potvrdio transakciju.
-
-## 21. Bezbednosna analiza
-
-Proveri najmanje:
-
-- autentifikaciju i oporavak naloga;
-- RBAC i field-level dozvole;
-- IDOR/BOLA;
-- horizontalnu i vertikalnu eskalaciju;
-- tenant escape;
-- Firestore Rules;
-- server-side input validation;
-- XSS, CSRF i SSRF gde je primenljivo;
-- injection;
-- open redirect;
-- rate limit;
-- session fixation i revocation;
-- jednokratne kodove;
-- upload PDF-a i slika;
-- Storage pravila;
-- poruke i grupne primaoce;
-- eksport i audit;
-- log redaction;
-- dependency i secret scan;
-- sigurnost CI/CD konfiguracije;
-- zaštitu produkcionih environment varijabli.
-
-Za svaku kritičnu ili visoku ranjivost:
-
-1. dokumentuj dokaz i uticaj bez izlaganja stvarnih tajni;
-2. popravi uz minimalnu promenu;
-3. dodaj regresioni test;
-4. ponovo testiraj.
-
-## 22. Privatnost, pravo i usklađenost
-
-Polazno tržište/pilot tretiraj kao Austriju, ali ne pretpostavljaj da austrijski zaključci automatski važe za Nemačku, Srbiju ili drugu zemlju. Pri svakoj prodaji uradi poseban jurisdiction review i tenant konfiguraciju.
-
-Koristi samo važeće zvanične izvore i zabeleži datum pristupa. Najmanje proveri:
-
-- GDPR, posebno čl. 5, 6, 13–15, 17–18, 20–22 gde je primenljivo, 25, 28, 30, 32–35 i 88;
-- austrijski ArbVG §96 za mere kontrole zaposlenih i moguće odobrenje Betriebsrat-a;
-- austrijski AZG §26 ako bi sistem ikada bio predstavljen kao evidencija radnog vremena;
-- austrijsku Datenschutzbehörde i važeću DSFA-V za DPIA;
-- smernice o obradi podataka zaposlenih i sistematskom praćenju;
-- pravila vezana za SMS/push provajdera, hosting, Firebase/Google, Render i druge podobrađivače;
-- međunarodne prenose, odgovarajući mehanizam i, gde je potrebno, SCC/TIA.
-
-Napravi:
-
-- mapu tokova ličnih podataka;
-- controller/processor/subprocessor matricu;
-- svrha × kategorija podataka × lice × pravni osnov matricu;
-- ROPA osnovu;
-- privacy notice za zaposlene/vozače;
-- politiku privatnosti za relevantni portal;
-- retention/deletion matricu;
-- proceduru prava lica;
-- DPIA pre-procenu, posebno za GPS, sistematski nadzor, audit i ponašanje zaposlenih;
-- plan odgovora na incident i procenu GDPR prijave u roku od 72 sata kada je primenljivo;
-- listu zahteva koje moraju potvrditi pravnik, DPO i Betriebsrat pre pilota.
-
-Ne koristi saglasnost zaposlenog kao automatski ili podrazumevani pravni osnov. Proveri neophodnost, proporcionalnost, transparentnost i manje invazivne alternative za svaku vrstu praćenja.
-
-Primeni data minimization i privacy by default:
-
-- disponent vidi samo podatke potrebne za operativni rad;
-- lokacija postoji samo u dozvoljenom vremenu;
-- tajni login podaci su odvojeni;
-- rokovi čuvanja nisu beskonačni;
-- pristupi i kritične promene su auditovani;
-- produkcioni logovi ne sadrže kodove, tokene ili nepotrebne lične podatke.
-
-Ne proglašavaj aplikaciju „100% pravno usklađenom“. Navedi šta je tehnički sprovedeno, šta je provereno iz zvaničnog izvora i šta čeka formalno pravno/organizacijsko odobrenje.
-
-## 23. Pristupačnost
-
-Cilj je WCAG 2.2 AA.
-
-Proveri:
-
-- rad tastaturom;
-- logičan redosled fokusa;
-- vidljiv focus;
-- skip link;
-- semantičke naslove;
-- pravilne labele i opise grešaka;
-- ARIA samo gde je potrebna;
-- modale i povratak fokusa;
-- kontrast teksta, ikonica i statusa;
-- status koji se ne oslanja samo na boju;
-- reduced motion;
-- screen reader objave za real-time promene;
-- touch targete na driver PWA;
-- zoom/reflow;
-- prevode i dužinu nemačkih tekstova.
-
-Drag-and-drop uvek mora imati pristupačnu alternativu.
-
-## 24. Testiranje
-
-Pokreni postojeće testove i dodaj testove za kritične nepokrivene tokove koristeći alate koje projekat već ima.
-
-### 24.1 Obavezne kategorije
-
-- unit;
-- integration;
-- API;
-- E2E;
-- Firestore Rules;
-- Storage Rules;
-- RBAC i field-level access;
-- tenant isolation;
-- security regression;
-- accessibility;
-- i18n completeness;
-- scheduler/timezone/DST;
-- PWA/service worker;
-- upload;
-- concurrency;
-- performance relevantnih velikih planova;
-- production build.
-
-### 24.2 Kritični scenariji
-
-Testiraj najmanje:
-
-- Super Admin kreira, suspenduje i ponovo aktivira test tenant bez pristupa tajnim login podacima;
-- Super Admin support session je vremenski ograničen, jasno označen i potpuno auditovan;
-- Company Admin ne može pristupiti drugoj firmi niti platformskim podešavanjima;
-- Company Admin kreira vozača;
-- jedinstveni aktivacioni kod važi jednom i ističe;
-- pogrešan tenant/ID/kod ne otkriva postojanje naloga;
-- disponent ne može pročitati login podatke vozača;
-- vozač ne može pročitati tuđe podatke;
-- uvoz PDF-a po grupi sa preview-em, greškom i aktivacijom;
-- verzionisanje kataloga smena;
-- mesečna dodela se vidi u dnevnom planu;
-- dnevna promena ažurira mesečni prikaz;
-- dva disponenta istovremeno menjaju istu dodelu;
-- neraspoloživ vozač → zamena → nova potvrda → zdrav plan;
-- zamena smena;
-- promena autobusa;
-- petak → subota ili nedelja + ponedeljak;
-- noćna smena i DST;
-- grupna i hitna poruka;
-- GPS se uključuje samo u dozvoljenom prozoru i prestaje posle smene/grace perioda;
-- stale lokacija nije označena kao live;
-- pronađeni predmet sa fotografijom i sva tri statusa;
-- offline/spora mreža/dvostruki klik/istek sesije;
-- srpski, nemački i engleski bez hardkodovanih ostataka;
-- prazan sistem bez demo podataka.
-
-Koristi stabilne `data-testid` ili semantičke selektore za E2E. Ne oslanjaj se na krhke CSS putanje ili prevedeni tekst.
-
-Ne označavaj test kao uspešan ako nije pokrenut. Sačuvaj tačnu komandu, exit code i relevantan rezultat.
-
-## 25. Redosled implementacije
-
-Radi po sledećim poglavljima i ne preskači zavisnosti.
-
-### Poglavlje 1 — Forenzički pregled i specifikacija
-
-- trenutno stanje;
-- git i checkpoint;
-- mapa sistema;
-- gap analiza;
-- zaključavanje poslovnih pravila;
-- data-flow i pravna pre-procena.
-
-### Poglavlje 2 — Osnova podataka, tenant i dozvole
-
-- kanonski model;
-- tenant isolation;
-- RBAC;
-- profile/auth separation;
-- audit;
-- transakcije i concurrency.
-
-### Poglavlje 3 — Super Admin i Company Admin osnova
-
-- tenant lifecycle i platform health;
-- support access i centralni audit;
-- firme i brending;
-- grupe;
-- tim dispečera;
-- vozači;
-- vozila;
-- uvoz i verzionisanje planova smena.
-
-### Poglavlje 4 — Dispečersko jezgro
-
-- mesečni plan;
-- dnevni plan;
-- problem-resolution workflow;
-- raspoloživi vozači;
-- istorija i undo;
-- poruke.
-
-### Poglavlje 5 — Vozački PWA
-
-- aktivacija;
-- prijava;
-- trenutna i sledeća smena;
-- potvrde;
-- poruke;
-- quick reports;
-- SOS;
-- pronađeni predmeti.
-
-### Poglavlje 6 — Scheduler, push/SMS i lokacija
-
-- potvrde tokom poslednje prethodne smene;
-- vikend pravila;
-- provider adapteri;
-- GPS lifecycle;
-- automatska odjava;
-- retry, idempotency i observability.
-
-### Poglavlje 7 — Vizuelno, i18n i accessibility usklađivanje
-
-- tri referentna panela;
-- BusCommand identitet;
-- tenant brending;
-- sva stanja;
-- tri jezika;
-- WCAG 2.2 AA.
-
-### Poglavlje 8 — Potpuna QA, security i legal readiness kontrola
-
-- svi testovi;
-- browser pregled;
-- rule testovi;
-- security audit;
-- privacy/legal matrice;
-- performance;
-- recovery;
-- release readiness.
-
-### Poglavlje 9 — Kontrolisani pilot
-
-Ovo poglavlje se ne pokreće bez odobrenja vlasnika proizvoda:
-
-- novi sintetički test tenant;
-- novi testni nalozi;
-- 100% role-by-role live test;
-- popravke;
-- lokalna završna browser potvrda;
-- tek zatim GitHub, Firebase i Render deployment;
-- smoke test, monitoring i rollback provera.
-
-## 26. Pravila izmene koda
-
-- Poštuj postojeću arhitekturu.
-- Ne povećavaj obim bez stvarne potrebe.
-- Ne uvodi paralelni dizajn sistem.
-- Ne menjaj nepovezane fajlove.
-- Ne poništavaj tuđe izmene.
-- Ne koristi destruktivne git komande.
-- Ne briši podatke ili resurse bez tačnog targeta i odobrenja.
-- Ne menjaj poslovnu logiku samo da test prođe.
-- Ne koristi `any` bez dokumentovanog razloga.
-- Ne potiskuj TypeScript, lint ili build grešku.
-- Ne prikrivaj problem fallback vrednošću.
-- Ne ostavljaj nefunkcionalno dugme.
-- Ne ostavljaj TODO kao zamenu za obećanu funkciju.
-- Ne prikazuj interne stack trace poruke korisniku.
-- Ne upisuj tajne u kod, commit, screenshot, log ili izveštaj.
-- Ne radi deployment dok lokalni browser pregled i svi release gate-ovi nisu odobreni.
-- Svaka veća promena mora imati razlog, test i mogućnost povratka.
-
-Radi autonomno unutar jasno definisanog obima. Traži potvrdu samo kada je potrebna:
-
-- nova poslovna odluka;
-- pravno osetljiva odluka bez jasnog odgovora;
-- destruktivna radnja;
-- promena arhitekture ili scope-a;
-- produkcioni deployment;
-- trošak ili izbor spoljnog provajdera;
-- radnja koja zahteva nove pristupne podatke ili ovlašćenje.
-
-## 27. Izveštaj posle svakog poglavlja
-
-Posle svakog završenog poglavlja daj kratak, istinit rezime:
-
-- šta je analizirano;
-- šta je implementirano;
-- koji fajlovi su promenjeni;
-- koje su komande pokrenute;
-- koji testovi stvarno prolaze;
-- šta nije moglo da se proveri;
-- otvoreni rizici i odluke;
-- tačan sledeći korak;
-- ocena napretka tog poglavlja od 1 do 10;
-- ukupna ocena spremnosti projekta od 1 do 10.
-
-Ocena mora imati dokaz. Ne povećavaj je samo zato što je kod napisan. Funkcija bez testova, pravila baze, error stanja i browser potvrde nije završena funkcija.
-
-Napravi checkpoint/commit samo kada je stanje konzistentno i testirano. Koristi jasan naziv i zabeleži commit SHA.
-
-## 28. Timski rad tokom pet dana
-
-Ako više ljudi radi paralelno, podeli rad po nezavisnim granama i vlasništvu fajlova:
-
-### Dan 1
-
-- forenzički pregled;
-- business-rule matrica;
-- arhitektura i model podataka;
-- RBAC;
-- privacy/legal gap analiza.
-
-### Dan 2
-
-- dispečerski cockpit;
-- dnevni/mesečni plan;
-- problem-resolution tok;
-- vizuelni sistem.
-
-### Dan 3
-
-- backend autorizacija;
-- transakcije;
-- aktivacija vozača;
-- scheduler;
-- poruke.
-
-### Dan 4
-
-- driver PWA;
-- Company Admin;
-- import;
-- GPS lifecycle;
-- tri jezika i accessibility.
-
-### Dan 5
-
-- E2E;
-- Firestore/Storage Rules;
-- security;
-- full browser QA;
-- legal readiness paket;
-- release/rollback plan.
-
-Pre spajanja svake grane:
-
-- rebase/merge konflikt rešava autor uz pregled;
-- najmanje jedna druga osoba pregleda promenu;
-- testovi moraju biti zeleni;
-- nema demo podataka ni tajni;
-- promena ne sme pokvariti drugi jezik ili ulogu;
-- rezultat se proverava u browseru.
-
-## 29. Obavezni završni artefakti
-
-Kreiraj i održavaj:
-
-- `reports/full-buscommand-audit-YYYY-MM-DD.md`;
-- mapu stranica, ruta i servisa;
-- arhitekturni pregled;
-- ER/data model;
-- RBAC i field-access matricu;
-- state machine plana, problema i potvrde;
-- threat model;
-- data-flow mapu;
-- retention/deletion matricu;
-- DPIA pre-procenu;
-- legal/open-decisions listu;
-- test plan i stvarne rezultate;
-- vizuelni acceptance checklist;
-- deployment, rollback i recovery runbook;
-- spisak environment varijabli bez njihovih vrednosti;
-- listu preostalih rizika sa vlasnikom i prioritetom.
-
-Prioriteti nalaza:
-
-- `Critical`;
-- `High`;
-- `Medium`;
-- `Low`;
-- `Improvement`;
-- `Business decision`;
-- `Legal validation`.
-
-## 30. Release gate i definicija završenog
-
-BusCommand nije spreman za produkcioni pilot dok sve sledeće nije potvrđeno:
-
-- nema poznatog Critical ili High security problema;
-- tenant isolation i RBAC testovi prolaze;
-- Firestore i Storage Rules testovi prolaze;
-- nema javne liste vozača ili curenja login podataka;
-- nema demo/Transit Flow/test podataka u produkcionom toku;
-- dnevni i mesečni plan koriste isti kanonski model;
-- paralelne izmene ne prepisuju podatke bez upozorenja;
-- vozačka aktivacija je jednokratna i rate-limitovana;
-- potvrde i scheduler prolaze vremenske, vikend i DST scenarije;
-- GPS lifecycle je tehnički ograničen i čeka/ima potrebna pravna odobrenja;
-- sve četiri uloge prolaze kritične E2E tokove;
-- sva tri jezika su kompletna;
-- WCAG kritične prepreke su rešene;
-- typecheck prolazi;
-- lint prolazi bez novih grešaka;
-- testovi prolaze;
-- production build prolazi;
-- browser konzola nema neobjašnjene greške;
-- backup i rollback su dokumentovani i provereni;
-- pravna otvorena pitanja su jasno izdvojena;
-- vlasnik proizvoda je odobrio lokalni browser pregled.
-
-Tek nakon toga i posebne potvrde:
-
-1. napravi nameran commit;
-2. push na odobrenu GitHub granu;
-3. deploy Firebase/Render konfiguracije;
-4. pokreni migracije ili indekse kontrolisano;
-5. uradi smoke test;
-6. proveri logove bez PII;
-7. potvrdi rollback plan.
-
-## 31. Završni odgovor
-
-Na kraju prikaži:
-
-- trenutno stanje i procenat stvarne spremnosti;
-- ukupan broj izmenjenih fajlova;
-- završene stranice i module;
-- najvažnija vizuelna poboljšanja;
-- najvažnije funkcionalne i bezbednosne popravke;
-- rezultate typecheck, lint, test i build komandi;
-- rezultate lokalnog browser i role-by-role testa;
-- stanje tri jezika i accessibility;
-- pravne nalaze i šta još zahteva pravnika/DPO/Betriebsrat;
-- lokaciju izveštaja i svih artefakata;
-- commit/checkpoint identifikator;
-- preostale rizike;
-- tačan sledeći korak.
-
-Ne tvrdi da je nešto završeno, bezbedno, pravno usklađeno, testirano ili spremno za deployment ako to nisi stvarno dokazao.
-
-Krajnji cilj nije da aplikacija samo izgleda lepo. Krajnji cilj je da Super Admin pouzdano kontroliše platformu, Company Admin samostalno upravlja svojom firmom, disponent reši realan problem u nekoliko klikova, a vozač bez zabune vidi, potvrdi i prijavi sve što mu je potrebno. Sve četiri uloge moraju činiti jednu brzu, razumljivu, auditovanu, bezbednu i pravno spremnu celinu.
-
-## KRAJ MASTER PROMPTA
+- tim disponenata i dodela grupa;
+- vozači i njihovi puni administrativni podaci u dozvoljenom obimu;
+- autobusi;
+- zvanični katalozi smena po grupi;
+- bezbedan import/preview/activate/rollback;
+- tenant podešavanja, vremenska zona, jezici i login profil;
+- audit aktivnosti dostupnih ovoj ulozi.
+
+„Uredi vozače“, „Uredi autobuse“ i svako drugo vidljivo dugme mora voditi do stvarne, autorizovane funkcije sa validacijom i povratnom informacijom.
+
+## 18. Super Admin panel
+
+Super Admin upravlja:
+
+- kreiranjem, aktivacijom, suspenzijom i gašenjem firme;
+- licencama i planovima proizvoda bez razvoja računovodstva;
+- Company Admin nalozima;
+- platformskim health statusom, verzijama i auditom;
+- bezbednim tenant purge/export tokom kontrolisanog lifecycle-a;
+- support pristupom samo kroz vremenski ograničen i auditovan tok;
+- globalnim feature flagovima i jurisdiction profilima.
+
+Super Admin ne dobija neograničen tihi pristup ličnim podacima samo zato što je platform administrator. Primeni least privilege i break-glass principe.
+
+## 19. Brending i stalni BusCommand identitet
+
+- Mali plavi BusCommand znak ostaje stalno vidljiv u uglu svih aplikacionih površina.
+- Tenant može promeniti naziv/wordmark, sekundarni logo i dozvoljene boje.
+- Tenant brending ne sme ukloniti BusCommand znak, pokvariti kontrast ili prikriti sigurnosne statuse.
+- Favicon i PWA ikone koriste odobreni BusCommand znak, osim jasno dokumentovanih tenant varijanti koje i dalje čuvaju platformski identitet.
+
+## 20. Vizuelni sistem i pristupačnost
+
+Prihvaćene slike su obavezna vizuelna referenca. Zadržati moderni tamno-teget SaaS identitet, plave akcente, jasne statuse i gustinu prikladnu operativnom centru.
+
+Minimalno:
+
+- WCAG 2.2 AA kao cilj za relevantne površine;
+- dovoljan kontrast u normalnom, hover, focus, disabled i selected stanju;
+- čitljive native/custom dropdown opcije bez oslanjanja na hover;
+- vidljiv keyboard focus;
+- semantičke labele i poruke greške povezane sa poljima;
+- status se ne prenosi samo bojom;
+- velike touch mete na PWA;
+- reduced motion za treperenje/animacije;
+- vizuelna hijerarhija koja prvo pokazuje problem i akciju.
+
+Usvojene tri referentne slike određuju raspored i vizuelni smer, ali se primenjuju sledeće obavezne korekcije:
+
+1. Na dispečerskom panelu problematičan red ostaje crveno označen, a **„Reši problem“** koristi upečatljiv amber/narandžasti `urgent-action` stil umesto standardnog plavog dugmeta.
+2. Company Admin pregled uvoza koristi jednu sticky aktivacionu traku sa sažetkom i jednom akcijom **„Aktiviraj katalog“**, bez dupliranih dugmadi.
+3. Vozački PWA ima samo jedan SOS, u centru donje navigacije; gornji SOS se uklanja, a navigacija glasi **Plan · Smene · SOS · Prijavi · Poruke**.
+
+Ove korekcije imaju prednost nad detaljima prikazanim na starijim referentnim slikama. BusCommand logo, tamno-teget vizuelni identitet, jasna gustina operativnih informacija i pravila tenant brendinga ostaju nepromenjeni.
+
+## 21. Arhitektura i multi-tenant izolacija
+
+Zadrži jednu modularnu aplikaciju dok nema dokazane potrebe za podelom.
+
+- UI moduli ne sadrže privilegovanu poslovnu logiku.
+- Server je autoritet za role, tenant/group scope i kritične upise.
+- Firestore Rules su druga linija zaštite, ne zamena za serversku autorizaciju.
+- Admin SDK upisi prolaze kroz validirane servisne funkcije i audit.
+- Kritični tokovi koriste transakcije, idempotency, optimistic concurrency i outbox gde je potrebno.
+- Projekcije/mirror podaci su server-owned i mogu se pouzdano obnoviti iz kanonskog izvora.
+- Ne uvoditi novu infrastrukturu bez merljivog problema koji postojeći sistem ne može bezbedno rešiti.
+
+## 22. Application security
+
+Koristi OWASP ASVS i NIST SSDF kao smernice, ali ne tvrdi sertifikaciju bez stvarne verifikacije.
+
+Obavezno analizirati i testirati:
+
+- autentifikaciju, MFA za privilegovane uloge i session lifecycle;
+- server-side RBAC i object-level authorization;
+- cross-tenant IDOR/BOLA;
+- validaciju inputa i output encoding;
+- upload fajlova;
+- rate limiting, brute-force i abuse zaštitu;
+- CSRF gde je primenljivo, XSS, injection, SSRF i unsafe redirects;
+- CORS/CSP i sigurnosna zaglavlja;
+- secret management i rotaciju;
+- dependency/SCA i supply-chain rizik;
+- audit integritet i zaštitu logova;
+- backup, restore i disaster-recovery probe;
+- dependency pinning i reproduktivan build.
+
+Ne stavljati tajne u repo, bundle, screenshot, log, test fixture ili odgovor.
+
+## 23. Međunarodna privatnost i jurisdiction profiles
+
+Ne postoji jedna oznaka „globalno usklađeno“. Implementiraj zajedničku privacy/security osnovu, a zatim odvojen, verzionisan pravni profil za svako tržište na kome se proizvod stvarno pušta.
+
+### 23.1 Zajednička tehnička osnova
+
+- privacy by design/default;
+- data minimization i purpose limitation;
+- klasifikacija podataka i registar obrade;
+- controller/processor/subprocessor odgovornosti;
+- tenant-configurable retention u granicama odobrenog pravnog profila;
+- access, correction, export, deletion/restriction workflows;
+- legal hold odvojen od običnog retention-a;
+- breach detection, evidence preservation i notification workflow;
+- enkripcija u tranzitu i mirovanju prema mogućnostima platforme;
+- data residency i cross-border transfer evidencija;
+- DPA/subprocessor dokumentacija;
+- DPIA/PIA tehnička dokumentacija za GPS, monitoring i druge rizične obrade;
+- zabrana secondary use-a i profilisanja bez nove svrhe i pravne procene.
+
+### 23.2 Obavezni release gate po tržištu
+
+Pre uključivanja novog tržišta dokumentuj:
+
+1. primenljive zakone i regulatora iz zvaničnih aktuelnih izvora;
+2. controller/processor uloge;
+3. svaku svrhu i pravni osnov;
+4. kategorije i tokove podataka;
+5. retention i brisanje;
+6. prava lica i rokove;
+7. breach obaveze;
+8. međunarodne transfere i potrebne mehanizme;
+9. employee monitoring, radničko saodlučivanje i obaveštavanje;
+10. data localization ili sektorske zahteve;
+11. potrebne ugovore, politike, DPIA/PIA i odobrenja;
+12. tehničke feature flagove koji se ne smeju aktivirati pre odobrenja.
+
+Kao početne pravne porodice razmotriti, ali uvek ponovo proveriti aktuelne zvanične izvore: EU/EEA GDPR i lokalno radno pravo; Austriju uključujući ArbVG i AZG samo u relevantnom obimu; UK GDPR/Data Protection Act; švajcarski FADP; California CCPA/CPRA; brazilski LGPD; kanadski PIPEDA i provincijske propise; australijski Privacy Act/APPs; japanski APPI; kao i druge zakone stvarnog ciljnog tržišta.
+
+Ovaj spisak nije pravna potvrda niti konačna lista.
+
+### 23.3 Posebno za zaposlene, GPS i raspored
+
+- BusCommand ne zaključuje automatski da je raspored pravno dozvoljen.
+- Odgovornost za raspored i odmor ostaje ovlašćenim licima kompanije i lokalnom pravnom procesu.
+- GPS, prijava/odjava i audit zaposlenih ne aktiviraju se za tržište dok svrha, pravni osnov, transparentnost, retention i radničko saodlučivanje nisu potvrđeni.
+- Saglasnost zaposlenog ne pretpostavljaj kao dovoljan ili slobodno dat osnov u radnom odnosu.
+- „Pravno spremno“ znači da postoje tehničke kontrole i dokumentacija za pravni pregled, ne da je agent izdao pravno mišljenje.
+
+## 24. Notifikacije, scheduler i pouzdanost
+
+- Push/SMS/email provider koriste adaptere.
+- Tajne i provider konfiguracija su izvan klijenta.
+- Svaka poruka ima tenant, recipient, purpose, locale, template version, idempotency key i status.
+- Scheduler koristi server vreme i tenant timezone.
+- Retry ima backoff i maksimalni broj pokušaja.
+- Restart ne sme duplirati poruke.
+- Failure je vidljiv disponentu ili administratoru kada zahteva akciju.
+- Notifikacije van dozvoljenog prozora se ne šalju.
+
+## 25. Firestore Rules, API i audit
+
+- Pravila počinju sa deny-by-default.
+- Kritični server-owned resursi ne prihvataju klijentske upise.
+- Svaka kolekcija ima dokumentovan read/write matrix.
+- Rules testovi pokrivaju dozvoljen i zabranjen pristup za sve uloge, cross-tenant i cross-group pokušaje, lokaciju van sesije i zaštićena polja.
+- API validira schema, token, revocation, tenant, role, group i field-level dozvole.
+- Audit je append-only za obične uloge; ispravka audita pravi novi zapis.
+- Svaka kritična akcija ima correlation ID između API, baze, audit-a i notifikacije.
+
+## 26. Testiranje
+
+Minimalna test matrica:
+
+- unit testovi poslovnih pravila;
+- API/integration testovi stvarnih ruta;
+- Firestore Emulator Rules testovi;
+- multi-tenant negative testovi;
+- E2E za četiri uloge;
+- i18n coverage i missing-key testovi;
+- accessibility smoke/automated provere i ručna tastatura kontrola;
+- offline/reconnect testovi vozačkog PWA;
+- timezone, DST, petak–ponedeljak i vikend potvrde;
+- optimistic concurrency i paralelni disponenti;
+- idempotency/retry/restart testovi;
+- upload/parser neispravni fajlovi;
+- browser test stvarnih dugmadi i dropdown prikaza;
+- build i clean-install provera;
+- test da produkcioni bundle ne sadrži demo podatke, tajne ili Transit Flow tragove.
+
+Testovi moraju tvrditi ono što zaista proveravaju. Statičko traženje stringa nije zamena za funkcionalan integration test kritičnog toka.
+
+## 27. Redosled implementacije
+
+Podrazumevani redosled, jedno poglavlje po ciklusu:
+
+1. utvrđivanje stanja i stabilnog checkpoint-a;
+2. tajne, RBAC, Firestore Rules i tenant izolacija;
+3. identitet i četiri login lifecycle-a;
+4. kanonski model plana i revizije;
+5. Company Admin katalog smena/import;
+6. mesečni plan;
+7. dnevni plan i problem-resolution;
+8. confirmations scheduler/outbox;
+9. poruke;
+10. driver session, GPS i mapa;
+11. mobilni PWA/offline;
+12. pronađeni predmeti;
+13. Super Admin i Company Admin kompletiranje;
+14. i18n, accessibility i vizuelno usklađivanje;
+15. potpuno integraciono testiranje i testni cleanup;
+16. jurisdiction release gate za pilot tržište;
+17. staging deployment i ručni acceptance test;
+18. tek zatim kontrolisano spajanje i release.
+
+Redosled se menja samo ako dokazani blocker ili kritična ranjivost zahteva prioritet.
+
+## 28. Pravila izmene i Git disciplina
+
+- Nikada ne radi direktno na `main` bez izričitog odobrenja.
+- Jedno poglavlje ima jasnu granu i ograničen diff.
+- Ne uključuj nepovezane izmene.
+- Ne briši korisnički rad.
+- Pre commita pregledaj diff i tajne.
+- Commit poruke opisuju stvarnu promenu.
+- Draft PR sadrži cilj, rizike, testove, poznata ograničenja i rollback.
+- Ne spajaj draft dok release gate nije ispunjen.
+- Render/Firebase/produkcija se ne menjaju dok lokalna/CI i browser provera nisu završene i vlasnik nije odobrio deployment.
+
+## 29. Izveštaj posle svakog poglavlja
+
+Izveštaj mora sadržati:
+
+1. cilj poglavlja;
+2. početno stanje;
+3. pronađene probleme i njihov rizik;
+4. izmenjene fajlove i ponašanje;
+5. bezbednosni/privacy uticaj;
+6. tačne test komande, exit code i rezultat;
+7. šta nije testirano i zašto;
+8. poznata ograničenja;
+9. rollback/checkpoint;
+10. ocenu napretka 1–10 sa obrazloženjem;
+11. jedan preporučen sledeći korak.
+
+Ne koristiti „100%“, „potpuno bezbedno“, „pravno usklađeno“ ili „production ready“ bez precizno definisanog i dokazano položenog kriterijuma.
+
+## 30. Završni artefakti
+
+Pre release-a moraju postojati:
+
+- arhitekturni pregled i model podataka;
+- RBAC/field/tenant matrica;
+- API i error-code dokumentacija;
+- Firestore Rules matrica i test izveštaj;
+- i18n coverage izveštaj;
+- threat model i security checklist;
+- privacy data-flow mapa, retention matrica i subprocessor lista;
+- jurisdiction profil pilot tržišta i lista potrebnih pravnih odobrenja;
+- DPIA/PIA tehnička pre-procena za GPS/employee monitoring;
+- backup/restore i incident-response procedura;
+- deployment i rollback runbook;
+- QA izveštaj sa dokazima;
+- test-data cleanup izveštaj;
+- release notes i poznata ograničenja.
+
+## 31. Release gate i definicija završenog
+
+Poglavlje je završeno samo kada:
+
+- funkcija radi kroz ceo tok, ne samo vizuelno;
+- autorizacija je serverska i testirana;
+- Firestore Rules ne otvaraju širi pristup;
+- audit je tačan;
+- greške i retry tok rade;
+- SR/DE/EN su kompletni;
+- relevantan UI odgovara prihvaćenom dizajnu;
+- ciljani i kompletni testovi prolaze;
+- nema placeholder-a, demo podataka, stranih tragova ili tajni;
+- dokumentacija je ažurirana;
+- poznati rizik nije skriven.
+
+Release kandidat je spreman za staging samo kada:
+
+- sva četiri role flow-a prođu E2E;
+- clean-install/build i dvostruki kompletni QA prolaze;
+- testni tenant može kontrolisano da se kreira i ukloni;
+- backup/rollback je proveren;
+- pilot jurisdiction profil je odobren za uključene funkcije;
+- vlasnik proizvoda odobri deployment.
+
+Produkcioni release je dozvoljen tek posle staging browser acceptance testa, uklanjanja sintetičkih podataka i izričitog odobrenja.
+
+## Završni cilj
+
+Isporuči BusCommand kao brzu, pouzdanu, auditovanu, pristupačnu i privacy-by-design operativnu celinu. Disponent mora rešavati probleme u nekoliko jasnih koraka, dok Company Admin, Super Admin i vozač dobijaju potpuno funkcionalne i strogo ograničene alate.
+
+Sistem mora biti tehnički pripremljen za međunarodna tržišta kroz modularne jurisdiction profile, ali nijedno tržište ne proglašavaj pravno usklađenim bez aktuelne lokalne pravne, DPO i radnopravne potvrde.
+
+# KRAJ MASTER PROMPTA
 
 ---
 
-## Minimalni zvanični pravni izvori za proveru
+## Zvanične polazne reference za proveru, ne za automatsku pravnu potvrdu
 
-Ove izvore obavezno proveriti ponovo na datum svake pravne analize:
+- EU GDPR, EUR-Lex: https://eur-lex.europa.eu/eli/reg/2016/679/oj
+- Austrijski RIS: https://www.ris.bka.gv.at/
+- UK ICO: https://ico.org.uk/
+- Švajcarski Fedlex/FDPIC: https://www.fedlex.admin.ch/ i https://www.edoeb.admin.ch/
+- California Privacy Protection Agency: https://cppa.ca.gov/
+- Brazil LGPD, Planalto: https://www.planalto.gov.br/
+- Canada Justice Laws / PIPEDA: https://laws-lois.justice.gc.ca/
+- Australia OAIC: https://www.oaic.gov.au/
+- Japan PPC: https://www.ppc.go.jp/en/
+- OWASP ASVS: https://owasp.org/www-project-application-security-verification-standard/
+- NIST SSDF SP 800-218: https://csrc.nist.gov/publications/detail/sp/800-218/final
+- WCAG 2.2: https://www.w3.org/TR/WCAG22/
 
-- GDPR, EUR-Lex: https://eur-lex.europa.eu/eli/reg/2016/679/oj/eng
-- Austrijski ArbVG §96, RIS: https://www.ris.bka.gv.at/eli/bgbl/1974/22/P96/NOR40123095
-- Austrijski AZG §26, RIS: https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=NOR40206209
-- Austrijska Datenschutzbehörde — DPIA/DSFA: https://dsb.gv.at/rechte-pflichten/uestakk-v
-- DSFA-V, RIS: https://www.ris.bka.gv.at/geltendefassung/bundesnormen/20010375/dsfa-v%2C%20fassung%20vom%2020.06.2021.pdf
-- WP29 Opinion 2/2017 on data processing at work: https://ec.europa.eu/newsroom/document.cfm?doc_id=45631
-
-Pravni deo prompta nije pravno mišljenje niti potvrda usklađenosti. Njegov cilj je da spreči tehničke odluke koje bi kasnije onemogućile zakonit pilot i da pripremi tačna pitanja, dokaze i dokumentaciju za kvalifikovanu pravnu proveru.
+Pre svake tržišne odluke proveriti trenutno važeću verziju propisa u zvaničnom izvoru.

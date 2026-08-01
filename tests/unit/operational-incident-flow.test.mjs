@@ -31,11 +31,24 @@ test("operations center requires a reason and keeps the shift until replacement"
     assert.doesNotMatch(submit, /persistShift\(driver, today, "clear"\)/);
 });
 
-test("daily replacement closes the matching active coverage incident", async () => {
+test("daily replacement delegates the matching active incident to the atomic resolver", async () => {
     const daily = await read("../../js/dispatcher/daily-plan.js");
     assert.match(daily, /report\.type === "coverage:disruption"/);
-    assert.match(daily, /report\.driverId === \(previousDriver\.id \|\| previousDriver\.uid\)/);
-    assert.match(daily, /await resolveReport\(incident\.id\)/);
+    assert.match(daily, /report\.driverId === previousDriverId/);
+    assert.match(daily, /window\.openCoverageResolver\(incident\.id, preferredReplacementDriverId\)/);
+    assert.doesNotMatch(daily, /resolveReport\(/);
+});
+
+test("atomic resolver validates schedule availability and writes plan plus audit in one transaction", async () => {
+    const server = await read("../../server/driver-routes.js");
+    const start = server.indexOf('app.put("/api/staff/operational-incidents/:reportId/resolve"');
+    const end = server.indexOf('app.get("/api/staff/shift-confirmations"', start);
+    const route = server.slice(start, end);
+    assert.match(route, /replacementScheduleSnap\.data\(\)\?\.parsedShifts\?\.\[day\]/);
+    assert.match(route, /new Set\(\["clear", "off", "bereitschaft", "standby"\]\)/);
+    assert.match(route, /await db\(\)\.runTransaction/);
+    assert.match(route, /tx\.update\(reportRef, \{ status: "resolved"/);
+    assert.match(route, /action: "operational_incident_resolved"/);
 });
 
 test("incident workflow has genuine EN SR and DE text", async () => {
