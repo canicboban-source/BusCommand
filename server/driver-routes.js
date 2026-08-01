@@ -24,6 +24,10 @@ const {
   buildScheduleDayEntry
 } = require("./shift-assignment");
 const {
+  PlanImportValidationError,
+  buildPlanImportPreview
+} = require("./plan-import-preview");
+const {
   staffMessageSchema,
   messageTypeForTemplate,
   resolveStaffMessageTargets,
@@ -127,6 +131,13 @@ const shiftAssignmentSchema = z.object({
   start: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).optional(),
   end: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).optional(),
   expectedRevision: z.number().int().min(0)
+});
+const monthlyPlanImportPreviewSchema = z.object({
+  groupId: groupIdSchema,
+  month: z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])$/),
+  sourceName: z.string().trim().min(1).max(255),
+  reason: z.string().trim().min(3).max(200),
+  rows: z.array(shiftAssignmentSchema).min(1).max(1000)
 });
 const shiftConfirmationSchema = z.object({
   dates: z.array(isoDateSchema).min(1).max(4).transform((dates) => [...new Set(dates)])
@@ -1627,6 +1638,79 @@ function registerDriverRoutes(app, deps) {
     } catch (error) {
       req.log?.error?.({ err: error }, "Učitavanje potvrda smena nije uspelo");
       return res.status(500).json({ success: false, error: "Potvrde smena nisu mogle biti učitane." });
+    }
+  });
+
+  app.post("/api/staff/monthly-plans/import/preview", requireStaff, async (req, res) => {
+    if (req.staff.role !== "dispatcher") {
+      return res.status(403).json({ success: false, error: "Samo disponent može pripremiti mesečni plan." });
+    }
+    const parsed = monthlyPlanImportPreviewSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        code: "INVALID_PLAN_IMPORT",
+        error: "Paket mesečnog plana nije ispravan."
+      });
+    }
+    if (!req.staff.groups.includes(parsed.data.groupId)) {
+      return res.status(403).json({
+        success: false,
+        code: "GROUP_ACCESS_DENIED",
+        error: "Pristup izabranoj grupi nije dozvoljen."
+      });
+    }
+
+    try {
+      const companyRef = db().collection("companies").doc(req.staff.companyId);
+      const driverIds = [...new Set(parsed.data.rows.map((row) => row.driverId))];
+      const driverRefs = driverIds.map((driverId) => companyRef.collection("drivers").doc(driverId));
+      const [driverSnaps, monthlyShiftsSnap] = await Promise.all([
+        db().getAll(...driverRefs),
+        companyRef.collection("shifts")
+          .where("date", ">=", `${parsed.data.month}-01`)
+          .where("date", "<=", `${parsed.data.month}-31`)
+          .get()
+      ]);
+      const driversById = new Map(driverSnaps
+        .filter((snap) => snap.exists)
+        .map((snap) => [snap.id, snap.data()]));
+      const shiftsById = new Map(monthlyShiftsSnap.docs
+        .map((doc) => doc.data())
+        .filter((shift) => shift.driverId && shift.date)
+        .map((shift) => [`${shift.driverId}|${shift.date}`, shift]));
+
+      const preview = buildPlanImportPreview({
+        companyId: req.staff.companyId,
+        staffUid: req.staff.uid,
+        payload: parsed.data,
+        driversById,
+        shiftsById
+      });
+      await logAudit(req.staff.companyId, req.staff.uid, "monthly_plan_import_previewed", {
+        fingerprint: preview.fingerprint,
+        groupId: preview.groupId,
+        month: preview.month,
+        sourceName: preview.sourceName,
+        reason: preview.reason,
+        summary: preview.summary
+      });
+      return res.json({ success: true, preview });
+    } catch (error) {
+      if (error instanceof PlanImportValidationError) {
+        return res.status(422).json({
+          success: false,
+          code: error.code,
+          error: "Plan sadrži podatke koji moraju biti ispravljeni.",
+          details: error.errors
+        });
+      }
+      req.log?.error?.({ err: error }, "Pregled uvoza mesečnog plana nije uspeo");
+      return res.status(500).json({
+        success: false,
+        code: "PLAN_IMPORT_PREVIEW_FAILED",
+        error: "Pregled mesečnog plana nije mogao biti pripremljen."
+      });
     }
   });
 
