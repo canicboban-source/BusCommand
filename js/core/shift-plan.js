@@ -9,6 +9,34 @@ function driverIdForName(driverName) {
     return window.state.drivers?.find(driver => driver.name === driverName)?.id || null;
 }
 
+function resolveDriverIdentity(identity) {
+    const driver = window.state.drivers?.find(item => item.id === identity)
+        || window.state.drivers?.find(item => item.name === identity)
+        || null;
+    return {
+        id: driver?.id || null,
+        name: driver?.name || String(identity || "")
+    };
+}
+
+function shiftMatchesDriverDate(shift, identity, dateStr) {
+    if (!shift || shift.date !== dateStr) return false;
+    return Boolean(
+        (identity.id && shift.driverId === identity.id)
+        || (identity.name && shift.driverName === identity.name)
+    );
+}
+
+function compareShiftOverrides(left, right, identity) {
+    const leftCanonical = identity.id && left.driverId === identity.id ? 1 : 0;
+    const rightCanonical = identity.id && right.driverId === identity.id ? 1 : 0;
+    if (leftCanonical !== rightCanonical) return rightCanonical - leftCanonical;
+    const revisionDiff = (Number(right.revision) || 0) - (Number(left.revision) || 0);
+    if (revisionDiff) return revisionDiff;
+    return String(right.updatedAt || right.assignedAt || "")
+        .localeCompare(String(left.updatedAt || left.assignedAt || ""));
+}
+
 function getActiveBereitschaftCode() {
     return getBereitschaftCode(getActiveLineId());
 }
@@ -189,11 +217,11 @@ function findRouteForDriver(driver, routeCode) {
 function getShiftForDriverDate(driverName, dateStr) {
     ensureShiftsArray();
 
-    const driverId = driverIdForName(driverName);
-    const direct = window.state.shifts.find(s =>
-        s.date === dateStr
-        && (s.driverName === driverName || (driverId && s.driverId === driverId))
-    );
+    const identity = resolveDriverIdentity(driverName);
+    const driverId = identity.id;
+    const direct = window.state.shifts
+        .filter(shift => shiftMatchesDriverDate(shift, identity, dateStr))
+        .sort((left, right) => compareShiftOverrides(left, right, identity))[0];
     if (direct) {
         return {
             ...direct,
@@ -213,7 +241,7 @@ function getShiftForDriverDate(driverName, dateStr) {
         const s = schedule.parsedShifts[day];
         return {
             driverId: driverId || schedule.driverId || null,
-            driverName,
+            driverName: identity.name,
             date: dateStr,
             type: s.type || "off",
             name: s.name || "",
@@ -238,14 +266,17 @@ function getCurrentShiftForDriver(driverName, yearMonthStr, dayNum) {
 function setShiftForDriverDate(driverName, dateStr, { type, name, bus, routeCode, start, end, revision, syncSchedule = true }) {
     ensureShiftsArray();
 
-    window.state.shifts = window.state.shifts.filter(s => !(s.driverName === driverName && s.date === dateStr));
+    const identity = resolveDriverIdentity(driverName);
+    window.state.shifts = window.state.shifts.filter(
+        shift => !shiftMatchesDriverDate(shift, identity, dateStr)
+    );
 
     if (type && type !== "clear") {
         const label = name || SHIFT_TYPE_LABELS[type] || type;
         window.state.shifts.push({
-            id: `shf-${driverIdForName(driverName) || "x"}-${dateStr}`,
-            driverId: driverIdForName(driverName),
-            driverName,
+            id: `shf-${identity.id || "x"}-${dateStr}`,
+            driverId: identity.id,
+            driverName: identity.name,
             date: dateStr,
             type,
             name: label,
@@ -261,7 +292,7 @@ function setShiftForDriverDate(driverName, dateStr, { type, name, bus, routeCode
     }
 
     if (syncSchedule) {
-        syncShiftToMonthlyPlan(driverName, dateStr, type, name, start, end, bus, routeCode);
+        syncShiftToMonthlyPlan(identity.name, dateStr, type, name, start, end, bus, routeCode);
     }
 }
 
