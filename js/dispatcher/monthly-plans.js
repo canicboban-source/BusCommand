@@ -9,6 +9,7 @@ import { closeModal, showModal } from "../ui/modals.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { persistShift } from "./shifts.js";
+import { resolveMonthlyShiftTimes, splitListedValue } from "./monthly-shift-edit-model.js";
 
 let _selectedGroupId = null;
 let _editCtx = null;
@@ -403,8 +404,8 @@ function readMedFormValues() {
 
     return {
         type: typeSelect?.value || "off",
-        code: (codeCustom?.value || codeSelect?.value || "").trim(),
-        bus: (busCustom?.value || busSelect?.value || "").trim().replace(/^bus\s*/i, "")
+        code: (codeSelect?.value || codeCustom?.value || "").trim(),
+        bus: (busSelect?.value || busCustom?.value || "").trim().replace(/^bus\s*/i, "")
     };
 }
 
@@ -420,17 +421,13 @@ function applyMedFormValues({ type, code, bus }, schedule) {
 
     if (typeSelect) typeSelect.value = type || "off";
 
-    const codesInList = collectShiftCodesForEdit(schedule);
-    const codeInList = code && codesInList.includes(code);
+    const codeFields = splitListedValue(code, collectShiftCodesForEdit(schedule));
+    if (codeSelect) codeSelect.value = codeFields.selectValue;
+    if (codeCustom) codeCustom.value = codeFields.customValue;
 
-    if (codeSelect) codeSelect.value = codeInList ? code : "";
-    if (codeCustom) codeCustom.value = code || "";
-
-    const buses = getHubBuses().map(b => String(b.number));
-    const busInList = bus && buses.includes(String(bus));
-
-    if (busSelect) busSelect.value = busInList ? String(bus) : "";
-    if (busCustom) busCustom.value = bus || "";
+    const busFields = splitListedValue(bus, getHubBuses().map(b => String(b.number)));
+    if (busSelect) busSelect.value = busFields.selectValue;
+    if (busCustom) busCustom.value = busFields.customValue;
 }
 
 function shiftToFormValues(shift) {
@@ -536,6 +533,18 @@ function onMedShiftCodeCustomInput() {
     typeSelect.value = inferTypeFromShiftCode(code, entry);
 }
 
+function onMedBusSelectChange() {
+    const busSelect = document.getElementById("med-bus-select");
+    const busCustom = document.getElementById("med-bus-custom");
+    if (busSelect?.value && busCustom) busCustom.value = "";
+}
+
+function onMedBusCustomInput() {
+    const busSelect = document.getElementById("med-bus-select");
+    const busCustom = document.getElementById("med-bus-custom");
+    if (busCustom?.value.trim() && busSelect) busSelect.value = "";
+}
+
 function openMonthlyDayEdit(scheduleKey, day) {
     const schedule = window.state.schedules?.find(s => s.id === scheduleKey);
     if (!schedule) {
@@ -587,8 +596,8 @@ async function saveMonthlyDayEdit() {
     );
 
     let type = typeSelect?.value || "off";
-    const code = (codeCustom?.value || codeSelect?.value || "").trim();
-    const bus = (busCustom?.value || busSelect?.value || "").trim().replace(/^bus\s*/i, "");
+    const code = (codeSelect?.value || codeCustom?.value || "").trim();
+    const bus = (busSelect?.value || busCustom?.value || "").trim().replace(/^bus\s*/i, "");
 
     const schedule = window.state.schedules.find(s => s.id === _editCtx.scheduleKey);
     if (!schedule) {
@@ -605,6 +614,7 @@ async function saveMonthlyDayEdit() {
     }
 
     const catalog = code ? window.state.shiftCatalog?.entries?.[code] : null;
+    const existingShift = getShiftForPlanDay(schedule, day);
 
     if (code && (type === "off" || type === "vacation" || type === "sick")) {
         type = inferTypeFromShiftCode(code, catalog);
@@ -621,14 +631,19 @@ async function saveMonthlyDayEdit() {
     const displayName = bus ? `${name} (Bus ${bus})` : name;
     const dateStr = `${_editCtx.year}-${String(_editCtx.monthNum).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const toastDate = formatPlanDate(_editCtx.year, _editCtx.monthNum, day);
+    const times = resolveMonthlyShiftTimes({ type, catalogEntry: catalog, existingShift });
+    if (!times.valid) {
+        showToast(t("med_shift_times_missing"), "error", 6000);
+        return;
+    }
 
     const saved = await persistShift(
         driver,
         dateStr,
         type,
         displayName,
-        catalog?.start || null,
-        catalog?.end || null,
+        times.start,
+        times.end,
         bus || null
     );
     if (!saved) return;
@@ -762,6 +777,8 @@ export {
     saveMonthlyDayEdit,
     onMedDaySelectChange,
     onMedCatalogSelectChange,
+    onMedBusCustomInput,
+    onMedBusSelectChange,
     onMedShiftTypeChange,
     onMedShiftCodeCustomInput
 };

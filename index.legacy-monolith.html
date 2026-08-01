@@ -2609,10 +2609,10 @@
 
             <div class="form-group monthly-day-edit-field monthly-day-edit-field--last">
                 <label data-i18n="med_label_bus">Autobus</label>
-                <select id="med-bus-select" class="med-control">
+                <select id="med-bus-select" class="med-control" data-change-action="onMedBusSelectChange">
                     <option value="" data-i18n="med_bus_none">— Bez autobusa —</option>
                 </select>
-                <input type="text" id="med-bus-custom" class="med-control med-control--follow" data-i18n-placeholder="med_bus_placeholder" placeholder="ili ukucajte broj autobusa, npr. 91103" inputmode="numeric">
+                <input type="text" id="med-bus-custom" class="med-control med-control--follow" data-i18n-placeholder="med_bus_placeholder" placeholder="ili ukucajte broj autobusa, npr. 91103" inputmode="numeric" data-input-action="onMedBusCustomInput">
             </div>
 
             <div class="monthly-day-edit-actions">

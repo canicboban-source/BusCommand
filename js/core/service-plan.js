@@ -43,7 +43,7 @@ function findDemoPlan(groupId) {
         .sort((a, b) => String(b.validFrom).localeCompare(String(a.validFrom)))[0] || null;
 }
 
-async function loadActiveServicePlanForLine(groupId) {
+async function loadActiveServicePlanForLine(groupId, options = {}) {
     const targetGroupId = String(groupId || "").trim();
     if (!targetGroupId) return null;
     if (IS_DEMO_MODE) {
@@ -53,7 +53,7 @@ async function loadActiveServicePlanForLine(groupId) {
     }
     const companyId = window.currentUser?.companyId;
     if (!companyId) return null;
-    const result = await ApiClient.getActiveServicePlan(companyId, targetGroupId);
+    const result = await ApiClient.getActiveServicePlan(companyId, targetGroupId, options);
     if (!result.success) return null;
     applyServicePlanToCatalog(result.plan, targetGroupId);
     return result.plan;

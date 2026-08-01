@@ -65,6 +65,9 @@ const busCreateSchema = z.object({
   number: z.string().trim().min(1).max(32).regex(/^[\p{L}\p{N} ._/-]+$/u),
   groupId: groupIdSchema
 });
+const busUpdateSchema = z.object({
+  number: z.string().trim().min(1).max(32).regex(/^[\p{L}\p{N} ._/-]+$/u)
+});
 const busStatusSchema = z.object({ active: z.boolean() });
 const quickReportSchema = z.object({
   type: z.enum([
@@ -1227,6 +1230,98 @@ function registerDriverRoutes(app, deps) {
     } catch (error) {
       req.log?.error?.({ err: error }, "Dodavanje autobusa nije uspelo");
       return res.status(500).json({ success: false, error: "Autobus nije mogao biti dodat." });
+    }
+  });
+
+  app.put("/api/staff/buses/:busId", rateLimit(30, 60_000), requireStaff, async (req, res) => {
+    if (req.staff.role !== "dispatcher") {
+      return res.status(403).json({ success: false, code: "bus_role_denied", error: "Samo disponent može upravljati autobusima." });
+    }
+    const busId = busIdSchema.safeParse(req.params.busId);
+    const update = busUpdateSchema.safeParse(req.body);
+    if (!busId.success || !update.success) {
+      return res.status(400).json({ success: false, code: "bus_invalid", error: "Nevažeći podaci autobusa." });
+    }
+
+    try {
+      const companyRef = db().collection("companies").doc(req.staff.companyId);
+      const busRef = companyRef.collection("buses").doc(busId.data);
+      const duplicateQuery = companyRef.collection("buses")
+        .where("number", "==", update.data.number)
+        .limit(2);
+      const auditRef = companyRef.collection("audit_log").doc();
+      const result = await db().runTransaction(async (tx) => {
+        const [busSnap, duplicateSnap] = await Promise.all([
+          tx.get(busRef),
+          tx.get(duplicateQuery)
+        ]);
+        if (!busSnap.exists) {
+          const error = new Error("bus_not_found");
+          error.code = "bus_not_found";
+          throw error;
+        }
+        const bus = busSnap.data() || {};
+        const groupId = bus.groupId || bus.lineId || null;
+        if (!groupId || !dispatcherCanAccessGroup(req.staff.groups, groupId)) {
+          const error = new Error("bus_group_denied");
+          error.code = "bus_group_denied";
+          throw error;
+        }
+        if (duplicateSnap.docs.some((doc) => doc.id !== busId.data)) {
+          const error = new Error("bus_number_duplicate");
+          error.code = "bus_number_duplicate";
+          throw error;
+        }
+        if (bus.number === update.data.number) {
+          return { bus, groupId, changed: false };
+        }
+
+        const updatedAt = admin().firestore.FieldValue.serverTimestamp();
+        tx.update(busRef, {
+          number: update.data.number,
+          updatedAt,
+          updatedBy: req.staff.uid
+        });
+        tx.set(auditRef, {
+          action: "bus_updated",
+          actorId: req.staff.uid,
+          actorRole: req.staff.role,
+          companyId: req.staff.companyId,
+          category: "fleet",
+          timestamp: updatedAt,
+          details: {
+            busId: busId.data,
+            groupId,
+            previousNumber: bus.number || "",
+            newNumber: update.data.number
+          }
+        });
+        return { bus: { ...bus, number: update.data.number }, groupId, changed: true };
+      });
+
+      return res.json({
+        success: true,
+        changed: result.changed,
+        bus: {
+          id: busId.data,
+          number: result.bus.number,
+          groupId: result.groupId,
+          lineId: result.bus.lineId || result.groupId,
+          active: result.bus.active !== false
+        }
+      });
+    } catch (error) {
+      if (error.code === "bus_not_found") {
+        return res.status(404).json({ success: false, code: error.code, error: "Autobus nije pronađen." });
+      }
+      if (error.code === "bus_group_denied") {
+        return res.status(403).json({ success: false, code: error.code, error: "Autobus nije u dodeljenoj grupi." });
+      }
+      if (error.code === "bus_number_duplicate") {
+        return res.status(409).json({ success: false, code: error.code, error: "Autobus sa ovim brojem već postoji." });
+      }
+      req.log?.error?.({ err: error }, "Izmena autobusa nije uspela");
+      return res.status(500).json({ success: false, code: "bus_update_failed", error: "Autobus nije mogao biti izmenjen." });
     }
   });
 

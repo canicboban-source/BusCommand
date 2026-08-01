@@ -15,7 +15,7 @@ import { closeSuperAdminModal, confirmSuperAdminPin, handleLogoClick } from "./a
 import { clickElementById, installActionDelegates, removeElementById } from "./core/action-delegate.js";
 import { exportDriversCSV, exportLostItemsCSV, exportReportsCSV } from "./core/export-csv.js";
 import { getScheduleByKey } from "./core/utils.js";
-import { addBus, clearBusImport, confirmBusImport, deleteBus, deleteRoute, handleBusImportFile } from "./data/buses-routes.js";
+import { addBus, cancelBusEdit, clearBusImport, confirmBusImport, deleteBus, deleteRoute, handleBusImportFile, saveBusEdit, startEditBus } from "./data/buses-routes.js";
 import { addDriver, editDriver, toggleDriverActive } from "./data/drivers.js";
 import { deleteGroup, setGroupFilter } from "./data/groups.js";
 import { clearScheduleFile, clearScheduleText, deleteScheduleEntry, formatScheduleText, handleScheduleDrop, handleScheduleFileSelect, insertScheduleTable, sendScheduleToDrivers, switchScheduleTab } from "./data/schedules.js";
@@ -23,7 +23,7 @@ import { updateDriverBusInline, updateDriverShiftInline, opsAssignDriver, openOp
 import { removeDispatcher } from "./dispatcher/dispatchers.js";
 import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlansFull, scrollHubSection } from "./dispatcher/group-hub.js";
 import { returnLostItem } from "./dispatcher/lost-items.js";
-import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, saveMonthlyDayEdit, selectMonthlyPlanGroup } from "./dispatcher/monthly-plans.js";
+import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, loadMonthlyPlanForDriver, onMedBusCustomInput, onMedBusSelectChange, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftCodeCustomInput, onMedShiftTypeChange, openMonthlyDayEdit, saveMonthlyDayEdit, selectMonthlyPlanGroup } from "./dispatcher/monthly-plans.js";
 import { setMessagesPageTab, submitDispatcherMessage } from "./dispatcher/msg-compose.js";
 import { clearPendingPlanImports, confirmBulkPlanImport, handleBulkPlanDrop, handleBulkPlanFileInput, removePendingImport, updatePendingImportDriver, updatePendingImportMonth } from "./dispatcher/plan-import.js";
 import { resolveReport, openReportResolution, closeReportResolution } from "./dispatcher/reports.js";
@@ -57,6 +57,7 @@ const HANDLERS = {
     archiveDispatcherMessage,
     assignShift,
     backFromPlanFullPage,
+    cancelBusEdit,
     caWizardBack,
     caWizardNext,
     caWizardSelectColor,
@@ -138,7 +139,10 @@ const HANDLERS = {
     loginAsDispatcher,
     logout,
     onMedCatalogSelectChange,
+    onMedBusCustomInput,
+    onMedBusSelectChange,
     onMedDaySelectChange,
+    onMedShiftCodeCustomInput,
     onMedShiftTypeChange,
     openCompanyDriverEdit,
     openCompanyServicePlanDuty,
@@ -173,6 +177,7 @@ const HANDLERS = {
     saveCompanyGroup,
     saveCompanyProfileSettings,
     saveMonthlyDayEdit,
+    saveBusEdit,
     saveNewDispatcherPassword,
     scrollHubSection,
     selectMonthlyPlanGroup,
@@ -182,6 +187,7 @@ const HANDLERS = {
     shiftWeekNav,
     showModal,
     startEditCompanyGroup,
+    startEditBus,
     submitDispatcherMessage,
     superadminCreateCompany,
     superadminCreateCompanyAdmin,

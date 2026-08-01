@@ -2213,6 +2213,24 @@ html[data-app-surface="staff"] .bus-import-preview__actions {
     flex-wrap: wrap;
 }
 
+html[data-app-surface="staff"] .hub-bus-row-actions,
+html[data-app-surface="staff"] .hub-bus-edit-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+html[data-app-surface="staff"] .hub-bus-edit-form {
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+html[data-app-surface="staff"] .hub-bus-edit-form input {
+    flex: 1 1 160px;
+    min-width: 0;
+}
+
 html[data-app-surface="staff"] #header-logo-container .bc-co-brand {
     display: flex;
     align-items: center;
