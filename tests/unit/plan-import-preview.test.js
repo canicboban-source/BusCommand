@@ -1,5 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const {
   PlanImportValidationError,
@@ -79,4 +81,14 @@ test("rejects missing, inactive and cross-group drivers", () => {
     assert.ok(error.errors.some((item) => item.code === "DRIVER_OUTSIDE_GROUP"));
     return true;
   });
+});
+
+test("dispatcher preview route is server-owned, scoped and audited", () => {
+  const source = fs.readFileSync(path.join(__dirname, "../../server/driver-routes.js"), "utf8");
+  assert.match(source, /monthly-plans\/import\/preview/);
+  assert.match(source, /req\.staff\.role !== "dispatcher"/);
+  assert.match(source, /req\.staff\.groups\.includes\(parsed\.data\.groupId\)/);
+  assert.match(source, /buildPlanImportPreview/);
+  assert.match(source, /monthly_plan_import_previewed/);
+  assert.match(source, /reason: z\.string\(\)\.trim\(\)\.min\(3\)/);
 });
