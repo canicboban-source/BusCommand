@@ -7,6 +7,9 @@ import { renderMonthlyPlansView } from "./monthly-plans.js";
 import { renderDispatcherDataHub } from "./data-hub.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr, changeAttr } from "../core/action-delegate.js";
+import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { persistImportedMonthlyPlan } from "../imports/monthly-plan-persist.js";
+import { loadStateFromFirestore } from "../core/firebase-service.js";
 
 let _pendingImports = [];
 
@@ -151,12 +154,13 @@ function clearPendingPlanImports() {
     renderPlanImportPreview();
 }
 
-function confirmBulkPlanImport() {
+async function confirmBulkPlanImport() {
     if (!_pendingImports.length) {
         showToast(t("plan_nothing_to_save"), "error");
         return;
     }
 
+    const byMonth = {};
     _pendingImports.forEach(item => {
         saveMonthlyPlan(item.driverName, item.month, item.parsedShifts, {
             fileName: item.fileName,
@@ -164,7 +168,32 @@ function confirmBulkPlanImport() {
             fileData: item.fileData,
             parseQuality: item.parseQuality
         });
+        if (!byMonth[item.month]) byMonth[item.month] = {};
+        byMonth[item.month][item.driverName] = { parsedShifts: item.parsedShifts };
     });
+
+    if (!IS_DEMO_MODE) {
+        let serverOk = 0;
+        let serverFail = 0;
+        for (const [month, byDriver] of Object.entries(byMonth)) {
+            const sync = await persistImportedMonthlyPlan(byDriver, month, {
+                drivers: window.state.drivers || []
+            });
+            serverOk += sync.ok;
+            serverFail += sync.fail + sync.skipped;
+        }
+        if (serverFail > 0 && serverOk === 0) {
+            showToast(t("plan_server_save_failed") !== "plan_server_save_failed"
+                ? t("plan_server_save_failed")
+                : "Plan was not saved on the server.", "error", 7000);
+            return;
+        }
+        if (window.currentUser?.companyId) {
+            const refreshed = await loadStateFromFirestore(window.currentUser.companyId);
+            if (refreshed?.schedules) window.state.schedules = refreshed.schedules;
+            if (refreshed?.shifts) window.state.shifts = refreshed.shifts;
+        }
+    }
 
     saveState();
     const count = _pendingImports.length;

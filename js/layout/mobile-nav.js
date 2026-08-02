@@ -30,9 +30,9 @@ function fpNavSwitch(key) {
 function updateMobileNavVisibility(role) {
     var nav = document.getElementById('fp-mobile-nav');
     if (!nav) return;
-    // Bottom nav je samo za vozače
+    // Driver surface uses #mobile-bottom-nav (with SOS). Never show legacy fp nav for drivers.
     var isDriver = (role === 'driver');
-    nav.style.display = isDriver ? '' : 'none';
+    nav.style.display = isDriver ? 'none' : 'none';
 };
 
 // Sinhronizuj mobilni nav s aktivnom sekcijom iz sidebar klikova

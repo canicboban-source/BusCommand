@@ -29,6 +29,11 @@ html[data-app-surface="driver"] #mobile-bottom-nav {
     display: flex !important;
 }
 
+/* Master §15: one bottom nav with SOS — hide legacy fp nav on driver surface */
+html[data-app-surface="driver"] #fp-mobile-nav {
+    display: none !important;
+}
+
 html[data-app-surface="driver"] .mobile-bottom-nav {
     position: fixed;
     left: 0;
@@ -335,6 +340,8 @@ html[data-app-surface="driver"] .mobile-bottom-nav {
 }
 
 html[data-app-surface="driver"] .mob-nav-sos {
+    position: relative;
+    overflow: hidden;
     transform: translateY(-10px);
     width: 58px;
     height: 58px;
@@ -343,4 +350,19 @@ html[data-app-surface="driver"] .mob-nav-sos {
     color: #fff;
     border: 2px solid rgba(248, 113, 113, 0.55);
     box-shadow: 0 10px 22px rgba(239, 68, 68, 0.32);
+}
+
+html[data-app-surface="driver"] .mob-nav-sos .mob-nav-sos-progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 4px;
+    width: 0%;
+    background: #fff;
+    opacity: 0.85;
+    transition: width 40ms linear;
+}
+
+html[data-app-surface="driver"] .mob-nav-sos.is-holding {
+    filter: brightness(1.08);
 }

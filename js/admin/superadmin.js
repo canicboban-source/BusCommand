@@ -600,15 +600,21 @@ function renderCompanyAdminList() {
                 <span style="color:var(--text-muted);font-size:0.78rem;margin-left:8px;">${escapeHtml(ca.email)}</span>
                 <span style="color:var(--primary-color);font-size:0.75rem;margin-left:8px;">firma: ${escapeHtml(ca.companyId)}</span>
             </div>
-            <button ${actionAttr("superadminDeleteCompanyAdmin", [ca.id])} style="background:#ef444422;border:1px solid #ef4444;color:#ef4444;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:0.75rem;">
+            ${IS_DEMO_MODE ? `<button ${actionAttr("superadminDeleteCompanyAdmin", [ca.id])} style="background:#ef444422;border:1px solid #ef4444;color:#ef4444;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:0.75rem;" title="Demo only">
                 <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
-            </button>
+            </button>` : ""}
         </div>
     `).join('');
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function superadminDeleteCompanyAdmin(id) {
+    if (!IS_DEMO_MODE) {
+        showToast(t("sa_ca_delete_prod_blocked") !== "sa_ca_delete_prod_blocked"
+            ? t("sa_ca_delete_prod_blocked")
+            : "In production, disable the Company Admin instead of deleting.", "error");
+        return;
+    }
     if (!window.state.companyAdmins) return;
     window.state.companyAdmins = window.state.companyAdmins.filter(ca => ca.id !== id);
     renderCompanyAdminList();
