@@ -2,75 +2,65 @@
 
 **Prompt:** `reports/PROMPT-SWISS-WATCH-ZA-ODOBRENJE.md` **v1.2** (ODOBRENO: plavi logo iz chata)  
 **Master:** `docs/BusCommand-MASTER-PROMPT-v3.1.md`  
-**Grana:** `work/swiss-control-fixes`  
+**Grana:** `work/swiss-control-fixes` @ **`8cf99c8`**  
 **Base:** `ee4e003`
 
-## Gate (lokalno)
+## Gate (lokalno) — Pass 2
 
 | Check | Result |
 |-------|--------|
 | lint | PASS |
-| unit | **409/409** PASS |
-| build | PASS (brand + icons copy) |
+| unit | **411/411** PASS |
+| build | PASS |
 | PDF 310 ~1.29 MB | PASS (limit 5 MB) |
 | PDF 320 ~3.27 MB | PASS (limit 5 MB) |
-| Logo SHA256 = sent asset | PASS (`E5ECE2A4…C43C12`) |
+| PDF >5 MB | rejected (expected) |
+| Logo SHA = chat asset | PASS |
 
-## Pass 1 — status po poglavlju
+## Pass 1 → Pass 2 matrica
 
-### A) Super Admin — u toku / delimično FIXED
-| Stavka | Status |
-|--------|--------|
-| Fake CA delete (local-only trash) | **FIXED** — dugme samo u demo; prod blokiran |
-| Ostale SA akcije (create, support, suspend…) | code PASS (ranije inventura); live browser OPEN |
+| Poglavlje | Pass 1 | Pass 2 (kod) | Napomena |
+|-----------|--------|--------------|----------|
+| A SA | Fake CA delete FIXED | PASS | Live browser OPEN |
+| B CA | PDF 5MB, logo, audit FIXED | PASS | Live import www OPEN do deploy |
+| C Dispo | Monthly persist FIXED | PASS | Live 310 XLSX + busevi OPEN do deploy |
+| D Vozač | SOS hold/nav FIXED | PASS | Check-in local-only = High OPEN |
+| E Cross | lint/unit/build/logo | PASS | Deploy nije urađen |
 
-### B) Company Admin — Critical ulazi FIXED (kod)
-| Stavka | Status |
-|--------|--------|
-| PDF >2 MB / 320 | **FIXED** `MAX_FILE_BYTES=5MB` + i18n + unit |
-| Plavi logo uvek | **FIXED** — PNG iz chata u `public/brand/*` |
-| Activity User = email | **FIXED** — UI `actorLabel` + server `sanitizeAuditActorName` |
-| Deactivate-only vozač/dispo | **PASS (namerno)** — UI “Deaktiviraj” |
-| Live import 310/320 na www | OPEN do deploy |
+## Critical/High zatvoreno u kodu
 
-### C) Dispečer — Critical FIXED (kod)
-| Stavka | Status |
-|--------|--------|
-| Bus import API | PASS |
-| Sticky shift delete | PASS (ranije) |
-| Plan lock UI | PASS |
-| Monthly/package XLSX local-only | **FIXED** — `persistImportedMonthlyPlan` → `PUT /api/staff/shifts/assignment` + reload |
+1. Service plan limit **5 MB** (320 PDF)  
+2. Plavi logo uvek (`/brand/logo-*.png`); tenant samo pored  
+3. SOS: jedan nav + press-hold; fp-nav sakriven  
+4. Mesečni/package import → `persistImportedMonthlyPlan` → assignment API  
+5. Activity actor bez sirovog email-a  
+6. SA trash CA samo u demo  
 
-### D) Vozač — Critical FIXED (kod)
-| Stavka | Status |
-|--------|--------|
-| Dual SOS (header + nav) | **FIXED** — uklonjen header SOS |
-| Press-hold SOS | **FIXED** — hold 700ms → confirm modal |
-| fp-nav prekriva SOS | **FIXED** — sakriven na driver surface |
-| Nav Plan·Smene·SOS·Prijavi·Poruke | **FIXED** (Odmor → Poruke scroll) |
-| Company-code 410 | PASS |
-| Check-in local-only | OPEN / dokumentovano (High) |
-| Live browser SOS | OPEN |
+## Još OPEN
 
-### E) Cross-cutting — delimično
-Logo + i18n plan limit + build/lint/unit PASS. Deploy / Pass 2 još nisu.
+| Sev | Stavka |
+|-----|--------|
+| High | Driver check-in local-only (nema server API) |
+| High | Live/www Pass 2 (deploy + browser) nije dokazan na ovom SHA |
+| Medium | Dedicated monthly import commit endpoint (trenutno N× assignment) |
+| Business | Hard delete vozač/dispo — namerno nema |
 
-## Ocena (trenutno, uz dokaz lokalnog gate-a)
+## Ocene (uz lokalni dokaz; bez live deploy)
 
 | Poglavlje | Ocena |
 |-----------|------:|
-| A SA | 7 |
-| B CA | 7.5 (kod; live deploy nedostaje) |
-| C Dispo | 5 (još nije prošao Pass 1 do kraja) |
-| D Vozač | 6.5 (Critical SOS zatvoren u kodu) |
-| E Cross | 7 |
-| **Ukupno** | **6.5 / 10** |
+| A SA | 7.5 |
+| B CA | 8 |
+| C Dispo | 7.5 |
+| D Vozač | 7 |
+| E Cross | 7.5 |
+| **Ukupno** | **7.5 / 10** |
 
-Ne tvrditi Swiss-watch / production ready dok Pass 2 nije zelen i vlasnik ne odobri deploy.
+Ne tvrditi Swiss-watch / production ready dok live Pass 2 nije zelen i vlasnik ne odobri deploy.
 
 ## Sledeći korak
 
-1. Pass 1 Ch.C (dispečer) + smoke Downloads asseti  
-2. Pass 1 ostatak A/B live gde moguće  
-3. Pass 2 ceo A→E  
-4. Pitati vlasnika za commit/PR/deploy  
+1. Odobri PR merge `work/swiss-control-fixes` → `main`  
+2. Deploy Render `buscommand`  
+3. Live smoke: PDF 320, logo, XLSX 310, SOS hold, audit User  
+4. Opciono: server check-in API (High)  
