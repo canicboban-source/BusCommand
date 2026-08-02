@@ -621,8 +621,12 @@ test.describe("UI smoke", () => {
       if (!document.getElementById("global-confirm-modal")?.classList.contains("hidden")) closeConfirmModal();
       window.switchSection("driver-vacation");
     });
-    await page.locator("#vacation-start").fill("2026-08-01");
-    await page.locator("#vacation-end").fill("2026-08-03");
+    const start = await page.locator("#vacation-start").getAttribute("min");
+    expect(start).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const endDate = new Date(`${start}T00:00:00.000Z`);
+    endDate.setUTCDate(endDate.getUTCDate() + 2);
+    await page.locator("#vacation-start").fill(start);
+    await page.locator("#vacation-end").fill(endDate.toISOString().slice(0, 10));
     await page.locator("#vacation-type").selectOption("lt_vacation");
     await page.locator("#vacation-reason").fill("Family leave");
     await page.locator("#vacation-form button[type='submit']").click();
