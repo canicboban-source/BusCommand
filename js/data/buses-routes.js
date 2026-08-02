@@ -69,13 +69,18 @@ async function addBus(event) {
             if (!IS_DEMO_MODE) {
                 const result = await ApiClient.createStaffBus(number, activeGrp);
                 if (!result?.success) {
-                    showToast(t("bus_add_failed"), "error");
+                    const detail = String(result?.error || "").trim();
+                    showToast(
+                        detail || t("bus_add_failed") || "The bus could not be added.",
+                        "error"
+                    );
                     return;
                 }
+                if (!Array.isArray(window.state.buses)) window.state.buses = [];
                 upsertLocalBusFromApi(result.bus);
                 input.value = "";
                 renderBusesList();
-                lucide.createIcons();
+                if (typeof lucide !== "undefined") lucide.createIcons();
                 const msg = result.attached
                     ? t("bus_attached_to_group") || "Bus linked to this group"
                     : (result.alreadyInGroup

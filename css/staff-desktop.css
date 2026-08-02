@@ -1405,10 +1405,13 @@ html[data-app-surface="staff"] #dispatcher-group-hub .hub-bus-form input {
     min-width: 0;
 }
 
-html[data-app-surface="staff"] #dispatcher-group-hub .hub-bus-form .btn-icon-only.btn-primary {
-    width: 40px;
+html[data-app-surface="staff"] #dispatcher-group-hub .hub-bus-form .hub-add-bus-btn {
+    flex: 0 0 auto;
     min-height: 40px;
+    padding: 0 14px;
+    white-space: nowrap;
     border-radius: 10px;
+    font-weight: 700;
     box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.28);
 }
 

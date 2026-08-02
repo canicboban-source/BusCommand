@@ -5617,25 +5617,16 @@ Object.assign(TRANSLATIONS.sr, {
 
 
 Object.assign(TRANSLATIONS.en, {
-    error_ops_read_only: "Read-only view — changes are not allowed.",
-    ops_readonly_banner: "Read-only operational view — Company Admin cannot change plans or buses.",
-    ca_nav_ops_view: "Operational view",
-    plan_lock_held: "Plan is locked by {name}.",
-    ops_bus_cross_group_warn: "Bus {bus} is already on an active shift in group {group} ({driver}). Assignment saved — check coverage."
+    hub_add_bus_btn: "Add bus",
+    hub_add_bus_placeholder: "e.g. 91504"
 });
 Object.assign(TRANSLATIONS.de, {
-    error_ops_read_only: "Nur-Lesen-Ansicht — Änderungen sind nicht erlaubt.",
-    ops_readonly_banner: "Operative Nur-Lesen-Ansicht — Company Admin darf Pläne und Busse nicht ändern.",
-    ca_nav_ops_view: "Operativer Einblick",
-    plan_lock_held: "Plan ist gesperrt von {name}.",
-    ops_bus_cross_group_warn: "Bus {bus} ist bereits in Gruppe {group} aktiv ({driver}). Zuweisung gespeichert — Einsatz prüfen."
+    hub_add_bus_btn: "Bus hinzufügen",
+    hub_add_bus_placeholder: "z. B. 91504"
 });
 Object.assign(TRANSLATIONS.sr, {
-    error_ops_read_only: "Samo pregled — izmene nisu dozvoljene.",
-    ops_readonly_banner: "Operativni uvid (samo čitanje) — Company Admin ne menja planove ni autobuse.",
-    ca_nav_ops_view: "Operativni uvid",
-    plan_lock_held: "Plan je zaključao {name}.",
-    ops_bus_cross_group_warn: "Autobus {bus} je već na aktivnoj smeni u grupi {group} ({driver}). Dodela sačuvana — proverite pokrivenost."
+    hub_add_bus_btn: "Dodaj autobus",
+    hub_add_bus_placeholder: "npr. 91504"
 });
 
 // Propagate new EN keys to all languages (after MISSING_* merges)

@@ -34,6 +34,9 @@ test("p7 staff and driver surfaces expose i18n aria labels for icon controls", a
   const sa = await read("../../js/auth/superadmin.js");
   assert.match(staff, /data-i18n-aria-label="week_nav_prev"/);
   assert.match(staff, /data-i18n-aria-label="hub_add_bus_aria"/);
+  assert.match(staff, /data-i18n="hub_add_bus_btn"/);
+  assert.match(staff, /class="[^"]*hub-add-bus-btn/);
+  assert.doesNotMatch(staff, /add-bus-form[\s\S]*btn-icon-only/);
   assert.match(driver, /data-i18n-aria-label="driver_profile_aria"/);
   assert.match(shell, /role_superadmin/);
   assert.match(shell, /stealth_inspect_banner/);
