@@ -5,7 +5,7 @@ import { loginAsDriver } from "./auth/login-driver.js";
 import { clickElementById, installActionDelegates, removeElementById } from "./core/action-delegate.js";
 import { handleAvatarUpload, triggerAvatarUpload } from "./driver/avatar.js";
 import { confirmTomorrowShift } from "./driver/calendar.js";
-import { closeSosTriggerModal, confirmSOSTrigger, driverCheckIn, triggerSOSAlert } from "./driver/dashboard.js";
+import { closeSosTriggerModal, confirmSOSTrigger, driverCheckIn, openDriverMessagesNav, triggerSOSAlert } from "./driver/dashboard.js";
 import { resolveSOS } from "./maps/sos-siren.js";
 import { archiveMessage, archiveReadMessages, confirmMessageRead } from "./driver/message-alerts.js";
 import { markMessageAsRead } from "./driver/messages-inbox.js";
@@ -45,6 +45,7 @@ const HANDLERS = {
     logout,
     markMessageAsRead,
     openDriverActivation,
+    openDriverMessagesNav,
     removeElementById,
     resolveSOS,
     sendQuickReport,

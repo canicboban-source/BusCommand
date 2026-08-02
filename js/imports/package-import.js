@@ -18,6 +18,7 @@ import { actionAttr } from "../core/action-delegate.js";
 import ApiClient from "../core/api-client.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import { loadStateFromFirestore } from "../core/firebase-service.js";
+import { persistImportedMonthlyPlan } from "./monthly-plan-persist.js";
 
 let _pendingPackage = null;
 
@@ -380,6 +381,30 @@ async function confirmPackageImport() {
             totals.month ||= result.month;
             totals.driverPlans += result.driverPlans;
             totals.totalDays += result.totalDays;
+        }
+        if (!IS_DEMO_MODE && totals.month) {
+            showToast(t("pkg_saving_plan") !== "pkg_saving_plan" ? t("pkg_saving_plan") : "Saving plan to server…", "info", 4000);
+            let serverOk = 0;
+            let serverFail = 0;
+            for (const item of p.plans) {
+                const sync = await persistImportedMonthlyPlan(item.parsed?.byDriver || {}, totals.month, {
+                    drivers: window.state.drivers || []
+                });
+                serverOk += sync.ok;
+                serverFail += sync.fail + sync.skipped;
+            }
+            if (serverFail > 0 && serverOk === 0) {
+                showToast(t("pkg_plan_server_failed") !== "pkg_plan_server_failed"
+                    ? t("pkg_plan_server_failed")
+                    : "Plan was not saved on the server. Fix drivers/group and retry.", "error", 8000);
+                return;
+            }
+            if (serverFail > 0) {
+                msg.push(`${serverOk} saved / ${serverFail} failed`);
+            }
+            const refreshed = await loadStateFromFirestore(window.currentUser.companyId);
+            if (refreshed?.schedules) window.state.schedules = refreshed.schedules;
+            if (refreshed?.shifts) window.state.shifts = refreshed.shifts;
         }
         msg.push(t("pkg_saved_plan", { month: totals.month, drivers: totals.driverPlans, days: totals.totalDays }));
         window.state.activeGroupFilter = getActiveLineId();

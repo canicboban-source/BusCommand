@@ -1,6 +1,7 @@
 // BusCommand — driver surface app shell
 import { updateAvatarUI } from "../driver/avatar.js";
 import { checkSOSStatus } from "../maps/sos-siren.js";
+import { bindSosHoldControl } from "../driver/dashboard.js";
 import { clearAllSensitiveAuthFields } from "../auth/login-ui.js";
 import { switchSection } from "./navigation.js";
 import { showPreTripModal } from "./pretrip.js";
@@ -61,5 +62,6 @@ export function showAppLayout() {
     if (isDriverWorkSessionActive()) startDriverGpsTracking();
     switchSection("driver-dashboard");
     checkSOSStatus();
+    bindSosHoldControl();
     return true;
 }

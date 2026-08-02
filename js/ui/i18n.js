@@ -127,7 +127,7 @@ function productLogoHtml(name) {
     return escapeAttr(n);
 }
 
-/** Official BusCommand mark — concept 3D BC monogram (PNG). */
+/** Official product mark — owner blue logo PNG. */
 function productBrandMarkHtml({ size = "sm", titleId = null, name = "BusCommand" } = {}) {
     const sizeClass = size === "lg" ? "bc-brand-mark--lg" : "bc-brand-mark--sm";
     const px = size === "lg" ? 48 : 28;
@@ -171,43 +171,41 @@ function applyBrandingToUI() {
     const brandTitle = document.getElementById("app-branding-title");
     if (brandTitle) brandTitle.innerText = displayName;
     
-    // Dinamički logo u zavisnosti od izabranog brenda
+    // Owner blue logo always visible; tenant logo/name is optional companion branding.
     const loginHeaderLogo = document.getElementById("login-logo-container");
     if (loginHeaderLogo) {
-        if (logoUrl) {
-            loginHeaderLogo.innerHTML = `
-                <div class="custom-brand-logo" style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-bottom: 1.5rem;">
-                    <img src="${escapeAttr(logoUrl)}" alt="${safeName}" referrerpolicy="no-referrer" style="max-height: 60px; max-width: 220px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3)); border-radius: var(--radius-sm);">
-                    <span style="font-weight:700; color:var(--text-main); font-size:1.4rem; margin-top:8px;">${safeName}</span>
-                </div>
-            `;
-        } else {
-            loginHeaderLogo.innerHTML = `
-                <div class="logo bc-brand" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;">
-                    <img class="bc-brand-mark bc-brand-mark--hero" src="/brand/logo-hero.png" width="80" height="80" alt="BusCommand">
-                    <span class="bc-brand-text">${productLogoHtml(branding.name)}</span>
-                </div>
-                <p data-i18n="login_subtitle" class="login-subtitle-text">${window.t("login_subtitle")}</p>
-            `;
-        }
+        const tenantLogo = logoUrl
+            ? `<img class="bc-tenant-logo" src="${escapeAttr(logoUrl)}" alt="${safeName}" referrerpolicy="no-referrer" style="max-height: 40px; max-width: 160px; object-fit: contain; margin-top: 10px;">`
+            : "";
+        const tenantLabel = branding.name && !/^BusCommand(\s|$)/i.test(branding.name)
+            ? `<span class="bc-tenant-name" style="font-weight:600; color:var(--text-muted); font-size:0.95rem; margin-top:6px;">${safeName}</span>`
+            : "";
+        loginHeaderLogo.innerHTML = `
+            <div class="logo bc-brand" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;flex-direction:column;align-items:center;">
+                <img class="bc-brand-mark bc-brand-mark--hero" src="/brand/logo-hero.png" width="80" height="80" alt="BusCommand">
+                <span class="bc-brand-text">${productLogoHtml("BusCommand")}</span>
+                ${tenantLogo}
+                ${tenantLabel}
+            </div>
+            <p data-i18n="login_subtitle" class="login-subtitle-text">${window.t("login_subtitle")}</p>
+        `;
     }
 
     const headerLogoContainer = document.getElementById("header-logo-container");
     if (headerLogoContainer) {
-        if (logoUrl) {
-            headerLogoContainer.innerHTML = `
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <img src="${escapeAttr(logoUrl)}" alt="${safeName}" referrerpolicy="no-referrer" style="max-height: 32px; max-width: 110px; object-fit: contain; border-radius: 2px;">
-                    <span style="font-weight:700; color:var(--text-main); font-size:1.1rem; letter-spacing:-0.2px;">${safeName}</span>
-                </div>
-            `;
-        } else {
-            headerLogoContainer.innerHTML = productBrandMarkHtml({
-                size: "sm",
-                titleId: "app-branding-title",
-                name: displayName
-            });
-        }
+        const tenantLogo = logoUrl
+            ? `<img class="bc-tenant-logo" src="${escapeAttr(logoUrl)}" alt="${safeName}" referrerpolicy="no-referrer" style="max-height: 28px; max-width: 96px; object-fit: contain;">`
+            : "";
+        headerLogoContainer.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px;">
+                ${productBrandMarkHtml({
+                    size: "sm",
+                    titleId: "app-branding-title",
+                    name: "BusCommand"
+                })}
+                ${tenantLogo}
+            </div>
+        `;
     }
 
     const brandInput = document.getElementById("settings-brand-name");

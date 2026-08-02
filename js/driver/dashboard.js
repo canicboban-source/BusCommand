@@ -124,6 +124,7 @@ function renderDriverDashboard() {
     renderStopsTimeline(route?.stops);
     renderDriverMessages();
     checkSOSStatus();
+    bindSosHoldControl();
     if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
@@ -255,6 +256,73 @@ function triggerSOSAlert() {
     if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
+const SOS_HOLD_MS = 700;
+let sosHoldTimer = null;
+let sosHoldBound = false;
+
+function clearSosHold(btn) {
+    if (sosHoldTimer) {
+        clearTimeout(sosHoldTimer);
+        sosHoldTimer = null;
+    }
+    btn?.classList.remove("is-holding");
+    const progress = btn?.querySelector(".mob-nav-sos-progress");
+    if (progress) progress.style.width = "0%";
+}
+
+function bindSosHoldControl() {
+    if (sosHoldBound) return;
+    const btn = document.getElementById("mobnav-sos");
+    if (!btn || btn.getAttribute("data-sos-hold") !== "true") return;
+    sosHoldBound = true;
+
+    const startHold = (event) => {
+        if (event.type === "mousedown" && event.button !== 0) return;
+        event.preventDefault();
+        clearSosHold(btn);
+        btn.classList.add("is-holding");
+        const progress = btn.querySelector(".mob-nav-sos-progress");
+        const started = Date.now();
+        const tick = () => {
+            const ratio = Math.min(1, (Date.now() - started) / SOS_HOLD_MS);
+            if (progress) progress.style.width = `${Math.round(ratio * 100)}%`;
+            if (ratio >= 1) {
+                clearSosHold(btn);
+                triggerSOSAlert();
+                return;
+            }
+            sosHoldTimer = setTimeout(tick, 40);
+        };
+        tick();
+    };
+
+    const endHold = () => clearSosHold(btn);
+    btn.addEventListener("pointerdown", startHold);
+    btn.addEventListener("pointerup", endHold);
+    btn.addEventListener("pointerleave", endHold);
+    btn.addEventListener("pointercancel", endHold);
+    btn.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            triggerSOSAlert();
+        }
+    });
+}
+
+function openDriverMessagesNav() {
+    if (typeof window.switchSection === "function") {
+        window.switchSection("driver-dashboard");
+    }
+    requestAnimationFrame(() => {
+        document.querySelector(".driver-pwa-dispatch-msg")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById("mobnav-dashboard")?.classList.add("active");
+        document.getElementById("mobnav-messages")?.classList.add("active");
+        ["mobnav-calendar", "mobnav-reports", "mobnav-sos"].forEach((id) => {
+            document.getElementById(id)?.classList.remove("active");
+        });
+    });
+}
+
 function closeSosTriggerModal() {
     const modal = document.getElementById("sos-trigger-modal");
     if (!modal) return;
@@ -295,5 +363,7 @@ export {
     closeSosTriggerModal,
     confirmSOSTrigger,
     checkSOSStatus,
-    resolveSOS
+    resolveSOS,
+    bindSosHoldControl,
+    openDriverMessagesNav
 };

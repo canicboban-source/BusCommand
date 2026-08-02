@@ -1,6 +1,6 @@
 import { validateServicePlan } from "../../shared/service-plan-contract.mjs";
 
-const MAX_FILE_BYTES = 2 * 1024 * 1024;
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const DUTY_HEADERS = Object.freeze([
     "duty_code", "day_type", "work_start", "first_trip_start",
     "last_trip_end", "work_end", "start_location", "end_location"
@@ -27,7 +27,7 @@ function validateServicePlanFile(file) {
     if (!ACCEPTED_EXTENSIONS.includes(ext)) {
         return "Dozvoljeni su samo BusCommand .xlsx, .csv i strukturirani .pdf šabloni.";
     }
-    if (file.size > MAX_FILE_BYTES) return "Fajl plana može imati najviše 2 MB.";
+    if (file.size > MAX_FILE_BYTES) return "Fajl plana može imati najviše 5 MB.";
     return null;
 }
 

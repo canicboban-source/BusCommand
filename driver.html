@@ -321,9 +321,6 @@
                             <h2 data-i18n="driver_dashboard_title">Dnevni plan</h2>
                             <p id="current-date-badge" class="driver-pwa-date">—</p>
                         </div>
-                        <button type="button" id="sos-btn" class="btn-sos-emergency driver-pwa-sos" data-action="triggerSOSAlert" aria-label="SOS emergency" data-i18n-aria-label="sos_button_aria">
-                            <span aria-hidden="true">SOS</span>
-                        </button>
                     </div>
 
                     <article class="driver-pwa-card driver-pwa-shift-today" aria-labelledby="driver-today-shift-label">
@@ -728,17 +725,18 @@
                     <i data-lucide="calendar"></i>
                     <span data-i18n="nav_monthly_plan_short">Smene</span>
                 </button>
-                <button class="mob-nav-btn mob-nav-sos" data-action="triggerSOSAlert" id="mobnav-sos">
+                <button type="button" class="mob-nav-btn mob-nav-sos" id="mobnav-sos" aria-label="SOS" data-i18n-aria-label="sos_button_aria" data-sos-hold="true">
                     <i data-lucide="phone-call"></i>
                     <span>SOS</span>
+                    <span class="mob-nav-sos-progress" aria-hidden="true"></span>
                 </button>
                 <button class="mob-nav-btn" data-action="switchSection" data-action-args='["driver-reports"]' id="mobnav-reports">
                     <i data-lucide="alert-triangle"></i>
                     <span data-i18n="nav_report_short">Prijavi</span>
                 </button>
-                <button class="mob-nav-btn" data-action="switchSection" data-action-args='["driver-vacation"]' id="mobnav-vacation">
-                    <i data-lucide="calendar-days"></i>
-                    <span data-i18n="nav_vacation_short">Odmor</span>
+                <button class="mob-nav-btn" data-action="openDriverMessagesNav" id="mobnav-messages">
+                    <i data-lucide="message-square"></i>
+                    <span data-i18n="nav_messages">Poruke</span>
                 </button>
             </nav>
 

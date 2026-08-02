@@ -1593,6 +1593,14 @@ app.use((err, req, res, _next) => {
 
 // ─── Helpers ───────────────────────────────────────────────
 
+function sanitizeAuditActorName(value) {
+  const name = String(value || "").trim().slice(0, 120);
+  if (!name) return null;
+  if (!name.includes("@")) return name;
+  const local = name.split("@")[0].trim();
+  return local || null;
+}
+
 async function _logAuditEvent(companyId, actorId, action, details = {}, metadata = {}) {
   if (!HAS_FIREBASE) return;
   try {
@@ -1600,7 +1608,7 @@ async function _logAuditEvent(companyId, actorId, action, details = {}, metadata
       .collection("audit_log").add({
         action, actorId, details,
         actorRole: metadata.actorRole || null,
-        actorName: metadata.actorName || null,
+        actorName: sanitizeAuditActorName(metadata.actorName),
         source: metadata.source || "server",
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });

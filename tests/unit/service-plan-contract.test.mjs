@@ -120,13 +120,14 @@ test("XLSX parser requires exact sheets and canonical headers", () => {
   assert.ok(missing.errors.some(error => error.code === "missing_sheet"));
 });
 
-test("file gate accepts BusCommand xlsx, csv and pdf up to 2 MB", () => {
+test("file gate accepts BusCommand xlsx, csv and pdf up to 5 MB", () => {
   assert.equal(validateServicePlanFile({ name: "plan.xlsx", size: 1024 }), null);
   assert.equal(validateServicePlanFile({ name: "plan.csv", size: 1024 }), null);
   assert.equal(validateServicePlanFile({ name: "plan.pdf", size: 1024 }), null);
+  assert.equal(validateServicePlanFile({ name: "plan.pdf", size: 3.4 * 1024 * 1024 }), null);
   assert.match(validateServicePlanFile({ name: "plan.xls", size: 1024 }), /xlsx.*csv.*pdf|Dozvoljeni/i);
   assert.match(validateServicePlanFile({ name: "plan.txt", size: 1024 }), /Dozvoljeni/i);
-  assert.match(validateServicePlanFile({ name: "plan.xlsx", size: 3 * 1024 * 1024 }), /najviše 2 MB/i);
+  assert.match(validateServicePlanFile({ name: "plan.xlsx", size: 6 * 1024 * 1024 }), /najviše 5 MB/i);
 });
 
 test("CSV twin template parses into the same validated contract", () => {

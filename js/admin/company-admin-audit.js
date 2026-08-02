@@ -50,6 +50,21 @@ function roleLabel(role) {
     return role || "—";
 }
 
+/** Prefer display name; never show raw email as the primary actor label. */
+function actorLabel(event) {
+    const name = String(event?.actorName || "").trim();
+    const role = roleLabel(event?.actorRole);
+    if (name && !name.includes("@")) return name;
+    if (name.includes("@")) {
+        const local = name.split("@")[0]?.trim();
+        if (local) return local;
+    }
+    if (role && role !== "—") return role;
+    const id = String(event?.actorId || "").trim();
+    if (id && id.length <= 12) return id;
+    return t("ca_audit_actor_unknown") !== "ca_audit_actor_unknown" ? t("ca_audit_actor_unknown") : "Staff";
+}
+
 function renderDetails(details) {
     const entries = Object.entries(details || {});
     if (!entries.length) return `<span class="company-audit-no-details">${escapeHtml(t("ca_audit_no_details"))}</span>`;
@@ -82,7 +97,7 @@ function renderAuditList() {
     const rows = events.map(event => `<tr>
         <td data-label="${escapeHtml(t("ca_audit_when"))}"><time datetime="${escapeHtml(event.timestamp)}">${escapeHtml(formatTimestamp(event.timestamp))}</time></td>
         <td data-label="${escapeHtml(t("ca_audit_action"))}"><span class="company-audit-action"><i data-lucide="${event.category === "access" ? "key-round" : event.category === "plans" ? "route" : event.category === "drivers" ? "contact-round" : event.category === "scheduling" ? "calendar-clock" : "settings-2"}"></i>${escapeHtml(actionLabel(event.action))}</span><small>${escapeHtml(t(`ca_audit_category_${event.category}`))}</small></td>
-        <td data-label="${escapeHtml(t("ca_audit_actor"))}"><strong>${escapeHtml(event.actorName || event.actorId)}</strong><small>${escapeHtml(roleLabel(event.actorRole))}</small></td>
+        <td data-label="${escapeHtml(t("ca_audit_actor"))}"><strong>${escapeHtml(actorLabel(event))}</strong><small>${escapeHtml(roleLabel(event.actorRole))}</small></td>
         <td data-label="${escapeHtml(t("ca_audit_details"))}"><div class="company-audit-details">${renderDetails(event.details)}</div></td>
         <td data-label="${escapeHtml(t("ca_audit_source"))}"><span class="company-audit-source ${event.source === "server" ? "is-server" : ""}">${escapeHtml(t(event.source === "server" ? "ca_audit_source_server" : "ca_audit_source_reported"))}</span></td>
     </tr>`).join("");
