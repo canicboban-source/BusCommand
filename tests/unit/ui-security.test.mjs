@@ -19,6 +19,8 @@ test("company admin retains own-company administration sections but production r
   assert.equal(canOpenSection("company_admin", "company-admin-team", false), true);
   assert.equal(canOpenSection("company_admin", "company-admin-settings", false), true);
   assert.equal(canOpenSection("company_admin", "dispatcher-settings", false), false);
+  assert.equal(canOpenSection("company_admin", "dispatcher-group-hub", false), true);
+  assert.equal(canOpenSection("company_admin", "dispatcher-messages", false), false);
   assert.equal(canRunCompanyAdminAction("company_admin"), true);
   assert.equal(canRunFactoryReset("company_admin", false), false);
 });

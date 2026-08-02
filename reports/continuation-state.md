@@ -4,7 +4,7 @@ Poslednje osvežavanje: **2026-08-02** (Europe/Vienna)
 
 ## Aktivni cilj
 
-Završiti pripremu **v1.0.10**, zatim disponent bus-uvoz (kurirani formati) i Poglavlje 2. Kvalitet: Swiss-watch.
+Ch2 (CA RO + first-lock) + bus multi-group pool — **gate zelen**, spremno za commit. Dalje: lock UI / Firestore store; smena-konflikt upozorenje za deljeni bus.
 
 ## Kanonska lokacija
 
@@ -33,6 +33,7 @@ Završiti pripremu **v1.0.10**, zatim disponent bus-uvoz (kurirani formati) i Po
    4. „Zamrzni grupu“ = **kasnije** (backlog).
    5. Lozinke min 6 ostaju do posebne odluke pre hard-pilota.
 9. **Pre-commit tok-gate (2026-08-02):** pre svakog commit-a — funkcija → kompletan tok → dokaz da rešava problem. Artefakt: `reports/pre-commit-flow-gate-2026-08-02.md`. Lint/unit/build + tok-inventura + smoke (happy+fail) za UI. Bez gate-a nema „gotovo“.
+10. **Autobus multi-group pool (2026-08-02):** broj jedinstven u firmi; **isti bus dostupan više grupama** (npr. 310+320); uvoz u drugu grupu = attach. Artefakt + smoke: `decision-bus-multi-group-pool` / `smoke-bus-multi-group-pool-2026-08-02.md`. ✅ implementirano.
 
 Ranije zaključano:
 
@@ -48,7 +49,7 @@ Ranije zaključano:
 | Kreiranje vozača / aktivacija | Piše | Ne |
 | Zvanični katalog smena | Uvoz + potvrda | Koristi |
 | Dnevni / mesečni plan | **Samo uvid** | **Piše** (+ first-lock) |
-| Autobusi | **Samo uvid** | **Piše + kurirani uvoz** |
+| Autobusi | **Samo uvid** | **Piše + kurirani uvoz**; **isti broj u više grupa** (company pool) |
 | Poruke / SOS / incidenti | Uvid gde treba | Operiše |
 | Plan lock break-glass | Skida lock + audit | Drži / release |
 
@@ -58,14 +59,20 @@ Ranije zaključano:
 2. ✅ Odluke 1–5 usvojene
 3. ✅ Priprema **v1.0.10** (verzija + EN default) — unit/lint/build zeleni
 4. ✅ Disponent bus-uvoz — unit + **Playwright smoke 2/2** (`reports/smoke-bus-import-2026-08-02.md`)
-5. ⏳ Poglavlje 2 (CA uvid-only plan, first-lock)
+5. ✅ Poglavlje 2 slice: CA uvid-only + first-writer lock
+6. ✅ Bus multi-group pool (attach) — `reports/smoke-bus-multi-group-pool-2026-08-02.md`
+7. ⏳ Lock polish: Firestore store, release/break UI, heartbeat UI
+8. ⏳ Deljeni bus: upozorenje ako već u aktivnoj smeni druge grupe
 
 ## Artefakti odluka
 
 - `reports/decision-ca-boss-dispatcher-ops-2026-08-02.md`
 - `reports/decision-buses-dispatcher-import-2026-08-02.md`
+- `reports/decision-bus-multi-group-pool-2026-08-02.md`
 - `reports/decision-review-legal-logic-2026-08-02.md`
 - `reports/decision-1-5-adopted-2026-08-02.md`
 - `reports/pre-commit-flow-gate-2026-08-02.md`
 - `reports/poglavlje-1-state-checkpoint-2026-08-02.md`
 - `reports/smoke-bus-import-2026-08-02.md`
+- `reports/smoke-ch2-ops-readonly-lock-2026-08-02.md`
+- `reports/smoke-bus-multi-group-pool-2026-08-02.md`

@@ -54,6 +54,18 @@ test("classifyBusImport splits new existing and reactivate", () => {
     "g1"
   );
   assert.deepEqual(result.toCreate, ["10"]);
+  assert.deepEqual(result.toAttach, []);
   assert.deepEqual(result.existing, ["11"]);
   assert.deepEqual(result.toReactivate, [{ number: "12", id: "b2" }]);
+});
+
+test("classifyBusImport attaches company bus from another group", () => {
+  const result = classifyBusImport(
+    ["91504", "999"],
+    [{ id: "b-shared", number: "91504", groupId: "310", groupIds: ["310"], active: true }],
+    "320"
+  );
+  assert.deepEqual(result.toCreate, ["999"]);
+  assert.deepEqual(result.toAttach, [{ number: "91504", id: "b-shared" }]);
+  assert.deepEqual(result.existing, []);
 });

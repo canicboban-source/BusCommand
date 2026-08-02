@@ -1205,15 +1205,61 @@ function registerDriverRoutes(app, deps) {
     if (!dispatcherCanAccessGroup(req.staff.groups, parsed.data.groupId)) {
       return res.status(403).json({ success: false, error: "Grupa nije dodeljena ovom disponentu." });
     }
+    const { busHasGroup, withAttachedGroup, buildNewBusGroups, normalizeGroupIds } = require("./bus-group-membership");
     try {
       const companyRef = db().collection("companies").doc(req.staff.companyId);
       const duplicate = await companyRef.collection("buses").where("number", "==", parsed.data.number).limit(1).get();
-      if (!duplicate.empty) return res.status(409).json({ success: false, error: "Autobus sa ovim brojem već postoji." });
+      if (!duplicate.empty) {
+        const doc = duplicate.docs[0];
+        const existing = { id: doc.id, ...doc.data() };
+        if (busHasGroup(existing, parsed.data.groupId)) {
+          return res.status(200).json({
+            success: true,
+            attached: false,
+            alreadyInGroup: true,
+            bus: {
+              id: doc.id,
+              number: existing.number,
+              groupId: existing.groupId || parsed.data.groupId,
+              lineId: existing.lineId || existing.groupId || parsed.data.groupId,
+              groupIds: normalizeGroupIds(existing),
+              active: existing.active !== false,
+              createdAt: null
+            }
+          });
+        }
+        const attached = withAttachedGroup(existing, parsed.data.groupId);
+        await doc.ref.update({
+          groupIds: attached.groupIds,
+          groupId: attached.groupId,
+          lineId: attached.lineId
+        });
+        await logAudit(req.staff.companyId, req.staff.uid, "bus_group_attached", {
+          busId: doc.id,
+          number: parsed.data.number,
+          groupId: parsed.data.groupId,
+          groupIds: attached.groupIds
+        });
+        return res.status(200).json({
+          success: true,
+          attached: true,
+          alreadyInGroup: false,
+          bus: {
+            id: doc.id,
+            number: attached.number,
+            groupId: attached.groupId,
+            lineId: attached.lineId,
+            groupIds: attached.groupIds,
+            active: attached.active !== false,
+            createdAt: null
+          }
+        });
+      }
       const busRef = companyRef.collection("buses").doc();
+      const groups = buildNewBusGroups(parsed.data.groupId);
       const payload = {
         number: parsed.data.number,
-        groupId: parsed.data.groupId,
-        lineId: parsed.data.groupId,
+        ...groups,
         companyId: req.staff.companyId,
         active: true,
         createdAt: admin().firestore.FieldValue.serverTimestamp(),
@@ -1221,9 +1267,9 @@ function registerDriverRoutes(app, deps) {
       };
       await busRef.set(payload);
       await logAudit(req.staff.companyId, req.staff.uid, "bus_created", {
-        busId: busRef.id, number: parsed.data.number, groupId: parsed.data.groupId
+        busId: busRef.id, number: parsed.data.number, groupId: parsed.data.groupId, groupIds: groups.groupIds
       });
-      return res.status(201).json({ success: true, bus: { id: busRef.id, ...payload, createdAt: null } });
+      return res.status(201).json({ success: true, attached: false, bus: { id: busRef.id, ...payload, createdAt: null } });
     } catch (error) {
       req.log?.error?.({ err: error }, "Dodavanje autobusa nije uspelo");
       return res.status(500).json({ success: false, error: "Autobus nije mogao biti dodat." });
@@ -1242,8 +1288,10 @@ function registerDriverRoutes(app, deps) {
       const snapshot = await busRef.get();
       if (!snapshot.exists) return res.status(404).json({ success: false, error: "Autobus nije pronađen." });
       const bus = snapshot.data() || {};
-      const groupId = bus.groupId || bus.lineId || null;
-      if (!groupId || !dispatcherCanAccessGroup(req.staff.groups, groupId)) {
+      const { normalizeGroupIds } = require("./bus-group-membership");
+      const groupIds = normalizeGroupIds(bus);
+      const canAccess = groupIds.some((gid) => dispatcherCanAccessGroup(req.staff.groups, gid));
+      if (!groupIds.length || !canAccess) {
         return res.status(403).json({ success: false, error: "Autobus nije u dodeljenoj grupi." });
       }
       await busRef.update({
@@ -1252,7 +1300,7 @@ function registerDriverRoutes(app, deps) {
         statusChangedBy: req.staff.uid
       });
       await logAudit(req.staff.companyId, req.staff.uid, status.data.active ? "bus_activated" : "bus_deactivated", {
-        busId: busId.data, groupId
+        busId: busId.data, groupId: groupIds[0], groupIds
       });
       return res.json({ success: true, active: status.data.active });
     } catch (error) {
@@ -1370,9 +1418,10 @@ function registerDriverRoutes(app, deps) {
       if (replacementDriver.active === false || originalGroupId !== groupId || replacementGroupId !== groupId) {
         return res.status(409).json({ success: false, code: "DRIVER_NOT_AVAILABLE", error: "Izabrani vozač nije aktivan i dostupan u ovoj grupi." });
       }
+      const { busHasGroup } = require("./bus-group-membership");
       const busSnap = busQuery.docs.find((doc) => {
         const bus = doc.data();
-        return bus.active !== false && (bus.groupId || bus.lineId || null) === groupId;
+        return bus.active !== false && busHasGroup(bus, groupId);
       });
       if (!busSnap) {
         return res.status(409).json({ success: false, code: "BUS_NOT_AVAILABLE", error: "Izabrani autobus nije aktivan i dostupan u ovoj grupi." });
@@ -1741,6 +1790,37 @@ function registerDriverRoutes(app, deps) {
         return res.status(403).json({ success: false, error: "Pristup voza\u010du van dodeljene grupe nije dozvoljen." });
       }
 
+      // First-writer lock: first successful mutate acquires; others blocked until release/TTL/break-glass
+      const { acquireLock, assertHolder, buildLockId } = require("./plan-edit-lock");
+      const { memoryLocks } = require("./plan-edit-lock-routes");
+      const dayLockId = buildLockId("day", driverGroupId, parsed.data.date);
+      if (dayLockId) {
+        let lockCheck = assertHolder(memoryLocks, { lockId: dayLockId, holderUid: req.staff.uid });
+        if (!lockCheck.ok && lockCheck.code === "LOCK_REQUIRED") {
+          const acquired = acquireLock(memoryLocks, {
+            lockId: dayLockId,
+            holderUid: req.staff.uid,
+            holderName: req.staff.name || req.staff.email || ""
+          });
+          if (!acquired.ok) {
+            return res.status(409).json({
+              success: false,
+              code: acquired.code || "LOCK_HELD",
+              error: "Plan trenutno uređuje drugi disponent.",
+              lock: acquired.lock
+            });
+          }
+          lockCheck = acquired;
+        } else if (!lockCheck.ok) {
+          return res.status(409).json({
+            success: false,
+            code: lockCheck.code || "LOCK_HELD",
+            error: "Plan trenutno uređuje drugi disponent.",
+            lock: lockCheck.lock
+          });
+        }
+      }
+
       const driverName = safeDriver(driverSnap).name;
       const shiftId = shiftDocumentId(parsed.data.driverId, parsed.data.date);
       const shiftRef = companyRef.collection("shifts").doc(shiftId);
@@ -1881,6 +1961,9 @@ function registerDriverRoutes(app, deps) {
       return res.status(500).json({ success: false, error: "Smena nije mogla biti sa\u010duvana." });
     }
   });
+
+  const { registerPlanEditLockRoutes } = require("./plan-edit-lock-routes");
+  registerPlanEditLockRoutes(app, { requireStaff, logAudit });
 }
 
 module.exports = {

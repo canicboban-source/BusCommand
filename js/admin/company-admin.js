@@ -12,6 +12,9 @@ import {
     itemBelongsToCompany
 } from "./company-admin-overview-model.js";
 import ApiClient from "../core/api-client.js";
+import { openGroupHub } from "../dispatcher/group-hub.js";
+import { getFormedLineGroupIds } from "../data/groups.js";
+import { canViewOperationalRoster } from "../core/ui-permissions.js";
 
 let _supportSessionCache = null;
 
@@ -281,12 +284,29 @@ async function renderCompanyAdminDashboard() {
     if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
+function openCompanyOpsOverview() {
+    if (!canViewOperationalRoster(window.currentUser?.role)) {
+        showToast(t("error_access_denied"), "error");
+        return;
+    }
+    const formed = getFormedLineGroupIds();
+    const groups = (window.state.groups || []).filter((g) => !formed.length || formed.includes(g.id));
+    const first = groups[0];
+    if (!first) {
+        showToast(t("hub_no_groups") || "No groups created.", "error");
+        return;
+    }
+    openGroupHub(first.id);
+    showToast(t("ops_readonly_banner") || "Read-only operational view.", "info");
+}
+
 export {
     renderCompanyAdminDashboard,
     renderCompanyAdminBranding,
     companyNeedsBrandingSetup,
     getCompanyScope,
     getCompanyLicenseInfo,
+    openCompanyOpsOverview,
     calculateGroupStats,
     itemBelongsToCompany,
     endCompanySupportSession

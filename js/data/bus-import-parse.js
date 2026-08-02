@@ -2,6 +2,7 @@
  * Dispatcher bus import — curated formats (TXT / CSV / paste / XLSX rows).
  * Pure helpers for unit tests; no DOM.
  */
+import { busHasGroup } from "./bus-group-membership.js";
 
 const BUS_NUMBER_RE = /^[\p{L}\p{N} ._/-]+$/u;
 const HEADER_ALIASES = new Set([
@@ -106,22 +107,21 @@ function parseBusImportRows(rows) {
 }
 
 /**
- * Classify against existing fleet for a group.
+ * Classify against company fleet for the active group.
+ * Same number in another group → toAttach (reuse), never duplicate.
  * @param {string[]} numbers
- * @param {Array<{ number?: string, groupId?: string, lineId?: string, active?: boolean }>} existingBuses
+ * @param {Array<{ id?: string, number?: string, groupId?: string, lineId?: string, groupIds?: string[], active?: boolean }>} companyBuses
  * @param {string|null} groupId
  */
-function classifyBusImport(numbers, existingBuses, groupId) {
-  const inGroup = (existingBuses || []).filter((b) => {
-    if (!groupId) return true;
-    const gid = b.groupId || b.lineId || null;
-    return !gid || gid === groupId;
-  });
-  const byNumber = new Map(
-    inGroup.map((b) => [String(b.number || "").trim().toLowerCase(), b])
-  );
+function classifyBusImport(numbers, companyBuses, groupId) {
+  const byNumber = new Map();
+  for (const b of companyBuses || []) {
+    const key = String(b.number || "").trim().toLowerCase();
+    if (key && !byNumber.has(key)) byNumber.set(key, b);
+  }
 
   const toCreate = [];
+  const toAttach = [];
   const existing = [];
   const toReactivate = [];
 
@@ -131,11 +131,15 @@ function classifyBusImport(numbers, existingBuses, groupId) {
       toCreate.push(number);
       continue;
     }
-    if (hit.active === false) toReactivate.push({ number, id: hit.id });
-    else existing.push(number);
+    if (busHasGroup(hit, groupId)) {
+      if (hit.active === false) toReactivate.push({ number, id: hit.id });
+      else existing.push(number);
+      continue;
+    }
+    toAttach.push({ number, id: hit.id });
   }
 
-  return { toCreate, existing, toReactivate };
+  return { toCreate, toAttach, existing, toReactivate };
 }
 
 export {

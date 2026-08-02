@@ -5548,18 +5548,21 @@ Object.assign(TRANSLATIONS.en, {
     bus_import_cancel: "Clear",
     bus_import_preview_title: "Import preview",
     bus_import_stat_new: "New",
+    bus_import_stat_attach: "Link existing to this group",
     bus_import_stat_existing: "Already active",
     bus_import_stat_reactivate: "Inactive → reactivate",
     bus_import_stat_invalid: "Invalid",
     bus_import_confirm: "Confirm import",
-    bus_import_confirm_body: "Create {new} bus(es) and reactivate {reactivate}?",
+    bus_import_confirm_body: "Create {new}, link {attach} to this group, reactivate {reactivate}?",
     bus_import_nothing_to_apply: "Nothing new to import.",
     bus_import_need_group: "Open a group before importing buses.",
     bus_import_empty: "No bus numbers found.",
     bus_import_unsupported: "Unsupported file. Use TXT, CSV or XLSX.",
     bus_import_xlsx_unavailable: "Excel import is unavailable in this session.",
     bus_import_failed: "Bus import failed.",
-    bus_import_done: "Import done: {created} new, {reactivated} reactivated, {failed} failed."
+    bus_import_done: "Import done: {created} new, {attached} linked, {reactivated} reactivated, {failed} failed.",
+    bus_attached_to_group: "Bus linked to this group.",
+    bus_already_in_group: "Bus already in this group."
 });
 
 Object.assign(TRANSLATIONS.de, {
@@ -5570,18 +5573,21 @@ Object.assign(TRANSLATIONS.de, {
     bus_import_cancel: "Löschen",
     bus_import_preview_title: "Importvorschau",
     bus_import_stat_new: "Neu",
+    bus_import_stat_attach: "Bestehende mit dieser Gruppe verknüpfen",
     bus_import_stat_existing: "Bereits aktiv",
     bus_import_stat_reactivate: "Inaktiv → reaktivieren",
     bus_import_stat_invalid: "Ungültig",
     bus_import_confirm: "Import bestätigen",
-    bus_import_confirm_body: "{new} Bus(se) anlegen und {reactivate} reaktivieren?",
+    bus_import_confirm_body: "{new} anlegen, {attach} mit dieser Gruppe verknüpfen, {reactivate} reaktivieren?",
     bus_import_nothing_to_apply: "Nichts Neues zum Importieren.",
     bus_import_need_group: "Gruppe öffnen, bevor Busse importiert werden.",
     bus_import_empty: "Keine Busnummern gefunden.",
     bus_import_unsupported: "Nicht unterstützte Datei. TXT, CSV oder XLSX verwenden.",
     bus_import_xlsx_unavailable: "Excel-Import in dieser Sitzung nicht verfügbar.",
     bus_import_failed: "Busimport fehlgeschlagen.",
-    bus_import_done: "Import fertig: {created} neu, {reactivated} reaktiviert, {failed} fehlgeschlagen."
+    bus_import_done: "Import fertig: {created} neu, {attached} verknüpft, {reactivated} reaktiviert, {failed} fehlgeschlagen.",
+    bus_attached_to_group: "Bus mit dieser Gruppe verknüpft.",
+    bus_already_in_group: "Bus ist bereits in dieser Gruppe."
 });
 
 Object.assign(TRANSLATIONS.sr, {
@@ -5592,18 +5598,41 @@ Object.assign(TRANSLATIONS.sr, {
     bus_import_cancel: "Obriši",
     bus_import_preview_title: "Pregled uvoza",
     bus_import_stat_new: "Novi",
+    bus_import_stat_attach: "Poveži postojeće sa ovom grupom",
     bus_import_stat_existing: "Već aktivni",
     bus_import_stat_reactivate: "Neaktivni → ponovo aktiviraj",
     bus_import_stat_invalid: "Nevažeći",
     bus_import_confirm: "Potvrdi uvoz",
-    bus_import_confirm_body: "Kreirati {new} autobus(a) i reaktivirati {reactivate}?",
+    bus_import_confirm_body: "Kreirati {new}, povezati {attach} sa ovom grupom, reaktivirati {reactivate}?",
     bus_import_nothing_to_apply: "Nema ničeg novog za uvoz.",
     bus_import_need_group: "Otvorite grupu pre uvoza autobusa.",
     bus_import_empty: "Nisu pronađeni brojevi autobusa.",
     bus_import_unsupported: "Nepodržan fajl. Koristite TXT, CSV ili XLSX.",
     bus_import_xlsx_unavailable: "Excel uvoz nije dostupan u ovoj sesiji.",
     bus_import_failed: "Uvoz autobusa nije uspeo.",
-    bus_import_done: "Uvoz završen: {created} novih, {reactivated} reaktivirano, {failed} neuspelo."
+    bus_import_done: "Uvoz završen: {created} novih, {attached} povezano, {reactivated} reaktivirano, {failed} neuspelo.",
+    bus_attached_to_group: "Autobus povezan sa ovom grupom.",
+    bus_already_in_group: "Autobus je već u ovoj grupi."
+});
+
+
+Object.assign(TRANSLATIONS.en, {
+    error_ops_read_only: "Read-only view — changes are not allowed.",
+    ops_readonly_banner: "Read-only operational view — Company Admin cannot change plans or buses.",
+    ca_nav_ops_view: "Operational view",
+    plan_lock_held: "Plan is locked by {name}."
+});
+Object.assign(TRANSLATIONS.de, {
+    error_ops_read_only: "Nur-Lesen-Ansicht — Änderungen sind nicht erlaubt.",
+    ops_readonly_banner: "Operative Nur-Lesen-Ansicht — Company Admin darf Pläne und Busse nicht ändern.",
+    ca_nav_ops_view: "Operativer Einblick",
+    plan_lock_held: "Plan ist gesperrt von {name}."
+});
+Object.assign(TRANSLATIONS.sr, {
+    error_ops_read_only: "Samo pregled — izmene nisu dozvoljene.",
+    ops_readonly_banner: "Operativni uvid (samo čitanje) — Company Admin ne menja planove ni autobuse.",
+    ca_nav_ops_view: "Operativni uvid",
+    plan_lock_held: "Plan je zaključao {name}."
 });
 
 // Propagate new EN keys to all languages (after MISSING_* merges)

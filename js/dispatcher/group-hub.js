@@ -20,6 +20,7 @@ import { renderHubDailyPreview } from "./daily-plan.js";
 import { renderHubMonthlyPreview } from "./monthly-plans.js";
 import { switchSection } from "../layout/navigation.js";
 import { escapeHtml } from "../core/utils.js";
+import { isOperationalReadOnly } from "../core/access.js";
 
 function getHubGroupId() {
     return window.state.activeGroupHubId || null;
@@ -260,8 +261,38 @@ function renderGroupHub() {
 
     renderDispatcherDataHub();
     renderHubPlanPreviews();
+    applyOperationalReadOnlyToHub();
 
     if (typeof lucide !== "undefined") lucide.createIcons();
+}
+
+function applyOperationalReadOnlyToHub() {
+    const readOnly = isOperationalReadOnly();
+    const bannerId = "ops-readonly-banner";
+    let banner = document.getElementById(bannerId);
+    const hub = document.getElementById("dispatcher-group-hub");
+    if (readOnly && hub) {
+        if (!banner) {
+            banner = document.createElement("div");
+            banner.id = bannerId;
+            banner.setAttribute("role", "status");
+            banner.style.cssText = "margin:0 0 12px;padding:10px 14px;border-radius:10px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.45);color:#fbbf24;font-size:0.85rem;font-weight:600;";
+            hub.insertBefore(banner, hub.firstChild);
+        }
+        banner.textContent = t("ops_readonly_banner") || "Read-only operational view — Company Admin cannot change plans or buses.";
+        banner.classList.remove("hidden");
+    } else if (banner) {
+        banner.classList.add("hidden");
+    }
+
+    const addForm = document.getElementById("add-bus-form");
+    if (addForm) addForm.style.display = readOnly ? "none" : "";
+    const importBox = document.querySelector(".hub-bus-import");
+    if (importBox) importBox.style.display = readOnly ? "none" : "";
+    const packageImport = document.getElementById("group-hub-step-import");
+    if (packageImport) packageImport.style.display = readOnly ? "none" : "";
+    const extraImport = document.getElementById("hub-section-extra-import");
+    if (extraImport) extraImport.style.display = readOnly ? "none" : "";
 }
 
 function getDashboardLineGroups() {

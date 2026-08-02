@@ -1,6 +1,7 @@
 // BusCommand — pripadnost vozača liniji / grupi (310 + G1/G2/G3)
 import { getGroupById } from "./groups.js";
 import { getVisibleDrivers } from "../core/utils.js";
+import { busHasGroup, normalizeGroupIds } from "./bus-group-membership.js";
 
 /**
  * Da li vozač pripada liniji/grupi (npr. "310" vidi i grp-g1, grp-g2…)
@@ -58,17 +59,20 @@ function countPlansForLineGroup(lineOrGroupId) {
 
 function busBelongsToLine(bus, lineOrGroupId) {
     if (!bus || !lineOrGroupId) return true;
-    if (bus.groupId === lineOrGroupId) return true;
-    if (bus.lineId === lineOrGroupId) return true;
+    if (busHasGroup(bus, lineOrGroupId)) return true;
 
     const lineGroup = getGroupById(lineOrGroupId);
-    if (lineGroup && bus.groupId === lineGroup.name) return true;
+    if (lineGroup) {
+        if (busHasGroup(bus, lineGroup.name) || busHasGroup(bus, lineGroup.id)) return true;
+    }
 
-    const busGroup = getGroupById(bus.groupId);
-    if (busGroup) {
-        if (busGroup.lineId === lineOrGroupId) return true;
-        if (busGroup.id === lineOrGroupId) return true;
-        if (lineGroup && busGroup.name === lineGroup.name) return true;
+    for (const gid of normalizeGroupIds(bus)) {
+        const busGroup = getGroupById(gid);
+        if (busGroup) {
+            if (busGroup.lineId === lineOrGroupId) return true;
+            if (busGroup.id === lineOrGroupId) return true;
+            if (lineGroup && busGroup.name === lineGroup.name) return true;
+        }
     }
 
     return false;

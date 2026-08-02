@@ -25,3 +25,8 @@ Zabranjeno tiho: proizvoljni PDF/Word/sken. Novi format = primer fajla firme + a
 ## Napomena
 
 Ne mešati sa CA uvozom vozača/plana. Autobus-uvoz je dispečerski operativni alat.
+
+## Dopuna 2026-08-02 — multi-group pool
+
+**Zaključano:** isti broj autobusa može pripadati / biti dostupan **više grupama** firme (npr. 310 + 320). Jedan kanonski zapis po broju u firmi; uvoz u drugu grupu = attach, ne duplikat.  
+Detalj: `reports/decision-bus-multi-group-pool-2026-08-02.md`.
