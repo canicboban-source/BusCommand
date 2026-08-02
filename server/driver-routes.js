@@ -1858,6 +1858,7 @@ function registerDriverRoutes(app, deps) {
             const schedule = { ...scheduleBaseSnap.data() };
             const parsedShifts = { ...(schedule.parsedShifts || {}) };
             delete parsedShifts[dayNum];
+            delete parsedShifts[String(dayNum)];
             tx.set(scheduleRef, {
               ...schedule,
               id: scheduleIds.canonical,

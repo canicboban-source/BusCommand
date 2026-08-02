@@ -7,20 +7,31 @@ import {
     sheetToRows
 } from "./import-parse-utils.js";
 
+function foldImportText(value) {
+    return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
+
 function colIndex(headers, needles) {
-    return headers.findIndex(h => needles.some(n => h.includes(n)));
+    const foldedNeedles = needles.map(foldImportText);
+    return headers.findIndex((h) => {
+        const folded = foldImportText(h);
+        return foldedNeedles.some((n) => folded.includes(n));
+    });
 }
 
 function parseDetaljnoSheet(rows, lineId) {
-    const headerIdx = rows.findIndex(r => {
-        const line = r.map(c => String(c).toLowerCase()).join("|");
+    const headerIdx = rows.findIndex((r) => {
+        const line = foldImportText(r.map((c) => String(c)).join("|"));
         return (line.includes("vozac") || line.includes("fahrer"))
             && (line.includes("smena") || line.includes("dienst"));
     });
 
     if (headerIdx < 0) return null;
 
-    const headers = rows[headerIdx].map(h => String(h).trim().toLowerCase());
+    const headers = rows[headerIdx].map((h) => foldImportText(h));
     const iDatum = colIndex(headers, ["datum"]);
     const iVozac = colIndex(headers, ["vozac", "fahrer"]);
     const iGrupa = colIndex(headers, ["grupa", "group"]);
@@ -78,13 +89,13 @@ function parseDetaljnoSheet(rows, lineId) {
 function parseBazaSmenaSheet(rows, lineId) {
     const line = String(lineId || "").trim();
     const linePrefix = line ? new RegExp(`^${line.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.`, "i") : null;
-    const headerIdx = rows.findIndex(r => {
-        const line = r.map(c => String(c).toLowerCase()).join("|");
-        return line.includes("smena") && line.includes("pocetak");
+    const headerIdx = rows.findIndex((r) => {
+        const lineText = foldImportText(r.map((c) => String(c)).join("|"));
+        return lineText.includes("smena") && lineText.includes("pocetak");
     });
     if (headerIdx < 0) return {};
 
-    const headers = rows[headerIdx].map(h => String(h).trim().toLowerCase());
+    const headers = rows[headerIdx].map((h) => foldImportText(h));
     const iCode = colIndex(headers, ["smena", "dienst"]);
     const iTip = colIndex(headers, ["tip"]);
     const iStart = colIndex(headers, ["pocetak"]);

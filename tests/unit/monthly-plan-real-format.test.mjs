@@ -6,7 +6,7 @@ globalThis.window = {
     state: { activeLineId: "320", groups: [] }
 };
 
-const { parseDienstplanSheet } = await import("../../js/imports/monthly-plan-excel.js");
+const { parseDienstplanSheet, parseDetaljnoSheet } = await import("../../js/imports/monthly-plan-excel.js");
 const { isMonthlyPlanCsv, parseMonthlyPlanCsv } = await import("../../js/imports/monthly-plan-csv.js");
 
 test("parses an individual Dienstplan using the real Tag/Bus/Linie-Dienst layout", () => {
@@ -66,4 +66,18 @@ test("overview matrices are not silently treated as import plans", () => {
         ["Marko Petrović", "100601", "F05", "F05", "F05"]
     ];
     assert.equal(parseDienstplanSheet(rows, "320"), null);
+});
+
+test("Detaljno sheet recognizes Serbian Vozač header with diacritics", () => {
+    const rows = [
+        ["Datum", "Dan", "Vozač", "Grupa", "Tip dana", "Smena/Dienst", "Status", "Početak", "Kraj", "Linije"],
+        [46235, "Sub", "Nikola Jovanović", "G1", "Vikend", "310.601", "RAD", "04:03", "16:06", "311,313"],
+        [46236, "Ned", "Nikola Jovanović", "G1", "Vikend", "SLOBODNO", "", "", "", ""]
+    ];
+    const parsed = parseDetaljnoSheet(rows, "310");
+    assert.ok(parsed);
+    assert.equal(parsed.month, "2026-08");
+    assert.equal(parsed.rowCount, 2);
+    assert.equal(parsed.byDriver["Nikola Jovanović"].parsedShifts[1].routeCode, "310.601");
+    assert.equal(parsed.byDriver["Nikola Jovanović"].parsedShifts[2].type, "off");
 });
