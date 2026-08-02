@@ -16,6 +16,13 @@ import { clickElementById, installActionDelegates, removeElementById } from "./c
 import { exportDriversCSV, exportLostItemsCSV, exportReportsCSV } from "./core/export-csv.js";
 import { getScheduleByKey } from "./core/utils.js";
 import { addBus, deleteBus, deleteRoute } from "./data/buses-routes.js";
+import {
+    clearBusImportPreview,
+    confirmBusImport,
+    handleBusImportDrop,
+    handleBusImportFile,
+    handleBusImportPaste
+} from "./data/bus-import.js";
 import { addDriver, editDriver, toggleDriverActive } from "./data/drivers.js";
 import { deleteGroup, setGroupFilter } from "./data/groups.js";
 import { clearScheduleFile, clearScheduleText, deleteScheduleEntry, formatScheduleText, handleScheduleDrop, handleScheduleFileSelect, insertScheduleTable, sendScheduleToDrivers, switchScheduleTab } from "./data/schedules.js";
@@ -48,6 +55,11 @@ import { canInvokeActionDuringDriverActivation } from "./auth/driver-access-gate
 
 const HANDLERS = {
     addBus,
+    clearBusImportPreview,
+    confirmBusImport,
+    handleBusImportDrop,
+    handleBusImportFile,
+    handleBusImportPaste,
     addCompanyDispatcher,
     addDriver,
     applyBrandingSettings,

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BusCommand — Driver</title>
+  <link rel="icon" type="image/png" href="/brand/logo-hero.png">
+  <link rel="apple-touch-icon" href="/brand/logo-hero.png">
     <!-- Google Font: Outfit (Moderan i premium izgled) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -133,7 +135,7 @@
                                 <input type="password" id="login-dispatcher-password"
                                     placeholder="••••••••"
                                     autocomplete="new-password"
-                                    onkeydown="if(event.key==='Enter') loginAsDispatcher()">
+                                    data-enter-action="loginAsDispatcher">
                             </div>
                         </div>
                         <div id="login-error-dispatcher" class="login-error hidden"></div>
@@ -215,7 +217,7 @@
                     </select>
                 </div>
 
-                <div class="role-selector-container">
+                <div id="legacy-role-selector" class="role-selector-container">
                     <span class="role-label" data-i18n="role_label">Aktivna uloga:</span>
                     <div class="role-toggle" data-action="toggleRoleDirectly">
                         <span id="current-role-badge">Vozač</span>
@@ -281,7 +283,7 @@
                     
                 </nav>
                 <div class="sidebar-footer">
-                    <p data-i18n="saas_version">BusCommand v1.0.1</p>
+                    <p data-i18n="saas_version">BusCommand v1.0.10</p>
                 </div>
             </aside>
 
@@ -998,7 +1000,7 @@
                     <option value="" data-i18n="med_code_none">— Bez šifre / slobodno —</option>
                 </select>
                 <input type="text" id="med-shift-code-custom" class="med-control med-control--follow" data-i18n-placeholder="med_code_placeholder" placeholder="ili ukucajte šifru, npr. 310.F08"
-                    oninput="onMedShiftCodeCustomInput()">
+                    data-input-action="onMedShiftCodeCustomInput">
             </div>
 
             <div class="form-group monthly-day-edit-field monthly-day-edit-field--last">
@@ -1123,7 +1125,7 @@
                     style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
                     background:rgba(255,255,255,0.05); color:white; font-size:1rem; text-align:center;
                     box-sizing:border-box; margin-bottom:8px; outline:none;"
-                    onkeydown="if(event.key==='Enter') confirmSuperAdminPin()">
+                    data-enter-action="confirmSuperAdminPin">
             </div>
             <!-- Produkcija: email + lozinka only -->
             <div id="superadmin-prod-fields" class="hidden" style="display:none;" aria-hidden="true">
@@ -1135,7 +1137,7 @@
                     style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
                     background:rgba(255,255,255,0.05); color:white; font-size:0.95rem;
                     box-sizing:border-box; margin-bottom:8px; outline:none;"
-                    onkeydown="if(event.key==='Enter') confirmSuperAdminPin()">
+                    data-enter-action="confirmSuperAdminPin">
             </div>
             <p id="superadmin-pin-error" style="color:#ef4444; font-size:0.85rem; margin-bottom:16px; min-height:20px;"></p>
             <div style="display:flex; gap:12px;">

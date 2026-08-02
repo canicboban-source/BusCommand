@@ -36,7 +36,7 @@ function resolveUiLanguage(preferred) {
     return normalize(preferred)
         || normalize(stored)
         || normalize(typeof window !== "undefined" ? window.state?.language : null)
-        || "de";
+        || "en";
 }
 
 /** Re-apply UI language after any window.state = { ...getBaseState(), ... } merge. */

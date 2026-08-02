@@ -33,7 +33,7 @@ const BusCommandConfig = (() => {
         IS_LOCAL: isLocal,
         IS_QUICK_DEMO: quickDemo === "driver" || quickDemo === "dispatcher",
         QUICK_DEMO_ROLE: quickDemo === "driver" || quickDemo === "dispatcher" ? quickDemo : null,
-        VERSION: "1.0.1"
+        VERSION: "1.0.10"
     };
 })();
 

@@ -19,7 +19,7 @@ export const BusCommandConfig = (() => {
         IS_LOCAL: mode.isLocal,
         IS_QUICK_DEMO: mode.quickDemoRole !== null,
         QUICK_DEMO_ROLE: mode.quickDemoRole,
-        VERSION: "1.0.1"
+        VERSION: "1.0.10"
     };
 })();
 

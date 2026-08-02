@@ -9,7 +9,7 @@ import {
 import { initPasswordFieldGuards } from "../auth/password-fields.js";
 import { initFirebase, initializeFirebaseClient } from "../core/firebase-service.js";
 import { checkCompanyLicense } from "../core/license.js";
-import { getBaseState, loadStateFromStorage, clearTenantStateCache, resetInMemoryTenantState, applyUiLanguagePreference } from "../core/state.js";
+import { getBaseState, loadStateFromStorage, clearTenantStateCache, resetInMemoryTenantState, applyUiLanguagePreference, resolveUiLanguage } from "../core/state.js";
 import { showToast } from "../core/utils.js";
 import { showAppLayout } from "../layout/shell.js";
 import { applyBrandingToUI, t, translateUI } from "../ui/i18n.js";
@@ -68,7 +68,7 @@ async function bootstrapBusCommand() {
     initPasswordFieldGuards();
     initLoginSessionGuards(handleSessionInvalidated);
 
-    const savedLang = localStorage.getItem("buscommand_lang") || "de";
+    const savedLang = resolveUiLanguage();
     document.documentElement.lang = savedLang;
 
     if (IS_DEMO_MODE) {

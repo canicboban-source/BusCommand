@@ -104,6 +104,21 @@ export function installActionDelegates(handlers, root = document) {
         event.preventDefault();
         invokeHandler(handlers, name, [event], event);
     });
+
+    root.addEventListener("dragover", (event) => {
+        const el = event.target.closest("[data-drop-action]");
+        if (!el) return;
+        event.preventDefault();
+    });
+
+    root.addEventListener("drop", (event) => {
+        const el = event.target.closest("[data-drop-action]");
+        if (!el) return;
+        event.preventDefault();
+        const name = el.dataset.dropAction;
+        if (!name) return;
+        invokeHandler(handlers, name, [event], event);
+    });
 }
 
 /**

@@ -1,4 +1,4 @@
-# BusCommand v1.0.1
+# BusCommand v1.0.10
 
 Granice proizvoda su u [PRODUCT-SCOPE.md](PRODUCT-SCOPE.md). Finansije, gorivo, plate i dnevnice nisu dio preview aplikacije.
 

@@ -1,73 +1,71 @@
 # BusCommand — trajna tačka nastavka
 
-Poslednje osvežavanje: 2026-07-22 (Europe/Vienna)
+Poslednje osvežavanje: **2026-08-02** (Europe/Vienna)
 
 ## Aktivni cilj
 
-Završiti kompletnu analizu, redizajn, funkcionalnu doradu, bezbednosnu proveru, testiranje i dokumentovanje aplikacije prema `AGENTS.md`, bez prekidanja između stranica i bez gubitka poslovnih odluka.
+Završiti pripremu **v1.0.10**, zatim disponent bus-uvoz (kurirani formati) i Poglavlje 2. Kvalitet: Swiss-watch.
 
-## Nepromenljive poslovne odluke
+## Kanonska lokacija
 
-- Company Admin upravlja firmom, brendingom, grupama/linijama, dispečerima, vozačkim nalozima i važećim voznim planovima.
-- Dispečer nema Settings panel i ne menja matične postavke firme. Radi operativni dnevni i mesečni raspored samo za dodeljene grupe.
-- Company Admin ima uvid u dispečerske planove, ali ih ne menja.
-- Vozač dobija zahteve za potvrdu smene samo tokom sopstvenog radnog vremena prema vremenskoj zoni sedišta firme.
-- Posle završetka rada i odjave nema push poruka ni GPS praćenja. Automatska odjava nastupa najkasnije 30 minuta posle završetka smene.
-- Petkom se paketiraju potrebne potvrde za radni vikend i ponedeljak; ako je vozač petkom slobodan, paket stiže prethodnog radnog dana.
-- Službeni vozni plan se uvozi odvojeno po grupi, kroz verzionisani BusCommand ugovor `BUSCOMMAND-DIENSTPLAN-1` (**XLSX kanonski + CSV twin + strukturirani BusCommand PDF**). Proizvoljni firmi PDF/XLS/TXT nije produkcioni import format. **Zaključano 2026-07-24 (opcija 1).**
+| Stavka | Vrednost |
+|--------|----------|
+| Folder | `C:\Users\cane\Desktop\BusCommand` |
+| Remote | `https://github.com/canicboban-source/BusCommand.git` |
+| `main` baza | `ff7832d` — v1.0.1 |
+| Radna grana | `work/ch1-state-checkpoint` |
+| Verzija u radu | **1.0.10** |
+| Master prompt | `docs/BusCommand-MASTER-PROMPT.md` (v3.1) |
 
-## Završene i verifikovane celine
+## Zaključane odluke vlasnika
 
-- Privatnost radne sesije vozača i potvrde smena.
-- Company Admin: vozački nalozi, važeći vozni plan, istorija verzija i evidencija aktivnosti.
-- Company Admin: Firma & pregled, Brending firme, Grupe / linije i Tim dispečera, uključujući tenant-scoped serversko čuvanje, validaciju, audit, licencni limit, deaktivaciju, opoziv API/realtime sesija i uklanjanje plaintext/hardkodovanih lozinki iz produkcijskog state-a.
-- Dispečerska dodela smene, godišnji odmori i vozački kalendar.
-- Dispečerski Settings uklonjen iz navigacije i dozvola; podešavanja pripadaju Company Admin ulozi.
-- ESLint i build upozorenja očišćena; Firebase SOS status premešten u ispravan modul.
+1. Kanonski repo: **BusCommand** (ne Preview).
+2. Verzije: važna izdanja **+10** → **1.0.10**.
+3. **Jezik:** baza/fallback **EN**; kompletan izbor **EN / DE / SR**; dodatna sučelja po potrebi.
+4. Lozinke: min **6** (sada). Jačanje pre hard-pilota = posebna odluka.
+5. Ne portovati slepo Preview-Local diffove.
+6. **Autobusi:** disponent uvoz + održavanje; CA **samo uvid** (bez write).
+7. **CA šef / disponent operacija:** CA nije nonstop online; disponent vodi grupu (planovi, vozači u planu, autobusi, zamene, poruke).
+8. **Usvojeno 2026-08-02 (review 1–5):**
+   1. CA na **dnevnom/mesečnom planu i autobusima** = **samo uvid (read-only)**, bez write / bez „kontrole“ kao edit.
+   2. Bus uvoz = **kurirani formati**: TXT, CSV (`,`/`;`), XLSX, paste + **preview/potvrda**. Novi format tek uz primer fajla firme.
+   3. **First-writer lock:** prvi koji menja zaključava ostale; on može dalje. Obavezno: **TTL**, **release** od vlasnika lock-a, **break-glass** CA/SA (skida lock + razlog + audit, **bez** CA edit plana).
+   4. „Zamrzni grupu“ = **kasnije** (backlog).
+   5. Lozinke min 6 ostaju do posebne odluke pre hard-pilota.
+9. **Pre-commit tok-gate (2026-08-02):** pre svakog commit-a — funkcija → kompletan tok → dokaz da rešava problem. Artefakt: `reports/pre-commit-flow-gate-2026-08-02.md`. Lint/unit/build + tok-inventura + smoke (happy+fail) za UI. Bez gate-a nema „gotovo“.
 
-## Poslednja zelena kontrola
+Ranije zaključano:
 
-- `npm run lint`: 0 grešaka, 0 upozorenja.
-- `npm run test:unit`: 195/195 prošlo.
-- `npm run check:firebase-isolation`: prošlo za source i poslednji build output.
-- `node --check`: prošao za sve JS fajlove promenjene u toku Tima dispečera.
-- Poslednji potpuno izvršen Playwright paket ostaje 28/28 i poslednji build 121 modul, oba pre Tima dispečera. Novi E2E je dodat, ali Playwright/esbuild procesi su trenutno blokirani sa `spawn EPERM`; izvan-sandbox zahtev je odbijen zbog usage limita. Ovo je obavezna završna regresija čim izvršno okruženje dozvoli.
+- Uvoz plana smena = BusCommand XLSX + CSV + strukturirani BC PDF (opcija 1).
+- Vozač = PWA; staff = desktop.
+- Soft pilot: SMS none, confirmation scheduler OFF, support session flag, live GPS OFF dok legal/owner ne odobri.
 
-## Trenutni redosled rada
+## Matrica (posle usvajanja)
 
-1. Company Admin — Firma & pregled. **Završeno 2026-07-22.**
-2. Company Admin — Brending firme. **Završeno 2026-07-22.**
-3. Company Admin — Grupe / linije. **Završeno 2026-07-22.**
-4. Company Admin — Tim dispečera. **Implementacija i unit/security verifikacija završene 2026-07-22; Playwright/build/emulator čekaju dostupno izvršno okruženje.**
-5. Company Admin — Podešavanja firme i završna regresija svih Company Admin stranica. **Trenutno.**
-6. Dispečerski Operativni centar prema odobrenom mockupu.
-7. Preostale dispečerske, vozačke i sistemske stranice.
-8. Kompletna završna kontrola, regulatorni pregled i zaključak audita.
+| Resurs | CA | Disponent |
+|--------|----|-----------|
+| Firma, grupe, tim, brending | Piše | Ne |
+| Kreiranje vozača / aktivacija | Piše | Ne |
+| Zvanični katalog smena | Uvoz + potvrda | Koristi |
+| Dnevni / mesečni plan | **Samo uvid** | **Piše** (+ first-lock) |
+| Autobusi | **Samo uvid** | **Piše + kurirani uvoz** |
+| Poruke / SOS / incidenti | Uvid gde treba | Operiše |
+| Plan lock break-glass | Skida lock + audit | Drži / release |
 
-## Sledeća konkretna akcija
+## Trenutni redosled
 
-Mapirati `company-admin-settings`: odvojiti stvarne postavke firme od demo/reset funkcija, potvrditi serversko čuvanje, tenant/role zaštitu, vremensku zonu sedišta, podrazumevani jezik, privatnost/notifikacije, izvoz podataka, opasne akcije, audit, validaciju, responsive i testove. Po završetku svih Company Admin stranica ponovo pokušati odloženi Tim Playwright/build/emulator paket pre prelaska na dispečerski Operativni centar.
+1. ✅ Poglavlje 1 state checkpoint
+2. ✅ Odluke 1–5 usvojene
+3. ✅ Priprema **v1.0.10** (verzija + EN default) — unit/lint/build zeleni
+4. ✅ Disponent bus-uvoz — unit + **Playwright smoke 2/2** (`reports/smoke-bus-import-2026-08-02.md`)
+5. ⏳ Poglavlje 2 (CA uvid-only plan, first-lock)
 
-## Autoritativno osveženje posle Company Admin Podešavanja (2026-07-22)
+## Artefakti odluka
 
-- Company Admin stranice su funkcionalno obrađene redom: Firma i pregled, Brending, Grupe/linije, Tim dispečera, službeni planovi, vozački nalozi, audit i Podešavanja.
-- Podešavanja sada imaju server-only profil sedišta (`AT`/`RS`), serverski izvedenu vremensku zonu, podrazumevani jezik i poslovni email; licenca je strogo read-only.
-- Fiksna politika privatnosti jasno navodi: bez GPS-a i push poruka van radnog prozora, automatska odjava najkasnije 30 minuta posle smene.
-- Produkcijski CSV izvoz je tenant-scoped, auditovan, ograničen na 10.000 redova, uklanja pristupne tajne i neutrališe spreadsheet formule.
-- `profile`, `branding` i `settings` više se ne mogu pisati direktno iz Firestore klijenta niti kroz globalni state sync.
-- Poslednja zelena kontrola: `npm run lint` 0/0, `npm run test:unit` **208/208**, `npm run check:firebase-isolation` prošao, `node --check` prošao za nove serverske module.
-- Firestore emulator test nije pokrenut jer Java nije instalirana. Novi Settings i Team Playwright tokovi i novi production build ostaju odloženi jer okruženje ne dozvoljava pokretanje browser/esbuild procesa (`spawn EPERM`), a in-app browser odbija lokalni host.
-- Sledeća stranica: Dispečerski Operativni centar. Prvo mapirati postojeći `dispatcher-dashboard`, upozorenja koja se provlače ceo dan i sva povezana stanja/API tokove; zatim implementirati ponašanje odobrenog mockupa bez Settings panela.
-
-## Autoritativno osveženje — RBAC matrica (2026-07-24)
-
-- Artefakt: `reports/rbac-matrix-2026-07-24.md` (uloga × resurs × akcija × polja × tenant × audit).
-- OTP aktivacija već u `5cf03c3`.
-- Najveće RBAC rupe za kod: mesečni plan/client schedules (G2), concurrency (G7), staff poruke bez API (G1), drivers CRUD via saveState (G3).
-- Sledeće Poglavlje 2: kanonski roster + optimistic concurrency (G2/G7).
-
-- Grana: `work/master-prompt-ch1`, checkpoint `bb6c4aa`.
-- Uvoz plana zaključan: BusCommand XLSX + CSV + strukturirani PDF (opcija 1).
-- Artefakti: `reports/poglavlje-1-{forensic,gap-matrix,dataflow,legal-open}-2026-07-24.md`.
-- Najveći Critical gapovi: shared temp code `123456`, dual roster model bez concurrency, demo tragovi u produkcionom path-u.
-- Sledeće: **Poglavlje 2** (OTP/RBAC/kanonski model) — ne live GPS dok legal L1 nije rešen.
+- `reports/decision-ca-boss-dispatcher-ops-2026-08-02.md`
+- `reports/decision-buses-dispatcher-import-2026-08-02.md`
+- `reports/decision-review-legal-logic-2026-08-02.md`
+- `reports/decision-1-5-adopted-2026-08-02.md`
+- `reports/pre-commit-flow-gate-2026-08-02.md`
+- `reports/poglavlje-1-state-checkpoint-2026-08-02.md`
+- `reports/smoke-bus-import-2026-08-02.md`
