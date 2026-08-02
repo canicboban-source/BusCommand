@@ -31,6 +31,7 @@ const ApiClient = (() => {
                 status: res.status,
                 code: data && data.code,
                 conflict: data && data.conflict,
+                lock: data && data.lock,
                 details: data && (data.details || data.errors)
             };
         }
@@ -316,6 +317,33 @@ const ApiClient = (() => {
             body: JSON.stringify(shift)
         });
     }
+    async function acquirePlanLock({ scopeType, groupId, scopeKey }) {
+        return apiFetch("/api/staff/plan-locks/acquire", {
+            method: "POST",
+            body: JSON.stringify({ scopeType, groupId, scopeKey })
+        });
+    }
+    async function heartbeatPlanLock(lockId) {
+        return apiFetch("/api/staff/plan-locks/heartbeat", {
+            method: "POST",
+            body: JSON.stringify({ lockId })
+        });
+    }
+    async function releasePlanLock(lockId) {
+        return apiFetch("/api/staff/plan-locks/release", {
+            method: "POST",
+            body: JSON.stringify({ lockId })
+        });
+    }
+    async function breakPlanLock(lockId, reason) {
+        return apiFetch("/api/staff/plan-locks/break", {
+            method: "POST",
+            body: JSON.stringify({ lockId, reason })
+        });
+    }
+    async function getPlanLock(lockId) {
+        return apiFetch("/api/staff/plan-locks/" + encodeURIComponent(lockId));
+    }
     async function getDriverWorkSession() {
         return apiFetch("/api/driver/work-session");
     }
@@ -367,6 +395,7 @@ const ApiClient = (() => {
         createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage,
         createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, resolveStaffOperationalIncident, resolveStaffSos,
         setLostItemStatus, createStaffBus, setStaffBusActive, assignStaffShift,
+        acquirePlanLock, heartbeatPlanLock, releasePlanLock, breakPlanLock, getPlanLock,
         sendStaffMessage, getDriverWorkSession, confirmDriverShifts, getStaffShiftConfirmations,
         startSupportSession, getActiveSupportSessionAdmin, endSupportSessionAdmin,
         getCompanySupportSession, endCompanySupportSession

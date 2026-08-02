@@ -62,4 +62,56 @@ function assertHolder(store, input) {
   return { ok: true, lock: publicLockView(existing) };
 }
 
-export { DEFAULT_TTL_MS, buildLockId, acquireLock, assertHolder };
+function heartbeatLock(store, input) {
+  const nowMs = input.nowMs ?? Date.now();
+  const ttlMs = input.ttlMs ?? DEFAULT_TTL_MS;
+  const existing = store[input.lockId] || null;
+  if (!existing || isExpired(existing, nowMs)) {
+    return { ok: false, code: "LOCK_MISSING" };
+  }
+  if (existing.holderUid !== input.holderUid) {
+    return { ok: false, code: "LOCK_HELD", lock: publicLockView(existing) };
+  }
+  const lock = { ...existing, expiresAtMs: nowMs + ttlMs, updatedAtMs: nowMs };
+  store[input.lockId] = lock;
+  return { ok: true, lock: publicLockView(lock) };
+}
+
+function releaseLock(store, input) {
+  const nowMs = input.nowMs ?? Date.now();
+  const existing = store[input.lockId] || null;
+  if (!existing || isExpired(existing, nowMs)) {
+    delete store[input.lockId];
+    return { ok: true, released: true };
+  }
+  if (existing.holderUid !== input.holderUid) {
+    return { ok: false, code: "LOCK_HELD", lock: publicLockView(existing) };
+  }
+  delete store[input.lockId];
+  return { ok: true, released: true };
+}
+
+function breakLock(store, input) {
+  const reason = String(input.reason || "").trim();
+  if (reason.length < 8) {
+    return { ok: false, code: "REASON_REQUIRED" };
+  }
+  const existing = store[input.lockId] || null;
+  delete store[input.lockId];
+  return {
+    ok: true,
+    broken: true,
+    previous: existing ? publicLockView(existing) : null,
+    reason
+  };
+}
+
+export {
+  DEFAULT_TTL_MS,
+  buildLockId,
+  acquireLock,
+  assertHolder,
+  heartbeatLock,
+  releaseLock,
+  breakLock
+};

@@ -38,6 +38,13 @@ import { archiveAllDispatcherMessages, archiveDispatcherMessage } from "./dispat
 import { shiftWeekNav } from "./dispatcher/shift-utils.js";
 import { assignShift, openShiftCell, persistShift, removeShift } from "./dispatcher/shifts.js";
 import { dailyPlanAssignDriver } from "./dispatcher/daily-plan.js";
+import {
+    acquirePlanEditLock,
+    releasePlanEditLock,
+    breakPlanEditLock,
+    confirmBreakPlanEditLock,
+    refreshPlanLockBanner
+} from "./dispatcher/plan-edit-lock-ui.js";
 import { handleVacation } from "./dispatcher/vacations.js";
 import { resolveSOS } from "./maps/sos-siren.js";
 import { wizardAddDriverRow, wizardBack, wizardHandleLogo, wizardNext, wizardSelectColor, wizardSkip } from "./features/onboarding.js";
@@ -165,6 +172,11 @@ const HANDLERS = {
     openShiftCell,
     persistShift,
     dailyPlanAssignDriver,
+    acquirePlanEditLock,
+    releasePlanEditLock,
+    breakPlanEditLock,
+    confirmBreakPlanEditLock,
+    refreshPlanLockBanner,
     opsAssignDriver,
     publishCompanyServicePlan,
     refreshCompanyAudit,

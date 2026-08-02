@@ -1791,34 +1791,21 @@ function registerDriverRoutes(app, deps) {
       }
 
       // First-writer lock: first successful mutate acquires; others blocked until release/TTL/break-glass
-      const { acquireLock, assertHolder, buildLockId } = require("./plan-edit-lock");
-      const { memoryLocks } = require("./plan-edit-lock-routes");
-      const dayLockId = buildLockId("day", driverGroupId, parsed.data.date);
-      if (dayLockId) {
-        let lockCheck = assertHolder(memoryLocks, { lockId: dayLockId, holderUid: req.staff.uid });
-        if (!lockCheck.ok && lockCheck.code === "LOCK_REQUIRED") {
-          const acquired = acquireLock(memoryLocks, {
-            lockId: dayLockId,
-            holderUid: req.staff.uid,
-            holderName: req.staff.name || req.staff.email || ""
-          });
-          if (!acquired.ok) {
-            return res.status(409).json({
-              success: false,
-              code: acquired.code || "LOCK_HELD",
-              error: "Plan trenutno uređuje drugi disponent.",
-              lock: acquired.lock
-            });
-          }
-          lockCheck = acquired;
-        } else if (!lockCheck.ok) {
-          return res.status(409).json({
-            success: false,
-            code: lockCheck.code || "LOCK_HELD",
-            error: "Plan trenutno uređuje drugi disponent.",
-            lock: lockCheck.lock
-          });
-        }
+      const { ensureAssignmentDayLock } = require("./plan-edit-lock-routes");
+      const lockCheck = await ensureAssignmentDayLock({
+        db,
+        companyId: req.staff.companyId,
+        staff: req.staff,
+        groupId: driverGroupId,
+        dateStr: parsed.data.date
+      });
+      if (!lockCheck.ok) {
+        return res.status(409).json({
+          success: false,
+          code: lockCheck.code || "LOCK_HELD",
+          error: "Plan trenutno uređuje drugi disponent.",
+          lock: lockCheck.lock || null
+        });
       }
 
       const driverName = safeDriver(driverSnap).name;
@@ -1963,7 +1950,7 @@ function registerDriverRoutes(app, deps) {
   });
 
   const { registerPlanEditLockRoutes } = require("./plan-edit-lock-routes");
-  registerPlanEditLockRoutes(app, { requireStaff, logAudit });
+  registerPlanEditLockRoutes(app, { requireStaff, logAudit, db });
 }
 
 module.exports = {

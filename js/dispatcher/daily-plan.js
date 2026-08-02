@@ -6,6 +6,7 @@ import { t } from "../ui/i18n.js";
 import { actionAttr, changeAttr } from "../core/action-delegate.js";
 import { persistShift } from "./shifts.js";
 import { isOperationalReadOnly } from "../core/access.js";
+import { refreshPlanLockBanner } from "./plan-edit-lock-ui.js";
 
 function getActiveHubGroupId() {
     return window.state.activeGroupHubId || null;
@@ -152,9 +153,14 @@ function renderDailyPlanFullPage() {
     const date = today;
     const plan = getDailyPlanForDate(date);
     renderDailyPlanMeta(plan, metaEl, { full: true });
-    if (!plan.slots.length) return renderEmptyState(container, t("daily_no_shifts_full", { date }));
+    if (!plan.slots.length) {
+        renderEmptyState(container, t("daily_no_shifts_full", { date }));
+        void refreshPlanLockBanner();
+        return;
+    }
     container.innerHTML = buildDailyPlanTable(plan.slots, { editable: !isOperationalReadOnly(), dateStr: date });
     if (typeof lucide !== "undefined") lucide.createIcons();
+    void refreshPlanLockBanner();
 }
 
 function bindDailyPlanFullPage() {
