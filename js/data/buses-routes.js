@@ -1,12 +1,26 @@
 // BusCommand ESM v9.5
+import { getBusesForLineGroup } from "./group-membership.js";
+import { busHasGroup, withAttachedGroup, buildNewBusGroups } from "./bus-group-membership.js";
 import { saveState } from "../core/state.js";
 import { showToast } from "../core/utils.js";
-import { getBusesForLineGroup } from "./group-membership.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import ApiClient from "../core/api-client.js";
+import { isOperationalReadOnly } from "../core/access.js";
+
+function findCompanyBusByNumber(number) {
+    const key = String(number || "").trim().toLowerCase();
+    return (window.state.buses || []).find((b) => String(b.number || "").trim().toLowerCase() === key) || null;
+}
+
+function upsertLocalBusFromApi(bus) {
+    if (!bus?.id) return;
+    const idx = window.state.buses.findIndex((item) => item.id === bus.id);
+    if (idx >= 0) window.state.buses[idx] = { ...window.state.buses[idx], ...bus };
+    else window.state.buses.push(bus);
+}
 
 function renderBusesList() {
     const list = document.getElementById("settings-buses-list");
@@ -15,10 +29,13 @@ function renderBusesList() {
     const hubId = window.state.activeGroupHubId;
     const activeGrp = hubId || (window.currentUser && window.currentUser.activeGroupId);
     const myBuses = activeGrp ? getBusesForLineGroup(activeGrp) : (window.state.buses || []);
+    const readOnly = isOperationalReadOnly();
     myBuses.forEach(b => {
         const li = document.createElement("li");
         const active = b.active !== false;
-        const deleteBtn = `<button ${actionAttr("deleteBus", [b.id])} style="background:rgba(239,68,68,0.08);color:${active ? "#ef4444" : "#16a34a"};border:1px solid currentColor;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;">
+        const deleteBtn = readOnly
+            ? ""
+            : `<button ${actionAttr("deleteBus", [b.id])} style="background:rgba(239,68,68,0.08);color:${active ? "#ef4444" : "#16a34a"};border:1px solid currentColor;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;">
                 ${active ? (t("btn_deactivate") || "Deactivate") : (t("btn_activate") || "Activate")}
             </button>`;
         li.innerHTML = `
@@ -31,33 +48,73 @@ function renderBusesList() {
 
 async function addBus(event) {
     event.preventDefault();
+    if (isOperationalReadOnly()) {
+        showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+        return;
+    }
     const input = document.getElementById("new-bus-num");
     const number = input.value.trim();
     if (!number) return;
-    
+
     const hubId = window.state.activeGroupHubId;
     const activeGrp = hubId || (window.currentUser && window.currentUser.activeGroupId);
-    const newBus = {
-        id: `bus-${Date.now()}`,
-        number: number,
-        groupId: activeGrp
-    };
+    if (!activeGrp) {
+        showToast(t("bus_import_need_group"), "error");
+        return;
+    }
+
     showConfirm(
         (t("confirm_add_bus") || "Add bus") + ': "' + number + '"?',
         async function() {
             if (!IS_DEMO_MODE) {
                 const result = await ApiClient.createStaffBus(number, activeGrp);
                 if (!result?.success) {
-                    showToast(t("bus_add_failed"), "error");
+                    const detail = String(result?.error || "").trim();
+                    showToast(
+                        detail || t("bus_add_failed") || "The bus could not be added.",
+                        "error"
+                    );
                     return;
                 }
-                if (!window.state.buses.some((bus) => bus.id === result.bus.id)) {
-                    window.state.buses.push(result.bus);
-                }
-            } else {
-            window.state.buses.push(newBus);
-                saveState();
+                if (!Array.isArray(window.state.buses)) window.state.buses = [];
+                upsertLocalBusFromApi(result.bus);
+                input.value = "";
+                renderBusesList();
+                if (typeof lucide !== "undefined") lucide.createIcons();
+                const msg = result.attached
+                    ? t("bus_attached_to_group") || "Bus linked to this group"
+                    : (result.alreadyInGroup
+                        ? t("bus_already_in_group") || "Bus already in this group"
+                        : (number + " — " + (t("bus_added") || "vozilo dodano")));
+                showToast(msg, result.alreadyInGroup ? "info" : "success");
+                return;
             }
+
+            const existing = findCompanyBusByNumber(number);
+            if (existing) {
+                if (busHasGroup(existing, activeGrp)) {
+                    showToast(t("bus_already_in_group") || "Bus already in this group", "info");
+                    input.value = "";
+                    renderBusesList();
+                    return;
+                }
+                Object.assign(existing, withAttachedGroup(existing, activeGrp));
+                saveState();
+                input.value = "";
+                renderBusesList();
+                lucide.createIcons();
+                showToast(t("bus_attached_to_group") || "Bus linked to this group", "success");
+                return;
+            }
+
+            const groups = buildNewBusGroups(activeGrp);
+            window.state.buses.push({
+                id: `bus-${Date.now()}`,
+                number,
+                active: true,
+                ...groups
+            });
+            saveState();
             input.value = "";
             renderBusesList();
             lucide.createIcons();
@@ -68,6 +125,10 @@ async function addBus(event) {
 }
 
 function deleteBus(id) {
+    if (isOperationalReadOnly()) {
+        showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+        return;
+    }
     const bus = window.state.buses.find((item) => item.id === id);
     if (!bus) return;
     const nextActive = bus.active === false;

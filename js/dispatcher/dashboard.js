@@ -16,6 +16,7 @@ import {
 import { persistShift } from "./shifts.js";
 import { ApiClient } from "../core/api-client.js";
 import { saveState } from "../core/state.js";
+import { busHasGroup } from "../data/bus-group-membership.js";
 
 const SHIFT_TYPE_OPTIONS = Object.freeze([
     { value: "morning", labelKey: "shift_type_morning", fallback: "Prepodne" },
@@ -563,7 +564,7 @@ function coverageBusCandidates(report) {
     return (window.state.buses || []).filter(bus => {
         const number = String(bus.number || "");
         return bus.active !== false
-            && String(bus.groupId || bus.lineId || "") === groupId
+            && busHasGroup(bus, groupId)
             && (!used.has(number) || number === String(report.bus || ""));
     });
 }

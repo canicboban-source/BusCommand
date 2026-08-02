@@ -21,6 +21,7 @@ import "./admin/company-admin-settings.js";
 import "./data/groups.js";
 import "./data/drivers.js";
 import "./data/buses-routes.js";
+import "./data/bus-import.js";
 import "./maps/helpers.js";
 import "./maps/map-data.js";
 import "./maps/live-map-core.js";

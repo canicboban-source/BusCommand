@@ -370,6 +370,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="#" class="nav-item" data-action="openCompanyOpsOverview">
+                                <i data-lucide="eye"></i> <span data-i18n="ca_nav_ops_view">Operational view</span>
+                            </a>
+                        </li>
+                        <li>
                             <a href="#" class="nav-item" data-action="switchSection" data-action-args='["company-admin-branding"]'>
                                 <i data-lucide="palette"></i> <span data-i18n="ca_nav_branding">Brending firme</span>
                             </a>
@@ -446,7 +451,7 @@
                     </ul>
                 </nav>
                 <div class="sidebar-footer">
-                    <p data-i18n="saas_version">BusCommand v1.0.1</p>
+                    <p data-i18n="saas_version">BusCommand v1.0.10</p>
                 </div>
             </aside>
 
@@ -1779,9 +1784,21 @@
                         <div class="card hub-panel" id="hub-section-buses">
                             <h3 class="hub-section-title"><i data-lucide="bus"></i> <span data-i18n="hub_stat_buses">Buses</span></h3>
                             <form id="add-bus-form" data-submit-action="addBus" class="crud-form hub-bus-form" style="margin-bottom:10px;">
-                                <input type="text" id="new-bus-num" required placeholder="npr. 91103" aria-label="Bus number" data-i18n-aria-label="hub_add_bus_label" data-i18n-placeholder="hub_add_bus_placeholder">
-                                <button type="submit" class="btn-icon-only btn-primary" aria-label="Add bus" data-i18n-aria-label="hub_add_bus_aria"><i data-lucide="plus"></i></button>
+                                <input type="text" id="new-bus-num" required placeholder="e.g. 91504" aria-label="Bus number" data-i18n-aria-label="hub_add_bus_label" data-i18n-placeholder="hub_add_bus_placeholder">
+                                <button type="submit" class="btn-primary hub-add-bus-btn" data-i18n="hub_add_bus_btn" aria-label="Add bus" data-i18n-aria-label="hub_add_bus_aria">Add bus</button>
                             </form>
+                            <div class="hub-bus-import" style="margin-bottom:12px;">
+                                <p class="subtitle" style="font-size:0.8rem;margin:0 0 8px;" data-i18n="bus_import_hint">Import buses: TXT, CSV, XLSX or paste — one number per line.</p>
+                                <div id="bus-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bus-import-file"]'
+                                    data-drop-action="handleBusImportDrop" data-i18n="bus_import_drop">Drop TXT / CSV / XLSX here</div>
+                                <input type="file" id="bus-import-file" accept=".txt,.csv,.tsv,.xlsx,.xls" style="display:none;" data-change-action="handleBusImportFile" data-change-pass="event">
+                                <textarea id="bus-import-paste" rows="3" style="width:100%;margin-top:8px;box-sizing:border-box;" data-i18n-placeholder="bus_import_paste_placeholder" placeholder="Paste bus numbers…"></textarea>
+                                <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                                    <button type="button" class="btn-secondary" data-action="handleBusImportPaste" data-i18n="bus_import_preview_btn">Preview import</button>
+                                    <button type="button" class="btn-secondary" data-action="clearBusImportPreview" data-i18n="bus_import_cancel">Clear</button>
+                                </div>
+                                <div id="bus-import-preview"></div>
+                            </div>
                             <ul class="crud-list" id="settings-buses-list" style="max-height:280px;overflow-y:auto;"></ul>
                         </div>
 
@@ -2046,7 +2063,7 @@
                             <div class="company-settings-form-grid">
                                 <label for="ca-settings-country"><span data-i18n="ca_settings_country">Država sedišta</span><select id="ca-settings-country" data-change-action="handleCompanySettingsCountry"><option value="AT" data-i18n="country_at">Austrija</option><option value="RS" data-i18n="country_rs">Srbija</option></select><span class="field-error" data-company-settings-error="country" aria-live="polite"></span></label>
                                 <label for="ca-settings-timezone"><span data-i18n="ca_settings_timezone">Vremenska zona</span><input id="ca-settings-timezone" type="text" readonly aria-readonly="true"><small data-i18n="ca_settings_timezone_locked">Automatski se vezuje za državu sedišta.</small></label>
-                                <label for="ca-settings-language"><span data-i18n="ca_settings_language">Podrazumevani jezik firme</span><select id="ca-settings-language" data-change-action="handleCompanySettingsInput"><option value="de">Deutsch</option><option value="sr">Srpski</option><option value="en">English</option></select><span class="field-error" data-company-settings-error="defaultLanguage" aria-live="polite"></span></label>
+                                <label for="ca-settings-language"><span data-i18n="ca_settings_language">Podrazumevani jezik firme</span><select id="ca-settings-language" data-change-action="handleCompanySettingsInput"><option value="en">English</option><option value="de">Deutsch</option><option value="sr">Srpski</option></select><span class="field-error" data-company-settings-error="defaultLanguage" aria-live="polite"></span></label>
                                 <label for="ca-settings-contact-email"><span data-i18n="ca_settings_contact_email">Poslovni kontakt email</span><input id="ca-settings-contact-email" type="email" maxlength="254" autocomplete="email" inputmode="email" data-input-action="handleCompanySettingsInput" placeholder="office@firma.at" required><span class="field-error" data-company-settings-error="contactEmail" aria-live="polite"></span></label>
                             </div>
                             <div class="company-settings-form-actions"><button type="button" class="btn-secondary" data-action="resetCompanySettingsForm" data-i18n="btn_cancel">Otkaži</button><button id="ca-settings-save" type="submit" class="btn-primary"><i data-lucide="save"></i><span data-i18n="ca_settings_save">Sačuvaj podešavanja</span></button></div>

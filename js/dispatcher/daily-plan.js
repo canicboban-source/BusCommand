@@ -5,6 +5,7 @@ import { getGroupById } from "../data/groups.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr, changeAttr } from "../core/action-delegate.js";
 import { persistShift } from "./shifts.js";
+import { isOperationalReadOnly } from "../core/access.js";
 
 function getActiveHubGroupId() {
     return window.state.activeGroupHubId || null;
@@ -126,7 +127,7 @@ function renderDailyPlanPanel(dateStr) {
     const plan = getDailyPlanForDate(date);
     renderDailyPlanMeta(plan, metaEl);
     if (!plan.slots.length) return renderEmptyState(container, t("daily_no_shifts", { date }));
-    container.innerHTML = buildDailyPlanTable(plan.slots, { editable: true, dateStr: date });
+    container.innerHTML = buildDailyPlanTable(plan.slots, { editable: !isOperationalReadOnly(), dateStr: date });
     if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
@@ -152,7 +153,7 @@ function renderDailyPlanFullPage() {
     const plan = getDailyPlanForDate(date);
     renderDailyPlanMeta(plan, metaEl, { full: true });
     if (!plan.slots.length) return renderEmptyState(container, t("daily_no_shifts_full", { date }));
-    container.innerHTML = buildDailyPlanTable(plan.slots, { editable: true, dateStr: date });
+    container.innerHTML = buildDailyPlanTable(plan.slots, { editable: !isOperationalReadOnly(), dateStr: date });
     if (typeof lucide !== "undefined") lucide.createIcons();
 }
 

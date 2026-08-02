@@ -1,7 +1,7 @@
-# BusCommand — status projekta (v1.0.1)
+# BusCommand — status projekta (v1.0.10)
 
-**Kanonski folder:** `C:\Users\cane\buscommand`  
-**Izdanje:** BusCommand `v1.0.1` (jul 2026)
+**Kanonski folder:** `C:\Users\cane\Desktop\BusCommand`  
+**Izdanje:** BusCommand `v1.0.10` (avgust 2026)
 **Domen:** buscommand.com  
 **Plan refaktorisanja:** `f:\fleet\PLAN-REFAKTORISANJA.md`
 
@@ -10,7 +10,7 @@
 ## Brzi start
 
 ```powershell
-cd C:\Users\cane\buscommand
+cd C:\Users\cane\Desktop\BusCommand
 npm install
 npm run build
 npm start
@@ -52,7 +52,7 @@ npm run build
 
 ### Rebrand FleetPulse → BusCommand ✅
 - ~121 fajlova, `buscommand_*` storage keys + migracija
-- `BusCommandConfig`, verzija **1.0.1**
+- `BusCommandConfig`, verzija **1.0.10**
 - Cursor rules: `.cursor/rules/buscommand-*.mdc`
 
 ### Nedelja 2 — ESLint + testovi ✅
@@ -112,7 +112,7 @@ npm run build
 ### Deploy priprema ✅ (lokalno)
 - `.env.example` — `PORT`, `CORS_ORIGINS`, `LOG_LEVEL`
 - `GET /api/health` — uptime + mode (monitoring)
-- `/api/config` — verzija iz `package.json` (1.0.1)
+- `/api/config` — verzija iz `package.json` (1.0.10)
 - `.gitignore` — `.env` / `.env.local`
 
 ### Faza 0.6 — merge u `f:\fleet` ✅

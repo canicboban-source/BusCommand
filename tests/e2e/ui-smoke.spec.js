@@ -617,16 +617,30 @@ test.describe("UI smoke", () => {
     await seedDemoState(page);
     await page.goto("/staff.html?mode=demo");
     await loginDriver(page);
+    const start = await page.evaluate(() => {
+      const d = new Date();
+      d.setUTCDate(d.getUTCDate() + 14);
+      return d.toISOString().slice(0, 10);
+    });
+    const end = await page.evaluate((s) => {
+      const d = new Date(`${s}T00:00:00.000Z`);
+      d.setUTCDate(d.getUTCDate() + 2);
+      return d.toISOString().slice(0, 10);
+    }, start);
     await page.evaluate(() => {
-      if (!document.getElementById("global-confirm-modal")?.classList.contains("hidden")) closeConfirmModal();
+      if (!document.getElementById("global-confirm-modal")?.classList.contains("hidden")) {
+        if (typeof window.closeConfirmModal === "function") window.closeConfirmModal();
+      }
       window.switchSection("driver-vacation");
     });
-    await page.locator("#vacation-start").fill("2026-08-01");
-    await page.locator("#vacation-end").fill("2026-08-03");
+    await page.locator("#vacation-start").fill(start);
+    await page.locator("#vacation-end").fill(end);
     await page.locator("#vacation-type").selectOption("lt_vacation");
     await page.locator("#vacation-reason").fill("Family leave");
     await page.locator("#vacation-form button[type='submit']").click();
-    await page.locator("#global-confirm-yes").click();
+    const confirmYes = page.locator("#global-confirm-modal #global-confirm-yes");
+    await expect(confirmYes).toBeVisible();
+    await confirmYes.click();
     await expect.poll(() => page.evaluate(() => window.state.vacations?.[0]?.days)).toBe(3);
     await expect(page.locator("#driver-vacation-history .badge.pending")).toHaveCount(1);
   });

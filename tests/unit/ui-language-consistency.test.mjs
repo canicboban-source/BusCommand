@@ -49,7 +49,7 @@ function loadUiLanguageHelpers() {
         return normalize(preferred)
           || normalize(stored)
           || normalize(window.state?.language)
-          || "de";
+          || "en";
       }
       function applyUiLanguagePreference(preferred) {
         const lang = resolveUiLanguage(preferred);
@@ -81,6 +81,12 @@ function loadUiLanguageHelpers() {
     const api = vm.runInNewContext(pure, { localStorage, document, window, FRESH_STATE });
     return { api, localStorage, window };
 }
+
+test("resolveUiLanguage defaults to en when nothing is stored", () => {
+    const { api, window } = loadUiLanguageHelpers();
+    window.state = { language: "xx" };
+    assert.equal(api.resolveUiLanguage(), "en");
+});
 
 test("resolveUiLanguage prefers buscommand_lang over FRESH_STATE en", () => {
     const { api, localStorage, window } = loadUiLanguageHelpers();
@@ -115,13 +121,29 @@ test("loadStateFromStorage without companyId does not leave language as en when 
     assert.equal(window.state.language, "de");
 });
 
+test("pilot UI languages en/de/sr remain selectable", () => {
+    const { api, localStorage } = loadUiLanguageHelpers();
+    for (const lang of ["en", "de", "sr"]) {
+        localStorage.setItem("buscommand_lang", lang);
+        assert.equal(api.resolveUiLanguage(), lang);
+    }
+});
+
 test("state.js wires resolve/apply helpers into reset and load paths", () => {
     const source = readFileSync(join(root, "js/core/state.js"), "utf8");
     assert.match(source, /function resolveUiLanguage/);
     assert.match(source, /function applyUiLanguagePreference/);
     assert.match(source, /buscommand_lang/);
+    assert.match(source, /\|\|\s*"en"/);
     assert.match(source, /resetInMemoryTenantState[\s\S]*resolveUiLanguage/);
     assert.match(source, /loadStateFromStorage[\s\S]*applyUiLanguagePreference/);
+});
+
+test("init bootstrap resolves UI language via resolveUiLanguage", () => {
+    const init = readFileSync(join(root, "js/bootstrap/init.js"), "utf8");
+    assert.match(init, /resolveUiLanguage/);
+    assert.match(init, /const savedLang = resolveUiLanguage\(\);/);
+    assert.doesNotMatch(init, /buscommand_lang"\)\s*\|\|\s*"de"/);
 });
 
 test("initFirebase reapplies UI language after base-state merge", () => {

@@ -1,5 +1,12 @@
 # BusCommand — Changelog
 
+## Version 1.0.10 — 2026-08-02
+
+### Release prep
+- Verzija bump **1.0.1 → 1.0.10** (package, config, UI `saas_version`, docs).
+- UI jezik: baza/fallback **English**; kompletan izbor **EN / DE / SR** ostaje obavezan.
+- Lozinke: min 6 (bez promene politike u ovom ciklusu).
+
 ## Version 9.1 — Vizualni redesign — 2026-07-02
 
 ### 🎨 Novi vizualni identitet (v9.1)

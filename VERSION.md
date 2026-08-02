@@ -1,30 +1,32 @@
-# BusCommand v1.0.1
+# BusCommand v1.0.10
 
-Snapshot sačuvan: **9. jul 2026.**
+Snapshot priprema: **2. avgust 2026.**
 
 ## Lokacija
 
-BusCommand release kandidat `v1.0.1`
+Kanonski folder: `C:\Users\cane\Desktop\BusCommand`  
+Remote: `canicboban-source/BusCommand`  
+Baza: `v1.0.1` (`ff7832d`) → radna priprema **v1.0.10**
 
-## Šta je u ovoj verziji
+## Šema verzija
 
-- **Group Hub** — upravljanje po formiranoj liniji/grupi (310, 105, bilo koja nova)
-- **Mesečni planovi** — pregled i modal „Uredi dan“ (dan, tip smene, šifra, autobus)
-- **Per-line shift catalog** (`js/core/line-shift-catalog.js`) — svaka grupa ima svoj šifarnik (`{linija}.F01`, `{linija}.X2`, …)
-- **Paket uvoz** — CSV vozači + Excel mesečni plan, dinamički po aktivnoj liniji
-- **Group membership** — vozači, autobusi, podgrupe po liniji
+Važna izdanja: last segment **+10** (`1.0.0` → `1.0.10` → `1.0.20` …).
+
+## Jezik (zaključano 2026-08-02)
+
+- Baza / fallback UI: **English (`en`)**
+- Obavezan kompletan izbor: **EN / DE / SR**
+- Dodatna jezička sučelja po potrebi kasnije
 
 ## Pokretanje
 
 ```powershell
-cd BusCommand
+cd C:\Users\cane\Desktop\BusCommand
 npm install
 npm run build
 npm start
 ```
 
-Demo dispečer: `http://localhost:8766/?demo=dispatcher`
-
 ## Prethodna verzija
 
-Bazirano na `fleet_v20.1` (Group Hub + mesečni planovi za sve grupe).
+`v1.0.1` — GitHub release `#7`.

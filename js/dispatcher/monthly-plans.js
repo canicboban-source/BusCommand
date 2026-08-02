@@ -9,6 +9,7 @@ import { closeModal, showModal } from "../ui/modals.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { persistShift } from "./shifts.js";
+import { isOperationalReadOnly } from "../core/access.js";
 
 let _selectedGroupId = null;
 let _editCtx = null;
@@ -537,6 +538,10 @@ function onMedShiftCodeCustomInput() {
 }
 
 function openMonthlyDayEdit(scheduleKey, day) {
+    if (isOperationalReadOnly()) {
+        showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+        return;
+    }
     const schedule = window.state.schedules?.find(s => s.id === scheduleKey);
     if (!schedule) {
         showToast(t("med_plan_not_found"), "error");

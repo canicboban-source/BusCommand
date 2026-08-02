@@ -7,7 +7,7 @@ import { caWizardBack, caWizardNext, caWizardSelectColor, caWizardSelectColorFro
 import { clearCompanyServicePlanPreview, closeCompanyServicePlanDuty, closeCompanyServicePlanHistory, handleCompanyServicePlanFile, handleCompanyServicePlanGroupChange, openCompanyServicePlanDuty, openCompanyServicePlanHistory, publishCompanyServicePlan } from "./admin/company-admin-service-plan.js";
 import { handleCompanySettingsCountry, handleCompanySettingsInput, resetCompanySettingsForm, saveCompanyProfileSettings } from "./admin/company-admin-settings.js";
 import { addCompanyDispatcher, focusCompanyDispatcherForm, resetCompanyDispatcherPassword, revokeCompanyDispatcherSessions, saveCompanyDispatcherGroups, toggleCaDispGroupsEdit, toggleCompanyDispatcherStatus } from "./admin/company-admin-team.js";
-import { endCompanySupportSession } from "./admin/company-admin.js";
+import { endCompanySupportSession, openCompanyOpsOverview } from "./admin/company-admin.js";
 import { createDispatcherGroup, enterDispatcherActiveGroup, exitImpersonation, saveNewDispatcherPassword, switchToGroupSetup } from "./admin/dispatcher-setup.js";
 import { superadminCreateCompany, superadminCreateCompanyAdmin, superadminDeleteCompany, superadminCancelDeleteCompanyModal, superadminConfirmDeleteCompany, superadminDeleteCompanyAdmin, superadminFocusCompanies, superadminCopyCompanyId, superadminCopyText, superadminImpersonate, superadminOpenCompany, superadminOpenCompanyDetail, superadminCloseCompanyDetail, superadminSetCompanyAdminStatus, superadminResetCompanyAdminPassword, superadminResetPin, superadminToggleStatus, superadminStartSupport, superadminCancelSupportModal, superadminConfirmSupportStart, superadminEndSupport } from "./admin/superadmin.js";
 import { forgotDispatcherPassword, loginAsDispatcher, logout } from "./auth/login-dispatcher.js";
@@ -16,6 +16,13 @@ import { clickElementById, installActionDelegates, removeElementById } from "./c
 import { exportDriversCSV, exportLostItemsCSV, exportReportsCSV } from "./core/export-csv.js";
 import { getScheduleByKey } from "./core/utils.js";
 import { addBus, deleteBus, deleteRoute } from "./data/buses-routes.js";
+import {
+    clearBusImportPreview,
+    confirmBusImport,
+    handleBusImportDrop,
+    handleBusImportFile,
+    handleBusImportPaste
+} from "./data/bus-import.js";
 import { addDriver, editDriver, toggleDriverActive } from "./data/drivers.js";
 import { deleteGroup, setGroupFilter } from "./data/groups.js";
 import { clearScheduleFile, clearScheduleText, deleteScheduleEntry, formatScheduleText, handleScheduleDrop, handleScheduleFileSelect, insertScheduleTable, sendScheduleToDrivers, switchScheduleTab } from "./data/schedules.js";
@@ -29,7 +36,7 @@ import { clearPendingPlanImports, confirmBulkPlanImport, handleBulkPlanDrop, han
 import { resolveReport, openReportResolution, closeReportResolution } from "./dispatcher/reports.js";
 import { archiveAllDispatcherMessages, archiveDispatcherMessage } from "./dispatcher/sent-messages.js";
 import { shiftWeekNav } from "./dispatcher/shift-utils.js";
-import { assignShift, openShiftCell, removeShift } from "./dispatcher/shifts.js";
+import { assignShift, openShiftCell, persistShift, removeShift } from "./dispatcher/shifts.js";
 import { dailyPlanAssignDriver } from "./dispatcher/daily-plan.js";
 import { handleVacation } from "./dispatcher/vacations.js";
 import { resolveSOS } from "./maps/sos-siren.js";
@@ -48,6 +55,11 @@ import { canInvokeActionDuringDriverActivation } from "./auth/driver-access-gate
 
 const HANDLERS = {
     addBus,
+    clearBusImportPreview,
+    confirmBusImport,
+    handleBusImportDrop,
+    handleBusImportFile,
+    handleBusImportPaste,
     addCompanyDispatcher,
     addDriver,
     applyBrandingSettings,
@@ -104,6 +116,7 @@ const HANDLERS = {
     deleteScheduleEntry,
     editDriver,
     endCompanySupportSession,
+    openCompanyOpsOverview,
     enterDispatcherActiveGroup,
     exitImpersonation,
     exportDriversCSV,
@@ -150,6 +163,7 @@ const HANDLERS = {
     openMonthlyPlanForGroup,
     openMonthlyPlansFull,
     openShiftCell,
+    persistShift,
     dailyPlanAssignDriver,
     opsAssignDriver,
     publishCompanyServicePlan,

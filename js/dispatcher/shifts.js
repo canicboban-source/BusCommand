@@ -9,6 +9,13 @@ import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import { switchSection } from "../layout/navigation.js";
+import { isOperationalReadOnly } from "../core/access.js";
+import { ensureDemoDayLock } from "./plan-edit-lock-demo.js";
+import {
+    findCrossGroupBusConflicts,
+    formatCrossGroupBusWarn,
+    ACTIVE_DUTY_TYPES
+} from "../core/bus-shift-conflicts.js";
 
 const pendingShiftAssignments = new Set();
 
@@ -16,12 +23,47 @@ function driverByName(driverName) {
     return getVisibleDrivers().find(driver => driver.name === driverName) || null;
 }
 
+function warnIfBusUsedInOtherGroup(driver, date, type, start, end, busValue) {
+    const dutyType = String(type || "").toLowerCase();
+    if (!ACTIVE_DUTY_TYPES.has(dutyType)) return;
+    if (!String(busValue || "").trim()) return;
+    const groupId = driver.groupId || driver.lineId || window.state?.activeGroupHubId || null;
+    const conflicts = findCrossGroupBusConflicts(window.state?.shifts || [], {
+        bus: busValue,
+        date,
+        groupId,
+        excludeDriverId: driver.id,
+        start,
+        end,
+        drivers: window.state?.drivers || []
+    });
+    if (!conflicts.length) return;
+    showToast(formatCrossGroupBusWarn(conflicts, t), "warning", 6000);
+}
+
 async function persistShift(driver, date, type, name = "", start = null, end = null, bus = null) {
+    if (isOperationalReadOnly()) {
+        showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+        return false;
+    }
+    const groupId = driver.groupId || driver.lineId || window.state?.activeGroupHubId || null;
+    if (IS_DEMO_MODE && groupId) {
+        const lock = ensureDemoDayLock(groupId, date);
+        if (!lock.ok) {
+            const who = lock.lock?.holderName || lock.lock?.holderUid || "";
+            showToast(
+                (t("plan_lock_held") || "Plan is locked by {name}.").replace("{name}", who || "another dispatcher"),
+                "error"
+            );
+            return false;
+        }
+    }
     const key = `${driver.id}:${date}`;
     if (pendingShiftAssignments.has(key)) return false;
     pendingShiftAssignments.add(key);
     try {
         const busValue = bus != null ? String(bus) : (driver.bus || "");
+        warnIfBusUsedInOtherGroup(driver, date, type, start, end, busValue);
         const existing = getShiftForDriverDate(driver.name, date);
         const expectedRevision = Number.isInteger(existing?.revision) ? existing.revision : 0;
         if (!IS_DEMO_MODE) {
@@ -34,6 +76,12 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
             if (!result.success) {
                 if (result.status === 409 || result.code === "REVISION_CONFLICT") {
                     showToast(t("shift_conflict_refresh") || "Raspored je izmenjen. Osvežite i pokušajte ponovo.", "error");
+                } else if (result.code === "LOCK_HELD") {
+                    const who = result.lock?.holderName || result.lock?.holderUid || "";
+                    showToast(
+                        (t("plan_lock_held") || "Plan is locked by {name}.").replace("{name}", who || "another dispatcher"),
+                        "error"
+                    );
                 } else {
                     showToast(result.error || t("shift_save_failed") || "Smena nije sačuvana.", "error");
                 }
