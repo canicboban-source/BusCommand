@@ -238,13 +238,19 @@ function getCurrentShiftForDriver(driverName, yearMonthStr, dayNum) {
 function setShiftForDriverDate(driverName, dateStr, { type, name, bus, routeCode, start, end, revision, syncSchedule = true }) {
     ensureShiftsArray();
 
-    window.state.shifts = window.state.shifts.filter(s => !(s.driverName === driverName && s.date === dateStr));
+    const driverId = driverIdForName(driverName);
+    window.state.shifts = window.state.shifts.filter((s) => {
+        if (s.date !== dateStr) return true;
+        const sameName = s.driverName === driverName;
+        const sameId = driverId && s.driverId && s.driverId === driverId;
+        return !(sameName || sameId);
+    });
 
     if (type && type !== "clear") {
         const label = name || SHIFT_TYPE_LABELS[type] || type;
         window.state.shifts.push({
-            id: `shf-${driverIdForName(driverName) || "x"}-${dateStr}`,
-            driverId: driverIdForName(driverName),
+            id: `shf-${driverId || "x"}-${dateStr}`,
+            driverId: driverId,
             driverName,
             date: dateStr,
             type,
@@ -275,13 +281,27 @@ function syncShiftToMonthlyPlan(driverName, dateStr, type, name, start, end, bus
     const scheduleKeyByName = `${driverName}_${yearMonth}`;
 
     if (!Array.isArray(window.state.schedules)) window.state.schedules = [];
-    let schedule = (scheduleKeyById && window.state.schedules.find(s => s.id === scheduleKeyById && s.parsedShifts))
-        || window.state.schedules.find(s => s.id === scheduleKeyByName && s.parsedShifts);
 
     if (!type || type === "clear") {
-        if (schedule?.parsedShifts) delete schedule.parsedShifts[day];
+        // Clear day on every matching schedule copy (canonical id + legacy name key).
+        for (const schedule of window.state.schedules) {
+            if (!schedule?.parsedShifts) continue;
+            const sameId = scheduleKeyById && schedule.id === scheduleKeyById;
+            const sameNameKey = schedule.id === scheduleKeyByName;
+            const sameDriverMonth = schedule.month === yearMonth
+                && (
+                    (driverId && schedule.driverId === driverId)
+                    || schedule.driverName === driverName
+                );
+            if (!sameId && !sameNameKey && !sameDriverMonth) continue;
+            delete schedule.parsedShifts[day];
+            delete schedule.parsedShifts[String(day)];
+        }
         return;
     }
+
+    let schedule = (scheduleKeyById && window.state.schedules.find(s => s.id === scheduleKeyById && s.parsedShifts))
+        || window.state.schedules.find(s => s.id === scheduleKeyByName && s.parsedShifts);
 
     if (!schedule) {
         schedule = {
