@@ -4,7 +4,7 @@ Datum: **2026-08-02**
 Prompt: `reports/prompt-deep-control-qa-2026-08-02.md`  
 Okruženje: lokalni repo + Playwright demo (ne live www.buscommand.com)  
 Grana: `work/ch1-state-checkpoint`  
-SHA: **f9b34b6**  
+SHA: **bee7306** (i18n fix `f9b34b6` + ovaj izveštaj)  
 PR: https://github.com/canicboban-source/BusCommand/pull/15  
 Verzija paketa: **1.0.10**
 
