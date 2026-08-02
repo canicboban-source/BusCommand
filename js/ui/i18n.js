@@ -171,21 +171,17 @@ function applyBrandingToUI() {
     const brandTitle = document.getElementById("app-branding-title");
     if (brandTitle) brandTitle.innerText = displayName;
     
-    // Owner blue logo always visible; tenant logo/name is optional companion branding.
+    // Owner blue logo image always visible; wordmark may show tenant name (Master §19).
     const loginHeaderLogo = document.getElementById("login-logo-container");
     if (loginHeaderLogo) {
         const tenantLogo = logoUrl
             ? `<img class="bc-tenant-logo" src="${escapeAttr(logoUrl)}" alt="${safeName}" referrerpolicy="no-referrer" style="max-height: 40px; max-width: 160px; object-fit: contain; margin-top: 10px;">`
             : "";
-        const tenantLabel = branding.name && !/^BusCommand(\s|$)/i.test(branding.name)
-            ? `<span class="bc-tenant-name" style="font-weight:600; color:var(--text-muted); font-size:0.95rem; margin-top:6px;">${safeName}</span>`
-            : "";
         loginHeaderLogo.innerHTML = `
             <div class="logo bc-brand" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;flex-direction:column;align-items:center;">
                 <img class="bc-brand-mark bc-brand-mark--hero" src="/brand/logo-hero.png" width="80" height="80" alt="BusCommand">
-                <span class="bc-brand-text">${productLogoHtml("BusCommand")}</span>
+                <span class="bc-brand-text">${productLogoHtml(displayName)}</span>
                 ${tenantLogo}
-                ${tenantLabel}
             </div>
             <p data-i18n="login_subtitle" class="login-subtitle-text">${window.t("login_subtitle")}</p>
         `;
@@ -201,7 +197,7 @@ function applyBrandingToUI() {
                 ${productBrandMarkHtml({
                     size: "sm",
                     titleId: "app-branding-title",
-                    name: "BusCommand"
+                    name: displayName
                 })}
                 ${tenantLogo}
             </div>
