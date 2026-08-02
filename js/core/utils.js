@@ -1,12 +1,7 @@
 // BusCommand ESM v9.5
 import { t } from "../ui/i18n.js";
 import { driverBelongsToLine } from "../data/group-membership.js";
-
-function isMobileDevice() {
-    const ua = navigator.userAgent || navigator.vendor || window.opera;
-    const mobileRe = /android|iphone|ipad|ipod|blackberry|windows phone|opera mini|mobile/i;
-    return mobileRe.test(ua) || window.innerWidth < 768;
-}
+import { isMobileDevice, isMobileUserAgent } from "./mobile-device.js";
 
 // ── UTILITY: escapeHtml ──────────────────────────────────
 function escapeHtml(str) {
@@ -127,6 +122,7 @@ function getScheduleByKey(key) {
 }
 
 export {
+    isMobileUserAgent,
     isMobileDevice,
     escapeHtml,
     getVisibleDrivers,
