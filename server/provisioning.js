@@ -9,6 +9,28 @@ class ProvisioningError extends Error {
 const STAFF_ROLES = new Set(["company_admin", "dispatcher"]);
 const { normalizeGroupIds, assertCompanyGroupsExist } = require("./group-access");
 
+function assertDispatcherSeatAvailable(settingsSnapshot, dispatchersSnapshot, excludeUid = null) {
+  if (!settingsSnapshot.exists) {
+    throw new ProvisioningError("license-unavailable", "Licenca firme nije dostupna.");
+  }
+  const settings = settingsSnapshot.data();
+  if (settings.status === "suspended") {
+    throw new ProvisioningError("license-suspended", "Licenca firme je suspendovana.");
+  }
+  if (settings.status !== "active") {
+    throw new ProvisioningError("license-unavailable", "Licenca firme nije aktivna.");
+  }
+  const maxDispatchers = Number(settings.maxDispatchers);
+  if (!Number.isInteger(maxDispatchers) || maxDispatchers < 1) {
+    throw new ProvisioningError("license-unavailable", "Limit dispatchera nije konfigurisan u licenci.");
+  }
+  const activeCount = dispatchersSnapshot.docs
+    .filter(doc => doc.id !== excludeUid && doc.data().active !== false).length;
+  if (activeCount >= maxDispatchers) {
+    throw new ProvisioningError("dispatcher-limit", "Dostignut je limit aktivnih dispatchera za ovu licencu.");
+  }
+}
+
 function normalizeFirebaseUid(value) {
   const uid = String(value || "").trim();
   if (!/^[A-Za-z0-9_-]{1,128}$/.test(uid)) {
@@ -203,6 +225,13 @@ async function provisionUser({ db, admin, email, password, name, role, companyId
   }
   const normalizedGroups = role === "dispatcher" ? normalizeGroupIds(groups) : [];
   if (companyRef && normalizedGroups.length) await assertCompanyGroupsExist(companyRef, normalizedGroups);
+  if (companyRef && role === "dispatcher") {
+    const [settingsSnapshot, dispatchersSnapshot] = await Promise.all([
+      companyRef.collection("settings").doc("main").get(),
+      companyRef.collection("users").where("role", "==", "dispatcher").get()
+    ]);
+    assertDispatcherSeatAvailable(settingsSnapshot, dispatchersSnapshot);
+  }
 
   let userRecord;
   let userRef;
@@ -217,9 +246,19 @@ async function provisionUser({ db, admin, email, password, name, role, companyId
       userRef = companyRef.collection("users").doc(userRecord.uid);
       const auditRef = companyRef.collection("audit_log").doc();
       const timestamp = admin.firestore.FieldValue.serverTimestamp();
+      const settingsRef = companyRef.collection("settings").doc("main");
+      const dispatchersQuery = companyRef.collection("users").where("role", "==", "dispatcher");
       await db.runTransaction(async (transaction) => {
-        const company = await transaction.get(companyRef);
+        const reads = [transaction.get(companyRef)];
+        if (role === "dispatcher") {
+          reads.push(transaction.get(settingsRef), transaction.get(dispatchersQuery));
+        }
+        const [company, settingsSnapshot, dispatchersSnapshot] = await Promise.all(reads);
         if (!company.exists) throw new ProvisioningError("company-not-found", "Firma nije pronađena.");
+        if (role === "dispatcher") {
+          assertDispatcherSeatAvailable(settingsSnapshot, dispatchersSnapshot);
+          transaction.set(settingsRef, { dispatcherSeatsUpdatedAt: timestamp }, { merge: true });
+        }
         transaction.set(userRef, {
           id: userRecord.uid, email, name: displayName, role, companyId,
           groups: normalizedGroups, active: true, sessionsValidAfterEpoch: 0, createdAt: timestamp
@@ -306,28 +345,11 @@ async function setDispatcherActive({ db, admin, companyId, uid, active, actorId 
   const { companyRef, userRef } = dispatcher;
   uid = dispatcher.uid;
   if (active) {
-    const [settingsSnap, dispatchersSnap] = await Promise.all([
+    const [settingsSnapshot, dispatchersSnapshot] = await Promise.all([
       companyRef.collection("settings").doc("main").get(),
       companyRef.collection("users").where("role", "==", "dispatcher").get()
     ]);
-    if (!settingsSnap.exists) {
-      throw new ProvisioningError("license-unavailable", "Licenca firme nije dostupna.");
-    }
-    const settings = settingsSnap.data();
-    if (settings.status === "suspended") {
-      throw new ProvisioningError("license-suspended", "Licenca firme je suspendovana.");
-    }
-    if (settings.status !== "active") {
-      throw new ProvisioningError("license-unavailable", "Licenca firme nije aktivna.");
-    }
-    const activeCount = dispatchersSnap.docs.filter(doc => doc.id !== uid && doc.data().active !== false).length;
-    const maxDispatchers = Number(settings.maxDispatchers);
-    if (!Number.isInteger(maxDispatchers) || maxDispatchers < 1) {
-      throw new ProvisioningError("license-unavailable", "Limit dispatchera nije konfigurisan u licenci.");
-    }
-    if (activeCount >= maxDispatchers) {
-      throw new ProvisioningError("dispatcher-limit", "Dostignut je limit aktivnih dispatchera za ovu licencu.");
-    }
+    assertDispatcherSeatAvailable(settingsSnapshot, dispatchersSnapshot, uid);
   }
   const authUser = await admin.auth().getUser(uid);
   const wasDisabled = authUser.disabled === true;
@@ -335,13 +357,21 @@ async function setDispatcherActive({ db, admin, companyId, uid, active, actorId 
   try {
     const timestamp = admin.firestore.FieldValue.serverTimestamp();
     const sessionsValidAfterEpoch = Math.floor(Date.now() / 1000);
+    const settingsRef = companyRef.collection("settings").doc("main");
+    const dispatchersQuery = companyRef.collection("users").where("role", "==", "dispatcher");
     await db.runTransaction(async transaction => {
-      const current = await transaction.get(userRef);
+      const reads = [transaction.get(userRef), transaction.get(settingsRef)];
+      if (active) reads.push(transaction.get(dispatchersQuery));
+      const [current, settingsSnapshot, dispatchersSnapshot] = await Promise.all(reads);
       const data = current.exists ? current.data() : null;
       if (!data || data.companyId !== companyId || data.role !== "dispatcher") {
         throw new ProvisioningError("user-not-found", "Dispatcher nije pronadjen u ovoj firmi.");
       }
+      if (active) assertDispatcherSeatAvailable(settingsSnapshot, dispatchersSnapshot, uid);
       transaction.set(userRef, { active, sessionsValidAfterEpoch, updatedAt: timestamp }, { merge: true });
+      if (settingsSnapshot.exists) {
+        transaction.set(settingsRef, { dispatcherSeatsUpdatedAt: timestamp }, { merge: true });
+      }
       transaction.set(companyRef.collection("audit_log").doc(), {
         action: active ? "dispatcher_activated" : "dispatcher_deactivated",
         actorId,

@@ -918,30 +918,7 @@ app.post(
     const companyId = requireOwnCompany(req, res);
     if (!companyId) return;
     const { email, password, name, groups } = req.validatedBody;
-    const companyRef = db.collection("companies").doc(companyId);
     try {
-      const [settingsSnap, usersSnap] = await Promise.all([
-        companyRef.collection("settings").doc("main").get(),
-        companyRef.collection("users").where("role", "==", "dispatcher").get()
-      ]);
-      if (!settingsSnap.exists) {
-        return res.status(409).json({ success: false, error: "Licenca firme nije dostupna." });
-      }
-      const settings = settingsSnap.data();
-      if (settings.status === "suspended") {
-        return res.status(403).json({ success: false, error: "Licenca firme je suspendovana." });
-      }
-      if (settings.status !== "active") {
-        return res.status(409).json({ success: false, error: "Licenca firme nije aktivna." });
-      }
-      const activeDispatchers = usersSnap.docs.filter(doc => doc.data().active !== false).length;
-      const maxDispatchers = Number(settings.maxDispatchers);
-      if (!Number.isInteger(maxDispatchers) || maxDispatchers < 1) {
-        return res.status(409).json({ success: false, error: "Limit dispatchera nije konfigurisan u licenci." });
-      }
-      if (activeDispatchers >= maxDispatchers) {
-        return res.status(409).json({ success: false, error: "Dostignut je limit aktivnih dispatchera za ovu licencu." });
-      }
       const result = await provisionUser({
         db, admin, email, password, name, role: "dispatcher", companyId, groups,
         actorId: req.staffUser.uid
@@ -955,6 +932,10 @@ app.post(
         return res.status(409).json({ success: false, error: "Email je vec u upotrebi." });
       }
       if (err.code === "group-not-found") return res.status(404).json({ success: false, error: err.message });
+      if (err.code === "license-suspended") return res.status(403).json({ success: false, error: err.message });
+      if (["license-unavailable", "dispatcher-limit"].includes(err.code)) {
+        return res.status(409).json({ success: false, error: err.message });
+      }
       req.log?.error({ err, code: err.code }, "Company dispatcher create failed");
       return res.status(500).json({ success: false, error: "Dispatcher nije kreiran." });
     }
