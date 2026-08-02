@@ -4,7 +4,7 @@ Poslednje osvežavanje: **2026-08-02** (Europe/Vienna)
 
 ## Aktivni cilj
 
-Ch2 (CA RO + first-lock) + bus multi-group pool — **gate zelen**, spremno za commit. Dalje: lock UI / Firestore store; smena-konflikt upozorenje za deljeni bus.
+Ch2 + multi-group pool + mobile gate + **cross-group bus warn** — gate zelen. Dalje: lock polish (UI release/break + Firestore store).
 
 ## Kanonska lokacija
 
@@ -61,8 +61,8 @@ Ranije zaključano:
 4. ✅ Disponent bus-uvoz — unit + **Playwright smoke 2/2** (`reports/smoke-bus-import-2026-08-02.md`)
 5. ✅ Poglavlje 2 slice: CA uvid-only + first-writer lock
 6. ✅ Bus multi-group pool (attach) — `reports/smoke-bus-multi-group-pool-2026-08-02.md`
-7. ⏳ Lock polish: Firestore store, release/break UI, heartbeat UI
-8. ⏳ Deljeni bus: upozorenje ako već u aktivnoj smeni druge grupe
+7. ✅ Deljeni bus: soft warn na cross-group aktivnoj smeni — `reports/smoke-bus-cross-group-warn-2026-08-02.md`
+8. ⏳ Lock polish: Firestore store, release/break UI, heartbeat UI
 
 ## Artefakti odluka
 
@@ -76,3 +76,4 @@ Ranije zaključano:
 - `reports/smoke-bus-import-2026-08-02.md`
 - `reports/smoke-ch2-ops-readonly-lock-2026-08-02.md`
 - `reports/smoke-bus-multi-group-pool-2026-08-02.md`
+- `reports/smoke-bus-cross-group-warn-2026-08-02.md`

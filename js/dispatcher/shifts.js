@@ -11,11 +11,34 @@ import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import { switchSection } from "../layout/navigation.js";
 import { isOperationalReadOnly } from "../core/access.js";
 import { ensureDemoDayLock } from "./plan-edit-lock-demo.js";
+import {
+    findCrossGroupBusConflicts,
+    formatCrossGroupBusWarn,
+    ACTIVE_DUTY_TYPES
+} from "../core/bus-shift-conflicts.js";
 
 const pendingShiftAssignments = new Set();
 
 function driverByName(driverName) {
     return getVisibleDrivers().find(driver => driver.name === driverName) || null;
+}
+
+function warnIfBusUsedInOtherGroup(driver, date, type, start, end, busValue) {
+    const dutyType = String(type || "").toLowerCase();
+    if (!ACTIVE_DUTY_TYPES.has(dutyType)) return;
+    if (!String(busValue || "").trim()) return;
+    const groupId = driver.groupId || driver.lineId || window.state?.activeGroupHubId || null;
+    const conflicts = findCrossGroupBusConflicts(window.state?.shifts || [], {
+        bus: busValue,
+        date,
+        groupId,
+        excludeDriverId: driver.id,
+        start,
+        end,
+        drivers: window.state?.drivers || []
+    });
+    if (!conflicts.length) return;
+    showToast(formatCrossGroupBusWarn(conflicts, t), "warning", 6000);
 }
 
 async function persistShift(driver, date, type, name = "", start = null, end = null, bus = null) {
@@ -40,6 +63,7 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
     pendingShiftAssignments.add(key);
     try {
         const busValue = bus != null ? String(bus) : (driver.bus || "");
+        warnIfBusUsedInOtherGroup(driver, date, type, start, end, busValue);
         const existing = getShiftForDriverDate(driver.name, date);
         const expectedRevision = Number.isInteger(existing?.revision) ? existing.revision : 0;
         if (!IS_DEMO_MODE) {

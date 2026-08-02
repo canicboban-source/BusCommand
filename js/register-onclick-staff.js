@@ -36,7 +36,7 @@ import { clearPendingPlanImports, confirmBulkPlanImport, handleBulkPlanDrop, han
 import { resolveReport, openReportResolution, closeReportResolution } from "./dispatcher/reports.js";
 import { archiveAllDispatcherMessages, archiveDispatcherMessage } from "./dispatcher/sent-messages.js";
 import { shiftWeekNav } from "./dispatcher/shift-utils.js";
-import { assignShift, openShiftCell, removeShift } from "./dispatcher/shifts.js";
+import { assignShift, openShiftCell, persistShift, removeShift } from "./dispatcher/shifts.js";
 import { dailyPlanAssignDriver } from "./dispatcher/daily-plan.js";
 import { handleVacation } from "./dispatcher/vacations.js";
 import { resolveSOS } from "./maps/sos-siren.js";
@@ -163,6 +163,7 @@ const HANDLERS = {
     openMonthlyPlanForGroup,
     openMonthlyPlansFull,
     openShiftCell,
+    persistShift,
     dailyPlanAssignDriver,
     opsAssignDriver,
     publishCompanyServicePlan,
