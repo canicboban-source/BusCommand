@@ -1,5 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
 const {
   createCompanyAtomic,
   deleteCompanyAtomic,
@@ -21,6 +22,7 @@ function fakeFirestore({ initial = {}, failTransactionSetAt = null } = {}) {
   const store = new Map(Object.entries(initial));
   let generated = 0;
   const deleted = [];
+  let transactionTail = Promise.resolve();
 
   function ref(path) {
     return {
@@ -51,21 +53,27 @@ function fakeFirestore({ initial = {}, failTransactionSetAt = null } = {}) {
     store,
     deleted,
     collection,
-    async runTransaction(callback) {
-      const staged = [];
-      let setCount = 0;
-      const transaction = {
-        async get(documentRef) {
-          return { exists: store.has(documentRef.path), data: () => store.get(documentRef.path) };
-        },
-        set(documentRef, value, options) {
-          setCount += 1;
-          if (setCount === failTransactionSetAt) throw new Error("simulated transaction failure");
-          staged.push([documentRef.path, value, options]);
-        }
-      };
-      await callback(transaction);
-      staged.forEach(([path, value, options]) => store.set(path, options?.merge ? { ...(store.get(path) || {}), ...value } : value));
+    runTransaction(callback) {
+      const run = transactionTail.then(async () => {
+        const staged = [];
+        let setCount = 0;
+        const transaction = {
+          async get(reference) {
+            if (!reference.path && typeof reference.get === "function") return reference.get();
+            return { exists: store.has(reference.path), data: () => store.get(reference.path) };
+          },
+          set(documentRef, value, options) {
+            setCount += 1;
+            if (setCount === failTransactionSetAt) throw new Error("simulated transaction failure");
+            staged.push([documentRef.path, value, options]);
+          }
+        };
+        const result = await callback(transaction);
+        staged.forEach(([path, value, options]) => store.set(path, options?.merge ? { ...(store.get(path) || {}), ...value } : value));
+        return result;
+      });
+      transactionTail = run.catch(() => undefined);
+      return run;
     }
   };
 }
@@ -159,7 +167,10 @@ test("createCompanyAtomic rolls back every write on transaction failure", async 
 
 for (const role of ["company_admin", "dispatcher"]) {
   test(`provisionUser creates ${role} claims and company user document`, async () => {
-    const db = fakeFirestore({ initial: { "companies/alpha": { name: "Alpha" } } });
+    const db = fakeFirestore({ initial: {
+      "companies/alpha": { name: "Alpha" },
+      "companies/alpha/settings/main": { status: "active", maxDispatchers: 5 }
+    } });
     const admin = fakeAdmin();
     const result = await provisionUser({
       db, admin, email: `${role}@example.test`, password: "unit-test-password",
@@ -185,7 +196,10 @@ test("provisionUser checks company existence before creating Auth user", async (
 });
 
 test("provisionUser safely rejects a duplicate email without creating orphan data", async () => {
-  const db = fakeFirestore({ initial: { "companies/alpha": {} } });
+  const db = fakeFirestore({ initial: {
+    "companies/alpha": {},
+    "companies/alpha/settings/main": { status: "active", maxDispatchers: 5 }
+  } });
   const admin = fakeAdmin({ emailExists: true });
   await assert.rejects(provisionUser({
     db, admin, email: "existing@example.test", password: "unit-test-password",
@@ -199,6 +213,7 @@ test("provisionUser safely rejects a duplicate email without creating orphan dat
 test("new dispatcher stores normalized groups in claims and profile", async () => {
   const db = fakeFirestore({ initial: {
     "companies/alpha": {},
+    "companies/alpha/settings/main": { status: "active", maxDispatchers: 5 },
     "companies/alpha/groups/310": { name: "LEO" },
     "companies/alpha/groups/311": { name: "Other" }
   } });
@@ -267,6 +282,58 @@ test("dispatcher reactivation fails closed when the licensed active-seat limit i
   assert.equal(db.store.get("companies/alpha/users/dispatcher-1").active, false);
 });
 
+test("concurrent dispatcher creation cannot exceed the licensed active-seat limit", async () => {
+  const db = fakeFirestore({ initial: {
+    "companies/alpha": {},
+    "companies/alpha/settings/main": { status: "active", maxDispatchers: 1 }
+  } });
+  const admin = fakeAdmin();
+  const create = (suffix) => provisionUser({
+    db, admin, email: `dispatcher-${suffix}@example.test`, password: "unit-test-password",
+    name: `Dispatcher ${suffix}`, role: "dispatcher", companyId: "alpha", actorId: "admin-1"
+  });
+  const results = await Promise.allSettled([create("one"), create("two")]);
+  assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
+  const rejected = results.find(result => result.status === "rejected");
+  assert.equal(rejected.reason.code, "dispatcher-limit");
+  const active = [...db.store.entries()].filter(([path, value]) =>
+    path.startsWith("companies/alpha/users/") && value.role === "dispatcher" && value.active !== false
+  );
+  assert.equal(active.length, 1);
+  assert.equal(admin.deleted.length, 1);
+});
+
+test("concurrent dispatcher reactivation cannot exceed the licensed active-seat limit", async () => {
+  const db = fakeFirestore({ initial: {
+    "companies/alpha": {},
+    "companies/alpha/settings/main": { status: "active", maxDispatchers: 1 },
+    "companies/alpha/users/dispatcher-1": { id: "dispatcher-1", role: "dispatcher", companyId: "alpha", active: false },
+    "companies/alpha/users/dispatcher-2": { id: "dispatcher-2", role: "dispatcher", companyId: "alpha", active: false }
+  } });
+  const admin = fakeAdmin();
+  const activate = uid => setDispatcherActive({ db, admin, companyId: "alpha", uid, active: true, actorId: "admin-1" });
+  const results = await Promise.allSettled([activate("dispatcher-1"), activate("dispatcher-2")]);
+  assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
+  const rejected = results.find(result => result.status === "rejected");
+  assert.equal(rejected.reason.code, "dispatcher-limit");
+  const active = ["dispatcher-1", "dispatcher-2"].filter(uid => db.store.get(`companies/alpha/users/${uid}`).active);
+  assert.equal(active.length, 1);
+});
+
+test("dispatcher create route delegates license enforcement to atomic provisioning", () => {
+  const api = fs.readFileSync(require.resolve("../../api-server.js"), "utf8").replace(/\r\n/g, "\n");
+  const start = api.indexOf('app.post(\n  "/api/company-admin/dispatchers"');
+  const end = api.indexOf('app.put(\n  "/api/company-admin/dispatchers/:uid/groups"', start);
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  const route = api.slice(start, end);
+  assert.match(route, /provisionUser/);
+  assert.doesNotMatch(route, /activeDispatchers|usersSnap|maxDispatchers/);
+  assert.match(route, /dispatcher-limit/);
+  assert.match(route, /license-suspended/);
+  assert.match(route, /license-unavailable/);
+});
+
 test("session revocation rejects foreign-tenant IDs and audits valid dispatcher", async () => {
   const db = fakeFirestore({ initial: {
     "companies/alpha": {},
@@ -301,7 +368,10 @@ test("provisionUser rejects a forbidden role before external writes", async () =
 });
 
 test("provisionUser compensates Auth and Firestore after partial failure", async () => {
-  const db = fakeFirestore({ initial: { "companies/alpha": {} }, failTransactionSetAt: 2 });
+  const db = fakeFirestore({ initial: {
+    "companies/alpha": {},
+    "companies/alpha/settings/main": { status: "active", maxDispatchers: 5 }
+  }, failTransactionSetAt: 2 });
   const admin = fakeAdmin();
   await assert.rejects(provisionUser({
     db, admin, email: "dispatcher@example.test", password: "unit-test-password",
@@ -313,7 +383,10 @@ test("provisionUser compensates Auth and Firestore after partial failure", async
 });
 
 test("provisionUser deletes a new Auth user when claims assignment fails", async () => {
-  const db = fakeFirestore({ initial: { "companies/alpha": {} } });
+  const db = fakeFirestore({ initial: {
+    "companies/alpha": {},
+    "companies/alpha/settings/main": { status: "active", maxDispatchers: 5 }
+  } });
   const admin = fakeAdmin({ failClaims: true });
   await assert.rejects(provisionUser({
     db, admin, email: "dispatcher@example.test", password: "unit-test-password",
