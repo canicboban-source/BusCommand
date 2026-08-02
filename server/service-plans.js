@@ -1,5 +1,4 @@
 const crypto = require("crypto");
-const { assertCompanyGroupsExist } = require("./group-access");
 
 const contractPromise = import("../shared/service-plan-contract.mjs");
 
@@ -59,7 +58,7 @@ async function previewServicePlan(plan) {
   return validatePlanPayload(plan);
 }
 
-async function publishServicePlan({ db, admin, companyId, groupId, actorId, plan }) {
+async function publishServicePlan({ db, admin, companyId, groupId, actorId, actorRole = null, actorName = null, plan }) {
   const validation = await validatePlanPayload(plan);
   if (!validation.valid) {
     const error = new Error("Vozni plan nije validan.");
@@ -71,57 +70,90 @@ async function publishServicePlan({ db, admin, companyId, groupId, actorId, plan
   const normalized = validation.plan;
   const normalizedGroupId = normalizeServicePlanGroupId(groupId);
   const companyRef = db.collection("companies").doc(companyId);
-  await assertCompanyGroupsExist(companyRef, [normalizedGroupId]);
+  const groupRef = companyRef.collection("groups").doc(normalizedGroupId);
   const planId = servicePlanId(normalizedGroupId, normalized);
   const plansRef = companyRef.collection("service_plans");
   const planRef = plansRef.doc(planId);
-  const existingPlan = await planRef.get();
-  if (existingPlan.exists) {
-    const error = new Error("Ova verzija plana je već objavljena. Uvezite novu verziju umesto prepisivanja istorije.");
-    error.code = "version-exists";
-    throw error;
-  }
-  const activeSnapshot = await plansRef.where("status", "==", "active").get();
-  const batch = db.batch();
+  const activeQuery = plansRef.where("status", "==", "active");
+  const auditRef = companyRef.collection("audit_log").doc();
   const revisionId = `${Date.now()}-${crypto.randomBytes(6).toString("hex")}`;
   const timestamp = admin.firestore.FieldValue.serverTimestamp();
 
-  activeSnapshot.docs.forEach(doc => {
-    const current = doc.data();
-    if (doc.id !== planId && current.groupId === normalizedGroupId) {
-      batch.set(doc.ref, {
-        status: "superseded",
-        supersededAt: timestamp,
-        supersededBy: planId
-      }, { merge: true });
+  await db.runTransaction(async transaction => {
+    const [groupSnapshot, existingPlan, activeSnapshot] = await Promise.all([
+      transaction.get(groupRef),
+      transaction.get(planRef),
+      transaction.get(activeQuery)
+    ]);
+    if (!groupSnapshot.exists) {
+      const error = new Error("Jedna ili više grupa ne postoje u ovoj firmi.");
+      error.code = "group-not-found";
+      throw error;
     }
+    if (existingPlan.exists) {
+      const error = new Error("Ova verzija plana je već objavljena. Uvezite novu verziju umesto prepisivanja istorije.");
+      error.code = "version-exists";
+      throw error;
+    }
+
+    activeSnapshot.docs.forEach(doc => {
+      const current = doc.data();
+      if (doc.id !== planId && current.groupId === normalizedGroupId) {
+        transaction.set(doc.ref, {
+          status: "superseded",
+          supersededAt: timestamp,
+          supersededBy: planId
+        }, { merge: true });
+      }
+    });
+
+    transaction.create(planRef, {
+      id: planId,
+      groupId: normalizedGroupId,
+      templateVersion: normalized.templateVersion,
+      planCode: normalized.planCode,
+      planVersion: normalized.planVersion,
+      validFrom: normalized.validFrom,
+      timezone: normalized.timezone,
+      status: "active",
+      revisionId,
+      dutyCount: validation.summary.dutyCount,
+      activityCount: validation.summary.activityCount,
+      overnightDutyCount: validation.summary.overnightDutyCount,
+      publishedAt: timestamp,
+      publishedBy: actorId
+    });
+
+    normalized.duties.forEach(duty => {
+      transaction.set(
+        planRef.collection("duties").doc(encodeURIComponent(duty.code)),
+        serializeDuty(duty, revisionId)
+      );
+    });
+
+    transaction.set(groupRef, {
+      activeServicePlanId: planId,
+      servicePlanRevisionId: revisionId,
+      servicePlanUpdatedAt: timestamp
+    }, { merge: true });
+    transaction.set(auditRef, {
+      action: "service_plan_published",
+      actorId,
+      actorRole,
+      actorName,
+      source: "server",
+      details: {
+        planId,
+        groupId: normalizedGroupId,
+        planCode: normalized.planCode,
+        planVersion: normalized.planVersion,
+        validFrom: normalized.validFrom,
+        dutyCount: validation.summary.dutyCount,
+        activityCount: validation.summary.activityCount
+      },
+      timestamp
+    });
   });
-
-  batch.set(planRef, {
-    id: planId,
-    groupId: normalizedGroupId,
-    templateVersion: normalized.templateVersion,
-    planCode: normalized.planCode,
-    planVersion: normalized.planVersion,
-    validFrom: normalized.validFrom,
-    timezone: normalized.timezone,
-    status: "active",
-    revisionId,
-    dutyCount: validation.summary.dutyCount,
-    activityCount: validation.summary.activityCount,
-    overnightDutyCount: validation.summary.overnightDutyCount,
-    publishedAt: timestamp,
-    publishedBy: actorId
-  }, { merge: true });
-
-  normalized.duties.forEach(duty => {
-    batch.set(
-      planRef.collection("duties").doc(encodeURIComponent(duty.code)),
-      serializeDuty(duty, revisionId)
-    );
-  });
-
-  await batch.commit();
   return {
     planId,
     revisionId,
