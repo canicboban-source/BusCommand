@@ -1444,16 +1444,9 @@ app.put(
         companyId,
         groupId: req.body?.groupId,
         actorId: req.staffUser.uid,
+        actorRole: req.staffUser.role,
+        actorName: req.staffUser.name || null,
         plan: req.body?.plan
-      });
-      await _logAuditEvent(companyId, req.staffUser.uid, "service_plan_published", {
-        planId: result.planId,
-        groupId: result.plan.groupId,
-        planCode: result.plan.planCode,
-        planVersion: result.plan.planVersion,
-        validFrom: result.plan.validFrom,
-        dutyCount: result.summary.dutyCount,
-        activityCount: result.summary.activityCount
       });
       return res.json({ success: true, planId: result.planId, summary: result.summary });
     } catch (err) {
