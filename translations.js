@@ -5623,6 +5623,19 @@ Object.assign(TRANSLATIONS.en, {
     ops_readonly_banner: "Read-only operational view — Company Admin cannot change plans or buses.",
     ca_nav_ops_view: "Operational view",
     plan_lock_held: "Plan is locked by {name}.",
+    plan_lock_free: "Plan unlocked — first save claims the edit lock.",
+    plan_lock_acquire: "Claim lock",
+    plan_lock_acquired: "Edit lock claimed.",
+    plan_lock_held_by_you: "You hold the edit lock until {time}.",
+    plan_lock_release: "Release",
+    plan_lock_released: "Edit lock released.",
+    plan_lock_release_failed: "Could not release lock.",
+    plan_lock_break: "Break lock",
+    plan_lock_break_prompt: "Break-glass reason (min 8 characters):",
+    plan_lock_break_reason_short: "Reason must be at least 8 characters.",
+    plan_lock_break_confirm: "Force-release this plan lock? This is audited.",
+    plan_lock_broken: "Lock broken.",
+    plan_lock_break_failed: "Break failed.",
     ops_bus_cross_group_warn: "Bus {bus} is already on an active shift in group {group} ({driver}). Assignment saved — check coverage."
 });
 Object.assign(TRANSLATIONS.de, {
@@ -5632,6 +5645,19 @@ Object.assign(TRANSLATIONS.de, {
     ops_readonly_banner: "Operative Nur-Lesen-Ansicht — Company Admin darf Pläne und Busse nicht ändern.",
     ca_nav_ops_view: "Operativer Einblick",
     plan_lock_held: "Plan ist gesperrt von {name}.",
+    plan_lock_free: "Plan freigegeben — erste Speicherung beansprucht die Sperre.",
+    plan_lock_acquire: "Sperre beanspruchen",
+    plan_lock_acquired: "Bearbeitungssperre aktiv.",
+    plan_lock_held_by_you: "Sie halten die Sperre bis {time}.",
+    plan_lock_release: "Freigeben",
+    plan_lock_released: "Sperre freigegeben.",
+    plan_lock_release_failed: "Sperre konnte nicht freigegeben werden.",
+    plan_lock_break: "Sperre aufheben",
+    plan_lock_break_prompt: "Break-glass-Grund (mind. 8 Zeichen):",
+    plan_lock_break_reason_short: "Grund muss mindestens 8 Zeichen haben.",
+    plan_lock_break_confirm: "Diese Plansperre erzwingen freigeben? Wird auditiert.",
+    plan_lock_broken: "Sperre aufgehoben.",
+    plan_lock_break_failed: "Aufheben fehlgeschlagen.",
     ops_bus_cross_group_warn: "Bus {bus} ist bereits in Gruppe {group} aktiv ({driver}). Zuweisung gespeichert — Einsatz prüfen."
 });
 Object.assign(TRANSLATIONS.sr, {
@@ -5641,6 +5667,19 @@ Object.assign(TRANSLATIONS.sr, {
     ops_readonly_banner: "Operativni uvid (samo čitanje) — Company Admin ne menja planove ni autobuse.",
     ca_nav_ops_view: "Operativni uvid",
     plan_lock_held: "Plan je zaključao {name}.",
+    plan_lock_free: "Plan otključan — prvo čuvanje preuzima edit lock.",
+    plan_lock_acquire: "Preuzmi lock",
+    plan_lock_acquired: "Edit lock preuzet.",
+    plan_lock_held_by_you: "Vi držite edit lock do {time}.",
+    plan_lock_release: "Pusti",
+    plan_lock_released: "Edit lock pušten.",
+    plan_lock_release_failed: "Lock nije pušten.",
+    plan_lock_break: "Skini lock",
+    plan_lock_break_prompt: "Break-glass razlog (min. 8 karaktera):",
+    plan_lock_break_reason_short: "Razlog mora imati najmanje 8 karaktera.",
+    plan_lock_break_confirm: "Forsirano skinuti lock? Akcija se auditira.",
+    plan_lock_broken: "Lock skinut.",
+    plan_lock_break_failed: "Skidanje nije uspelo.",
     ops_bus_cross_group_warn: "Autobus {bus} je već na aktivnoj smeni u grupi {group} ({driver}). Dodela sačuvana — proverite pokrivenost."
 });
 

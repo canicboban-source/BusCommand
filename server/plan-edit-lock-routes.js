@@ -1,6 +1,5 @@
 /**
- * In-memory plan lock store + Express route registration.
- * Production can later mirror to Firestore; memory works for single-instance + unit/API smoke.
+ * Plan lock store (memory L1 + Firestore mirror) + Express routes.
  */
 const {
   buildLockId,
@@ -11,11 +10,27 @@ const {
   assertHolder,
   DEFAULT_TTL_MS
 } = require("./plan-edit-lock");
+const {
+  hydrateLock,
+  persistLock,
+  deletePersistedLock
+} = require("./plan-edit-lock-store");
 
 const memoryLocks = new Map();
 
-function registerPlanEditLockRoutes(app, { requireStaff, logAudit }) {
-  app.post("/api/staff/plan-locks/acquire", requireStaff, (req, res) => {
+function registerPlanEditLockRoutes(app, { requireStaff, logAudit, db = null }) {
+  async function syncAfterMutate(companyId, result, lockId, deleted) {
+    if (deleted) {
+      await deletePersistedLock(db, companyId, lockId);
+      return;
+    }
+    if (result?.ok && result.lock) {
+      const full = memoryLocks.get(result.lock.lockId);
+      if (full) await persistLock(db, companyId, full);
+    }
+  }
+
+  app.post("/api/staff/plan-locks/acquire", requireStaff, async (req, res) => {
     if (req.staff.role !== "dispatcher") {
       return res.status(403).json({ success: false, error: "Samo disponent može držati edit lock." });
     }
@@ -24,6 +39,7 @@ function registerPlanEditLockRoutes(app, { requireStaff, logAudit }) {
     if (Array.isArray(req.staff.groups) && req.staff.groups.length && !req.staff.groups.includes(String(req.body.groupId))) {
       return res.status(403).json({ success: false, error: "Grupa nije dodeljena ovom disponentu." });
     }
+    await hydrateLock(memoryLocks, { db, companyId: req.staff.companyId, lockId });
     const result = acquireLock(memoryLocks, {
       lockId,
       holderUid: req.staff.uid,
@@ -37,15 +53,18 @@ function registerPlanEditLockRoutes(app, { requireStaff, logAudit }) {
         lock: result.lock
       });
     }
+    await syncAfterMutate(req.staff.companyId, result, lockId, false);
     return res.json({ success: true, lock: result.lock, ttlMs: DEFAULT_TTL_MS });
   });
 
-  app.post("/api/staff/plan-locks/heartbeat", requireStaff, (req, res) => {
+  app.post("/api/staff/plan-locks/heartbeat", requireStaff, async (req, res) => {
     if (req.staff.role !== "dispatcher") {
       return res.status(403).json({ success: false, error: "Samo disponent može produžiti lock." });
     }
+    const lockId = String(req.body?.lockId || "");
+    await hydrateLock(memoryLocks, { db, companyId: req.staff.companyId, lockId });
     const result = heartbeatLock(memoryLocks, {
-      lockId: String(req.body?.lockId || ""),
+      lockId,
       holderUid: req.staff.uid
     });
     if (!result.ok) {
@@ -56,15 +75,18 @@ function registerPlanEditLockRoutes(app, { requireStaff, logAudit }) {
         lock: result.lock || null
       });
     }
+    await syncAfterMutate(req.staff.companyId, result, lockId, false);
     return res.json({ success: true, lock: result.lock });
   });
 
-  app.post("/api/staff/plan-locks/release", requireStaff, (req, res) => {
+  app.post("/api/staff/plan-locks/release", requireStaff, async (req, res) => {
     if (req.staff.role !== "dispatcher") {
       return res.status(403).json({ success: false, error: "Samo disponent može pustiti lock." });
     }
+    const lockId = String(req.body?.lockId || "");
+    await hydrateLock(memoryLocks, { db, companyId: req.staff.companyId, lockId });
     const result = releaseLock(memoryLocks, {
-      lockId: String(req.body?.lockId || ""),
+      lockId,
       holderUid: req.staff.uid
     });
     if (!result.ok) {
@@ -75,6 +97,7 @@ function registerPlanEditLockRoutes(app, { requireStaff, logAudit }) {
         lock: result.lock
       });
     }
+    await syncAfterMutate(req.staff.companyId, result, lockId, true);
     return res.json({ success: true, released: true });
   });
 
@@ -83,8 +106,10 @@ function registerPlanEditLockRoutes(app, { requireStaff, logAudit }) {
     if (role !== "company_admin" && role !== "company-admin" && role !== "superadmin") {
       return res.status(403).json({ success: false, error: "Samo CA/SA može skinuti lock." });
     }
+    const lockId = String(req.body?.lockId || "");
+    await hydrateLock(memoryLocks, { db, companyId: req.staff.companyId, lockId });
     const result = breakLock(memoryLocks, {
-      lockId: String(req.body?.lockId || ""),
+      lockId,
       reason: req.body?.reason
     });
     if (!result.ok) {
@@ -94,10 +119,11 @@ function registerPlanEditLockRoutes(app, { requireStaff, logAudit }) {
         error: "Razlog break-glass mora imati najmanje 8 karaktera."
       });
     }
+    await syncAfterMutate(req.staff.companyId, result, lockId, true);
     try {
       if (typeof logAudit === "function" && req.staff.companyId) {
         await logAudit(req.staff.companyId, req.staff.uid, "plan_lock_break", {
-          lockId: req.body?.lockId,
+          lockId,
           reason: result.reason,
           previous: result.previous
         });
@@ -108,23 +134,38 @@ function registerPlanEditLockRoutes(app, { requireStaff, logAudit }) {
     return res.json({ success: true, broken: true, previous: result.previous });
   });
 
-  app.get("/api/staff/plan-locks/:lockId", requireStaff, (req, res) => {
+  app.get("/api/staff/plan-locks/:lockId", requireStaff, async (req, res) => {
     const lockId = decodeURIComponent(String(req.params.lockId || ""));
-    const raw = memoryLocks.get(lockId);
-    if (!raw || Number(raw.expiresAtMs) <= Date.now()) {
-      return res.json({ success: true, lock: null });
-    }
-    return res.json({
-      success: true,
-      lock: {
-        lockId: raw.lockId,
-        holderUid: raw.holderUid,
-        holderName: raw.holderName || "",
-        acquiredAtMs: raw.acquiredAtMs,
-        expiresAtMs: raw.expiresAtMs
-      }
+    const view = await hydrateLock(memoryLocks, {
+      db,
+      companyId: req.staff.companyId,
+      lockId
     });
+    return res.json({ success: true, lock: view });
   });
+}
+
+/**
+ * Hydrate + assert (or auto-acquire) day lock for assignment mutate.
+ */
+async function ensureAssignmentDayLock({ db, companyId, staff, groupId, dateStr }) {
+  const { acquireLock: acquire, assertHolder: assert, buildLockId: buildId } = require("./plan-edit-lock");
+  const lockId = buildId("day", groupId, dateStr);
+  if (!lockId) return { ok: false, code: "INVALID_LOCK_REQUEST" };
+  await hydrateLock(memoryLocks, { db, companyId, lockId });
+  let lockCheck = assert(memoryLocks, { lockId, holderUid: staff.uid });
+  if (!lockCheck.ok && lockCheck.code === "LOCK_REQUIRED") {
+    lockCheck = acquire(memoryLocks, {
+      lockId,
+      holderUid: staff.uid,
+      holderName: staff.name || staff.email || ""
+    });
+    if (lockCheck.ok) {
+      const full = memoryLocks.get(lockId);
+      if (full) await persistLock(db, companyId, full);
+    }
+  }
+  return lockCheck;
 }
 
 function requirePlanLockForAssignment(staff, groupId, dateStr) {
@@ -141,6 +182,7 @@ function _resetPlanLocksForTests() {
 module.exports = {
   registerPlanEditLockRoutes,
   requirePlanLockForAssignment,
+  ensureAssignmentDayLock,
   memoryLocks,
   _resetPlanLocksForTests
 };

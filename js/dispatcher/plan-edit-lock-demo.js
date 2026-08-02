@@ -2,7 +2,14 @@
  * Demo / offline first-writer day lock (localStorage).
  * Production assignment lock is enforced on the server.
  */
-import { buildLockId, acquireLock, assertHolder } from "./plan-edit-lock-client.js";
+import {
+  buildLockId,
+  acquireLock,
+  assertHolder,
+  heartbeatLock,
+  releaseLock,
+  breakLock
+} from "./plan-edit-lock-client.js";
 
 const STORE_KEY = "buscommand_plan_locks_v1";
 
@@ -22,8 +29,28 @@ function saveStore(store) {
   } catch { /* ignore */ }
 }
 
+function currentUid() {
+  return window.currentUser?.id || window.currentUser?.uid || null;
+}
+
+function getDemoDayLock(groupId, dateStr) {
+  const lockId = buildLockId("day", groupId, dateStr);
+  if (!lockId) return { ok: false, code: "INVALID_LOCK_REQUEST", lock: null };
+  const store = loadStore();
+  const nowMs = Date.now();
+  const existing = store[lockId] || null;
+  if (!existing || Number(existing.expiresAtMs) <= nowMs) {
+    if (existing) {
+      delete store[lockId];
+      saveStore(store);
+    }
+    return { ok: true, lock: null };
+  }
+  return { ok: true, lock: existing };
+}
+
 function ensureDemoDayLock(groupId, dateStr) {
-  const uid = window.currentUser?.id || window.currentUser?.uid;
+  const uid = currentUid();
   if (!uid || !groupId || !dateStr) {
     return { ok: false, code: "INVALID_LOCK_REQUEST" };
   }
@@ -42,4 +69,39 @@ function ensureDemoDayLock(groupId, dateStr) {
   return check;
 }
 
-export { ensureDemoDayLock };
+function heartbeatDemoDayLock(groupId, dateStr) {
+  const uid = currentUid();
+  const lockId = buildLockId("day", groupId, dateStr);
+  if (!uid || !lockId) return { ok: false, code: "INVALID_LOCK_REQUEST" };
+  const store = loadStore();
+  const result = heartbeatLock(store, { lockId, holderUid: uid });
+  saveStore(store);
+  return result;
+}
+
+function releaseDemoDayLock(groupId, dateStr) {
+  const uid = currentUid();
+  const lockId = buildLockId("day", groupId, dateStr);
+  if (!uid || !lockId) return { ok: false, code: "INVALID_LOCK_REQUEST" };
+  const store = loadStore();
+  const result = releaseLock(store, { lockId, holderUid: uid });
+  saveStore(store);
+  return result;
+}
+
+function breakDemoDayLock(groupId, dateStr, reason) {
+  const lockId = buildLockId("day", groupId, dateStr);
+  if (!lockId) return { ok: false, code: "INVALID_LOCK_REQUEST" };
+  const store = loadStore();
+  const result = breakLock(store, { lockId, reason });
+  saveStore(store);
+  return result;
+}
+
+export {
+  getDemoDayLock,
+  ensureDemoDayLock,
+  heartbeatDemoDayLock,
+  releaseDemoDayLock,
+  breakDemoDayLock
+};
