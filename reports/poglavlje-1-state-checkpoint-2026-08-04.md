@@ -163,7 +163,9 @@ Typecheck i posebna format komanda ne postoje u `package.json`; rezultati nisu i
 ## 9. Rollback i checkpoint
 
 - Pre-feature rollback tačka: `c0e915c`.
-- Lokalni checkpoint commit se pravi tek nakon ovog izveštaja i finalnog git pregleda.
+- Feature snapshot commit: `5807be728b4b3652a396d9aae8e1d608037f6c09`.
+- Lokalni Git attribution hook je naslov feature snapshot commita sveo na `Co-authored-by:`; sadržaj i autor su provereni, istorija nije prepisivana bez eksplicitnog amend odobrenja.
+- Završni dokumentacioni checkpoint commit se pravi nakon ove dopune.
 - Nema push-a, merge-a, deployment-a niti promene produkcionog Firebase-a.
 
 ## 10. Ocena poglavlja
