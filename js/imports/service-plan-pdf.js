@@ -12,7 +12,8 @@ const COURSE_BLOCK_RE = /(?<![A-Za-z0-9.])(\d{3})\s+((?:\d{1,2}\.\d{2}(?:\s+|\s*
 const COMPANY_DUTY_RE = /Dienst\s+(\d{2,4}\.[A-Za-z0-9]+)/gi;
 const COMPANY_ACTIVITY_RE = /(\d{1,3})\s+(Arbeit|Depot|Trans|Ruhe|P|\d{2,4})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})/gi;
 const COMPANY_VERSION_RE = /Version\s+(\d+)\s+ab\s+(\d{1,2})\.(\d{1,2})\.(\d{4})/i;
-const UNSUPPORTED_PDF_MESSAGE = "Ovaj PDF nije podržan. Dozvoljeni su: BusCommand XLSX/CSV/PDF šablon, zvanični kompanijski Dienstplan PDF (Dienst + Version ab), ili javni austrijski Fahrplan (linija + Gültig ab + Kursnummer). Skenirani PDF bez teksta nije podržan.";
+/** Machine-readable fallback only — UI localizes via ca_plan_err_* keys. */
+const UNSUPPORTED_PDF_MESSAGE = "ca_plan_err_unsupported_pdf";
 
 function decodePdfField(value) {
     return clean(String(value ?? "").replace(/~/g, " "));
@@ -232,7 +233,7 @@ function parseCompanyDienstplanText(text) {
             errors: [{
                 path: "PDF",
                 code: "dienstplan_metadata",
-                message: "Kompanijski Dienstplan mora imati „Version N ab DD.MM.YYYY“."
+                message: "ca_plan_err_dienstplan_metadata"
             }],
             plan: null,
             summary: null
@@ -248,7 +249,7 @@ function parseCompanyDienstplanText(text) {
             errors: [{
                 path: "PDF",
                 code: "dienstplan_no_duties",
-                message: "U Dienstplan PDF-u nisu pronađene smene (npr. Dienst 310.F01)."
+                message: "ca_plan_err_dienstplan_no_duties"
             }],
             plan: null,
             summary: null
@@ -268,7 +269,8 @@ function parseCompanyDienstplanText(text) {
                 errors: [{
                     path: "PDF",
                     code: "dienstplan_day_type",
-                    message: `Nepoznat tip dana za smenu ${current.code}.`
+                    message: "ca_plan_err_dienstplan_day_type",
+                    params: { duty: current.code }
                 }],
                 plan: null,
                 summary: null
@@ -284,7 +286,8 @@ function parseCompanyDienstplanText(text) {
                 errors: [{
                     path: "PDF",
                     code: "dienstplan_no_activities",
-                    message: `Smena ${current.code} nema parsabilne aktivnosti.`
+                    message: "ca_plan_err_dienstplan_no_activities",
+                    params: { duty: current.code }
                 }],
                 plan: null,
                 summary: null
@@ -341,7 +344,7 @@ function parseAustrianFahrplanText(text) {
             errors: [{
                 path: "PDF",
                 code: "fahrplan_metadata",
-                message: "Fahrplan PDF mora imati broj linije na početku i datum „Gültig ab DD.MM.YYYY“."
+                message: "ca_plan_err_fahrplan_metadata"
             }],
             plan: null,
             summary: null
@@ -389,7 +392,7 @@ function parseAustrianFahrplanText(text) {
             errors: [{
                 path: "PDF",
                 code: "fahrplan_no_courses",
-                message: "U Fahrplan PDF-u nisu pronađeni kursevi sa vremenima (npr. 101 5.11 …)."
+                message: "ca_plan_err_fahrplan_no_courses"
             }],
             plan: null,
             summary: null
@@ -425,7 +428,7 @@ function parseStructuredPdfText(text) {
                 path: "PDF",
                 code: empty ? "pdf_no_text" : "unsupported_pdf",
                 message: empty
-                    ? "PDF nema izvlativ tekst (verovatno skeniran). Koristite BusCommand XLSX/CSV šablon ili tekstualni Dienstplan PDF."
+                    ? "ca_plan_err_pdf_no_text"
                     : UNSUPPORTED_PDF_MESSAGE
             }],
             plan: null,
@@ -448,7 +451,7 @@ function parseStructuredPdfText(text) {
             const payload = token.slice(5);
             const eq = payload.indexOf("=");
             if (eq <= 0) {
-                errors.push({ path: "PDF.META", code: "missing_value", message: "META red nije ispravan." });
+                errors.push({ path: "PDF.META", code: "meta_invalid", message: "ca_plan_err_meta_invalid" });
                 continue;
             }
             metadata[clean(payload.slice(0, eq)).toLowerCase()] = clean(decodePdfField(payload.slice(eq + 1)));
@@ -457,7 +460,7 @@ function parseStructuredPdfText(text) {
         if (token.startsWith("DUTY:")) {
             const parts = token.slice(5).split("|");
             if (parts.length < 8) {
-                errors.push({ path: "PDF.DUTY", code: "missing_column", message: "DUTY red nema sve kolone." });
+                errors.push({ path: "PDF.DUTY", code: "duty_columns", message: "ca_plan_err_duty_columns" });
                 continue;
             }
             dutyRows.push({
@@ -475,7 +478,7 @@ function parseStructuredPdfText(text) {
         if (token.startsWith("ACT:")) {
             const parts = token.slice(4).split("|");
             if (parts.length < 9) {
-                errors.push({ path: "PDF.ACT", code: "missing_column", message: "ACT red nema sve kolone." });
+                errors.push({ path: "PDF.ACT", code: "act_columns", message: "ca_plan_err_act_columns" });
                 continue;
             }
             activityRows.push({
@@ -491,12 +494,22 @@ function parseStructuredPdfText(text) {
             });
             continue;
         }
-        errors.push({ path: "PDF", code: "unknown_token", message: `Nepoznat PDF token: ${token.slice(0, 40)}` });
+        errors.push({
+            path: "PDF",
+            code: "unknown_token",
+            message: "ca_plan_err_unknown_token",
+            params: { token: token.slice(0, 40) }
+        });
     }
 
     for (const key of ["template_version", "plan_code", "plan_version", "valid_from", "timezone"]) {
         if (!clean(metadata[key])) {
-            errors.push({ path: `PLAN.${key}`, code: "missing_value", message: `Nedostaje vrednost ${key}.` });
+            errors.push({
+                path: `PLAN.${key}`,
+                code: "missing_value",
+                message: "ca_plan_err_missing_value",
+                params: { field: key }
+            });
         }
     }
     if (errors.length) return { valid: false, errors, plan: null, summary: null };
@@ -538,7 +551,7 @@ function buildStructuredPdfPayload(planInput) {
 }
 
 async function extractPdfText(arrayBuffer) {
-    if (typeof pdfjsLib === "undefined") throw new Error("PDF.js parser nije učitan.");
+    if (typeof pdfjsLib === "undefined") throw new Error("ca_plan_err_pdfjs_missing");
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let text = "";
     for (let i = 1; i <= pdf.numPages; i += 1) {

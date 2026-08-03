@@ -22,12 +22,12 @@ function extensionOf(fileName) {
 }
 
 function validateServicePlanFile(file) {
-    if (!file) return "Izaberite fajl plana (XLSX, CSV ili BusCommand PDF).";
+    if (!file) return "ca_plan_err_file_required";
     const ext = extensionOf(file.name);
     if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-        return "Dozvoljeni su samo BusCommand .xlsx, .csv i strukturirani .pdf šabloni.";
+        return "ca_plan_err_file_type";
     }
-    if (file.size > MAX_FILE_BYTES) return "Fajl plana može imati najviše 5 MB.";
+    if (file.size > MAX_FILE_BYTES) return "ca_plan_err_file_too_large";
     return null;
 }
 

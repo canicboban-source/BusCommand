@@ -125,9 +125,9 @@ test("file gate accepts BusCommand xlsx, csv and pdf up to 5 MB", () => {
   assert.equal(validateServicePlanFile({ name: "plan.csv", size: 1024 }), null);
   assert.equal(validateServicePlanFile({ name: "plan.pdf", size: 1024 }), null);
   assert.equal(validateServicePlanFile({ name: "plan.pdf", size: 3.4 * 1024 * 1024 }), null);
-  assert.match(validateServicePlanFile({ name: "plan.xls", size: 1024 }), /xlsx.*csv.*pdf|Dozvoljeni/i);
-  assert.match(validateServicePlanFile({ name: "plan.txt", size: 1024 }), /Dozvoljeni/i);
-  assert.match(validateServicePlanFile({ name: "plan.xlsx", size: 6 * 1024 * 1024 }), /najviše 5 MB/i);
+  assert.equal(validateServicePlanFile({ name: "plan.xls", size: 1024 }), "ca_plan_err_file_type");
+  assert.equal(validateServicePlanFile({ name: "plan.txt", size: 1024 }), "ca_plan_err_file_type");
+  assert.equal(validateServicePlanFile({ name: "plan.xlsx", size: 6 * 1024 * 1024 }), "ca_plan_err_file_too_large");
 });
 
 test("CSV twin template parses into the same validated contract", () => {

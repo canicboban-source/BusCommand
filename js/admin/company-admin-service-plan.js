@@ -67,11 +67,27 @@ function renderGroupSelector() {
     if (groups.some(group => String(group.id) === previous)) select.value = previous;
 }
 
+function formatServicePlanError(error) {
+    const params = { ...(error?.params || {}) };
+    const code = String(error?.code || "").trim();
+    if (code) {
+        const key = `ca_plan_err_${code}`;
+        const translated = t(key, params);
+        if (translated !== key) return translated;
+    }
+    const raw = String(error?.message || "").trim();
+    if (raw.startsWith("ca_plan_")) {
+        const translated = t(raw, params);
+        if (translated !== raw) return translated;
+    }
+    return raw || t("ca_plan_err_generic");
+}
+
 function renderErrors(errors) {
     if (!errors?.length) return "";
     return `<div class="service-plan-errors" role="alert">
         <div class="service-plan-errors-title">${escapeHtml(t("ca_plan_errors_title"))}</div>
-        <ul>${errors.slice(0, 50).map(error => `<li><code>${escapeHtml(error.path)}</code> ${escapeHtml(error.message)}</li>`).join("")}</ul>
+        <ul>${errors.slice(0, 50).map(error => `<li><code>${escapeHtml(error.path || "PDF")}</code> ${escapeHtml(formatServicePlanError(error))}</li>`).join("")}</ul>
         ${errors.length > 50 ? `<p>${escapeHtml(t("ca_plan_errors_more", { count: errors.length - 50 }))}</p>` : ""}
     </div>`;
 }
@@ -469,7 +485,8 @@ async function handleCompanyServicePlanFile(event) {
     } catch (error) {
         pendingImport = null;
         renderServicePlanPreview();
-        showToast(error.message || t("error_generic"), "error");
+        const msg = String(error?.message || "").trim();
+        showToast(msg.startsWith("ca_plan_") ? t(msg) : (msg || t("error_generic")), "error");
     }
 }
 
