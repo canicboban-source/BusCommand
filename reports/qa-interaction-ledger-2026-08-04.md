@@ -154,7 +154,26 @@ odgovore, uključujući tuđi tenant, neaktivan profil, „role drift“, grupe 
 profila i member-only licencni endpoint. Statičke provere u
 `company-admin-groups-access`, `company-admin-branding-access`,
 `company-admin-settings-access` i `dispatcher-report-access` ostaju statičke i
-predviđene su za konverziju u Poglavlju 3.
+predviđene su za konverziju u narednom poglavlju.
+
+### Ažuriranje posle Poglavlja 3
+
+Emulator matrica je 39/39, jer je uz Firestore dodat i Auth emulator. Novo
+pokriveno funkcionalno, kroz stvarni Admin SDK saobraćaj a ne kroz mokove:
+
+- Firestore sentineli i tipovi: `serverTimestamp`, `Timestamp.fromDate`,
+  `arrayUnion`, `FieldValue.delete`;
+- transakcije sa read-then-write i batched write sa mešanim `set`/`delete`;
+- `count()` agregacija i `select()` projekcija;
+- životni ciklus naloga: `createUser`, `setCustomUserClaims`, `getUser`,
+  `getUserByEmail`, `updateUser({disabled})`, `deleteUser`;
+- `createCustomToken` → razmena za ID token → `verifyIdToken` sa tenant
+  claims-ovima i `auth_time`.
+
+Time je zatvoren otvoreni rizik iz Poglavlja 2: `checkRevoked` više nije dokazan
+samo lažnim Admin SDK slojem — `revokeRefreshTokens` stvarno odbija ranije izdat
+token sa `auth/id-token-revoked`. Ostaje ograničenje da emulator odbija opozvan
+token i bez te zastavice, pa razlika između dva režima nije merljiva lokalno.
 
 ## Sledeći dokazivi koraci
 
