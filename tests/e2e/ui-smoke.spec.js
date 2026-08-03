@@ -464,6 +464,13 @@ test.describe("UI smoke", () => {
     await expect(page.locator("#company-admin-team")).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
     expect(overflow).toBe(false);
+
+    const inactiveAna = page.locator(".company-team-card").filter({ hasText: "ana@example.test" });
+    await inactiveAna.getByRole("button", { name: /Delete permanently/i }).click();
+    await expect(page.locator("#global-confirm-message")).toContainText("Historical plans and audit records remain");
+    await page.locator("#global-confirm-yes").click();
+    await expect(page.locator(".company-team-card").filter({ hasText: "ana@example.test" })).toHaveCount(0);
+    await expect(page.locator("#ca-team-stat-total")).toHaveText("1");
   });
 
   test("driver PIN login", async ({ page }) => {

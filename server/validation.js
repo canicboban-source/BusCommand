@@ -89,6 +89,11 @@ const companyDispatcherActionBody = z.object({
   companyId: z.string().trim().min(1).max(64)
 });
 
+const companyDispatcherDeleteBody = z.object({
+  companyId: z.string().trim().min(1).max(64),
+  confirmEmail: z.string().trim().toLowerCase().email().max(254)
+}).strict();
+
 const companyAdminStatusBody = z.object({
   active: z.boolean()
 });
@@ -213,6 +218,7 @@ module.exports = {
   companyDispatcherBody,
   companyDispatcherStatusBody,
   companyDispatcherActionBody,
+  companyDispatcherDeleteBody,
   companyAdminStatusBody,
   companyProfileSettingsBody,
   companyBrandingBody,

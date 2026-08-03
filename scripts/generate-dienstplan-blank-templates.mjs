@@ -109,7 +109,33 @@ function writeDriversCsv() {
   console.log("Wrote", dest);
 }
 
+function writeMonthlyGroupTemplates() {
+  const csvDest = path.join(outDir, "BusCommand_Monthly_Group_Plan_Blank_v1.csv");
+  fs.writeFileSync(csvDest, "eid,date,duty_code\n", "utf8");
+  console.log("Wrote", csvDest);
+
+  const XLSX = ensureXlsx();
+  const wb = XLSX.utils.book_new();
+  const planSheet = XLSX.utils.aoa_to_sheet([["eid", "date", "duty_code"]]);
+  const guideSheet = XLSX.utils.aoa_to_sheet([
+    ["field", "notes"],
+    ["eid", "Required. Exact employee EID from the Company Admin driver directory."],
+    ["date", "Required. ISO date YYYY-MM-DD; all rows must be in the month selected in BusCommand."],
+    ["duty_code", "Exact active catalog code (e.g. 310.S01), or OFF | VACATION | SICK."],
+    ["group", "Select the target group in BusCommand; the file must contain only drivers from that group."],
+    ["buses", "Not imported here. Buses remain a manual dispatcher assignment."],
+    ["mode_merge", "Adds or updates only listed EID/date rows."],
+    ["mode_replace", "Also removes existing group/month assignments not present in the file. Always review removals before publish."]
+  ]);
+  XLSX.utils.book_append_sheet(wb, planSheet, "MONTHLY_PLAN");
+  XLSX.utils.book_append_sheet(wb, guideSheet, "INSTRUCTIONS");
+  const xlsxDest = path.join(outDir, "BusCommand_Monthly_Group_Plan_Blank_v1.xlsx");
+  XLSX.writeFile(wb, xlsxDest);
+  console.log("Wrote", xlsxDest);
+}
+
 fs.mkdirSync(outDir, { recursive: true });
 writeCsv();
 writeXlsx();
 writeDriversCsv();
+writeMonthlyGroupTemplates();

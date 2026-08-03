@@ -27,6 +27,7 @@ const {
   PlanImportValidationError,
   buildPlanImportPreview
 } = require("./plan-import-preview");
+const { assertNoActiveGroupMonthlyImport } = require("./group-monthly-plan-import");
 const {
   staffMessageSchema,
   messageTypeForTemplate,
@@ -1788,6 +1789,20 @@ function registerDriverRoutes(app, deps) {
       const driverGroupId = driver.groupId || driver.lineId || null;
       if (!Array.isArray(groups) || !driverGroupId || !groups.includes(driverGroupId)) {
         return res.status(403).json({ success: false, error: "Pristup voza\u010du van dodeljene grupe nije dozvoljen." });
+      }
+
+      const importLock = await assertNoActiveGroupMonthlyImport({
+        db: db(),
+        companyId: req.staff.companyId,
+        groupId: driverGroupId,
+        month: scheduleMonthFromDate(parsed.data.date)
+      });
+      if (!importLock.ok) {
+        return res.status(409).json({
+          success: false,
+          code: importLock.code,
+          error: "Uvoz mesečnog plana za ovu grupu je u toku. Pokušajte ponovo kada se uvoz završi."
+        });
       }
 
       // First-writer lock: first successful mutate acquires; others blocked until release/TTL/break-glass

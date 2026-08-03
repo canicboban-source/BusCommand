@@ -5,8 +5,9 @@ import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriver
 import { cancelCompanyGroupEdit, deleteCompanyGroup, focusCompanyGroupForm, saveCompanyGroup, startEditCompanyGroup } from "./admin/company-admin-groups.js";
 import { caWizardBack, caWizardNext, caWizardSelectColor, caWizardSelectColorFromHex, caWizardSelectColorFromPicker, caWizardHandleLogo, caWizardSkip } from "./admin/company-admin-onboarding.js";
 import { clearCompanyServicePlanPreview, closeCompanyServicePlanDuty, closeCompanyServicePlanHistory, handleCompanyServicePlanFile, handleCompanyServicePlanGroupChange, openCompanyServicePlanDuty, openCompanyServicePlanHistory, publishCompanyServicePlan } from "./admin/company-admin-service-plan.js";
+import { clearCompanyGroupMonthlyImport, commitCompanyGroupMonthlyImport, handleCompanyGroupMonthlyFile, invalidateCompanyGroupMonthlyPreview, previewCompanyGroupMonthlyImport } from "./admin/company-admin-monthly-import.js";
 import { handleCompanySettingsCountry, handleCompanySettingsInput, resetCompanySettingsForm, saveCompanyProfileSettings } from "./admin/company-admin-settings.js";
-import { addCompanyDispatcher, focusCompanyDispatcherForm, resetCompanyDispatcherPassword, revokeCompanyDispatcherSessions, saveCompanyDispatcherGroups, toggleCaDispGroupsEdit, toggleCompanyDispatcherStatus } from "./admin/company-admin-team.js";
+import { addCompanyDispatcher, focusCompanyDispatcherForm, removeCompanyDispatcher, resetCompanyDispatcherPassword, revokeCompanyDispatcherSessions, saveCompanyDispatcherGroups, toggleCaDispGroupsEdit, toggleCompanyDispatcherStatus } from "./admin/company-admin-team.js";
 import { endCompanySupportSession, openCompanyOpsOverview } from "./admin/company-admin.js";
 import { createDispatcherGroup, enterDispatcherActiveGroup, exitImpersonation, saveNewDispatcherPassword, switchToGroupSetup } from "./admin/dispatcher-setup.js";
 import { superadminCreateCompany, superadminCreateCompanyAdmin, superadminDeleteCompany, superadminCancelDeleteCompanyModal, superadminConfirmDeleteCompany, superadminDeleteCompanyAdmin, superadminFocusCompanies, superadminCopyCompanyId, superadminCopyText, superadminImpersonate, superadminOpenCompany, superadminOpenCompanyDetail, superadminCloseCompanyDetail, superadminSetCompanyAdminStatus, superadminResetCompanyAdminPassword, superadminResetPin, superadminToggleStatus, superadminStartSupport, superadminCancelSupportModal, superadminConfirmSupportStart, superadminEndSupport } from "./admin/superadmin.js";
@@ -88,6 +89,7 @@ const HANDLERS = {
     clearCompanyBrandingLogo,
     handleCompanyBrandingLogoFile,
     clearCompanyDriversImport,
+    clearCompanyGroupMonthlyImport,
     clearCompanyServicePlanPreview,
     clearPackageImport,
     clearPendingPlanImports,
@@ -138,6 +140,7 @@ const HANDLERS = {
     handleBulkPlanFileInput,
     handleCompanyAuditFilters,
     handleCompanyDriversFile,
+    handleCompanyGroupMonthlyFile,
     handleCompanyDriversFilter,
     handleCompanyServicePlanFile,
     handleCompanyServicePlanGroupChange,
@@ -179,6 +182,9 @@ const HANDLERS = {
     refreshPlanLockBanner,
     opsAssignDriver,
     publishCompanyServicePlan,
+    previewCompanyGroupMonthlyImport,
+    commitCompanyGroupMonthlyImport,
+    invalidateCompanyGroupMonthlyPreview,
     refreshCompanyAudit,
     removeDispatcher,
     removeElementById,
@@ -233,6 +239,7 @@ const HANDLERS = {
     t,
     toggleCaDispGroupsEdit,
     toggleCompanyDispatcherStatus,
+    removeCompanyDispatcher,
     toggleCompanyDriverStatus,
     toggleDriverActive,
     toggleTheme,

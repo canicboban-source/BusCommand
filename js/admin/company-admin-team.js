@@ -156,6 +156,7 @@ function dispatcherCardHtml(dispatcher, groups) {
             <button type="button" class="btn-secondary" ${actionAttr("resetCompanyDispatcherPassword", [String(dispatcher.id)])} ${busy || !active ? "disabled" : ""}><i data-lucide="mail-key"></i><span>${escapeHtml(t("ca_send_reset_link"))}</span></button>
             <button type="button" class="btn-secondary" ${actionAttr("revokeCompanyDispatcherSessions", [String(dispatcher.id)])} ${busy || !active ? "disabled" : ""}><i data-lucide="log-out"></i><span>${escapeHtml(t("ca_revoke_sessions"))}</span></button>
             <button type="button" class="${active ? "btn-danger-ghost" : "btn-secondary"}" ${actionAttr("toggleCompanyDispatcherStatus", [String(dispatcher.id)])} ${busy ? "disabled" : ""}><i data-lucide="${toggleIcon}"></i><span>${escapeHtml(toggleLabel)}</span></button>
+            ${active ? "" : `<button type="button" class="btn-danger-ghost" ${actionAttr("removeCompanyDispatcher", [String(dispatcher.id)])} ${busy ? "disabled" : ""}><i data-lucide="trash-2"></i><span>${escapeHtml(t("ca_disp_delete"))}</span></button>`}
         </div>
         <div id="ca-disp-groups-edit-${escapeHtml(String(dispatcher.id))}" class="company-team-editor${editingGroups ? "" : " hidden"}">
             <div><strong>${escapeHtml(t("ca_assign_groups"))}</strong><p>${escapeHtml(t("ca_assign_groups_hint"))}</p></div>
@@ -397,7 +398,39 @@ function toggleCompanyDispatcherStatus(dispId) {
 }
 
 function removeCompanyDispatcher(dispId) {
-    return toggleCompanyDispatcherStatus(dispId);
+    const dispatcher = findCompanyDispatcher(dispId);
+    if (!dispatcher || dispatcher.active !== false || pendingDispatcherActions.has(String(dispId))) return;
+    showConfirm(
+        t("ca_confirm_delete_disp", { name: dispatcher.name, email: dispatcher.email }),
+        async () => {
+            pendingDispatcherActions.add(String(dispId));
+            renderCompanyAdminTeam();
+            try {
+                if (!IS_DEMO_MODE) {
+                    const result = await ApiClient.deleteCompanyDispatcher(getCompanyId(), dispId, dispatcher.email);
+                    if (!result.success) {
+                        const errorKey = {
+                            "dispatcher-active": "ca_disp_delete_requires_inactive",
+                            "confirm-mismatch": "ca_disp_delete_confirmation_failed",
+                            "dispatcher-deleting": "ca_disp_delete_in_progress",
+                            "dispatcher-delete-incomplete": "ca_disp_delete_incomplete"
+                        }[result.code] || "ca_disp_delete_failed";
+                        throw new Error(t(errorKey));
+                    }
+                }
+                window.state.dispatchers = (window.state.dispatchers || []).filter(item => String(item.id) !== String(dispId));
+                if (IS_DEMO_MODE) saveState();
+                showToast(t("ca_disp_deleted"), "success", 6500);
+            } catch (cause) {
+                showToast(cause.message || t("ca_disp_delete_failed"), "error");
+            } finally {
+                pendingDispatcherActions.delete(String(dispId));
+                renderCompanyAdminTeam();
+                renderCompanyAdminDashboard();
+            }
+        },
+        { danger: true, confirmText: t("ca_disp_delete") }
+    );
 }
 
 function revokeCompanyDispatcherSessions(dispId) {

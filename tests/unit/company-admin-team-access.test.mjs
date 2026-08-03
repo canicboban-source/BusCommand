@@ -19,6 +19,8 @@ test("dispatcher lifecycle endpoints are Company Admin-only, tenant-bound and ra
     assert.match(block, /requireOwnCompany/);
   }
   assert.match(api, /verifyIdToken\(token, true\)/);
+  assert.match(api, /app\.delete\([\s\S]*?"\/api\/company-admin\/dispatchers\/:uid"[\s\S]*?requireCompanyAdmin[\s\S]*?requireOwnCompany/);
+  assert.match(api, /validateBody\(companyDispatcherDeleteBody\)/);
   assert.match(api, /\/api\/admin\/create-user[\s\S]*?req\.adminUser\.role === "company_admin"[\s\S]*?namenski Company Admin endpoint/);
 });
 
@@ -35,6 +37,8 @@ test("team and onboarding share the same validated provisioning path without pro
   const team = read("../../js/admin/company-admin-team.js");
   const onboarding = read("../../js/admin/company-admin-onboarding.js");
   assert.match(team, /ApiClient\.createCompanyDispatcher/);
+  assert.match(team, /ApiClient\.deleteCompanyDispatcher/);
+  assert.match(team, /dispatcher\.active !== false/);
   assert.match(team, /if \(IS_DEMO_MODE\) \{[\s\S]*?dispatcher\.password/);
   assert.doesNotMatch(team, /TEMP_RESET_PASSWORD|ChangeMe123/);
   assert.match(onboarding, /persistCompanyDispatcherDraft/);

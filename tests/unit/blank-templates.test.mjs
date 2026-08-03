@@ -58,3 +58,23 @@ test("drivers import CSV is header-only official blank", () => {
   const csv = fs.readFileSync(path.join(templates, "BusCommand_Drivers_Import_v1.csv"), "utf8").trim();
   assert.equal(csv, "eid,first_name,last_name,phone,email,company_code");
 });
+
+test("monthly group CSV and XLSX are header-only official blanks", () => {
+  const csv = fs.readFileSync(path.join(templates, "BusCommand_Monthly_Group_Plan_Blank_v1.csv"), "utf8").trim();
+  assert.equal(csv, "eid,date,duty_code");
+
+  const xlsxPath = path.join(templates, "BusCommand_Monthly_Group_Plan_Blank_v1.xlsx");
+  const workbook = readXlsxEntry(xlsxPath, "xl/workbook.xml");
+  assert.match(workbook, /sheet name="MONTHLY_PLAN"/);
+  assert.match(workbook, /sheet name="INSTRUCTIONS"/);
+  const plan = readXlsxEntry(xlsxPath, "xl/worksheets/sheet1.xml");
+  assert.match(plan, /<v>eid<\/v>/);
+  assert.match(plan, /<v>date<\/v>/);
+  assert.match(plan, /<v>duty_code<\/v>/);
+  assert.match(plan, /dimension ref="A1:C1"/);
+  assert.doesNotMatch(plan, /<row r="2"/);
+
+  const copier = fs.readFileSync(path.join(root, "scripts", "copy-static-to-dist.js"), "utf8");
+  assert.match(copier, /BusCommand_Monthly_Group_Plan_Blank_v1\.csv/);
+  assert.match(copier, /BusCommand_Monthly_Group_Plan_Blank_v1\.xlsx/);
+});

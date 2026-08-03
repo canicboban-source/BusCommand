@@ -772,7 +772,7 @@
                     <div class="section-header service-plan-page-header">
                         <div>
                             <h2><i data-lucide="calendar-range" class="section-title-icon"></i> <span data-i18n="ca_plan_title">Planovi smena</span></h2>
-                            <p class="subtitle" data-i18n="ca_plan_subtitle">Uvezite zvanični plan posebno za svaku grupu. Disponenti ga koriste u rasporedu, ali ga ne mogu menjati.</p>
+                            <p class="subtitle" data-i18n="ca_plan_subtitle">Objavite katalog smena i uvezite mesečne dodele cele grupe. Disponent zatim vodi dnevnu operativu bez pristupa EID podacima.</p>
                         </div>
                     </div>
 
@@ -833,6 +833,58 @@
                     </div>
 
                     <div id="ca-service-plan-preview" class="service-plan-preview-host" aria-live="polite"></div>
+
+                    <div class="card ca-monthly-import-card" aria-labelledby="ca-monthly-import-title">
+                        <div class="service-plan-panel-header">
+                            <div>
+                                <span class="service-plan-kicker" data-i18n="ca_monthly_import_kicker">MESEČNE DODELE</span>
+                                <h3 id="ca-monthly-import-title" data-i18n="ca_monthly_import_title">Uvezite mesečni plan cele grupe</h3>
+                                <p data-i18n="ca_monthly_import_hint">EID iz fajla povezuje red sa vozačem. Kod smene mora postojati u aktivnom katalogu izabrane grupe. Busevi se ne uvoze ovim fajlom.</p>
+                            </div>
+                            <i data-lucide="calendar-sync" aria-hidden="true"></i>
+                        </div>
+                        <div class="ca-monthly-import-fields">
+                            <label class="form-group" for="ca-monthly-import-group">
+                                <span data-i18n="ca_plan_group">Grupa / linija</span>
+                                <select id="ca-monthly-import-group" data-change-action="invalidateCompanyGroupMonthlyPreview">
+                                    <option value="" data-i18n="ca_plan_group_placeholder">Izaberite grupu</option>
+                                </select>
+                            </label>
+                            <label class="form-group" for="ca-monthly-import-month">
+                                <span data-i18n="ca_monthly_import_month">Mesec</span>
+                                <input type="month" id="ca-monthly-import-month" data-change-action="invalidateCompanyGroupMonthlyPreview">
+                            </label>
+                            <label class="form-group" for="ca-monthly-import-mode">
+                                <span data-i18n="ca_monthly_import_mode">Način uvoza</span>
+                                <select id="ca-monthly-import-mode" data-change-action="invalidateCompanyGroupMonthlyPreview">
+                                    <option value="merge" data-i18n="ca_monthly_import_mode_merge">Dopuni ili izmeni navedene dane</option>
+                                    <option value="replace" data-i18n="ca_monthly_import_mode_replace">Zameni ceo plan grupe za mesec</option>
+                                </select>
+                            </label>
+                            <label class="form-group ca-monthly-import-reason" for="ca-monthly-import-reason">
+                                <span data-i18n="ca_monthly_import_reason">Razlog / napomena</span>
+                                <input type="text" id="ca-monthly-import-reason" maxlength="200" data-i18n-placeholder="ca_monthly_import_reason_placeholder" placeholder="Npr. Prva objava plana za septembar" data-input-action="invalidateCompanyGroupMonthlyPreview">
+                            </label>
+                        </div>
+                        <div class="ca-monthly-import-upload-row">
+                            <button type="button" class="company-drivers-dropzone" data-action="clickElementById" data-action-args='["ca-monthly-import-file"]'>
+                                <i data-lucide="file-spreadsheet" aria-hidden="true"></i>
+                                <strong data-i18n="ca_monthly_import_choose">Izaberi grupni XLSX ili CSV</strong>
+                                <span data-i18n="ca_monthly_import_file_rule">Kolone: eid, date, duty_code · do 2.500 redova</span>
+                            </button>
+                            <input type="file" id="ca-monthly-import-file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden data-change-action="handleCompanyGroupMonthlyFile" data-change-pass="event">
+                            <div class="service-plan-download-actions">
+                                <a class="btn-secondary" href="/templates/BusCommand_Monthly_Group_Plan_Blank_v1.xlsx" download>
+                                    <i data-lucide="file-spreadsheet"></i><span data-i18n="ca_monthly_import_download_xlsx">Preuzmi XLSX</span>
+                                </a>
+                                <a class="btn-secondary" href="/templates/BusCommand_Monthly_Group_Plan_Blank_v1.csv" download>
+                                    <i data-lucide="file-down"></i><span data-i18n="ca_monthly_import_download_csv">Preuzmi CSV</span>
+                                </a>
+                            </div>
+                        </div>
+                        <p class="service-plan-format-note"><i data-lucide="triangle-alert"></i> <span data-i18n="ca_monthly_import_replace_warning">„Zameni ceo plan“ uklanja postojeće dodele izabranog meseca koje nisu u fajlu. Pregled će pokazati tačan broj uklanjanja pre potvrde.</span></p>
+                        <div id="ca-monthly-import-preview" class="service-plan-preview-host" aria-live="polite"></div>
+                    </div>
 
                     <div class="card service-plan-history-panel">
                         <div class="service-plan-panel-header">

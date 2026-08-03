@@ -9,10 +9,27 @@ const {
   companyGroupUpdateBody,
   companyDispatcherBody,
   companyDispatcherStatusBody,
+  companyDispatcherDeleteBody,
   companyProfileSettingsBody,
   assertCompanyIdUsable,
   sanitizeCompanyId
 } = require("../../server/validation.js");
+
+test("dispatcher deletion requires tenant and exact email-shaped confirmation", () => {
+  assert.equal(companyDispatcherDeleteBody.safeParse({
+    companyId: "alpha",
+    confirmEmail: " dispatcher@example.test "
+  }).success, true);
+  assert.equal(companyDispatcherDeleteBody.safeParse({
+    companyId: "alpha",
+    confirmEmail: "dispatcher"
+  }).success, false);
+  assert.equal(companyDispatcherDeleteBody.safeParse({
+    companyId: "alpha",
+    confirmEmail: "dispatcher@example.test",
+    active: false
+  }).success, false);
+});
 
 test("driverLoginBody rejects empty object", () => {
   const result = driverLoginBody.safeParse({});

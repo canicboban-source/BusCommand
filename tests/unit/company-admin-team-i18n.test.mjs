@@ -14,10 +14,13 @@ test("dispatcher team has complete pilot-language labels, states and errors", ()
     "ca_team_form_hint", "ca_team_password_help", "ca_team_groups_help", "ca_team_catalog_title",
     "ca_team_search_placeholder", "ca_team_filter_active", "ca_team_filter_inactive", "ca_disp_inactive",
     "ca_disp_deactivate", "ca_disp_activate", "ca_send_reset_link", "ca_revoke_sessions",
+    "ca_disp_delete", "ca_confirm_delete_disp", "ca_disp_deleted", "ca_disp_delete_failed",
+    "ca_disp_delete_requires_inactive", "ca_disp_delete_confirmation_failed",
+    "ca_disp_delete_in_progress", "ca_disp_delete_incomplete",
     "ca_team_error_email_invalid", "ca_team_error_password_short", "ca_team_error_groups_required",
     "ca_confirm_deactivate_disp", "ca_sessions_revoked", "ca_reset_email_sent",
     "ca_audit_event_dispatcher_activated", "ca_audit_event_dispatcher_deactivated",
-    "ca_audit_event_dispatcher_sessions_revoked"
+    "ca_audit_event_dispatcher_sessions_revoked", "ca_audit_event_dispatcher_deleted"
   ];
   for (const language of ["en", "de", "sr"]) {
     for (const key of keys) {
@@ -34,5 +37,7 @@ test("dispatcher team markup is semantic, labelled and contains no legacy multi-
   assert.match(html, /for="ca-new-disp-name"/);
   assert.match(html, /aria-live="polite"/);
   assert.doesNotMatch(html, /id="ca-disp-groups-select"/);
+  assert.match(source, /removeCompanyDispatcher/);
+  assert.match(source, /trash-2/);
   assert.doesNotMatch(source, /ChangeMe123|TEMP_RESET_PASSWORD/);
 });

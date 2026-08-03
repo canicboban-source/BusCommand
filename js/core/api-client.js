@@ -109,6 +109,12 @@ const ApiClient = (() => {
             body: JSON.stringify({ companyId })
         });
     }
+    async function deleteCompanyDispatcher(companyId, uid, confirmEmail) {
+        return apiFetch("/api/company-admin/dispatchers/" + encodeURIComponent(uid), {
+            method: "DELETE",
+            body: JSON.stringify({ companyId, confirmEmail })
+        });
+    }
     async function updateCompanyProfileSettings(companyId, profile) {
         return apiFetch("/api/company-admin/profile-settings", {
             method: "PUT",
@@ -147,6 +153,18 @@ const ApiClient = (() => {
         return apiFetch("/api/company-admin/service-plans/publish", {
             method: "PUT",
             body: JSON.stringify({ companyId, groupId, plan })
+        });
+    }
+    async function previewGroupMonthlyPlanImport(payload) {
+        return apiFetch("/api/company-admin/monthly-plans/import/preview", {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+    }
+    async function commitGroupMonthlyPlanImport(companyId, importId, fingerprint) {
+        return apiFetch("/api/company-admin/monthly-plans/import/commit", {
+            method: "PUT",
+            body: JSON.stringify({ companyId, importId, fingerprint })
         });
     }
     async function getActiveServicePlan(companyId, groupId) {
@@ -387,9 +405,10 @@ const ApiClient = (() => {
         getCompanyDetail, setCompanyAdminStatus, resetCompanyAdminPassword,
         setCompanyStatus, deleteCompany, createCompany, createUser, updateUserGroups,
         createCompanyDispatcher, updateCompanyDispatcherGroups,
-        setCompanyDispatcherStatus, revokeCompanyDispatcherSessions,
+        setCompanyDispatcherStatus, revokeCompanyDispatcherSessions, deleteCompanyDispatcher,
         updateCompanyProfileSettings, downloadCompanyExport,
-        previewServicePlan, publishServicePlan, getActiveServicePlan, getServicePlanHistory, getServicePlanVersion, getCompanyAudit, updateCompanyBranding,
+        previewServicePlan, publishServicePlan, previewGroupMonthlyPlanImport, commitGroupMonthlyPlanImport,
+        getActiveServicePlan, getServicePlanHistory, getServicePlanVersion, getCompanyAudit, updateCompanyBranding,
         createCompanyGroup, updateCompanyGroup, deleteCompanyGroup, reportStateSync, importDriversCsv, setDriverActive,
         updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode,
         createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage,
