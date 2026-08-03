@@ -10,19 +10,26 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ─── SUPERADMIN ─────────────────────────────────────────
-    // SuperAdmin ima pristup svemu
+    // SuperAdmin nadzire sve firme, ali samo čita.
+    // Rules su aditivne: da je ovdje dozvoljen `write`, SuperAdmin browser
+    // sesija bi nadjačala `allow write: if false` na audit_log-u i ostalim
+    // server-owned kolekcijama. Sve promjene idu kroz Admin SDK API koji
+    // validira tenant, poslovna pravila i piše audit zapis.
 
     match /companies/{companyId}/{companyCollection}/{document=**} {
-      allow read, write: if isSuperAdmin()
-                         && companyCollection != "driver_credentials";
+      allow read: if isSuperAdmin()
+                  && companyCollection != "driver_credentials";
+      allow write: if false;
     }
 
     // ─── FIRMA — SOPSTVENI PODACI ───────────────────────────
-    // Firma može čitati i pisati SAMO pod svojom companyId putanjom
+    // Firma može čitati SAMO pod svojom companyId putanjom
 
     match /companies/{companyId} {
       allow read: if isSuperAdmin() || isCompanyMember(companyId);
-      allow write: if isSuperAdmin() || isCompanyAdmin(companyId);
+      // Korijenski dokument nosi naziv, slug i status firme. Licenca i
+      // lifecycle mijenjaju se samo kroz SuperAdmin/CA API sa audit tragom.
+      allow write: if false;
     }
 
     // Profil i branding firme
@@ -195,6 +202,28 @@ service cloud.firestore {
     match /companies/{companyId}/support_sessions/{sessionId} {
       allow read: if isCompanyAdmin(companyId) || isSuperAdmin();
       allow create, update, delete: if false;
+    }
+
+    // ─── INTERNA KOORDINACIJA (samo Admin SDK) ──────────────
+    // Zaključavanja i job stanje čuvaju konzistentnost uvoza i izmjena plana.
+    // Klijent ih nikada ne čita direktno — stanje dobija kroz validirane API-je.
+    // Eksplicitno zatvoreno da naredna kolekcija ne bi „pala“ samo na
+    // implicitni default-deny.
+
+    match /companies/{companyId}/monthly_plan_imports/{importId} {
+      allow read, write: if false;
+    }
+
+    match /companies/{companyId}/monthly_plan_import_locks/{lockId} {
+      allow read, write: if false;
+    }
+
+    match /companies/{companyId}/plan_locks/{lockId} {
+      allow read, write: if false;
+    }
+
+    match /companies/{companyId}/ops/{opsId} {
+      allow read, write: if false;
     }
 
     // ─── HELPER FUNCTIONS ───────────────────────────────────

@@ -7,6 +7,7 @@ const {
   assertSucceeds
 } = require("@firebase/rules-unit-testing");
 const {
+  deleteDoc,
   doc,
   getDoc,
   setDoc,
@@ -60,7 +61,37 @@ async function seedCompany(companyId) {
       sessionEndsAt: new Date(Date.now() + 60 * 60 * 1000),
       notificationsUntil: new Date(Date.now() + 60 * 60 * 1000)
     });
+    await setDoc(doc(db, "companies", companyId, "audit_log", "audit-1"), {
+      action: "user_created",
+      actorId: "ca-1"
+    });
+    await setDoc(doc(db, "companies", companyId, "support_sessions", "sup-1"), {
+      status: "active",
+      category: "incident"
+    });
+    await setDoc(doc(db, "companies", companyId, "monthly_plan_imports", "imp-1"), {
+      groupId: "31099",
+      month: "2026-08",
+      status: "previewed"
+    });
+    await setDoc(doc(db, "companies", companyId, "monthly_plan_import_locks", "31099_2026-08"), {
+      importId: "imp-1"
+    });
+    await setDoc(doc(db, "companies", companyId, "plan_locks", "31099_2026-08"), {
+      holderUid: "disp-1"
+    });
+    await setDoc(doc(db, "companies", companyId, "ops", "confirmation_dispatch"), {
+      lastRunAt: new Date()
+    });
   });
+}
+
+function superAdmin() {
+  return env.authenticatedContext("sa-1", {
+    role: "superadmin",
+    mustChangeLoginCode: false,
+    auth_time: Math.floor(Date.now() / 1000)
+  }).firestore();
 }
 
 function auth(uid, role, companyId) {
@@ -139,4 +170,67 @@ test("driver cannot change protected profile fields during an active session", a
   await assertFails(updateDoc(doc(db, "companies", "alpha", "drivers", "drv-1"), {
     groupId: "other"
   }));
+});
+
+test("superadmin oversees every tenant collection read-only", async () => {
+  const db = superAdmin();
+  await assertSucceeds(getDoc(doc(db, "companies", "alpha", "audit_log", "audit-1")));
+  await assertSucceeds(getDoc(doc(db, "companies", "beta", "shifts", "drv-1_2026-08-01")));
+  await assertSucceeds(getDoc(doc(db, "companies", "alpha", "support_sessions", "sup-1")));
+  await assertFails(getDoc(doc(db, "companies", "alpha", "driver_credentials", "drv-1")));
+});
+
+test("superadmin browser session cannot forge or erase server-owned tenant records", async () => {
+  const db = superAdmin();
+  await assertFails(setDoc(doc(db, "companies", "alpha", "audit_log", "forged"), { action: "forged" }));
+  await assertFails(updateDoc(doc(db, "companies", "alpha", "audit_log", "audit-1"), { action: "rewritten" }));
+  await assertFails(deleteDoc(doc(db, "companies", "alpha", "audit_log", "audit-1")));
+  await assertFails(setDoc(doc(db, "companies", "alpha", "shifts", "sa-injected"), { driverId: "drv-1" }));
+  await assertFails(updateDoc(doc(db, "companies", "alpha", "settings", "main"), { status: "suspended" }));
+  await assertFails(updateDoc(doc(db, "companies", "alpha", "support_sessions", "sup-1"), { status: "ended" }));
+  await assertFails(updateDoc(doc(db, "companies", "alpha", "users", "disp-1"), { active: false }));
+});
+
+test("company root document is server-owned for every role", async () => {
+  const companyAdmin = auth("ca-1", "company_admin", "alpha");
+  await assertSucceeds(getDoc(doc(companyAdmin, "companies", "alpha")));
+  await assertFails(updateDoc(doc(companyAdmin, "companies", "alpha"), { status: "suspended" }));
+  await assertFails(setDoc(doc(companyAdmin, "companies", "alpha"), { name: "Renamed" }));
+  await assertFails(updateDoc(doc(superAdmin(), "companies", "alpha"), { status: "suspended" }));
+});
+
+test("import locks, plan locks and job state stay invisible and untouchable for tenant clients", async () => {
+  const collections = [
+    ["monthly_plan_imports", "imp-1"],
+    ["monthly_plan_import_locks", "31099_2026-08"],
+    ["plan_locks", "31099_2026-08"],
+    ["ops", "confirmation_dispatch"]
+  ];
+  for (const [role, uid] of [["company_admin", "ca-1"], ["dispatcher", "disp-1"], ["driver", "drv-1"]]) {
+    const db = auth(uid, role, "alpha");
+    for (const [collection, id] of collections) {
+      await assertFails(getDoc(doc(db, "companies", "alpha", collection, id)));
+      await assertFails(setDoc(doc(db, "companies", "alpha", collection, id), { tampered: true }));
+    }
+  }
+});
+
+test("support sessions are readable by the tenant owner only and never client-written", async () => {
+  const companyAdmin = auth("ca-1", "company_admin", "alpha");
+  const dispatcher = auth("disp-1", "dispatcher", "alpha");
+  const foreignAdmin = auth("ca-1", "company_admin", "beta");
+  await assertSucceeds(getDoc(doc(companyAdmin, "companies", "alpha", "support_sessions", "sup-1")));
+  await assertFails(getDoc(doc(dispatcher, "companies", "alpha", "support_sessions", "sup-1")));
+  await assertFails(getDoc(doc(foreignAdmin, "companies", "alpha", "support_sessions", "sup-1")));
+  await assertFails(updateDoc(doc(companyAdmin, "companies", "alpha", "support_sessions", "sup-1"), { status: "ended" }));
+});
+
+test("audit log stays admin-readable, tenant-scoped and immutable from the browser", async () => {
+  const companyAdmin = auth("ca-1", "company_admin", "alpha");
+  const dispatcher = auth("disp-1", "dispatcher", "alpha");
+  await assertSucceeds(getDoc(doc(companyAdmin, "companies", "alpha", "audit_log", "audit-1")));
+  await assertFails(getDoc(doc(dispatcher, "companies", "alpha", "audit_log", "audit-1")));
+  await assertFails(getDoc(doc(companyAdmin, "companies", "beta", "audit_log", "audit-1")));
+  await assertFails(updateDoc(doc(companyAdmin, "companies", "alpha", "audit_log", "audit-1"), { action: "rewritten" }));
+  await assertFails(deleteDoc(doc(companyAdmin, "companies", "alpha", "audit_log", "audit-1")));
 });

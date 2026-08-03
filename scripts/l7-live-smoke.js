@@ -6,9 +6,11 @@
 const fs = require("fs");
 const path = require("path");
 
-const BASE = "https://buscommand-preview.onrender.com";
-const API_KEY = "AIzaSyCr9Q8b36nRRX_JIEmYgbLGaS7LEG1LRIo";
-const COMPANY_ID = "bc-test";
+// Target i Firebase Web API identifikator dolaze iz okruženja: skripta radi
+// protiv živog okruženja, pa repozitorijum ne fiksira ni projekat ni tenant.
+const BASE = process.env.L7_SMOKE_BASE_URL || "http://localhost:3000";
+const API_KEY = process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_WEB_API_KEY || "";
+const COMPANY_ID = process.env.L7_SMOKE_COMPANY_ID || "bc-test";
 const ROOT = path.join(__dirname, "..");
 const KEY_PATH = path.join(ROOT, "firebase-admin-key.json");
 const PACK_PATH = path.join(process.env.USERPROFILE || "", "Desktop", "BusCommand-Test-Nalozi", "test-nalozi.json");
@@ -98,6 +100,9 @@ function ok(label, cond, detail) {
 
 async function main() {
   const results = [];
+  if (!API_KEY) {
+    throw new Error("Postavi VITE_FIREBASE_API_KEY (Firebase Web API identifikator) pre pokretanja smoke testa.");
+  }
   const accounts = loadAccounts();
   console.log("L7 live smoke —", BASE, "company=", COMPANY_ID);
 

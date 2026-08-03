@@ -13,7 +13,7 @@ test("published service plan APIs are company-admin owned and dispatcher scoped"
   assert.match(api, /\/api\/staff\/service-plans\/active[\s\S]*?requireCompanyStaff/);
   assert.match(api, /groups\.includes\(groupId\)/);
   assert.match(api, /assertCompanyGroupsExist[\s\S]*?req\.body\?\.groupId/);
-  assert.match(api, /parsed\.id !== req\.staffUser\.companyId/);
+  assert.match(read("../../server/staff-auth.js"), /parsed\.id !== req\.staffUser\.companyId/);
 });
 
 test("firestore keeps service plan writes server-only and separates roster ownership", () => {

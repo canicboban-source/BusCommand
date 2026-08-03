@@ -137,6 +137,25 @@ Funkcionalno je izvršeno 24/24 emulator testova:
 
 Poglavlje 2 mora eksplicitno proveriti kolekcije/tokove koji nisu pojedinačno imenovani u trenutnoj Rules matrici, posebno service plan, monthly import metadata, confirmation outbox, support session i shift confirmations.
 
+### Ažuriranje posle Poglavlja 2
+
+Rules matrica je 30/30. Novo pokriveno funkcionalno:
+
+- SuperAdmin nadzor je read-only, pisanje po tenant kolekcijama odbijeno;
+- korenski dokument firme server-owned za sve uloge;
+- `monthly_plan_imports`, `monthly_plan_import_locks`, `plan_locks` i `ops`
+  nedostupni tenant klijentima za čitanje i pisanje;
+- support sesije čitljive samo vlasniku tenanta, nikad klijentski upisive;
+- audit log admin-readable, tenant-scoped i nepromenljiv iz pretraživača.
+
+Serverska autorizacija je prešla iz „statički“ u „funkcionalno“ za zajednički
+staff gate: `tests/unit/staff-auth-http.test.js` izvršava stvarne 401/403/400/200/503
+odgovore, uključujući tuđi tenant, neaktivan profil, „role drift“, grupe iz
+profila i member-only licencni endpoint. Statičke provere u
+`company-admin-groups-access`, `company-admin-branding-access`,
+`company-admin-settings-access` i `dispatcher-report-access` ostaju statičke i
+predviđene su za konverziju u Poglavlju 3.
+
 ## Sledeći dokazivi koraci
 
 Redosled ostaje iz master prompta v3.1:

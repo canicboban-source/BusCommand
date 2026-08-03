@@ -4,7 +4,9 @@ function createRequireSuperAdmin({ hasFirebase, admin }) {
     if (!token) return res.status(401).json({ success: false, error: "Nema tokena." });
     if (!hasFirebase()) return res.status(503).json({ success: false, error: "Firebase nije konfigurisan." });
     try {
-      const decoded = await admin().auth().verifyIdToken(token);
+      // checkRevoked: deaktivacija ili „odjavi sve uređaje“ mora odmah zatvoriti
+      // i najprivilegovaniji API, a ne nakon isteka ID tokena.
+      const decoded = await admin().auth().verifyIdToken(token, true);
       if (decoded.role !== "superadmin") return res.status(403).json({ success: false, error: "Pristup odbijen." });
       req.adminUser = decoded;
       return next();

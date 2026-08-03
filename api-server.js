@@ -28,6 +28,7 @@ const {
   updateDispatcherGroups
 } = require("./server/provisioning");
 const { createRequireSuperAdmin, createSuperAdminOverviewHandler } = require("./server/superadmin-overview");
+const { createStaffAuth, parseCompanyParam } = require("./server/staff-auth");
 const {
   getCompanyDetail,
   listAllCompanyAdmins,
@@ -231,72 +232,17 @@ app.get("/staff", (_req, res) => {
 
 const requireSuperAdmin = createRequireSuperAdmin({ hasFirebase: () => HAS_FIREBASE, admin: () => admin });
 
-async function requireUserProvisioner(req, res, next) {
-  if (!HAS_FIREBASE) return res.status(503).json({ success: false, error: "Firebase nije konfigurisan." });
-  const token = req.headers.authorization?.replace("Bearer ", "");
-  if (!token) return res.status(401).json({ success: false, error: "Nema tokena." });
-  try {
-    const decoded = await admin.auth().verifyIdToken(token, true);
-    if (!["superadmin", "company_admin"].includes(decoded.role)) {
-      return res.status(403).json({ success: false, error: "Pristup odbijen." });
-    }
-    req.adminUser = decoded;
-    next();
-  } catch (err) {
-    req.log?.warn({ err }, "User provisioner token verification failed");
-    return res.status(401).json({ success: false, error: "Nevažeći token." });
-  }
-}
-
-async function requireCompanyStaff(req, res, next) {
-  if (!HAS_FIREBASE) return res.status(503).json({ success: false, error: "Firebase nije konfigurisan." });
-  const token = req.headers.authorization?.replace("Bearer ", "");
-  if (!token) return res.status(401).json({ success: false, error: "Nema tokena." });
-  try {
-    const decoded = await admin.auth().verifyIdToken(token, true);
-    if (!["company_admin", "dispatcher"].includes(decoded.role) || !decoded.companyId) {
-      return res.status(403).json({ success: false, error: "Pristup odbijen." });
-    }
-    req.staffUser = decoded;
-    next();
-  } catch (err) {
-    req.log?.warn({ err }, "Company staff token verification failed");
-    return res.status(401).json({ success: false, error: "Nevažeći token." });
-  }
-}
-
-function requireCompanyAdmin(req, res, next) {
-  return requireCompanyStaff(req, res, () => {
-    if (req.staffUser.role !== "company_admin") {
-      return res.status(403).json({ success: false, error: "Samo Company Admin može objaviti vozni plan." });
-    }
-    next();
-  });
-}
-
-function parseCompanyParam(companyId) {
-  if (!companyId || typeof companyId !== "string") {
-    return { ok: false, error: "Nedostaje companyId." };
-  }
-  const id = companyId.trim().toLowerCase();
-  if (!id || id.length > 64 || !/^[a-z0-9][a-z0-9-]*$/.test(id)) {
-    return { ok: false, error: "Nevalidan companyId." };
-  }
-  return { ok: true, id };
-}
-
-function requireOwnCompany(req, res) {
-  const parsed = parseCompanyParam(req.body?.companyId || req.query?.companyId);
-  if (!parsed.ok) {
-    res.status(400).json({ success: false, error: parsed.error });
-    return null;
-  }
-  if (parsed.id !== req.staffUser.companyId) {
-    res.status(403).json({ success: false, error: "Pristup drugoj firmi nije dozvoljen." });
-    return null;
-  }
-  return parsed.id;
-}
+const {
+  requireCompanyStaff,
+  requireCompanyAdmin,
+  requireCompanyMemberParam,
+  requireUserProvisioner,
+  requireOwnCompany
+} = createStaffAuth({
+  hasFirebase: () => HAS_FIREBASE,
+  admin: () => admin,
+  db: () => db
+});
 
 // ─── API: Konfiguracija servera ────────────────────────────
 
@@ -420,19 +366,8 @@ app.post(
 
 // ─── API: Licenca ──────────────────────────────────────────
 
-app.get("/api/license/:companyId", async (req, res) => {
-  const parsed = parseCompanyParam(req.params.companyId);
-  if (!parsed.ok) {
-    return res.status(400).json({ success: false, error: parsed.error });
-  }
-  const { id: companyId } = parsed;
-
-  if (!HAS_FIREBASE) {
-    return res.status(503).json({
-      success: false,
-      error: "Firebase nije konfigurisan."
-    });
-  }
+app.get("/api/license/:companyId", rateLimit(60, 60 * 1000), requireCompanyMemberParam, async (req, res) => {
+  const companyId = req.tenantId;
 
   try {
     const settingsSnap = await db
@@ -1702,7 +1637,8 @@ app.get(
       return res.status(400).json({ success: false, error: err.message });
     }
     if (req.staffUser.role === "dispatcher") {
-      const groups = Array.isArray(req.staffUser.groups) ? req.staffUser.groups.map(String) : [];
+      // Grupe dolaze iz tenant profila (staff-auth), ne iz token claims-a.
+      const groups = req.staffUser.groups;
       if (!groups.includes(groupId)) {
         return res.status(403).json({ success: false, error: "Plan nije u dodeljenim grupama disponenta." });
       }
