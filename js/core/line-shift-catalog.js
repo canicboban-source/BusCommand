@@ -1,9 +1,42 @@
 // BusCommand — per-line shift catalog (svaka formirana grupa ima svoj šifarnik)
 import { getActiveLineId } from "../data/groups.js";
 
+const OPERATIONAL_SHIFT_TYPES = new Set(["morning", "afternoon", "night", "bereitschaft"]);
+
 function getBereitschaftCode(lineId) {
     const line = String(lineId || getActiveLineId() || "").trim();
     return line ? `${line}.X2` : "";
+}
+
+function parseClockMinutes(value) {
+    const match = /^(\d{1,2}):(\d{2})$/.exec(String(value || "").trim());
+    if (!match) return null;
+    const hour = Number(match[1]);
+    const minute = Number(match[2]);
+    if (hour > 23 || minute > 59) return null;
+    return hour * 60 + minute;
+}
+
+/**
+ * Technical type for API / grid colors only (morning|afternoon|night|bereitschaft).
+ * Product assignment identity is duty code + workStart/workEnd from the plan —
+ * not Prepodne/Popodne labels. S/F letters mean škola/ferije (dayType), never Früh/Spät.
+ */
+function inferOperationalShiftType(input = {}) {
+    const code = String(input.code || "").trim();
+    const existing = String(input.type || "").trim().toLowerCase();
+    if (OPERATIONAL_SHIFT_TYPES.has(existing)) return existing;
+    if (/\.X2$/i.test(code) || /^x2$/i.test(code)) return "bereitschaft";
+
+    const startMin = parseClockMinutes(input.start || input.workStart);
+    const endMin = parseClockMinutes(input.end || input.workEnd);
+    const overnight = Number(input.endDayOffset) > 0
+        || (startMin != null && endMin != null && endMin < startMin);
+    if (overnight) return "night";
+    if (startMin == null) return "morning";
+    if (startMin < 12 * 60) return "morning";
+    if (startMin < 18 * 60) return "afternoon";
+    return "night";
 }
 
 function buildFallbackCatalogEntries(lineId) {
@@ -22,6 +55,8 @@ function buildFallbackCatalogEntries(lineId) {
         lines: line
     };
 
+    // Legacy empty placeholders only — NOT Blaguss S=škola / F=ferije semantics.
+    // Replaced entirely when a company service plan is published (replace: true).
     for (let i = 1; i <= 25; i++) {
         const f = `${line}.F${String(i).padStart(2, "0")}`;
         entries[f] = { code: f, type: "morning", label: "Frühdienst" };
@@ -144,8 +179,10 @@ function persistCatalogForLine(lineId, entries, meta = {}) {
 }
 
 export {
+    OPERATIONAL_SHIFT_TYPES,
     getBereitschaftCode,
     buildFallbackCatalogEntries,
+    inferOperationalShiftType,
     migrateLegacyShiftCatalog,
     getShiftCatalogForLine,
     activateShiftCatalogForLine,

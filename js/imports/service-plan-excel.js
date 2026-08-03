@@ -72,7 +72,7 @@ function parseServicePlanWorkbook(workbook) {
 }
 
 async function parseServicePlanXlsxFile(file) {
-    if (typeof XLSX === "undefined") throw new Error("XLSX parser nije učitan.");
+    if (typeof XLSX === "undefined") throw new Error("ca_plan_err_xlsx_missing");
     const arrayBuffer = await file.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: "array", cellDates: false });
     return parseServicePlanWorkbook(workbook);
@@ -85,7 +85,7 @@ async function readServicePlanFile(file) {
     if (ext === ".xlsx") return parseServicePlanXlsxFile(file);
     if (ext === ".csv") return parseServicePlanCsvFile(file);
     if (ext === ".pdf") return parseServicePlanPdfFile(file);
-    throw new Error("Nepodržan format fajla.");
+    throw new Error("ca_plan_err_file_type");
 }
 
 export {

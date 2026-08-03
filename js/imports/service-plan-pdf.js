@@ -9,6 +9,11 @@ const DAY_SECTION_RE = /(Montag\s*[-–]\s*Freitag|Samstag(?:\s*\(Werktag\))?|So
 const TIME_TOKEN_RE = /\b(\d{1,2})\.(\d{2})\b/g;
 // Kursnummer must be a standalone 3-digit token (not the MM of 6.22, not the tail of hi200).
 const COURSE_BLOCK_RE = /(?<![A-Za-z0-9.])(\d{3})\s+((?:\d{1,2}\.\d{2}(?:\s+|\s*$))+)/g;
+const COMPANY_DUTY_RE = /Dienst\s+(\d{2,4}\.[A-Za-z0-9]+)/gi;
+const COMPANY_ACTIVITY_RE = /(\d{1,3})\s+(Arbeit|Depot|Trans|Ruhe|P|\d{2,4})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})/gi;
+const COMPANY_VERSION_RE = /Version\s+(\d+)\s+ab\s+(\d{1,2})\.(\d{1,2})\.(\d{4})/i;
+/** Machine-readable fallback only — UI localizes via ca_plan_err_* keys. */
+const UNSUPPORTED_PDF_MESSAGE = "ca_plan_err_unsupported_pdf";
 
 function decodePdfField(value) {
     return clean(String(value ?? "").replace(/~/g, " "));
@@ -32,6 +37,15 @@ function normalizeClockToken(token) {
     return toHhMm(hour, minute);
 }
 
+function normalizeColonClock(token) {
+    const match = /^(\d{1,2}):(\d{2})$/.exec(clean(token));
+    if (!match) return null;
+    const hour = Number(match[1]);
+    const minute = Number(match[2]);
+    if (hour > 23 || minute > 59) return null;
+    return toHhMm(hour, minute);
+}
+
 function mapDayType(label) {
     const text = clean(label).toLowerCase();
     if (text.includes("samstag") || text === "sa") return "SATURDAY";
@@ -40,12 +54,39 @@ function mapDayType(label) {
     return null;
 }
 
+function mapCompanyDutyDayType(dutyCode) {
+    const suffix = String(dutyCode || "").split(".")[1] || "";
+    if (/^S/i.test(suffix)) return "SCHOOL_WEEKDAY";
+    if (/^F/i.test(suffix)) return "HOLIDAY_WEEKDAY";
+    if (/^6/.test(suffix)) return "SATURDAY";
+    if (/^7/.test(suffix)) return "SUNDAY_HOLIDAY";
+    return null;
+}
+
+function mapCompanyActivityType(token) {
+    const text = clean(token);
+    if (/^arbeit$/i.test(text)) return "ARBEIT";
+    if (/^depot$/i.test(text)) return "DEPOT";
+    if (/^trans$/i.test(text)) return "TRANS";
+    if (/^ruhe$/i.test(text)) return "RUHE";
+    if (/^p$/i.test(text)) return "PAUSE";
+    if (/^\d{2,4}$/.test(text)) return "FAHRT";
+    return "SONSTIGES";
+}
+
 function looksLikePublicFahrplan(text) {
     const raw = String(text || "");
     if (!raw.trim()) return false;
     if (/Kursnummer/i.test(raw) && /Gültig ab/i.test(raw)) return true;
     if (/Betreiber:/i.test(raw) && /Gültig ab/i.test(raw) && TIME_TOKEN_RE.test(raw)) return true;
     return false;
+}
+
+function looksLikeCompanyDienstplan(text) {
+    const raw = String(text || "");
+    if (!raw.trim()) return false;
+    if (!COMPANY_VERSION_RE.test(raw)) return false;
+    return findCompanyDutyStarts(raw).length >= 1;
 }
 
 function extractLineCode(text) {
@@ -108,6 +149,178 @@ function splitDaySections(text) {
     return sections.length ? sections : [{ dayType: "SCHOOL_WEEKDAY", body: source }];
 }
 
+function findCompanyDutyStarts(text) {
+    const source = String(text || "");
+    const starts = [];
+    COMPANY_DUTY_RE.lastIndex = 0;
+    let match;
+    while ((match = COMPANY_DUTY_RE.exec(source))) {
+        const code = String(match[1] || "").toUpperCase();
+        const before = source.slice(Math.max(0, match.index - 12), match.index);
+        if (/(?:an|von)\s+$/i.test(before)) continue;
+        const after = source.slice(match.index + match[0].length, match.index + match[0].length + 180);
+        if (/^\s*\(ab\s+\d{1,2}:\d{2}\)/i.test(after)) continue;
+        const activity = /^(?:\s*\+\s*Bus[\s\S]{0,120}?)?(?:\s*Dienstunterbrechung)?\s+(\d{1,3})\s+(Arbeit|Depot|Trans|Ruhe|P|\d{2,4})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})/i.exec(after);
+        if (!activity) continue;
+        starts.push({
+            index: match.index,
+            endHeader: match.index + match[0].length,
+            code
+        });
+    }
+
+    const seen = new Set();
+    const unique = [];
+    for (const start of starts) {
+        if (seen.has(start.code)) continue;
+        seen.add(start.code);
+        unique.push(start);
+    }
+    return unique;
+}
+
+function parseCompanyDutyActivities(blockText, dutyCode) {
+    const source = String(blockText || "");
+    const acts = [];
+    const seqSeen = new Set();
+    COMPANY_ACTIVITY_RE.lastIndex = 0;
+    let match;
+    while ((match = COMPANY_ACTIVITY_RE.exec(source))) {
+        const sequence = String(Number(match[1]));
+        if (seqSeen.has(sequence)) continue;
+        const start = normalizeColonClock(match[3]);
+        const end = normalizeColonClock(match[4]);
+        if (!start || !end) continue;
+        seqSeen.add(sequence);
+        const typeToken = match[2];
+        const type = mapCompanyActivityType(typeToken);
+        const tail = source.slice(match.index + match[0].length, match.index + match[0].length + 220);
+        const courseMatch = /Kurs:\s*(\S+)/i.exec(tail);
+        acts.push({
+            duty_code: dutyCode,
+            sequence,
+            activity_type: type,
+            start,
+            end,
+            line: type === "FAHRT" ? clean(typeToken) : "",
+            course: type === "FAHRT" && courseMatch ? clean(courseMatch[1]) : "",
+            from: "",
+            to: ""
+        });
+    }
+    return acts.sort((a, b) => Number(a.sequence) - Number(b.sequence));
+}
+
+function parseCompanyDienstplanText(text) {
+    const raw = String(text || "").replace(/\u00a0/g, " ");
+    if (!looksLikeCompanyDienstplan(raw)) {
+        return {
+            valid: false,
+            errors: [{
+                path: "PDF",
+                code: "unsupported_pdf",
+                message: UNSUPPORTED_PDF_MESSAGE
+            }],
+            plan: null,
+            summary: null
+        };
+    }
+
+    const versionMatch = COMPANY_VERSION_RE.exec(raw);
+    if (!versionMatch) {
+        return {
+            valid: false,
+            errors: [{
+                path: "PDF",
+                code: "dienstplan_metadata",
+                message: "ca_plan_err_dienstplan_metadata"
+            }],
+            plan: null,
+            summary: null
+        };
+    }
+
+    const planVersion = versionMatch[1];
+    const validFrom = `${versionMatch[4]}-${String(versionMatch[3]).padStart(2, "0")}-${String(versionMatch[2]).padStart(2, "0")}`;
+    const dutyStarts = findCompanyDutyStarts(raw);
+    if (!dutyStarts.length) {
+        return {
+            valid: false,
+            errors: [{
+                path: "PDF",
+                code: "dienstplan_no_duties",
+                message: "ca_plan_err_dienstplan_no_duties"
+            }],
+            plan: null,
+            summary: null
+        };
+    }
+
+    const planCode = dutyStarts[0].code.split(".")[0] || "";
+    const dutyRows = [];
+    const activityRows = [];
+
+    for (let i = 0; i < dutyStarts.length; i += 1) {
+        const current = dutyStarts[i];
+        const dayType = mapCompanyDutyDayType(current.code);
+        if (!dayType) {
+            return {
+                valid: false,
+                errors: [{
+                    path: "PDF",
+                    code: "dienstplan_day_type",
+                    message: "ca_plan_err_dienstplan_day_type",
+                    params: { duty: current.code }
+                }],
+                plan: null,
+                summary: null
+            };
+        }
+
+        const blockEnd = i + 1 < dutyStarts.length ? dutyStarts[i + 1].index : raw.length;
+        const block = raw.slice(current.endHeader, blockEnd);
+        const acts = parseCompanyDutyActivities(block, current.code);
+        if (!acts.length) {
+            return {
+                valid: false,
+                errors: [{
+                    path: "PDF",
+                    code: "dienstplan_no_activities",
+                    message: "ca_plan_err_dienstplan_no_activities",
+                    params: { duty: current.code }
+                }],
+                plan: null,
+                summary: null
+            };
+        }
+
+        const trips = acts.filter(activity => activity.activity_type === "FAHRT");
+        dutyRows.push({
+            duty_code: current.code,
+            day_type: dayType,
+            work_start: acts[0].start,
+            first_trip_start: trips[0]?.start || acts[0].start,
+            last_trip_end: trips[trips.length - 1]?.end || acts[acts.length - 1].end,
+            work_end: acts[acts.length - 1].end,
+            start_location: "",
+            end_location: ""
+        });
+        activityRows.push(...acts);
+    }
+
+    return validateBuiltPlan({
+        metadata: {
+            templateVersion: TEMPLATE_VERSION,
+            planCode,
+            planVersion,
+            validFrom,
+            timezone: "Europe/Vienna"
+        },
+        dutyRows,
+        activityRows
+    });
+}
+
 function parseAustrianFahrplanText(text) {
     const raw = String(text || "").replace(/\u00a0/g, " ");
     if (!looksLikePublicFahrplan(raw)) {
@@ -116,7 +329,7 @@ function parseAustrianFahrplanText(text) {
             errors: [{
                 path: "PDF",
                 code: "unsupported_pdf",
-                message: "Dozvoljen je samo strukturirani BusCommand PDF šablon (BUSCOMMAND-DIENSTPLAN-1) ili javni austrijski Fahrplan PDF (linija + Gültig ab + Kursnummer)."
+                message: UNSUPPORTED_PDF_MESSAGE
             }],
             plan: null,
             summary: null
@@ -131,7 +344,7 @@ function parseAustrianFahrplanText(text) {
             errors: [{
                 path: "PDF",
                 code: "fahrplan_metadata",
-                message: "Fahrplan PDF mora imati broj linije na početku i datum „Gültig ab DD.MM.YYYY“."
+                message: "ca_plan_err_fahrplan_metadata"
             }],
             plan: null,
             summary: null
@@ -179,7 +392,7 @@ function parseAustrianFahrplanText(text) {
             errors: [{
                 path: "PDF",
                 code: "fahrplan_no_courses",
-                message: "U Fahrplan PDF-u nisu pronađeni kursevi sa vremenima (npr. 101 5.11 …)."
+                message: "ca_plan_err_fahrplan_no_courses"
             }],
             plan: null,
             summary: null
@@ -202,15 +415,21 @@ function parseAustrianFahrplanText(text) {
 function parseStructuredPdfText(text) {
     const raw = String(text || "").replace(/\s+/g, " ").trim();
     if (!raw.includes(START_MARKER) || !raw.includes(END_MARKER)) {
+        if (looksLikeCompanyDienstplan(text)) {
+            return parseCompanyDienstplanText(text);
+        }
         if (looksLikePublicFahrplan(text)) {
             return parseAustrianFahrplanText(text);
         }
+        const empty = !clean(String(text || "")).replace(/--\s*\d+\s+of\s+\d+\s*--/gi, "").trim();
         return {
             valid: false,
             errors: [{
                 path: "PDF",
-                code: "unsupported_pdf",
-                message: "Ovaj PDF nije BusCommand Dienstplan šablon. Preuzmite XLSX/CSV/PDF šablon sa stranice, ili ubacite javni austrijski Fahrplan (linija + Gültig ab + Kursnummer)."
+                code: empty ? "pdf_no_text" : "unsupported_pdf",
+                message: empty
+                    ? "ca_plan_err_pdf_no_text"
+                    : UNSUPPORTED_PDF_MESSAGE
             }],
             plan: null,
             summary: null
@@ -232,7 +451,7 @@ function parseStructuredPdfText(text) {
             const payload = token.slice(5);
             const eq = payload.indexOf("=");
             if (eq <= 0) {
-                errors.push({ path: "PDF.META", code: "missing_value", message: "META red nije ispravan." });
+                errors.push({ path: "PDF.META", code: "meta_invalid", message: "ca_plan_err_meta_invalid" });
                 continue;
             }
             metadata[clean(payload.slice(0, eq)).toLowerCase()] = clean(decodePdfField(payload.slice(eq + 1)));
@@ -241,7 +460,7 @@ function parseStructuredPdfText(text) {
         if (token.startsWith("DUTY:")) {
             const parts = token.slice(5).split("|");
             if (parts.length < 8) {
-                errors.push({ path: "PDF.DUTY", code: "missing_column", message: "DUTY red nema sve kolone." });
+                errors.push({ path: "PDF.DUTY", code: "duty_columns", message: "ca_plan_err_duty_columns" });
                 continue;
             }
             dutyRows.push({
@@ -259,7 +478,7 @@ function parseStructuredPdfText(text) {
         if (token.startsWith("ACT:")) {
             const parts = token.slice(4).split("|");
             if (parts.length < 9) {
-                errors.push({ path: "PDF.ACT", code: "missing_column", message: "ACT red nema sve kolone." });
+                errors.push({ path: "PDF.ACT", code: "act_columns", message: "ca_plan_err_act_columns" });
                 continue;
             }
             activityRows.push({
@@ -275,12 +494,22 @@ function parseStructuredPdfText(text) {
             });
             continue;
         }
-        errors.push({ path: "PDF", code: "unknown_token", message: `Nepoznat PDF token: ${token.slice(0, 40)}` });
+        errors.push({
+            path: "PDF",
+            code: "unknown_token",
+            message: "ca_plan_err_unknown_token",
+            params: { token: token.slice(0, 40) }
+        });
     }
 
     for (const key of ["template_version", "plan_code", "plan_version", "valid_from", "timezone"]) {
         if (!clean(metadata[key])) {
-            errors.push({ path: `PLAN.${key}`, code: "missing_value", message: `Nedostaje vrednost ${key}.` });
+            errors.push({
+                path: `PLAN.${key}`,
+                code: "missing_value",
+                message: "ca_plan_err_missing_value",
+                params: { field: key }
+            });
         }
     }
     if (errors.length) return { valid: false, errors, plan: null, summary: null };
@@ -322,13 +551,25 @@ function buildStructuredPdfPayload(planInput) {
 }
 
 async function extractPdfText(arrayBuffer) {
-    if (typeof pdfjsLib === "undefined") throw new Error("PDF.js parser nije učitan.");
+    if (typeof pdfjsLib === "undefined") throw new Error("ca_plan_err_pdfjs_missing");
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let text = "";
     for (let i = 1; i <= pdf.numPages; i += 1) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
-        text += content.items.map(item => item.str).join(" ") + "\n";
+        let lastY = null;
+        const parts = [];
+        for (const item of content.items) {
+            const y = item.transform ? item.transform[5] : null;
+            if (lastY != null && y != null && Math.abs(lastY - y) > 2) {
+                parts.push("\n");
+            } else if (parts.length && !/\s$/.test(parts[parts.length - 1]) && !/^\s/.test(item.str || "")) {
+                parts.push(" ");
+            }
+            parts.push(item.str || "");
+            if (y != null) lastY = y;
+        }
+        text += `${parts.join("")}\n`;
     }
     return text;
 }
@@ -344,8 +585,10 @@ export {
     MARKER,
     START_MARKER,
     buildStructuredPdfPayload,
+    looksLikeCompanyDienstplan,
     looksLikePublicFahrplan,
     parseAustrianFahrplanText,
+    parseCompanyDienstplanText,
     parseServicePlanPdfFile,
     parseStructuredPdfText
 };

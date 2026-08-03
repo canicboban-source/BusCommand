@@ -125,9 +125,9 @@ test("file gate accepts BusCommand xlsx, csv and pdf up to 5 MB", () => {
   assert.equal(validateServicePlanFile({ name: "plan.csv", size: 1024 }), null);
   assert.equal(validateServicePlanFile({ name: "plan.pdf", size: 1024 }), null);
   assert.equal(validateServicePlanFile({ name: "plan.pdf", size: 3.4 * 1024 * 1024 }), null);
-  assert.match(validateServicePlanFile({ name: "plan.xls", size: 1024 }), /xlsx.*csv.*pdf|Dozvoljeni/i);
-  assert.match(validateServicePlanFile({ name: "plan.txt", size: 1024 }), /Dozvoljeni/i);
-  assert.match(validateServicePlanFile({ name: "plan.xlsx", size: 6 * 1024 * 1024 }), /najviše 5 MB/i);
+  assert.equal(validateServicePlanFile({ name: "plan.xls", size: 1024 }), "ca_plan_err_file_type");
+  assert.equal(validateServicePlanFile({ name: "plan.txt", size: 1024 }), "ca_plan_err_file_type");
+  assert.equal(validateServicePlanFile({ name: "plan.xlsx", size: 6 * 1024 * 1024 }), "ca_plan_err_file_too_large");
 });
 
 test("CSV twin template parses into the same validated contract", () => {
@@ -149,6 +149,30 @@ test("structured PDF payload parses and rejects non-BusCommand text", () => {
   const rejected = parseStructuredPdfText("Some random company Dienstplan PDF without markers");
   assert.equal(rejected.valid, false);
   assert.ok(rejected.errors.some(error => error.code === "unsupported_pdf"));
+});
+
+test("company Dienstplan PDF text parses duties with day types and version", async () => {
+  const { parseCompanyDienstplanText, parseStructuredPdfText } = await import("../../js/imports/service-plan-pdf.js");
+  const sample = fs.readFileSync(path.join(root, "tests/fixtures/company-dienstplan-310-sample.txt"), "utf8");
+  const result = parseCompanyDienstplanText(sample);
+  assert.equal(result.valid, true, JSON.stringify(result.errors));
+  assert.equal(result.plan.planCode, "310");
+  assert.equal(result.plan.planVersion, "66");
+  assert.equal(result.plan.validFrom, "2026-02-09");
+  assert.equal(result.summary.dutyCount, 5);
+  assert.ok(result.plan.duties.some(duty => duty.code === "310.S01" && duty.dayType === "SCHOOL_WEEKDAY"));
+  assert.ok(result.plan.duties.some(duty => duty.code === "310.F01" && duty.dayType === "HOLIDAY_WEEKDAY"));
+  assert.ok(result.plan.duties.some(duty => duty.code === "310.601" && duty.dayType === "SATURDAY"));
+  assert.ok(result.plan.duties.some(duty => duty.code === "310.701" && duty.dayType === "SUNDAY_HOLIDAY"));
+  assert.ok(result.plan.duties.some(duty => duty.code === "310.S91" && duty.dayType === "SCHOOL_WEEKDAY"));
+
+  const viaRouter = parseStructuredPdfText(sample);
+  assert.equal(viaRouter.valid, true, JSON.stringify(viaRouter.errors));
+  assert.equal(viaRouter.summary.dutyCount, 5);
+
+  const scanned = parseStructuredPdfText("-- 1 of 32 --\n\n-- 2 of 32 --\n");
+  assert.equal(scanned.valid, false);
+  assert.ok(scanned.errors.some(error => error.code === "pdf_no_text"));
 });
 
 test("Austrian public Fahrplan text converts courses into duties", async () => {
