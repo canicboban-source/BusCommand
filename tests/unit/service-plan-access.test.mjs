@@ -33,6 +33,9 @@ test("company admin UI accepts versioned XLSX CSV and structured PDF without bun
   assert.match(html, /id="ca-service-plan-file"[^>]*accept="[^"]*\.xlsx[^"]*\.csv[^"]*\.pdf/);
   assert.match(html, /id="ca-service-plan-group"[\s\S]*?handleCompanyServicePlanGroupChange/);
   assert.doesNotMatch(html, /\/templates\/BusCommand_Dienstplan_Import_v1\.(xlsx|csv|pdf)/);
+  assert.match(html, /\/templates\/BusCommand_Dienstplan_Blank_v1\.xlsx/);
+  assert.match(html, /\/templates\/BusCommand_Dienstplan_Blank_v1\.csv/);
+  assert.match(html, /\/templates\/BusCommand_Drivers_Import_v1\.csv/);
   assert.match(module, /ApiClient\.previewServicePlan/);
   assert.match(module, /ApiClient\.publishServicePlan/);
   assert.match(module, /pendingImport\.groupId !== selectedGroupId\(\)/);
