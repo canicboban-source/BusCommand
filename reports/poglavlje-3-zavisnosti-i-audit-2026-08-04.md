@@ -3,6 +3,7 @@
 - Datum: 2026-08-04
 - Grana: `work/ca-group-monthly-import` (radni direktorijum `BusCommand-ca-monthly-import`)
 - Polazna tačka: checkpoint iz Poglavlja 2 (`reports/poglavlje-2-secrets-rbac-rules-2026-08-04.md`, `f961576` / `3c9ccc6`)
+- Checkpoint commit: `8becb8e`
 - Okruženje: Node 22.23.2, Temurin JRE 21.0.12 (Firestore emulator), Playwright Chromium
 - Master prompt: `docs/BusCommand-MASTER-PROMPT.md` v3.1
 

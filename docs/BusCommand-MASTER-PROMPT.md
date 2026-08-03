@@ -1,6 +1,21 @@
-# BusCommand — master prompt za nastavak razvoja, proveru i završetak aplikacije (v3.1)
+# BusCommand — master prompt za nastavak razvoja, proveru i završetak aplikacije (v3.2)
 
 **Usvojena vizuelna dopuna:** 1. avgust 2026. — semantika hitnih akcija, sticky potvrda uvoza i jedinstveni SOS tok.
+
+**Dopune v3.2, odluka vlasnika 4. avgusta 2026.** Numeracija poglavlja 1–31 je
+namerno nepromenjena da bi se raniji izveštaji koji je citiraju i dalje odnosili
+na isti tekst. Izmene su:
+
+1. Potvrđena granica proizvoda (§1.4): disponentski panel je proizvod; gorivo,
+   servis, delovi, knjigovodstvo, fakture, obračun sati i putni nalozi su van
+   obima i ne planiraju se u ovom ciklusu.
+2. Autonomija unutar odobrene staze (§A.8): poglavlja teku bez traženja potvrde
+   za svako; izričito odobrenje ostaje obavezno za deploy i release.
+3. Merljiva definicija završenosti (§31 i novi §35) umesto opisne ocene.
+4. Registar interaktivnih elemenata kao obavezan artefakt (novi §32).
+5. Dizajn sistem kao poglavlje koje prethodi redizajnu stranica (novi §33).
+6. Dnevnik odluka za poslovna pravila (novi §34).
+7. Staging okruženje kao uslov za tvrdnje o produkcionom ponašanju (novi §36).
 
 Ovaj prompt je samostalan i predstavlja glavni operativni dokument za razvoj BusCommand aplikacije. Može se dati drugom AI razvojnom agentu ili članu tima zajedno sa:
 
@@ -54,7 +69,7 @@ Zabranjeno je pokušavati rešavanje celog projekta ili više nepovezanih poglav
 5. Ako bilo koja obavezna provera padne, ne prelazi na sledeće poglavlje. Utvrdi uzrok, popravi bezbedno i ponovi pogođene i kompletne testove.
 6. Kao dokaz navedi tačne komande, exit code i neizmišljeni rezultat. Dugačke sirove logove sačuvaj kao artefakt; u izveštaju prikaži relevantan deo i putanju/link. Obavezno ukloni tokene, lozinke, privatne ključeve, lične podatke i druge tajne.
 7. Posle poglavlja napravi kratak rezime: šta je pronađeno, šta je izmenjeno, šta je testirano, šta ostaje i ocenu napretka 1–10.
-8. Posle završenog poglavlja sačekaj izričitu dozvolu vlasnika proizvoda pre prelaska na sledeće poglavlje.
+8. Unutar odobrene staze rada nastavi na sledeće poglavlje bez traženja nove potvrde, pod uslovom da je prethodno poglavlje zatvoreno checkpoint commitom, izveštajem i čistim gate-om. Izričito odobrenje vlasnika i dalje je obavezno za: promenu obima ili redosleda staze, izmenu poslovnog pravila koje nije zapisano u dnevniku odluka (§34), svaki deploy pravila ili koda, i svaki dodir produkcionih podataka. Ako poglavlje otvori pitanje koje blokira bezbedan nastavak, zapiši ga u dnevnik odluka, nastavi na sledeće nezavisno poglavlje i ne pogađaj odgovor.
 
 ---
 
@@ -130,6 +145,17 @@ Van trenutnog obima su:
 - gorivo i potrošnja;
 - automatsko pravno odobravanje rasporeda;
 - zamena za Almex ili drugi uređaj za navigaciju po stanicama.
+
+**Potvrda vlasnika, 4. avgust 2026.** Granica je izričito potvrđena i pooštrena:
+disponentski panel je glavni proizvod i merilo prioriteta. Ne planirati, ne
+skicirati i ne pripremati model podataka za module vozila sa VIN/registracijom,
+gorivo i rezervoare, servisne intervale i radne naloge, delove, dobavljače,
+fakture, troškove, dnevnice, obračun sati ni putne naloge. Ako neki od tih
+zahteva stigne kroz opšta pravila zadatka, tretirati ga kao van obima, zapisati
+u dnevnik odluka (§34) i nastaviti.
+
+Autobus ostaje u obimu isključivo kao entitet za dodelu smeni i za operativni
+status; to nije modul za upravljanje voznim parkom.
 
 Podaci o početku i kraju smene koriste se za operativnu prijavu/odjavu, dostupnost, potvrde i privatnost lokacije. BusCommand nije autoritativni payroll ili zakonski sistem evidencije radnog vremena dok poseban pravni profil, dokumentacija i odobrenje to izričito ne omoguće.
 
@@ -595,28 +621,35 @@ Testovi moraju tvrditi ono što zaista proveravaju. Statičko traženje stringa 
 
 ## 27. Redosled implementacije
 
-Podrazumevani redosled, jedno poglavlje po ciklusu:
+Potvrđena staza, jedno poglavlje po ciklusu. Status se ažurira posle svakog
+zatvorenog poglavlja i uvek pokazuje na izveštaj sa dokazima.
 
-1. utvrđivanje stanja i stabilnog checkpoint-a;
-2. tajne, RBAC, Firestore Rules i tenant izolacija;
-3. identitet i četiri login lifecycle-a;
-4. kanonski model plana i revizije;
-5. Company Admin katalog smena/import;
-6. mesečni plan;
-7. dnevni plan i problem-resolution;
-8. confirmations scheduler/outbox;
-9. poruke;
-10. driver session, GPS i mapa;
-11. mobilni PWA/offline;
-12. pronađeni predmeti;
-13. Super Admin i Company Admin kompletiranje;
-14. i18n, accessibility i vizuelno usklađivanje;
-15. potpuno integraciono testiranje i testni cleanup;
-16. jurisdiction release gate za pilot tržište;
-17. staging deployment i ručni acceptance test;
-18. tek zatim kontrolisano spajanje i release.
+| # | Poglavlje | Status | Dokaz |
+| --- | --- | --- | --- |
+| 1 | Utvrđivanje stanja i stabilnog checkpoint-a | završeno | `reports/poglavlje-1-state-checkpoint-2026-08-04.md` |
+| 2 | Tajne, RBAC, Firestore Rules i tenant izolacija | završeno | `reports/poglavlje-2-secrets-rbac-rules-2026-08-04.md` |
+| 3 | Zavisnosti, `npm audit` i runtime dokaz Admin SDK-a | završeno | `reports/poglavlje-3-zavisnosti-i-audit-2026-08-04.md` |
+| 4 | Identitet i četiri login lifecycle-a, sesije i istek | — | — |
+| 5 | Dizajn sistem i tokeni (prethodi svakom redizajnu, §33) | — | — |
+| 6 | Kanonski model plana i revizije | — | — |
+| 7 | Company Admin katalog smena, import/preview/activate/rollback | — | — |
+| 8 | Mesečni plan | — | — |
+| 9 | Dnevni plan, problem-resolution i dispečerski cockpit | — | — |
+| 10 | Confirmations scheduler i outbox | — | — |
+| 11 | Poruke | — | — |
+| 12 | Driver session, GPS i mapa | — | — |
+| 13 | Mobilni PWA i kontrolisani offline rad | — | — |
+| 14 | Pronađeni predmeti | — | — |
+| 15 | Kompletiranje Super Admin i Company Admin površina | — | — |
+| 16 | i18n, pristupačnost i vizuelno usklađivanje | — | — |
+| 17 | Performanse i budžeti | — | — |
+| 18 | Potpuno integraciono testiranje i uklanjanje testnih podataka | — | — |
+| 19 | Jurisdiction release gate za pilot tržište | — | — |
+| 20 | Staging deployment i ručni acceptance test | — | — |
+| 21 | Kontrolisano spajanje i release | — | — |
 
-Redosled se menja samo ako dokazani blocker ili kritična ranjivost zahteva prioritet.
+Redosled se menja samo ako dokazani blocker ili kritična ranjivost zahteva
+prioritet, ili odlukom vlasnika zapisanom u dnevniku odluka (§34).
 
 ## 28. Pravila izmene i Git disciplina
 
@@ -665,11 +698,18 @@ Pre release-a moraju postojati:
 - deployment i rollback runbook;
 - QA izveštaj sa dokazima;
 - test-data cleanup izveštaj;
-- release notes i poznata ograničenja.
+- release notes i poznata ograničenja;
+- registar interaktivnih elemenata sa stanjem svakog elementa (§32);
+- specifikacija dizajn sistema i lista odstupanja (§33);
+- dnevnik odluka sa svim otvorenim i zatvorenim poslovnim pitanjima (§34);
+- tabela merljivih ciljeva kvaliteta sa poslednjim izmerenim vrednostima (§35).
 
 ## 31. Release gate i definicija završenog
 
-Poglavlje je završeno samo kada:
+Poglavlje je završeno samo kada su ispunjeni i opisni i merljivi uslovi. Merljivi
+prag je u §35 i navodi se sa izmerenom vrednošću, ne sa tvrdnjom.
+
+Opisni uslovi:
 
 - funkcija radi kroz ceo tok, ne samo vizuelno;
 - autorizacija je serverska i testirana;
@@ -693,6 +733,111 @@ Release kandidat je spreman za staging samo kada:
 - vlasnik proizvoda odobri deployment.
 
 Produkcioni release je dozvoljen tek posle staging browser acceptance testa, uklanjanja sintetičkih podataka i izričitog odobrenja.
+
+## 32. Registar interaktivnih elemenata
+
+Tvrdnja „svako dugme radi“ nije proverljiva bez spiska svih dugmadi. Zato je
+registar obavezan artefakt i jedini izvor istine za obim UI provere.
+
+Registar se vodi u `reports/qa-interaction-ledger-*.md` i sadrži, po ulozi i
+površini, svaki interaktivan element: dugme, link, polje, dropdown, tab, filter,
+sortiranje, paginaciju, modal, potvrdu, upload, kontekstualni meni i masovnu
+akciju.
+
+Svaki element mora završiti u tačno jednom od tri stanja:
+
+1. **Funkcionalno** — postoji handler, serverski ugovor kada je potreban, i
+   automatski test koji izvršava stvarnu akciju. Statička provera izvornog koda
+   ne kvalifikuje element kao funkcionalan.
+2. **Svesno statično** — element je informativan ili dekorativan, i to je
+   zapisano sa razlogom.
+3. **Uklonjeno** — element koji ne radi i nema opravdanje se briše, ne ostavlja.
+
+Zabranjeno je stanje „postoji, izgleda aktivno, ne radi“. Svako poglavlje
+ažurira registar za svoju površinu i navodi razliku u odnosu na prethodno
+stanje: koliko elemenata je prešlo iz statičnog u funkcionalno, koliko je
+uklonjeno i koliko ostaje nepokriveno.
+
+## 33. Dizajn sistem pre redizajna
+
+Redizajn pojedinačnih stranica pre nego što postoji dizajn sistem znači da se
+ista stranica prefarbava više puta i da nekonzistentnost raste. Zato poglavlje
+dizajn sistema prethodi svakom vizuelnom poglavlju.
+
+Dizajn sistem definiše i kodifikuje kao tokene i komponente:
+
+- paletu, uključujući semantiku statusa: crveno za problem i destruktivno, amber
+  `urgent-action` za hitnu operativnu akciju, zeleno za potvrđeno rešeno,
+  neutralno za informaciju;
+- tipografsku skalu, težine i visine linija;
+- skalu razmaka, radijusa, senki i granica;
+- gustinu prikaza za operativni centar i za mobilni PWA odvojeno;
+- komponente: dugme u svim variantama i stanjima, polje, select, tabela, kartica,
+  modal, toast, badge, tab, prazno stanje, skeleton, stanje greške;
+- stanja svake komponente: normalno, hover, focus, active, selected, disabled,
+  read-only, loading, error;
+- prelome za podržane rezolucije.
+
+Posle usvajanja, stranice se usklađuju sa sistemom, a svako odstupanje mora biti
+zapisano sa razlogom. Novi ad-hoc stilovi u pojedinačnim stranicama nisu
+dozvoljeni kada u sistemu postoji odgovarajuća komponenta.
+
+## 34. Dnevnik odluka
+
+Nepotvrđena pretpostavka koja se jednom ugradi u kod kasnije izgleda kao
+činjenica. Dnevnik odluka to sprečava.
+
+Vodi se u `docs/decisions.md` i za svaku stavku sadrži: redni broj, datum,
+pitanje, zašto blokira ili utiče na implementaciju, ponuđene opcije sa
+posledicama, odluku vlasnika, datum odluke i mesto u kodu na koje se odnosi.
+
+Pravila:
+
+- poslovno pravilo koje nije u ovom dnevniku ne sme se izmišljati u kodu;
+- dok odluka ne stigne, implementiraj najkonzervativniju varijantu koja ne
+  proizvodi netačan podatak, i jasno je označi kao privremenu;
+- odluka se menja samo novim unosom, stari unos se ne prepisuje;
+- svaki izveštaj poglavlja navodi koje je unose otvorio i zatvorio.
+
+## 35. Merljivi ciljevi kvaliteta
+
+Cilj je preciznost preko 90 odsto, izražena brojevima koji se mere na kraju
+svakog poglavlja i navode u izveštaju sa stvarnom vrednošću.
+
+| Cilj | Prag | Kako se meri |
+| --- | --- | --- |
+| Mrtva dugmad | 0 | Registar (§32): nijedan element u stanju „ne radi“ |
+| Pokrivenost interaktivnih elemenata | ≥ 90% funkcionalno | Registar, po ulozi i površini |
+| Kritični tokovi po ulozi | 100% pokriveno E2E ili HTTP testom | Test matrica §26 |
+| Otvoreni Critical i High nalazi | 0 na checkpointu | Izveštaj poglavlja |
+| Serverska autorizacija | 100% zaštićenih ruta ima negativan test | HTTP testovi |
+| Firestore Rules | svako pravilo ima i pozitivan i negativan test | Emulator testovi |
+| Mutaciona provera bezbednosti | svaka nova zaštita pada kad se vrati staro stanje | Zapisana mutacija u izveštaju |
+| i18n | 0 nedostajućih ključeva na SR/DE/EN | i18n test |
+| Pristupačnost | 0 ozbiljnih axe prekršaja, kompletan tok tastaturom | Automatska provera i ručni prolaz |
+| Produkcione zavisnosti | 0 poznatih ranjivosti | `npm audit --omit=dev` |
+| Gate | dva čista kompletna prolaza nad istim stablom | Tabela komandi u izveštaju |
+
+Ako neki prag nije dostignut, to se navodi kao broj i kao rizik, a ne
+preformuliše u opisnu ocenu.
+
+## 36. Staging okruženje i granica tvrdnji
+
+Emulator dokazuje logiku, ne produkciju. Zato važi stroga granica u jeziku
+izveštaja:
+
+- što je dokazano nad emulatorom, opisuje se kao dokazano nad emulatorom;
+- ponašanje pravila, revokacije tokena, providera i performansi u produkciji ne
+  tvrdi se dok nije izmereno na staging okruženju;
+- staging koristi zaseban Firebase projekat, sopstvene kredencijale i sintetičke
+  podatke, nikada produkcione lične podatke;
+- deploy pravila na staging je odvojena, izričito odobrena radnja;
+- pre produkcije obavezan je ručni acceptance prolaz kroz sve četiri uloge.
+
+Za uključivanje staginga potrebni su: ID projekta, servisni nalog sa ograničenim
+pravima, Web konfiguracija klijenta i odobrenje za deploy pravila. Dok ti podaci
+ne postoje, rad se nastavlja nad emulatorom, a svako poglavlje navodi šta zbog
+toga ostaje nepotvrđeno.
 
 ## Završni cilj
 
