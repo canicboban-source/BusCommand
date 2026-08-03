@@ -175,6 +175,33 @@ test("company Dienstplan PDF text parses duties with day types and version", asy
   assert.ok(scanned.errors.some(error => error.code === "pdf_no_text"));
 });
 
+test("pdf.js Version glyph spacing joins and parses", async () => {
+  const { joinPdfTextItems, parseCompanyDienstplanText } = await import("../../js/imports/service-plan-pdf.js");
+  const joined = joinPdfTextItems([
+    { str: "Version", transform: [38, 0, 0, 38, 72, 510], width: 139 },
+    { str: " ", transform: [38, 0, 0, 38, 212, 510], width: 10 },
+    { str: "6", transform: [38, 0, 0, 38, 222, 510], width: 21 },
+    { str: "6", transform: [38, 0, 0, 38, 243, 510], width: 21 },
+    { str: " ", transform: [38, 0, 0, 38, 264, 510], width: 10 },
+    { str: "ab", transform: [38, 0, 0, 38, 274, 510], width: 44 },
+    { str: " ", transform: [38, 0, 0, 38, 318, 510], width: 10 },
+    { str: "09", transform: [38, 0, 0, 38, 328, 510], width: 42 },
+    { str: ".", transform: [38, 0, 0, 38, 370, 510], width: 11 },
+    { str: "0", transform: [38, 0, 0, 38, 381, 510], width: 21 },
+    { str: "2", transform: [38, 0, 0, 38, 402, 510], width: 21 },
+    { str: ".202", transform: [38, 0, 0, 38, 423, 510], width: 74 },
+    { str: "6", transform: [38, 0, 0, 38, 496, 510], width: 21 }
+  ]);
+  assert.match(joined, /Version\s+66\s+ab\s+09\.02\.2026/);
+
+  const spaced = fs.readFileSync(path.join(root, "tests/fixtures/company-dienstplan-310-sample.txt"), "utf8")
+    .replace("Version 66 ab 09.02.2026", "Version 6 6 ab 09 . 0 2 .202 6");
+  const result = parseCompanyDienstplanText(spaced);
+  assert.equal(result.valid, true, JSON.stringify(result.errors));
+  assert.equal(result.plan.planVersion, "66");
+  assert.equal(result.plan.validFrom, "2026-02-09");
+});
+
 test("Austrian public Fahrplan text converts courses into duties", async () => {
   const { parseAustrianFahrplanText } = await import("../../js/imports/service-plan-pdf.js");
   const sample = [
