@@ -48,6 +48,7 @@ test("company admin UI accepts versioned XLSX CSV and structured PDF without bun
   assert.match(csv, /section/);
   assert.match(pdf, /unsupported_pdf/);
   assert.match(pdf, /BUSCOMMAND-DIENSTPLAN-START/);
+  assert.match(pdf, /parseCompanyDienstplanText|looksLikeCompanyDienstplan/);
   assert.doesNotMatch(parser, /samo \.xlsx šablon/);
 });
 
