@@ -1,7 +1,8 @@
 # Poglavlje 2 — tajne, RBAC, Firestore Rules i tenant izolacija
 
 - Datum: 2026-08-04
-- Grana: `work/ca-monthly-import` (radni direktorijum `BusCommand-ca-monthly-import`)
+- Grana: `work/ca-group-monthly-import` (radni direktorijum `BusCommand-ca-monthly-import`)
+- Checkpoint commit: `f961576`
 - Polazna tačka: checkpoint iz Poglavlja 1 (`reports/poglavlje-1-state-checkpoint-2026-08-04.md`)
 - Okruženje: Node 22.23.2, Temurin JRE 21.0.12 (Firestore emulator), Playwright Chromium
 - Master prompt: `docs/BusCommand-MASTER-PROMPT.md` v3.1
@@ -231,8 +232,9 @@ poglavlju nema.
 - Ocena: 9/10. Sve nađene propusnosti su zatvorene i dokazane testovima, uz dva
   mutaciona dokaza. Minus je L3 (odložena nadogradnja `firebase-admin`) i to što
   `checkRevoked` i deploy pravila nisu potvrđeni u živom okruženju.
-- Rollback: sve izmene su u jednom checkpoint commitu na `work/ca-monthly-import`;
-  `git revert` tog commita vraća prethodno stanje pravila i middleware-a.
+- Rollback: sve izmene su u jednom checkpoint commitu `f961576` na grani
+  `work/ca-group-monthly-import`; `git revert f961576` vraća prethodno stanje
+  pravila i middleware-a.
 - Rizik po korisnika: nema promene u UI-u niti u ugovorima API odgovora za
   ispravno autentifikovane sesije. Jedina vidljiva promena ponašanja je da
   licencni endpoint sada zahteva prijavu, što svi klijentski tokovi već imaju.
