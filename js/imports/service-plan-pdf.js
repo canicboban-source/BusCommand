@@ -11,9 +11,57 @@ const TIME_TOKEN_RE = /\b(\d{1,2})\.(\d{2})\b/g;
 const COURSE_BLOCK_RE = /(?<![A-Za-z0-9.])(\d{3})\s+((?:\d{1,2}\.\d{2}(?:\s+|\s*$))+)/g;
 const COMPANY_DUTY_RE = /Dienst\s+(\d{2,4}\.[A-Za-z0-9]+)/gi;
 const COMPANY_ACTIVITY_RE = /(\d{1,3})\s+(Arbeit|Depot|Trans|Ruhe|P|\d{2,4})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})/gi;
-const COMPANY_VERSION_RE = /Version\s+(\d+)\s+ab\s+(\d{1,2})\.(\d{1,2})\.(\d{4})/i;
+// pdf.js may emit Version glyphs as "6 6" / "09 . 0 2 .202 6" — accept spaced digits.
+const COMPANY_VERSION_RE = /Version\s+([\d\s]+?)\s+ab\s+([\d\s]+?)\s*\.\s*([\d\s]+?)\s*\.\s*([\d\s]{4,})/i;
 /** Machine-readable fallback only — UI localizes via ca_plan_err_* keys. */
 const UNSUPPORTED_PDF_MESSAGE = "ca_plan_err_unsupported_pdf";
+
+function compactDigitSpaces(value) {
+    return String(value || "").replace(/\s+/g, "");
+}
+
+/**
+ * Join pdf.js text items using geometry so adjacent glyphs (e.g. Version "6""6")
+ * are not force-spaced into "6 6".
+ */
+function joinPdfTextItems(items) {
+    let lastY = null;
+    let lastEndX = null;
+    let lastFontSize = 10;
+    const parts = [];
+    for (const item of items || []) {
+        const str = item?.str || "";
+        if (!str) continue;
+        const transform = item.transform || null;
+        const x = transform ? transform[4] : null;
+        const y = transform ? transform[5] : null;
+        const fontSize = transform && transform[0] != null
+            ? Math.abs(transform[0]) || lastFontSize
+            : lastFontSize;
+        const width = typeof item.width === "number" ? item.width : 0;
+
+        if (lastY != null && y != null && Math.abs(lastY - y) > Math.max(2, fontSize * 0.35)) {
+            parts.push("\n");
+            lastEndX = null;
+        } else if (parts.length) {
+            const prev = parts[parts.length - 1];
+            const prevEndsSpace = /\s$/.test(prev);
+            const curStartsSpace = /^\s/.test(str);
+            if (!prevEndsSpace && !curStartsSpace) {
+                const gap = x != null && lastEndX != null ? x - lastEndX : Number.POSITIVE_INFINITY;
+                if (gap > Math.max(1.2, fontSize * 0.12)) {
+                    parts.push(" ");
+                }
+            }
+        }
+
+        parts.push(str);
+        if (y != null) lastY = y;
+        if (x != null) lastEndX = x + width;
+        lastFontSize = fontSize;
+    }
+    return parts.join("");
+}
 
 function decodePdfField(value) {
     return clean(String(value ?? "").replace(/~/g, " "));
@@ -240,8 +288,23 @@ function parseCompanyDienstplanText(text) {
         };
     }
 
-    const planVersion = versionMatch[1];
-    const validFrom = `${versionMatch[4]}-${String(versionMatch[3]).padStart(2, "0")}-${String(versionMatch[2]).padStart(2, "0")}`;
+    const planVersion = compactDigitSpaces(versionMatch[1]);
+    const validDay = compactDigitSpaces(versionMatch[2]);
+    const validMonth = compactDigitSpaces(versionMatch[3]);
+    const validYear = compactDigitSpaces(versionMatch[4]);
+    if (!/^\d+$/.test(planVersion) || !/^\d{1,2}$/.test(validDay) || !/^\d{1,2}$/.test(validMonth) || !/^\d{4}$/.test(validYear)) {
+        return {
+            valid: false,
+            errors: [{
+                path: "PDF",
+                code: "dienstplan_metadata",
+                message: "ca_plan_err_dienstplan_metadata"
+            }],
+            plan: null,
+            summary: null
+        };
+    }
+    const validFrom = `${validYear}-${validMonth.padStart(2, "0")}-${validDay.padStart(2, "0")}`;
     const dutyStarts = findCompanyDutyStarts(raw);
     if (!dutyStarts.length) {
         return {
@@ -557,19 +620,7 @@ async function extractPdfText(arrayBuffer) {
     for (let i = 1; i <= pdf.numPages; i += 1) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
-        let lastY = null;
-        const parts = [];
-        for (const item of content.items) {
-            const y = item.transform ? item.transform[5] : null;
-            if (lastY != null && y != null && Math.abs(lastY - y) > 2) {
-                parts.push("\n");
-            } else if (parts.length && !/\s$/.test(parts[parts.length - 1]) && !/^\s/.test(item.str || "")) {
-                parts.push(" ");
-            }
-            parts.push(item.str || "");
-            if (y != null) lastY = y;
-        }
-        text += `${parts.join("")}\n`;
+        text += `${joinPdfTextItems(content.items)}\n`;
     }
     return text;
 }
@@ -585,6 +636,7 @@ export {
     MARKER,
     START_MARKER,
     buildStructuredPdfPayload,
+    joinPdfTextItems,
     looksLikeCompanyDienstplan,
     looksLikePublicFahrplan,
     parseAustrianFahrplanText,
