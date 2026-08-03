@@ -133,6 +133,27 @@ html[data-app-surface="staff"] .service-plan-import-card {
     padding: 18px;
 }
 
+html[data-app-surface="staff"] .service-plan-download-row {
+    margin: 14px 0 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(15, 23, 42, 0.35);
+}
+
+html[data-app-surface="staff"] .service-plan-download-row > p {
+    margin: 6px 0 10px;
+    color: var(--text-muted-dark);
+    font-size: 0.86rem;
+    line-height: 1.45;
+}
+
+html[data-app-surface="staff"] .service-plan-download-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
 html[data-app-surface="staff"] .service-plan-current-panel {
     border-color: rgba(74, 222, 128, 0.35);
     background: linear-gradient(180deg, rgba(74, 222, 128, 0.08), var(--staff-panel));

@@ -803,7 +803,21 @@
                                         data-change-action="handleCompanyServicePlanFile" data-change-pass="event">
                                 </div>
                             </div>
-                            <p class="service-plan-format-note"><i data-lucide="shield-check"></i> <span data-i18n="ca_plan_format_note">Podržani: BusCommand XLSX/CSV/PDF šablon, zvanični kompanijski Dienstplan PDF (Dienst + Version ab) i javni austrijski Fahrplan PDF. Skenirani PDF bez teksta nije podržan. Objavljuje se samo potpuno validiran plan.</span></p>
+                            <div class="service-plan-download-row" aria-label="BusCommand templates">
+                                <span class="service-plan-kicker" data-i18n="ca_plan_download_title">Preuzmite BusCommand šablon</span>
+                                <p data-i18n="ca_plan_download_hint">Popunite prazan XLSX ili CSV šablon, ili uploadujte zvanični kompanijski Dienstplan PDF / javni Fahrplan. Buseve unosite ručno po grupi.</p>
+                                <div class="service-plan-download-actions">
+                                    <a class="btn-secondary" href="/templates/BusCommand_Dienstplan_Blank_v1.xlsx" download>
+                                        <i data-lucide="file-spreadsheet"></i>
+                                        <span data-i18n="ca_plan_download_xlsx">Preuzmi XLSX šablon</span>
+                                    </a>
+                                    <a class="btn-secondary" href="/templates/BusCommand_Dienstplan_Blank_v1.csv" download>
+                                        <i data-lucide="file-down"></i>
+                                        <span data-i18n="ca_plan_download_csv">Preuzmi CSV šablon</span>
+                                    </a>
+                                </div>
+                            </div>
+                            <p class="service-plan-format-note"><i data-lucide="shield-check"></i> <span data-i18n="ca_plan_format_note">Podržani: BusCommand XLSX/CSV šablon, zvanični kompanijski Dienstplan PDF (Dienst + Version ab) i javni austrijski Fahrplan PDF. Skenirani PDF bez teksta nije podržan. Objavljuje se samo potpuno validiran plan.</span></p>
                         </div>
 
                         <div class="card service-plan-current-panel" aria-labelledby="ca-plan-current-heading">

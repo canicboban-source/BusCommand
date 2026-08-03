@@ -88,10 +88,10 @@ test("SMS activation portalUrl includes ?company=", () => {
 
 test("CA driver import hint is translated and describes secure SMS activation", () => {
     const tr = readFileSync(join(root, "translations.js"), "utf8");
-    assert.doesNotMatch(tr, /CSV grupa is used/);
-    assert.doesNotMatch(tr, /CSV-grupa wird/);
-    assert.match(tr, /CSV group column is used/);
-    assert.match(tr, /CSV-Gruppenspalte wird verwendet/);
+    assert.match(tr, /eid, first_name, last_name, phone, email, company_code/);
+    assert.match(tr, /buses are entered manually per group/);
+    assert.match(tr, /Busse werden manuell pro Gruppe erfasst/);
+    assert.match(tr, /buseve unosite ručno po grupi/);
     assert.match(tr, /one-time six-digit activation code and sends it by SMS/);
     assert.match(tr, /einmaligen sechsstelligen Aktivierungscode und sendet ihn per SMS/);
 });
