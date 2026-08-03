@@ -1,17 +1,34 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { inflateRawSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { parseCsvText } from "../../js/imports/service-plan-csv.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const templates = path.join(root, "public", "templates");
 
-/** Read one entry from an .xlsx (OOXML zip) without the SheetJS dependency. */
-function readXlsxEntry(xlsxPath, entry) {
-  return execFileSync("tar", ["-xOf", xlsxPath, entry], { encoding: "utf8" });
+/** Read one OOXML zip entry without SheetJS (CI has no `xlsx` package). */
+function readXlsxEntry(xlsxPath, entryName) {
+  const buf = fs.readFileSync(xlsxPath);
+  let offset = 0;
+  while (offset + 30 <= buf.length) {
+    if (buf.readUInt32LE(offset) !== 0x04034b50) break;
+    const method = buf.readUInt16LE(offset + 8);
+    const compressedSize = buf.readUInt32LE(offset + 18);
+    const nameLen = buf.readUInt16LE(offset + 26);
+    const extraLen = buf.readUInt16LE(offset + 28);
+    const name = buf.subarray(offset + 30, offset + 30 + nameLen).toString("utf8");
+    const dataStart = offset + 30 + nameLen + extraLen;
+    const data = buf.subarray(dataStart, dataStart + compressedSize);
+    offset = dataStart + compressedSize;
+    if (name !== entryName) continue;
+    if (method === 0) return data.toString("utf8");
+    if (method === 8) return inflateRawSync(data).toString("utf8");
+    throw new Error(`unsupported zip compression ${method} for ${entryName}`);
+  }
+  throw new Error(`zip entry not found: ${entryName}`);
 }
 
 test("blank Dienstplan CSV has headers and no sample duties", () => {
