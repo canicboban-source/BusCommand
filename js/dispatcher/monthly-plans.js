@@ -1,6 +1,6 @@
 // BusCommand — mesečni plan: pregled po vozaču, izmena po danu
 import { parseBusFromText, parseRouteCodeFromText } from "../core/shift-plan.js";
-import { ensureShiftCatalogForEdit } from "../core/line-shift-catalog.js";
+import { ensureShiftCatalogForEdit, inferOperationalShiftType, OPERATIONAL_SHIFT_TYPES } from "../core/line-shift-catalog.js";
 import { saveState } from "../core/state.js";
 import { getVisibleDrivers, getVisibleGroups, showToast } from "../core/utils.js";
 import { getBusesForLineGroup, getDriversForLineGroup, countPlansForLineGroup } from "../data/group-membership.js";
@@ -319,13 +319,16 @@ function collectShiftCodesForEdit(schedule) {
 }
 
 function inferTypeFromShiftCode(code, catalogEntry) {
-    if (catalogEntry?.type) return catalogEntry.type;
-    if (!code) return "off";
-    if (/\.X2/i.test(code)) return "bereitschaft";
-    if (/\.F/i.test(code)) return "morning";
-    if (/\.S/i.test(code)) return "afternoon";
-    if (/\.N/i.test(code)) return "night";
-    return "morning";
+    if (!code && !catalogEntry?.type) return "off";
+    const catalogType = String(catalogEntry?.type || "").trim().toLowerCase();
+    if (OPERATIONAL_SHIFT_TYPES.has(catalogType)) return catalogType;
+    // Do not map .F/.S letters to Früh/Spät — Blaguss uses S=škola, F=ferije (dayType).
+    return inferOperationalShiftType({
+        code,
+        start: catalogEntry?.start || catalogEntry?.workStart,
+        end: catalogEntry?.end || catalogEntry?.workEnd,
+        endDayOffset: catalogEntry?.endDayOffset || 0
+    });
 }
 
 function fillMedDaySelect(year, monthNum, totalDays, selectedDay) {
@@ -464,6 +467,8 @@ function loadMonthlyDayEditForm(day, opts = {}) {
 
     const values = opts.formValues || shiftToFormValues(getShiftForPlanDay(schedule, day));
     applyMedFormValues(values, schedule);
+    const code = values.code;
+    updateMedDutyTimeHint(code ? window.state.shiftCatalog?.entries?.[code] : null);
 
     updateMedDateHint(day);
     _editCtx.day = day;
@@ -490,6 +495,32 @@ function onMedDaySelectChange() {
     loadMonthlyDayEditForm(newDay);
 }
 
+function updateMedDutyTimeHint(entry) {
+    const hint = document.getElementById("med-duty-time-hint");
+    if (!hint) return;
+    const start = entry?.start || entry?.workStart || "";
+    const end = entry?.end || entry?.workEnd || "";
+    if (start && end) {
+        const dayType = entry?.dayType ? ` · ${dayTypeShortLabel(entry.dayType)}` : "";
+        hint.textContent = `${start}–${end}${dayType}`;
+        hint.hidden = false;
+        return;
+    }
+    hint.textContent = "";
+    hint.hidden = true;
+}
+
+function dayTypeShortLabel(dayType) {
+    const key = {
+        SCHOOL_WEEKDAY: "ca_plan_day_school",
+        HOLIDAY_WEEKDAY: "ca_plan_day_holiday_weekday",
+        SATURDAY: "ca_plan_day_saturday",
+        SUNDAY_HOLIDAY: "ca_plan_day_sunday",
+        ALL_DAYS: "ca_plan_day_all"
+    }[String(dayType || "").toUpperCase()];
+    return key ? t(key) : "";
+}
+
 function onMedCatalogSelectChange() {
     const codeSelect = document.getElementById("med-shift-code-select");
     const codeCustom = document.getElementById("med-shift-code-custom");
@@ -499,10 +530,15 @@ function onMedCatalogSelectChange() {
     const code = codeSelect.value;
     if (codeCustom) codeCustom.value = code;
 
-    if (!code) return;
+    if (!code) {
+        updateMedDutyTimeHint(null);
+        return;
+    }
 
-    ensureShiftCatalogForEdit();
+    ensureShiftCatalogForEdit(getActiveLineForEdit());
     const entry = window.state.shiftCatalog?.entries?.[code];
+    updateMedDutyTimeHint(entry);
+    // API still requires morning|afternoon|night — times from catalog are the real assignment.
     if (typeSelect) {
         typeSelect.value = inferTypeFromShiftCode(code, entry);
     }
@@ -531,9 +567,10 @@ function onMedShiftCodeCustomInput() {
     const code = codeCustom.value.trim();
     if (codeSelect && code) codeSelect.value = "";
 
-    if (!code || !typeSelect) return;
+    const entry = code ? window.state.shiftCatalog?.entries?.[code] : null;
+    updateMedDutyTimeHint(entry);
 
-    const entry = window.state.shiftCatalog?.entries?.[code];
+    if (!code || !typeSelect) return;
     typeSelect.value = inferTypeFromShiftCode(code, entry);
 }
 

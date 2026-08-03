@@ -1,19 +1,27 @@
 import ApiClient from "./api-client.js";
 import { IS_DEMO_MODE } from "./runtime-config.js";
-import { persistCatalogForLine } from "./line-shift-catalog.js";
+import { inferOperationalShiftType, persistCatalogForLine } from "./line-shift-catalog.js";
 
 function servicePlanToCatalog(plan, groupId = plan?.groupId) {
     const entries = {};
     (plan?.duties || []).forEach(duty => {
+        const start = duty.workStart || duty.start || "";
+        const end = duty.workEnd || duty.end || "";
         entries[duty.code] = {
             code: duty.code,
             label: duty.code,
             dayType: duty.dayType,
-            type: "service",
-            start: duty.workStart,
+            type: inferOperationalShiftType({
+                code: duty.code,
+                start,
+                end,
+                endDayOffset: duty.endDayOffset || 0,
+                type: duty.type
+            }),
+            start,
             firstTripStart: duty.firstTripStart,
             lastTripEnd: duty.lastTripEnd,
-            end: duty.workEnd,
+            end,
             endDayOffset: duty.endDayOffset || 0,
             startLocation: duty.startLocation || "",
             endLocation: duty.endLocation || "",
