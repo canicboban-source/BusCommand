@@ -41,6 +41,27 @@ function warnIfBusUsedInOtherGroup(driver, date, type, start, end, busValue) {
     showToast(formatCrossGroupBusWarn(conflicts, t), "warning", 6000);
 }
 
+function applyServerShiftConflict(driver, date, conflict) {
+    const remote = conflict?.shift;
+    if (!remote || typeof remote !== "object") return;
+    if (remote.type && remote.type !== "clear") {
+        setShiftForDriverDate(driver.name, date, {
+            type: remote.type,
+            name: remote.name || "",
+            start: remote.start || null,
+            end: remote.end || null,
+            bus: remote.bus || undefined,
+            routeCode: remote.routeCode || undefined,
+            revision: Number.isInteger(conflict.currentRevision)
+                ? conflict.currentRevision
+                : (Number.isInteger(remote.revision) ? remote.revision : 0),
+            syncSchedule: true
+        });
+    } else {
+        setShiftForDriverDate(driver.name, date, { type: "clear", syncSchedule: true });
+    }
+}
+
 async function persistShift(driver, date, type, name = "", start = null, end = null, bus = null) {
     if (isOperationalReadOnly()) {
         showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
@@ -65,7 +86,10 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
         const busValue = bus != null ? String(bus) : (driver.bus || "");
         warnIfBusUsedInOtherGroup(driver, date, type, start, end, busValue);
         const existing = getShiftForDriverDate(driver.name, date);
-        const expectedRevision = Number.isInteger(existing?.revision) ? existing.revision : 0;
+        // Mirror-only cells report revision 0; never invent a positive revision locally.
+        const expectedRevision = existing?.source === "shift" && Number.isInteger(existing.revision)
+            ? existing.revision
+            : 0;
         if (!IS_DEMO_MODE) {
             const result = await ApiClient.assignStaffShift({
                 driverId: driver.id, date, type, name,
@@ -75,6 +99,7 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
             });
             if (!result.success) {
                 if (result.status === 409 || result.code === "REVISION_CONFLICT") {
+                    applyServerShiftConflict(driver, date, result.conflict);
                     showToast(t("shift_conflict_refresh") || "Raspored je izmenjen. Osvežite i pokušajte ponovo.", "error");
                 } else if (result.code === "LOCK_HELD") {
                     const who = result.lock?.holderName || result.lock?.holderUid || "";

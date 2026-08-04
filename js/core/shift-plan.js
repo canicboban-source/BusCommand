@@ -185,7 +185,7 @@ function findRouteForDriver(driver, routeCode) {
     ) || window.state.routes.find(r => r.number === lineNum) || null;
 }
 
-/** Čitanje smene: prvo dnevne izmene (shifts[]), zatim mesečni plan (schedules) */
+/** Canonical read: shifts[] first; schedules is a server mirror projection only (§5). */
 function getShiftForDriverDate(driverName, dateStr) {
     ensureShiftsArray();
 
@@ -198,7 +198,7 @@ function getShiftForDriverDate(driverName, dateStr) {
         return {
             ...direct,
             revision: Number.isInteger(direct.revision) ? direct.revision : 0,
-            source: "override"
+            source: "shift"
         };
     }
 
@@ -221,8 +221,11 @@ function getShiftForDriverDate(driverName, dateStr) {
             routeCode: s.routeCode || parseRouteCodeFromText(s.name),
             start: s.start || null,
             end: s.end || null,
+            // Day-level revision lives only on the shift doc. Mirror cells report 0
+            // so the first server write uses expectedRevision: 0; if a shift already
+            // exists server-side, the API returns REVISION_CONFLICT with the truth.
             revision: 0,
-            source: "schedule"
+            source: "schedule_mirror"
         };
     }
     return null;

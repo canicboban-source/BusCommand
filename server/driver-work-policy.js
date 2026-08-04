@@ -65,10 +65,13 @@ function scheduleShiftForDate(schedules, dateString) {
 }
 
 function shiftForDate({ shifts = [], schedules = [] }, dateString) {
-  const scheduled = scheduleShiftForDate(schedules, dateString);
+  // Canonical read: day assignment docs win. The monthly schedule is only a
+  // projection for days that do not yet have a shift document.
   const direct = shifts.find((entry) => entry.date === dateString);
-  if (!direct) return scheduled ? { ...scheduled, date: dateString, source: "schedule" } : null;
-  return { ...(scheduled || {}), ...direct, date: dateString, source: "override" };
+  if (direct) return { ...direct, date: dateString, source: "shift" };
+  const scheduled = scheduleShiftForDate(schedules, dateString);
+  if (!scheduled) return null;
+  return { ...scheduled, date: dateString, source: "schedule_mirror", revision: 0 };
 }
 
 function shiftWindow(shift, dateString, timezone) {

@@ -58,6 +58,16 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
 - Posledica u kodu: `server/driver-routes.js`, `js/auth/login-driver.js`,
   `js/core/auth-client.js`. Dužina koda i dalje pod O3.
 
+### D6 — Kanonski plan: shifts SoT, schedules mirror
+
+- Datum: 2026-08-04 · Status: **Odlučeno** (Poglavlje 6)
+- Pitanje: da li su `shifts` i `schedules` dva izvora istine?
+- Odluka: ne. `shifts/{driverId}_{date}` je kanonski; `schedules` je
+  server-owned mesečna projekcija. Optimistic concurrency preko `revision` +
+  `expectedRevision`; potvrda vezana za `confirmationBoundRevision`.
+- Posledica: `docs/canonical-plan-model.md`, `server/shift-assignment.js`,
+  `js/core/shift-plan.js`, `js/dispatcher/shifts.js`.
+
 ---
 
 ## Otvorena pitanja

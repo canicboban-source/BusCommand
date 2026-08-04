@@ -44,7 +44,7 @@ test("revision requires expectedRevision and rejects stale values", () => {
   assert.equal(assertExpectedRevision({ revision: 2 }, 1).currentRevision, 2);
 });
 
-test("assigned shift and schedule day builders keep revision and mirror fields", () => {
+test("assigned shift resets confirmation and binds the new revision", () => {
   const shift = buildAssignedShift({
     data: {
       driverId: "drv-1",
@@ -63,8 +63,10 @@ test("assigned shift and schedule day builders keep revision and mirror fields",
     assignedAt: "ts"
   });
   assert.equal(shift.revision, 4);
-  assert.equal(shift.groupId, "31099");
+  assert.equal(shift.confirmationBoundRevision, 4);
   assert.equal(shift.confirmedByDriver, false);
+  assert.equal(shift.confirmedAt, null);
+  assert.equal(shift.shiftFingerprint, null);
   assert.deepEqual(buildScheduleDayEntry(shift), {
     type: "morning",
     name: "310.F08",
@@ -73,6 +75,72 @@ test("assigned shift and schedule day builders keep revision and mirror fields",
     start: "04:02",
     end: "12:30"
   });
+});
+
+test("two writers: second stale expectedRevision loses without overwriting", () => {
+  const {
+    simulateOptimisticWrite
+  } = require("../../server/shift-assignment");
+
+  const base = {
+    data: {
+      driverId: "drv-1",
+      date: "2026-08-04",
+      type: "morning",
+      name: "A",
+      bus: "91100",
+      routeCode: "310.A",
+      start: "05:00",
+      end: "13:00"
+    },
+    driverName: "Ana",
+    driverGroupId: "310",
+    staffUid: "disp-1"
+  };
+
+  const first = simulateOptimisticWrite(null, 0, base);
+  assert.equal(first.ok, true);
+  assert.equal(first.revision, 1);
+  assert.equal(first.shift.confirmedByDriver, false);
+
+  const stale = simulateOptimisticWrite(first.shift, 0, {
+    ...base,
+    data: { ...base.data, name: "STALE" },
+    staffUid: "disp-2"
+  });
+  assert.equal(stale.ok, false);
+  assert.equal(stale.code, "REVISION_CONFLICT");
+  assert.equal(stale.currentRevision, 1);
+  assert.equal(stale.current.name, "A");
+
+  const fresh = simulateOptimisticWrite(first.shift, 1, {
+    ...base,
+    data: { ...base.data, name: "B" },
+    staffUid: "disp-2"
+  });
+  assert.equal(fresh.ok, true);
+  assert.equal(fresh.revision, 2);
+  assert.equal(fresh.shift.name, "B");
+  assert.equal(fresh.shift.confirmationBoundRevision, 2);
+});
+
+test("confirmation is valid only for the bound revision", () => {
+  const {
+    assertConfirmationMatchesRevision
+  } = require("../../server/shift-assignment");
+
+  const confirmed = {
+    revision: 3,
+    confirmationBoundRevision: 3,
+    confirmedByDriver: true
+  };
+  assert.equal(assertConfirmationMatchesRevision(confirmed, 3).ok, true);
+  assert.equal(assertConfirmationMatchesRevision(confirmed, 2).ok, false);
+  assert.equal(
+    assertConfirmationMatchesRevision({ ...confirmed, revision: 4 }, 3).reason,
+    "confirmation_revision_mismatch"
+  );
+  assert.equal(assertConfirmationMatchesRevision({ revision: 1, confirmedByDriver: false }, 1).ok, false);
 });
 
 test("assignment route wires revision conflict and schedule mirror", () => {
@@ -100,8 +168,17 @@ test("client sync skips shifts and schedules writes", () => {
 test("client monthly and daily assignment go through persistShift with expectedRevision", () => {
   const shifts = fs.readFileSync(path.join(__dirname, "../../js/dispatcher/shifts.js"), "utf8");
   const monthly = fs.readFileSync(path.join(__dirname, "../../js/dispatcher/monthly-plans.js"), "utf8");
+  const plan = fs.readFileSync(path.join(__dirname, "../../js/core/shift-plan.js"), "utf8");
+  const policy = fs.readFileSync(path.join(__dirname, "../../server/driver-work-policy.js"), "utf8");
   assert.match(shifts, /expectedRevision/);
   assert.match(shifts, /REVISION_CONFLICT/);
+  assert.match(shifts, /applyServerShiftConflict/);
+  assert.match(shifts, /result\.conflict/);
   assert.match(monthly, /persistShift/);
   assert.match(monthly, /from "\.\/shifts\.js"/);
+  assert.match(plan, /source: "shift"/);
+  assert.match(plan, /source: "schedule_mirror"/);
+  assert.match(policy, /source: "shift"/);
+  assert.match(policy, /source: "schedule_mirror"/);
+  assert.doesNotMatch(policy, /source: "override"/);
 });
