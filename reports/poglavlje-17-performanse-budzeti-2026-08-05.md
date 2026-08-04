@@ -3,7 +3,7 @@
 - Datum: 2026-08-05
 - Grana: `work/ca-group-monthly-import`
 - Polazna tačka: Poglavlje 16 (`b38a6e0` / `85c6b37`)
-- Checkpoint commit: _(popunjava se posle commit-a)_
+- Checkpoint commit: 0da122
 - Master prompt: v3.2 §27 #17, §35 (kvalitet), odluka D17
 - Napomena: §35 nema KB/TTI brojeve — budžeti su uvedeni u D17
 
