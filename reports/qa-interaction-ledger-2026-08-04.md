@@ -210,18 +210,19 @@ Redosled iz master prompta v3.2 §27:
 11. ~~driver session/GPS/mapa~~ (P12) — liveGps OFF, current-point, map audit;
 12. ~~PWA / offline~~ (P13) — SW scope, queue+idempotency, network banner;
 13. ~~Pronađeni predmeti~~ (P14) — status triad, photo, foundAt, staff filter;
-14. SA/CA kompletiranje, i18n/a11y, staging acceptance.
-
-### Ažuriranje posle Poglavlja 13
-
-Driver SW scope `/driver.html` + allowlist; offline queue za reports/lost-items
-sa idempotency dedupe; SOS/confirm/vacation zahtevaju mrežu; TTL snapshot i
-clear na logout. Gate: unit 514, rules 40, E2E 57.
+14. ~~SA/CA kompletiranje~~ (P15) — RO fleet, tenant settings PATCH, health;
+15. i18n/a11y, staging acceptance.
 
 ### Ažuriranje posle Poglavlja 14
 
 Lost-item status triad + audited staff transitions; optional photo with
 client EXIF strip and server reject; foundAt persistence; staff filters.
 Gate: unit 518, rules 40, E2E 57.
+
+### Ažuriranje posle Poglavlja 15
+
+CA read-only buses surface; SA audited plan/limits/flags PATCH; platform
+health strip; RO login-profile card. O1–O5 i dalje otvoreni. Gate: unit 521,
+rules 40, E2E 57.
 
 Svaka stavka prelazi iz „delimično/statički/nepokriveno“ u „funkcionalno“ samo kada postoji izvršen dokaz odgovarajućeg nivoa.

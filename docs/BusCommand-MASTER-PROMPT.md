@@ -641,7 +641,7 @@ zatvorenog poglavlja i uvek pokazuje na izveštaj sa dokazima.
 | 13 | Mobilni PWA i kontrolisani offline rad | završeno | `reports/poglavlje-13-pwa-offline-2026-08-04.md` |
 | 14 | SA/CA kompletiranje, i18n/a11y i staging acceptance | — | — |
 | 14 | Pronađeni predmeti | završeno | `reports/poglavlje-14-pronadjeni-predmeti-2026-08-04.md` |
-| 15 | Kompletiranje Super Admin i Company Admin površina | — | — |
+| 15 | Kompletiranje Super Admin i Company Admin površina | završeno | `reports/poglavlje-15-sa-ca-2026-08-04.md` |
 | 16 | i18n, pristupačnost i vizuelno usklađivanje | — | — |
 | 17 | Performanse i budžeti | — | — |
 | 18 | Potpuno integraciono testiranje i uklanjanje testnih podataka | — | — |

@@ -35,6 +35,11 @@ const {
   setCompanyAdminActive,
   requestCompanyAdminPasswordReset
 } = require("./server/superadmin-company");
+const {
+  buildTenantSettingsPatch,
+  applyTenantSettingsPatch,
+  EDITABLE_FEATURE_KEYS
+} = require("./server/superadmin-tenant-settings");
 const { createSupportSessionHandlers } = require("./server/support-session");
 const { createConfirmationScheduler } = require("./server/confirmation-scheduler");
 const {
@@ -250,7 +255,9 @@ app.get("/api/health", (req, res) => {
     success: true,
     status: "ok",
     uptime: Math.floor(process.uptime()),
-    mode: HAS_FIREBASE ? "production" : "demo"
+    mode: HAS_FIREBASE ? "production" : "demo",
+    version: APP_VERSION,
+    firebase: HAS_FIREBASE
   });
 });
 
@@ -554,6 +561,42 @@ app.get("/api/admin/company/:companyId", requireSuperAdmin, async (req, res) => 
     }
     req.log?.error({ err }, "company detail greška");
     return res.status(500).json({ success: false, error: "Greška pri učitavanju firme." });
+  }
+});
+
+app.patch("/api/admin/company/:companyId/settings", rateLimit(20, 5 * 60 * 1000), requireSuperAdmin, async (req, res) => {
+  const parsed = parseCompanyParam(req.params.companyId);
+  if (!parsed.ok) {
+    return res.status(400).json({ success: false, error: parsed.error });
+  }
+  const built = buildTenantSettingsPatch(req.body || {});
+  if (!built.ok) {
+    return res.status(400).json({ success: false, error: built.error, details: built.details || null });
+  }
+  try {
+    const settingsRef = db.collection("companies").doc(parsed.id).collection("settings").doc("main");
+    const snap = await settingsRef.get();
+    if (!snap.exists) {
+      return res.status(404).json({ success: false, error: "Firma nije pronađena." });
+    }
+    const existing = snap.data() || {};
+    const next = applyTenantSettingsPatch(existing, built.patch, {
+      adminTimestampFromDate: (date) => admin.firestore.Timestamp.fromDate(date)
+    });
+    await settingsRef.set(next, { merge: true });
+    await _logAuditEvent("superadmin", req.adminUser.uid, "company_settings_patched", {
+      companyId: parsed.id,
+      ...built.audit
+    });
+    const company = await getCompanyDetail({ db, companyId: parsed.id });
+    return res.json({
+      success: true,
+      company,
+      editableFeatures: EDITABLE_FEATURE_KEYS
+    });
+  } catch (err) {
+    req.log?.error({ err }, "company settings patch greška");
+    return res.status(500).json({ success: false, error: "Podešavanja firme nisu sačuvana." });
   }
 });
 

@@ -2639,3 +2639,25 @@ html[data-app-surface="staff"] .alert-item-actions {
     gap: 8px;
     margin-top: 8px;
 }
+
+.sa-platform-health {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(110, 180, 255, 0.28);
+  background: rgba(90, 160, 255, 0.1);
+  color: #d6e8ff;
+  font-size: 0.85rem;
+}
+.sa-detail-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.sa-detail-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  margin: 8px 0 12px;
+}

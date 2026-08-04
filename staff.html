@@ -357,6 +357,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["company-admin-buses"]'>
+                                <i data-lucide="bus"></i> <span data-i18n="ca_nav_buses">Autobusi</span>
+                            </a>
+                        </li>
+                        <li>
                             <a href="#" class="nav-item" data-action="switchSection" data-action-args='["company-admin-service-plan"]'>
                                 <i data-lucide="calendar-range"></i> <span data-i18n="ca_nav_service_plan">Planovi smena</span>
                             </a>
@@ -441,6 +446,10 @@
                 <section id="superadmin-dashboard" class="content-section hidden">
                     <div class="section-header">
                         <h2 data-i18n="superadmin_title">Super Admin Dashboard</h2>
+                    </div>
+
+                    <div id="sa-platform-health" class="sa-platform-health" role="status" aria-live="polite">
+                        <span data-i18n="sa_health_loading">Checking platform health…</span>
                     </div>
                     
                     <div class="stats-grid">
@@ -577,7 +586,7 @@
                             <span><i data-lucide="shield-check"></i></span>
                             <div><strong id="ca-stat-dispatchers">0</strong><small data-i18n="ca_stat_dispatchers">Dispečeri</small></div>
                         </button>
-                        <button type="button" class="company-overview-stat is-cyan" data-action="switchSection" data-action-args='["company-admin-groups"]'>
+                        <button type="button" class="company-overview-stat is-cyan" data-action="switchSection" data-action-args='["company-admin-buses"]'>
                             <span><i data-lucide="bus"></i></span>
                             <div><strong id="ca-stat-buses">0</strong><small data-i18n="ca_stat_buses">Autobusi</small></div>
                         </button>
@@ -1749,6 +1758,32 @@
                     </div>
                 </section>
 
+                <section id="company-admin-buses" class="content-section hidden">
+                    <header class="company-settings-heading">
+                        <div>
+                            <span class="company-page-kicker" data-i18n="ca_buses_kicker">FLOTA</span>
+                            <h2><i data-lucide="bus"></i><span data-i18n="ca_nav_buses">Autobusi</span></h2>
+                            <p id="ca-buses-readonly-note" data-i18n="ca_buses_readonly_note">Pregled flote samo za čitanje. Dispečeri povezuju i vode autobuse u dnevnim operacijama.</p>
+                        </div>
+                        <div class="company-settings-save-state is-saved"><i data-lucide="eye"></i><span id="ca-buses-count">0</span></div>
+                    </header>
+                    <div class="card full-width-card">
+                        <div class="table-container">
+                            <table class="app-table table-large">
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="table_bus">Autobus</th>
+                                        <th data-i18n="ca_col_groups">Grupe</th>
+                                        <th data-i18n="table_status">Status</th>
+                                        <th>ID</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ca-buses-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- COMPANY ADMIN — PODEŠAVANJA FIRME -->
                 <section id="company-admin-settings" class="content-section hidden">
                     <header class="company-settings-heading">
@@ -1779,6 +1814,11 @@
                     <section class="card company-settings-privacy" aria-labelledby="ca-settings-privacy-title">
                         <div class="company-panel-heading"><div><span data-i18n="ca_settings_privacy_kicker">FIKSNA POLITIKA</span><h3 id="ca-settings-privacy-title" data-i18n="ca_settings_privacy_title">Privatnost van radnog vremena</h3></div><i data-lucide="shield-check"></i></div>
                         <div class="company-settings-policy-grid"><article><i data-lucide="map-pin-off"></i><div><strong data-i18n="ca_settings_no_gps">Nema GPS praćenja</strong><p data-i18n="ca_settings_no_gps_hint">Lokacija se ne prati posle odjave ili van aktivnog radnog prozora.</p></div></article><article><i data-lucide="bell-off"></i><div><strong data-i18n="ca_settings_no_push">Nema push poruka</strong><p data-i18n="ca_settings_no_push_hint">Aplikacija miruje do sledeće prijave vozača.</p></div></article><article><i data-lucide="clock-3"></i><div><strong data-i18n="ca_settings_auto_logout">Automatska odjava</strong><p data-i18n="ca_settings_auto_logout_hint">Sesija se zatvara najkasnije 30 minuta posle završetka smene.</p></div></article></div>
+                    </section>
+
+                    <section class="card company-settings-login-profile" aria-labelledby="ca-settings-login-title">
+                        <div class="company-panel-heading"><div><span data-i18n="ca_settings_login_kicker">SAMO ZA ČITANJE</span><h3 id="ca-settings-login-title" data-i18n="ca_settings_login_title">Login profil vozača</h3></div><i data-lucide="key-round"></i></div>
+                        <p id="ca-settings-login-profile" data-i18n="ca_settings_login_body">Vozači se prijavljuju ličnim kodom (5–12 cifara) posle SMS aktivacije. Dužina i MFA politika su zaključane do odluke O3/O4.</p>
                     </section>
 
                     <section class="card company-settings-exports" aria-labelledby="ca-settings-export-title">

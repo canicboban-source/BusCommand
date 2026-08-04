@@ -170,6 +170,18 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
   4. `foundAt`/`date`/`time` uvek persistuju se pri create.
 - Posledica: `server/lost-item-lifecycle.js`, driver/staff lost-item UI.
 
+### D15 — SA/CA: RO flota + audited tenant settings
+
+- Datum: 2026-08-04 · Status: **Odlučeno** (Poglavlje 15)
+- Odluka:
+  1. CA vidi flotu read-only (`company-admin-buses`); mutate ostaje dispatcher.
+  2. SA `PATCH /api/admin/company/:id/settings` za plan/limite/trial/flagove
+     (allowlist); audit `company_settings_patched`.
+  3. SA health strip iz `/api/health` (version/mode/uptime).
+  4. CA login-profil kartica je RO do O3/O4; liveGps flag menjanje ne
+     zamenjuje O2 retention odluku.
+- Posledica: `superadmin-tenant-settings.js`, CA buses, SA detail settings.
+
 ---
 
 ## Otvorena pitanja

@@ -13,6 +13,7 @@ import { renderCompanyGroupMonthlyImport } from "../admin/company-admin-monthly-
 import { renderCompanyAdminDrivers } from "../admin/company-admin-drivers.js";
 import { renderCompanyAdminAudit } from "../admin/company-admin-audit.js";
 import { renderCompanyAdminSettings } from "../admin/company-admin-settings.js";
+import { renderCompanyAdminBuses } from "../admin/company-admin-buses.js";
 import { renderDispatcherShifts } from "../dispatcher/shifts.js";
 import { renderDispatcherVacations } from "../dispatcher/vacations.js";
 import { initDispatcherLiveMap } from "../maps/live-map-core.js";
@@ -42,6 +43,7 @@ export function registerStaffSections() {
         "company-admin-branding": () => renderCompanyAdminBranding(),
         "company-admin-groups": () => renderCompanyAdminGroups(),
         "company-admin-drivers": () => renderCompanyAdminDrivers(),
+        "company-admin-buses": () => renderCompanyAdminBuses(),
         "company-admin-service-plan": () => {
             renderCompanyAdminServicePlan();
             renderCompanyGroupMonthlyImport();
