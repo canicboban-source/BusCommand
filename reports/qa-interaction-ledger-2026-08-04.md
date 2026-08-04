@@ -204,16 +204,15 @@ Redosled iz master prompta v3.2 §27:
 5. ~~kanonski plan i revizije~~ (P6);
 6. ~~CA katalog~~ (P7);
 7. ~~mesečni plan~~ (P8) — undo, sticky/matrix, mass absence, catalog lock;
-8. dnevni plan i problem-resolution (P9);
-9. scheduler/outbox i poruke;
+8. ~~dnevni plan / problem-resolution / cockpit~~ (P9);
+9. scheduler/outbox i poruke (P10–11);
 10. driver session/GPS/PWA offline;
 11. SA/CA kompletiranje, i18n/a11y, staging acceptance.
 
-### Ažuriranje posle Poglavlja 8
+### Ažuriranje posle Poglavlja 9
 
-Mesečni disponentski plan: unit pokriva undo/soft-clear/mass preview i
-katalog-bez-inventa; E2E 57 i dalje pokriva CA monthly import i cockpit.
-Dispatcher monthly cell-edit + undo na live Firebase ostaje **delimično**
-(unit + wiring; nema novog Playwright live-assign scena).
+Problem lifecycle (open→…→resolved), vehicle-out, ops-activity feed i
+best-effort notify posle resolve-a su unit-pokriveni; demo cockpit E2E i
+dalje 57/57. Scheduler/outbox ostaje P10.
 
 Svaka stavka prelazi iz „delimično/statički/nepokriveno“ u „funkcionalno“ samo kada postoji izvršen dokaz odgovarajućeg nivoa.

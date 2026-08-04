@@ -329,11 +329,21 @@ const ApiClient = (() => {
             body: JSON.stringify(incident)
         });
     }
+    async function transitionStaffOperationalIncident(reportId, payload) {
+        return apiFetch("/api/staff/operational-incidents/" + encodeURIComponent(reportId) + "/transition", {
+            method: "PUT",
+            body: JSON.stringify(payload)
+        });
+    }
     async function resolveStaffOperationalIncident(reportId, resolution) {
         return apiFetch("/api/staff/operational-incidents/" + encodeURIComponent(reportId) + "/resolve", {
             method: "PUT",
             body: JSON.stringify(resolution)
         });
+    }
+    async function getStaffOpsActivity(limit = 20) {
+        const q = new URLSearchParams({ limit: String(limit) });
+        return apiFetch(`/api/staff/ops-activity?${q}`);
     }
     async function assignStaffShift(shift) {
         return apiFetch("/api/staff/shifts/assignment", {
@@ -424,7 +434,7 @@ const ApiClient = (() => {
         createCompanyGroup, updateCompanyGroup, deleteCompanyGroup, reportStateSync, importDriversCsv, setDriverActive,
         updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode,
         createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage,
-        createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, resolveStaffOperationalIncident, resolveStaffSos,
+        createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, transitionStaffOperationalIncident, resolveStaffOperationalIncident, getStaffOpsActivity, resolveStaffSos,
         setLostItemStatus, createStaffBus, setStaffBusActive, assignStaffShift, undoStaffShift,
         acquirePlanLock, heartbeatPlanLock, releasePlanLock, breakPlanLock, getPlanLock,
         sendStaffMessage, getDriverWorkSession, confirmDriverShifts, getStaffShiftConfirmations,

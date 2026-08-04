@@ -14,7 +14,7 @@ test("dispatcher incident endpoint is today-only, group-scoped and audited", asy
     assert.match(route, /req\.staff\.role !== "dispatcher"/);
     assert.match(route, /dispatcherCanAccessGroup\(req\.staff\.groups, groupId\)/);
     assert.match(route, /parsed\.data\.date !== today/);
-    assert.match(route, /type: "coverage:disruption"/);
+    assert.match(route, /buildProblemCreateFields|status: "open"/);
     assert.match(route, /operational_incident_created/);
 });
 
@@ -47,8 +47,10 @@ test("atomic resolver validates schedule availability and writes plan plus audit
     assert.match(route, /replacementScheduleSnap\.data\(\)\?\.parsedShifts\?\.\[day\]/);
     assert.match(route, /new Set\(\["clear", "off", "bereitschaft", "standby"\]\)/);
     assert.match(route, /await db\(\)\.runTransaction/);
-    assert.match(route, /tx\.update\(reportRef, \{ status: "resolved"/);
+    assert.match(route, /status: "resolved"/);
     assert.match(route, /action: "operational_incident_resolved"/);
+    assert.match(route, /tmpl_shift_now/);
+    assert.match(route, /sameDriverRefs/);
 });
 
 test("incident workflow has genuine EN SR and DE text", async () => {

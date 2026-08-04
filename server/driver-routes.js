@@ -5,6 +5,13 @@ const { parseDriverCsv } = require("./driver-csv");
 const { evaluateDriverWorkPolicy, validTimezone, localDateString, addDays } = require("./driver-work-policy");
 const { dispatcherCanAccessGroup, isActiveReportStatus, isResolvedReportStatus } = require("./report-lifecycle");
 const {
+  buildProblemCreateFields,
+  simulateProblemTransition,
+  currentProblemRevision,
+  isOpsActivityAction,
+  normalizedProblemStatus
+} = require("./problem-resolution");
+const {
   generateActivationOtp,
   activationExpiresAt,
   hashSecret,
@@ -104,19 +111,35 @@ const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => 
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 });
 const operationalIncidentSchema = z.object({
-  driverId: driverIdSchema,
+  affectedEntity: z.enum(["driver", "vehicle"]).optional().default("driver"),
+  driverId: driverIdSchema.optional(),
   date: isoDateSchema,
   reason: z.string().trim().min(2).max(200),
   description: z.string().trim().max(1000).optional().default(""),
   bus: z.string().trim().max(32).optional().default(""),
   shiftType: z.string().trim().max(64).optional().default(""),
   shiftName: z.string().trim().max(120).optional().default("")
+}).superRefine((data, ctx) => {
+  const entity = data.affectedEntity || "driver";
+  if (entity === "driver" && !data.driverId) {
+    ctx.addIssue({ code: "custom", path: ["driverId"], message: "required" });
+  }
+  if (entity === "vehicle" && !String(data.bus || "").trim()) {
+    ctx.addIssue({ code: "custom", path: ["bus"], message: "required" });
+  }
+});
+const problemTransitionSchema = z.object({
+  toStatus: z.enum(["acknowledged", "solution_proposed", "applying", "cancelled"]),
+  expectedRevision: z.number().int().min(0),
+  assigneeId: z.string().trim().min(1).max(128).optional(),
+  proposedSolution: z.string().trim().max(1000).optional()
 });
 const coverageResolutionSchema = z.object({
   replacementDriverId: driverIdSchema,
   replacementBus: z.string().trim().min(1).max(32),
   expectedOriginalRevision: z.number().int().min(0),
-  expectedReplacementRevision: z.number().int().min(0)
+  expectedReplacementRevision: z.number().int().min(0),
+  expectedProblemRevision: z.number().int().min(0).optional()
 });
 const vacationSchema = z.object({
   type: z.enum(["lt_vacation", "lt_paid", "lt_days"]),
@@ -1407,18 +1430,62 @@ function registerDriverRoutes(app, deps) {
     if (!parsed.success) return res.status(400).json({ success: false, error: "Nevažeći podaci incidenta." });
     try {
       const companyRef = db().collection("companies").doc(req.staff.companyId);
-      const [driverSnap, profileSnap] = await Promise.all([
-        companyRef.collection("drivers").doc(parsed.data.driverId).get(),
-        companyRef.collection("profile").doc("main").get()
-      ]);
-      if (!driverSnap.exists || driverSnap.data().active === false) {
-        return res.status(404).json({ success: false, error: "Aktivan vozač nije pronađen." });
+      const affectedEntity = parsed.data.affectedEntity || "driver";
+      const busNumber = String(parsed.data.bus || "").trim();
+      let groupId = null;
+      let driverId = parsed.data.driverId || null;
+      let driverName = "";
+      let driverSnap = null;
+
+      if (driverId) {
+        driverSnap = await companyRef.collection("drivers").doc(driverId).get();
+        if (!driverSnap.exists || driverSnap.data().active === false) {
+          return res.status(404).json({ success: false, error: "Aktivan vozač nije pronađen." });
+        }
+        const driver = driverSnap.data();
+        groupId = driver.groupId || driver.lineId || null;
+        driverName = safeDriver(driverSnap).name;
+        if (!dispatcherCanAccessGroup(req.staff.groups, groupId)) {
+          return res.status(403).json({ success: false, error: "Vozač nije u dodeljenoj grupi." });
+        }
       }
-      const driver = driverSnap.data();
-      const groupId = driver.groupId || driver.lineId || null;
-      if (!dispatcherCanAccessGroup(req.staff.groups, groupId)) {
-        return res.status(403).json({ success: false, error: "Vozač nije u dodeljenoj grupi." });
+
+      if (affectedEntity === "vehicle") {
+        const { busHasGroup, normalizeGroupIds } = require("./bus-group-membership");
+        const busQuery = await companyRef.collection("buses").where("number", "==", busNumber).limit(5).get();
+        if (groupId) {
+          const busSnap = busQuery.docs.find((doc) => {
+            const bus = doc.data();
+            return bus.active !== false && busHasGroup(bus, groupId);
+          });
+          if (!busSnap) {
+            return res.status(409).json({
+              success: false,
+              code: "BUS_NOT_AVAILABLE",
+              error: "Izabrani autobus nije aktivan i dostupan u ovoj grupi."
+            });
+          }
+        } else {
+          const staffGroups = Array.isArray(req.staff.groups) ? req.staff.groups : [];
+          const busSnap = busQuery.docs.find((doc) => {
+            const bus = doc.data();
+            if (bus.active === false) return false;
+            return staffGroups.some((gid) => busHasGroup(bus, gid));
+          });
+          if (!busSnap) {
+            return res.status(404).json({ success: false, error: "Autobus nije pronađen u dodeljenoj grupi." });
+          }
+          const busGroupIds = normalizeGroupIds(busSnap.data());
+          groupId = busGroupIds.find((gid) => dispatcherCanAccessGroup(req.staff.groups, gid)) || null;
+          if (!dispatcherCanAccessGroup(req.staff.groups, groupId)) {
+            return res.status(403).json({ success: false, error: "Autobus nije u dodeljenoj grupi." });
+          }
+        }
+      } else if (!driverId) {
+        return res.status(400).json({ success: false, error: "Nevažeći podaci incidenta." });
       }
+
+      const profileSnap = await companyRef.collection("profile").doc("main").get();
       const timezone = profileSnap.exists ? profileSnap.data().timezone : null;
       if (!validTimezone(timezone)) {
         return res.status(503).json({
@@ -1435,38 +1502,189 @@ function registerDriverRoutes(app, deps) {
           error: "Operativni incident može se evidentirati samo za današnju smenu."
         });
       }
+
       const reportId = crypto.randomUUID();
+      const createdAt = admin().firestore.FieldValue.serverTimestamp();
       const report = {
         type: "coverage:disruption",
         reason: parsed.data.reason,
         description: parsed.data.description,
         severity: "sev_critical",
-        bus: parsed.data.bus,
+        bus: busNumber,
         shiftType: parsed.data.shiftType,
         shiftName: parsed.data.shiftName,
         date: parsed.data.date,
-        driverId: parsed.data.driverId,
-        driver: safeDriver(driverSnap).name,
+        driverId,
+        driver: driverName,
         groupId,
-        status: "active",
         source: "dispatcher",
         createdBy: req.staff.uid,
-        createdAt: admin().firestore.FieldValue.serverTimestamp()
+        createdAt,
+        ...buildProblemCreateFields({
+          affectedEntity,
+          reporterId: req.staff.uid,
+          at: createdAt
+        })
       };
       await companyRef.collection("reports").doc(reportId).set(report);
       await logAudit(req.staff.companyId, req.staff.uid, "operational_incident_created", {
         reportId,
-        driverId: parsed.data.driverId,
+        driverId,
         groupId,
-        date: parsed.data.date
+        date: parsed.data.date,
+        affectedEntity,
+        bus: busNumber || null
       });
       return res.status(201).json({
         success: true,
-        report: { ...report, id: reportId, createdAt: null }
+        report: { ...report, id: reportId, createdAt: null, lifecycle: { open: null } }
       });
     } catch (error) {
       req.log?.error?.({ err: error }, "Evidentiranje operativnog incidenta nije uspelo");
       return res.status(500).json({ success: false, error: "Operativni incident nije mogao biti sačuvan." });
+    }
+  });
+
+  app.put("/api/staff/operational-incidents/:reportId/transition", rateLimit(20, 60_000), requireStaff, async (req, res) => {
+    if (req.staff.role !== "dispatcher") {
+      return res.status(403).json({ success: false, error: "Samo disponent može menjati status incidenta." });
+    }
+    const reportId = reportIdSchema.safeParse(req.params.reportId);
+    const parsed = problemTransitionSchema.safeParse(req.body);
+    if (!reportId.success || !parsed.success) {
+      return res.status(400).json({ success: false, error: "Nevažeći podaci tranzicije." });
+    }
+    try {
+      const companyRef = db().collection("companies").doc(req.staff.companyId);
+      const reportRef = companyRef.collection("reports").doc(reportId.data);
+      const reportSnap = await reportRef.get();
+      if (!reportSnap.exists) return res.status(404).json({ success: false, error: "Incident nije pronađen." });
+      const existing = reportSnap.data();
+      const groupId = existing.groupId || null;
+      if (!dispatcherCanAccessGroup(req.staff.groups, groupId)) {
+        return res.status(403).json({ success: false, error: "Incident nije u dodeljenoj grupi." });
+      }
+
+      const fromStatus = normalizedProblemStatus(existing.status);
+      const transitionedAt = admin().firestore.FieldValue.serverTimestamp();
+      const simulated = simulateProblemTransition(existing, parsed.data.toStatus, {
+        expectedRevision: parsed.data.expectedRevision,
+        assigneeId: parsed.data.assigneeId,
+        proposedSolution: parsed.data.proposedSolution,
+        actorId: req.staff.uid,
+        at: transitionedAt
+      });
+      if (!simulated.ok) {
+        if (simulated.code === "REVISION_CONFLICT") {
+          return res.status(409).json({
+            success: false,
+            code: "REVISION_CONFLICT",
+            currentRevision: simulated.currentRevision ?? 0,
+            error: "Incident je u međuvremenu izmenjen. Osvežite prikaz."
+          });
+        }
+        if (simulated.code === "INVALID_TRANSITION") {
+          return res.status(409).json({
+            success: false,
+            code: "INVALID_TRANSITION",
+            from: simulated.from,
+            to: simulated.to,
+            error: "Nedozvoljena promena statusa incidenta."
+          });
+        }
+        if (simulated.code === "INCIDENT_NOT_ACTIVE") {
+          return res.status(409).json({
+            success: false,
+            code: "INCIDENT_NOT_ACTIVE",
+            currentRevision: simulated.currentRevision ?? 0,
+            error: "Incident nije aktivan."
+          });
+        }
+        return res.status(400).json({
+          success: false,
+          code: simulated.code || "INVALID_TRANSITION",
+          error: "Nevažeći podaci tranzicije."
+        });
+      }
+
+      await reportRef.update(simulated.patch);
+      await logAudit(req.staff.companyId, req.staff.uid, "operational_incident_transitioned", {
+        reportId: reportId.data,
+        groupId,
+        from: fromStatus,
+        to: simulated.status,
+        revision: simulated.revision,
+        affectedEntity: existing.affectedEntity || "driver"
+      });
+      return res.json({
+        success: true,
+        report: {
+          id: reportId.data,
+          status: simulated.status,
+          revision: simulated.revision,
+          assigneeId: simulated.patch.assigneeId,
+          proposedSolution: simulated.patch.proposedSolution,
+          groupId
+        }
+      });
+    } catch (error) {
+      req.log?.error?.({ err: error }, "Tranzicija operativnog incidenta nije uspela");
+      return res.status(500).json({ success: false, error: "Status incidenta nije mogao biti promenjen." });
+    }
+  });
+
+  app.get("/api/staff/ops-activity", rateLimit(30, 60_000), requireStaff, async (req, res) => {
+    if (req.staff.role !== "dispatcher") {
+      return res.status(403).json({ success: false, error: "Samo disponent može pregledati operativnu aktivnost." });
+    }
+    try {
+      const requested = Number.parseInt(req.query.limit, 10);
+      const limit = Number.isFinite(requested) ? Math.min(50, Math.max(1, requested)) : 25;
+      const companyRef = db().collection("companies").doc(req.staff.companyId);
+      const snapshot = await companyRef.collection("audit_log")
+        .orderBy("timestamp", "desc")
+        .limit(Math.min(250, limit * 5))
+        .get();
+
+      const events = [];
+      for (const doc of snapshot.docs) {
+        const data = doc.data() || {};
+        if (!isOpsActivityAction(data.action)) continue;
+        const details = data.details && typeof data.details === "object" ? data.details : {};
+        const groupId = details.groupId || null;
+        const groupIds = Array.isArray(details.groupIds) ? details.groupIds : [];
+        if (groupId) {
+          if (!dispatcherCanAccessGroup(req.staff.groups, groupId)) continue;
+        } else if (groupIds.length) {
+          const visible = groupIds.some((gid) => dispatcherCanAccessGroup(req.staff.groups, gid));
+          if (!visible) continue;
+        }
+        const ts = data.timestamp;
+        events.push({
+          id: doc.id,
+          action: String(data.action || ""),
+          actorId: data.actorId || null,
+          actorName: data.actorName || null,
+          timestamp: typeof ts?.toDate === "function" ? ts.toDate().toISOString() : (ts || null),
+          details: {
+            groupId: groupId || null,
+            groupIds: groupIds.length ? groupIds : undefined,
+            reportId: details.reportId || null,
+            driverId: details.driverId || null,
+            date: details.date || null,
+            affectedEntity: details.affectedEntity || null,
+            bus: details.bus || null,
+            from: details.from || null,
+            to: details.to || null,
+            revision: details.revision ?? null
+          }
+        });
+        if (events.length >= limit) break;
+      }
+      return res.json({ success: true, events });
+    } catch (error) {
+      req.log?.error?.({ err: error }, "Učitavanje operativne aktivnosti nije uspelo");
+      return res.status(500).json({ success: false, error: "Operativna aktivnost nije mogla biti učitana." });
     }
   });
 
@@ -1489,8 +1707,28 @@ function registerDriverRoutes(app, deps) {
       if (!dispatcherCanAccessGroup(req.staff.groups, groupId)) {
         return res.status(403).json({ success: false, error: "Incident nije u dodeljenoj grupi." });
       }
-      if (!initialReport.driverId || initialReport.driverId === parsed.data.replacementDriverId) {
+      const affectedEntity = initialReport.affectedEntity === "vehicle" ? "vehicle" : "driver";
+      const isSameDriverBusSwap = affectedEntity === "vehicle"
+        && initialReport.driverId
+        && initialReport.driverId === parsed.data.replacementDriverId;
+      if (!initialReport.driverId) {
+        return res.status(409).json({
+          success: false,
+          code: "INVALID_REPLACEMENT",
+          error: "Incident nema vozača za zamenu. Dodeli vozača pre rešavanja."
+        });
+      }
+      if (!isSameDriverBusSwap && initialReport.driverId === parsed.data.replacementDriverId) {
         return res.status(409).json({ success: false, code: "INVALID_REPLACEMENT", error: "Izaberite drugog vozača za zamenu." });
+      }
+      if (Number.isInteger(parsed.data.expectedProblemRevision)
+        && parsed.data.expectedProblemRevision !== currentProblemRevision(initialReport)) {
+        return res.status(409).json({
+          success: false,
+          code: "REVISION_CONFLICT",
+          error: "Incident je u međuvremenu izmenjen.",
+          conflict: { currentRevision: currentProblemRevision(initialReport) }
+        });
       }
 
       const [originalDriverSnap, replacementDriverSnap, busQuery] = await Promise.all([
@@ -1561,7 +1799,8 @@ function registerDriverRoutes(app, deps) {
           ? replacementShiftSnap.data().type
           : replacementScheduleDay?.type;
         const availableReplacementTypes = new Set(["clear", "off", "bereitschaft", "standby"]);
-        if (replacementDutyType && !availableReplacementTypes.has(replacementDutyType)) {
+        const sameDriverRefs = originalShiftRef.id === replacementShiftRef.id;
+        if (!sameDriverRefs && replacementDutyType && !availableReplacementTypes.has(replacementDutyType)) {
           const error = new Error("driver_conflict");
           error.code = "driver_conflict";
           throw error;
@@ -1575,37 +1814,43 @@ function registerDriverRoutes(app, deps) {
           throw error;
         }
 
-        if (originalShiftSnap.exists) tx.delete(originalShiftRef);
-        if (originalScheduleSnap.exists && day != null) {
-          const originalSchedule = originalScheduleSnap.data();
-          const parsedShifts = { ...(originalSchedule.parsedShifts || {}) };
-          delete parsedShifts[day];
-          tx.set(originalScheduleRef, {
-            ...originalSchedule, parsedShifts,
-            revision: currentRevision(originalSchedule) + 1,
-            updatedAt: admin().firestore.FieldValue.serverTimestamp(),
-            updatedBy: req.staff.uid
-          }, { merge: true });
+        const assignedAt = admin().firestore.FieldValue.serverTimestamp();
+        if (!sameDriverRefs) {
+          if (originalShiftSnap.exists) tx.delete(originalShiftRef);
+          if (originalScheduleSnap.exists && day != null) {
+            const originalSchedule = originalScheduleSnap.data();
+            const parsedShifts = { ...(originalSchedule.parsedShifts || {}) };
+            delete parsedShifts[day];
+            tx.set(originalScheduleRef, {
+              ...originalSchedule, parsedShifts,
+              revision: currentRevision(originalSchedule) + 1,
+              updatedAt: assignedAt,
+              updatedBy: req.staff.uid
+            }, { merge: true });
+          }
         }
 
-        const assignedAt = admin().firestore.FieldValue.serverTimestamp();
+        const priorShift = sameDriverRefs && originalShiftSnap.exists
+          ? originalShiftSnap.data()
+          : (replacementShiftSnap.exists ? replacementShiftSnap.data() : null);
         const shiftData = {
           driverId: parsed.data.replacementDriverId,
           date,
-          type: initialReport.shiftType || "morning",
-          name: initialReport.shiftName || "",
+          type: (sameDriverRefs && priorShift?.type) || initialReport.shiftType || "morning",
+          name: (sameDriverRefs && priorShift?.name) || initialReport.shiftName || "",
           bus: parsed.data.replacementBus,
-          routeCode: initialReport.shiftName || "",
-          start: originalShiftSnap.exists ? originalShiftSnap.data().start || undefined : undefined,
-          end: originalShiftSnap.exists ? originalShiftSnap.data().end || undefined : undefined
+          routeCode: (sameDriverRefs && priorShift?.routeCode) || initialReport.shiftName || "",
+          start: priorShift?.start || (originalShiftSnap.exists ? originalShiftSnap.data().start || undefined : undefined),
+          end: priorShift?.end || (originalShiftSnap.exists ? originalShiftSnap.data().end || undefined : undefined)
         };
         const replacementShift = buildAssignedShift({
           data: shiftData,
           driverName: replacementName,
           driverGroupId: groupId,
           staffUid: req.staff.uid,
-          revision: currentRevision(replacementShiftSnap.exists ? replacementShiftSnap.data() : null) + 1,
-          assignedAt
+          revision: currentRevision(priorShift) + 1,
+          assignedAt,
+          priorSnapshot: capturePriorSnapshot(priorShift)
         });
         tx.set(replacementShiftRef, replacementShift);
         if (day != null) {
@@ -1629,7 +1874,23 @@ function registerDriverRoutes(app, deps) {
           verifiedBy: req.staff.uid,
           verifiedAt: assignedAt
         };
-        tx.update(reportRef, { status: "resolved", resolution, resolvedAt: assignedAt, resolvedBy: req.staff.uid });
+        const problemRevision = currentProblemRevision(reportSnap.data()) + 1;
+        const lifecycle = {
+          ...(reportSnap.data().lifecycle && typeof reportSnap.data().lifecycle === "object"
+            ? reportSnap.data().lifecycle
+            : {}),
+          applying: assignedAt,
+          resolved: assignedAt
+        };
+        tx.update(reportRef, {
+          status: "resolved",
+          revision: problemRevision,
+          resolution,
+          resolvedAt: assignedAt,
+          resolvedBy: req.staff.uid,
+          assigneeId: req.staff.uid,
+          lifecycle
+        });
         tx.set(auditRef, {
           action: "operational_incident_resolved",
           actorId: req.staff.uid,
@@ -1642,17 +1903,76 @@ function registerDriverRoutes(app, deps) {
             groupId,
             originalDriverId: initialReport.driverId,
             replacementDriverId: parsed.data.replacementDriverId,
-            replacementBus: parsed.data.replacementBus
+            replacementBus: parsed.data.replacementBus,
+            affectedEntity: initialReport.affectedEntity || "driver",
+            revision: problemRevision
           }
         });
-        return { replacementShift, resolution };
+        return { replacementShift, resolution, problemRevision };
       });
+
+      // Best-effort notify relevant drivers (§8). Full outbox lifecycle remains Ch10.
+      const notifyIds = [...new Set([
+        initialReport.driverId,
+        parsed.data.replacementDriverId
+      ].filter(Boolean))];
+      const notified = [];
+      try {
+        if (notifyIds.length) {
+          const batch = db().batch();
+          const createdAt = admin().firestore.FieldValue.serverTimestamp();
+          const nowDate = new Date();
+          for (const targetId of notifyIds) {
+            const targetSnap = targetId === parsed.data.replacementDriverId
+              ? replacementDriverSnap
+              : originalDriverSnap;
+            const id = newMessageId();
+            const doc = buildStaffMessageDoc({
+              id,
+              now: nowDate,
+              senderName: "Dispatch",
+              senderUid: req.staff.uid,
+              senderLang: "sr",
+              template: "tmpl_shift_now",
+              detail: `Plan ${date}: ${replacementName} / bus ${parsed.data.replacementBus}`,
+              type: "info",
+              scope: "driver",
+              broadcast: false,
+              recipientName: safeDriver(targetSnap).name,
+              recipientDriverId: targetId,
+              groupId
+            });
+            batch.set(companyRef.collection("messages").doc(id), { ...doc, createdAt });
+            notified.push(targetId);
+          }
+          await batch.commit();
+          await logAudit(req.staff.companyId, req.staff.uid, "staff_message_sent", {
+            mode: "driver",
+            template: "tmpl_shift_now",
+            scope: "driver",
+            broadcast: false,
+            groupId,
+            messageCount: notified.length,
+            recipientDriverIds: notified,
+            reason: "operational_incident_resolved"
+          });
+        }
+      } catch (notifyError) {
+        req.log?.warn?.({ err: notifyError }, "Obaveštavanje vozača posle resolve-a nije uspelo");
+      }
 
       return res.json({
         success: true,
-        report: { id: reportId.data, status: "resolved", resolution: { ...result.resolution, verifiedAt: null }, resolvedAt: null },
+        report: {
+          id: reportId.data,
+          status: "resolved",
+          revision: result.problemRevision,
+          resolution: { ...result.resolution, verifiedAt: null },
+          resolvedAt: null
+        },
         shift: { ...result.replacementShift, id: replacementShiftRef.id, assignedAt: null },
-        removedDriverId: initialReport.driverId
+        removedDriverId: isSameDriverBusSwap ? null : initialReport.driverId,
+        notifiedDriverIds: notified
       });
     } catch (error) {
       if (error.code === "revision_conflict") {

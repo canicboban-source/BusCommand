@@ -47,7 +47,7 @@ fingerprint se otkazuje.
 
 ## 6. Šta nije u ovom modelu
 
-- Problem/resolution entiteti → Poglavlje 9
+- Problem/resolution entiteti → Poglavlje 9 ✅ (`server/problem-resolution.js`)
 - CA katalog import/activate/rollback → Poglavlje 7
 - Outbox delivery lifecycle → Poglavlje 10
 

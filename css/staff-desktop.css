@@ -2547,3 +2547,54 @@ html[data-app-surface="staff"] .plan-lock-banner__input {
     color: var(--text-main, #e2e8f0);
 }
 
+
+/* -- Ops activity + lifecycle (Ch9) -- */
+html[data-app-surface="staff"] .ops-activity-block {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--panel-border);
+}
+html[data-app-surface="staff"] .ops-activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 220px;
+    overflow: auto;
+}
+html[data-app-surface="staff"] .ops-activity-item {
+    display: grid;
+    gap: 2px;
+    padding: 8px 10px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.02);
+    font-size: 0.78rem;
+}
+html[data-app-surface="staff"] .ops-activity-item time {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+}
+html[data-app-surface="staff"] .ops-lifecycle-chip {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    background: rgba(245, 158, 11, 0.16);
+    color: #fbbf24;
+}
+html[data-app-surface="staff"] .ops-row-actions {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+}
+html[data-app-surface="staff"] .ops-daily-table tr.is-neutral .ops-status-pill {
+    color: var(--text-muted);
+}
+html[data-app-surface="staff"] .alert-item-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}

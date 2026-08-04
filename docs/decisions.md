@@ -92,6 +92,18 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
 - Posledica: `server/shift-assignment.js`, `POST …/assignment/undo`,
   `js/dispatcher/monthly-plans.js`.
 
+### D9 — Problem lifecycle + vehicle out + ops activity
+
+- Datum: 2026-08-04 · Status: **Odlučeno** (Poglavlje 9)
+- Odluka:
+  1. Generički statusi: `open → acknowledged → solution_proposed → applying →
+     resolved|cancelled` (legacy `active` = `open`).
+  2. Incident nosi `revision`, `assigneeId`, `affectedEntity` (driver|vehicle).
+  3. Resolve šalje best-effort poruku relevantnim vozačima; pun outbox ostaje P10.
+  4. Cockpit čita `GET /api/staff/ops-activity` (Admin SDK), ne direktan
+     client `audit_log`.
+- Posledica: `server/problem-resolution.js`, ops transition/activity rute.
+
 ---
 
 ## Otvorena pitanja
