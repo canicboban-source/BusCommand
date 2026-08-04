@@ -70,12 +70,25 @@ test("routes, rules, provisioning flag and UI hooks are wired", () => {
   const sa = fs.readFileSync(path.join(__dirname, "../../js/admin/superadmin.js"), "utf8");
   const ca = fs.readFileSync(path.join(__dirname, "../../js/admin/company-admin.js"), "utf8");
   const client = fs.readFileSync(path.join(__dirname, "../../js/core/api-client.js"), "utf8");
+  const staffActions = fs.readFileSync(path.join(__dirname, "../../js/register-onclick-staff.js"), "utf8");
+  const staff = fs.readFileSync(path.join(__dirname, "../../staff.html"), "utf8");
+  const staffSource = fs.readFileSync(path.join(__dirname, "../../index.legacy-monolith.html"), "utf8");
 
   assert.match(api, /\/api\/admin\/companies\/:companyId\/support-sessions/);
   assert.match(api, /\/api\/company-admin\/support-session\/end/);
   assert.match(rules, /support_sessions\/\{sessionId\}[\s\S]*?allow create, update, delete: if false/);
   assert.match(provisioning, /supportSession:\s*false/);
   assert.match(sa, /superadminStartSupport/);
+  assert.match(sa, /sa-detail-support-action-btn/);
+  assert.match(sa, /supportActionBtn\.disabled = true/);
+  assert.match(sa, /setAttribute\("data-i18n", "sa_support_start"\)/);
+  assert.match(sa, /setAttribute\("data-i18n", "sa_support_end"\)/);
+  assert.doesNotMatch(sa, /function superadminOpenCompany[\s\S]*?window\.open/);
+  assert.doesNotMatch(staffActions, /\bsuperadminOpenCompany\b(?!Detail)/);
+  assert.doesNotMatch(staff, /data-action="superadminOpenCompany"/);
+  assert.doesNotMatch(staffSource, /data-action="superadminOpenCompany"/);
+  assert.match(staff, /id="sa-detail-support-action-btn"[\s\S]*?disabled/);
+  assert.match(staffSource, /id="sa-detail-support-action-btn"[\s\S]*?disabled/);
   assert.doesNotMatch(sa, /driver_credentials/);
   assert.match(ca, /ca_support_active/);
   assert.match(client, /startSupportSession/);

@@ -28,6 +28,7 @@ const {
 const { createRequireSuperAdmin, createSuperAdminOverviewHandler } = require("./server/superadmin-overview");
 const {
   getCompanyDetail,
+  updateCompanyDetails,
   listAllCompanyAdmins,
   setCompanyAdminActive,
   requestCompanyAdminPasswordReset
@@ -62,6 +63,7 @@ const {
   companyDispatcherStatusBody,
   companyDispatcherActionBody,
   companyAdminStatusBody,
+  superAdminCompanyDetailsBody,
   companyProfileSettingsBody,
   companyBrandingBody,
   companyGroupBody,
@@ -689,6 +691,40 @@ app.get("/api/admin/company/:companyId", requireSuperAdmin, async (req, res) => 
     return res.status(500).json({ success: false, error: "Greška pri učitavanju firme." });
   }
 });
+
+app.put(
+  "/api/admin/company/:companyId",
+  rateLimit(20, 5 * 60 * 1000),
+  requireSuperAdmin,
+  validateBody(superAdminCompanyDetailsBody),
+  async (req, res) => {
+    const parsed = parseCompanyParam(req.params.companyId);
+    if (!parsed.ok) {
+      return res.status(400).json({ success: false, error: parsed.error });
+    }
+    try {
+      const result = await updateCompanyDetails({
+        db,
+        admin,
+        companyId: parsed.id,
+        input: req.validatedBody,
+        actorId: req.adminUser.uid
+      });
+      return res.json({ success: true, ...result });
+    } catch (err) {
+      if (err instanceof ProvisioningError) {
+        if (err.code === "company-not-found") {
+          return res.status(404).json({ success: false, error: err.message });
+        }
+        if (err.code === "license-unavailable") {
+          return res.status(409).json({ success: false, error: err.message });
+        }
+      }
+      req.log?.error({ err }, "company details update greška");
+      return res.status(500).json({ success: false, error: "Podaci firme nisu ažurirani." });
+    }
+  }
+);
 
 app.patch(
   "/api/admin/company/:companyId/admins/:uid/status",
@@ -1658,3 +1694,4 @@ app.listen(PORT, "0.0.0.0", () => {
     console.log("     (vidi SETUP-FIREBASE.md)");
   }
 });
+

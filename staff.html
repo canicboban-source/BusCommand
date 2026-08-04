@@ -2228,8 +2228,10 @@
             <p id="sa-detail-error" class="error-message hidden" role="alert"></p>
             <div id="sa-detail-body"></div>
             <div class="sa-detail-footer">
-                <button type="button" id="sa-detail-open-app-btn" class="btn-secondary" data-action="superadminOpenCompany" data-action-args='[]' data-i18n="btn_open">Open</button>
-                <button type="button" class="btn-primary" data-action="superadminCloseCompanyDetail" data-i18n="btn_close">Close</button>
+                <button type="button" id="sa-detail-edit-cancel-btn" class="btn-secondary hidden" data-action="superadminCancelCompanyDetailEdit" data-i18n="btn_cancel">Cancel</button>
+                <button type="button" id="sa-detail-support-action-btn" class="btn-secondary" disabled data-i18n="sa_detail_support_off">Support off</button>
+                <button type="button" id="sa-detail-close-btn" class="btn-secondary" data-action="superadminCloseCompanyDetail" data-i18n="btn_close">Close</button>
+                <button type="button" id="sa-detail-edit-btn" class="btn-primary" data-action="superadminEditCompanyDetail" disabled><span data-i18n="btn_edit">Edit</span></button>
             </div>
         </div>
     </div>
@@ -2254,7 +2256,7 @@
             <p id="sa-support-error" class="error-message hidden" role="alert"></p>
             <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;">
                 <button type="button" class="btn-secondary" data-action="superadminCancelSupportModal" data-i18n="btn_cancel">Cancel</button>
-                <button type="button" class="btn-primary" data-action="superadminConfirmSupportStart" data-i18n="sa_support_confirm">Start session</button>
+                <button type="button" id="sa-support-confirm-btn" class="btn-primary" data-action="superadminConfirmSupportStart"><span data-i18n="sa_support_confirm">Start session</span></button>
             </div>
         </div>
     </div>
@@ -2322,3 +2324,4 @@
 
 </body>
 </html>
+

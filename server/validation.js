@@ -93,6 +93,16 @@ const companyAdminStatusBody = z.object({
   active: z.boolean()
 });
 
+const superAdminCompanyDetailsBody = z.object({
+  name: z.string().trim().min(2).max(200),
+  country: z.enum(["AT", "RS"]),
+  contactEmail: z.string().trim().toLowerCase().email().max(254),
+  plan: z.enum(["trial", "paid"]),
+  maxDrivers: z.number().int().min(1).max(100000),
+  maxDispatchers: z.number().int().min(1).max(10000),
+  trialEndsAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable()
+}).strict();
+
 const companyProfileSettingsBody = z.object({
   companyId: z.string().trim().min(1).max(64),
   country: z.enum(["AT", "RS"]),
@@ -214,6 +224,7 @@ module.exports = {
   companyDispatcherStatusBody,
   companyDispatcherActionBody,
   companyAdminStatusBody,
+  superAdminCompanyDetailsBody,
   companyProfileSettingsBody,
   companyBrandingBody,
   companyGroupBody,

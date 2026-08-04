@@ -49,6 +49,12 @@ const ApiClient = (() => {
     async function getCompanyDetail(companyId) {
         return apiFetch("/api/admin/company/" + encodeURIComponent(companyId));
     }
+    async function updateCompanyDetails(companyId, details) {
+        return apiFetch("/api/admin/company/" + encodeURIComponent(companyId), {
+            method: "PUT",
+            body: JSON.stringify(details)
+        });
+    }
     async function setCompanyAdminStatus(companyId, uid, active) {
         return apiFetch(
             "/api/admin/company/" + encodeURIComponent(companyId) + "/admins/" + encodeURIComponent(uid) + "/status",
@@ -384,7 +390,7 @@ const ApiClient = (() => {
 
     return {
         fetch: apiFetch, getConfig, getLicense, getCompanies, getCompanyAdmins, getSuperAdminOverview,
-        getCompanyDetail, setCompanyAdminStatus, resetCompanyAdminPassword,
+        getCompanyDetail, updateCompanyDetails, setCompanyAdminStatus, resetCompanyAdminPassword,
         setCompanyStatus, deleteCompany, createCompany, createUser, updateUserGroups,
         createCompanyDispatcher, updateCompanyDispatcherGroups,
         setCompanyDispatcherStatus, revokeCompanyDispatcherSessions,
@@ -404,3 +410,4 @@ const ApiClient = (() => {
 
 export { ApiClient };
 export default ApiClient;
+
