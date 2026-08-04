@@ -7,17 +7,18 @@ const { pathToFileURL } = require("node:url");
 const ROOT = path.join(__dirname, "../..");
 
 function pinLoginSlice(authClientSource) {
-  const start = authClientSource.indexOf("async function loginWithPin");
+  const start = authClientSource.indexOf("async function loginWithDriverCode");
   const end = authClientSource.indexOf("async function activatePersonalLoginCode", start);
-  assert.ok(start > -1 && end > start, "loginWithPin missing");
+  assert.ok(start > -1 && end > start, "loginWithDriverCode missing");
   return authClientSource.slice(start, end);
 }
 
-test("driver login/identify API errors expose stable codes (not locale-only)", () => {
+test("driver auth API errors expose stable codes (not locale-only)", () => {
   const source = fs.readFileSync(path.join(ROOT, "server/driver-routes.js"), "utf8");
-  assert.match(source, /code:\s*"INVALID_DATA"/);
-  assert.match(source, /code:\s*"DRIVER_NOT_FOUND"/);
   assert.match(source, /code:\s*"INVALID_LOGIN"/);
+  assert.match(source, /code:\s*"INVALID_LOGIN_PAYLOAD"/);
+  assert.match(source, /code:\s*"ACCOUNT_LOCKED"/);
+  assert.match(source, /code:\s*"COMPANY_SUSPENDED"/);
   assert.match(source, /code:\s*"INVALID_TOKEN"/);
   assert.match(source, /code:\s*"ACTIVATION_REQUIRED"/);
 });
@@ -25,10 +26,10 @@ test("driver login/identify API errors expose stable codes (not locale-only)", (
 test("driver login UI never toasts raw Serbian server error strings", () => {
   const loginDriver = fs.readFileSync(path.join(ROOT, "js/auth/login-driver.js"), "utf8");
   assert.match(loginDriver, /translateApiError/);
-  assert.doesNotMatch(loginDriver, /showToast\(\s*identified\.error/);
   assert.doesNotMatch(loginDriver, /showToast\(\s*result\.error/);
   assert.doesNotMatch(loginDriver, /Pristup firmi je suspendovan/);
   assert.doesNotMatch(loginDriver, /Nevažeći podaci/);
+  assert.doesNotMatch(loginDriver, /Unesite EID/);
 
   const pinLogin = pinLoginSlice(fs.readFileSync(path.join(ROOT, "js/core/auth-client.js"), "utf8"));
   assert.match(pinLogin, /code:\s*"MISSING_FIELDS"/);
@@ -44,7 +45,9 @@ test("api_error_* keys exist for en/sr/de", () => {
     "INVALID_DATA",
     "INVALID_LOGIN",
     "INVALID_TOKEN",
-    "DRIVER_NOT_FOUND",
+    "ACCOUNT_LOCKED",
+    "COMPANY_SUSPENDED",
+    "SESSION_SUPERSEDED",
     "MISSING_FIELDS",
     "SERVER_ERROR"
   ]) {

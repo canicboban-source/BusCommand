@@ -119,7 +119,11 @@ function fixture() {
     ["sa", { uid: "sa-1", role: "superadmin" }],
     ["ca-revoked", { uid: "ca-1", role: "company_admin", companyId: "alpha", revoked: true }],
     ["claims-only", { uid: "ca-9", role: "company_admin" }],
-    ["role-drift", { uid: "disp-4", role: "company_admin", companyId: "alpha" }]
+    ["role-drift", { uid: "disp-4", role: "company_admin", companyId: "alpha" }],
+    // Signed in before the tenant revoked its sessions.
+    ["disp-stale", { uid: "disp-5", role: "dispatcher", companyId: "alpha", auth_time: 1_000 }],
+    // Signed in after that cutoff.
+    ["disp-fresh", { uid: "disp-5", role: "dispatcher", companyId: "alpha", auth_time: 3_000 }]
   ]);
   const profiles = new Map([
     ["alpha/ca-1", { role: "company_admin", active: true, name: "Alpha Admin" }],
@@ -127,6 +131,7 @@ function fixture() {
     ["alpha/disp-1", { role: "dispatcher", active: true, groups: ["310"] }],
     ["alpha/disp-2", { role: "dispatcher", active: false, groups: ["310"] }],
     ["alpha/disp-4", { role: "dispatcher", active: true, groups: ["310"] }],
+    ["alpha/disp-5", { role: "dispatcher", active: true, groups: ["310"], sessionsValidAfterEpoch: 2_000 }],
     ["beta/disp-3", { role: "dispatcher", active: true, groups: ["105"] }]
   ]);
   return { tokens, profiles };
@@ -184,6 +189,22 @@ test("deactivated, missing and role-drifted profiles are refused even with a val
       assert.equal(response.status, 403, `token ${token} must be refused`);
       assert.equal(response.body.error, "Nalog nije aktivan.");
     }
+  } finally {
+    await server.close();
+  }
+});
+
+test("a session started before the tenant cutoff is refused, a later one is allowed", async () => {
+  const server = await startServer(fixture());
+  try {
+    // Revoking refresh tokens and bumping the cutoff are two separate calls, so
+    // the API applies the cutoff itself rather than assuming the pair held.
+    const stale = await server.request("/staff/echo", { token: "disp-stale" });
+    assert.equal(stale.status, 401);
+    assert.equal(stale.body.code, "SESSION_SUPERSEDED");
+
+    const fresh = await server.request("/staff/echo", { token: "disp-fresh" });
+    assert.equal(fresh.status, 200);
   } finally {
     await server.close();
   }

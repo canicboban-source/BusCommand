@@ -629,7 +629,7 @@ zatvorenog poglavlja i uvek pokazuje na izveštaj sa dokazima.
 | 1 | Utvrđivanje stanja i stabilnog checkpoint-a | završeno | `reports/poglavlje-1-state-checkpoint-2026-08-04.md` |
 | 2 | Tajne, RBAC, Firestore Rules i tenant izolacija | završeno | `reports/poglavlje-2-secrets-rbac-rules-2026-08-04.md` |
 | 3 | Zavisnosti, `npm audit` i runtime dokaz Admin SDK-a | završeno | `reports/poglavlje-3-zavisnosti-i-audit-2026-08-04.md` |
-| 4 | Identitet i četiri login lifecycle-a, sesije i istek | — | — |
+| 4 | Identitet i četiri login lifecycle-a, sesije i istek | završeno | `reports/poglavlje-4-auth-lifecycle-2026-08-04.md` |
 | 5 | Dizajn sistem i tokeni (prethodi svakom redizajnu, §33) | — | — |
 | 6 | Kanonski model plana i revizije | — | — |
 | 7 | Company Admin katalog smena, import/preview/activate/rollback | — | — |

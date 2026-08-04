@@ -5,6 +5,13 @@ import { populateTemplateSelect } from "../dispatcher/msg-compose.js";
 import { initializeLoginSelects } from "../auth/login-selects.js";
 import { switchSection } from "../layout/navigation.js";
 import { tp } from "./i18n-plural.js";
+import { isStaffSurface } from "../core/app-surface.js";
+
+// The Super Admin entry hides behind repeated logo clicks, and only the staff
+// bundle registers that handler.
+function superAdminEntryAttr() {
+    return isStaffSurface() ? ' data-action="handleLogoClick"' : "";
+}
 
 function changeLanguage(lang) {
     if (!window.TRANSLATIONS[lang]) {
@@ -178,7 +185,7 @@ function applyBrandingToUI() {
             ? `<img class="bc-tenant-logo" src="${escapeAttr(logoUrl)}" alt="${safeName}" referrerpolicy="no-referrer" style="max-height: 40px; max-width: 160px; object-fit: contain; margin-top: 10px;">`
             : "";
         loginHeaderLogo.innerHTML = `
-            <div class="logo bc-brand" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;flex-direction:column;align-items:center;">
+            <div class="logo bc-brand" id="login-logo"${superAdminEntryAttr()} style="cursor:default;user-select:none;flex-direction:column;align-items:center;">
                 <img class="bc-brand-mark bc-brand-mark--hero" src="/brand/logo-hero.png" width="80" height="80" alt="BusCommand">
                 <span class="bc-brand-text">${productLogoHtml(displayName)}</span>
                 ${tenantLogo}

@@ -66,10 +66,10 @@ test("driverPortalUrl embeds company for SMS deep link", () => {
     assert.equal(api.driverPortalUrl(""), "/driver.html");
 });
 
-test("login-driver identify body uses resolved companyId variable not bare COMPANY_ID only", () => {
+test("driver login sends the resolved tenant, never the bare URL company", () => {
     const login = readFileSync(join(root, "js/auth/login-driver.js"), "utf8");
     assert.match(login, /resolveDriverLoginCompanyId/);
-    assert.match(login, /JSON\.stringify\(\{\s*companyId,\s*eid\s*\}\)/);
+    assert.match(login, /loginWithDriverCode\(\{ companyId: tenantId, eid, loginCode: pin \}\)/);
     assert.doesNotMatch(login, /companyId:\s*COMPANY_ID/);
     assert.match(login, /login_company_required_toast/);
 });

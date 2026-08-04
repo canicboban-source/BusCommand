@@ -26,7 +26,7 @@ Brojevi predstavljaju deklaraciona mesta. Dinamičke liste mogu proizvesti više
 
 ### Vozač
 
-- `driver-dashboard` — **delimično**. Browser pokriva PIN prijavu, nepotpune podatke i osnovni dashboard. Produkcioni Firebase/EID login nije browser-testiran.
+- `driver-dashboard` — **delimično**. Browser pokriva EID/kod prijavu (demo), nepotpune podatke i osnovni dashboard. Produkcioni Firebase login nije browser-testiran; HTTP login lifecycle je funkcionalno pokriven unit testovima.
 - `driver-calendar` — **delimično**. Browser pokriva promenu meseca i dodeljene podatke; timezone/DST ostaje unit-only.
 - `driver-reports` — **delimično**. Browser pokriva kašnjenje/kvar i sprečavanje duplog slanja; pravi Firebase/API lanac nije end-to-end potvrđen.
 - `driver-vacation` — **delimično**. Browser pokriva validiran zahtev i disponentovo odobrenje u demo režimu.
@@ -175,19 +175,37 @@ samo lažnim Admin SDK slojem — `revokeRefreshTokens` stvarno odbija ranije iz
 token sa `auth/id-token-revoked`. Ostaje ograničenje da emulator odbija opozvan
 token i bez te zastavice, pa razlika između dva režima nije merljiva lokalno.
 
+### Ažuriranje posle Poglavlja 4
+
+Auth lifecycle je prešao iz delimično/statički u **funkcionalno** za vozačku
+prijavu i staff session cut-off. Emulator matrica je 40/40; unit 464; E2E 57.
+
+Novo pokriveno funkcionalno:
+
+- jednokoračna vozačka prijava (EID + kod) bez identify orakla;
+- account lockout (10 neuspeha / 15 min) i `COMPANY_SUSPENDED`;
+- `checkRevoked` na `/api/driver` i activate-personal-code (HTTP test + mutacija);
+- `sessionsValidAfterEpoch` na Express staff gate (`SESSION_SUPERSEDED`);
+- identify → `410`; legacy PIN i hash-pin → `404`;
+- uklonjen SuperAdmin modal / `handleLogoClick` sa vozačke površine.
+
+Vozački dashboard i dalje je **delimično** za produkcioni Firebase browser pass;
+staff email login lifecycle ostaje E2E u demo režimu. Super Admin browser
+lifecycle ostaje najslabija uloga.
+
 ## Sledeći dokazivi koraci
 
-Redosled ostaje iz master prompta v3.1:
+Redosled iz master prompta v3.2 §27:
 
-1. RBAC, Firestore Rules i tenant izolacija;
-2. četiri login lifecycle-a;
-3. kanonski plan i revizije;
-4. CA katalog i mesečni plan;
-5. dnevni plan i problem-resolution;
-6. scheduler/outbox i poruke;
-7. driver session/GPS/PWA offline;
-8. SA/CA kompletiranje;
-9. i18n/accessibility;
-10. završni click/field integration ledger, test cleanup i staging acceptance.
+1. ~~RBAC / Rules / tenant~~ (P2);
+2. ~~zavisnosti / audit~~ (P3);
+3. ~~login lifecycle~~ (P4);
+4. dizajn sistem i tokeni (P5, §33);
+5. kanonski plan i revizije;
+6. CA katalog i mesečni plan;
+7. dnevni plan i problem-resolution;
+8. scheduler/outbox i poruke;
+9. driver session/GPS/PWA offline;
+10. SA/CA kompletiranje, i18n/a11y, staging acceptance.
 
 Svaka stavka prelazi iz „delimično/statički/nepokriveno“ u „funkcionalno“ samo kada postoji izvršen dokaz odgovarajućeg nivoa.

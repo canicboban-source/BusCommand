@@ -59,9 +59,7 @@ const {
   validateBody,
   sanitizeCompanyId,
   assertCompanyIdUsable,
-  driverLoginBody,
   companyStatusBody,
-  hashPinBody,
   createCompanyBody,
   deleteCompanyBody,
   createUserBody,
@@ -280,89 +278,11 @@ registerDriverRoutes(app, {
   clearRateLimit,
   getClientIp,
   logAudit: (...args) => _logAuditEvent(...args),
-  confirmationScheduler
+  confirmationScheduler,
+  staffAuth: { requireCompanyStaff }
 });
 
 confirmationScheduler.registerRoutes(app, { rateLimit });
-
-// ─── API: Driver PIN Login ─────────────────────────────────
-
-app.post(
-  "/api/legacy/auth/driver-login",
-  rateLimit(10, 5 * 60 * 1000),
-  validateBody(driverLoginBody),
-  async (req, res) => {
-    const { companyId, driverId, pin } = req.validatedBody;
-    const clientIp = getClientIp(req);
-
-    if (!HAS_FIREBASE) {
-      return res.status(503).json({
-        success: false,
-        error: "Prijava zahteva konfigurisanu Firebase vezu."
-      });
-    }
-
-    try {
-      const companyRef  = db.collection("companies").doc(companyId);
-      const companySnap = await companyRef.get();
-
-      if (!companySnap.exists) {
-        return res.status(404).json({ success: false, error: "Firma nije pronađena." });
-      }
-
-      const companySettings = (await companyRef.collection("settings").doc("main").get()).data() || {};
-      if (companySettings.status === "suspended") {
-        return res.status(403).json({
-          success: false,
-          error: "Pristup firmi je suspendovan. Kontaktirajte podršku."
-        });
-      }
-
-      const driverRef  = companyRef.collection("drivers").doc(driverId);
-      const driverSnap = await driverRef.get();
-
-      if (!driverSnap.exists) {
-        return res.status(401).json({
-          success: false,
-          error: "Pogrešan PIN ili vozač nije pronađen."
-        });
-      }
-
-      const driver = driverSnap.data();
-
-      if (driver.active === false) {
-        return res.status(403).json({ success: false, error: "Nalog je deaktiviran." });
-      }
-
-      const pinMatch = await bcrypt.compare(String(pin), driver.pin);
-      if (!pinMatch) {
-        await _logAuditEvent(companyId, driverId, "driver_login_failed", { driverId, ip: clientIp });
-        return res.status(401).json({ success: false, error: "Pogrešan PIN." });
-      }
-
-      const customToken = await admin.auth().createCustomToken(driverId, {
-        role: "driver", companyId, name: driver.name,
-        bus: driver.bus || null, driverId
-      });
-
-      await _logAuditEvent(companyId, driverId, "driver_login_success", {
-        driverName: driver.name, bus: driver.bus
-      });
-
-      clearRateLimit(clientIp);
-
-      return res.json({
-        success: true,
-        token: customToken,
-        user: { id: driverId, name: driver.name, bus: driver.bus || null, companyId }
-      });
-
-    } catch (err) {
-      req.log?.error({ err }, "Driver login greška");
-      return res.status(500).json({ success: false, error: "Server greška. Pokušajte ponovo." });
-    }
-  }
-);
 
 // ─── API: Licenca ──────────────────────────────────────────
 
@@ -538,23 +458,6 @@ app.post(
 );
 
 app.post(
-  "/api/admin/hash-pin",
-  requireSuperAdmin,
-  validateBody(hashPinBody),
-  async (req, res) => {
-    const { pin } = req.validatedBody;
-
-    try {
-      const hash = await bcrypt.hash(String(pin), 12);
-      return res.json({ success: true, hash });
-    } catch (err) {
-      req.log?.error({ err }, "hash-pin greška");
-      return res.status(500).json({ success: false, error: "Greška." });
-    }
-  }
-);
-
-app.post(
   "/api/admin/create-company",
   requireSuperAdmin,
   validateBody(createCompanyBody),
@@ -655,6 +558,7 @@ app.get("/api/admin/company/:companyId", requireSuperAdmin, async (req, res) => 
 
 app.patch(
   "/api/admin/company/:companyId/admins/:uid/status",
+  rateLimit(20, 5 * 60 * 1000),
   requireSuperAdmin,
   validateBody(companyAdminStatusBody),
   async (req, res) => {
@@ -688,6 +592,7 @@ app.patch(
 
 app.post(
   "/api/admin/company/:companyId/admins/:uid/reset-password",
+  rateLimit(10, 5 * 60 * 1000),
   requireSuperAdmin,
   async (req, res) => {
     const parsed = parseCompanyParam(req.params.companyId);
@@ -723,6 +628,7 @@ app.post(
 
 app.post(
   "/api/admin/create-user",
+  rateLimit(20, 5 * 60 * 1000),
   requireUserProvisioner,
   validateBody(createUserBody),
   async (req, res) => {
@@ -757,6 +663,7 @@ app.post(
 
 app.put(
   "/api/admin/users/:uid/groups",
+  rateLimit(30, 5 * 60 * 1000),
   requireUserProvisioner,
   validateBody(updateUserGroupsBody),
   async (req, res) => {

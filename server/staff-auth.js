@@ -21,6 +21,22 @@ function normalizeGroups(value) {
 }
 
 /**
+ * Every path that bumps `sessionsValidAfterEpoch` also revokes refresh tokens,
+ * so `checkRevoked` normally catches a superseded session. The two are separate
+ * Firebase calls though, and the Firestore rules already gate reads on this
+ * field, so the API applies the same test rather than trusting that the pair
+ * never comes apart. Both values are Unix seconds, and the comparison matches
+ * `firestore.rules` exactly: the session must have started after the cutoff.
+ */
+function isSupersededSession(profile, decoded) {
+  const validAfter = Number(profile?.sessionsValidAfterEpoch);
+  if (!Number.isFinite(validAfter) || validAfter <= 0) return false;
+  const authTime = Number(decoded?.auth_time);
+  if (!Number.isFinite(authTime)) return false;
+  return validAfter >= authTime;
+}
+
+/**
  * Staff authorization for every browser-facing API.
  *
  * Claims alone are not sufficient: they are minted at sign-in and a token stays
@@ -72,6 +88,10 @@ function createStaffAuth({ hasFirebase, admin, db }) {
     }
     if (!profile || profile.active === false || profile.role !== decoded.role) {
       res.status(403).json({ success: false, error: "Nalog nije aktivan." });
+      return null;
+    }
+    if (isSupersededSession(profile, decoded)) {
+      res.status(401).json({ success: false, code: "SESSION_SUPERSEDED", error: "Sesija je poništena. Prijavite se ponovo." });
       return null;
     }
     return { ...decoded, groups: normalizeGroups(profile.groups), name: decoded.name || profile.name || null };

@@ -16,7 +16,6 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "setup": "node scripts/setup-company.js",
-    "hash-pin": "node scripts/hash-pin.js",
     "extract-modules": "node scripts/extract-modules.js",
     "split-phase2": "node scripts/split-phase2.js",
     "split-phase3": "node scripts/split-phase3.js",

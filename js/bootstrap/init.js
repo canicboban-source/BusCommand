@@ -48,16 +48,18 @@ function handleSessionInvalidated() {
     window.currentUser = null;
     clearUserSession();
     showLoginScreen(true);
-    showToast("Sesija je istekla ili je prijava aktivna na drugom tabu.", "info", 5000);
+    showToast(t("session_invalidated_toast"), "info", 5000);
 }
 
+// The underlying error names internal configuration and belongs in the console,
+// not on a login screen a driver is looking at.
 function showFirebaseConfigurationError(error) {
+    console.error("Firebase configuration rejected", error);
     showLoginScreen(false);
-    const message = `Preview Firebase configuration error: ${error.message}`;
     ["login-error-driver", "login-error-dispatcher"].forEach((id) => {
         const element = document.getElementById(id);
         if (!element) return;
-        element.textContent = message;
+        element.textContent = t("auth_config_error");
         element.classList.remove("hidden");
     });
 }

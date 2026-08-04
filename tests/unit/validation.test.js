@@ -1,7 +1,6 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const {
-  driverLoginBody,
   createCompanyBody,
   createUserBody,
   companyBrandingBody,
@@ -29,29 +28,6 @@ test("dispatcher deletion requires tenant and exact email-shaped confirmation", 
     confirmEmail: "dispatcher@example.test",
     active: false
   }).success, false);
-});
-
-test("driverLoginBody rejects empty object", () => {
-  const result = driverLoginBody.safeParse({});
-  assert.equal(result.success, false);
-});
-
-test("driverLoginBody accepts valid demo login", () => {
-  const result = driverLoginBody.safeParse({
-    companyId: "demo",
-    driverId: "drv-1",
-    pin: "1234"
-  });
-  assert.equal(result.success, true);
-});
-
-test("driverLoginBody rejects short PIN", () => {
-  const result = driverLoginBody.safeParse({
-    companyId: "demo",
-    driverId: "drv-1",
-    pin: "12"
-  });
-  assert.equal(result.success, false);
 });
 
 test("createCompanyBody requires name", () => {

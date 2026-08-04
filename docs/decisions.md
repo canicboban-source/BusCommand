@@ -47,6 +47,17 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
   čist gate. Izričito odobrenje ostaje za deploy, produkcione podatke i promenu
   obima.
 
+### D5 — Vozačka prijava: jedan korak, bez EID orakla
+
+- Datum: 2026-08-04 · Status: **Odlučeno** (implementacija u Poglavlju 4)
+- Pitanje: da li `/api/public/drivers/identify` sme da potvrdi postojanje EID-a
+  pre unosa koda?
+- Odluka (tehnička, konzervativna, usklađena sa §4 privacy): ne. Prijava je
+  `firma + EID + kod` u jednom koraku; identify vraća `410`; nepoznat EID i
+  pogrešan kod daju isti odgovor. Lockout: 10 neuspeha / 15 minuta.
+- Posledica u kodu: `server/driver-routes.js`, `js/auth/login-driver.js`,
+  `js/core/auth-client.js`. Dužina koda i dalje pod O3.
+
 ---
 
 ## Otvorena pitanja

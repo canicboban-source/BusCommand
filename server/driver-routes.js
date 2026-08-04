@@ -39,6 +39,7 @@ const {
   summarizeOutboxStatuses,
   classifyOutboxForOps
 } = require("./confirmation-outbox");
+const { createStaffAuth } = require("./staff-auth");
 
 const COST = 12;
 const smsProvider = createSmsProvider();
@@ -48,12 +49,19 @@ const SENSITIVE_DRIVER_FIELDS = Object.freeze([
   "activationUsedAt", "pin", "password", "passwordHash"
 ]);
 const companySchema = z.string().trim().toLowerCase().min(1).max(64).regex(/^[a-z0-9][a-z0-9-]*$/);
-const identifySchema = z.object({ companyId: companySchema, eid: z.string().trim().min(1).max(128) });
+// The driver signs in with the employee id printed on their roster. `driverId`
+// stays accepted so a browser still running a cached bundle keeps working, but
+// no client needs to resolve the id up front any more.
 const loginSchema = z.object({
   companyId: companySchema,
-  driverId: z.string().uuid(),
+  eid: z.string().trim().min(1).max(128).optional(),
+  driverId: z.string().uuid().optional(),
   loginCode: z.string().trim().regex(/^\d{5,12}$/)
+}).refine((value) => Boolean(value.eid || value.driverId), {
+  message: "Potreban je EID ili identifikator vozača."
 });
+const MAX_FAILED_LOGIN_ATTEMPTS = 10;
+const LOGIN_LOCK_MS = 15 * 60_000;
 const activateSchema = z.object({
   personalLoginCode: z.string().trim().regex(PERSONAL_CODE_RE)
 });
@@ -152,11 +160,6 @@ function vacationOverlaps(candidate, existing) {
   return candidate.start <= existing.end && candidate.end >= existing.start;
 }
 
-function isLocalDemoRequest(req) {
-  return process.env.NODE_ENV !== "production"
-    && (req.hostname === "localhost" || req.hostname === "127.0.0.1");
-}
-
 function safeDriver(doc) {
   const data = doc.data ? doc.data() : doc;
   return { id: doc.id || data.id, name: `${data.firstName || ""} ${data.lastName || ""}`.trim() };
@@ -197,6 +200,41 @@ async function verifyDriverLogin(profile, credentials, loginCode, now = new Date
   return bcrypt.compare(loginCode, credentials.loginCodeHash);
 }
 
+async function resolveDriverIdByEid(companyRef, eid) {
+  if (!eid) return null;
+  const snapshot = await companyRef.collection("driver_credentials")
+    .where("eid", "==", eid).limit(1).get();
+  return snapshot.empty ? null : snapshot.docs[0].id;
+}
+
+function toDateOrNull(value) {
+  if (!value) return null;
+  if (typeof value.toDate === "function") return value.toDate();
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * The per-IP limiter does not stop a distributed guess at a five digit code, so
+ * failures are also counted on the credential document itself. The counter is
+ * updated inside the login transaction, which makes it exact under concurrent
+ * attempts.
+ */
+function loginLockState(credentials, now) {
+  const lockedUntil = toDateOrNull(credentials?.lockedUntil);
+  if (!lockedUntil || lockedUntil <= now) return { locked: false, lockedUntil: null };
+  return { locked: true, lockedUntil };
+}
+
+function nextFailureState(credentials, now) {
+  const attempts = Number(credentials?.failedLoginAttempts);
+  const failedLoginAttempts = (Number.isFinite(attempts) && attempts > 0 ? attempts : 0) + 1;
+  if (failedLoginAttempts < MAX_FAILED_LOGIN_ATTEMPTS) {
+    return { failedLoginAttempts, lockedUntil: null };
+  }
+  return { failedLoginAttempts: 0, lockedUntil: new Date(now.getTime() + LOGIN_LOCK_MS) };
+}
+
 async function verifyCompanyCode(credentials, companyCode) {
   return Boolean(credentials?.companyCodeHash) && bcrypt.compare(companyCode, credentials.companyCodeHash);
 }
@@ -207,7 +245,9 @@ function createRequireActivatedDriver({ admin, hasFirebase }) {
     try {
       const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
       if (!token) return res.status(401).json({ success: false, code: "INVALID_TOKEN", error: "Nevažeći token." });
-      const decoded = await admin().auth().verifyIdToken(token);
+      // checkRevoked: deactivating a driver revokes refresh tokens, and without
+      // this flag an already issued ID token would keep working until it expires.
+      const decoded = await admin().auth().verifyIdToken(token, true);
       if (decoded.role !== "driver" || decoded.mustChangeLoginCode !== false || !decoded.companyId) {
         return res.status(403).json({ success: false, code: "ACTIVATION_REQUIRED", error: "Aktivacija naloga je obavezna." });
       }
@@ -220,7 +260,10 @@ function createRequireActivatedDriver({ admin, hasFirebase }) {
 }
 
 function registerDriverRoutes(app, deps) {
-  const { admin, db, hasFirebase, rateLimit, clearRateLimit, getClientIp, logAudit, confirmationScheduler = null } = deps;
+  const {
+    admin, db, hasFirebase, rateLimit, clearRateLimit, getClientIp, logAudit,
+    confirmationScheduler = null, staffAuth = null
+  } = deps;
   const now = typeof deps.now === "function" ? deps.now : () => new Date();
   app.use("/api/driver", createRequireActivatedDriver({ admin, hasFirebase }));
 
@@ -315,19 +358,16 @@ function registerDriverRoutes(app, deps) {
     }
   });
 
-  async function requireStaff(req, res, next) {
-    if (!hasFirebase()) return res.status(503).json({ success: false, error: "Firebase nije konfigurisan." });
-    try {
-      const decoded = await admin().auth().verifyIdToken(String(req.headers.authorization || "").replace(/^Bearer\s+/i, ""), true);
-      if (!["dispatcher", "company_admin"].includes(decoded.role)) return res.status(403).json({ success: false, error: "Pristup odbijen." });
-      if (!decoded.companyId || !decoded.uid) return res.status(403).json({ success: false, error: "Pristup odbijen." });
-      const staffSnap = await db().collection("companies").doc(decoded.companyId).collection("users").doc(decoded.uid).get();
-      if (!staffSnap.exists || staffSnap.data().active === false) {
-        return res.status(403).json({ success: false, error: "Nalog nije aktivan." });
-      }
-      req.staff = { ...decoded, groups: Array.isArray(staffSnap.data().groups) ? staffSnap.data().groups : [] };
-      next();
-    } catch { return res.status(401).json({ success: false, error: "Nevažeći token." }); }
+  // Staff authorization lives in one place (server/staff-auth.js): revoked-token
+  // check, tenant profile lookup, role drift and superseded sessions. This used
+  // to be a second, weaker copy that accepted a token whose role no longer
+  // matched the profile. The alias keeps `req.staff` for the routes below.
+  const gate = staffAuth || createStaffAuth({ hasFirebase, admin, db });
+  function requireStaff(req, res, next) {
+    return gate.requireCompanyStaff(req, res, () => {
+      req.staff = req.staffUser;
+      return next();
+    });
   }
 
   // Unauthenticated roster dump removed (privacy / G5). Login resolves identity via EID identify.
@@ -341,25 +381,16 @@ function registerDriverRoutes(app, deps) {
     });
   });
 
-  app.post("/api/public/drivers/identify", rateLimit(8, 5 * 60_000), async (req, res) => {
-    const parsed = identifySchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ success: false, code: "INVALID_DATA", error: "Nevažeći podaci." });
-    }
-    if (!hasFirebase()) {
-      return res.status(503).json({ success: false, code: "FIREBASE_UNAVAILABLE", error: "Firebase nije konfigurisan." });
-    }
-    const companyRef = db().collection("companies").doc(parsed.data.companyId);
-    const credentialSnap = await companyRef.collection("driver_credentials").where("eid", "==", parsed.data.eid).limit(1).get();
-    const driverId = credentialSnap.empty ? null : credentialSnap.docs[0].id;
-    if (!driverId) {
-      return res.status(404).json({ success: false, code: "DRIVER_NOT_FOUND", error: "Vozač nije pronađen." });
-    }
-    const profileSnap = await companyRef.collection("drivers").doc(driverId).get();
-    if (!profileSnap.exists) {
-      return res.status(404).json({ success: false, code: "DRIVER_NOT_FOUND", error: "Vozač nije pronađen." });
-    }
-    return res.json({ success: true, driver: safeDriver(profileSnap) });
+  // Removed: this answered an unauthenticated caller with a driver's full name
+  // for any guessed company/EID pair, and the 404 told them which employee ids
+  // exist. Login now resolves the EID itself and never distinguishes an unknown
+  // id from a wrong code.
+  app.post("/api/public/drivers/identify", rateLimit(8, 5 * 60_000), async (_req, res) => {
+    return res.status(410).json({
+      success: false,
+      code: "DRIVER_IDENTIFY_DISABLED",
+      error: "Prijava se obavlja u jednom koraku: firma, EID i kod."
+    });
   });
 
   app.post("/api/auth/driver-login", rateLimit(10, 5 * 60_000), async (req, res) => {
@@ -367,10 +398,7 @@ function registerDriverRoutes(app, deps) {
     if (!parsed.success) {
       return res.status(400).json({ success: false, code: "INVALID_LOGIN_PAYLOAD", error: "Nevažeći podaci za prijavu." });
     }
-    const { companyId, driverId, loginCode } = parsed.data;
-    if (!hasFirebase() && !isLocalDemoRequest(req)) {
-      return res.status(503).json({ success: false, code: "FIREBASE_UNAVAILABLE", error: "Firebase nije konfigurisan." });
-    }
+    const { companyId, loginCode } = parsed.data;
     if (!hasFirebase()) {
       return res.status(503).json({
         success: false,
@@ -379,45 +407,98 @@ function registerDriverRoutes(app, deps) {
       });
     }
     const companyRef = db().collection("companies").doc(companyId);
+    const settingsSnap = await companyRef.collection("settings").doc("main").get();
+    if (settingsSnap.exists && settingsSnap.data().status === "suspended") {
+      return res.status(403).json({
+        success: false,
+        code: "COMPANY_SUSPENDED",
+        error: "Pristup firmi je suspendovan. Obratite se podršci."
+      });
+    }
+
+    const driverId = parsed.data.driverId || await resolveDriverIdByEid(companyRef, parsed.data.eid);
+    if (!driverId) {
+      await logAudit(companyId, "unknown", "driver_login_failed", { ip: getClientIp(req), reason: "unknown_identifier" });
+      return res.status(401).json({
+        success: false,
+        code: "INVALID_LOGIN",
+        error: "Pogrešan kod ili vozač nije pronađen."
+      });
+    }
+
     const profileRef = companyRef.collection("drivers").doc(driverId);
     const credentialRef = companyRef.collection("driver_credentials").doc(driverId);
     let mustChangeLoginCode = false;
     let userPayload = null;
+    let outcome = "granted";
+    let lockedUntil = null;
     try {
       await db().runTransaction(async (tx) => {
+        const attemptedAt = now();
         const [profileSnap, credentialSnap] = await Promise.all([tx.get(profileRef), tx.get(credentialRef)]);
         const profile = profileSnap.exists ? profileSnap.data() : null;
         const credentials = credentialSnap.exists ? credentialSnap.data() : null;
-        const valid = profileSnap.exists && await verifyDriverLogin(profile, credentials, loginCode);
+        const lock = loginLockState(credentials, attemptedAt);
+        if (lock.locked) {
+          outcome = "locked";
+          lockedUntil = lock.lockedUntil;
+          return;
+        }
+        const activationReplayed = Boolean(profile && !profile.codeActivated && credentials?.activationUsedAt);
+        const valid = profileSnap.exists
+          && !activationReplayed
+          && await verifyDriverLogin(profile, credentials, loginCode, attemptedAt);
         if (!valid) {
-          const error = new Error("invalid_login");
-          error.code = "invalid_login";
-          throw error;
+          outcome = "invalid";
+          if (credentialSnap.exists) {
+            const failure = nextFailureState(credentials, attemptedAt);
+            lockedUntil = failure.lockedUntil;
+            tx.update(credentialRef, failure);
+          }
+          return;
         }
         mustChangeLoginCode = !profile.codeActivated;
-        if (mustChangeLoginCode) {
-          if (credentials.activationUsedAt) {
-            const error = new Error("invalid_login");
-            error.code = "invalid_login";
-            throw error;
-          }
-          tx.update(credentialRef, {
-            activationUsedAt: admin().firestore.FieldValue.serverTimestamp()
-          });
-        }
+        tx.update(credentialRef, {
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+          ...(mustChangeLoginCode
+            ? { activationUsedAt: admin().firestore.FieldValue.serverTimestamp() }
+            : {})
+        });
         userPayload = safeDriver(profileSnap);
       });
     } catch (error) {
-      if (error?.code === "invalid_login") {
-        await logAudit(companyId, driverId, "driver_login_failed", { ip: getClientIp(req) });
-        return res.status(401).json({
-          success: false,
-          code: "INVALID_LOGIN",
-          error: "Pogrešan kod ili vozač nije pronađen."
-        });
-      }
       req.log?.error?.({ err: error }, "Driver login failed");
       return res.status(500).json({ success: false, code: "LOGIN_FAILED", error: "Prijava nije uspela." });
+    }
+
+    if (outcome === "locked") {
+      await logAudit(companyId, driverId, "driver_login_locked_out", { ip: getClientIp(req) });
+      return res.status(429).json({
+        success: false,
+        code: "ACCOUNT_LOCKED",
+        retryAfterSeconds: Math.max(1, Math.ceil((lockedUntil.getTime() - now().getTime()) / 1000)),
+        error: "Nalog je privremeno zaključan zbog previše pokušaja. Pokušajte kasnije."
+      });
+    }
+    if (outcome === "invalid") {
+      await logAudit(companyId, driverId, "driver_login_failed", {
+        ip: getClientIp(req),
+        ...(lockedUntil ? { lockedOut: true } : {})
+      });
+      if (lockedUntil) {
+        return res.status(429).json({
+          success: false,
+          code: "ACCOUNT_LOCKED",
+          retryAfterSeconds: Math.ceil(LOGIN_LOCK_MS / 1000),
+          error: "Nalog je privremeno zaključan zbog previše pokušaja. Pokušajte kasnije."
+        });
+      }
+      return res.status(401).json({
+        success: false,
+        code: "INVALID_LOGIN",
+        error: "Pogrešan kod ili vozač nije pronađen."
+      });
     }
     const token = await admin().auth().createCustomToken(driverId, {
       role: "driver",
@@ -435,7 +516,7 @@ function registerDriverRoutes(app, deps) {
     const parsed = activateSchema.safeParse(req.body);
     if (!parsed.success || !hasFirebase()) return res.status(hasFirebase() ? 400 : 503).json({ success: false, error: "Aktivacija nije dostupna." });
     try {
-      const decoded = await admin().auth().verifyIdToken(String(req.headers.authorization || "").replace(/^Bearer\s+/i, ""));
+      const decoded = await admin().auth().verifyIdToken(String(req.headers.authorization || "").replace(/^Bearer\s+/i, ""), true);
       if (decoded.role !== "driver" || decoded.mustChangeLoginCode !== true) return res.status(403).json({ success: false, error: "Aktivacija nije dozvoljena." });
       const companyRef = db().collection("companies").doc(decoded.companyId);
       const profileRef = companyRef.collection("drivers").doc(decoded.uid);
@@ -859,7 +940,7 @@ function registerDriverRoutes(app, deps) {
     }
   });
 
-  app.put("/api/staff/drivers/:driverId/status", requireStaff, async (req, res) => {
+  app.put("/api/staff/drivers/:driverId/status", rateLimit(20, 5 * 60_000), requireStaff, async (req, res) => {
     const driverId = driverIdSchema.safeParse(req.params.driverId);
     const status = driverStatusSchema.safeParse(req.body);
     if (!driverId.success || !status.success) {
@@ -1970,7 +2051,7 @@ function registerDriverRoutes(app, deps) {
 }
 
 module.exports = {
-  registerDriverRoutes, COST, safeDriver, isLocalDemoRequest,
+  registerDriverRoutes, COST, safeDriver,
   safeProfilePayload, credentialPayload, SENSITIVE_DRIVER_FIELDS,
   verifyDriverLogin, verifyCompanyCode, createRequireActivatedDriver,
   inclusiveDays, vacationOverlaps,

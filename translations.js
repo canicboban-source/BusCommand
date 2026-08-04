@@ -2705,11 +2705,59 @@ const NEW_TRANSLATIONS = {
         fr: "Erreur serveur. Vérifiez que le serveur est démarré.",
         pl: "Błąd serwera. Sprawdź, czy serwer działa.", cs: "Chyba serveru. Zkontrolujte, zda server běží."
     },
-    api_error_DEMO_OTP_UNAVAILABLE: {
-        sr: "Lokalni demo OTP nije konfigurisan.", en: "Local demo OTP is not configured.",
-        de: "Lokales Demo-OTP ist nicht konfiguriert.",
-        hr: "Lokalni demo OTP nije konfiguriran.", fr: "L'OTP démo local n'est pas configuré.",
-        pl: "Lokalne demo OTP nie jest skonfigurowane.", cs: "Lokální demo OTP není nakonfigurováno."
+    api_error_ACCOUNT_LOCKED: {
+        sr: "Nalog je privremeno zaključan zbog previše pokušaja. Pokušajte za 15 minuta.",
+        en: "The account is temporarily locked after too many attempts. Try again in 15 minutes.",
+        de: "Das Konto ist nach zu vielen Versuchen vorübergehend gesperrt. Versuchen Sie es in 15 Minuten erneut.",
+        hr: "Račun je privremeno zaključan zbog previše pokušaja. Pokušajte za 15 minuta.",
+        fr: "Le compte est temporairement verrouillé après trop de tentatives. Réessayez dans 15 minutes.",
+        pl: "Konto jest tymczasowo zablokowane po zbyt wielu próbach. Spróbuj za 15 minut.",
+        cs: "Účet je po příliš mnoha pokusech dočasně uzamčen. Zkuste to za 15 minut."
+    },
+    api_error_COMPANY_SUSPENDED: {
+        sr: "Pristup firmi je suspendovan. Obratite se podršci.",
+        en: "Company access is suspended. Contact support.",
+        de: "Der Firmenzugang ist gesperrt. Wenden Sie sich an den Support.",
+        hr: "Pristup tvrtki je suspendiran. Obratite se podršci.",
+        fr: "L'accès de l'entreprise est suspendu. Contactez le support.",
+        pl: "Dostęp firmy jest zawieszony. Skontaktuj się ze wsparciem.",
+        cs: "Přístup firmy je pozastaven. Kontaktujte podporu."
+    },
+    api_error_DRIVER_IDENTIFY_DISABLED: {
+        sr: "Prijavite se u jednom koraku: firma, EID i kod.",
+        en: "Sign in in one step: company, EID and code.",
+        de: "Melden Sie sich in einem Schritt an: Firma, EID und Code.",
+        hr: "Prijavite se u jednom koraku: tvrtka, EID i kod.",
+        fr: "Connectez-vous en une étape : entreprise, EID et code.",
+        pl: "Zaloguj się w jednym kroku: firma, EID i kod.",
+        cs: "Přihlaste se v jednom kroku: firma, EID a kód."
+    },
+    api_error_SESSION_SUPERSEDED: {
+        sr: "Sesija je poništena. Prijavite se ponovo.",
+        en: "The session was invalidated. Please sign in again.",
+        de: "Die Sitzung wurde ungültig. Bitte erneut anmelden.",
+        hr: "Sesija je poništena. Prijavite se ponovno.",
+        fr: "La session a été invalidée. Reconnectez-vous.",
+        pl: "Sesja została unieważniona. Zaloguj się ponownie.",
+        cs: "Relace byla zneplatněna. Přihlaste se znovu."
+    },
+    session_invalidated_toast: {
+        sr: "Sesija je istekla ili je prijava aktivna na drugom tabu.",
+        en: "The session expired, or a sign-in is active in another tab.",
+        de: "Die Sitzung ist abgelaufen oder eine Anmeldung ist in einem anderen Tab aktiv.",
+        hr: "Sesija je istekla ili je prijava aktivna u drugoj kartici.",
+        fr: "La session a expiré ou une connexion est active dans un autre onglet.",
+        pl: "Sesja wygasła lub logowanie jest aktywne w innej karcie.",
+        cs: "Relace vypršela nebo je přihlášení aktivní na jiné kartě."
+    },
+    auth_config_error: {
+        sr: "Prijava trenutno nije dostupna. Obratite se podršci.",
+        en: "Sign-in is currently unavailable. Please contact support.",
+        de: "Die Anmeldung ist derzeit nicht verfügbar. Bitte wenden Sie sich an den Support.",
+        hr: "Prijava trenutno nije dostupna. Obratite se podršci.",
+        fr: "La connexion est actuellement indisponible. Contactez le support.",
+        pl: "Logowanie jest obecnie niedostępne. Skontaktuj się ze wsparciem.",
+        cs: "Přihlášení je momentálně nedostupné. Kontaktujte podporu."
     },
     error_invalid_email: {
         sr: "Neispravna e-mail adresa.", en: "Invalid email address.",
@@ -3803,7 +3851,8 @@ const MISSING_EN = {
     driver_activation_title: "Activate account",
     driver_activation_explanation: "Choose a personal login code (5-12 digits). You already signed in with the one-time SMS code.",
     driver_activation_confirm_field: "Confirm personal code",
-    driver_activation_mismatch: "Codes must match and contain 5-12 digits.",
+    driver_activation_mismatch: "The two codes do not match. Enter the confirmation again.",
+    driver_activation_format: "The personal code must contain 5-12 digits.",
     driver_activation_field: "Personal login code",
     driver_activation_activate: "Activate",
     driver_activation_loading: "Activating...",
@@ -4664,7 +4713,8 @@ const MISSING_SR = {
     driver_activation_title: "Aktivacija naloga",
     driver_activation_explanation: "Izaberite lični kod za prijavu (5-12 cifara). Već ste se prijavili jednokratnim SMS kodom.",
     driver_activation_confirm_field: "Potvrdite lični kod",
-    driver_activation_mismatch: "Kodovi moraju biti isti i imati 5-12 cifara.",
+    driver_activation_mismatch: "Kodovi se ne poklapaju. Unesite potvrdu ponovo.",
+    driver_activation_format: "Lični kod mora imati 5-12 cifara.",
     driver_activation_field: "Lični kod za prijavu",
     driver_activation_activate: "Aktiviraj",
     driver_activation_loading: "Aktiviranje...",
@@ -5375,7 +5425,8 @@ const MISSING_DE = {
     driver_activation_title: "Konto aktivieren",
     driver_activation_explanation: "Waehlen Sie einen persoenlichen Anmeldecode (5-12 Ziffern). Sie haben sich bereits mit dem einmaligen SMS-Code angemeldet.",
     driver_activation_confirm_field: "Persoenlichen Code bestaetigen",
-    driver_activation_mismatch: "Codes muessen uebereinstimmen und 5-12 Ziffern haben.",
+    driver_activation_mismatch: "Die Codes stimmen nicht ueberein. Bestaetigung erneut eingeben.",
+    driver_activation_format: "Der persoenliche Code muss 5-12 Ziffern haben.",
     driver_activation_field: "Persoenlicher Anmeldecode",
     driver_activation_activate: "Aktivieren",
     driver_activation_loading: "Wird aktiviert...",

@@ -63,15 +63,17 @@ const Auth = (() => {
         }
     }
 
-    async function loginWithPin(companyId, driverId, pin) {
-        if (!companyId || !driverId || !pin) {
+    // One request, one answer: the server resolves the employee id itself and
+    // never tells an unauthenticated caller whether that id exists.
+    async function loginWithDriverCode({ companyId, eid, loginCode }) {
+        if (!companyId || !eid || !loginCode) {
             return { success: false, code: "MISSING_FIELDS" };
         }
         try {
             const response = await fetch("/api/auth/driver-login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ companyId, driverId, loginCode: pin })
+                body: JSON.stringify({ companyId, eid, loginCode })
             });
             let data;
             try {
@@ -82,41 +84,21 @@ const Auth = (() => {
             if (!response.ok || !data.success) {
                 return {
                     success: false,
-                    code: data.code || "INVALID_LOGIN"
+                    code: data.code || "INVALID_LOGIN",
+                    retryAfterSeconds: Number(data.retryAfterSeconds) || null
                 };
             }
-            if (data.demo || !data.token) {
-                return {
-                    success: true,
-                    user: {
-                        id: driverId,
-                        name: data.user.name,
-                        role: "driver",
-                        companyId,
-                        bus: data.user.bus
-                    }
-                };
+            if (!data.token || !data.user?.id) {
+                return { success: false, code: "SERVER_ERROR" };
             }
             await firebase.auth().signInWithCustomToken(data.token);
+            const user = { id: data.user.id, name: data.user.name, role: "driver", companyId };
             if (data.mustChangeLoginCode) {
-                return {
-                    success: true,
-                    requiresActivation: true,
-                    user: { id: driverId, name: data.user.name, role: "driver", companyId, bus: data.user.bus }
-                };
+                return { success: true, requiresActivation: true, user };
             }
-            return {
-                success: true,
-                user: {
-                    id: driverId,
-                    name: data.user.name,
-                    role: "driver",
-                    companyId,
-                    bus: data.user.bus
-                }
-            };
+            return { success: true, user };
         } catch (err) {
-            console.error("PIN login greška:", err);
+            console.error("Driver login greška:", err);
             return { success: false, code: "SERVER_ERROR" };
         }
     }
@@ -144,11 +126,6 @@ const Auth = (() => {
         }
     }
 
-    /** @deprecated Use activatePersonalLoginCode */
-    async function activateCompanyCode(code) {
-        return activatePersonalLoginCode(code);
-    }
-
     async function logout() {
         try {
             await firebase.auth().signOut();
@@ -173,11 +150,6 @@ const Auth = (() => {
         };
     }
 
-    async function refreshToken() {
-        const user = firebase.auth().currentUser;
-        if (user) await user.getIdToken(true);
-    }
-
     async function getIdToken() {
         const user = firebase.auth().currentUser;
         if (!user) return null;
@@ -190,9 +162,9 @@ const Auth = (() => {
     }
 
     return {
-        init, loginWithEmail, loginWithPin, activatePersonalLoginCode, activateCompanyCode, logout,
+        init, loginWithEmail, loginWithDriverCode, activatePersonalLoginCode, logout,
         getCurrentUser, isLoggedIn, hasRole, hasPermission,
-        onAuthStateChanged, refreshToken, getIdToken
+        onAuthStateChanged, getIdToken
     };
 })();
 

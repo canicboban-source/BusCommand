@@ -41,7 +41,10 @@ test.describe("UI smoke", () => {
     await expect(page.getByText("Reset App", { exact: true })).toHaveCount(0);
     await expect(page.locator("body")).not.toContainText("Demo admin:");
     await expect(page.locator("body")).not.toContainText("Demo driver:");
-    await expect(page.locator("#login-error-driver")).toContainText("Preview Firebase configuration error");
+    // The driver reads a translated sentence; the internal reason stays in the
+    // console.
+    await expect(page.locator("#login-error-driver")).toContainText("Sign-in is currently unavailable");
+    await expect(page.locator("#login-error-driver")).not.toContainText("Firebase");
     await expect.poll(() => page.evaluate(() => window.firebase?.apps?.length ?? 0)).toBe(0);
   });
 
