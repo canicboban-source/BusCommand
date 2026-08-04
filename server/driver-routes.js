@@ -47,7 +47,8 @@ const {
 } = require("./staff-messages");
 const {
   summarizeOutboxStatuses,
-  classifyOutboxForOps
+  classifyOutboxForOps,
+  isStaleConfirmation
 } = require("./confirmation-outbox");
 const { createStaffAuth } = require("./staff-auth");
 
@@ -786,24 +787,52 @@ function registerDriverRoutes(app, deps) {
       return res.status(403).json({ success: false, error: "Potvrditi se mogu samo ponu\u0111ene naredne smene." });
     }
     try {
+      const companyRef = req.driverWorkPolicy.companyRef;
+      const shiftRefs = parsed.data.dates.map((date) =>
+        companyRef.collection("shifts").doc(shiftDocumentId(req.driver.uid, date))
+      );
+      const shiftSnaps = shiftRefs.length ? await db().getAll(...shiftRefs) : [];
+      const liveByDate = new Map();
+      shiftSnaps.forEach((snap, index) => {
+        liveByDate.set(parsed.data.dates[index], snap.exists ? snap.data() : null);
+      });
+
+      for (const date of parsed.data.dates) {
+        const target = allowed.get(date);
+        const live = liveByDate.get(date);
+        if (live?.shiftFingerprint && target?.fingerprint
+          && live.shiftFingerprint !== target.fingerprint
+          && live.confirmedByDriver === true) {
+          return res.status(409).json({
+            success: false,
+            code: "CONFIRMATION_STALE",
+            error: "Plan smene je izmenjen. Osvežite potvrdu i pokušajte ponovo."
+          });
+        }
+      }
+
       const batch = db().batch();
       const confirmedAt = admin().firestore.FieldValue.serverTimestamp();
       parsed.data.dates.forEach((date) => {
         const target = allowed.get(date);
-        batch.set(req.driverWorkPolicy.companyRef.collection("shift_confirmations").doc(`${req.driver.uid}_${date}`), {
+        const live = liveByDate.get(date);
+        const boundRevision = live ? currentRevision(live) : 0;
+        batch.set(companyRef.collection("shift_confirmations").doc(`${req.driver.uid}_${date}`), {
           driverId: req.driver.uid,
           date,
           shiftFingerprint: target.fingerprint,
+          confirmationBoundRevision: boundRevision,
           confirmedAt,
           confirmationSourceShiftDate: req.driverWorkPolicy.shift.date
         }, { merge: true });
         // Mirror onto assignment doc so staff UI that reads shifts sees confirm immediately.
-        batch.set(req.driverWorkPolicy.companyRef.collection("shifts").doc(shiftDocumentId(req.driver.uid, date)), {
+        batch.set(companyRef.collection("shifts").doc(shiftDocumentId(req.driver.uid, date)), {
           driverId: req.driver.uid,
           date,
           confirmedByDriver: true,
           confirmedAt,
           shiftFingerprint: target.fingerprint,
+          confirmationBoundRevision: boundRevision,
           confirmationSourceShiftDate: req.driverWorkPolicy.shift.date,
           updatedAt: confirmedAt
         }, { merge: true });
@@ -822,7 +851,13 @@ function registerDriverRoutes(app, deps) {
       }
       await logAudit(req.driver.companyId, req.driver.uid, "driver_shifts_confirmed", {
         dates: parsed.data.dates,
-        sourceShiftDate: req.driverWorkPolicy.shift.date
+        sourceShiftDate: req.driverWorkPolicy.shift.date,
+        boundRevisions: Object.fromEntries(
+          parsed.data.dates.map((date) => [
+            date,
+            liveByDate.get(date) ? currentRevision(liveByDate.get(date)) : 0
+          ])
+        )
       });
       return res.json({ success: true, confirmedDates: parsed.data.dates });
     } catch (error) {
@@ -1911,7 +1946,20 @@ function registerDriverRoutes(app, deps) {
         return { replacementShift, resolution, problemRevision };
       });
 
-      // Best-effort notify relevant drivers (§8). Full outbox lifecycle remains Ch10.
+      // Best-effort notify + invalidate stale confirms (§10).
+      if (confirmationScheduler?.invalidateShiftConfirmations) {
+        const invalidateEntries = [
+          { driverId: initialReport.driverId, date },
+          { driverId: parsed.data.replacementDriverId, date }
+        ].filter((row) => row.driverId);
+        confirmationScheduler.invalidateShiftConfirmations({
+          companyId: req.staff.companyId,
+          entries: invalidateEntries,
+          reason: "operational_incident_resolved"
+        }).catch((err) => {
+          req.log?.warn?.({ err }, "Invalidacija potvrda posle resolve-a nije uspela");
+        });
+      }
       const notifyIds = [...new Set([
         initialReport.driverId,
         parsed.data.replacementDriverId
@@ -2030,13 +2078,16 @@ function registerDriverRoutes(app, deps) {
       }
 
       const inRange = (date) => date >= from && date <= to;
-      const confirmations = confirmSnap.docs.map((doc) => {
+      const confirmationsRaw = confirmSnap.docs.map((doc) => {
         const data = doc.data();
         return {
           id: doc.id,
           driverId: data.driverId || null,
           date: data.date || null,
           shiftFingerprint: data.shiftFingerprint || null,
+          confirmationBoundRevision: Number.isInteger(data.confirmationBoundRevision)
+            ? data.confirmationBoundRevision
+            : null,
           confirmedAt: data.confirmedAt?.toDate?.()?.toISOString?.() || data.confirmedAt || null,
           confirmationSourceShiftDate: data.confirmationSourceShiftDate || null
         };
@@ -2058,6 +2109,7 @@ function registerDriverRoutes(app, deps) {
           lastAttemptAt: data.lastAttemptAt || null,
           lastError: data.lastError || null,
           nextRetryAt: data.nextRetryAt || null,
+          terminalFailure: data.terminalFailure === true,
           deliveredAt: data.deliveredAt || null,
           confirmedAt: data.confirmedAt || null,
           smsStatus: data.smsStatus || null,
@@ -2066,16 +2118,31 @@ function registerDriverRoutes(app, deps) {
       }).filter((row) => row.driverId && row.targetDate && inRange(row.targetDate)
         && (!allowedDriverIds || allowedDriverIds.has(row.driverId)));
 
+      const outboxByKey = new Map(
+        outbox.map((row) => [`${row.driverId}|${row.targetDate}`, row])
+      );
+      const confirmations = confirmationsRaw.filter((row) => {
+        const ob = outboxByKey.get(`${row.driverId}|${row.date}`);
+        if (ob?.status === "cancelled") return false;
+        if (isStaleConfirmation(row, { liveFingerprint: ob?.fingerprint || null })) return false;
+        return true;
+      });
+
       const confirmedKeys = new Set(
         confirmations.map((row) => `${row.driverId}|${row.date}`)
       );
       const attention = outbox
-        .map((row) => classifyOutboxForOps(row, confirmedKeys))
+        .map((row) => classifyOutboxForOps(row, confirmedKeys, { today }))
         .filter(Boolean)
         .sort((a, b) => {
           if (a.severity === b.severity) return String(a.targetDate).localeCompare(String(b.targetDate));
           return a.severity === "critical" ? -1 : 1;
         });
+
+      const summary = {
+        ...summarizeOutboxStatuses(outbox),
+        expired: attention.filter((row) => row.kind === "expired").length
+      };
 
       const dispatchHealth = dispatchHealthSnap.exists
         ? {
@@ -2084,6 +2151,7 @@ function registerDriverRoutes(app, deps) {
           processed: Number(dispatchHealthSnap.data().processed || 0),
           delivered: Number(dispatchHealthSnap.data().delivered || 0),
           failed: Number(dispatchHealthSnap.data().failed || 0),
+          terminalFailed: Number(dispatchHealthSnap.data().terminalFailed || 0),
           skippedInactiveSession: Number(dispatchHealthSnap.data().skippedInactiveSession || 0),
           skippedRetryWindow: Number(dispatchHealthSnap.data().skippedRetryWindow || 0),
           scanned: Number(dispatchHealthSnap.data().scanned || 0)
@@ -2097,7 +2165,7 @@ function registerDriverRoutes(app, deps) {
         to,
         confirmations,
         outbox,
-        summary: summarizeOutboxStatuses(outbox),
+        summary,
         attention,
         dispatchHealth
       });
@@ -2358,6 +2426,15 @@ function registerDriverRoutes(app, deps) {
           shiftId: result.shiftId, driverId: parsed.data.driverId, date: parsed.data.date,
           revision: result.revision
         });
+        if (confirmationScheduler?.invalidateShiftConfirmations) {
+          confirmationScheduler.invalidateShiftConfirmations({
+            companyId: req.staff.companyId,
+            entries: [{ driverId: parsed.data.driverId, date: parsed.data.date }],
+            reason: "staff_assignment_clear"
+          }).catch((err) => {
+            req.log?.warn?.({ err }, "Invalidacija potvrda posle clear-a nije uspela");
+          });
+        }
         return res.json({
           success: true,
           deleted: true,
@@ -2376,6 +2453,15 @@ function registerDriverRoutes(app, deps) {
         type: parsed.data.type,
         revision: result.revision
       });
+      if (confirmationScheduler?.invalidateShiftConfirmations) {
+        confirmationScheduler.invalidateShiftConfirmations({
+          companyId: req.staff.companyId,
+          entries: [{ driverId: parsed.data.driverId, date: parsed.data.date }],
+          reason: "staff_assignment"
+        }).catch((err) => {
+          req.log?.warn?.({ err }, "Invalidacija potvrda posle dodele nije uspela");
+        });
+      }
       return res.json({
         success: true,
         shift: { ...result.shift, id: result.shiftId, assignedAt: null }
@@ -2560,6 +2646,16 @@ function registerDriverRoutes(app, deps) {
         revision: result.revision,
         restoredEmpty: result.deleted === true
       });
+
+      if (confirmationScheduler?.invalidateShiftConfirmations) {
+        confirmationScheduler.invalidateShiftConfirmations({
+          companyId: req.staff.companyId,
+          entries: [{ driverId: parsed.data.driverId, date: parsed.data.date }],
+          reason: "staff_assignment_undo"
+        }).catch((err) => {
+          req.log?.warn?.({ err }, "Invalidacija potvrda posle undo-a nije uspela");
+        });
+      }
 
       if (result.deleted) {
         return res.json({

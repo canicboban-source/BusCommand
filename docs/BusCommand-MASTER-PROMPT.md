@@ -635,7 +635,7 @@ zatvorenog poglavlja i uvek pokazuje na izveštaj sa dokazima.
 | 7 | Company Admin katalog smena, import/preview/activate/rollback | završeno | `reports/poglavlje-7-katalog-smena-2026-08-04.md` |
 | 8 | Mesečni plan | završeno | `reports/poglavlje-8-mesecni-plan-2026-08-04.md` |
 | 9 | Dnevni plan, problem-resolution i dispečerski cockpit | završeno | `reports/poglavlje-9-dnevni-plan-resolution-cockpit-2026-08-04.md` |
-| 10 | Confirmations scheduler i outbox | — | — |
+| 10 | Confirmations scheduler i outbox | završeno | `reports/poglavlje-10-confirmations-scheduler-outbox-2026-08-04.md` |
 | 11 | Poruke | — | — |
 | 12 | Driver session, GPS i mapa | — | — |
 | 13 | Mobilni PWA i kontrolisani offline rad | — | — |

@@ -104,6 +104,21 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
      client `audit_log`.
 - Posledica: `server/problem-resolution.js`, ops transition/activity rute.
 
+### D10 — Confirmations: invalidate + expired + max retry
+
+- Datum: 2026-08-04 · Status: **Odlučeno** (Poglavlje 10)
+- Odluka:
+  1. Svaka staff mutate (assign/clear/undo) i incident resolve briše
+     `shift_confirmations` i otkazuje outbox red (`cancelled` + razlog).
+  2. Driver potvrda stampuje `confirmationBoundRevision` = trenutna revizija
+     smene; staff GET ne računa stale potvrde (fingerprint / cancelled).
+  3. Attention uključuje **expired** (targetDate < tenant today) pored
+     pending / awaiting / delivery_failed.
+  4. Max 8 dispatch pokušaja → `terminalFailure`; scheduler flag ostaje OFF
+     by default; re-enqueue na sledećoj aktivnoj work-session.
+- Posledica: `server/confirmation-outbox.js`, `server/confirmation-scheduler.js`,
+  staff/driver confirmation rute, cockpit statusi.
+
 ---
 
 ## Otvorena pitanja

@@ -5,8 +5,10 @@
  */
 const {
   outboxDocId,
+  confirmationDocId,
   buildOutboxEntries,
   planOutboxUpsert,
+  planInvalidateOutbox,
   planDispatchAttempt,
   shouldRetry
 } = require("./confirmation-outbox");
@@ -99,6 +101,74 @@ function createConfirmationScheduler({
     await batch.commit();
   }
 
+  /**
+   * Staff mutate / resolve: delete shift_confirmations and cancel outbox rows
+   * for the affected (driverId, date) pairs so UI cannot show a stale confirm.
+   * Re-enqueue happens on the next active work-session when the scheduler flag
+   * is on (enqueueFromPolicy).
+   */
+  async function invalidateShiftConfirmations({
+    companyId,
+    entries = [],
+    reason = "plan_changed",
+    now = new Date()
+  } = {}) {
+    if (!hasFirebase() || !companyId || !entries.length) {
+      return { cancelled: 0, deletedConfirmations: 0 };
+    }
+    const companyRef = db().collection("companies").doc(companyId);
+    const unique = new Map();
+    for (const entry of entries) {
+      const driverId = String(entry?.driverId || "").trim();
+      const date = String(entry?.date || entry?.targetDate || "").slice(0, 10);
+      if (!driverId || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+      unique.set(`${driverId}|${date}`, { driverId, date });
+    }
+    if (!unique.size) return { cancelled: 0, deletedConfirmations: 0 };
+
+    const pairs = [...unique.values()];
+    const outboxRefs = pairs.map((row) =>
+      companyRef.collection("confirmation_outbox").doc(outboxDocId(row.driverId, row.date))
+    );
+    const confirmRefs = pairs.map((row) =>
+      companyRef.collection("shift_confirmations").doc(confirmationDocId(row.driverId, row.date))
+    );
+    const [outboxSnaps, confirmSnaps] = await Promise.all([
+      db().getAll(...outboxRefs),
+      db().getAll(...confirmRefs)
+    ]);
+
+    const batch = db().batch();
+    let cancelled = 0;
+    let deletedConfirmations = 0;
+    outboxSnaps.forEach((snap) => {
+      if (!snap.exists) return;
+      const plan = planInvalidateOutbox(snap.data(), reason, now);
+      if (plan.action === "skip") return;
+      batch.set(snap.ref, {
+        ...plan.patch,
+        updatedAtServer: admin().firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      cancelled += 1;
+    });
+    confirmSnaps.forEach((snap) => {
+      if (!snap.exists) return;
+      batch.delete(snap.ref);
+      deletedConfirmations += 1;
+    });
+    if (cancelled || deletedConfirmations) await batch.commit();
+
+    if (logAudit && (cancelled || deletedConfirmations)) {
+      await logAudit(companyId, "system", "shift_confirmations_invalidated", {
+        reason: String(reason).slice(0, 120),
+        cancelled,
+        deletedConfirmations,
+        entries: pairs.slice(0, 40)
+      }).catch(() => {});
+    }
+    return { cancelled, deletedConfirmations, entries: pairs.length };
+  }
+
   async function deliverOne(doc, data, now = new Date()) {
     // In-app is always the primary channel; SMS stub only when phone present and provider not none.
     const channel = "in_app";
@@ -157,12 +227,14 @@ function createConfirmationScheduler({
     let processed = 0;
     let delivered = 0;
     let failed = 0;
+    let terminalFailed = 0;
     let skippedInactiveSession = 0;
     let skippedRetryWindow = 0;
     for (const doc of snap.docs) {
       const data = doc.data();
       if (data.status === "failed" && !shouldRetry(data, now)) {
         skippedRetryWindow += 1;
+        if (data.terminalFailure === true) terminalFailed += 1;
         continue;
       }
       // Only deliver while driver session is still active (last previous shift window)
@@ -174,7 +246,10 @@ function createConfirmationScheduler({
       const result = await deliverOne(doc, { ...data, companyId }, now);
       processed += 1;
       if (result.status === "delivered") delivered += 1;
-      else failed += 1;
+      else {
+        failed += 1;
+        if (result.terminalFailure === true) terminalFailed += 1;
+      }
     }
 
     await writeDispatchHealth(companyRef, {
@@ -182,6 +257,7 @@ function createConfirmationScheduler({
       processed,
       delivered,
       failed,
+      terminalFailed,
       skippedInactiveSession,
       skippedRetryWindow,
       scanned: snap.size
@@ -192,6 +268,7 @@ function createConfirmationScheduler({
       processed,
       delivered,
       failed,
+      terminalFailed,
       skippedInactiveSession,
       skippedRetryWindow,
       scanned: snap.size
@@ -251,6 +328,7 @@ function createConfirmationScheduler({
     isSchedulerEnabled,
     enqueueFromPolicy,
     markConfirmed,
+    invalidateShiftConfirmations,
     dispatchCompany,
     dispatchAll,
     registerRoutes

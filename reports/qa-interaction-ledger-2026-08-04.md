@@ -205,14 +205,22 @@ Redosled iz master prompta v3.2 §27:
 6. ~~CA katalog~~ (P7);
 7. ~~mesečni plan~~ (P8) — undo, sticky/matrix, mass absence, catalog lock;
 8. ~~dnevni plan / problem-resolution / cockpit~~ (P9);
-9. scheduler/outbox i poruke (P10–11);
-10. driver session/GPS/PWA offline;
-11. SA/CA kompletiranje, i18n/a11y, staging acceptance.
+9. ~~scheduler/outbox~~ (P10) — invalidate, expired, bound revision, max retry;
+10. poruke (P11);
+11. driver session/GPS/PWA offline;
+12. SA/CA kompletiranje, i18n/a11y, staging acceptance.
 
 ### Ažuriranje posle Poglavlja 9
 
 Problem lifecycle (open→…→resolved), vehicle-out, ops-activity feed i
 best-effort notify posle resolve-a su unit-pokriveni; demo cockpit E2E i
 dalje 57/57. Scheduler/outbox ostaje P10.
+
+### Ažuriranje posle Poglavlja 10
+
+Confirm invalidate na staff mutate/resolve, expired attention, bound revision,
+max-retry terminal i unit pokrivanje (+6) su zatvoreni. Scheduler flag i dalje
+OFF by default; live Firebase dispatch E2E nije deo ovog checkpoint-a. Gate:
+unit 497, rules 40, E2E 57.
 
 Svaka stavka prelazi iz „delimično/statički/nepokriveno“ u „funkcionalno“ samo kada postoji izvršen dokaz odgovarajućeg nivoa.

@@ -57,18 +57,23 @@ function confirmationAttentionRows() {
             if (["confirmed", "cancelled"].includes(row.status)) return false;
             return !confirmed.has(`${row.driverId}|${row.targetDate}`);
         })
-        .map((row) => ({
-            kind: row.status === "failed" ? "delivery_failed"
-                : row.status === "pending" ? "pending_send"
-                    : "awaiting_confirm",
-            severity: row.status === "failed" ? "critical" : "warning",
-            driverId: row.driverId,
-            targetDate: row.targetDate,
-            label: row.label || "next_shift",
-            attempts: Number(row.attempts || 0),
-            lastError: row.lastError || null,
-            status: row.status
-        }))
+        .map((row) => {
+            const today = todayDateStr();
+            const expired = today && String(row.targetDate) < String(today);
+            return {
+                kind: expired ? "expired"
+                    : row.status === "failed" ? "delivery_failed"
+                        : row.status === "pending" ? "pending_send"
+                            : "awaiting_confirm",
+                severity: row.status === "failed" ? "critical" : "warning",
+                driverId: row.driverId,
+                targetDate: row.targetDate,
+                label: row.label || "next_shift",
+                attempts: Number(row.attempts || 0),
+                lastError: row.lastError || null,
+                status: row.status
+            };
+        })
         .sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "critical" ? -1 : 1));
 }
 
@@ -83,6 +88,9 @@ function confirmationAttentionTitle(row) {
     if (row.kind === "pending_send") {
         return t("status_confirmation_pending_send") || "Čeka slanje zahteva";
     }
+    if (row.kind === "expired") {
+        return t("status_confirmation_expired") || "Potvrda istekla";
+    }
     return t("status_pending_confirmation") || "Čeka potvrdu";
 }
 
@@ -90,12 +98,13 @@ function shiftConfirmStatus(drv, dateStr) {
     const uid = driverUid(drv);
     if (!uid) return "unknown";
     if (hasConfirmedShift(uid, dateStr)) return "confirmed";
-    const pending = pendingConfirmationRows().some(
-        (row) => row.driverId === uid && row.targetDate === dateStr
+    const row = pendingConfirmationRows().find(
+        (entry) => entry.driverId === uid && entry.targetDate === dateStr
     );
-    if (pending) return "pending";
-    // No outbox/confirm row yet — neutral until Ch10 scheduler creates one.
-    return "neutral";
+    if (!row) return "neutral";
+    if (row.kind === "expired") return "expired";
+    if (row.kind === "delivery_failed") return "failed";
+    return "pending";
 }
 
 function problemStatusLabel(status) {
@@ -352,13 +361,14 @@ function renderDispatcherDashboard() {
                 const drv = driversById.get(row.driverId);
                 const div = document.createElement("article");
                 const isFailed = row.kind === "delivery_failed";
+                const isExpired = row.kind === "expired";
                 div.className = `ops-action-card alert-item ${isFailed ? "alert-breakdown is-critical" : "alert-delay is-warning"}`;
                 const label = row.label && row.label !== "next_shift"
                     ? (t(`confirm_label_${row.label}`) || row.label)
                     : (t("confirm_label_next_shift") || "Sledeća smena");
                 const errorHint = isFailed && row.lastError
                     ? ` · ${escapeHtml(String(row.lastError).slice(0, 80))}`
-                    : "";
+                    : (isExpired ? ` · ${escapeHtml(t("status_confirmation_expired") || "Isteklo")}` : "");
                 const attemptsHint = Number(row.attempts || 0) > 0
                     ? ` · ${escapeHtml(t("confirmation_attempts") || "Pokušaji")}: ${Number(row.attempts)}`
                     : "";
@@ -432,12 +442,18 @@ function renderDispatcherDashboard() {
                     ? (t("ops_shift_uncovered") || "Nepokriveno / van dužnosti")
                     : (confirmStatus === "confirmed"
                         ? (t("ops_shift_confirmed") || "Potvrđeno")
-                        : (confirmStatus === "pending"
-                            ? (t("status_pending_confirmation") || "Čeka potvrdu")
-                            : (t("ops_shift_planned") || "Po planu")));
+                        : (confirmStatus === "expired"
+                            ? (t("status_confirmation_expired") || "Isteklo")
+                            : (confirmStatus === "failed"
+                                ? (t("status_confirmation_delivery_failed") || "Slanje nije uspelo")
+                                : (confirmStatus === "pending"
+                                    ? (t("status_pending_confirmation") || "Čeka potvrdu")
+                                    : (t("ops_shift_planned") || "Po planu")))));
                 const rowClass = uncovered
                     ? "is-uncovered"
-                    : (confirmStatus === "confirmed" ? "is-ok" : (confirmStatus === "pending" ? "is-pending" : "is-neutral"));
+                    : (confirmStatus === "confirmed" ? "is-ok"
+                        : (confirmStatus === "expired" || confirmStatus === "failed" ? "is-uncovered"
+                            : (confirmStatus === "pending" ? "is-pending" : "is-neutral")));
                 const busOutBtn = !uncovered && busNum
                     ? `<button type="button" class="btn-danger-ghost ops-row-action" ${actionAttr("openVehicleOperationalIncident", [busNum, drv.name])} aria-label="${escapeHtml(t("ops_bus_out") || "Vozilo van operacije")}"><i data-lucide="bus"></i></button>`
                     : "";
@@ -487,11 +503,17 @@ function renderDispatcherDashboard() {
                     ? (t("ops_driver_available") || "Dostupan")
                     : (confirmStatus === "confirmed"
                         ? (t("ops_driver_on_duty") || "Na dužnosti")
-                        : (t("status_pending_confirmation") || "Čeka potvrdu")))
+                        : (confirmStatus === "expired"
+                            ? (t("status_confirmation_expired") || "Isteklo")
+                            : (confirmStatus === "failed"
+                                ? (t("status_confirmation_delivery_failed") || "Slanje nije uspelo")
+                                : (t("status_pending_confirmation") || "Čeka potvrdu")))))
                 : (t("ops_driver_off") || "Van dužnosti");
             const statusClass = !drv.active
                 ? "is-off"
-                : (uncovered ? "is-available" : (confirmStatus === "confirmed" ? "is-on-duty" : "is-pending"));
+                : (uncovered ? "is-available"
+                    : (confirmStatus === "confirmed" ? "is-on-duty"
+                        : (confirmStatus === "expired" || confirmStatus === "failed" ? "is-available" : "is-pending")));
 
             const card = document.createElement("article");
             card.className = `ops-crew-card ${statusClass}`;
