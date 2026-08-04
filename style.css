@@ -80,24 +80,8 @@
     .driver-dashboard-grid-two { grid-template-columns: 1fr !important; }
     .driver-dashboard-grid-two > * { grid-column: 1 !important; }
 }
-/* ── LIGHT MODE TEMA ─────────────────────────────────────────────────────── */
-body.light-theme {
-    --bg-dark:         #F0F4FF;
-    --bg-darker:       #E4EAFB;
-    --panel-bg:        rgba(255, 255, 255, 0.85);
-    --panel-bg-solid:  #FFFFFF;
-    --panel-border:    rgba(61, 126, 245, 0.18);
-    --panel-border-hover: rgba(61, 126, 245, 0.38);
-    --text-main:       #0D1628;
-    --text-muted:      #4A5A7A;
-    --text-muted-dark: #7B8DB0;
-    --primary-color:   #2968E8;
-    --primary-hover:   #1A50CC;
-    --primary-rgb:     41, 104, 232;
-    --primary-glow:    0 0 20px rgba(41, 104, 232, 0.2);
-    --shadow-main:     0 8px 32px rgba(41, 104, 232, 0.08);
-    color-scheme: light;
-}
+/* Light theme CSS variables live only in css/design-tokens.css (design system / chapter 5).
+   Component-specific light overrides may remain below; do not redeclare :root tokens here. */
 body.light-theme .login-container {
     background:
         radial-gradient(ellipse at 15% 25%, rgba(61, 126, 245, 0.08) 0%, transparent 50%),

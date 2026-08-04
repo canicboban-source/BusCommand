@@ -200,7 +200,7 @@ Redosled iz master prompta v3.2 §27:
 1. ~~RBAC / Rules / tenant~~ (P2);
 2. ~~zavisnosti / audit~~ (P3);
 3. ~~login lifecycle~~ (P4);
-4. dizajn sistem i tokeni (P5, §33);
+4. dizajn sistem i tokeni (P5, §33) — katalog u `docs/design-system.md`;
 5. kanonski plan i revizije;
 6. CA katalog i mesečni plan;
 7. dnevni plan i problem-resolution;

@@ -53,12 +53,12 @@ html[data-app-surface="staff"] .sidebar-nav .nav-item i {
 html[data-app-surface="staff"] .main-content,
 html[data-app-surface="staff"] main.content-area,
 html[data-app-surface="staff"] .app-main {
-    padding: 22px 24px 48px;
+    padding: var(--density-page-pad-y) var(--density-page-pad-x) var(--density-page-pad-bottom);
 }
 
 html[data-app-surface="staff"] .section-header h2 {
-    font-size: 1.45rem;
-    font-weight: 800;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-extrabold);
     letter-spacing: -0.02em;
 }
 
@@ -2164,39 +2164,40 @@ html[data-app-surface="staff"] .sa-detail-reset-link {
 }
 
 
-/* Dispatcher cockpit: semantic urgent actions and accessible resolution dialogs */
+/* Dispatcher cockpit: semantic urgent actions (§33 / design tokens) */
 html[data-app-surface="staff"] .urgent-action {
     display: inline-flex;
-    min-height: 38px;
+    min-height: var(--density-control-h);
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 8px 14px;
-    border: 1px solid #fbbf24;
-    border-radius: 9px;
-    color: #1c1300;
-    background: #f59e0b;
-    box-shadow: 0 8px 20px rgba(245, 158, 11, .18);
+    gap: var(--space-2);
+    padding: var(--space-2) 14px;
+    border: 1px solid var(--urgent-action-border);
+    border-radius: calc(var(--radius-sm) + 1px);
+    color: var(--urgent-action-fg);
+    background: var(--urgent-action);
+    box-shadow: var(--urgent-action-shadow);
     font: inherit;
-    font-weight: 800;
-    line-height: 1.15;
+    font-weight: var(--font-weight-extrabold);
+    line-height: var(--line-height-tight);
     cursor: pointer;
+    transition: var(--transition-fast);
 }
 
 html[data-app-surface="staff"] .urgent-action:hover:not(:disabled) {
-    border-color: #fde68a;
-    background: #fbbf24;
-    box-shadow: 0 10px 26px rgba(245, 158, 11, .28);
+    border-color: var(--urgent-action-border-hover);
+    background: var(--urgent-action-hover);
+    box-shadow: var(--urgent-action-shadow-hover);
     transform: translateY(-1px);
 }
 
 html[data-app-surface="staff"] .urgent-action:focus-visible {
-    outline: 3px solid rgba(251, 191, 36, .42);
-    outline-offset: 2px;
+    outline: none;
+    box-shadow: var(--urgent-action-focus), var(--urgent-action-shadow);
 }
 
 html[data-app-surface="staff"] .urgent-action:disabled {
-    opacity: .56;
+    opacity: var(--state-disabled-opacity);
     cursor: not-allowed;
     box-shadow: none;
     transform: none;
@@ -2211,7 +2212,7 @@ html[data-app-surface="staff"] .urgent-action svg {
 html[data-app-surface="staff"] .ops-modal-layer {
     position: fixed;
     inset: 0;
-    z-index: 20000;
+    z-index: var(--z-ops-modal);
     display: flex;
     align-items: center;
     justify-content: center;

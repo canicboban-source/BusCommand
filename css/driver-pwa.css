@@ -20,7 +20,7 @@ html[data-app-surface="driver"] .app-header {
 html[data-app-surface="driver"] .main-content,
 html[data-app-surface="driver"] main {
     margin: 0;
-    padding: 0 16px calc(var(--mobile-nav-h) + 28px);
+    padding: 0 var(--density-page-pad-x) var(--density-page-pad-bottom);
     max-width: 480px;
     margin-inline: auto;
 }
