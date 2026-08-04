@@ -221,10 +221,14 @@ function renderServicePlanPreview() {
     const plan = result.plan || pendingImport.rawPlan;
     const summary = result.summary || {};
     const activePlan = currentPlans.get(pendingImport.groupId);
-    const publishLabel = t("ca_plan_publish_specific", {
+    const activateLabel = t("ca_plan_activate_specific", {
         version: plan?.planVersion || "—",
         group: pendingImport.groupName
     });
+    const blocking = !result.valid;
+    const warningCount = Array.isArray(result.errors)
+        ? result.errors.filter(error => error?.severity === "warning").length
+        : 0;
     container.innerHTML = `
         <div class="service-plan-preview-card ${result.valid ? "is-valid" : "is-invalid"}">
             <div class="service-plan-preview-header">
@@ -249,13 +253,23 @@ function renderServicePlanPreview() {
             ${renderErrors(result.errors)}
             ${renderDutyTable(plan)}
             <div class="service-plan-actions">
-                <button type="button" id="ca-publish-service-plan" class="btn-primary" ${actionAttr("publishCompanyServicePlan")} ${result.valid ? "" : "disabled"}>
-                    <i data-lucide="badge-check"></i> ${escapeHtml(publishLabel)}
-                </button>
                 <button type="button" class="btn-secondary" ${actionAttr("clearCompanyServicePlanPreview")}>
                     ${escapeHtml(t("btn_clear_preview"))}
                 </button>
             </div>
+        </div>
+        <div class="ca-catalog-activation-bar" role="region" aria-label="${escapeHtml(t("ca_plan_activate_bar"))}">
+            <div>
+                <strong>${escapeHtml(pendingImport.groupName)} · ${escapeHtml(t("ca_plan_version_short"))} ${escapeHtml(plan?.planVersion || "—")}</strong>
+                <span>${escapeHtml(t("ca_plan_activate_bar_hint", {
+                    duties: summary.dutyCount || 0,
+                    warnings: warningCount,
+                    validFrom: plan?.validFrom || "—"
+                }))}</span>
+            </div>
+            <button type="button" id="ca-publish-service-plan" class="btn-primary" ${actionAttr("publishCompanyServicePlan")} ${blocking ? "disabled" : ""}>
+                <i data-lucide="badge-check"></i> ${escapeHtml(activateLabel)}
+            </button>
         </div>
         ${renderDutyDrawer(plan)}`;
     if (typeof lucide !== "undefined") lucide.createIcons();
@@ -296,7 +310,9 @@ function formatPublishedAt(value) {
 }
 
 function historyStatus(plan) {
-    return plan.status === "active" ? t("ca_plan_active") : t("ca_plan_superseded");
+    if (plan.status === "active") return t("ca_plan_active");
+    if (plan.status === "staged") return t("ca_plan_staged");
+    return t("ca_plan_superseded");
 }
 
 function renderHistoryDutyDetails(plan) {
@@ -349,15 +365,22 @@ function renderServicePlanHistory() {
         container.innerHTML = `<div class="service-plan-empty">${escapeHtml(t("ca_plan_history_empty"))}</div>`;
         return;
     }
-    const rows = history.map(plan => `<tr class="${plan.status === "active" ? "is-active" : ""}">
+    const rows = history.map(plan => {
+        const canActivate = plan.status === "staged" || plan.status === "superseded";
+        const activateLabel = plan.status === "superseded" ? t("ca_plan_rollback") : t("ca_plan_activate");
+        return `<tr class="${plan.status === "active" ? "is-active" : ""}">
         <td data-label="${escapeHtml(t("ca_plan_code"))}"><strong>${escapeHtml(plan.planCode)}</strong></td>
         <td data-label="${escapeHtml(t("ca_plan_version_short"))}">${escapeHtml(plan.planVersion)}</td>
         <td data-label="${escapeHtml(t("ca_plan_valid_from"))}">${escapeHtml(plan.validFrom)}</td>
         <td data-label="${escapeHtml(t("ca_plan_duties"))}">${escapeHtml(plan.dutyCount ?? "—")}</td>
         <td data-label="${escapeHtml(t("ca_plan_history_published"))}">${escapeHtml(formatPublishedAt(plan.publishedAt))}</td>
-        <td data-label="${escapeHtml(t("ca_col_status"))}"><span class="service-plan-status ${plan.status === "active" ? "success" : "neutral"}">${escapeHtml(historyStatus(plan))}</span></td>
-        <td data-label="${escapeHtml(t("table_actions"))}"><button type="button" class="btn-secondary service-plan-history-view" ${actionAttr("openCompanyServicePlanHistory", [plan.id])} ${selectedHistoryId === plan.id ? "aria-current=\"true\"" : ""}><i data-lucide="eye"></i>${escapeHtml(t("ca_plan_history_view"))}</button></td>
-    </tr>`).join("");
+        <td data-label="${escapeHtml(t("ca_col_status"))}"><span class="service-plan-status ${plan.status === "active" ? "success" : plan.status === "staged" ? "warning" : "neutral"}">${escapeHtml(historyStatus(plan))}</span></td>
+        <td data-label="${escapeHtml(t("table_actions"))}" class="service-plan-history-actions">
+            <button type="button" class="btn-secondary service-plan-history-view" ${actionAttr("openCompanyServicePlanHistory", [plan.id])} ${selectedHistoryId === plan.id ? "aria-current=\"true\"" : ""}><i data-lucide="eye"></i>${escapeHtml(t("ca_plan_history_view"))}</button>
+            ${canActivate ? `<button type="button" class="btn-primary service-plan-history-activate" ${actionAttr("activateCompanyServicePlanVersion", [plan.id])}><i data-lucide="badge-check"></i>${escapeHtml(activateLabel)}</button>` : ""}
+        </td>
+    </tr>`;
+    }).join("");
     const selected = selectedHistoryId ? historyDetails.get(selectedHistoryId) : null;
     container.innerHTML = `<div class="service-plan-table-wrap"><table class="service-plan-table service-plan-history-table">
         <thead><tr><th>${escapeHtml(t("ca_plan_code"))}</th><th>${escapeHtml(t("ca_plan_version_short"))}</th><th>${escapeHtml(t("ca_plan_valid_from"))}</th><th>${escapeHtml(t("ca_plan_duties"))}</th><th>${escapeHtml(t("ca_plan_history_published"))}</th><th>${escapeHtml(t("ca_col_status"))}</th><th>${escapeHtml(t("table_actions"))}</th></tr></thead>
@@ -475,6 +498,8 @@ async function handleCompanyServicePlanFile(event) {
         selectedDutyCode = null;
         pendingImport = {
             fileName: file.name,
+            contentType: file.type || null,
+            byteSize: Number.isFinite(file.size) ? file.size : null,
             groupId,
             groupName: group.name || groupId,
             result,
@@ -538,23 +563,35 @@ async function publishCompanyServicePlan() {
     if (button?.disabled) return;
     if (button) button.disabled = true;
     const plan = pendingImport.result.plan;
+    const source = {
+        fileName: pendingImport.fileName || null,
+        contentType: pendingImport.contentType || null,
+        byteSize: pendingImport.byteSize ?? null
+    };
     try {
         if (IS_DEMO_MODE) {
             if (!Array.isArray(window.state.servicePlans)) window.state.servicePlans = [];
+            const planId = `${groupId}-${plan.planCode}-${plan.planVersion}-${plan.validFrom}`;
+            if (window.state.servicePlans.some(existing => existing.id === planId)) {
+                throw new Error(t("ca_plan_version_exists"));
+            }
             window.state.servicePlans.forEach(existing => {
-                if (existing.groupId === groupId && existing.status === "active") existing.status = "superseded";
+                if (existing.groupId === groupId && existing.status === "active") {
+                    existing.status = "superseded";
+                    existing.supersededBy = planId;
+                }
             });
             const published = {
                 ...plan,
                 groupId,
-                id: `${groupId}-${plan.planCode}-${plan.planVersion}-${plan.validFrom}`,
+                id: planId,
                 status: "active",
+                sourceHash: "demo",
                 publishedAt: new Date().toISOString(),
-                publishedBy: window.currentUser.id || window.currentUser.email || "company-admin"
+                publishedBy: window.currentUser.id || window.currentUser.email || "company-admin",
+                activatedAt: new Date().toISOString(),
+                activatedBy: window.currentUser.id || window.currentUser.email || "company-admin"
             };
-            if (window.state.servicePlans.some(existing => existing.id === published.id)) {
-                throw new Error(t("ca_plan_version_exists"));
-            }
             window.state.servicePlans.push(published);
             applyServicePlanToCatalog(published, groupId);
             saveState();
@@ -567,9 +604,15 @@ async function publishCompanyServicePlan() {
                 showToast(preview.error || t("ca_plan_needs_fix"), "error");
                 return;
             }
-            const published = await ApiClient.publishServicePlan(companyId, groupId, plan);
-            if (!published.success) {
-                showToast(published.error || t("error_generic"), "error");
+            const staged = await ApiClient.publishServicePlan(companyId, groupId, plan, source);
+            if (!staged.success) {
+                showToast(staged.error || t("error_generic"), "error");
+                return;
+            }
+            const activated = await ApiClient.activateServicePlan(companyId, groupId, staged.planId);
+            if (!activated.success) {
+                showToast(activated.error || t("ca_plan_activate_failed"), "error");
+                await loadServicePlanHistory();
                 return;
             }
             applyServicePlanToCatalog({ ...plan, groupId }, groupId);
@@ -581,16 +624,67 @@ async function publishCompanyServicePlan() {
         renderServicePlanPreview();
         renderCurrentServicePlans();
         await loadServicePlanHistory();
-        showToast(t("ca_plan_publish_success"), "success", 5000);
+        showToast(t("ca_plan_activate_success"), "success", 5000);
     } catch (error) {
-        console.error("Service plan publish failed", error);
+        console.error("Service plan activate failed", error);
         showToast(error.message || t("error_generic"), "error");
     } finally {
         if (button) button.disabled = false;
     }
 }
 
+async function activateCompanyServicePlanVersion(planId) {
+    if (!isCompanyAdmin() || !planId) return;
+    const groupId = selectedGroupId();
+    if (!groupId) {
+        showToast(t("ca_plan_group_required"), "error");
+        return;
+    }
+    try {
+        if (IS_DEMO_MODE) {
+            if (!Array.isArray(window.state.servicePlans)) return;
+            const target = window.state.servicePlans.find(plan => plan.id === planId && plan.groupId === groupId);
+            if (!target) {
+                showToast(t("ca_plan_history_failed"), "error");
+                return;
+            }
+            window.state.servicePlans.forEach(plan => {
+                if (plan.groupId !== groupId) return;
+                if (plan.id === planId) {
+                    plan.status = "active";
+                    plan.activatedAt = new Date().toISOString();
+                } else if (plan.status === "active") {
+                    plan.status = "superseded";
+                    plan.supersededBy = planId;
+                }
+            });
+            applyServicePlanToCatalog(target, groupId);
+            currentPlans.set(groupId, { ...target, status: "active" });
+            saveState();
+        } else {
+            const companyId = window.currentUser.companyId;
+            const activated = await ApiClient.activateServicePlan(companyId, groupId, planId);
+            if (!activated.success) {
+                showToast(activated.error || t("ca_plan_activate_failed"), "error");
+                return;
+            }
+            const version = await ApiClient.getServicePlanVersion(companyId, groupId, planId);
+            if (version?.success && version.plan) {
+                applyServicePlanToCatalog(version.plan, groupId);
+                currentPlans.set(groupId, version.plan);
+            }
+        }
+        renderCurrentServicePlans();
+        await loadServicePlanHistory();
+        showToast(t("ca_plan_activate_success"), "success", 5000);
+    } catch (error) {
+        console.error("Service plan rollback/activate failed", error);
+        showToast(error.message || t("error_generic"), "error");
+    }
+}
+
 export {
+    activateCompanyServicePlanVersion,
     clearCompanyServicePlanPreview,
     closeCompanyServicePlanDuty,
     closeCompanyServicePlanHistory,

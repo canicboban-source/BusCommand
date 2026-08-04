@@ -632,7 +632,7 @@ zatvorenog poglavlja i uvek pokazuje na izveštaj sa dokazima.
 | 4 | Identitet i četiri login lifecycle-a, sesije i istek | završeno | `reports/poglavlje-4-auth-lifecycle-2026-08-04.md` |
 | 5 | Dizajn sistem i tokeni (prethodi svakom redizajnu, §33) | završeno | `reports/poglavlje-5-design-system-2026-08-04.md` |
 | 6 | Kanonski model plana i revizije | završeno | `reports/poglavlje-6-kanonski-plan-revizije-2026-08-04.md` |
-| 7 | Company Admin katalog smena, import/preview/activate/rollback | — | — |
+| 7 | Company Admin katalog smena, import/preview/activate/rollback | završeno | `reports/poglavlje-7-katalog-smena-2026-08-04.md` |
 | 8 | Mesečni plan | — | — |
 | 9 | Dnevni plan, problem-resolution i dispečerski cockpit | — | — |
 | 10 | Confirmations scheduler i outbox | — | — |

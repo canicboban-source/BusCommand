@@ -149,10 +149,16 @@ const ApiClient = (() => {
             body: JSON.stringify({ companyId, groupId, plan })
         });
     }
-    async function publishServicePlan(companyId, groupId, plan) {
+    async function publishServicePlan(companyId, groupId, plan, source = {}) {
         return apiFetch("/api/company-admin/service-plans/publish", {
             method: "PUT",
-            body: JSON.stringify({ companyId, groupId, plan })
+            body: JSON.stringify({ companyId, groupId, plan, source })
+        });
+    }
+    async function activateServicePlan(companyId, groupId, planId) {
+        return apiFetch("/api/company-admin/service-plans/" + encodeURIComponent(planId) + "/activate", {
+            method: "POST",
+            body: JSON.stringify({ companyId, groupId })
         });
     }
     async function previewGroupMonthlyPlanImport(payload) {
@@ -407,7 +413,7 @@ const ApiClient = (() => {
         createCompanyDispatcher, updateCompanyDispatcherGroups,
         setCompanyDispatcherStatus, revokeCompanyDispatcherSessions, deleteCompanyDispatcher,
         updateCompanyProfileSettings, downloadCompanyExport,
-        previewServicePlan, publishServicePlan, previewGroupMonthlyPlanImport, commitGroupMonthlyPlanImport,
+        previewServicePlan, publishServicePlan, activateServicePlan, previewGroupMonthlyPlanImport, commitGroupMonthlyPlanImport,
         getActiveServicePlan, getServicePlanHistory, getServicePlanVersion, getCompanyAudit, updateCompanyBranding,
         createCompanyGroup, updateCompanyGroup, deleteCompanyGroup, reportStateSync, importDriversCsv, setDriverActive,
         updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode,

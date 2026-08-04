@@ -8,9 +8,12 @@ test("published service plan APIs are company-admin owned and dispatcher scoped"
   const api = read("../../api-server.js");
   assert.match(api, /\/api\/company-admin\/service-plans\/preview[\s\S]*?requireCompanyAdmin/);
   assert.match(api, /\/api\/company-admin\/service-plans\/publish[\s\S]*?requireCompanyAdmin/);
+  assert.match(api, /\/api\/company-admin\/service-plans\/:planId\/activate[\s\S]*?requireCompanyAdmin/);
   assert.match(api, /\/api\/company-admin\/service-plans\/history[\s\S]*?requireCompanyAdmin/);
   assert.match(api, /\/api\/company-admin\/service-plans\/:planId[\s\S]*?requireCompanyAdmin/);
   assert.match(api, /\/api\/staff\/service-plans\/active[\s\S]*?requireCompanyStaff/);
+  assert.match(api, /service_plan_staged/);
+  assert.match(api, /service_plan_activated|service_plan_rolled_back/);
   assert.match(api, /groups\.includes\(groupId\)/);
   assert.match(api, /assertCompanyGroupsExist[\s\S]*?req\.body\?\.groupId/);
   assert.match(read("../../server/staff-auth.js"), /parsed\.id !== req\.staffUser\.companyId/);
@@ -38,6 +41,9 @@ test("company admin UI accepts versioned XLSX CSV and structured PDF without bun
   assert.match(html, /\/templates\/BusCommand_Drivers_Import_v1\.csv/);
   assert.match(module, /ApiClient\.previewServicePlan/);
   assert.match(module, /ApiClient\.publishServicePlan/);
+  assert.match(module, /ApiClient\.activateServicePlan/);
+  assert.match(module, /ca-catalog-activation-bar/);
+  assert.match(module, /activateCompanyServicePlanVersion/);
   assert.match(module, /pendingImport\.groupId !== selectedGroupId\(\)/);
   assert.match(module, /function comparePlanDuties/);
   assert.match(module, /service-plan-table/);

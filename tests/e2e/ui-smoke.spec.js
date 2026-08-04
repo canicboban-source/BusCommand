@@ -306,11 +306,12 @@ test.describe("UI smoke", () => {
     await page.locator("#ca-service-plan-file").setInputFiles(
       path.resolve(__dirname, "../../public/templates/BusCommand_Dienstplan_Import_v1.xlsx")
     );
-    await expect(page.locator("#ca-service-plan-preview")).toContainText("Ready to publish");
+    await expect(page.locator("#ca-service-plan-preview")).toContainText("Ready to activate");
     await expect(page.locator("#ca-service-plan-preview")).toContainText("First publication for this group");
     await expect(page.locator(".service-plan-table tbody tr")).toHaveCount(1);
     await expect(page.locator(".service-plan-table")).toContainText("310.S01");
-    await expect(page.locator("#ca-publish-service-plan")).toContainText("Publish version 66 for North depot");
+    await expect(page.locator("#ca-publish-service-plan")).toContainText("Activate catalog");
+    await expect(page.locator(".ca-catalog-activation-bar")).toBeVisible();
     await page.locator(".service-plan-duty-link").click();
     await expect(page.locator(".service-plan-duty-drawer")).toBeVisible();
     await expect(page.locator(".service-plan-activity-list article")).toHaveCount(25);
@@ -399,12 +400,15 @@ test.describe("UI smoke", () => {
     await expect(page.locator("#ca-service-plan-history tbody tr")).toHaveCount(2);
     await expect(page.locator("#ca-service-plan-history")).toContainText("67");
     await expect(page.locator("#ca-service-plan-history")).toContainText("66");
-    await page.locator("#ca-service-plan-history tbody tr").filter({ hasText: "66" }).getByRole("button").click();
+    await page.locator("#ca-service-plan-history tbody tr").filter({ hasText: "66" }).getByRole("button", { name: /View/i }).click();
     await expect(page.locator(".service-plan-history-detail")).toContainText("310.S01");
     await page.locator(".service-plan-history-duties summary").click();
     await expect(page.locator(".service-plan-history-detail .service-plan-activity-list article")).toHaveCount(1);
     await page.locator(".service-plan-history-detail-header .btn-secondary").click();
     await expect(page.locator(".service-plan-history-detail")).toHaveCount(0);
+    await page.locator("#ca-service-plan-history tbody tr").filter({ hasText: "66" }).getByRole("button", { name: /Restore this version/i }).click();
+    await expect(page.locator("#ca-service-plan-history")).toContainText("ACTIVE");
+    await expect(page.locator("#ca-current-service-plans")).toContainText("66");
   });
 
   test("rapid dispatcher creation double-click creates one account", async ({ page }) => {

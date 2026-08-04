@@ -169,7 +169,8 @@ html[data-app-surface="staff"] button.dashboard-group-card {
     font-size: 1.35rem;
 }
 
-.ca-monthly-activation-bar {
+.ca-monthly-activation-bar,
+.ca-catalog-activation-bar {
     position: sticky;
     bottom: 12px;
     z-index: 5;
@@ -185,13 +186,15 @@ html[data-app-surface="staff"] button.dashboard-group-card {
     backdrop-filter: blur(12px);
 }
 
-.ca-monthly-activation-bar > div {
+.ca-monthly-activation-bar > div,
+.ca-catalog-activation-bar > div {
     display: grid;
     flex: 1;
     gap: 3px;
 }
 
-.ca-monthly-activation-bar span {
+.ca-monthly-activation-bar span,
+.ca-catalog-activation-bar span {
     color: var(--text-muted);
     font-size: 0.78rem;
 }
@@ -218,13 +221,15 @@ html[data-app-surface="staff"] button.dashboard-group-card {
     }
 
     .ca-monthly-import-upload-row .service-plan-download-actions,
-    .ca-monthly-activation-bar {
+    .ca-monthly-activation-bar,
+    .ca-catalog-activation-bar {
         align-items: stretch;
         flex-direction: column;
     }
 
     .ca-monthly-import-upload-row .service-plan-download-actions > *,
-    .ca-monthly-activation-bar > button {
+    .ca-monthly-activation-bar > button,
+    .ca-catalog-activation-bar > button {
         justify-content: center;
         width: 100%;
     }

@@ -43,7 +43,8 @@ const {
   listServicePlanHistory,
   normalizeServicePlanGroupId,
   previewServicePlan,
-  publishServicePlan
+  publishServicePlan,
+  activateServicePlan
 } = require("./server/service-plans");
 const { assertCompanyGroupsExist } = require("./server/group-access");
 const { listAuditEvents, normalizeStateSyncDetails } = require("./server/audit-log");
@@ -1320,18 +1321,26 @@ app.put(
         companyId,
         groupId: req.body?.groupId,
         actorId: req.staffUser.uid,
-        plan: req.body?.plan
+        plan: req.body?.plan,
+        source: req.body?.source || {}
       });
-      await _logAuditEvent(companyId, req.staffUser.uid, "service_plan_published", {
+      await _logAuditEvent(companyId, req.staffUser.uid, "service_plan_staged", {
         planId: result.planId,
         groupId: result.plan.groupId,
         planCode: result.plan.planCode,
         planVersion: result.plan.planVersion,
         validFrom: result.plan.validFrom,
+        sourceHash: result.sourceHash,
         dutyCount: result.summary.dutyCount,
         activityCount: result.summary.activityCount
       });
-      return res.json({ success: true, planId: result.planId, summary: result.summary });
+      return res.json({
+        success: true,
+        planId: result.planId,
+        status: result.status,
+        sourceHash: result.sourceHash,
+        summary: result.summary
+      });
     } catch (err) {
       if (err.code === "validation-failed") {
         return res.status(422).json({ success: false, error: err.message, details: err.details });
@@ -1343,7 +1352,54 @@ app.put(
         return res.status(err.code === "group-not-found" ? 404 : 400).json({ success: false, error: err.message });
       }
       req.log?.error({ err }, "Service plan publish failed");
-      return res.status(500).json({ success: false, error: "Vozni plan nije objavljen." });
+      return res.status(500).json({ success: false, error: "Vozni plan nije sačuvan." });
+    }
+  }
+);
+
+app.post(
+  "/api/company-admin/service-plans/:planId/activate",
+  rateLimit(10, 5 * 60 * 1000),
+  requireCompanyAdmin,
+  async (req, res) => {
+    const companyId = requireOwnCompany(req, res);
+    if (!companyId) return;
+    try {
+      const result = await activateServicePlan({
+        db,
+        admin,
+        companyId,
+        groupId: req.body?.groupId,
+        actorId: req.staffUser.uid,
+        planId: req.params.planId
+      });
+      await _logAuditEvent(companyId, req.staffUser.uid, result.previousActivePlanId
+        ? "service_plan_rolled_back"
+        : "service_plan_activated", {
+        planId: result.planId,
+        groupId: req.body?.groupId,
+        previousActivePlanId: result.previousActivePlanId,
+        alreadyActive: result.alreadyActive
+      });
+      return res.json({
+        success: true,
+        planId: result.planId,
+        status: result.status,
+        previousActivePlanId: result.previousActivePlanId,
+        alreadyActive: result.alreadyActive
+      });
+    } catch (err) {
+      if (err.code === "plan-not-found") {
+        return res.status(404).json({ success: false, error: err.message });
+      }
+      if (err.code === "invalid-status" || err.code === "invalid-plan-id") {
+        return res.status(400).json({ success: false, error: err.message });
+      }
+      if (["invalid-group", "group-not-found"].includes(err.code)) {
+        return res.status(err.code === "group-not-found" ? 404 : 400).json({ success: false, error: err.message });
+      }
+      req.log?.error({ err }, "Service plan activate failed");
+      return res.status(500).json({ success: false, error: "Katalog nije aktiviran." });
     }
   }
 );

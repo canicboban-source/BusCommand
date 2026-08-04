@@ -68,6 +68,15 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
 - Posledica: `docs/canonical-plan-model.md`, `server/shift-assignment.js`,
   `js/core/shift-plan.js`, `js/dispatcher/shifts.js`.
 
+### D7 — Katalog smena: stage pa activate
+
+- Datum: 2026-08-04 · Status: **Odlučeno** (Poglavlje 7)
+- Pitanje: da li publish odmah aktivira katalog?
+- Odluka: ne. `publish` čuva nepromenljivu `staged` verziju sa `sourceHash`;
+  `activate` atomski prebacuje live pointer i supersede-uje prethodni active.
+  Rollback = activate ranije superseded verzije (audit `service_plan_rolled_back`).
+- Posledica: `server/service-plans.js`, CA sticky „Aktiviraj katalog“.
+
 ---
 
 ## Otvorena pitanja
