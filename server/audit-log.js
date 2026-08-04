@@ -11,7 +11,7 @@ function toIso(value) {
 }
 
 function categoryFor(action = "") {
-  if (/login|code_activat|session/i.test(action)) return "access";
+  if (/login|code_activat|session|map_access|location/i.test(action)) return "access";
   if (/driver|vacation|lost_item|quick_report|sos|staff_message|message_sent|message_read|message_ack|message_archiv/i.test(action)) return "drivers";
   if (/service_plan/i.test(action)) return "plans";
   if (/shift|schedule|state_sync/i.test(action)) return "scheduling";

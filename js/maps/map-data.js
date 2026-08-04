@@ -4,6 +4,7 @@ export const mapState = {
     dispatcherMap: null,
     busMarkers: {},
     gpsSimulationInterval: null,
+    mapAccessLogged: false,
 };
 
 export const ROUTE_GPS_PATHS = {

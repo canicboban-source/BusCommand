@@ -1,7 +1,7 @@
 import Auth from "../core/auth-client.js";
 import ApiClient from "../core/api-client.js";
 import { stopFirestoreSync } from "../core/firebase-service.js";
-import { stopDriverGpsTracking } from "../maps/gps-track.js";
+import { stopDriverGpsTracking, configureDriverGpsGate } from "../maps/gps-track.js";
 import { clearUserSession } from "../auth/login-session.js";
 import { showLoginScreen } from "../auth/login-ui.js";
 import { showToast } from "../core/utils.js";
@@ -30,6 +30,7 @@ function clearWorkTimers() {
 
 async function terminateDriverSession(messageKey = "driver_session_ended") {
     clearWorkTimers();
+    configureDriverGpsGate({ liveGps: false, sessionActive: false });
     stopDriverGpsTracking();
     stopFirestoreSync();
     policy = null;
@@ -66,6 +67,10 @@ function showRestOverlay() {
 }
 
 function enterDriverRestMode() {
+    configureDriverGpsGate({
+        liveGps: policy?.features?.liveGps === true,
+        sessionActive: false
+    });
     stopDriverGpsTracking();
     stopFirestoreSync();
     if (window.state?.messages) window.state.messages = [];
@@ -107,7 +112,15 @@ async function prepareDriverWorkSession() {
         return false;
     }
     policy = result.policy;
+    configureDriverGpsGate({
+        liveGps: policy?.features?.liveGps === true,
+        sessionActive: policy?.status === "active"
+    });
     return true;
+}
+
+function driverLiveGpsEnabled() {
+    return IS_DEMO_MODE ? false : policy?.features?.liveGps === true;
 }
 
 async function confirmUpcomingShifts(dates = null) {
@@ -132,5 +145,5 @@ async function confirmUpcomingShifts(dates = null) {
 export {
     driverWorkPolicy, isDriverWorkSessionActive, prepareDriverWorkSession,
     startDriverWorkSessionGuard, enterDriverRestMode, terminateDriverSession,
-    confirmUpcomingShifts
+    confirmUpcomingShifts, driverLiveGpsEnabled
 };

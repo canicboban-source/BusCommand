@@ -397,6 +397,18 @@ const ApiClient = (() => {
     async function getDriverWorkSession() {
         return apiFetch("/api/driver/work-session");
     }
+    async function postDriverLocation(location) {
+        return apiFetch("/api/driver/location", {
+            method: "POST",
+            body: JSON.stringify(location || {})
+        });
+    }
+    async function reportStaffMapAccess() {
+        return apiFetch("/api/staff/map-access", {
+            method: "PUT",
+            body: "{}"
+        });
+    }
     async function confirmDriverShifts(dates) {
         return apiFetch("/api/driver/shift-confirmations", {
             method: "POST",
@@ -447,7 +459,7 @@ const ApiClient = (() => {
         createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, transitionStaffOperationalIncident, resolveStaffOperationalIncident, getStaffOpsActivity, resolveStaffSos,
         setLostItemStatus, createStaffBus, setStaffBusActive, assignStaffShift, undoStaffShift,
         acquirePlanLock, heartbeatPlanLock, releasePlanLock, breakPlanLock, getPlanLock,
-        sendStaffMessage, archiveStaffMessage, getDriverWorkSession, confirmDriverShifts, getStaffShiftConfirmations,
+        sendStaffMessage, archiveStaffMessage, getDriverWorkSession, postDriverLocation, reportStaffMapAccess, confirmDriverShifts, getStaffShiftConfirmations,
         startSupportSession, getActiveSupportSessionAdmin, endSupportSessionAdmin,
         getCompanySupportSession, endCompanySupportSession
     };

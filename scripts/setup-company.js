@@ -72,8 +72,15 @@ async function setup() {
     maxDispatchers: 5,
     trialEndsAt: admin.firestore.Timestamp.fromDate(trialEnd),
     features: {
-      liveMap: true, pdfSchedules: true, excelImport: true,
-      sosAlarm: true, multiLanguage: true, reports: true
+      liveMap: true,
+      liveGps: false,
+      pdfSchedules: true,
+      excelImport: true,
+      sosAlarm: true,
+      multiLanguage: true,
+      reports: true,
+      supportSession: false,
+      shiftConfirmationScheduler: false
     }
   });
 

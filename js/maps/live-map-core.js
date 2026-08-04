@@ -15,9 +15,22 @@ function finiteNumber(value) {
 }
 
 function liveCoordinates(driver) {
-    const lat = finiteNumber(driver?.latitude ?? driver?.lat ?? driver?.location?.latitude ?? driver?.location?.lat);
-    const lng = finiteNumber(driver?.longitude ?? driver?.lng ?? driver?.location?.longitude ?? driver?.location?.lng);
+    const source = driver?.lastLocation && typeof driver.lastLocation === "object"
+        ? driver.lastLocation
+        : driver;
+    const lat = finiteNumber(source?.latitude ?? source?.lat ?? source?.location?.latitude ?? source?.location?.lat);
+    const lng = finiteNumber(source?.longitude ?? source?.lng ?? source?.location?.longitude ?? source?.location?.lng);
     return lat === null || lng === null ? null : [lat, lng];
+}
+
+function driverVisibleOnDispatcherMap(driver) {
+    if (!driver?.name || driver.active === false) return false;
+    const role = window.currentUser?.role;
+    if (role === "company_admin" || role === "company-admin") return true;
+    const groups = Array.isArray(window.currentUser?.groups) ? window.currentUser.groups : [];
+    if (!groups.length) return true;
+    const gid = driver.groupId || driver.lineId || null;
+    return Boolean(gid && groups.includes(gid));
 }
 
 function demoRoutePosition(driver, index) {
@@ -61,6 +74,13 @@ function initDispatcherLiveMap() {
     // coordinates supplied by an authenticated, active driver session.
     if (IS_DEMO_MODE && !mapState.gpsSimulationInterval) startGpsSimulation();
     updateMapMarkers();
+
+    if (!IS_DEMO_MODE && !mapState.mapAccessLogged) {
+        mapState.mapAccessLogged = true;
+        import("../core/api-client.js").then(({ default: ApiClient }) => {
+            ApiClient.reportStaffMapAccess?.().catch(() => {});
+        }).catch(() => {});
+    }
 }
 
 function startGpsSimulation() {
@@ -122,7 +142,7 @@ function updateMapMarkers() {
     const activeDriverNames = new Set();
 
     list(window.state?.drivers).forEach((driver, index) => {
-        if (!driver?.name || !driver.active) {
+        if (!driverVisibleOnDispatcherMap(driver)) {
             if (driver?.name) removeMarker(driver.name);
             return;
         }

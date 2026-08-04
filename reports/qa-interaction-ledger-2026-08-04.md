@@ -207,26 +207,20 @@ Redosled iz master prompta v3.2 §27:
 8. ~~dnevni plan / problem-resolution / cockpit~~ (P9);
 9. ~~scheduler/outbox~~ (P10) — invalidate, expired, bound revision, max retry;
 10. ~~poruke~~ (P11) — lifecycle, critical ack, multi-group, server archive;
-11. driver session/GPS/PWA offline;
-12. SA/CA kompletiranje, i18n/a11y, staging acceptance.
-
-### Ažuriranje posle Poglavlja 9
-
-Problem lifecycle (open→…→resolved), vehicle-out, ops-activity feed i
-best-effort notify posle resolve-a su unit-pokriveni; demo cockpit E2E i
-dalje 57/57. Scheduler/outbox ostaje P10.
-
-### Ažuriranje posle Poglavlja 10
-
-Confirm invalidate na staff mutate/resolve, expired attention, bound revision,
-max-retry terminal i unit pokrivanje (+6) su zatvoreni. Scheduler flag i dalje
-OFF by default; live Firebase dispatch E2E nije deo ovog checkpoint-a. Gate:
-unit 497, rules 40, E2E 57.
+11. ~~driver session/GPS/mapa~~ (P12) — liveGps OFF, current-point, map audit;
+12. PWA / offline (P13);
+13. SA/CA kompletiranje, i18n/a11y, staging acceptance.
 
 ### Ažuriranje posle Poglavlja 11
 
 Message delivery fields + critical ack + multi-group + server-owned staff
 archive; client sync više ne mutira `messages`. Gate: unit 503, rules 40,
 E2E 57. FCM/SMS ops delivery ostaje odloženo.
+
+### Ažuriranje posle Poglavlja 12
+
+`liveGps` default OFF; location upload + map audit + group-scoped markers;
+lastLocation clear van smene. O2/L1 i dalje blokiraju uključivanje live GPS-a.
+Gate: unit 509, rules 40, E2E 57.
 
 Svaka stavka prelazi iz „delimično/statički/nepokriveno“ u „funkcionalno“ samo kada postoji izvršen dokaz odgovarajućeg nivoa.

@@ -133,6 +133,19 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
 - Posledica: `server/message-lifecycle.js`, `server/staff-messages.js`,
   compose/history/driver inbox.
 
+### D12 — Session/GPS: liveGps OFF + current-point only
+
+- Datum: 2026-08-04 · Status: **Odlučeno** (Poglavlje 12)
+- Odluka:
+  1. `features.liveGps` default **false**; watcher i upload samo kad je
+     `=== true` i sesija `active`.
+  2. Server čuva samo trenutnu tačku (`lastLocation`), ne trail; briše se
+     van smene. O2 retention i dalje otvoren — bez istorijskog GPS store-a.
+  3. Staff mapa: group filter + audit `staff_map_access` (bez koordinata u
+     audit detalju).
+  4. Push login reminder ostaje stub (channel=none) do Ch11/Ch14 providera.
+- Posledica: `server/driver-location.js`, work-session/GPS/map klijent.
+
 ---
 
 ## Otvorena pitanja

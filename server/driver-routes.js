@@ -55,6 +55,12 @@ const {
   classifyOutboxForOps,
   isStaleConfirmation
 } = require("./confirmation-outbox");
+const {
+  isLiveGpsEnabled,
+  sanitizeLocationPayload,
+  shouldAcceptLocationSample,
+  publicLastLocation
+} = require("./driver-location");
 const { createStaffAuth } = require("./staff-auth");
 
 const COST = 12;
@@ -344,7 +350,12 @@ function registerDriverRoutes(app, deps) {
   app.get("/api/driver/work-session", rateLimit(20, 60_000), async (req, res) => {
     try {
       let policy = await loadDriverWorkPolicy(req.driver);
-      const sessionRef = policy.companyRef.collection("driver_sessions").doc(req.driver.uid);
+      const companyRef = policy.companyRef;
+      const sessionRef = companyRef.collection("driver_sessions").doc(req.driver.uid);
+      const settingsSnap = await companyRef.collection("settings").doc("main").get();
+      const settingsMain = settingsSnap.exists ? settingsSnap.data() : {};
+      const liveGps = isLiveGpsEnabled(settingsMain);
+
       if (policy.status === "active" || policy.status === "grace") {
         await sessionRef.set({
           driverId: req.driver.uid,
@@ -353,10 +364,16 @@ function registerDriverRoutes(app, deps) {
           timezone: policy.timezone,
           notificationsUntil: admin().firestore.Timestamp.fromDate(new Date(policy.notificationsUntil)),
           sessionEndsAt: admin().firestore.Timestamp.fromDate(new Date(policy.sessionEndsAt)),
+          liveGps,
           checkedAt: admin().firestore.FieldValue.serverTimestamp()
         }, { merge: true });
       } else {
         await sessionRef.delete().catch(() => {});
+        // Clear current point when off-duty — no GPS trail is retained (O2 open).
+        await companyRef.collection("drivers").doc(req.driver.uid).set({
+          lastLocation: admin().firestore.FieldValue.delete(),
+          lastLocationClearedAt: admin().firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(() => {});
       }
       policy = await decorateConfirmationStatus(policy, req.driver.uid);
       if (confirmationScheduler && policy.status === "active") {
@@ -368,7 +385,13 @@ function registerDriverRoutes(app, deps) {
           req.log?.warn?.({ err: error }, "Confirmation outbox enqueue failed");
         });
       }
-      const safePolicy = { ...policy };
+      const safePolicy = {
+        ...policy,
+        features: {
+          liveGps,
+          liveMap: settingsMain?.features?.liveMap !== false
+        }
+      };
       delete safePolicy.companyRef;
       return res.json({ success: true, policy: safePolicy });
     } catch (error) {
@@ -392,6 +415,45 @@ function registerDriverRoutes(app, deps) {
     } catch (error) {
       req.log?.error?.({ err: error }, "Provera radnog vremena voza\u010da nije uspela");
       return res.status(500).json({ success: false, error: "Radno vreme nije moglo biti provereno." });
+    }
+  });
+
+  app.post("/api/driver/location", rateLimit(30, 60_000), async (req, res) => {
+    try {
+      const companyRef = req.driverWorkPolicy.companyRef;
+      const settingsSnap = await companyRef.collection("settings").doc("main").get();
+      if (!isLiveGpsEnabled(settingsSnap.exists ? settingsSnap.data() : {})) {
+        return res.status(403).json({
+          success: false,
+          code: "LIVE_GPS_DISABLED",
+          error: "Praćenje lokacije nije uključeno za ovu firmu."
+        });
+      }
+      const parsed = sanitizeLocationPayload(req.body || {});
+      if (!parsed.ok) {
+        return res.status(400).json({ success: false, code: "INVALID_LOCATION", error: "Nevažeća lokacija." });
+      }
+      const driverRef = companyRef.collection("drivers").doc(req.driver.uid);
+      const driverSnap = await driverRef.get();
+      const previous = driverSnap.exists ? driverSnap.data()?.lastLocation : null;
+      if (!shouldAcceptLocationSample(previous)) {
+        return res.json({ success: true, throttled: true });
+      }
+      const nowIso = new Date().toISOString();
+      await driverRef.set({
+        lastLocation: {
+          ...parsed.location,
+          updatedAt: nowIso
+        },
+        lastSeen: admin().firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      return res.json({
+        success: true,
+        location: publicLastLocation({ ...parsed.location, updatedAt: nowIso })
+      });
+    } catch (error) {
+      req.log?.error?.({ err: error }, "Upis lokacije vozača nije uspeo");
+      return res.status(500).json({ success: false, error: "Lokacija nije mogla biti sačuvana." });
     }
   });
 
@@ -1279,6 +1341,23 @@ function registerDriverRoutes(app, deps) {
     } catch (error) {
       req.log?.error?.({ err: error }, "Arhiviranje staff poruke nije uspelo");
       return res.status(500).json({ success: false, error: "Poruka nije mogla biti arhivirana." });
+    }
+  });
+
+  app.put("/api/staff/map-access", rateLimit(20, 60_000), requireStaff, async (req, res) => {
+    if (!["dispatcher", "company_admin"].includes(req.staff.role)) {
+      return res.status(403).json({ success: false, error: "Pristup odbijen." });
+    }
+    try {
+      await logAudit(req.staff.companyId, req.staff.uid, "staff_map_access", {
+        role: req.staff.role,
+        // Never log coordinates — only that the live map was opened.
+        surface: "dispatcher_live_map"
+      });
+      return res.json({ success: true });
+    } catch (error) {
+      req.log?.error?.({ err: error }, "Audit pristupa mapi nije uspeo");
+      return res.status(500).json({ success: false, error: "Pristup mapi nije mogao biti zabeležen." });
     }
   });
 

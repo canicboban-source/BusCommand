@@ -50,7 +50,17 @@ async function createCompanyAtomic({ db, admin, companyId, name, country, contac
     transaction.set(settingsRef, {
       plan: "trial", status: "active", maxDrivers: 50, maxDispatchers: 5,
       trialEndsAt: admin.firestore.Timestamp.fromDate(trialEnd),
-      features: { liveMap: true, pdfSchedules: true, excelImport: true, sosAlarm: true, multiLanguage: true, reports: true, supportSession: false }
+      features: {
+        liveMap: true,
+        liveGps: false,
+        pdfSchedules: true,
+        excelImport: true,
+        sosAlarm: true,
+        multiLanguage: true,
+        reports: true,
+        supportSession: false,
+        shiftConfirmationScheduler: false
+      }
     });
     transaction.set(sosRef, { sosActive: false, sosDriver: "", sosBus: "" });
     transaction.set(auditRef, {
