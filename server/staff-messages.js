@@ -3,6 +3,10 @@
 const crypto = require("crypto");
 const { z } = require("zod");
 const { dispatcherCanAccessGroup } = require("./report-lifecycle");
+const {
+  shouldRequireAck,
+  buildDeliveryFields
+} = require("./message-lifecycle");
 
 const STAFF_MESSAGE_TEMPLATES = Object.freeze([
   "tmpl_delay_5", "tmpl_delay_10", "tmpl_delay_15", "tmpl_delay_20", "tmpl_delay_30",
@@ -20,11 +24,14 @@ const staffMessageSchema = z.object({
   mode: z.enum(["driver", "group", "broadcast"]),
   recipientDriverId: driverIdSchema.optional(),
   groupId: groupIdSchema.optional(),
+  groupIds: z.array(groupIdSchema).max(20).optional(),
   template: z.string().trim().min(1).max(64),
   detail: z.string().trim().max(500).optional().default(""),
   senderLang: z.string().trim().max(8).optional().default("en"),
   senderName: z.string().trim().min(1).max(120).optional(),
-  displayScope: z.enum(["driver", "group"]).optional()
+  displayScope: z.enum(["driver", "group"]).optional(),
+  requiresAck: z.boolean().optional(),
+  idempotencyKey: z.string().trim().min(8).max(64).optional()
 }).superRefine((data, ctx) => {
   if (!TEMPLATE_SET.has(data.template)) {
     ctx.addIssue({ code: "custom", path: ["template"], message: "unknown_template" });
@@ -32,10 +39,14 @@ const staffMessageSchema = z.object({
   if (data.mode === "driver" && !data.recipientDriverId) {
     ctx.addIssue({ code: "custom", path: ["recipientDriverId"], message: "required" });
   }
-  if (data.mode === "group" && !data.groupId) {
-    ctx.addIssue({ code: "custom", path: ["groupId"], message: "required" });
+  if (data.mode === "group") {
+    const multi = Array.isArray(data.groupIds) ? data.groupIds.filter(Boolean) : [];
+    if (!data.groupId && multi.length === 0) {
+      ctx.addIssue({ code: "custom", path: ["groupId"], message: "required" });
+    }
   }
-  if (data.mode === "broadcast" && (data.recipientDriverId || data.groupId)) {
+  if (data.mode === "broadcast" && (data.recipientDriverId || data.groupId
+    || (Array.isArray(data.groupIds) && data.groupIds.length))) {
     ctx.addIssue({ code: "custom", path: ["mode"], message: "broadcast_has_no_target_ids" });
   }
 });
@@ -63,7 +74,28 @@ function staffAccessibleDriverIds(staff, drivers) {
     .map((driver) => driver.id);
 }
 
-function resolveStaffMessageTargets({ mode, recipientDriverId, groupId, displayScope, staff, drivers, groups }) {
+function normalizeGroupIds({ groupId, groupIds } = {}) {
+  const ids = [];
+  if (Array.isArray(groupIds)) {
+    for (const id of groupIds) {
+      const value = String(id || "").trim();
+      if (value) ids.push(value);
+    }
+  }
+  if (groupId) ids.push(String(groupId).trim());
+  return [...new Set(ids)].slice(0, 20);
+}
+
+function resolveStaffMessageTargets({
+  mode,
+  recipientDriverId,
+  groupId,
+  groupIds,
+  displayScope,
+  staff,
+  drivers,
+  groups
+}) {
   const byId = new Map((drivers || []).map((driver) => [driver.id, driver]));
   const scope = displayScope === "driver" || displayScope === "group"
     ? displayScope
@@ -87,26 +119,43 @@ function resolveStaffMessageTargets({ mode, recipientDriverId, groupId, displayS
   }
 
   if (mode === "group") {
-    if (!staffCanAccessGroup(staff, groupId)) {
-      return { ok: false, status: 403, error: "Pristup grupi nije dozvoljen." };
+    const ids = normalizeGroupIds({ groupId, groupIds });
+    if (!ids.length) {
+      return { ok: false, status: 400, error: "Potrebna je bar jedna grupa." };
     }
-    const group = (groups || []).find((item) => item.id === groupId);
-    const targets = (drivers || [])
-      .filter((driver) => driver.active !== false && (driver.groupId === groupId || driver.lineId === groupId))
-      .map((driver) => ({
-        driverId: driver.id,
-        driverName: driver.name,
-        groupId
-      }));
+    for (const gid of ids) {
+      if (!staffCanAccessGroup(staff, gid)) {
+        return { ok: false, status: 403, error: "Pristup grupi nije dozvoljen." };
+      }
+    }
+    const targetByDriver = new Map();
+    for (const gid of ids) {
+      for (const driver of drivers || []) {
+        if (driver.active === false) continue;
+        if (driver.groupId !== gid && driver.lineId !== gid) continue;
+        if (targetByDriver.has(driver.id)) continue;
+        targetByDriver.set(driver.id, {
+          driverId: driver.id,
+          driverName: driver.name,
+          groupId: gid
+        });
+      }
+    }
+    const targets = [...targetByDriver.values()];
     if (!targets.length) {
-      return { ok: false, status: 400, error: "U grupi nema aktivnih vozača." };
+      return { ok: false, status: 400, error: "U odabranim grupama nema aktivnih vozača." };
     }
+    const groupNames = ids.map((gid) => {
+      const group = (groups || []).find((item) => item.id === gid);
+      return group?.name || gid;
+    });
     return {
       ok: true,
       broadcast: false,
       scope: "group",
-      groupId,
-      groupName: group?.name || groupId,
+      groupId: ids.length === 1 ? ids[0] : null,
+      groupIds: ids,
+      groupName: groupNames.join(", "),
       targets
     };
   }
@@ -148,12 +197,21 @@ function buildStaffMessageDoc({
   broadcast,
   recipientName,
   recipientDriverId,
-  groupId
+  groupId,
+  groupIds = null,
+  requiresAck = undefined,
+  idempotencyKey = null
 }) {
   const pad = (value) => String(value).padStart(2, "0");
   const dateString = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   const timeString = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
   const detailText = detail ? String(detail).trim() : "";
+  const ack = shouldRequireAck({ requiresAck, type, template });
+  const delivery = buildDeliveryFields({
+    requiresAck: ack,
+    nowIso: now.toISOString(),
+    idempotencyKey
+  });
   return {
     id,
     date: dateString,
@@ -164,13 +222,15 @@ function buildStaffMessageDoc({
     recipient: recipientName,
     recipientDriverId: recipientDriverId || null,
     groupId: groupId || null,
+    groupIds: Array.isArray(groupIds) && groupIds.length ? groupIds : null,
     broadcast: broadcast === true,
     template,
     detail: detailText,
     text: template + (detailText ? ` — ${detailText}` : ""),
     type,
     scope,
-    read: false
+    read: false,
+    ...delivery
   };
 }
 
@@ -184,6 +244,7 @@ module.exports = {
   messageTypeForTemplate,
   staffCanAccessGroup,
   staffAccessibleDriverIds,
+  normalizeGroupIds,
   resolveStaffMessageTargets,
   buildStaffMessageDoc,
   newMessageId

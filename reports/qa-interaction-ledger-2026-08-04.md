@@ -206,7 +206,7 @@ Redosled iz master prompta v3.2 §27:
 7. ~~mesečni plan~~ (P8) — undo, sticky/matrix, mass absence, catalog lock;
 8. ~~dnevni plan / problem-resolution / cockpit~~ (P9);
 9. ~~scheduler/outbox~~ (P10) — invalidate, expired, bound revision, max retry;
-10. poruke (P11);
+10. ~~poruke~~ (P11) — lifecycle, critical ack, multi-group, server archive;
 11. driver session/GPS/PWA offline;
 12. SA/CA kompletiranje, i18n/a11y, staging acceptance.
 
@@ -222,5 +222,11 @@ Confirm invalidate na staff mutate/resolve, expired attention, bound revision,
 max-retry terminal i unit pokrivanje (+6) su zatvoreni. Scheduler flag i dalje
 OFF by default; live Firebase dispatch E2E nije deo ovog checkpoint-a. Gate:
 unit 497, rules 40, E2E 57.
+
+### Ažuriranje posle Poglavlja 11
+
+Message delivery fields + critical ack + multi-group + server-owned staff
+archive; client sync više ne mutira `messages`. Gate: unit 503, rules 40,
+E2E 57. FCM/SMS ops delivery ostaje odloženo.
 
 Svaka stavka prelazi iz „delimično/statički/nepokriveno“ u „funkcionalno“ samo kada postoji izvršen dokaz odgovarajućeg nivoa.

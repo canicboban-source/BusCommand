@@ -12,7 +12,7 @@ function toIso(value) {
 
 function categoryFor(action = "") {
   if (/login|code_activat|session/i.test(action)) return "access";
-  if (/driver|vacation|lost_item|quick_report|sos|staff_message|message_sent/i.test(action)) return "drivers";
+  if (/driver|vacation|lost_item|quick_report|sos|staff_message|message_sent|message_read|message_ack|message_archiv/i.test(action)) return "drivers";
   if (/service_plan/i.test(action)) return "plans";
   if (/shift|schedule|state_sync/i.test(action)) return "scheduling";
   if (/company|dispatcher|group|branding|user/i.test(action)) return "company";

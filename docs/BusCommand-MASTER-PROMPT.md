@@ -636,7 +636,7 @@ zatvorenog poglavlja i uvek pokazuje na izveštaj sa dokazima.
 | 8 | Mesečni plan | završeno | `reports/poglavlje-8-mesecni-plan-2026-08-04.md` |
 | 9 | Dnevni plan, problem-resolution i dispečerski cockpit | završeno | `reports/poglavlje-9-dnevni-plan-resolution-cockpit-2026-08-04.md` |
 | 10 | Confirmations scheduler i outbox | završeno | `reports/poglavlje-10-confirmations-scheduler-outbox-2026-08-04.md` |
-| 11 | Poruke | — | — |
+| 11 | Poruke | završeno | `reports/poglavlje-11-poruke-2026-08-04.md` |
 | 12 | Driver session, GPS i mapa | — | — |
 | 13 | Mobilni PWA i kontrolisani offline rad | — | — |
 | 14 | Pronađeni predmeti | — | — |

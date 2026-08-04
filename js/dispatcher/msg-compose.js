@@ -88,28 +88,43 @@ function populateMessageRecipients(formId) {
         : (_msgScope[formId] || "driver");
     _msgScope[formId] = scope;
     const current = select.value;
+    const currentMulti = [...select.selectedOptions].map((opt) => opt.value);
 
-    select.innerHTML = `<option value="__all__">📢 ${t("msg_all_drivers") || "Svi vozači"}</option>`;
+    select.innerHTML = "";
+    select.multiple = scope === "group";
+    select.size = scope === "group" ? Math.min(6, Math.max(3, (window.state.groups || []).length || 3)) : 1;
+    select.classList.toggle("msg-recipient-multi", scope === "group");
+
+    if (scope !== "group") {
+        const allOpt = document.createElement("option");
+        allOpt.value = "__all__";
+        allOpt.textContent = `${t("msg_all_drivers") || "Svi vozači"}`;
+        select.appendChild(allOpt);
+    }
 
     if (scope === "group") {
         (window.state.groups || []).forEach(g => {
             const cnt = (window.state.drivers || []).filter(d => d.groupId === g.id).length;
             const opt = document.createElement("option");
             opt.value = `group:${g.id}`;
-            opt.innerText = `📣 ${escapeHtml(g.name)} (${cnt})`;
+            opt.textContent = `${g.name} (${cnt})`;
             select.appendChild(opt);
         });
+        if (currentMulti.length) {
+            [...select.options].forEach((opt) => {
+                opt.selected = currentMulti.includes(opt.value);
+            });
+        }
     } else {
         (window.state.drivers || []).forEach(d => {
             const grp = getGroupById(d.groupId);
             const opt = document.createElement("option");
             opt.value = d.id ? `driver:${d.id}` : d.name;
-            opt.innerText = grp ? `👤 ${d.name}  [${grp.name}]` : `👤 ${d.name}`;
+            opt.textContent = grp ? `${d.name}  [${grp.name}]` : `${d.name}`;
             select.appendChild(opt);
         });
+        if (current) select.value = current;
     }
-
-    if (current) select.value = current;
 }
 
 function renderAllMessagesList() {
@@ -156,7 +171,7 @@ function msgTypeIcon(type) {
     }
 }
 
-function buildLocalDemoMessages({ scope, recipient, template, detail }) {
+function buildLocalDemoMessages({ scope, recipient, template, detail, requiresAck }) {
     const now = new Date();
     const timeString = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
     const dateString = now.toISOString().slice(0, 10);
@@ -176,6 +191,11 @@ function buildLocalDemoMessages({ scope, recipient, template, detail }) {
         recipients = [recipient];
     }
 
+    const type = template.startsWith("tmpl_delay") ? "warning"
+        : template === "tmpl_call_dispatch" || template === "tmpl_pax_incident" ? "urgent"
+        : template.startsWith("tmpl_detour") || template.startsWith("tmpl_route") ? "detour" : "info";
+    const ack = requiresAck === true || type === "urgent";
+
     return recipients.map(rec => {
         const recipientDriver = (window.state.drivers || []).find(d => d.name === rec);
         const isBroadcast = recipient === "__all__";
@@ -191,23 +211,40 @@ function buildLocalDemoMessages({ scope, recipient, template, detail }) {
             template,
             detail,
             text: t(template) + (detail ? ` — ${detail}` : ""),
-            type: template.startsWith("tmpl_delay") ? "warning"
-                : template === "tmpl_call_dispatch" || template === "tmpl_pax_incident" ? "urgent"
-                : template.startsWith("tmpl_detour") || template.startsWith("tmpl_route") ? "detour" : "info",
+            type,
             scope,
-            read: false
+            read: false,
+            status: "delivered",
+            deliveryChannel: "in_app",
+            requiresAck: ack,
+            ackedAt: null,
+            ackedBy: null
         };
     });
 }
 
-function buildStaffMessagePayload({ scope, recipient, template, detail }) {
+function buildStaffMessagePayload({ scope, recipient, recipients, template, detail, requiresAck }) {
     const base = {
         template,
         detail: detail || "",
         senderLang: window.state.language || "en",
         senderName: window.currentUser?.name || undefined,
-        displayScope: scope === "group" ? "group" : "driver"
+        displayScope: scope === "group" ? "group" : "driver",
+        requiresAck: requiresAck === true
     };
+    if (scope === "group") {
+        const groupValues = (Array.isArray(recipients) && recipients.length
+            ? recipients
+            : [recipient]).filter(Boolean);
+        const groupIds = groupValues
+            .filter((value) => String(value).startsWith("group:"))
+            .map((value) => String(value).slice(6));
+        if (!groupIds.length) return null;
+        if (groupIds.length === 1) {
+            return { ...base, mode: "group", groupId: groupIds[0] };
+        }
+        return { ...base, mode: "group", groupIds };
+    }
     if (recipient === "__all__") {
         return { ...base, mode: "broadcast" };
     }
@@ -237,23 +274,39 @@ async function submitDispatcherMessage(event) {
     const recipientEl = document.getElementById("message-recipient" + suf);
     const templateEl  = document.getElementById("message-template" + suf);
     const detailEl    = document.getElementById("message-detail"   + suf);
+    const ackEl       = document.getElementById("message-requires-ack" + suf);
 
-    const recipient = recipientEl ? recipientEl.value   : "__all__";
+    const selected = recipientEl
+        ? [...recipientEl.selectedOptions].map((opt) => opt.value)
+        : ["__all__"];
+    const recipient = selected[0] || "__all__";
     const template  = templateEl  ? templateEl.value    : "";
     const detail    = detailEl    ? detailEl.value.trim() : "";
+    const requiresAck = Boolean(ackEl?.checked);
 
     if (!template) return;
+    if (scope === "group" && !selected.some((value) => String(value).startsWith("group:"))) {
+        showToast(t("msg_select_group") || "Izaberite bar jednu grupu.", "error");
+        return;
+    }
 
     messageSubmitPending = true;
     try {
         let created = [];
         if (IS_DEMO_MODE) {
-            created = buildLocalDemoMessages({ scope, recipient, template, detail });
+            created = buildLocalDemoMessages({ scope, recipient, template, detail, requiresAck });
             if (!window.state.messages) window.state.messages = [];
             created.forEach((message) => window.state.messages.unshift(message));
             saveState();
         } else {
-            const payload = buildStaffMessagePayload({ scope, recipient, template, detail });
+            const payload = buildStaffMessagePayload({
+                scope,
+                recipient,
+                recipients: selected,
+                template,
+                detail,
+                requiresAck
+            });
             if (!payload) {
                 showToast(t("msg_send_failed") || "Poruka nije poslata.", "error");
                 return;
@@ -273,6 +326,7 @@ async function submitDispatcherMessage(event) {
         }
 
         if (detailEl) detailEl.value = "";
+        if (ackEl) ackEl.checked = false;
         if (formId === "dispatcher-message-form-messages") {
             setMessagesPageTab(_messagesPageTab);
         } else {

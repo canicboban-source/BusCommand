@@ -275,6 +275,16 @@ const ApiClient = (() => {
             method: "PUT"
         });
     }
+    async function ackDriverMessage(messageId) {
+        return apiFetch("/api/driver/messages/" + encodeURIComponent(messageId) + "/ack", {
+            method: "PUT"
+        });
+    }
+    async function archiveStaffMessage(messageId) {
+        return apiFetch("/api/staff/messages/" + encodeURIComponent(messageId) + "/archive", {
+            method: "PUT"
+        });
+    }
     async function createDriverLostItem(item) {
         return apiFetch("/api/driver/lost-items", {
             method: "POST",
@@ -433,11 +443,11 @@ const ApiClient = (() => {
         getActiveServicePlan, getServicePlanHistory, getServicePlanVersion, getCompanyAudit, updateCompanyBranding,
         createCompanyGroup, updateCompanyGroup, deleteCompanyGroup, reportStateSync, importDriversCsv, setDriverActive,
         updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode,
-        createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage,
+        createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage, ackDriverMessage,
         createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, transitionStaffOperationalIncident, resolveStaffOperationalIncident, getStaffOpsActivity, resolveStaffSos,
         setLostItemStatus, createStaffBus, setStaffBusActive, assignStaffShift, undoStaffShift,
         acquirePlanLock, heartbeatPlanLock, releasePlanLock, breakPlanLock, getPlanLock,
-        sendStaffMessage, getDriverWorkSession, confirmDriverShifts, getStaffShiftConfirmations,
+        sendStaffMessage, archiveStaffMessage, getDriverWorkSession, confirmDriverShifts, getStaffShiftConfirmations,
         startSupportSession, getActiveSupportSessionAdmin, endSupportSessionAdmin,
         getCompanySupportSession, endCompanySupportSession
     };

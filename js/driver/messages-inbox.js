@@ -25,6 +25,9 @@ function isMessageReadByMe(m) {
     if (!m || !window.currentUser) return true;
     const name = window.currentUser.name;
     const uid = window.currentUser.id || window.currentUser.uid;
+    if (m.requiresAck === true) {
+        return Boolean(m.ackedAt || (uid && m.ackedBy === uid));
+    }
     if (Array.isArray(m.readBy)) return m.readBy.includes(name) || (uid && m.readBy.includes(uid));
     // Legacy personal messages used a shared `read` flag
     if (!isBroadcastRecipient(m.recipient)) return !!m.read;
@@ -118,7 +121,10 @@ function renderDriverMessages() {
         
         let messageAction = "";
         if (!read) {
-            messageAction = `<button class="btn-mark-read" ${actionAttr("markMessageAsRead", [msg.id])}><i data-lucide="check"></i> ${t("btn_mark_read")}</button>`;
+            const label = msg.requiresAck
+                ? (t("btn_ack_message") || "Potvrdi čitanje")
+                : (t("btn_mark_read") || "Pročitano");
+            messageAction = `<button class="btn-mark-read" ${actionAttr("markMessageAsRead", [msg.id])}><i data-lucide="check"></i> ${label}</button>`;
         } else {
             messageAction = `<button class="btn-mark-read" ${actionAttr("archiveMessage", [msg.id])}><i data-lucide="archive"></i> ${t("archive_label")}</button>`;
         }
@@ -140,7 +146,9 @@ async function markMessageAsRead(id) {
     if (!msg || !isMessageForMe(msg)) return;
 
     if (!IS_DEMO_MODE) {
-        const result = await ApiClient.markDriverMessageRead(id);
+        const result = msg.requiresAck === true
+            ? await ApiClient.ackDriverMessage(id)
+            : await ApiClient.markDriverMessageRead(id);
         if (!result?.success) {
             showToast(result?.error || t("msg_mark_read_failed") || "Poruka nije označena kao pročitana.", "error");
             return;
@@ -149,11 +157,17 @@ async function markMessageAsRead(id) {
 
     if (!Array.isArray(msg.readBy)) msg.readBy = [];
     const name = window.currentUser.name;
+    const uid = window.currentUser.id || window.currentUser.uid;
     if (!msg.readBy.includes(name)) msg.readBy.push(name);
+    if (uid && !msg.readBy.includes(uid)) msg.readBy.push(uid);
 
-    // Keep legacy flag only for personal (non-broadcast) messages
     if (!isBroadcastRecipient(msg.recipient)) {
         msg.read = true;
+    }
+    msg.status = "read";
+    if (msg.requiresAck === true) {
+        msg.ackedAt = new Date().toISOString();
+        msg.ackedBy = uid || name;
     }
 
     if (IS_DEMO_MODE) saveState();

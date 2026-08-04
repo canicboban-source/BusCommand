@@ -233,7 +233,15 @@ function dashboardReportType(report) {
 }
 
 function countUnreadMessages() {
-    return (window.state.messages || []).filter(m => !m.read && !isDispArchived(m)).length;
+    // Outbound awaiting driver receipt (read or critical ack) — not "staff unread inbox".
+    return (window.state.messages || []).filter((m) => {
+        if (isDispArchived(m)) return false;
+        if (m.requiresAck === true) return !m.ackedAt;
+        if (m.status === "read") return false;
+        if (m.broadcast !== true && m.read === true) return false;
+        if (Array.isArray(m.readBy) && m.readBy.length && m.broadcast !== true) return false;
+        return true;
+    }).length;
 }
 
 function updateMessagesNavBadge(count) {

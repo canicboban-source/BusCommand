@@ -27,10 +27,26 @@ function archiveBtnHtml(msgId) {
     </button>`;
 }
 
+function messageDeliveryBadge(m) {
+    if (m.requiresAck && !m.ackedAt) {
+        return `<span class="msg-status-chip is-warning">${escapeHtml(t("msg_status_awaiting_ack") || "Čeka potvrdu čitanja")}</span>`;
+    }
+    if (m.status === "failed") {
+        return `<span class="msg-status-chip is-critical">${escapeHtml(t("msg_status_failed") || "Neuspelo slanje")}</span>`;
+    }
+    if (m.ackedAt || m.status === "read" || (m.broadcast !== true && m.read === true)) {
+        return `<span class="msg-status-chip is-ok">${escapeHtml(t("msg_status_read") || "Pročitano")}</span>`;
+    }
+    if (m.status === "queued" || m.status === "sent") {
+        return `<span class="msg-status-chip is-pending">${escapeHtml(t("msg_status_pending") || "U redu za slanje")}</span>`;
+    }
+    return `<span class="msg-status-chip is-pending">${escapeHtml(t("msg_status_delivered") || "Isporučeno")}</span>`;
+}
+
 function messageCardHtml(m, { compact = false, showArchiveBtn = true } = {}) {
     const icon = msgTypeIcon(m.type);
     const typeLabel = t("msg_type_" + (m.type || "info")) || m.type || "Info";
-    const isUnread = !m.read;
+    const awaiting = m.requiresAck ? !m.ackedAt : !(m.read || m.status === "read");
     const bgColor = m.type === "urgent" ? "rgba(239,68,68,0.08)" :
         m.type === "warning" ? "rgba(245,158,11,0.08)" :
         m.type === "schedule" ? "rgba(14,165,233,0.08)" :
@@ -45,10 +61,11 @@ function messageCardHtml(m, { compact = false, showArchiveBtn = true } = {}) {
     const opacity = compact ? "opacity:0.65;" : "";
 
     return `
-    <div style="background:${bgColor};border:1px solid ${borderCol};border-radius:10px;padding:${compact ? "10px 12px" : "12px 14px"};margin-bottom:8px;${opacity}${isUnread && !compact ? "border-left:3px solid var(--primary-color);" : ""}">
+    <div style="background:${bgColor};border:1px solid ${borderCol};border-radius:10px;padding:${compact ? "10px 12px" : "12px 14px"};margin-bottom:8px;${opacity}${awaiting && !compact ? "border-left:3px solid var(--primary-color);" : ""}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">
             <span style="font-size:0.78rem;font-weight:700;color:var(--text-muted);">${icon} ${typeLabel}</span>
             <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                ${messageDeliveryBadge(m)}
                 <span style="font-size:0.75rem;color:var(--text-muted);">${timeLabel}</span>
                 ${showArchiveBtn ? archiveBtnHtml(m.id) : ""}
             </div>
@@ -147,15 +164,16 @@ function renderDispatcherMessageArchive() {
     renderArchiveAccordion(document.getElementById("dispatcher-messages-archive"), "personal");
 }
 
-function archiveDispatcherMessage(id) {
-    if (!archiveMessageForDispatcher(id)) return;
+async function archiveDispatcherMessage(id) {
+    const ok = await archiveMessageForDispatcher(id);
+    if (!ok) return;
     refreshDispatcherMessageViews();
     showToast(t("message_archived") || t("messages_archived") || "Poruka arhivirana", "success", 2000);
 }
 
-function archiveAllDispatcherMessages(tab) {
+async function archiveAllDispatcherMessages(tab) {
     const resolvedTab = tab || (document.getElementById("msg-tab-group-btn")?.classList.contains("msg-scope-active") ? "group" : "personal");
-    const count = archiveAllForDispatcherTab(resolvedTab);
+    const count = await archiveAllForDispatcherTab(resolvedTab);
     if (count === 0) {
         showToast(t("no_messages") || "Nema poruka za arhivu", "info", 2000);
         return;

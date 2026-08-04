@@ -2589,9 +2589,50 @@ html[data-app-surface="staff"] .ops-row-actions {
     gap: 6px;
     align-items: center;
 }
-html[data-app-surface="staff"] .ops-daily-table tr.is-neutral .ops-status-pill {
-    color: var(--text-muted);
+html[data-app-surface="staff"] #message-recipient-messages {
+    min-width: min(100%, 28rem);
+    max-width: 100%;
+    font-size: 0.92rem;
+    line-height: 1.35;
 }
+html[data-app-surface="staff"] #message-recipient-messages.msg-recipient-multi {
+    min-height: 7.5rem;
+}
+html[data-app-surface="staff"] .msg-ack-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    font-size: 0.88rem;
+    color: var(--text-main);
+    cursor: pointer;
+}
+html[data-app-surface="staff"] .msg-ack-label input {
+    margin-top: 0.2rem;
+}
+html[data-app-surface="staff"] .msg-status-chip {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.68rem;
+    font-weight: 650;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #CBD5E1;
+}
+html[data-app-surface="staff"] .msg-status-chip.is-ok {
+    color: #4ADE80;
+    border-color: rgba(74, 222, 128, 0.35);
+}
+html[data-app-surface="staff"] .msg-status-chip.is-warning,
+html[data-app-surface="staff"] .msg-status-chip.is-pending {
+    color: #FBBF24;
+    border-color: rgba(251, 191, 36, 0.35);
+}
+html[data-app-surface="staff"] .msg-status-chip.is-critical {
+    color: #F87171;
+    border-color: rgba(248, 113, 113, 0.4);
+}
+
 html[data-app-surface="staff"] .alert-item-actions {
     display: flex;
     flex-wrap: wrap;

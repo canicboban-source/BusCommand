@@ -76,11 +76,20 @@ function showFullscreenMessageAlert(msg, totalCount) {
     if (!modal) return;
 
     modal.dataset.msgId = msg.id;
+    modal.dataset.requiresAck = msg.requiresAck === true ? "1" : "0";
     if (sender) sender.textContent = msg.sender || "Dispe\u010der";
     if (text) text.textContent = msgText(msg, window.state.language);
     
     if (time) {
         time.textContent = formatDateTime(msg.date, msg.time);
+    }
+
+    const confirmBtn = modal.querySelector("[data-action=\"confirmMessageRead\"]");
+    if (confirmBtn) {
+        const label = msg.requiresAck === true
+            ? (t("btn_ack_message") || "Potvrdi čitanje")
+            : (t("btn_mark_read") || "Pročitano");
+        confirmBtn.textContent = label;
     }
 
     if (more) {

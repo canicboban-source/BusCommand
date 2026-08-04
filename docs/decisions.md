@@ -119,6 +119,20 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
 - Posledica: `server/confirmation-outbox.js`, `server/confirmation-scheduler.js`,
   staff/driver confirmation rute, cockpit statusi.
 
+### D11 — Poruke: lifecycle + kritični ack + server archive
+
+- Datum: 2026-08-04 · Status: **Odlučeno** (Poglavlje 11)
+- Odluka:
+  1. Message doc nosi `status` (`queued|sent|delivered|read|failed`); in-app
+     kanal = `delivered` u trenutku Admin SDK write-a.
+  2. Kritična potvrda: `requiresAck` (checkbox ili urgent šablon); driver
+     `PUT …/ack`; arhiva blokirana dok nema ack-a.
+  3. Multi-group: `groupIds[]` uz ACL po grupi i dedupe vozača.
+  4. Staff archive samo preko `PUT /api/staff/messages/:id/archive`; client
+     sync više ne piše `messages`.
+- Posledica: `server/message-lifecycle.js`, `server/staff-messages.js`,
+  compose/history/driver inbox.
+
 ---
 
 ## Otvorena pitanja

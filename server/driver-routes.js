@@ -46,6 +46,11 @@ const {
   newMessageId
 } = require("./staff-messages");
 const {
+  planMessageRead,
+  planMessageAck,
+  shouldRequireAck
+} = require("./message-lifecycle");
+const {
   summarizeOutboxStatuses,
   classifyOutboxForOps,
   isStaleConfirmation
@@ -742,8 +747,18 @@ function registerDriverRoutes(app, deps) {
         readBy: admin().firestore.FieldValue.arrayUnion(req.driver.uid),
         readAt: admin().firestore.FieldValue.serverTimestamp()
       };
-      if (message.broadcast !== true) update.read = true;
+      const plan = planMessageRead(message, req.driver.uid);
+      if (plan.ok && plan.patch) {
+        if (plan.patch.status) update.status = plan.patch.status;
+        if (message.broadcast !== true) update.read = true;
+      } else if (message.broadcast !== true) {
+        update.read = true;
+      }
       await messageRef.update(update);
+      await logAudit(req.driver.companyId, req.driver.uid, "message_read", {
+        messageId: parsed.data,
+        requiresAck: message.requiresAck === true
+      }).catch(() => {});
       return res.json({ success: true });
     } catch (error) {
       req.log?.error?.({ err: error }, "Potvrda poruke nije uspela");
@@ -768,6 +783,13 @@ function registerDriverRoutes(app, deps) {
       if (message.broadcast !== true && message.recipientDriverId !== req.driver.uid) {
         return res.status(403).json({ success: false, error: "Pristup poruci nije dozvoljen." });
       }
+      if (message.requiresAck === true && !message.ackedAt) {
+        return res.status(409).json({
+          success: false,
+          code: "ACK_REQUIRED",
+          error: "Kritična poruka zahteva potvrdu čitanja pre arhiviranja."
+        });
+      }
       await snapshot.ref.update({
         archivedByIds: admin().firestore.FieldValue.arrayUnion(req.driver.uid),
         archivedAt: admin().firestore.FieldValue.serverTimestamp()
@@ -776,6 +798,55 @@ function registerDriverRoutes(app, deps) {
     } catch (error) {
       req.log?.error?.({ err: error }, "Arhiviranje poruke nije uspelo");
       return res.status(500).json({ success: false, error: "Poruka nije mogla biti arhivirana." });
+    }
+  });
+
+  app.put("/api/driver/messages/:messageId/ack", rateLimit(30, 60_000), async (req, res) => {
+    const parsed = messageIdSchema.safeParse(req.params.messageId);
+    if (!parsed.success) return res.status(400).json({ success: false, error: "Nevažeća poruka." });
+    try {
+      const companyRef = db().collection("companies").doc(req.driver.companyId);
+      const [profileSnap, snapshot] = await Promise.all([
+        companyRef.collection("drivers").doc(req.driver.uid).get(),
+        companyRef.collection("messages").doc(parsed.data).get()
+      ]);
+      if (!profileSnap.exists || profileSnap.data().active === false) {
+        return res.status(403).json({ success: false, error: "Nalog vozača nije aktivan." });
+      }
+      if (!snapshot.exists) return res.status(404).json({ success: false, error: "Poruka nije pronađena." });
+      const message = snapshot.data();
+      if (message.broadcast !== true && message.recipientDriverId !== req.driver.uid) {
+        return res.status(403).json({ success: false, error: "Pristup poruci nije dozvoljen." });
+      }
+      const plan = planMessageAck(message, req.driver.uid);
+      if (!plan.ok) {
+        if (plan.reason === "ack_not_required") {
+          return res.status(400).json({
+            success: false,
+            code: "ACK_NOT_REQUIRED",
+            error: "Poruka ne zahteva potvrdu čitanja."
+          });
+        }
+        return res.status(400).json({ success: false, error: "Potvrda nije moguća." });
+      }
+      if (plan.already) {
+        return res.json({ success: true, already: true });
+      }
+      await snapshot.ref.update({
+        status: "read",
+        read: message.broadcast !== true,
+        ackedBy: req.driver.uid,
+        ackedAt: admin().firestore.FieldValue.serverTimestamp(),
+        readAt: admin().firestore.FieldValue.serverTimestamp(),
+        readBy: admin().firestore.FieldValue.arrayUnion(req.driver.uid)
+      });
+      await logAudit(req.driver.companyId, req.driver.uid, "message_ack", {
+        messageId: parsed.data
+      });
+      return res.json({ success: true, already: false });
+    } catch (error) {
+      req.log?.error?.({ err: error }, "Potvrda čitanja poruke nije uspela");
+      return res.status(500).json({ success: false, error: "Potvrda čitanja nije uspela." });
     }
   });
 
@@ -1101,6 +1172,7 @@ function registerDriverRoutes(app, deps) {
         mode: parsed.data.mode,
         recipientDriverId: parsed.data.recipientDriverId,
         groupId: parsed.data.groupId,
+        groupIds: parsed.data.groupIds,
         displayScope: parsed.data.displayScope,
         staff: req.staff,
         drivers,
@@ -1115,6 +1187,11 @@ function registerDriverRoutes(app, deps) {
 
       const now = new Date();
       const type = messageTypeForTemplate(parsed.data.template);
+      const requiresAck = shouldRequireAck({
+        requiresAck: parsed.data.requiresAck,
+        type,
+        template: parsed.data.template
+      });
       const senderName = parsed.data.senderName
         || staffUserSnap.data()?.name
         || staffUserSnap.data()?.displayName
@@ -1137,7 +1214,10 @@ function registerDriverRoutes(app, deps) {
           broadcast: resolved.broadcast,
           recipientName: target.driverName,
           recipientDriverId: target.driverId,
-          groupId: target.groupId || resolved.groupId || null
+          groupId: target.groupId || resolved.groupId || null,
+          groupIds: resolved.groupIds || null,
+          requiresAck,
+          idempotencyKey: parsed.data.idempotencyKey || null
         });
         batch.set(companyRef.collection("messages").doc(id), { ...doc, createdAt });
         return { ...doc, createdAt: null };
@@ -1150,6 +1230,8 @@ function registerDriverRoutes(app, deps) {
         scope: resolved.scope,
         broadcast: resolved.broadcast === true,
         groupId: resolved.groupId || null,
+        groupIds: resolved.groupIds || null,
+        requiresAck,
         messageCount: messages.length,
         messageIds: messages.map((message) => message.id),
         recipientDriverIds: messages
@@ -1162,6 +1244,41 @@ function registerDriverRoutes(app, deps) {
     } catch (error) {
       req.log?.error?.({ err: error }, "Slanje poruke nije uspelo");
       return res.status(500).json({ success: false, error: "Poruka nije mogla biti poslata." });
+    }
+  });
+
+  app.put("/api/staff/messages/:messageId/archive", rateLimit(40, 60_000), requireStaff, async (req, res) => {
+    if (!["dispatcher", "company_admin"].includes(req.staff.role)) {
+      return res.status(403).json({ success: false, error: "Pristup odbijen." });
+    }
+    const parsed = messageIdSchema.safeParse(req.params.messageId);
+    if (!parsed.success) return res.status(400).json({ success: false, error: "Nevažeća poruka." });
+    try {
+      const companyRef = db().collection("companies").doc(req.staff.companyId);
+      const snapshot = await companyRef.collection("messages").doc(parsed.data).get();
+      if (!snapshot.exists) return res.status(404).json({ success: false, error: "Poruka nije pronađena." });
+      const message = snapshot.data();
+      if (req.staff.role === "dispatcher") {
+        const groups = Array.isArray(req.staff.groups) ? req.staff.groups : [];
+        const gid = message.groupId || null;
+        if (message.broadcast === true && message.recipientDriverId == null) {
+          return res.status(403).json({ success: false, error: "Pristup CA broadcast poruci nije dozvoljen." });
+        }
+        if (gid && !groups.includes(gid)) {
+          return res.status(403).json({ success: false, error: "Pristup poruci van dodeljene grupe nije dozvoljen." });
+        }
+      }
+      await snapshot.ref.update({
+        dispArchivedByIds: admin().firestore.FieldValue.arrayUnion(req.staff.uid),
+        dispArchivedAt: admin().firestore.FieldValue.serverTimestamp()
+      });
+      await logAudit(req.staff.companyId, req.staff.uid, "staff_message_archived", {
+        messageId: parsed.data
+      });
+      return res.json({ success: true });
+    } catch (error) {
+      req.log?.error?.({ err: error }, "Arhiviranje staff poruke nije uspelo");
+      return res.status(500).json({ success: false, error: "Poruka nije mogla biti arhivirana." });
     }
   });
 
