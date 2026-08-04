@@ -366,3 +366,28 @@ html[data-app-surface="driver"] .mob-nav-sos .mob-nav-sos-progress {
 html[data-app-surface="driver"] .mob-nav-sos.is-holding {
     filter: brightness(1.08);
 }
+
+/* Network / sync status (Ch13) */
+.driver-network-status {
+  margin: 8px 12px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  border: 1px solid rgba(255, 196, 86, 0.35);
+  background: rgba(255, 196, 86, 0.12);
+  color: #f6e7c1;
+}
+.driver-network-status[data-state="offline"] {
+  border-color: rgba(255, 120, 90, 0.4);
+  background: rgba(255, 90, 70, 0.14);
+  color: #ffd7cf;
+}
+.driver-network-status[data-state="syncing"] {
+  border-color: rgba(110, 180, 255, 0.35);
+  background: rgba(90, 160, 255, 0.12);
+  color: #d6e8ff;
+}
+.driver-network-status.hidden {
+  display: none;
+}

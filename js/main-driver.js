@@ -34,7 +34,7 @@ if (document.readyState === "loading") {
 
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw-driver.js").catch((err) => {
+        navigator.serviceWorker.register("/sw-driver.js", { scope: "/driver.html" }).catch((err) => {
             console.warn("[PWA] SW register failed:", err.message);
         });
     });

@@ -638,7 +638,8 @@ zatvorenog poglavlja i uvek pokazuje na izveštaj sa dokazima.
 | 10 | Confirmations scheduler i outbox | završeno | `reports/poglavlje-10-confirmations-scheduler-outbox-2026-08-04.md` |
 | 11 | Poruke | završeno | `reports/poglavlje-11-poruke-2026-08-04.md` |
 | 12 | Driver session, GPS i mapa | završeno | `reports/poglavlje-12-session-gps-mapa-2026-08-04.md` |
-| 13 | Mobilni PWA i kontrolisani offline rad | — | — |
+| 13 | Mobilni PWA i kontrolisani offline rad | završeno | `reports/poglavlje-13-pwa-offline-2026-08-04.md` |
+| 14 | SA/CA kompletiranje, i18n/a11y i staging acceptance | — | — |
 | 14 | Pronađeni predmeti | — | — |
 | 15 | Kompletiranje Super Admin i Company Admin površina | — | — |
 | 16 | i18n, pristupačnost i vizuelno usklađivanje | — | — |

@@ -146,6 +146,18 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
   4. Push login reminder ostaje stub (channel=none) do Ch11/Ch14 providera.
 - Posledica: `server/driver-location.js`, work-session/GPS/map klijent.
 
+### D13 — PWA offline: uski SW scope + queue samo za ne-kritično
+
+- Datum: 2026-08-04 · Status: **Odlučeno** (Poglavlje 13)
+- Odluka:
+  1. Driver SW registracija i manifest scope = `/driver.html`; fetch
+     allowlist odbija `/api/*`, staff i landing.
+  2. Offline queue samo za reports/lost-items uz `idempotencyKey` i status
+     „čeka slanje“; SOS, potvrde smena i odmor zahtevaju mrežu.
+  3. Server dedupe preko `idem_{uid}_{key}` doc id (bez composite indexa).
+  4. TTL 8h snapshot smene/poruka; clear queue+snapshot+Cache API na logout.
+- Posledica: `sw-driver.js`, `offline-queue.js`, driver report rute.
+
 ---
 
 ## Otvorena pitanja

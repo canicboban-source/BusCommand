@@ -208,19 +208,20 @@ Redosled iz master prompta v3.2 §27:
 9. ~~scheduler/outbox~~ (P10) — invalidate, expired, bound revision, max retry;
 10. ~~poruke~~ (P11) — lifecycle, critical ack, multi-group, server archive;
 11. ~~driver session/GPS/mapa~~ (P12) — liveGps OFF, current-point, map audit;
-12. PWA / offline (P13);
-13. SA/CA kompletiranje, i18n/a11y, staging acceptance.
-
-### Ažuriranje posle Poglavlja 11
-
-Message delivery fields + critical ack + multi-group + server-owned staff
-archive; client sync više ne mutira `messages`. Gate: unit 503, rules 40,
-E2E 57. FCM/SMS ops delivery ostaje odloženo.
+12. ~~PWA / offline~~ (P13) — SW scope, queue+idempotency, network banner;
+13. Pronađeni predmeti (P14);
+14. SA/CA kompletiranje, i18n/a11y, staging acceptance.
 
 ### Ažuriranje posle Poglavlja 12
 
 `liveGps` default OFF; location upload + map audit + group-scoped markers;
 lastLocation clear van smene. O2/L1 i dalje blokiraju uključivanje live GPS-a.
 Gate: unit 509, rules 40, E2E 57.
+
+### Ažuriranje posle Poglavlja 13
+
+Driver SW scope `/driver.html` + allowlist; offline queue za reports/lost-items
+sa idempotency dedupe; SOS/confirm/vacation zahtevaju mrežu; TTL snapshot i
+clear na logout. Gate: unit 514, rules 40, E2E 57.
 
 Svaka stavka prelazi iz „delimično/statički/nepokriveno“ u „funkcionalno“ samo kada postoji izvršen dokaz odgovarajućeg nivoa.

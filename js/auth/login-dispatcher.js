@@ -15,6 +15,7 @@ import { confirmedTenantId } from "../core/production-auth-gate.js";
 import { isDriverSurface } from "../core/app-surface.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import { isHardStaffAuthError, staffAuthErrorKey } from "./staff-login-errors.js";
+import { clearDriverSensitiveCaches } from "../driver/offline-snapshot.js";
 
 function showDispatcherError(msg) {
     const el = document.getElementById("login-error-dispatcher");
@@ -229,6 +230,7 @@ function forgotDispatcherPassword() {
 
 function logout() {
     const companyId = window.currentUser?.companyId || null;
+    const wasDriver = window.currentUser?.role === "driver";
     if (window.currentUser && window.currentUser.role === "driver") {
         const driver = window.state.drivers.find(d => d.name === window.currentUser.name || d.id === window.currentUser.id);
         if (driver) {
@@ -244,6 +246,9 @@ function logout() {
     window.currentUser = null;
     clearUserSession();
     clearTenantStateCache(companyId);
+    if (wasDriver) {
+        clearDriverSensitiveCaches().catch(() => {});
+    }
     resetInMemoryTenantState();
     applyBrandingToUI();
     window.currentCalendarMonth = new Date().toISOString().slice(0, 7);

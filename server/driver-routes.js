@@ -61,6 +61,7 @@ const {
   shouldAcceptLocationSample,
   publicLastLocation
 } = require("./driver-location");
+const { normalizeIdempotencyKey } = require("./driver-report-idempotency");
 const { createStaffAuth } = require("./staff-auth");
 
 const COST = 12;
@@ -97,6 +98,7 @@ const busCreateSchema = z.object({
   groupId: groupIdSchema
 });
 const busStatusSchema = z.object({ active: z.boolean() });
+const idempotencyKeySchema = z.string().trim().min(8).max(64).regex(/^[A-Za-z0-9_-]+$/).optional();
 const quickReportSchema = z.object({
   type: z.enum([
     "delay:5", "delay:10", "delay:15", "delay:20", "delay:30",
@@ -106,7 +108,9 @@ const quickReportSchema = z.object({
   reason: z.string().trim().min(1).max(200),
   description: z.string().trim().max(1000).optional().default(""),
   severity: z.enum(["sev_low", "sev_medium", "sev_critical"]),
-  bus: z.string().trim().max(32).optional().default("")
+  bus: z.string().trim().max(32).optional().default(""),
+  idempotencyKey: idempotencyKeySchema,
+  clientCreatedAt: z.string().trim().min(10).max(40).optional()
 });
 const sosSchema = z.object({ bus: z.string().trim().max(32).optional().default("") });
 const messageIdSchema = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/);
@@ -116,7 +120,9 @@ const lostItemSchema = z.object({
   type: z.enum(["lost_tech", "lost_wallet", "lost_keys", "lost_bag", "lost_clothes", "lost_other"]),
   location: z.string().trim().min(2).max(200),
   description: z.string().trim().min(2).max(1000),
-  bus: z.string().trim().max(32).optional().default("")
+  bus: z.string().trim().max(32).optional().default(""),
+  idempotencyKey: idempotencyKeySchema,
+  clientCreatedAt: z.string().trim().min(10).max(40).optional()
 });
 const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const date = new Date(`${value}T00:00:00.000Z`);
@@ -664,18 +670,39 @@ function registerDriverRoutes(app, deps) {
       if (!profileSnap.exists || profileSnap.data().active === false) {
         return res.status(403).json({ success: false, error: "Nalog vozača nije aktivan." });
       }
-      const reportId = crypto.randomUUID();
+      const idempotencyKey = normalizeIdempotencyKey(parsed.data.idempotencyKey);
+      const reportsRef = companyRef.collection("reports");
+      const reportId = idempotencyKey
+        ? `idem_${req.driver.uid}_${idempotencyKey}`
+        : crypto.randomUUID();
+      if (idempotencyKey) {
+        const existingSnap = await reportsRef.doc(reportId).get();
+        if (existingSnap.exists) {
+          const existing = existingSnap.data() || {};
+          if (existing.driverId && existing.driverId !== req.driver.uid) {
+            return res.status(409).json({ success: false, error: "Konflikt idempotency ključa." });
+          }
+          return res.status(200).json({
+            success: true,
+            deduped: true,
+            report: { ...existing, id: reportId, createdAt: null }
+          });
+        }
+      }
+      const { idempotencyKey: _ignored, clientCreatedAt, ...reportFields } = parsed.data;
       const report = {
-        ...parsed.data,
+        ...reportFields,
         driverId: req.driver.uid,
         driver: safeDriver(profileSnap).name,
         groupId: profileSnap.data().groupId || profileSnap.data().lineId || null,
         status: "active",
+        idempotencyKey: idempotencyKey || null,
+        clientCreatedAt: clientCreatedAt || null,
         createdAt: admin().firestore.FieldValue.serverTimestamp()
       };
-      await companyRef.collection("reports").doc(reportId).set(report);
+      await reportsRef.doc(reportId).set(report);
       await logAudit(req.driver.companyId, req.driver.uid, "driver_quick_report_created", {
-        reportId, type: report.type, severity: report.severity
+        reportId, type: report.type, severity: report.severity, idempotencyKey: idempotencyKey || null
       });
       return res.status(201).json({ success: true, report: { ...report, id: reportId, createdAt: null } });
     } catch (error) {
@@ -723,18 +750,39 @@ function registerDriverRoutes(app, deps) {
       if (!profileSnap.exists || profileSnap.data().active === false) {
         return res.status(403).json({ success: false, error: "Nalog vozača nije aktivan." });
       }
-      const itemId = crypto.randomUUID();
+      const idempotencyKey = normalizeIdempotencyKey(parsed.data.idempotencyKey);
+      const itemsRef = companyRef.collection("lost_items");
+      const itemId = idempotencyKey
+        ? `idem_${req.driver.uid}_${idempotencyKey}`
+        : crypto.randomUUID();
+      if (idempotencyKey) {
+        const existingSnap = await itemsRef.doc(itemId).get();
+        if (existingSnap.exists) {
+          const existing = existingSnap.data() || {};
+          if (existing.driverId && existing.driverId !== req.driver.uid) {
+            return res.status(409).json({ success: false, error: "Konflikt idempotency ključa." });
+          }
+          return res.status(200).json({
+            success: true,
+            deduped: true,
+            item: { ...existing, id: itemId, createdAt: null }
+          });
+        }
+      }
+      const { idempotencyKey: _ignored, clientCreatedAt, ...itemFields } = parsed.data;
       const item = {
-        ...parsed.data,
+        ...itemFields,
         driverId: req.driver.uid,
         driver: safeDriver(profileSnap).name,
         groupId: profileSnap.data().groupId || profileSnap.data().lineId || null,
         status: "in_depot",
+        idempotencyKey: idempotencyKey || null,
+        clientCreatedAt: clientCreatedAt || null,
         createdAt: admin().firestore.FieldValue.serverTimestamp()
       };
-      await companyRef.collection("lost_items").doc(itemId).set(item);
+      await itemsRef.doc(itemId).set(item);
       await logAudit(req.driver.companyId, req.driver.uid, "driver_lost_item_created", {
-        itemId, type: item.type
+        itemId, type: item.type, idempotencyKey: idempotencyKey || null
       });
       return res.status(201).json({ success: true, item: { ...item, id: itemId, createdAt: null } });
     } catch (error) {

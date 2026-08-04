@@ -7,6 +7,7 @@ import { showLoginScreen } from "../auth/login-ui.js";
 import { showToast } from "../core/utils.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import { t } from "../ui/i18n.js";
+import { saveDriverOfflineSnapshot, clearDriverSensitiveCaches } from "./offline-snapshot.js";
 
 let policy = null;
 let restTimer = null;
@@ -34,6 +35,7 @@ async function terminateDriverSession(messageKey = "driver_session_ended") {
     stopDriverGpsTracking();
     stopFirestoreSync();
     policy = null;
+    try { await clearDriverSensitiveCaches(); } catch { /* best-effort */ }
     clearUserSession();
     window.currentUser = null;
     document.getElementById("driver-rest-overlay")?.remove();
@@ -116,6 +118,14 @@ async function prepareDriverWorkSession() {
         liveGps: policy?.features?.liveGps === true,
         sessionActive: policy?.status === "active"
     });
+    try {
+        saveDriverOfflineSnapshot({
+            companyId: window.currentUser?.companyId,
+            driverId: window.currentUser?.id || window.currentUser?.uid,
+            policy,
+            messages: window.state?.messages || []
+        });
+    } catch { /* offline snapshot is best-effort */ }
     return true;
 }
 
@@ -129,6 +139,10 @@ async function confirmUpcomingShifts(dates = null) {
         ? pending.filter((target) => dates.includes(target.date))
         : pending;
     if (!targets.length || policy?.status !== "active") return false;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        showToast(t("driver_critical_needs_network"), "error");
+        return false;
+    }
     const result = await ApiClient.confirmDriverShifts(targets.map((target) => target.date));
     if (!result.success) {
         showToast(result.error || t("shift_confirm_failed"), "error");

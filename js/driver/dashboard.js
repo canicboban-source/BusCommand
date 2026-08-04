@@ -333,6 +333,10 @@ function closeSosTriggerModal() {
 
 async function confirmSOSTrigger() {
     if (sosSubmissionPending || !window.currentUser || window.currentUser.role !== "driver") return;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        showToast(t("driver_critical_needs_network"), "error");
+        return;
+    }
     sosSubmissionPending = true;
     try {
         if (!IS_DEMO_MODE) {

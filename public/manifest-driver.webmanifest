@@ -3,7 +3,7 @@
   "short_name": "BusCommand",
   "description": "BusCommand vozačka PWA — smene, SOS, prijave",
   "start_url": "/driver.html",
-  "scope": "/",
+  "scope": "/driver.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#07070f",
