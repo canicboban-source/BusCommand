@@ -3,7 +3,7 @@
 - Datum: 2026-08-04
 - Grana: `work/ca-group-monthly-import`
 - Polazna tačka: Poglavlje 7 (`07ac15f` / `3372d03`)
-- Checkpoint commit: *(vidi git SHA na kraju / follow-up note)*
+- Checkpoint commit: `b53787b`
 - Master prompt: v3.2 §7, §5 (SoT), odluka D8
 
 ## 1. Cilj
