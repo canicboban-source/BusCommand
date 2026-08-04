@@ -30,7 +30,7 @@ import { clearScheduleFile, clearScheduleText, deleteScheduleEntry, formatSchedu
 import { updateDriverBusInline, updateDriverShiftInline, opsAssignDriver, openOperationalIncident, openVehicleOperationalIncident, closeOperationalIncident, openCoverageResolver, closeCoverageResolver, transitionOperationalIncident } from "./dispatcher/dashboard.js";
 import { removeDispatcher } from "./dispatcher/dispatchers.js";
 import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlansFull, scrollHubSection } from "./dispatcher/group-hub.js";
-import { returnLostItem } from "./dispatcher/lost-items.js";
+import { returnLostItem, setLostItemStatus, openLostItemPhoto } from "./dispatcher/lost-items.js";
 import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, openMonthlyDayEditForDriver, previewMonthlyMassAbsence, saveMonthlyDayEdit, selectMonthlyPlanGroup, undoMonthlyDayEdit } from "./dispatcher/monthly-plans.js";
 import { setMessagesPageTab, submitDispatcherMessage } from "./dispatcher/msg-compose.js";
 import { clearPendingPlanImports, confirmBulkPlanImport, handleBulkPlanDrop, handleBulkPlanFileInput, removePendingImport, updatePendingImportDriver, updatePendingImportMonth } from "./dispatcher/plan-import.js";
@@ -201,6 +201,8 @@ const HANDLERS = {
     resolveReport,
     resolveSOS,
     returnLostItem,
+    setLostItemStatus,
+    openLostItemPhoto,
     revokeCompanyDispatcherSessions,
     saveCompanyDispatcherGroups,
     saveCompanyDriverEdit,

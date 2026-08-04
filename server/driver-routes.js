@@ -62,6 +62,14 @@ const {
   publicLastLocation
 } = require("./driver-location");
 const { normalizeIdempotencyKey } = require("./driver-report-idempotency");
+const {
+  DRIVER_CREATE_STATUSES,
+  normalizeLostItemStatus,
+  canTransitionLostItemStatus,
+  buildFoundAtFields,
+  validateLostItemPhoto,
+  publicLostItemPhoto
+} = require("./lost-item-lifecycle");
 const { createStaffAuth } = require("./staff-auth");
 
 const COST = 12;
@@ -115,12 +123,23 @@ const quickReportSchema = z.object({
 const sosSchema = z.object({ bus: z.string().trim().max(32).optional().default("") });
 const messageIdSchema = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/);
 const lostItemIdSchema = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/);
-const lostItemStatusSchema = z.object({ status: z.enum(["returned"]) });
+const lostItemStatusSchema = z.object({
+  status: z.enum(["in_depot", "stays_on_bus", "returned"])
+});
+const lostItemPhotoSchema = z.object({
+  contentType: z.enum(["image/jpeg", "image/png"]),
+  dataBase64: z.string().min(32).max(500_000)
+}).optional().nullable();
 const lostItemSchema = z.object({
   type: z.enum(["lost_tech", "lost_wallet", "lost_keys", "lost_bag", "lost_clothes", "lost_other"]),
   location: z.string().trim().min(2).max(200),
   description: z.string().trim().min(2).max(1000),
   bus: z.string().trim().max(32).optional().default(""),
+  status: z.enum(["in_depot", "stays_on_bus"]).optional().default("in_depot"),
+  foundAt: z.string().trim().min(10).max(40).optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  photo: lostItemPhotoSchema,
   idempotencyKey: idempotencyKeySchema,
   clientCreatedAt: z.string().trim().min(10).max(40).optional()
 });
@@ -765,26 +784,59 @@ function registerDriverRoutes(app, deps) {
           return res.status(200).json({
             success: true,
             deduped: true,
-            item: { ...existing, id: itemId, createdAt: null }
+            item: {
+              ...existing,
+              id: itemId,
+              createdAt: null,
+              photo: publicLostItemPhoto(existing.photo)
+            }
           });
         }
       }
-      const { idempotencyKey: _ignored, clientCreatedAt, ...itemFields } = parsed.data;
+      const photoCheck = validateLostItemPhoto(parsed.data.photo || null);
+      if (!photoCheck.ok) {
+        return res.status(400).json({
+          success: false,
+          code: "LOST_ITEM_PHOTO_INVALID",
+          error: "Fotografija nije prihvaćena (tip, veličina ili EXIF).",
+          reason: photoCheck.reason
+        });
+      }
+      const status = DRIVER_CREATE_STATUSES.includes(parsed.data.status)
+        ? parsed.data.status
+        : "in_depot";
+      const found = buildFoundAtFields({
+        clientCreatedAt: parsed.data.foundAt || parsed.data.clientCreatedAt || null,
+        date: parsed.data.date || null,
+        time: parsed.data.time || null
+      });
+      const { idempotencyKey: _ignored, clientCreatedAt, photo: _photo, foundAt: _fa, ...itemFields } = parsed.data;
       const item = {
         ...itemFields,
         driverId: req.driver.uid,
         driver: safeDriver(profileSnap).name,
         groupId: profileSnap.data().groupId || profileSnap.data().lineId || null,
-        status: "in_depot",
+        status,
+        ...found,
+        photo: photoCheck.photo,
         idempotencyKey: idempotencyKey || null,
         clientCreatedAt: clientCreatedAt || null,
         createdAt: admin().firestore.FieldValue.serverTimestamp()
       };
       await itemsRef.doc(itemId).set(item);
       await logAudit(req.driver.companyId, req.driver.uid, "driver_lost_item_created", {
-        itemId, type: item.type, idempotencyKey: idempotencyKey || null
+        itemId, type: item.type, status: item.status, hasPhoto: !!photoCheck.photo,
+        idempotencyKey: idempotencyKey || null
       });
-      return res.status(201).json({ success: true, item: { ...item, id: itemId, createdAt: null } });
+      return res.status(201).json({
+        success: true,
+        item: {
+          ...item,
+          id: itemId,
+          createdAt: null,
+          photo: publicLostItemPhoto(item.photo)
+        }
+      });
     } catch (error) {
       req.log?.error?.({ err: error }, "Prijava pronađenog predmeta nije uspela");
       return res.status(500).json({ success: false, error: "Predmet nije mogao biti prijavljen." });
@@ -1482,13 +1534,15 @@ function registerDriverRoutes(app, deps) {
         return res.status(404).json({ success: false, error: "Predmet nije pronađen." });
       }
       const item = itemSnap.data() || {};
-      const openStatuses = new Set(["in_depot", "status_in_depot", "U depou", "Im Depot"]);
-      const closedStatuses = new Set(["returned", "status_returned"]);
-      if (closedStatuses.has(item.status)) {
-        return res.status(409).json({ success: false, error: "Predmet je već vraćen." });
-      }
-      if (!openStatuses.has(item.status)) {
-        return res.status(409).json({ success: false, error: "Predmet nema status u depou." });
+      const fromStatus = normalizeLostItemStatus(item.status) || item.status;
+      const toStatus = status.data.status;
+      if (!canTransitionLostItemStatus(fromStatus, toStatus)) {
+        return res.status(409).json({
+          success: false,
+          error: fromStatus === "returned"
+            ? "Predmet je već vraćen."
+            : "Nedozvoljena promena statusa predmeta."
+        });
       }
 
       let groupId = item.groupId || null;
@@ -1500,23 +1554,37 @@ function registerDriverRoutes(app, deps) {
         return res.status(403).json({ success: false, error: "Predmet nije u dodeljenoj grupi." });
       }
 
-      const returnedAt = admin().firestore.FieldValue.serverTimestamp();
-      await itemRef.update({
-        status: "returned",
-        returnedAt,
-        returnedBy: req.staff.uid
-      });
-      await logAudit(req.staff.companyId, req.staff.uid, "lost_item_returned", {
+      const patch = {
+        status: toStatus,
+        statusUpdatedAt: admin().firestore.FieldValue.serverTimestamp(),
+        statusUpdatedBy: req.staff.uid
+      };
+      if (toStatus === "returned") {
+        patch.returnedAt = admin().firestore.FieldValue.serverTimestamp();
+        patch.returnedBy = req.staff.uid;
+      }
+      await itemRef.update(patch);
+      await logAudit(req.staff.companyId, req.staff.uid, "lost_item_status_changed", {
         itemId: itemId.data,
+        fromStatus,
+        toStatus,
         driverId: item.driverId || null,
         groupId
       });
+      if (toStatus === "returned") {
+        await logAudit(req.staff.companyId, req.staff.uid, "lost_item_returned", {
+          itemId: itemId.data,
+          driverId: item.driverId || null,
+          groupId
+        });
+      }
       return res.json({
         success: true,
         item: {
           id: itemId.data,
-          status: "returned",
-          returnedBy: req.staff.uid,
+          status: toStatus,
+          statusUpdatedBy: req.staff.uid,
+          returnedBy: toStatus === "returned" ? req.staff.uid : (item.returnedBy || null),
           returnedAt: null
         }
       });

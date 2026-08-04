@@ -158,6 +158,18 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
   4. TTL 8h snapshot smene/poruka; clear queue+snapshot+Cache API na logout.
 - Posledica: `sw-driver.js`, `offline-queue.js`, driver report rute.
 
+### D14 — Pronađeni predmeti: triad + foto bez Storage SDK-a
+
+- Datum: 2026-08-04 · Status: **Odlučeno** (Poglavlje 14)
+- Odluka:
+  1. Statusi: `in_depot` | `stays_on_bus` | `returned` (returned terminal).
+  2. Driver bira open status; staff menja među open + return; audit
+     `lost_item_status_changed` (+ legacy `lost_item_returned`).
+  3. Opciona foto: klijent canvas re-encode (EXIF strip), server magic +
+     JPEG APP1 reject; čuva se na item doc-u (ne Firebase Storage još).
+  4. `foundAt`/`date`/`time` uvek persistuju se pri create.
+- Posledica: `server/lost-item-lifecycle.js`, driver/staff lost-item UI.
+
 ---
 
 ## Otvorena pitanja

@@ -13,6 +13,7 @@ import {
     newIdempotencyKey
 } from "./offline-queue.js";
 import { renderNetworkStatus } from "./network-status.js";
+import { sanitizeLostItemPhotoFile } from "./lost-item-photo.js";
 
 const pendingForms = new Set();
 
@@ -164,20 +165,42 @@ async function submitLostItem(event) {
     const type = document.getElementById("lost-item-type")?.value || "";
     const location = String(document.getElementById("lost-item-location")?.value || "").trim();
     const description = String(document.getElementById("lost-item-desc")?.value || "").trim();
+    const status = document.getElementById("lost-item-status")?.value || "in_depot";
+    const photoInput = document.getElementById("lost-item-photo");
     const validTypes = ["lost_tech", "lost_wallet", "lost_keys", "lost_bag", "lost_clothes", "lost_other"];
-    if (!validTypes.includes(type) || location.length < 2 || location.length > 200
+    const validStatuses = ["in_depot", "stays_on_bus"];
+    if (!validTypes.includes(type) || !validStatuses.includes(status)
+        || location.length < 2 || location.length > 200
         || description.length < 2 || description.length > 1000) {
         showToast(t("driver_lost_item_invalid") || t("driver_report_invalid"), "error");
         return;
     }
     const now = new Date();
+    const date = now.toISOString().slice(0, 10);
+    const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    let photo = null;
+    if (photoInput?.files?.[0]) {
+        if (typeof navigator !== "undefined" && navigator.onLine === false) {
+            showToast(t("driver_critical_needs_network"), "error");
+            return;
+        }
+        try {
+            photo = await sanitizeLostItemPhotoFile(photoInput.files[0]);
+        } catch {
+            showToast(t("lost_photo_invalid"), "error");
+            return;
+        }
+    }
     const item = {
         id: `lost-${Date.now()}`,
-        time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+        date,
+        time,
+        foundAt: now.toISOString(),
         ...identity,
         type, location, description,
         desc: description,
-        status: "in_depot"
+        status,
+        photo: photo ? { contentType: photo.contentType, dataUrl: `data:${photo.contentType};base64,${photo.dataBase64}` } : null
     };
     pendingForms.add("lost-item-form");
     try {
@@ -185,6 +208,9 @@ async function submitLostItem(event) {
             const idempotencyKey = newIdempotencyKey();
             const body = {
                 type, location, description, bus: identity.bus,
+                status, date, time,
+                foundAt: now.toISOString(),
+                photo,
                 idempotencyKey,
                 clientCreatedAt: now.toISOString()
             };
@@ -192,10 +218,10 @@ async function submitLostItem(event) {
             try {
                 const result = await ApiClient.createDriverLostItem(body);
                 if (!result.success) {
-                    if (isProbablyOfflineError(result)) {
+                    if (!photo && isProbablyOfflineError(result)) {
                         const queued = enqueueOfflineWrite({
                             kind: "lost_item",
-                            payload: body,
+                            payload: { ...body, photo: null },
                             localRecord: item
                         });
                         if (queued.ok) {
@@ -215,9 +241,13 @@ async function submitLostItem(event) {
                 }
                 Object.assign(item, result.item || {}, { syncStatus: "sent" });
             } catch {
+                if (photo) {
+                    showToast(t("driver_critical_needs_network"), "error");
+                    return;
+                }
                 const queued = enqueueOfflineWrite({
                     kind: "lost_item",
-                    payload: body,
+                    payload: { ...body, photo: null },
                     localRecord: item
                 });
                 if (queued.ok) {

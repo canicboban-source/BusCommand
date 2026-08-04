@@ -744,6 +744,18 @@
                                     <label for="lost-item-desc" data-i18n="lost_desc_label">Opis predmeta (boja, marka, detalji)</label>
                                     <textarea id="lost-item-desc" required minlength="2" maxlength="1000" data-i18n-placeholder="ph_lost_desc" placeholder="npr. Crveni kožni novčanik, Samsung telefon..."></textarea>
                                 </div>
+                                <div class="form-group">
+                                    <label for="lost-item-status" data-i18n="lost_status_label">Gde je predmet sada?</label>
+                                    <select id="lost-item-status" required>
+                                        <option value="in_depot" data-i18n="status_in_depot" selected>U depou</option>
+                                        <option value="stays_on_bus" data-i18n="status_stays_on_bus">Ostaje u autobusu</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="lost-item-photo" data-i18n="lost_photo_label">Fotografija (opciono)</label>
+                                    <input type="file" id="lost-item-photo" accept="image/jpeg,image/png,image/webp" capture="environment">
+                                    <p class="form-hint" data-i18n="lost_photo_hint">Slika se kompresuje lokalno; EXIF/GPS se uklanjaju pre slanja.</p>
+                                </div>
                                 <button type="submit" class="btn-lost-submit btn-full-width">
                                     <i data-lucide="package-plus"></i> <span data-i18n="btn_send_lost">Prijavi pronađeni predmet</span>
                                 </button>
@@ -2008,6 +2020,16 @@
                     </div>
 
                     <div class="card full-width-card">
+                        <div class="toolbar" style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+                            <label for="dispatcher-lost-status-filter" data-i18n="table_status">Status</label>
+                            <select id="dispatcher-lost-status-filter" aria-label="Filter by status">
+                                <option value="open" data-i18n="lost_filter_open" selected>Otvoreno</option>
+                                <option value="in_depot" data-i18n="status_in_depot">U depou</option>
+                                <option value="stays_on_bus" data-i18n="status_stays_on_bus">Ostaje u autobusu</option>
+                                <option value="returned" data-i18n="status_returned">Vraćeno</option>
+                                <option value="all" data-i18n="lost_filter_all">Sve</option>
+                            </select>
+                        </div>
                         <div class="table-container">
                             <table class="app-table table-large">
                                 <thead>
@@ -2017,6 +2039,7 @@
                                         <th data-i18n="lost_type_label">Predmet</th>
                                         <th data-i18n="lost_loc_label">Gde je nađen</th>
                                         <th data-i18n="lost_desc_label">Opis</th>
+                                        <th data-i18n="lost_photo_label">Foto</th>
                                         <th data-i18n="table_status">Status</th>
                                         <th data-i18n="table_action">Akcija</th>
                                     </tr>

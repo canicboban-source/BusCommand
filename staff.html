@@ -1631,6 +1631,16 @@
                     </div>
 
                     <div class="card full-width-card">
+                        <div class="toolbar" style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+                            <label for="dispatcher-lost-status-filter" data-i18n="table_status">Status</label>
+                            <select id="dispatcher-lost-status-filter" aria-label="Filter by status">
+                                <option value="open" data-i18n="lost_filter_open" selected>Otvoreno</option>
+                                <option value="in_depot" data-i18n="status_in_depot">U depou</option>
+                                <option value="stays_on_bus" data-i18n="status_stays_on_bus">Ostaje u autobusu</option>
+                                <option value="returned" data-i18n="status_returned">Vraćeno</option>
+                                <option value="all" data-i18n="lost_filter_all">Sve</option>
+                            </select>
+                        </div>
                         <div class="table-container">
                             <table class="app-table table-large">
                                 <thead>
@@ -1640,6 +1650,7 @@
                                         <th data-i18n="lost_type_label">Predmet</th>
                                         <th data-i18n="lost_loc_label">Gde je nađen</th>
                                         <th data-i18n="lost_desc_label">Opis</th>
+                                        <th data-i18n="lost_photo_label">Foto</th>
                                         <th data-i18n="table_status">Status</th>
                                         <th data-i18n="table_action">Akcija</th>
                                     </tr>
