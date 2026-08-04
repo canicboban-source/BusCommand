@@ -3,7 +3,7 @@
 
 import { handleCompanyAuditFilters, loadMoreCompanyAudit, refreshCompanyAudit, resetCompanyAuditFilters } from "./admin/company-admin-audit.js";
 import { applyBrandingSettings, clearCompanyBrandingLogo } from "./admin/company-admin-branding.js";
-import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriverEdit, confirmCompanyDriversImport, handleCompanyDriversFile, handleCompanyDriversFilter, openCompanyDriverEdit, saveCompanyDriverEdit, toggleCompanyDriverStatus } from "./admin/company-admin-drivers.js";
+import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriverEdit, confirmCompanyDriversImport, handleCompanyDriversFile, handleCompanyDriversFilter, handleCompanyDriversSearch, openCompanyDriverEdit, saveCompanyDriverEdit, toggleCompanyDriverStatus } from "./admin/company-admin-drivers.js";
 import { cancelCompanyGroupEdit, deleteCompanyGroup, focusCompanyGroupForm, saveCompanyGroup, startEditCompanyGroup } from "./admin/company-admin-groups.js";
 import { caWizardBack, caWizardNext, caWizardSelectColor, caWizardSkip } from "./admin/company-admin-onboarding.js";
 import { clearCompanyServicePlanPreview, closeCompanyServicePlanDuty, closeCompanyServicePlanHistory, handleCompanyServicePlanFile, handleCompanyServicePlanGroupChange, openCompanyServicePlanDuty, openCompanyServicePlanHistory, publishCompanyServicePlan, activateCompanyServicePlanVersion } from "./admin/company-admin-service-plan.js";
@@ -133,6 +133,7 @@ const __ONCLICK_HANDLERS = {
     handleCompanyAuditFilters,
     handleCompanyDriversFile,
     handleCompanyDriversFilter,
+    handleCompanyDriversSearch,
     handleCompanyServicePlanFile,
     handleCompanyServicePlanGroupChange,
     handleCompanySettingsCountry,

@@ -1,4 +1,5 @@
 import { TEMPLATE_VERSION } from "../../shared/service-plan-contract.mjs";
+import { ensureXlsx } from "../core/office-parsers.js";
 import { parseServicePlanCsvFile } from "./service-plan-csv.js";
 import { parseServicePlanPdfFile } from "./service-plan-pdf.js";
 import {
@@ -13,7 +14,7 @@ import {
 
 const REQUIRED_SHEETS = Object.freeze(["PLAN", "SMENE", "AKTIVNOSTI"]);
 
-function rowsFor(workbook, sheetName) {
+function rowsFor(workbook, sheetName, XLSX) {
     const sheet = workbook?.Sheets?.[sheetName];
     if (!sheet) return [];
     return XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
@@ -55,7 +56,16 @@ function parsePlanMetadata(rows, errors) {
     };
 }
 
-function parseServicePlanWorkbook(workbook) {
+function parseServicePlanWorkbook(workbook, xlsxLib = globalThis.XLSX) {
+    const XLSX = xlsxLib;
+    if (!XLSX?.utils) {
+        return {
+            valid: false,
+            errors: [{ path: "XLSX", code: "xlsx_missing", message: "XLSX biblioteka nije učitana." }],
+            plan: null,
+            summary: null
+        };
+    }
     const errors = [];
     const names = workbook?.SheetNames || [];
     REQUIRED_SHEETS.forEach(name => {
@@ -63,19 +73,19 @@ function parseServicePlanWorkbook(workbook) {
     });
     if (errors.length) return { valid: false, errors, plan: null, summary: null };
 
-    const metadata = parsePlanMetadata(rowsFor(workbook, "PLAN"), errors);
-    const dutyRows = objectRows(rowsFor(workbook, "SMENE"), DUTY_HEADERS, "SMENE", errors);
-    const activityRows = objectRows(rowsFor(workbook, "AKTIVNOSTI"), ACTIVITY_HEADERS, "AKTIVNOSTI", errors);
+    const metadata = parsePlanMetadata(rowsFor(workbook, "PLAN", XLSX), errors);
+    const dutyRows = objectRows(rowsFor(workbook, "SMENE", XLSX), DUTY_HEADERS, "SMENE", errors);
+    const activityRows = objectRows(rowsFor(workbook, "AKTIVNOSTI", XLSX), ACTIVITY_HEADERS, "AKTIVNOSTI", errors);
     if (errors.length) return { valid: false, errors, plan: null, summary: null };
 
     return validateBuiltPlan({ metadata, dutyRows, activityRows });
 }
 
 async function parseServicePlanXlsxFile(file) {
-    if (typeof XLSX === "undefined") throw new Error("ca_plan_err_xlsx_missing");
+    const XLSX = await ensureXlsx();
     const arrayBuffer = await file.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: "array", cellDates: false });
-    return parseServicePlanWorkbook(workbook);
+    return parseServicePlanWorkbook(workbook, XLSX);
 }
 
 async function readServicePlanFile(file) {

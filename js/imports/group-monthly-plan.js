@@ -117,7 +117,8 @@ async function readGroupMonthlyPlanFile(file, options = {}) {
     const name = String(file?.name || "").toLowerCase();
     if (name.endsWith(".csv")) return parseGroupMonthlyCsv(await file.text(), options);
     if (!name.endsWith(".xlsx")) throw new Error("monthly_import_file_type");
-    if (typeof XLSX === "undefined") throw new Error("ca_plan_err_xlsx_missing");
+    const { ensureXlsx } = await import("../core/office-parsers.js");
+    const XLSX = await ensureXlsx();
     const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
     const sheetName = workbook.SheetNames.find(item => normalizeHeader(item) === "monthly_plan");
     if (!sheetName) throw new Error("monthly_import_missing_sheet");

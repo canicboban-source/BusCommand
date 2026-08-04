@@ -196,6 +196,24 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
      poglavlju.
 - Posledica: Ch16 ključevi, SOS a11y, focus trap, tokenizovani ops rail.
 
+### D17 — Soft-pilot performance budgets
+
+- Datum: 2026-08-05 · Status: **Odlučeno** (Poglavlje 17)
+- Odluka:
+  1. §35 ne definiše KB/TTI; soft-pilot budžeti su:
+     - driver app JS excl. translations ≤ 220 KB raw;
+     - staff app JS excl. translations ≤ 520 KB raw;
+     - max single driver chunk ≤ 150 KB;
+     - translations chunk ≤ 360 KB;
+     - driver ne sme ugraditi dispatcher UI implementaciju.
+  2. `npm run build` mora pasti ako budžeti padnu (`check-bundle-budgets.js`).
+  3. Lucide CDN mora biti pinned (ne `@latest`); PDF.js/SheetJS lazy na first use.
+  4. Staff list hot-path (confirmations/messages) koristi date/group scoped
+     queries umesto full-collection scan gde je bezbedno.
+  5. Produkciona TTI/API latencija se ne tvrdi do staginga (O1 / §36).
+- Posledica: surface-split observer, i18n dynamic import, office-parsers,
+  API caps, budget gate.
+
 ---
 
 ## Otvorena pitanja

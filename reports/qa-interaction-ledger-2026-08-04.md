@@ -212,7 +212,8 @@ Redosled iz master prompta v3.2 §27:
 13. ~~Pronađeni predmeti~~ (P14) — status triad, photo, foundAt, staff filter;
 14. ~~SA/CA kompletiranje~~ (P15) — RO fleet, tenant settings PATCH, health;
 15. ~~i18n/a11y~~ (P16) — focus trap, SOS dialog, EN/DE/SR keys;
-16. performanse / budžeti, staging acceptance (P17+ / P20).
+16. ~~performanse / budžeti~~ (P17) — driver bundle cut, D17 CI budgets;
+17. integraciono testiranje / cleanup, staging acceptance (P18+ / P20).
 
 ### Ažuriranje posle Poglavlja 14
 
@@ -232,5 +233,12 @@ Shared focus trap; SOS/confirm dialog semantics; SA/ops toast i18n
 (EN/DE/SR); ops status rails on design tokens; mob-nav `nav_sos`.
 Pun axe CI i staging acceptance ostaju za kasnije. Gate: unit 526,
 rules 40, E2E 57.
+
+### Ažuriranje posle Poglavlja 17
+
+Driver više ne preload-uje dispatcher UI (~160 KB app JS excl.
+translations); Lucide pinned; PDF/XLSX lazy; confirmation/message list
+queries scoped; `check-bundle-budgets` u build. TTI na stagingu i dalje
+blokiran O1. Gate: unit 532, rules 40, E2E 57.
 
 Svaka stavka prelazi iz „delimično/statički/nepokriveno“ u „funkcionalno“ samo kada postoji izvršen dokaz odgovarajućeg nivoa.

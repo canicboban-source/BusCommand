@@ -642,7 +642,7 @@ zatvorenog poglavlja i uvek pokazuje na izveštaj sa dokazima.
 | 14 | Pronađeni predmeti | završeno | `reports/poglavlje-14-pronadjeni-predmeti-2026-08-04.md` |
 | 15 | Kompletiranje Super Admin i Company Admin površina | završeno | `reports/poglavlje-15-sa-ca-2026-08-04.md` |
 | 16 | i18n, pristupačnost i vizuelno usklađivanje | završeno | `reports/poglavlje-16-i18n-a11y-2026-08-05.md` |
-| 17 | Performanse i budžeti | — | — |
+| 17 | Performanse i budžeti | završeno | `reports/poglavlje-17-performanse-budzeti-2026-08-05.md` |
 | 18 | Potpuno integraciono testiranje i uklanjanje testnih podataka | — | — |
 | 19 | Jurisdiction release gate za pilot tržište | — | — |
 | 20 | Staging deployment i ručni acceptance test | — | — |

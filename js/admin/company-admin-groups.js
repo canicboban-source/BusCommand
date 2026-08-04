@@ -22,6 +22,7 @@ import {
 let editingGroupId = null;
 let groupSearch = "";
 let groupStatus = "all";
+let groupSearchTimer = null;
 const deletingGroups = new Set();
 
 function getScope() {
@@ -175,7 +176,8 @@ function renderCompanyAdminGroups() {
         search.value = groupSearch;
         search.oninput = event => {
             groupSearch = event.target.value;
-            renderCompanyAdminGroups();
+            clearTimeout(groupSearchTimer);
+            groupSearchTimer = setTimeout(() => renderCompanyAdminGroups(), 250);
         };
     }
     if (status) {

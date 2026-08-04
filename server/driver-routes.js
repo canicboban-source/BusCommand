@@ -1313,13 +1313,31 @@ function registerDriverRoutes(app, deps) {
     }
     try {
       const companyRef = db().collection("companies").doc(req.staff.companyId);
-      const [driversSnap, groupsSnap, staffUserSnap] = await Promise.all([
-        companyRef.collection("drivers").get(),
+      const [groupsSnap, staffUserSnap] = await Promise.all([
         companyRef.collection("groups").get(),
         companyRef.collection("users").doc(req.staff.uid).get()
       ]);
+      const groups = groupsSnap.docs.map((doc) => ({ id: doc.id, ...(doc.data() || {}) }));
 
-      const drivers = driversSnap.docs.map((doc) => {
+      // Soft-pilot (Ch17): dispatcher loads only assigned-group drivers; CA keeps tenant-wide.
+      let driverDocs = [];
+      if (req.staff.role === "dispatcher") {
+        const assigned = staffUserSnap.exists && Array.isArray(staffUserSnap.data().groups)
+          ? staffUserSnap.data().groups
+          : (req.staff.groups || []);
+        const groupIds = [...new Set((assigned || []).filter(Boolean))].slice(0, 40);
+        const snaps = await Promise.all(
+          groupIds.map((groupId) => companyRef.collection("drivers").where("groupId", "==", groupId).get())
+        );
+        const unique = new Map();
+        snaps.flatMap((snap) => snap.docs).forEach((doc) => unique.set(doc.id, doc));
+        driverDocs = [...unique.values()];
+      } else {
+        const driversSnap = await companyRef.collection("drivers").get();
+        driverDocs = driversSnap.docs;
+      }
+
+      const drivers = driverDocs.map((doc) => {
         const data = doc.data() || {};
         return {
           id: doc.id,
@@ -1329,7 +1347,6 @@ function registerDriverRoutes(app, deps) {
           active: data.active !== false
         };
       });
-      const groups = groupsSnap.docs.map((doc) => ({ id: doc.id, ...(doc.data() || {}) }));
       const resolved = resolveStaffMessageTargets({
         mode: parsed.data.mode,
         recipientDriverId: parsed.data.recipientDriverId,
@@ -2367,8 +2384,14 @@ function registerDriverRoutes(app, deps) {
       }
 
       const [confirmSnap, outboxSnap, staffSnap, dispatchHealthSnap] = await Promise.all([
-        companyRef.collection("shift_confirmations").get(),
-        companyRef.collection("confirmation_outbox").get(),
+        companyRef.collection("shift_confirmations")
+          .where("date", ">=", from)
+          .where("date", "<=", to)
+          .get(),
+        companyRef.collection("confirmation_outbox")
+          .where("targetDate", ">=", from)
+          .where("targetDate", "<=", to)
+          .get(),
         companyRef.collection("users").doc(req.staff.uid).get(),
         companyRef.collection("ops").doc("confirmation_dispatch").get()
       ]);
@@ -2378,14 +2401,13 @@ function registerDriverRoutes(app, deps) {
         const groups = staffSnap.exists && Array.isArray(staffSnap.data().groups)
           ? staffSnap.data().groups
           : (req.staff.groups || []);
-        const driversSnap = await companyRef.collection("drivers").get();
+        // Soft-pilot: avoid full drivers collection scan — query by assigned groups.
+        const groupIds = [...new Set((groups || []).filter(Boolean))].slice(0, 40);
+        const driverSnaps = await Promise.all(
+          groupIds.map((groupId) => companyRef.collection("drivers").where("groupId", "==", groupId).get())
+        );
         allowedDriverIds = new Set(
-          driversSnap.docs
-            .filter((doc) => {
-              const groupId = doc.data().groupId || doc.data().lineId || null;
-              return groupId && groups.includes(groupId);
-            })
-            .map((doc) => doc.id)
+          driverSnaps.flatMap((snap) => snap.docs.map((doc) => doc.id))
         );
       }
 

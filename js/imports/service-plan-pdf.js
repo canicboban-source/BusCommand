@@ -614,7 +614,8 @@ function buildStructuredPdfPayload(planInput) {
 }
 
 async function extractPdfText(arrayBuffer) {
-    if (typeof pdfjsLib === "undefined") throw new Error("ca_plan_err_pdfjs_missing");
+    const { ensurePdfJs } = await import("../core/office-parsers.js");
+    const pdfjsLib = await ensurePdfJs();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let text = "";
     for (let i = 1; i <= pdf.numPages; i += 1) {

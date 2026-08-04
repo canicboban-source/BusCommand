@@ -1,7 +1,6 @@
 // BusCommand ESM v9.5
 import { getBaseState, saveState, resolveUiLanguage, applyUiLanguagePreference } from "../core/state.js";
 import { DEFAULT_BRAND_COLOR, normalizeBrandColor, normalizeBrandLogoUrl } from "../admin/company-admin-branding-model.js";
-import { populateTemplateSelect } from "../dispatcher/msg-compose.js";
 import { initializeLoginSelects } from "../auth/login-selects.js";
 import { switchSection } from "../layout/navigation.js";
 import { tp } from "./i18n-plural.js";
@@ -101,9 +100,16 @@ function translateUI() {
         if (val) el.setAttribute("aria-label", val);
     });
 
-    // Obnovi template selectove na novom jeziku
-    populateTemplateSelect("message-template");
-    populateTemplateSelect("message-template-messages");
+    // Staff-only: message templates live in the dispatcher compose module.
+    // Dynamic import keeps that graph out of the driver bundle (Ch17).
+    if (isStaffSurface()) {
+        import("../dispatcher/msg-compose.js")
+            .then(({ populateTemplateSelect }) => {
+                populateTemplateSelect("message-template");
+                populateTemplateSelect("message-template-messages");
+            })
+            .catch(() => {});
+    }
 
     const loginScreen = document.getElementById("login-screen");
     if (loginScreen && !loginScreen.classList.contains("hidden")) {

@@ -9,7 +9,6 @@ import { installDriverSurface } from "./install-driver.js";
 import { registerOnclickHandlers } from "./register-onclick-driver.js";
 import { bootstrapBusCommand } from "./bootstrap/init.js";
 import { migrateLegacyStorage } from "./core/storage-keys.js";
-import "./core/state-observer-setup.js";
 
 window.__BUSCOMMAND_SURFACE__ = "driver";
 window.BusCommandConfig = BusCommandConfig;

@@ -9,10 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Lucide ikone -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- PDF.js i SheetJS za automatsko i precizno čitanje planova rada (Excel i PDF parser) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/lucide@0.469.0"></script>
+    <!-- PDF.js / SheetJS: lazy-loaded via js/core/office-parsers.js on first import -->
     <!-- Leaflet.js za mape uživo -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -1351,7 +1349,7 @@
                                 <div class="company-drivers-filters">
                                     <label class="company-drivers-search" for="ca-drivers-search">
                                         <i data-lucide="search" aria-hidden="true"></i>
-                                        <input type="search" id="ca-drivers-search" data-i18n-placeholder="ca_drivers_search_placeholder" placeholder="Pretraži ime, email ili telefon" data-input-action="handleCompanyDriversFilter">
+                                        <input type="search" id="ca-drivers-search" data-i18n-placeholder="ca_drivers_search_placeholder" placeholder="Pretraži ime, email ili telefon" data-input-action="handleCompanyDriversSearch">
                                     </label>
                                     <select id="ca-drivers-group-filter" aria-label="Filtriraj po grupi" data-change-action="handleCompanyDriversFilter">
                                         <option value="" data-i18n="ca_drivers_all_groups">Sve grupe</option>
