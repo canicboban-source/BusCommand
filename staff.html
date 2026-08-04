@@ -1848,7 +1848,7 @@
     
 
     <!-- SOS CONFIRM MODAL -->
-    <div id="sos-confirm-modal" class="modal-backdrop bc-overlay-modal hidden" data-action="closeSosConfirmModal" data-action-self="true" aria-hidden="true" style="display:none;">
+    <div id="sos-confirm-modal" class="modal-backdrop bc-overlay-modal hidden" role="dialog" aria-modal="true" aria-labelledby="sos-confirm-title" data-action="closeSosConfirmModal" data-action-self="true" aria-hidden="true" style="display:none;">
         <div style="
             background: #0f0f19;
             border: 2px solid rgba(239,68,68,0.5);
@@ -1867,7 +1867,7 @@
                 <i data-lucide="shield-check" style="width:34px; height:34px; color:#ef4444;"></i>
             </div>
 
-            <h3 style="font-size:1.25rem; font-weight:700; color:#fff; margin-bottom:8px;"
+            <h3 id="sos-confirm-title" style="font-size:1.25rem; font-weight:700; color:#fff; margin-bottom:8px;"
                 data-i18n="sos_confirm_title">Potvrdi rešavanje SOS alarma</h3>
 
             <p style="font-size:0.875rem; color:rgba(255,255,255,0.6); margin-bottom:8px; line-height:1.5;"
@@ -2262,8 +2262,8 @@
         </div>
     </div>
 
-    <!-- ===== CLEAR SOS CUSTOM MODAL ===== -->
-    <div id="clear-sos-modal" class="bc-overlay-modal hidden" aria-hidden="true" style="
+    <!-- ===== CLEAR SOS CUSTOM MODAL (legacy; showModal redirects to sos-confirm-modal) ===== -->
+    <div id="clear-sos-modal" class="bc-overlay-modal hidden" role="dialog" aria-modal="true" aria-labelledby="clear-sos-modal-title" aria-hidden="true" style="
         position:fixed; inset:0; z-index:9999;
         background:rgba(0,0,0,0.75); backdrop-filter:blur(8px);
         display:none; align-items:center; justify-content:center; padding:20px;">
@@ -2274,10 +2274,10 @@
             box-shadow:0 0 60px rgba(251,146,60,0.2), 0 20px 40px rgba(0,0,0,0.6);
             text-align:center;">
             <div style="font-size:3rem; margin-bottom:16px;">🚨</div>
-            <h2 style="color:#fb923c; font-size:1.2rem; font-weight:800; margin-bottom:10px;" id="clear-sos-modal-title">
+            <h2 style="color:#fb923c; font-size:1.2rem; font-weight:800; margin-bottom:10px;" id="clear-sos-modal-title" data-i18n="sos_confirm_title">
                 Confirm SOS Resolution
             </h2>
-            <p style="color:rgba(255,255,255,0.7); font-size:0.9rem; line-height:1.6; margin-bottom:24px;" id="clear-sos-modal-body">
+            <p style="color:rgba(255,255,255,0.7); font-size:0.9rem; line-height:1.6; margin-bottom:24px;" id="clear-sos-modal-body" data-i18n="sos_confirm_body">
                 Have you contacted the driver and verified the situation?
             </p>
             <div style="display:flex; gap:12px; justify-content:center;">

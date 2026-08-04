@@ -1,6 +1,7 @@
 // BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
 import { showToast } from "../core/utils.js";
+import { t } from "../ui/i18n.js";
 
 // Ažuriranje slika avatara na celom interfejsu (header + profil kartica)
 function updateAvatarUI() {
@@ -65,7 +66,7 @@ function handleAvatarUpload(event) {
     if (!file) return;
 
     if (!file.type.match('image.*')) {
-        showToast("Dozvoljeni su samo slikovni fajlovi (jpg/png).", "error");
+        showToast(t("avatar_image_type_error"), "error");
         return;
     }
 

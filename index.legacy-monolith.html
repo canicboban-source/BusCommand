@@ -2237,7 +2237,7 @@
                 </button>
                 <button type="button" class="mob-nav-btn mob-nav-sos" id="mobnav-sos" aria-label="SOS" data-i18n-aria-label="sos_button_aria" data-sos-hold="true">
                     <i data-lucide="phone-call"></i>
-                    <span>SOS</span>
+                    <span data-i18n="nav_sos">SOS</span>
                     <span class="mob-nav-sos-progress" aria-hidden="true"></span>
                 </button>
                 <button class="mob-nav-btn" data-action="switchSection" data-action-args='["driver-reports"]' id="mobnav-reports">
@@ -2343,12 +2343,12 @@
     </div>
 
     <!-- SOS TRIGGER MODAL (driver activates SOS) -->
-    <div id="sos-trigger-modal" class="modal-backdrop bc-overlay-modal hidden" data-action="closeSosTriggerModal" data-action-self="true" aria-hidden="true" style="position:fixed;inset:0;z-index:19000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);">
+    <div id="sos-trigger-modal" class="modal-backdrop bc-overlay-modal hidden" role="dialog" aria-modal="true" aria-labelledby="sos-trigger-title" data-action="closeSosTriggerModal" data-action-self="true" aria-hidden="true" style="position:fixed;inset:0;z-index:19000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);">
         <div style="background:#0f0f19;border:2px solid rgba(239,68,68,0.7);border-radius:20px;padding:32px 28px;width:92%;max-width:380px;text-align:center;animation:sosModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;box-shadow:0 0 60px rgba(239,68,68,0.25);">
             <div style="width:72px;height:72px;border-radius:50%;background:rgba(239,68,68,0.15);border:2px solid rgba(239,68,68,0.5);margin:0 auto 20px;display:flex;align-items:center;justify-content:center;animation:sosPulse 0.8s ease-in-out infinite;">
                 <i data-lucide="phone-call" style="width:34px;height:34px;color:#ef4444;"></i>
             </div>
-            <h3 style="font-size:1.3rem;font-weight:800;color:#ef4444;margin-bottom:10px;" data-i18n="sos_trigger_title">SOS ALARM</h3>
+            <h3 id="sos-trigger-title" style="font-size:1.3rem;font-weight:800;color:#ef4444;margin-bottom:10px;" data-i18n="sos_trigger_title">SOS ALARM</h3>
             <p style="font-size:0.9rem;color:rgba(255,255,255,0.7);margin-bottom:24px;line-height:1.6;" data-i18n="js_confirm_sos">Möchten Sie wirklich den NOTFALL SOS-ALARM aktivieren?</p>
             <div style="display:flex;gap:12px;">
                 <button data-action="closeSosTriggerModal" style="flex:1;padding:13px;border-radius:10px;font-size:0.9rem;font-weight:600;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);cursor:pointer;" data-i18n="btn_cancel">Cancel</button>
@@ -2358,7 +2358,7 @@
     </div>
 
     <!-- SOS CONFIRM MODAL -->
-    <div id="sos-confirm-modal" class="modal-backdrop bc-overlay-modal hidden" data-action="closeSosConfirmModal" data-action-self="true" aria-hidden="true" style="display:none;">
+    <div id="sos-confirm-modal" class="modal-backdrop bc-overlay-modal hidden" role="dialog" aria-modal="true" aria-labelledby="sos-confirm-title" data-action="closeSosConfirmModal" data-action-self="true" aria-hidden="true" style="display:none;">
         <div style="
             background: #0f0f19;
             border: 2px solid rgba(239,68,68,0.5);
@@ -2377,7 +2377,7 @@
                 <i data-lucide="shield-check" style="width:34px; height:34px; color:#ef4444;"></i>
             </div>
 
-            <h3 style="font-size:1.25rem; font-weight:700; color:#fff; margin-bottom:8px;"
+            <h3 id="sos-confirm-title" style="font-size:1.25rem; font-weight:700; color:#fff; margin-bottom:8px;"
                 data-i18n="sos_confirm_title">Potvrdi rešavanje SOS alarma</h3>
 
             <p style="font-size:0.875rem; color:rgba(255,255,255,0.6); margin-bottom:8px; line-height:1.5;"
@@ -2804,8 +2804,8 @@
         </div>
     </div>
 
-    <!-- ===== CLEAR SOS CUSTOM MODAL ===== -->
-    <div id="clear-sos-modal" class="bc-overlay-modal hidden" aria-hidden="true" style="
+    <!-- ===== CLEAR SOS CUSTOM MODAL (legacy; showModal redirects to sos-confirm-modal) ===== -->
+    <div id="clear-sos-modal" class="bc-overlay-modal hidden" role="dialog" aria-modal="true" aria-labelledby="clear-sos-modal-title" aria-hidden="true" style="
         position:fixed; inset:0; z-index:9999;
         background:rgba(0,0,0,0.75); backdrop-filter:blur(8px);
         display:none; align-items:center; justify-content:center; padding:20px;">
@@ -2816,10 +2816,10 @@
             box-shadow:0 0 60px rgba(251,146,60,0.2), 0 20px 40px rgba(0,0,0,0.6);
             text-align:center;">
             <div style="font-size:3rem; margin-bottom:16px;">🚨</div>
-            <h2 style="color:#fb923c; font-size:1.2rem; font-weight:800; margin-bottom:10px;" id="clear-sos-modal-title">
+            <h2 style="color:#fb923c; font-size:1.2rem; font-weight:800; margin-bottom:10px;" id="clear-sos-modal-title" data-i18n="sos_confirm_title">
                 Confirm SOS Resolution
             </h2>
-            <p style="color:rgba(255,255,255,0.7); font-size:0.9rem; line-height:1.6; margin-bottom:24px;" id="clear-sos-modal-body">
+            <p style="color:rgba(255,255,255,0.7); font-size:0.9rem; line-height:1.6; margin-bottom:24px;" id="clear-sos-modal-body" data-i18n="sos_confirm_body">
                 Have you contacted the driver and verified the situation?
             </p>
             <div style="display:flex; gap:12px; justify-content:center;">

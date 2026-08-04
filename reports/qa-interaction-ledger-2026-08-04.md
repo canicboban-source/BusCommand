@@ -211,7 +211,8 @@ Redosled iz master prompta v3.2 §27:
 12. ~~PWA / offline~~ (P13) — SW scope, queue+idempotency, network banner;
 13. ~~Pronađeni predmeti~~ (P14) — status triad, photo, foundAt, staff filter;
 14. ~~SA/CA kompletiranje~~ (P15) — RO fleet, tenant settings PATCH, health;
-15. i18n/a11y, staging acceptance.
+15. ~~i18n/a11y~~ (P16) — focus trap, SOS dialog, EN/DE/SR keys;
+16. performanse / budžeti, staging acceptance (P17+ / P20).
 
 ### Ažuriranje posle Poglavlja 14
 
@@ -223,6 +224,13 @@ Gate: unit 518, rules 40, E2E 57.
 
 CA read-only buses surface; SA audited plan/limits/flags PATCH; platform
 health strip; RO login-profile card. O1–O5 i dalje otvoreni. Gate: unit 521,
+rules 40, E2E 57.
+
+### Ažuriranje posle Poglavlja 16
+
+Shared focus trap; SOS/confirm dialog semantics; SA/ops toast i18n
+(EN/DE/SR); ops status rails on design tokens; mob-nav `nav_sos`.
+Pun axe CI i staging acceptance ostaju za kasnije. Gate: unit 526,
 rules 40, E2E 57.
 
 Svaka stavka prelazi iz „delimično/statički/nepokriveno“ u „funkcionalno“ samo kada postoji izvršen dokaz odgovarajućeg nivoa.

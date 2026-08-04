@@ -9,6 +9,7 @@ import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import { driverWorkPolicy } from "./work-session.js";
+import { attachFocusTrap, detachFocusTrap } from "../ui/focus-trap.js";
 
 let sosSubmissionPending = false;
 
@@ -252,8 +253,11 @@ function triggerSOSAlert() {
     if (btnEl) btnEl.textContent = t("sos_trigger_btn") || "SEND SOS";
     modal.classList.remove("hidden");
     modal.style.display = "flex";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
     modal.setAttribute("aria-hidden", "false");
     if (typeof lucide !== "undefined") lucide.createIcons();
+    attachFocusTrap(modal);
 }
 
 const SOS_HOLD_MS = 700;
@@ -329,6 +333,7 @@ function closeSosTriggerModal() {
     modal.classList.add("hidden");
     modal.style.display = "none";
     modal.setAttribute("aria-hidden", "true");
+    detachFocusTrap(modal);
 }
 
 async function confirmSOSTrigger() {

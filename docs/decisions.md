@@ -182,6 +182,20 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
      zamenjuje O2 retention odluku.
 - Posledica: `superadmin-tenant-settings.js`, CA buses, SA detail settings.
 
+### D16 — i18n/a11y soft-pilot bez full redesign-a
+
+- Datum: 2026-08-05 · Status: **Odlučeno** (Poglavlje 16)
+- Odluka:
+  1. Soft-pilot jezici ostaju EN/DE/SR; novi operativni stringovi idu kroz
+     `translations.js` (parity test).
+  2. Overlay dialogs (SOS, confirm, generic modals) koriste shared
+     `focus-trap.js` (Tab cycle + Escape) i `role="dialog"` / `aria-modal`.
+  3. Ops status rail boje koriste design tokene, ne raw hex.
+  4. §20 vizuelne korekcije (urgent-action, sticky katalog, jedan SOS)
+     ostaju obavezne; pun axe CI i kompletna WCAG matrica nisu u ovom
+     poglavlju.
+- Posledica: Ch16 ključevi, SOS a11y, focus trap, tokenizovani ops rail.
+
 ---
 
 ## Otvorena pitanja

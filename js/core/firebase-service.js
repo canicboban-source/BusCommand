@@ -3,6 +3,7 @@
 import { getBaseState, getStateStorageKey, clearAllTenantStateCaches, applyUiLanguagePreference } from "./state.js";
 import { showToast } from "./utils.js";
 import { IS_DEMO_MODE } from "./runtime-config.js";
+import { t } from "../ui/i18n.js";
 import {
     EXPECTED_FIREBASE_PROJECT_ID,
     readFirebaseWebConfig,
@@ -561,7 +562,7 @@ function startFirestoreSync(companyId) {
         if (sosChanged && window.currentUser) {
             checkSOSStatus();
             if (window.state.sosActive && window.currentUser.role === "dispatcher") {
-                showToast("🚨 SOS ALARM primljen!", "error", 8000);
+                showToast(t("sos_alarm_received"), "error", 8000);
             }
         }
     });

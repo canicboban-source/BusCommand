@@ -497,16 +497,16 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table th {
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table tr.is-uncovered {
-    background: rgba(248, 113, 113, 0.08);
-    box-shadow: inset 3px 0 0 #F87171;
+    background: var(--danger-bg);
+    box-shadow: inset 3px 0 0 var(--danger-color);
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table tr.is-pending {
-    box-shadow: inset 3px 0 0 #FBBF24;
+    box-shadow: inset 3px 0 0 var(--warning-color);
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table tr.is-ok {
-    box-shadow: inset 3px 0 0 #4ADE80;
+    box-shadow: inset 3px 0 0 var(--success-color);
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-status-pill {
@@ -534,15 +534,15 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-action-card {
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-action-rail {
-    background: #60A5FA;
+    background: var(--primary-color);
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-action-card.is-critical .ops-action-rail {
-    background: #F87171;
+    background: var(--danger-color);
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-action-card.is-warning .ops-action-rail {
-    background: #FBBF24;
+    background: var(--warning-color);
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-action-body {

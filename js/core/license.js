@@ -1,6 +1,7 @@
 // BusCommand ESM v9.5
 import ApiClient from "./api-client.js";
 import { IS_DEMO_MODE } from "./runtime-config.js";
+import { t } from "../ui/i18n.js";
 
 async function checkCompanyLicense(companyId) {
     if (IS_DEMO_MODE) {
@@ -46,7 +47,7 @@ function showLicenseBlockedBanner(_info) {
         banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:10001;background:#dc2626;color:#fff;text-align:center;padding:10px;font-size:0.85rem;font-weight:600;font-family:'Outfit',sans-serif;";
         document.body.prepend(banner);
     }
-    banner.textContent = "Pristup firmi je suspendovan. Kontaktirajte podršku.";
+    banner.textContent = t("license_suspended_banner");
 }
 
 /** Platform owner has no company trial — never show countdown to Super Admin. */

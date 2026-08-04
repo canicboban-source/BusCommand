@@ -256,7 +256,7 @@ async function superadminToggleStatus(companyId, status) {
     showConfirm("Da li želite da " + label + " firmu " + companyId + "?", async () => {
         const res = await ApiClient.setCompanyStatus(companyId, status);
         if (res.success) {
-            showToast("Status ažuriran.", "success");
+            showToast(t("sa_status_updated"), "success");
             renderSuperAdminDashboard();
         } else {
             showToast(res.error || "Greška.", "error");
@@ -615,7 +615,7 @@ async function superadminCreateCompany() {
     }
 
     if (pin.length < 4 || pin.length > 6) {
-        showToast("PIN mora imati 4–6 cifara.", "error"); return;
+        showToast(t("sa_pin_length_error"), "error"); return;
     }
 
     const id = "disp-" + Date.now();
@@ -668,7 +668,7 @@ async function superadminCreateCompanyAdmin() {
 
     if (!window.state.companyAdmins) window.state.companyAdmins = [];
     if (window.state.companyAdmins.find(ca => ca.email === email)) {
-        showToast('Company admin sa tim emailom već postoji', 'error'); return;
+        showToast(t("sa_ca_email_exists"), "error"); return;
     }
     window.state.companyAdmins.push({
         id: 'ca-' + Date.now(), name, email, password, companyId,
@@ -679,7 +679,7 @@ async function superadminCreateCompanyAdmin() {
         if (el) el.value = '';
     });
     renderCompanyAdminList();
-    showToast('Company Admin "' + name + '" kreiran za firmu: ' + companyId, 'success');
+    showToast(t("sa_ca_created_for_company", { name, companyId }), "success");
 }
 
 function renderCompanyAdminList() {
@@ -715,7 +715,7 @@ function superadminDeleteCompanyAdmin(id) {
     if (!window.state.companyAdmins) return;
     window.state.companyAdmins = window.state.companyAdmins.filter(ca => ca.id !== id);
     renderCompanyAdminList();
-    showToast('Company Admin obrisan', 'info');
+    showToast(t("sa_ca_deleted"), "info");
 }
 
 function superadminImpersonate(dispId) {
@@ -757,7 +757,7 @@ function superadminDeleteCompany(dispId) {
         saveState();
         renderSuperAdminDashboard();
         initializeLoginSelects();
-        showToast("Company deleted.", "info");
+        showToast(t("sa_company_deleted"), "info");
     }, { danger: true, title: "Delete Company" });
 }
 
