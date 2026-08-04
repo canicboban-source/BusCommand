@@ -77,6 +77,21 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
   Rollback = activate ranije superseded verzije (audit `service_plan_rolled_back`).
 - Posledica: `server/service-plans.js`, CA sticky „Aktiviraj katalog“.
 
+### D8 — Mesečni plan: undo + aktivni katalog + bez dispo bulk importa
+
+- Datum: 2026-08-04 · Status: **Odlučeno** (Poglavlje 8)
+- Odluka:
+  1. Kontrolisani undo = jedan nivo `priorSnapshot` + soft-clear tombstone;
+     audit `shift_undone`; bez brisanja istorije.
+  2. Edit modal nudi samo šifre aktivnog (locked) CA kataloga; bez izmišljenih
+     fallback F/S kodova.
+  3. Disponentski bulk uvoz mesečnog plana ostaje sakriven u UI dok commit /
+     partial-recovery ne dostignu CA nivo (CA group monthly import ostaje put).
+  4. Masovno odsustvo (off/vacation/sick) samo uz preview + potvrdu; svaki dan
+     ide kroz postojeći `PUT …/assignment`.
+- Posledica: `server/shift-assignment.js`, `POST …/assignment/undo`,
+  `js/dispatcher/monthly-plans.js`.
+
 ---
 
 ## Otvorena pitanja

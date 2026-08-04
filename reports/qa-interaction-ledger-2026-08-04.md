@@ -200,12 +200,20 @@ Redosled iz master prompta v3.2 §27:
 1. ~~RBAC / Rules / tenant~~ (P2);
 2. ~~zavisnosti / audit~~ (P3);
 3. ~~login lifecycle~~ (P4);
-4. dizajn sistem i tokeni (P5, §33) — katalog u `docs/design-system.md`;
-5. ~~kanonski plan i revizije~~ (P6) — `docs/canonical-plan-model.md`;
-6. ~~CA katalog i mesečni plan~~ — katalog (P7); mesečni roster UI → P8;
-7. dnevni plan i problem-resolution;
-8. scheduler/outbox i poruke;
-9. driver session/GPS/PWA offline;
-10. SA/CA kompletiranje, i18n/a11y, staging acceptance.
+4. ~~dizajn sistem i tokeni~~ (P5);
+5. ~~kanonski plan i revizije~~ (P6);
+6. ~~CA katalog~~ (P7);
+7. ~~mesečni plan~~ (P8) — undo, sticky/matrix, mass absence, catalog lock;
+8. dnevni plan i problem-resolution (P9);
+9. scheduler/outbox i poruke;
+10. driver session/GPS/PWA offline;
+11. SA/CA kompletiranje, i18n/a11y, staging acceptance.
+
+### Ažuriranje posle Poglavlja 8
+
+Mesečni disponentski plan: unit pokriva undo/soft-clear/mass preview i
+katalog-bez-inventa; E2E 57 i dalje pokriva CA monthly import i cockpit.
+Dispatcher monthly cell-edit + undo na live Firebase ostaje **delimično**
+(unit + wiring; nema novog Playwright live-assign scena).
 
 Svaka stavka prelazi iz „delimično/statički/nepokriveno“ u „funkcionalno“ samo kada postoji izvršen dokaz odgovarajućeg nivoa.

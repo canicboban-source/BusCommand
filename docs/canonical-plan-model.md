@@ -49,5 +49,15 @@ fingerprint se otkazuje.
 
 - Problem/resolution entiteti → Poglavlje 9
 - CA katalog import/activate/rollback → Poglavlje 7
-- Mesečni undo nove revizije u UI → Poglavlje 8
 - Outbox delivery lifecycle → Poglavlje 10
+
+## 7. Mesečni undo (Poglavlje 8)
+
+- Svaki staff mutate na `shifts/{driverId}_{date}` čuva `priorSnapshot`
+  (jedan nivo unazad).
+- `clear` ne briše dokument — soft tombstone (`type: "clear"`) zadržava
+  reviziju i `priorSnapshot` radi konkurencije i undo-a.
+- `POST /api/staff/shifts/assignment/undo` vraća prior stanje, bump-uje
+  `revision`, audit `shift_undone`. Ne briše istoriju.
+- Klijent ne sme da prijavi „sačuvano“ dok API ne potvrdi; prazan mesečni
+  omotač je samo lokalni shell (`localOnly`).

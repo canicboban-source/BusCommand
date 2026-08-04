@@ -67,7 +67,8 @@ function scheduleShiftForDate(schedules, dateString) {
 function shiftForDate({ shifts = [], schedules = [] }, dateString) {
   // Canonical read: day assignment docs win. The monthly schedule is only a
   // projection for days that do not yet have a shift document.
-  const direct = shifts.find((entry) => entry.date === dateString);
+  // Soft-clear tombstones (Ch8 undo) are not active assignments.
+  const direct = shifts.find((entry) => entry.date === dateString && entry.type !== "clear");
   if (direct) return { ...direct, date: dateString, source: "shift" };
   const scheduled = scheduleShiftForDate(schedules, dateString);
   if (!scheduled) return null;

@@ -195,6 +195,20 @@ function getShiftForDriverDate(driverName, dateStr) {
         && (s.driverName === driverName || (driverId && s.driverId === driverId))
     );
     if (direct) {
+        if (direct.type === "clear") {
+            return {
+                ...direct,
+                type: "clear",
+                name: "",
+                bus: null,
+                routeCode: null,
+                start: null,
+                end: null,
+                revision: Number.isInteger(direct.revision) ? direct.revision : 0,
+                source: "shift",
+                cleared: true
+            };
+        }
         return {
             ...direct,
             revision: Number.isInteger(direct.revision) ? direct.revision : 0,
@@ -266,6 +280,25 @@ function setShiftForDriverDate(driverName, dateStr, { type, name, bus, routeCode
             confirmedByDriver: false,
             assignedBy: window.currentUser?.name || "Dispečer",
             assignedAt: todayDateStr()
+        });
+    } else if (type === "clear" && Number.isInteger(revision) && revision > 0) {
+        // Soft-clear tombstone: keeps revision for concurrency + server undo (§7).
+        window.state.shifts.push({
+            id: `shf-${driverId || "x"}-${dateStr}`,
+            driverId: driverId,
+            driverName,
+            date: dateStr,
+            type: "clear",
+            name: "",
+            bus: null,
+            routeCode: null,
+            start: null,
+            end: null,
+            revision,
+            confirmedByDriver: false,
+            assignedBy: window.currentUser?.name || "Dispečer",
+            assignedAt: todayDateStr(),
+            cleared: true
         });
     }
 

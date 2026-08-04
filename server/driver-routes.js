@@ -21,7 +21,10 @@ const {
   currentRevision,
   assertExpectedRevision,
   buildAssignedShift,
-  buildScheduleDayEntry
+  buildScheduleDayEntry,
+  capturePriorSnapshot,
+  buildClearedShift,
+  simulateUndoWrite
 } = require("./shift-assignment");
 const {
   PlanImportValidationError,
@@ -139,6 +142,11 @@ const shiftAssignmentSchema = z.object({
   routeCode: z.string().trim().max(64).optional().default(""),
   start: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).optional(),
   end: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).optional(),
+  expectedRevision: z.number().int().min(0)
+});
+const shiftUndoSchema = z.object({
+  driverId: driverIdSchema,
+  date: isoDateSchema,
   expectedRevision: z.number().int().min(0)
 });
 const monthlyPlanImportPreviewSchema = z.object({
@@ -1949,7 +1957,20 @@ function registerDriverRoutes(app, deps) {
         const scheduleBaseSnap = scheduleSnap.exists ? scheduleSnap : legacyScheduleSnap;
 
         if (parsed.data.type === "clear") {
-          if (shiftSnap.exists) tx.delete(shiftRef);
+          const priorSnapshot = capturePriorSnapshot(existing);
+          const revision = currentRevision(existing) + 1;
+          const assignedAt = admin().firestore.FieldValue.serverTimestamp();
+          const cleared = buildClearedShift({
+            data: parsed.data,
+            driverName,
+            driverGroupId,
+            staffUid: req.staff.uid,
+            revision,
+            priorSnapshot,
+            assignedAt
+          });
+          tx.set(shiftRef, cleared);
+
           if (scheduleBaseSnap.exists && dayNum != null) {
             const schedule = { ...scheduleBaseSnap.data() };
             const parsedShifts = { ...(schedule.parsedShifts || {}) };
@@ -1964,14 +1985,15 @@ function registerDriverRoutes(app, deps) {
               month: yearMonth,
               parsedShifts,
               revision: currentRevision(schedule) + 1,
-              updatedAt: admin().firestore.FieldValue.serverTimestamp(),
+              updatedAt: assignedAt,
               updatedBy: req.staff.uid
             }, { merge: true });
             if (scheduleBaseSnap.id !== scheduleIds.canonical) tx.delete(legacyScheduleRef);
           }
-          return { deleted: true, shiftId, revision: existing ? currentRevision(existing) : 0 };
+          return { deleted: true, shiftId, revision, shift: cleared };
         }
 
+        const priorSnapshot = capturePriorSnapshot(existing);
         const revision = currentRevision(existing) + 1;
         const assignedAt = admin().firestore.FieldValue.serverTimestamp();
         const shift = buildAssignedShift({
@@ -1980,7 +2002,8 @@ function registerDriverRoutes(app, deps) {
           driverGroupId,
           staffUid: req.staff.uid,
           revision,
-          assignedAt
+          assignedAt,
+          priorSnapshot
         });
         tx.set(shiftRef, shift);
 
@@ -2015,7 +2038,15 @@ function registerDriverRoutes(app, deps) {
           shiftId: result.shiftId, driverId: parsed.data.driverId, date: parsed.data.date,
           revision: result.revision
         });
-        return res.json({ success: true, deleted: true, shiftId: result.shiftId, revision: result.revision });
+        return res.json({
+          success: true,
+          deleted: true,
+          shiftId: result.shiftId,
+          revision: result.revision,
+          shift: result.shift
+            ? { ...result.shift, id: result.shiftId, assignedAt: null, clearedAt: null }
+            : undefined
+        });
       }
 
       await logAudit(req.staff.companyId, req.staff.uid, "shift_assigned", {
@@ -2043,6 +2074,210 @@ function registerDriverRoutes(app, deps) {
       }
       req.log?.error?.({ err: error }, "Dodela smene nije uspela");
       return res.status(500).json({ success: false, error: "Smena nije mogla biti sa\u010duvana." });
+    }
+  });
+
+  app.post("/api/staff/shifts/assignment/undo", requireStaff, async (req, res) => {
+    if (req.staff.role !== "dispatcher") {
+      return res.status(403).json({ success: false, error: "Samo disponent može poništiti izmenu rasporeda." });
+    }
+    const parsed = shiftUndoSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: "Nevažeći zahtev za undo." });
+    try {
+      const companyRef = db().collection("companies").doc(req.staff.companyId);
+      const [driverSnap, staffSnap] = await Promise.all([
+        companyRef.collection("drivers").doc(parsed.data.driverId).get(),
+        companyRef.collection("users").doc(req.staff.uid).get()
+      ]);
+      if (!driverSnap.exists) return res.status(404).json({ success: false, error: "Vozač nije pronađen." });
+      const driver = driverSnap.data();
+      const groups = staffSnap.exists ? staffSnap.data().groups : req.staff.groups;
+      const driverGroupId = driver.groupId || driver.lineId || null;
+      if (!Array.isArray(groups) || !driverGroupId || !groups.includes(driverGroupId)) {
+        return res.status(403).json({ success: false, error: "Pristup vozaču van dodeljene grupe nije dozvoljen." });
+      }
+
+      const importLock = await assertNoActiveGroupMonthlyImport({
+        db: db(),
+        companyId: req.staff.companyId,
+        groupId: driverGroupId,
+        month: scheduleMonthFromDate(parsed.data.date)
+      });
+      if (!importLock.ok) {
+        return res.status(409).json({
+          success: false,
+          code: importLock.code,
+          error: "Uvoz mesečnog plana za ovu grupu je u toku. Pokušajte ponovo kada se uvoz završi."
+        });
+      }
+
+      const { ensureAssignmentDayLock } = require("./plan-edit-lock-routes");
+      const lockCheck = await ensureAssignmentDayLock({
+        db,
+        companyId: req.staff.companyId,
+        staff: req.staff,
+        groupId: driverGroupId,
+        dateStr: parsed.data.date
+      });
+      if (!lockCheck.ok) {
+        return res.status(409).json({
+          success: false,
+          code: lockCheck.code || "LOCK_HELD",
+          error: "Plan trenutno uređuje drugi disponent.",
+          lock: lockCheck.lock || null
+        });
+      }
+
+      const driverName = safeDriver(driverSnap).name;
+      const shiftId = shiftDocumentId(parsed.data.driverId, parsed.data.date);
+      const shiftRef = companyRef.collection("shifts").doc(shiftId);
+      const yearMonth = scheduleMonthFromDate(parsed.data.date);
+      const dayNum = scheduleDayNumber(parsed.data.date);
+      const scheduleIds = scheduleDocumentId(parsed.data.driverId, driverName, yearMonth);
+      const scheduleRef = companyRef.collection("schedules").doc(scheduleIds.canonical);
+      const legacyScheduleRef = companyRef.collection("schedules").doc(scheduleIds.legacyName);
+
+      const result = await db().runTransaction(async (tx) => {
+        const shiftSnap = await tx.get(shiftRef);
+        const scheduleSnap = await tx.get(scheduleRef);
+        const legacyScheduleSnap = await tx.get(legacyScheduleRef);
+        const existing = shiftSnap.exists ? shiftSnap.data() : null;
+        const plan = simulateUndoWrite(existing, parsed.data.expectedRevision);
+        if (!plan.ok) {
+          const error = new Error(plan.code === "NOTHING_TO_UNDO" ? "nothing_to_undo" : "revision_conflict");
+          error.code = plan.code === "NOTHING_TO_UNDO" ? "nothing_to_undo" : "revision_conflict";
+          error.currentRevision = plan.currentRevision ?? 0;
+          error.current = plan.current || existing;
+          throw error;
+        }
+
+        const assignedAt = admin().firestore.FieldValue.serverTimestamp();
+        const scheduleBaseSnap = scheduleSnap.exists ? scheduleSnap : legacyScheduleSnap;
+
+        if (plan.deleted) {
+          const cleared = buildClearedShift({
+            data: parsed.data,
+            driverName,
+            driverGroupId,
+            staffUid: req.staff.uid,
+            revision: plan.revision,
+            priorSnapshot: plan.priorSnapshot,
+            assignedAt
+          });
+          tx.set(shiftRef, cleared);
+          if (scheduleBaseSnap.exists && dayNum != null) {
+            const schedule = { ...scheduleBaseSnap.data() };
+            const parsedShifts = { ...(schedule.parsedShifts || {}) };
+            delete parsedShifts[dayNum];
+            delete parsedShifts[String(dayNum)];
+            tx.set(scheduleRef, {
+              ...schedule,
+              id: scheduleIds.canonical,
+              driverId: parsed.data.driverId,
+              driverName,
+              groupId: driverGroupId,
+              month: yearMonth,
+              parsedShifts,
+              revision: currentRevision(schedule) + 1,
+              updatedAt: assignedAt,
+              updatedBy: req.staff.uid
+            }, { merge: true });
+            if (scheduleBaseSnap.id !== scheduleIds.canonical) tx.delete(legacyScheduleRef);
+          }
+          return { deleted: true, shiftId, revision: plan.revision, shift: cleared };
+        }
+
+        const shift = buildAssignedShift({
+          data: {
+            driverId: parsed.data.driverId,
+            date: parsed.data.date,
+            type: plan.restore.type,
+            name: plan.restore.name,
+            bus: plan.restore.bus,
+            routeCode: plan.restore.routeCode,
+            start: plan.restore.start || undefined,
+            end: plan.restore.end || undefined
+          },
+          driverName,
+          driverGroupId,
+          staffUid: req.staff.uid,
+          revision: plan.revision,
+          assignedAt,
+          priorSnapshot: plan.priorSnapshot
+        });
+        tx.set(shiftRef, shift);
+
+        if (dayNum != null) {
+          const base = scheduleBaseSnap.exists
+            ? scheduleBaseSnap.data()
+            : { fileName: "", fileType: "application/json", fileData: "", parsedShifts: {} };
+          const parsedShifts = { ...(base.parsedShifts || {}) };
+          parsedShifts[dayNum] = buildScheduleDayEntry(shift);
+          tx.set(scheduleRef, {
+            ...base,
+            id: scheduleIds.canonical,
+            driverId: parsed.data.driverId,
+            driverName,
+            groupId: driverGroupId,
+            month: yearMonth,
+            parsedShifts,
+            revision: currentRevision(base) + 1,
+            updatedAt: assignedAt,
+            updatedBy: req.staff.uid
+          }, { merge: true });
+          if (scheduleBaseSnap.exists && scheduleBaseSnap.id !== scheduleIds.canonical) {
+            tx.delete(legacyScheduleRef);
+          }
+        }
+
+        return { deleted: false, shiftId, shift, revision: plan.revision };
+      });
+
+      await logAudit(req.staff.companyId, req.staff.uid, "shift_undone", {
+        shiftId: result.shiftId,
+        driverId: parsed.data.driverId,
+        date: parsed.data.date,
+        revision: result.revision,
+        restoredEmpty: result.deleted === true
+      });
+
+      if (result.deleted) {
+        return res.json({
+          success: true,
+          deleted: true,
+          shiftId: result.shiftId,
+          revision: result.revision,
+          shift: result.shift
+            ? { ...result.shift, id: result.shiftId, assignedAt: null, clearedAt: null }
+            : undefined
+        });
+      }
+      return res.json({
+        success: true,
+        deleted: false,
+        shift: { ...result.shift, id: result.shiftId, assignedAt: null }
+      });
+    } catch (error) {
+      if (error.code === "nothing_to_undo") {
+        return res.status(409).json({
+          success: false,
+          code: "NOTHING_TO_UNDO",
+          error: "Nema prethodne revizije za poništavanje."
+        });
+      }
+      if (error.code === "revision_conflict" || error.message === "revision_conflict") {
+        return res.status(409).json({
+          success: false,
+          error: "Raspored je u međuvremenu izmenjen. Osvežite prikaz i pokušajte ponovo.",
+          code: "REVISION_CONFLICT",
+          conflict: {
+            currentRevision: error.currentRevision ?? 0,
+            shift: error.current || null
+          }
+        });
+      }
+      req.log?.error?.({ err: error }, "Undo smene nije uspeo");
+      return res.status(500).json({ success: false, error: "Poništavanje izmene nije uspelo." });
     }
   });
 

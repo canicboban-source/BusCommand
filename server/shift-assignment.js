@@ -88,7 +88,7 @@ function simulateOptimisticWrite(existingData, expectedRevision, nextPayload) {
   return { ok: true, revision, shift };
 }
 
-function buildAssignedShift({ data, driverName, driverGroupId, staffUid, revision, assignedAt }) {
+function buildAssignedShift({ data, driverName, driverGroupId, staffUid, revision, assignedAt, priorSnapshot }) {
   return {
     driverId: data.driverId,
     groupId: driverGroupId,
@@ -108,7 +108,8 @@ function buildAssignedShift({ data, driverName, driverGroupId, staffUid, revisio
     shiftFingerprint: null,
     confirmationSourceShiftDate: null,
     confirmationBoundRevision: revision,
-    revision
+    revision,
+    priorSnapshot: priorSnapshot || { empty: true, revision: 0 }
   };
 }
 
@@ -121,6 +122,115 @@ function buildScheduleDayEntry(shift) {
     start: shift.start || null,
     end: shift.end || null
   };
+}
+
+/**
+ * One-level undo stack (§7 / Ch8). Captures the assignment state before a
+ * staff mutate so undo can restore without deleting audit history.
+ */
+function capturePriorSnapshot(existing) {
+  if (!existing || existing.type === "clear") {
+    return {
+      empty: true,
+      revision: existing ? currentRevision(existing) : 0
+    };
+  }
+  return {
+    empty: false,
+    revision: currentRevision(existing),
+    type: existing.type,
+    name: existing.name || "",
+    bus: existing.bus || "",
+    routeCode: existing.routeCode || "",
+    start: existing.start || null,
+    end: existing.end || null
+  };
+}
+
+function buildClearedShift({ data, driverName, driverGroupId, staffUid, revision, priorSnapshot, assignedAt }) {
+  return {
+    driverId: data.driverId,
+    groupId: driverGroupId,
+    date: data.date,
+    type: "clear",
+    name: "",
+    bus: "",
+    routeCode: "",
+    start: null,
+    end: null,
+    driverName,
+    assignedBy: staffUid,
+    assignedAt,
+    confirmedByDriver: false,
+    confirmedAt: null,
+    shiftFingerprint: null,
+    confirmationSourceShiftDate: null,
+    confirmationBoundRevision: revision,
+    revision,
+    priorSnapshot: priorSnapshot || { empty: true, revision: 0 },
+    clearedAt: assignedAt
+  };
+}
+
+/**
+ * Pure undo helper: given current shift + expectedRevision, produce next write.
+ * Used by API and unit tests — does not touch Firestore.
+ */
+function simulateUndoWrite(existingData, expectedRevision) {
+  const check = assertExpectedRevision(existingData, expectedRevision);
+  if (!check.ok) {
+    return {
+      ok: false,
+      code: "REVISION_CONFLICT",
+      currentRevision: check.currentRevision ?? 0,
+      current: check.current || existingData || null
+    };
+  }
+  if (!existingData || !existingData.priorSnapshot) {
+    return { ok: false, code: "NOTHING_TO_UNDO", currentRevision: check.currentRevision };
+  }
+  const prior = existingData.priorSnapshot;
+  const revision = currentRevision(existingData) + 1;
+  const undoneSnapshot = capturePriorSnapshot(existingData);
+  if (prior.empty === true) {
+    return {
+      ok: true,
+      revision,
+      deleted: true,
+      priorSnapshot: undoneSnapshot,
+      shift: null
+    };
+  }
+  return {
+    ok: true,
+    revision,
+    deleted: false,
+    priorSnapshot: undoneSnapshot,
+    restore: {
+      type: prior.type,
+      name: prior.name || "",
+      bus: prior.bus || "",
+      routeCode: prior.routeCode || "",
+      start: prior.start || null,
+      end: prior.end || null
+    }
+  };
+}
+
+/** Preview how many day cells a mass absence fill would touch (inclusive). */
+function previewMassDayRange(fromDay, toDay, totalDays) {
+  const from = Number(fromDay);
+  const to = Number(toDay);
+  const max = Number(totalDays);
+  if (!Number.isInteger(from) || !Number.isInteger(to) || !Number.isInteger(max)) {
+    return { ok: false, reason: "invalid_range" };
+  }
+  if (from < 1 || to < 1 || from > max || to > max || from > to) {
+    return { ok: false, reason: "invalid_range" };
+  }
+  const days = [];
+  for (let d = from; d <= to; d += 1) days.push(d);
+  return { ok: true, days, affectedCount: days.length };
 }
 
 /**
@@ -157,5 +267,9 @@ module.exports = {
   simulateOptimisticWrite,
   buildAssignedShift,
   buildScheduleDayEntry,
-  assertConfirmationMatchesRevision
+  assertConfirmationMatchesRevision,
+  capturePriorSnapshot,
+  buildClearedShift,
+  simulateUndoWrite,
+  previewMassDayRange
 };

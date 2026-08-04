@@ -341,6 +341,12 @@ const ApiClient = (() => {
             body: JSON.stringify(shift)
         });
     }
+    async function undoStaffShift(payload) {
+        return apiFetch("/api/staff/shifts/assignment/undo", {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+    }
     async function acquirePlanLock({ scopeType, groupId, scopeKey }) {
         return apiFetch("/api/staff/plan-locks/acquire", {
             method: "POST",
@@ -419,7 +425,7 @@ const ApiClient = (() => {
         updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode,
         createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage,
         createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, resolveStaffOperationalIncident, resolveStaffSos,
-        setLostItemStatus, createStaffBus, setStaffBusActive, assignStaffShift,
+        setLostItemStatus, createStaffBus, setStaffBusActive, assignStaffShift, undoStaffShift,
         acquirePlanLock, heartbeatPlanLock, releasePlanLock, breakPlanLock, getPlanLock,
         sendStaffMessage, getDriverWorkSession, confirmDriverShifts, getStaffShiftConfirmations,
         startSupportSession, getActiveSupportSessionAdmin, endSupportSessionAdmin,

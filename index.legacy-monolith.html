@@ -1870,12 +1870,15 @@
                             <div id="shift-catalog-status"></div>
                         </div>
 
-                        <div class="card hub-panel" id="hub-section-extra-import">
+                        <div class="card hub-panel" id="hub-section-extra-import" hidden data-feature="dispatcher-bulk-plan-import" aria-hidden="true">
                             <h3 class="hub-section-title hub-section-title--sm"><i data-lucide="file-up"></i> <span data-i18n="hub_extra_plans_title">Extra plans</span></h3>
-                            <div id="plan-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bulk-plan-import-files"]'
+                            <p class="subtitle" style="font-size:0.82rem;margin:0 0 8px;" data-i18n="hub_plan_import_deferred">
+                                Uvoz pripremljenih mesečnih dodela je dostupan Company Adminu (grupni mesečni uvoz). Disponentski bulk uvoz ostaje isključen dok serverski commit i oporavak ne budu potpuni.
+                            </p>
+                            <div id="plan-import-dropzone" class="hub-dropzone hub-dropzone--subtle" hidden data-action="clickElementById" data-action-args='["bulk-plan-import-files"]'
                                 data-drop-action="handleBulkPlanDrop" data-i18n="hub_plan_drop_hint">Drop PDF/Excel plans here</div>
-                            <input type="file" id="bulk-plan-import-files" multiple accept=".xlsx,.xls,.pdf,.csv,.txt" style="display:none;" data-change-action="handleBulkPlanFileInput" data-change-pass="event">
-                            <div id="plan-import-preview"></div>
+                            <input type="file" id="bulk-plan-import-files" multiple accept=".xlsx,.xls,.pdf,.csv,.txt" style="display:none;" data-change-action="handleBulkPlanFileInput" data-change-pass="event" disabled>
+                            <div id="plan-import-preview" hidden></div>
                         </div>
 
                         <div class="card hub-panel hub-panel--plans" id="hub-section-plan-shortcuts">
@@ -2676,6 +2679,7 @@
                 </select>
                 <input type="text" id="med-shift-code-custom" class="med-control med-control--follow" data-i18n-placeholder="med_code_placeholder" placeholder="ili ukucajte šifru, npr. 310.S01"
                     data-input-action="onMedShiftCodeCustomInput">
+                <div id="med-catalog-lock-hint" class="med-date-hint" hidden aria-live="polite"></div>
                 <div id="med-duty-time-hint" class="med-date-hint" hidden aria-live="polite"></div>
             </div>
 
@@ -2689,6 +2693,9 @@
 
             <div class="monthly-day-edit-actions">
                 <button type="button" data-action="closeMonthlyDayEditModal" class="btn-secondary monthly-day-edit-cancel"><span data-i18n="btn_cancel">Otkaži</span></button>
+                <button type="button" id="med-undo-btn" data-action="undoMonthlyDayEdit" class="btn-secondary monthly-day-edit-undo">
+                    <i data-lucide="undo-2"></i> <span data-i18n="med_btn_undo">Poništi poslednju</span>
+                </button>
                 <button type="button" data-action="saveMonthlyDayEdit" class="btn-primary monthly-day-edit-save">
                     <i data-lucide="save"></i> <span data-i18n="btn_save">Sačuvaj</span>
                 </button>

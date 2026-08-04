@@ -1965,9 +1965,11 @@ html[data-app-surface="staff"] .monthly-day-edit-panel .med-date-hint {
 html[data-app-surface="staff"] .monthly-day-edit-actions {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
 html[data-app-surface="staff"] .monthly-day-edit-cancel,
+html[data-app-surface="staff"] .monthly-day-edit-undo,
 html[data-app-surface="staff"] .monthly-day-edit-save {
     flex: 1;
     min-height: 44px;
@@ -1976,6 +1978,180 @@ html[data-app-surface="staff"] .monthly-day-edit-save {
 
 html[data-app-surface="staff"] .monthly-day-edit-save {
     box-shadow: 0 8px 18px rgba(var(--primary-rgb), 0.28);
+}
+
+/* ── Monthly plan sticky grid + mass ops (Ch8 / §7) ── */
+html[data-app-surface="staff"] .monthly-plan-scroll,
+html[data-app-surface="staff"] .monthly-matrix-scroll {
+    max-height: min(70vh, 720px);
+    overflow: auto;
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.01);
+}
+
+html[data-app-surface="staff"] .monthly-plan-table,
+html[data-app-surface="staff"] .monthly-matrix {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    text-align: left;
+}
+
+html[data-app-surface="staff"] .monthly-plan-thead th,
+html[data-app-surface="staff"] .monthly-matrix-thead th {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky, 50);
+    padding: 10px 12px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    background: rgba(8, 15, 28, 0.96);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+}
+
+html[data-app-surface="staff"] .monthly-matrix-corner,
+html[data-app-surface="staff"] .monthly-matrix-driver {
+    position: sticky;
+    left: 0;
+    z-index: calc(var(--z-sticky, 50) + 1);
+    background: rgba(8, 15, 28, 0.96);
+    min-width: 140px;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+html[data-app-surface="staff"] .monthly-matrix-thead .monthly-matrix-corner {
+    z-index: calc(var(--z-sticky, 50) + 2);
+}
+
+html[data-app-surface="staff"] .monthly-plan-td,
+html[data-app-surface="staff"] .monthly-plan-th {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+html[data-app-surface="staff"] .monthly-plan-row.is-muted {
+    opacity: 0.65;
+}
+
+html[data-app-surface="staff"] .monthly-plan-row.is-weekend .monthly-plan-td,
+html[data-app-surface="staff"] .monthly-matrix-day.is-weekend,
+html[data-app-surface="staff"] .monthly-matrix-cell.is-weekend {
+    color: #94a3b8;
+}
+
+html[data-app-surface="staff"] .monthly-plan-shift {
+    font-weight: 600;
+}
+
+html[data-app-surface="staff"] .monthly-plan-time {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-left: 6px;
+}
+
+html[data-app-surface="staff"] .monthly-plan-td--edit,
+html[data-app-surface="staff"] .monthly-plan-th--edit {
+    text-align: center;
+    width: 88px;
+}
+
+html[data-app-surface="staff"] .monthly-plan-edit-btn {
+    height: 30px;
+    padding: 0 10px;
+    font-size: 0.75rem;
+}
+
+html[data-app-surface="staff"] .monthly-plan-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+html[data-app-surface="staff"] .monthly-mass-ops {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 10px;
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+html[data-app-surface="staff"] .monthly-mass-ops__title {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    margin-right: 4px;
+}
+
+html[data-app-surface="staff"] .monthly-mass-ops__field {
+    display: grid;
+    gap: 4px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+html[data-app-surface="staff"] .monthly-mass-ops__field .med-control {
+    min-width: 88px;
+    min-height: 36px;
+}
+
+html[data-app-surface="staff"] .monthly-matrix-wrap {
+    margin-bottom: 18px;
+}
+
+html[data-app-surface="staff"] .monthly-matrix-hint {
+    margin: 0 0 8px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+html[data-app-surface="staff"] .monthly-matrix-day {
+    text-align: center;
+    min-width: 28px;
+    padding: 8px 4px;
+    font-size: 0.7rem;
+}
+
+html[data-app-surface="staff"] .monthly-matrix-cell {
+    padding: 2px;
+    text-align: center;
+}
+
+html[data-app-surface="staff"] .monthly-matrix-btn {
+    display: block;
+    width: 100%;
+    min-width: 28px;
+    min-height: 28px;
+    padding: 2px 3px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font-size: 0.68rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+html[data-app-surface="staff"] .monthly-matrix-btn:hover,
+html[data-app-surface="staff"] .monthly-matrix-btn:focus-visible {
+    border-color: rgba(var(--primary-rgb), 0.45);
+    background: rgba(var(--primary-rgb), 0.12);
+    outline: none;
+}
+
+html[data-app-surface="staff"] #hub-section-extra-import[hidden] {
+    display: none !important;
 }
 
 /* ── Messages compose ── */

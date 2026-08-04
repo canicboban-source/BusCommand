@@ -31,7 +31,7 @@ import { updateDriverBusInline, updateDriverShiftInline, opsAssignDriver, openOp
 import { removeDispatcher } from "./dispatcher/dispatchers.js";
 import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlansFull, scrollHubSection } from "./dispatcher/group-hub.js";
 import { returnLostItem } from "./dispatcher/lost-items.js";
-import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, saveMonthlyDayEdit, selectMonthlyPlanGroup } from "./dispatcher/monthly-plans.js";
+import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, openMonthlyDayEditForDriver, previewMonthlyMassAbsence, saveMonthlyDayEdit, selectMonthlyPlanGroup, undoMonthlyDayEdit } from "./dispatcher/monthly-plans.js";
 import { setMessagesPageTab, submitDispatcherMessage } from "./dispatcher/msg-compose.js";
 import { clearPendingPlanImports, confirmBulkPlanImport, handleBulkPlanDrop, handleBulkPlanFileInput, removePendingImport, updatePendingImportDriver, updatePendingImportMonth } from "./dispatcher/plan-import.js";
 import { resolveReport, openReportResolution, closeReportResolution } from "./dispatcher/reports.js";
@@ -167,6 +167,8 @@ const HANDLERS = {
     openDailyPlanFull,
     openGroupHub,
     openMonthlyDayEdit,
+    openMonthlyDayEditForDriver,
+    previewMonthlyMassAbsence,
     openOperationalIncident,
     openCoverageResolver,
     openReportResolution,
@@ -203,6 +205,7 @@ const HANDLERS = {
     saveCompanyGroup,
     saveCompanyProfileSettings,
     saveMonthlyDayEdit,
+    undoMonthlyDayEdit,
     saveNewDispatcherPassword,
     scrollHubSection,
     selectMonthlyPlanGroup,
