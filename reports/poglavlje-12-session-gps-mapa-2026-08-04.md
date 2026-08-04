@@ -3,7 +3,7 @@
 - Datum: 2026-08-04
 - Grana: `work/ca-group-monthly-import`
 - Polazna tačka: Poglavlje 11 (`6a8d0cb` / `6289d91`)
-- Checkpoint commit: _(popunjava se posle commit-a)_
+- Checkpoint commit: `23a2e61`
 - Master prompt: v3.2 §13–14, odluka D12
 
 ## 1. Cilj
