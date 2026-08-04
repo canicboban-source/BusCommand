@@ -3,7 +3,7 @@
 - Datum: 2026-08-04
 - Grana: `work/ca-group-monthly-import`
 - Polazna tačka: checkpoint Poglavlja 3 (`8becb8e`)
-- Checkpoint commit: *(upisuje se posle commita)*
+- Checkpoint commit: `d5c4ad2`
 - Okruženje: Node 22, Firestore + Auth emulator, Playwright Chromium
 - Master prompt: `docs/BusCommand-MASTER-PROMPT.md` v3.2
 
