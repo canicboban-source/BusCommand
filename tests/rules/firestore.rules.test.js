@@ -115,6 +115,25 @@ test("mustChangeLoginCode blocks every role from Firestore", async () => {
   await assertFails(doc(pendingSuper, "alpha", "profile", "main").get());
 });
 
+test("revoking staff sessions blocks a token issued before the cutoff", async () => {
+  await env.withSecurityRulesDisabled(async (context) => {
+    // "Sign out all devices" writes this cutoff; the ID token stays parseable
+    // until it expires, so the rules must compare it with auth_time.
+    await doc(context.firestore(), "alpha", "users", "dispatcher-a").set({
+      id: "dispatcher-a", role: "dispatcher", companyId: "alpha", active: true,
+      groups: ["310"], sessionsValidAfterEpoch: 5_000
+    });
+  });
+
+  const beforeCutoff = env.authenticatedContext("dispatcher-a", claims("dispatcher", "alpha", { auth_time: 4_999 })).firestore();
+  const atCutoff = env.authenticatedContext("dispatcher-a", claims("dispatcher", "alpha", { auth_time: 5_000 })).firestore();
+  const afterCutoff = env.authenticatedContext("dispatcher-a", claims("dispatcher", "alpha", { auth_time: 5_001 })).firestore();
+
+  await assertFails(doc(beforeCutoff, "alpha", "profile", "main").get());
+  await assertFails(doc(atCutoff, "alpha", "profile", "main").get());
+  await assertSucceeds(doc(afterCutoff, "alpha", "profile", "main").get());
+});
+
 test("driver reads only their own driver profile", async () => {
   const db = env.authenticatedContext("driver-a", claims("driver", "alpha")).firestore();
   await assertSucceeds(doc(db, "alpha", "drivers", "driver-a").get());

@@ -70,7 +70,7 @@ test("server routes use only driver_credentials and contain no public-profile fa
   const removedFallbackName = ["LEGACY", "CREDENTIAL", "FALLBACK"].join("_");
   assert.equal(source.includes(removedFallbackName), false);
   assert.doesNotMatch(source, /collection\("drivers"\)\.where\("eid"/);
-  assert.match(source, /collection\("driver_credentials"\)\.where\("eid"/);
+  assert.match(source, /collection\("driver_credentials"\)\s*\.where\("eid"/);
   assert.match(source, /credentialSnap\.exists \? credentialSnap\.data\(\) : null/g);
   assert.doesNotMatch(source, /batch\.set\(credentialRef/);
   assert.match(source, /batch\.update\(credentialRef/);
@@ -78,7 +78,7 @@ test("server routes use only driver_credentials and contain no public-profile fa
 
 test("driver deactivation is company-admin only, audited and revokes sessions", () => {
   const source = DRIVER_ROUTES_SOURCE;
-  assert.match(source, /app\.put\("\/api\/staff\/drivers\/:driverId\/status", requireStaff/);
+  assert.match(source, /app\.put\("\/api\/staff\/drivers\/:driverId\/status", rateLimit\(20, 5 \* 60_000\), requireStaff/);
   assert.match(source, /req\.staff\.role !== "company_admin"/);
   assert.match(source, /collection\("companies"\)\.doc\(req\.staff\.companyId\)/);
   assert.match(source, /revokeRefreshTokens\(driverId\.data\)/);
@@ -254,13 +254,14 @@ test("missing credentials fail closed even when the public profile contains lega
 
   const identifyRes = response();
   await routes.get("POST /api/public/drivers/identify")({ body: { companyId: "alpha", eid: "legacy-eid" } }, identifyRes);
-  assert.equal(identifyRes.statusCode, 404);
+  assert.equal(identifyRes.statusCode, 410);
   assert.deepEqual(Object.keys(identifyRes.body).sort(), ["code", "error", "success"]);
-  assert.equal(identifyRes.body.code, "DRIVER_NOT_FOUND");
+  assert.equal(identifyRes.body.code, "DRIVER_IDENTIFY_DISABLED");
 
   const loginRes = response();
   await routes.get("POST /api/auth/driver-login")({
-    body: { companyId: "alpha", driverId: profileSnapshot.id, loginCode: "482913" }
+    body: { companyId: "alpha", driverId: profileSnapshot.id, loginCode: "482913" },
+    headers: {}
   }, loginRes);
   assert.equal(loginRes.statusCode, 401);
   assert.deepEqual(Object.keys(loginRes.body).sort(), ["code", "error", "success"]);

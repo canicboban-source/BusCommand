@@ -98,18 +98,26 @@ async function submitDriverActivation(event) {
     const error = document.getElementById("driver-activation-error");
     const personalLoginCode = input?.value || "";
     const personalConfirm = confirm?.value || "";
-    clearActivationInput();
-    const requestId = ++activationRequestId;
-    if (submit) { submit.disabled = true; submit.textContent = t("driver_activation_loading"); }
     if (error) error.classList.add("hidden");
-    if (!/^\d{5,12}$/.test(personalLoginCode) || personalLoginCode !== personalConfirm) {
-        if (submit) { submit.disabled = false; submit.textContent = t("driver_activation_activate"); }
+    // Validate before wiping the fields, otherwise the driver reads a mismatch
+    // message next to two empty inputs and has to retype both.
+    const invalidFormat = !/^\d{5,12}$/.test(personalLoginCode);
+    if (invalidFormat || personalLoginCode !== personalConfirm) {
         if (error) {
-            error.textContent = t("driver_activation_mismatch");
+            error.textContent = t(invalidFormat ? "driver_activation_format" : "driver_activation_mismatch");
             error.classList.remove("hidden");
+        }
+        if (invalidFormat) {
+            input?.focus();
+        } else {
+            if (confirm) confirm.value = "";
+            confirm?.focus();
         }
         return false;
     }
+    clearActivationInput();
+    const requestId = ++activationRequestId;
+    if (submit) { submit.disabled = true; submit.textContent = t("driver_activation_loading"); }
     const result = await Auth.activatePersonalLoginCode(personalLoginCode);
     if (requestId !== activationRequestId) {
         await Auth.logout();

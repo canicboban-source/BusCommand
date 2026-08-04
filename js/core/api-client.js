@@ -49,6 +49,15 @@ const ApiClient = (() => {
     async function getCompanyDetail(companyId) {
         return apiFetch("/api/admin/company/" + encodeURIComponent(companyId));
     }
+    async function patchCompanySettings(companyId, settings) {
+        return apiFetch("/api/admin/company/" + encodeURIComponent(companyId) + "/settings", {
+            method: "PATCH",
+            body: JSON.stringify(settings || {})
+        });
+    }
+    async function getPlatformHealth() {
+        return apiFetch("/api/health");
+    }
     async function setCompanyAdminStatus(companyId, uid, active) {
         return apiFetch(
             "/api/admin/company/" + encodeURIComponent(companyId) + "/admins/" + encodeURIComponent(uid) + "/status",
@@ -109,6 +118,12 @@ const ApiClient = (() => {
             body: JSON.stringify({ companyId })
         });
     }
+    async function deleteCompanyDispatcher(companyId, uid, confirmEmail) {
+        return apiFetch("/api/company-admin/dispatchers/" + encodeURIComponent(uid), {
+            method: "DELETE",
+            body: JSON.stringify({ companyId, confirmEmail })
+        });
+    }
     async function updateCompanyProfileSettings(companyId, profile) {
         return apiFetch("/api/company-admin/profile-settings", {
             method: "PUT",
@@ -143,10 +158,28 @@ const ApiClient = (() => {
             body: JSON.stringify({ companyId, groupId, plan })
         });
     }
-    async function publishServicePlan(companyId, groupId, plan) {
+    async function publishServicePlan(companyId, groupId, plan, source = {}) {
         return apiFetch("/api/company-admin/service-plans/publish", {
             method: "PUT",
-            body: JSON.stringify({ companyId, groupId, plan })
+            body: JSON.stringify({ companyId, groupId, plan, source })
+        });
+    }
+    async function activateServicePlan(companyId, groupId, planId) {
+        return apiFetch("/api/company-admin/service-plans/" + encodeURIComponent(planId) + "/activate", {
+            method: "POST",
+            body: JSON.stringify({ companyId, groupId })
+        });
+    }
+    async function previewGroupMonthlyPlanImport(payload) {
+        return apiFetch("/api/company-admin/monthly-plans/import/preview", {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+    }
+    async function commitGroupMonthlyPlanImport(companyId, importId, fingerprint) {
+        return apiFetch("/api/company-admin/monthly-plans/import/commit", {
+            method: "PUT",
+            body: JSON.stringify({ companyId, importId, fingerprint })
         });
     }
     async function getActiveServicePlan(companyId, groupId) {
@@ -251,6 +284,16 @@ const ApiClient = (() => {
             method: "PUT"
         });
     }
+    async function ackDriverMessage(messageId) {
+        return apiFetch("/api/driver/messages/" + encodeURIComponent(messageId) + "/ack", {
+            method: "PUT"
+        });
+    }
+    async function archiveStaffMessage(messageId) {
+        return apiFetch("/api/staff/messages/" + encodeURIComponent(messageId) + "/archive", {
+            method: "PUT"
+        });
+    }
     async function createDriverLostItem(item) {
         return apiFetch("/api/driver/lost-items", {
             method: "POST",
@@ -305,16 +348,32 @@ const ApiClient = (() => {
             body: JSON.stringify(incident)
         });
     }
+    async function transitionStaffOperationalIncident(reportId, payload) {
+        return apiFetch("/api/staff/operational-incidents/" + encodeURIComponent(reportId) + "/transition", {
+            method: "PUT",
+            body: JSON.stringify(payload)
+        });
+    }
     async function resolveStaffOperationalIncident(reportId, resolution) {
         return apiFetch("/api/staff/operational-incidents/" + encodeURIComponent(reportId) + "/resolve", {
             method: "PUT",
             body: JSON.stringify(resolution)
         });
     }
+    async function getStaffOpsActivity(limit = 20) {
+        const q = new URLSearchParams({ limit: String(limit) });
+        return apiFetch(`/api/staff/ops-activity?${q}`);
+    }
     async function assignStaffShift(shift) {
         return apiFetch("/api/staff/shifts/assignment", {
             method: "PUT",
             body: JSON.stringify(shift)
+        });
+    }
+    async function undoStaffShift(payload) {
+        return apiFetch("/api/staff/shifts/assignment/undo", {
+            method: "POST",
+            body: JSON.stringify(payload)
         });
     }
     async function acquirePlanLock({ scopeType, groupId, scopeKey }) {
@@ -346,6 +405,18 @@ const ApiClient = (() => {
     }
     async function getDriverWorkSession() {
         return apiFetch("/api/driver/work-session");
+    }
+    async function postDriverLocation(location) {
+        return apiFetch("/api/driver/location", {
+            method: "POST",
+            body: JSON.stringify(location || {})
+        });
+    }
+    async function reportStaffMapAccess() {
+        return apiFetch("/api/staff/map-access", {
+            method: "PUT",
+            body: "{}"
+        });
     }
     async function confirmDriverShifts(dates) {
         return apiFetch("/api/driver/shift-confirmations", {
@@ -384,19 +455,20 @@ const ApiClient = (() => {
 
     return {
         fetch: apiFetch, getConfig, getLicense, getCompanies, getCompanyAdmins, getSuperAdminOverview,
-        getCompanyDetail, setCompanyAdminStatus, resetCompanyAdminPassword,
+        getCompanyDetail, patchCompanySettings, getPlatformHealth, setCompanyAdminStatus, resetCompanyAdminPassword,
         setCompanyStatus, deleteCompany, createCompany, createUser, updateUserGroups,
         createCompanyDispatcher, updateCompanyDispatcherGroups,
-        setCompanyDispatcherStatus, revokeCompanyDispatcherSessions,
+        setCompanyDispatcherStatus, revokeCompanyDispatcherSessions, deleteCompanyDispatcher,
         updateCompanyProfileSettings, downloadCompanyExport,
-        previewServicePlan, publishServicePlan, getActiveServicePlan, getServicePlanHistory, getServicePlanVersion, getCompanyAudit, updateCompanyBranding,
+        previewServicePlan, publishServicePlan, activateServicePlan, previewGroupMonthlyPlanImport, commitGroupMonthlyPlanImport,
+        getActiveServicePlan, getServicePlanHistory, getServicePlanVersion, getCompanyAudit, updateCompanyBranding,
         createCompanyGroup, updateCompanyGroup, deleteCompanyGroup, reportStateSync, importDriversCsv, setDriverActive,
         updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode,
-        createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage,
-        createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, resolveStaffOperationalIncident, resolveStaffSos,
-        setLostItemStatus, createStaffBus, setStaffBusActive, assignStaffShift,
+        createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage, ackDriverMessage,
+        createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, transitionStaffOperationalIncident, resolveStaffOperationalIncident, getStaffOpsActivity, resolveStaffSos,
+        setLostItemStatus, createStaffBus, setStaffBusActive, assignStaffShift, undoStaffShift,
         acquirePlanLock, heartbeatPlanLock, releasePlanLock, breakPlanLock, getPlanLock,
-        sendStaffMessage, getDriverWorkSession, confirmDriverShifts, getStaffShiftConfirmations,
+        sendStaffMessage, archiveStaffMessage, getDriverWorkSession, postDriverLocation, reportStaffMapAccess, confirmDriverShifts, getStaffShiftConfirmations,
         startSupportSession, getActiveSupportSessionAdmin, endSupportSessionAdmin,
         getCompanySupportSession, endCompanySupportSession
     };

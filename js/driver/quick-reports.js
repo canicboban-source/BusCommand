@@ -5,6 +5,12 @@ import { renderDriverDashboard } from "./dashboard.js";
 import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import {
+    enqueueOfflineWrite,
+    isProbablyOfflineError,
+    newIdempotencyKey
+} from "./offline-queue.js";
+import { renderNetworkStatus } from "./network-status.js";
 
 let quickReportPending = false;
 let lastQuickReportAt = 0;
@@ -41,12 +47,59 @@ async function sendQuickReport(type) {
     quickReportPending = true;
     try {
         if (!IS_DEMO_MODE) {
-            const result = await ApiClient.createDriverReport({ ...definition, bus: report.bus });
-            if (!result.success) {
-                showToast(result.error || t("driver_report_failed"), "error");
+            const idempotencyKey = newIdempotencyKey();
+            const body = {
+                ...definition,
+                bus: report.bus,
+                idempotencyKey,
+                clientCreatedAt: now.toISOString()
+            };
+            report.idempotencyKey = idempotencyKey;
+            try {
+                const result = await ApiClient.createDriverReport(body);
+                if (!result.success) {
+                    if (isProbablyOfflineError(result)) {
+                        report.status = "queued";
+                        report.syncStatus = "queued";
+                        const queued = enqueueOfflineWrite({
+                            kind: "report",
+                            payload: body,
+                            localRecord: report
+                        });
+                        if (queued.ok) {
+                            if (!Array.isArray(window.state.reports)) window.state.reports = [];
+                            window.state.reports.unshift(report);
+                            lastQuickReportAt = Date.now();
+                            renderDriverDashboard();
+                            renderNetworkStatus();
+                            showToast(t("driver_report_queued"), "info");
+                            return;
+                        }
+                    }
+                    showToast(result.error || t("driver_report_failed"), "error");
+                    return;
+                }
+                Object.assign(report, result.report || {}, { syncStatus: "sent" });
+            } catch {
+                report.status = "queued";
+                report.syncStatus = "queued";
+                const queued = enqueueOfflineWrite({
+                    kind: "report",
+                    payload: body,
+                    localRecord: report
+                });
+                if (queued.ok) {
+                    if (!Array.isArray(window.state.reports)) window.state.reports = [];
+                    window.state.reports.unshift(report);
+                    lastQuickReportAt = Date.now();
+                    renderDriverDashboard();
+                    renderNetworkStatus();
+                    showToast(t("driver_report_queued"), "info");
+                    return;
+                }
+                showToast(t("driver_report_failed"), "error");
                 return;
             }
-            Object.assign(report, result.report || {});
         }
         if (!Array.isArray(window.state.reports)) window.state.reports = [];
         window.state.reports.unshift(report);

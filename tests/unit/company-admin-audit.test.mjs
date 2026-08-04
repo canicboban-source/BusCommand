@@ -8,7 +8,8 @@ test("company audit API is admin-only and tenant scoped", () => {
   const api = read("../../api-server.js");
   assert.match(api, /\/api\/company-admin\/audit[\s\S]*?requireCompanyAdmin/);
   assert.match(api, /listAuditEvents\(\{[\s\S]*?companyId/);
-  assert.match(api, /parsed\.id !== req\.staffUser\.companyId/);
+  assert.match(api, /\/api\/company-admin\/audit[\s\S]*?requireOwnCompany\(req, res\)/);
+  assert.match(read("../../server/staff-auth.js"), /parsed\.id !== req\.staffUser\.companyId/);
 });
 
 test("audit writes are server-only and client sync uses a narrow endpoint", () => {

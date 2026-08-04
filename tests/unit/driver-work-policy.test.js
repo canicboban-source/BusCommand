@@ -190,3 +190,85 @@ test("ops classification separates failed delivery from awaiting confirm", () =>
   }, confirmed);
   assert.equal(queued.kind, "pending_send");
 });
+
+test("ops classification marks past targetDate as expired", () => {
+  const expired = classifyOutboxForOps({
+    driverId: "drv5",
+    targetDate: "2026-07-20",
+    status: "delivered"
+  }, new Set(), { today: "2026-07-28" });
+  assert.equal(expired.kind, "expired");
+  assert.equal(expired.severity, "warning");
+});
+
+test("ops classification marks fingerprint mismatch as expired", () => {
+  const live = new Map([["drv6|2026-07-29", "fp-new"]]);
+  const row = classifyOutboxForOps({
+    driverId: "drv6",
+    targetDate: "2026-07-29",
+    status: "delivered",
+    fingerprint: "fp-old"
+  }, new Set(), { today: "2026-07-28", liveFingerprints: live });
+  assert.equal(row.kind, "expired");
+  assert.equal(row.lastError, "fingerprint_mismatch");
+});
+
+test("invalidate outbox cancels confirmed and pending rows", () => {
+  const { planInvalidateOutbox } = require("../../server/confirmation-outbox");
+  const cancelled = planInvalidateOutbox({
+    status: "confirmed",
+    fingerprint: "fp1"
+  }, "staff_assignment", new Date("2026-07-28T10:00:00.000Z"));
+  assert.equal(cancelled.action, "cancel");
+  assert.equal(cancelled.patch.status, "cancelled");
+  assert.equal(cancelled.patch.cancelReason, "staff_assignment");
+
+  const skip = planInvalidateOutbox({ status: "cancelled" }, "staff_assignment");
+  assert.equal(skip.action, "skip");
+});
+
+test("dispatch retry stops after max attempts", () => {
+  const { MAX_DISPATCH_ATTEMPTS, planDispatchAttempt, shouldRetry } = require("../../server/confirmation-outbox");
+  const now = new Date("2026-07-28T10:00:00.000Z");
+  let row = { status: "pending", attempts: MAX_DISPATCH_ATTEMPTS - 1 };
+  const terminal = planDispatchAttempt(row, { ok: false, error: "boom" }, now);
+  assert.equal(terminal.status, "failed");
+  assert.equal(terminal.attempts, MAX_DISPATCH_ATTEMPTS);
+  assert.equal(terminal.terminalFailure, true);
+  assert.equal(terminal.nextRetryAt, null);
+  assert.equal(shouldRetry(terminal, now), false);
+});
+
+test("stale confirmation detects fingerprint and bound revision drift", () => {
+  const { isStaleConfirmation } = require("../../server/confirmation-outbox");
+  assert.equal(isStaleConfirmation({
+    shiftFingerprint: "a",
+    confirmationBoundRevision: 2
+  }, { liveFingerprint: "b", liveRevision: 2 }), true);
+  assert.equal(isStaleConfirmation({
+    shiftFingerprint: "a",
+    confirmationBoundRevision: 1
+  }, { liveFingerprint: "a", liveRevision: 2 }), true);
+  assert.equal(isStaleConfirmation({
+    shiftFingerprint: "a",
+    confirmationBoundRevision: 2
+  }, { liveFingerprint: "a", liveRevision: 2 }), false);
+});
+
+test("plan change after confirm reopens outbox via cancel_stale", () => {
+  const plan = planOutboxUpsert({
+    status: "confirmed",
+    fingerprint: "old",
+    createdAt: "2026-07-27T08:00:00.000Z"
+  }, {
+    companyId: "c1",
+    driverId: "d1",
+    targetDate: "2026-07-29",
+    fingerprint: "new",
+    label: "next_shift"
+  }, new Date("2026-07-28T10:00:00.000Z"));
+  assert.equal(plan.action, "cancel_stale");
+  assert.equal(plan.patch.status, "pending");
+  assert.equal(plan.patch.fingerprint, "new");
+  assert.equal(plan.patch.previousFingerprint, "old");
+});

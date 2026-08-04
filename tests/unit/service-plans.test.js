@@ -1,7 +1,15 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { getActiveServicePlan, getServicePlanVersion, listServicePlanHistory, publishServicePlan, servicePlanId } = require("../../server/service-plans");
+const {
+  activateServicePlan,
+  getActiveServicePlan,
+  getServicePlanVersion,
+  listServicePlanHistory,
+  publishServicePlan,
+  servicePlanId,
+  sourceHashForPlan
+} = require("../../server/service-plans");
 
 function validPlan(version = "66") {
   return {
@@ -110,42 +118,75 @@ function createDb() {
 
 const admin = { firestore: { FieldValue: { serverTimestamp: () => "SERVER_TIMESTAMP" } } };
 
-test("service plan publish stores the validated revision and supersedes the prior version", async () => {
-  const db = createDb();
-  const first = await publishServicePlan({ db, admin, companyId: "alpha", groupId: "group-a", actorId: "admin-1", plan: validPlan("66") });
-  assert.equal(first.planId, "group-a-310-66-2026-02-09");
-  assert.equal(db.plans.get(first.planId).groupId, "group-a");
-  assert.equal(db.plans.get(first.planId).status, "active");
-  assert.equal(db.duties.get(first.planId).size, 1);
+async function stageAndActivate(db, version, actor = "admin-1", groupId = "group-a") {
+  const staged = await publishServicePlan({
+    db, admin, companyId: "alpha", groupId, actorId: actor, plan: validPlan(version),
+    source: { fileName: `plan-${version}.xlsx`, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", byteSize: 1200 }
+  });
+  const activated = await activateServicePlan({
+    db, admin, companyId: "alpha", groupId, actorId: actor, planId: staged.planId
+  });
+  return { staged, activated };
+}
 
-  const second = await publishServicePlan({ db, admin, companyId: "alpha", groupId: "group-a", actorId: "admin-1", plan: validPlan("67") });
-  assert.equal(db.plans.get(first.planId).status, "superseded");
-  assert.equal(db.plans.get(first.planId).supersededBy, second.planId);
-  assert.equal(db.plans.get(second.planId).status, "active");
+test("publish stages an immutable revision with source hash and does not go live", async () => {
+  const db = createDb();
+  const staged = await publishServicePlan({
+    db, admin, companyId: "alpha", groupId: "group-a", actorId: "admin-1", plan: validPlan("66"),
+    source: { fileName: "dienst.xlsx", byteSize: 2048 }
+  });
+  assert.equal(staged.status, "staged");
+  assert.equal(db.plans.get(staged.planId).status, "staged");
+  assert.equal(db.plans.get(staged.planId).sourceHash, staged.sourceHash);
+  assert.match(staged.sourceHash, /^[a-f0-9]{64}$/);
+  assert.equal(db.plans.get(staged.planId).sourceFileName, "dienst.xlsx");
+  assert.equal(db.duties.get(staged.planId).size, 1);
+  assert.equal(await getActiveServicePlan({ db, companyId: "alpha", groupId: "group-a" }), null);
+});
+
+test("activate flips the live pointer and supersedes the prior active version", async () => {
+  const db = createDb();
+  const first = await stageAndActivate(db, "66");
+  const second = await stageAndActivate(db, "67", "admin-2");
+  assert.equal(db.plans.get(first.staged.planId).status, "superseded");
+  assert.equal(db.plans.get(first.staged.planId).supersededBy, second.staged.planId);
+  assert.equal(db.plans.get(second.staged.planId).status, "active");
+  assert.equal(second.activated.previousActivePlanId, first.staged.planId);
 
   const active = await getActiveServicePlan({ db, companyId: "alpha", groupId: "group-a" });
   assert.equal(active.planVersion, "67");
   assert.equal(active.duties[0].workStart, "04:02");
-  assert.equal(active.duties[0].firstTripStart, "04:33");
-  assert.equal(active.duties[0].lastTripEnd, "14:00");
-  assert.equal(active.duties[0].workEnd, "14:35");
+});
+
+test("rollback re-activates a superseded version with audit trail", async () => {
+  const db = createDb();
+  const first = await stageAndActivate(db, "66");
+  const second = await stageAndActivate(db, "67");
+  const rolled = await activateServicePlan({
+    db, admin, companyId: "alpha", groupId: "group-a", actorId: "admin-3", planId: first.staged.planId
+  });
+  assert.equal(rolled.previousActivePlanId, second.staged.planId);
+  assert.equal(db.plans.get(first.staged.planId).status, "active");
+  assert.equal(db.plans.get(second.staged.planId).status, "superseded");
+  assert.equal(db.plans.get(first.staged.planId).rolledBackFrom, second.staged.planId);
 });
 
 test("service plan history keeps immutable metadata and loads an archived duty detail", async () => {
   const db = createDb();
-  const first = await publishServicePlan({ db, admin, companyId: "alpha", groupId: "group-a", actorId: "admin-1", plan: validPlan("66") });
-  const second = await publishServicePlan({ db, admin, companyId: "alpha", groupId: "group-a", actorId: "admin-2", plan: validPlan("67") });
+  const first = await stageAndActivate(db, "66");
+  const second = await stageAndActivate(db, "67", "admin-2");
   const history = await listServicePlanHistory({ db, companyId: "alpha", groupId: "group-a" });
   assert.equal(history.length, 2);
-  assert.equal(history.find(plan => plan.id === first.planId).status, "superseded");
-  assert.equal(history.find(plan => plan.id === second.planId).status, "active");
-  const archived = await getServicePlanVersion({ db, companyId: "alpha", groupId: "group-a", planId: first.planId });
+  assert.equal(history.find(plan => plan.id === first.staged.planId).status, "superseded");
+  assert.equal(history.find(plan => plan.id === second.staged.planId).status, "active");
+  assert.ok(history.find(plan => plan.id === second.staged.planId).sourceHash);
+  const archived = await getServicePlanVersion({ db, companyId: "alpha", groupId: "group-a", planId: first.staged.planId });
   assert.equal(archived.planVersion, "66");
   assert.equal(archived.duties[0].activities.length, 5);
-  assert.equal(await getServicePlanVersion({ db, companyId: "alpha", groupId: "group-b", planId: first.planId }), null);
+  assert.equal(await getServicePlanVersion({ db, companyId: "alpha", groupId: "group-b", planId: first.staged.planId }), null);
 });
 
-test("an already published version cannot overwrite audit history", async () => {
+test("an already staged version cannot overwrite audit history", async () => {
   const db = createDb();
   await publishServicePlan({ db, admin, companyId: "alpha", groupId: "group-a", actorId: "admin-1", plan: validPlan("66") });
   await assert.rejects(
@@ -163,13 +204,12 @@ test("service plan IDs are stable and contain no Firestore path separators", () 
 
 test("the same plan can be published independently to multiple company groups", async () => {
   const db = createDb();
-  const plan = validPlan("66");
-  const groupA = await publishServicePlan({ db, admin, companyId: "alpha", groupId: "group-a", actorId: "admin-1", plan });
-  const groupB = await publishServicePlan({ db, admin, companyId: "alpha", groupId: "group-b", actorId: "admin-1", plan });
+  const groupA = await stageAndActivate(db, "66", "admin-1", "group-a");
+  const groupB = await stageAndActivate(db, "66", "admin-1", "group-b");
 
-  assert.notEqual(groupA.planId, groupB.planId);
-  assert.equal(db.plans.get(groupA.planId).status, "active");
-  assert.equal(db.plans.get(groupB.planId).status, "active");
+  assert.notEqual(groupA.staged.planId, groupB.staged.planId);
+  assert.equal(db.plans.get(groupA.staged.planId).status, "active");
+  assert.equal(db.plans.get(groupB.staged.planId).status, "active");
   assert.equal((await getActiveServicePlan({ db, companyId: "alpha", groupId: "group-a" })).groupId, "group-a");
   assert.equal((await getActiveServicePlan({ db, companyId: "alpha", groupId: "group-b" })).groupId, "group-b");
 });

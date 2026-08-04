@@ -1,15 +1,22 @@
 // BusCommand — mesečni plan: pregled po vozaču, izmena po danu
 import { parseBusFromText, parseRouteCodeFromText } from "../core/shift-plan.js";
-import { ensureShiftCatalogForEdit, inferOperationalShiftType, OPERATIONAL_SHIFT_TYPES } from "../core/line-shift-catalog.js";
-import { saveState } from "../core/state.js";
+import {
+    ensureShiftCatalogForEdit,
+    inferOperationalShiftType,
+    isCatalogLockedForLine,
+    OPERATIONAL_SHIFT_TYPES
+} from "../core/line-shift-catalog.js";
+import { loadActiveServicePlanForLine } from "../core/service-plan.js";
 import { getVisibleDrivers, getVisibleGroups, showToast } from "../core/utils.js";
 import { getBusesForLineGroup, getDriversForLineGroup, countPlansForLineGroup } from "../data/group-membership.js";
 import { getActiveLineId, getGroupById } from "../data/groups.js";
 import { closeModal, showModal } from "../ui/modals.js";
+import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
-import { persistShift } from "./shifts.js";
+import { persistShift, undoShift } from "./shifts.js";
 import { isOperationalReadOnly } from "../core/access.js";
+import { previewMassDayRange } from "../core/monthly-plan-ops.js";
 
 let _selectedGroupId = null;
 let _editCtx = null;
@@ -204,6 +211,29 @@ function updateMonthlyPlanSummary(ctx) {
         ${driver?.bus ? ` · ${t("monthly_default_bus")} <strong>${escapeHtml(driver.bus)}</strong>` : ""}`;
 }
 
+function ensureLocalScheduleShell(scheduleKey, driverName, month, totalDays, driverId = null) {
+    if (!Array.isArray(window.state.schedules)) window.state.schedules = [];
+    let schedule = window.state.schedules.find(s => s.id === scheduleKey);
+    if (schedule) return schedule;
+    const emptyShifts = {};
+    for (let d = 1; d <= totalDays; d++) {
+        emptyShifts[d] = { type: "off", name: "Frei" };
+    }
+    schedule = {
+        id: scheduleKey,
+        fileName: `plan-${driverName}-${month}.local`,
+        fileType: "application/json",
+        fileData: "",
+        parsedShifts: emptyShifts,
+        driverName,
+        driverId: driverId || null,
+        month,
+        localOnly: true
+    };
+    window.state.schedules.push(schedule);
+    return schedule;
+}
+
 function loadMonthlyPlanForDriver() {
     const container = document.getElementById("monthly-plan-grid-container");
     if (!container) return;
@@ -218,27 +248,71 @@ function loadMonthlyPlanForDriver() {
     updateMonthlyPlanSummary(ctx);
 
     const { driverName, month, year, monthNum, totalDays, scheduleKey, schedule } = ctx;
+    const hubId = window.state.activeGroupHubId || _selectedGroupId;
+    const drivers = hubId ? getDriversForLineGroup(hubId) : [];
 
     if (!schedule) {
         container.innerHTML = `
             <div class="plan-empty-state plan-empty-state--action">
                 <p class="plan-empty-title">${t("monthly_no_plan_for", { driver: escapeHtml(driverName), month })}</p>
-                <p class="plan-empty-hint">${t("monthly_import_hint")}</p>
+                <p class="plan-empty-hint">${t("monthly_empty_shell_hint") || t("monthly_import_hint")}</p>
                 <button type="button" class="btn-primary plan-empty-cta" ${actionAttr("createEmptyMonthlyPlan", [scheduleKey, escapeHtml(driverName), month, totalDays])}>
                     ${t("monthly_create_empty")}
                 </button>
-            </div>`;
+            </div>
+            ${drivers.length > 1 ? renderGroupMonthMatrix(drivers, year, monthNum, totalDays, month) : ""}`;
+        if (typeof lucide !== "undefined") lucide.createIcons();
         return;
     }
 
-    let html = `<table style="width:100%;border-collapse:collapse;text-align:left;background:rgba(255,255,255,0.01);border-radius:8px;overflow:hidden;">
-        <thead>
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);">
-                <th style="padding:10px 12px;font-size:0.75rem;color:var(--text-muted);font-weight:600;width:48px;">${t("monthly_col_day")}</th>
-                <th style="padding:10px 12px;font-size:0.75rem;color:var(--text-muted);font-weight:600;width:200px;">${t("monthly_col_date")}</th>
-                <th style="padding:10px 12px;font-size:0.75rem;color:var(--text-muted);font-weight:600;">${t("monthly_col_shift")}</th>
-                <th style="padding:10px 12px;font-size:0.75rem;color:var(--text-muted);font-weight:600;width:100px;">${t("monthly_col_bus")}</th>
-                <th style="padding:10px 12px;font-size:0.75rem;color:var(--text-muted);font-weight:600;width:72px;text-align:center;">${t("monthly_col_edit")}</th>
+    let html = "";
+    if (drivers.length > 1) {
+        html += renderGroupMonthMatrix(drivers, year, monthNum, totalDays, month);
+    }
+    html += renderMassOpsToolbar(totalDays);
+    html += renderDriverDayTable(schedule, scheduleKey, year, monthNum, totalDays);
+
+    container.innerHTML = html;
+    if (typeof lucide !== "undefined") lucide.createIcons();
+}
+
+function renderMassOpsToolbar(totalDays) {
+    if (isOperationalReadOnly()) return "";
+    return `
+      <div class="monthly-mass-ops" role="group" aria-label="${escapeHtml(t("monthly_mass_ops_label") || "Masovne operacije")}">
+        <span class="monthly-mass-ops__title">${t("monthly_mass_ops_label") || "Masovno odsustvo"}</span>
+        <label class="monthly-mass-ops__field">
+          <span>${t("monthly_mass_from") || "Od"}</span>
+          <input type="number" id="monthly-mass-from" class="med-control" min="1" max="${totalDays}" value="1">
+        </label>
+        <label class="monthly-mass-ops__field">
+          <span>${t("monthly_mass_to") || "Do"}</span>
+          <input type="number" id="monthly-mass-to" class="med-control" min="1" max="${totalDays}" value="${Math.min(7, totalDays)}">
+        </label>
+        <label class="monthly-mass-ops__field">
+          <span>${t("monthly_mass_type") || "Tip"}</span>
+          <select id="monthly-mass-type" class="med-control">
+            <option value="off">${escapeHtml(getShiftTypeLabel("off"))}</option>
+            <option value="vacation">${escapeHtml(getShiftTypeLabel("vacation"))}</option>
+            <option value="sick">${escapeHtml(getShiftTypeLabel("sick"))}</option>
+          </select>
+        </label>
+        <button type="button" class="btn-secondary" ${actionAttr("previewMonthlyMassAbsence", [])}>
+          <i data-lucide="list-checks"></i> ${t("monthly_mass_preview") || "Pregled"}
+        </button>
+      </div>`;
+}
+
+function renderDriverDayTable(schedule, scheduleKey, year, monthNum, totalDays) {
+    let html = `<div class="monthly-plan-scroll">
+        <table class="monthly-plan-table">
+        <thead class="monthly-plan-thead">
+            <tr>
+                <th class="monthly-plan-th monthly-plan-th--day">${t("monthly_col_day")}</th>
+                <th class="monthly-plan-th">${t("monthly_col_date")}</th>
+                <th class="monthly-plan-th">${t("monthly_col_shift")}</th>
+                <th class="monthly-plan-th">${t("monthly_col_bus")}</th>
+                <th class="monthly-plan-th monthly-plan-th--edit">${t("monthly_col_edit")}</th>
             </tr>
         </thead>
         <tbody>`;
@@ -249,18 +323,22 @@ function loadMonthlyPlanForDriver() {
         const isWeekend = [0, 6].includes(new Date(year, monthNum - 1, day).getDay());
         const shiftLabel = getShiftDisplayName(shift);
         const busLabel = getShiftBus(shift);
-        const rowMuted = shift.type === "off" && !isWeekend ? "opacity:0.65;" : "";
+        const rowClass = [
+            "monthly-plan-row",
+            isWeekend ? "is-weekend" : "",
+            shift.type === "off" && !isWeekend ? "is-muted" : ""
+        ].filter(Boolean).join(" ");
 
-        html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);${rowMuted}" onmouseenter="this.style.background='rgba(255,255,255,0.03)'" onmouseleave="this.style.background='transparent'">
-            <td style="padding:8px 12px;font-weight:700;font-size:0.85rem;">${day}.</td>
-            <td style="padding:8px 12px;font-size:0.85rem;color:${isWeekend ? "#94a3b8" : "var(--text-main)"};">${dateLabel}</td>
-            <td style="padding:8px 12px;font-size:0.85rem;">
-                <span style="font-weight:600;">${escapeHtml(shiftLabel)}</span>
-                ${shift.start && shift.end ? `<span style="color:var(--text-muted);font-size:0.75rem;margin-left:6px;">${shift.start}–${shift.end}</span>` : ""}
+        html += `<tr class="${rowClass}">
+            <td class="monthly-plan-td monthly-plan-td--day">${day}.</td>
+            <td class="monthly-plan-td">${dateLabel}</td>
+            <td class="monthly-plan-td">
+                <span class="monthly-plan-shift">${escapeHtml(shiftLabel)}</span>
+                ${shift.start && shift.end ? `<span class="monthly-plan-time">${shift.start}–${shift.end}</span>` : ""}
             </td>
-            <td style="padding:8px 12px;font-size:0.85rem;">${escapeHtml(busLabel)}</td>
-            <td style="padding:8px 12px;text-align:center;">
-                <button type="button" class="btn-secondary" style="height:30px;padding:0 10px;font-size:0.75rem;"
+            <td class="monthly-plan-td">${escapeHtml(busLabel)}</td>
+            <td class="monthly-plan-td monthly-plan-td--edit">
+                <button type="button" class="btn-secondary monthly-plan-edit-btn"
                     ${actionAttr("openMonthlyDayEdit", [scheduleKey, day])}>
                     <i data-lucide="pencil"></i> ${t("monthly_btn_edit")}
                 </button>
@@ -268,15 +346,59 @@ function loadMonthlyPlanForDriver() {
         </tr>`;
     }
 
-    html += `</tbody></table>
-        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-            <button type="button" class="btn-primary" style="height:34px;font-size:0.8rem;" ${actionAttr("openMonthlyDayEdit", [scheduleKey, 1])}>
+    html += `</tbody></table></div>
+        <div class="monthly-plan-actions">
+            <button type="button" class="btn-primary" ${actionAttr("openMonthlyDayEdit", [scheduleKey, 1])}>
                 <i data-lucide="calendar-days"></i> ${t("monthly_btn_edit_pick")}
             </button>
         </div>`;
+    return html;
+}
 
-    container.innerHTML = html;
-    if (typeof lucide !== "undefined") lucide.createIcons();
+function cellLabelForMatrix(schedule, day) {
+    const shift = getShiftForPlanDay(schedule, day);
+    if (!shift || isPlanDayEmpty(shift)) return "·";
+    if (shift.type === "vacation") return "U";
+    if (shift.type === "sick") return "B";
+    if (shift.type === "off") return "·";
+    return (shift.routeCode || parseRouteCodeFromText(shift.name) || shift.type || "?").slice(0, 8);
+}
+
+function renderGroupMonthMatrix(drivers, year, monthNum, totalDays, month) {
+    let html = `<div class="monthly-matrix-wrap">
+      <p class="monthly-matrix-hint">${t("monthly_matrix_hint") || "Pregled grupe — klik na ćeliju otvara izmenu."}</p>
+      <div class="monthly-matrix-scroll">
+      <table class="monthly-matrix">
+        <thead class="monthly-matrix-thead">
+          <tr>
+            <th class="monthly-matrix-corner">${t("monthly_label_driver") || "Vozač"}</th>`;
+    for (let day = 1; day <= totalDays; day++) {
+        const isWeekend = [0, 6].includes(new Date(year, monthNum - 1, day).getDay());
+        html += `<th class="monthly-matrix-day${isWeekend ? " is-weekend" : ""}">${day}</th>`;
+    }
+    html += `</tr></thead><tbody>`;
+
+    for (const driver of drivers) {
+        const scheduleKey = `${driver.name}_${month}`;
+        const schedule = window.state.schedules?.find(s =>
+            s.id === scheduleKey
+            || (driver.id && s.id === `${driver.id}_${month}`)
+        );
+        html += `<tr>
+          <th class="monthly-matrix-driver" scope="row" title="${escapeHtml(driver.name)}">${escapeHtml(driver.name)}</th>`;
+        for (let day = 1; day <= totalDays; day++) {
+            const label = cellLabelForMatrix(schedule, day);
+            const isWeekend = [0, 6].includes(new Date(year, monthNum - 1, day).getDay());
+            html += `<td class="monthly-matrix-cell${isWeekend ? " is-weekend" : ""}">
+              <button type="button" class="monthly-matrix-btn"
+                ${actionAttr("openMonthlyDayEditForDriver", [driver.name, month, day])}
+                title="${escapeHtml(driver.name)} · ${day}.${monthNum}.">${escapeHtml(label)}</button>
+            </td>`;
+        }
+        html += `</tr>`;
+    }
+    html += `</tbody></table></div></div>`;
+    return html;
 }
 
 function getActiveLineForEdit() {
@@ -307,13 +429,23 @@ function collectShiftCodesForEdit(schedule) {
     const catalog = window.state.shiftCatalog?.entries || {};
     Object.keys(catalog).forEach(k => codes.add(k));
 
-    Object.values(schedule?.parsedShifts || {}).forEach(s => {
-        if (s.routeCode) codes.add(s.routeCode);
-        else if (s.name && !isPlanDayEmpty(s)) {
-            const c = parseRouteCodeFromText(s.name);
-            if (c) codes.add(c);
-        }
-    });
+    // When catalog is locked to active CA plan, do not surface invented/legacy codes
+    // that are not in the catalog — only keep in-plan schedule codes already assigned.
+    const locked = lineId ? isCatalogLockedForLine(lineId) : false;
+    if (!locked) {
+        Object.values(schedule?.parsedShifts || {}).forEach(s => {
+            if (s.routeCode) codes.add(s.routeCode);
+            else if (s.name && !isPlanDayEmpty(s)) {
+                const c = parseRouteCodeFromText(s.name);
+                if (c) codes.add(c);
+            }
+        });
+    } else {
+        Object.values(schedule?.parsedShifts || {}).forEach(s => {
+            const code = s.routeCode || (s.name ? parseRouteCodeFromText(s.name) : "");
+            if (code && catalog[code]) codes.add(code);
+        });
+    }
 
     return [...codes].sort();
 }
@@ -348,9 +480,11 @@ function fillMedCatalogSelect(schedule, selectedCode) {
     const sel = document.getElementById("med-shift-code-select");
     if (!sel) return;
 
-    ensureShiftCatalogForEdit();
+    const lineId = getActiveLineForEdit();
+    ensureShiftCatalogForEdit(lineId);
     const codes = collectShiftCodesForEdit(schedule);
     const catalog = window.state.shiftCatalog?.entries || {};
+    const locked = lineId ? isCatalogLockedForLine(lineId) : false;
 
     sel.innerHTML = `<option value="">${t("med_code_none")}</option>`;
 
@@ -364,6 +498,21 @@ function fillMedCatalogSelect(schedule, selectedCode) {
         if (code === selectedCode) opt.selected = true;
         sel.appendChild(opt);
     });
+
+    const custom = document.getElementById("med-shift-code-custom");
+    if (custom) {
+        custom.hidden = locked;
+        custom.disabled = locked;
+        if (locked) custom.value = selectedCode && catalog[selectedCode] ? selectedCode : (custom.value || "");
+    }
+    const lockHint = document.getElementById("med-catalog-lock-hint");
+    if (lockHint) {
+        lockHint.hidden = !locked;
+        if (locked) {
+            lockHint.textContent = t("med_catalog_locked_hint")
+                || "Samo šifre aktivnog kataloga smena.";
+        }
+    }
 }
 
 function fillMedBusSelect(selectedBus) {
@@ -574,35 +723,68 @@ function onMedShiftCodeCustomInput() {
     typeSelect.value = inferTypeFromShiftCode(code, entry);
 }
 
+function openMonthlyDayEditForDriver(driverName, month, day) {
+    const driverSelect = document.getElementById("monthly-driver-select");
+    const monthSelect = document.getElementById("monthly-month-select");
+    if (driverSelect && driverName) driverSelect.value = driverName;
+    if (monthSelect && month) monthSelect.value = month;
+    const [year, monthNum] = String(month).split("-").map(Number);
+    const totalDays = new Date(year, monthNum, 0).getDate();
+    const scheduleKey = `${driverName}_${month}`;
+    const driver = window.state.drivers?.find(d => d.name === driverName);
+    ensureLocalScheduleShell(scheduleKey, driverName, month, totalDays, driver?.id || null);
+    loadMonthlyPlanForDriver();
+    openMonthlyDayEdit(scheduleKey, day);
+}
+
 function openMonthlyDayEdit(scheduleKey, day) {
     if (isOperationalReadOnly()) {
         showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
         return;
     }
-    const schedule = window.state.schedules?.find(s => s.id === scheduleKey);
-    if (!schedule) {
-        showToast(t("med_plan_not_found"), "error");
-        return;
-    }
-
-    const parts = scheduleKey.match(/^(.+)_(\d{4}-\d{2})$/);
+    const parts = String(scheduleKey || "").match(/^(.+)_(\d{4}-\d{2})$/);
     if (!parts) return;
 
-    const driverName = schedule.driverName || parts[1];
-    const month = schedule.month || parts[2];
+    const driverName = parts[1];
+    const month = parts[2];
     const [year, monthNum] = month.split("-").map(Number);
     const totalDays = new Date(year, monthNum, 0).getDate();
-    const safeDay = Math.min(Math.max(1, day || 1), totalDays);
+    const driver = window.state.drivers?.find(d => d.name === driverName);
+    const schedule = ensureLocalScheduleShell(
+        scheduleKey,
+        driverName,
+        month,
+        totalDays,
+        driver?.id || null
+    );
 
-    _editCtx = { scheduleKey, driverName, month, year, monthNum, totalDays, day: safeDay };
+    const safeDay = Math.min(Math.max(1, day || 1), totalDays);
+    _editCtx = {
+        scheduleKey,
+        driverName: schedule.driverName || driverName,
+        month,
+        year,
+        monthNum,
+        totalDays,
+        day: safeDay
+    };
 
     const driverLabel = document.getElementById("med-driver-label");
     const monthLabel = document.getElementById("med-month-label");
-    if (driverLabel) driverLabel.textContent = driverName;
+    if (driverLabel) driverLabel.textContent = _editCtx.driverName;
     if (monthLabel) monthLabel.textContent = month;
 
-    ensureShiftCatalogForEdit();
+    const lineId = getActiveLineForEdit();
+    if (lineId) {
+        loadActiveServicePlanForLine(lineId).catch(() => {});
+        ensureShiftCatalogForEdit(lineId);
+    } else {
+        ensureShiftCatalogForEdit();
+    }
     loadMonthlyDayEditForm(safeDay);
+
+    const undoBtn = document.getElementById("med-undo-btn");
+    if (undoBtn) undoBtn.disabled = false;
 
     showModal("monthly-day-edit-modal");
     if (typeof lucide !== "undefined") lucide.createIcons();
@@ -647,6 +829,11 @@ async function saveMonthlyDayEdit() {
     }
 
     const catalog = code ? window.state.shiftCatalog?.entries?.[code] : null;
+    const lineId = getActiveLineForEdit();
+    if (code && lineId && isCatalogLockedForLine(lineId) && !catalog) {
+        showToast(t("med_code_not_in_catalog") || "Šifra nije u aktivnom katalogu smena.", "error");
+        return;
+    }
 
     if (code && (type === "off" || type === "vacation" || type === "sick")) {
         type = inferTypeFromShiftCode(code, catalog);
@@ -680,23 +867,124 @@ async function saveMonthlyDayEdit() {
     showToast(t("med_shift_saved", { date: toastDate }), "success");
 }
 
-function createEmptyMonthlyPlan(scheduleKey, driverName, month, totalDays) {
-    const emptyShifts = {};
-    for (let d = 1; d <= totalDays; d++) {
-        emptyShifts[d] = { type: "off", name: "Frei" };
+async function undoMonthlyDayEdit() {
+    if (!_editCtx) return;
+    if (isOperationalReadOnly()) {
+        showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+        return;
     }
-    if (!Array.isArray(window.state.schedules)) window.state.schedules = [];
-    window.state.schedules.push({
-        id: scheduleKey,
-        fileName: `plan-${driverName}-${month}.txt`,
-        fileType: "text/plain",
-        fileData: "",
-        parsedShifts: emptyShifts,
-        driverName,
-        month
-    });
-    saveState();
+
+    const day = _editCtx.day;
+    const schedule = window.state.schedules.find(s => s.id === _editCtx.scheduleKey);
+    const driver = window.state.drivers?.find(d =>
+        d.name === _editCtx.driverName || (schedule?.driverId && d.id === schedule.driverId)
+    );
+    if (!driver?.id) {
+        showToast(t("med_driver_missing") || "Vozač za ovaj plan nije pronađen.", "error");
+        return;
+    }
+
+    const dateStr = `${_editCtx.year}-${String(_editCtx.monthNum).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const toastDate = formatPlanDate(_editCtx.year, _editCtx.monthNum, day);
+    const ok = await undoShift(driver, dateStr);
+    if (!ok) return;
+
+    closeMonthlyDayEditModal();
     loadMonthlyPlanForDriver();
+    showToast(t("med_shift_undone", { date: toastDate })
+        || t("shift_undone")
+        || "Izmena je poništena.", "success");
+}
+
+function previewMonthlyMassAbsence() {
+    if (isOperationalReadOnly()) {
+        showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+        return;
+    }
+    const ctx = getScheduleContext();
+    if (!ctx) {
+        showToast(t("monthly_select_prompt"), "error");
+        return;
+    }
+
+    const fromEl = document.getElementById("monthly-mass-from");
+    const toEl = document.getElementById("monthly-mass-to");
+    const typeEl = document.getElementById("monthly-mass-type");
+    const preview = previewMassDayRange(fromEl?.value, toEl?.value, ctx.totalDays);
+    if (!preview.ok) {
+        showToast(t("monthly_mass_invalid_range") || "Neispravan opseg dana.", "error");
+        return;
+    }
+    const type = typeEl?.value || "off";
+    if (!["off", "vacation", "sick"].includes(type)) {
+        showToast(t("monthly_mass_invalid_type") || "Dozvoljeni tipovi: slobodno, odmor, bolovanje.", "error");
+        return;
+    }
+
+    const typeLabel = getShiftTypeLabel(type);
+    const message = (t("monthly_mass_confirm", {
+        count: preview.affectedCount,
+        from: preview.days[0],
+        to: preview.days[preview.days.length - 1],
+        type: typeLabel,
+        driver: ctx.driverName
+    }) || `Primeni „${typeLabel}“ na ${preview.affectedCount} dana (${preview.days[0]}–${preview.days[preview.days.length - 1]}) za ${ctx.driverName}?`);
+
+    showConfirm(message, () => {
+        applyMonthlyMassAbsence(preview.days, type).catch((err) => {
+            console.warn("Mass absence failed", err);
+            showToast(t("monthly_mass_failed") || "Masovna izmena nije uspela.", "error");
+        });
+    }, {
+        title: t("monthly_mass_ops_label") || "Masovne operacije",
+        confirmText: t("btn_confirm") || "Potvrdi",
+        danger: false
+    });
+}
+
+async function applyMonthlyMassAbsence(days, type) {
+    const ctx = getScheduleContext();
+    if (!ctx) return;
+
+    const driver = window.state.drivers?.find(d => d.name === ctx.driverName);
+    if (!driver?.id) {
+        showToast(t("med_driver_missing") || "Vozač za ovaj plan nije pronađen.", "error");
+        return;
+    }
+
+    ensureLocalScheduleShell(ctx.scheduleKey, ctx.driverName, ctx.month, ctx.totalDays, driver.id);
+
+    let name = getShiftTypeLabel(type);
+    if (type === "off") name = t("shift_off") || "Frei";
+    else if (type === "vacation") name = t("shift_vacation") || "Urlaub";
+    else if (type === "sick") name = t("shift_sick") || "Krank";
+
+    let ok = 0;
+    let fail = 0;
+    for (const day of days) {
+        const dateStr = `${ctx.year}-${String(ctx.monthNum).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const saved = await persistShift(driver, dateStr, type, name, null, null, null);
+        if (saved) ok += 1;
+        else fail += 1;
+    }
+
+    loadMonthlyPlanForDriver();
+    if (fail === 0) {
+        showToast(t("monthly_mass_done", { count: ok }) || `Sačuvano: ${ok} dana.`, "success");
+    } else {
+        showToast(
+            t("monthly_mass_partial", { ok, fail }) || `Sačuvano ${ok}, neuspelo ${fail}.`,
+            fail === days.length ? "error" : "warning"
+        );
+    }
+}
+
+function createEmptyMonthlyPlan(scheduleKey, driverName, month, totalDays) {
+    const driver = window.state.drivers?.find(d => d.name === driverName);
+    ensureLocalScheduleShell(scheduleKey, driverName, month, Number(totalDays) || 31, driver?.id || null);
+    // Local shell only — not persisted until a day is saved via server assignment (§7).
+    loadMonthlyPlanForDriver();
+    showToast(t("monthly_shell_ready") || "Prazan plan je otvoren. Dan se čuva tek posle potvrde servera.", "info");
 }
 
 /** @deprecated koristi openMonthlyDayEdit + saveMonthlyDayEdit */
@@ -711,7 +999,7 @@ function updateMonthlyPlanDay(scheduleKey, day, field, value) {
         else if (value === "sick") schedule.parsedShifts[day].name = t("shift_sick") || "Bolovanje";
         loadMonthlyPlanForDriver();
     }
-    saveState();
+    // Intentionally no saveState — day writes go through persistShift / server only.
 }
 
 function renderHubMonthlyPreview() {
@@ -800,8 +1088,11 @@ export {
     createEmptyMonthlyPlan,
     updateMonthlyPlanDay,
     openMonthlyDayEdit,
+    openMonthlyDayEditForDriver,
     closeMonthlyDayEditModal,
     saveMonthlyDayEdit,
+    undoMonthlyDayEdit,
+    previewMonthlyMassAbsence,
     onMedDaySelectChange,
     onMedCatalogSelectChange,
     onMedShiftTypeChange,

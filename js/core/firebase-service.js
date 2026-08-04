@@ -3,6 +3,7 @@
 import { getBaseState, getStateStorageKey, clearAllTenantStateCaches, applyUiLanguagePreference } from "./state.js";
 import { showToast } from "./utils.js";
 import { IS_DEMO_MODE } from "./runtime-config.js";
+import { t } from "../ui/i18n.js";
 import {
     EXPECTED_FIREBASE_PROJECT_ID,
     readFirebaseWebConfig,
@@ -388,23 +389,12 @@ async function saveStateToFirestore(stateObj, companyId) {
             // Dispatcher accounts are provisioned and changed only through the server.
             // Driver profiles/credentials: import + status APIs only (never client PIN/CRUD).
             // Shifts/schedules: only PUT /api/staff/shifts/assignment (revision + Admin SDK).
-            if (item.key === "groups" || item.key === "dispatchers" || item.key === "reports" || item.key === "drivers" || item.key === "lostItems" || item.key === "buses" || item.key === "routes" || item.key === "shifts" || item.key === "schedules") continue;
+            // Messages: create/read/ack/archive only via staff/driver APIs (§12 — no client mutate).
+            if (item.key === "messages" || item.key === "groups" || item.key === "dispatchers" || item.key === "reports" || item.key === "drivers" || item.key === "lostItems" || item.key === "buses" || item.key === "routes" || item.key === "shifts" || item.key === "schedules") continue;
             const localList = stateObj[item.key] || [];
             const collectionRef = companyRef.collection(item.col);
             const baseline = _baselineFor(item.key);
-            let { sets, deletes, localIds, audit } = diffCollectionOps(localList, baseline);
-
-            // Message creates go only through POST /api/staff/messages (Rules deny client create).
-            // Keep update/delete ops so dispatcher soft-archive (dispArchivedBy) still syncs.
-            if (item.key === "messages" && baseline) {
-                const allowed = new Set(baseline);
-                sets = sets.filter((entry) => allowed.has(entry.id));
-                audit = {
-                    ...audit,
-                    added: [],
-                    updated: audit.updated.filter((id) => allowed.has(id))
-                };
-            }
+            const { sets, deletes, localIds, audit } = diffCollectionOps(localList, baseline);
 
             for (const entry of sets) {
                 writeOps.push({
@@ -572,7 +562,7 @@ function startFirestoreSync(companyId) {
         if (sosChanged && window.currentUser) {
             checkSOSStatus();
             if (window.state.sosActive && window.currentUser.role === "dispatcher") {
-                showToast("🚨 SOS ALARM primljen!", "error", 8000);
+                showToast(t("sos_alarm_received"), "error", 8000);
             }
         }
     });

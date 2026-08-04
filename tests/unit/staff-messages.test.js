@@ -99,7 +99,31 @@ test("company admin broadcast uses single company-wide message", () => {
   assert.equal(resolved.targets[0].driverId, null);
 });
 
-test("buildStaffMessageDoc keeps driver delivery fields", () => {
+test("multi-group send unions drivers and enforces ACL per group", () => {
+  const staff = { role: "dispatcher", groups: ["g1", "g2"] };
+  const resolved = resolveStaffMessageTargets({
+    mode: "group",
+    groupIds: ["g1", "g2"],
+    staff,
+    drivers,
+    groups
+  });
+  assert.equal(resolved.ok, true);
+  assert.deepEqual(resolved.groupIds, ["g1", "g2"]);
+  assert.equal(resolved.targets.length, 2);
+
+  const denied = resolveStaffMessageTargets({
+    mode: "group",
+    groupIds: ["g1", "g2"],
+    staff: { role: "dispatcher", groups: ["g1"] },
+    drivers,
+    groups
+  });
+  assert.equal(denied.ok, false);
+  assert.equal(denied.status, 403);
+});
+
+test("buildStaffMessageDoc keeps driver delivery fields and ack flag", () => {
   const doc = buildStaffMessageDoc({
     id: "msg_abc",
     now: new Date("2026-07-24T10:05:00"),
@@ -113,12 +137,16 @@ test("buildStaffMessageDoc keeps driver delivery fields", () => {
     broadcast: false,
     recipientName: "Alex",
     recipientDriverId: drivers[0].id,
-    groupId: "g1"
+    groupId: "g1",
+    requiresAck: true
   });
   assert.equal(doc.recipientDriverId, drivers[0].id);
   assert.equal(doc.broadcast, false);
   assert.equal(doc.template, "tmpl_delay_15");
   assert.match(doc.text, /tmpl_delay_15/);
+  assert.equal(doc.status, "delivered");
+  assert.equal(doc.requiresAck, true);
+  assert.equal(doc.deliveryChannel, "in_app");
 });
 
 test("staff message route and client compose use the API path", () => {
@@ -126,19 +154,27 @@ test("staff message route and client compose use the API path", () => {
   const compose = fs.readFileSync(path.join(__dirname, "../../js/dispatcher/msg-compose.js"), "utf8");
   const api = fs.readFileSync(path.join(__dirname, "../../js/core/api-client.js"), "utf8");
   const rules = fs.readFileSync(path.join(__dirname, "../../firestore.rules"), "utf8");
+  const archive = fs.readFileSync(path.join(__dirname, "../../js/dispatcher/message-archive.js"), "utf8");
+  const firebase = fs.readFileSync(path.join(__dirname, "../../js/core/firebase-service.js"), "utf8");
 
   assert.match(routes, /\/api\/staff\/messages/);
+  assert.match(routes, /\/api\/staff\/messages\/:messageId\/archive/);
+  assert.match(routes, /\/api\/driver\/messages\/:messageId\/ack/);
   assert.match(routes, /staff_message_sent/);
   assert.match(api, /sendStaffMessage/);
+  assert.match(api, /archiveStaffMessage/);
+  assert.match(api, /ackDriverMessage/);
   assert.match(compose, /ApiClient\.sendStaffMessage/);
-  assert.match(compose, /acknowledgeServerCreatedIds/);
-  assert.match(compose, /if \(IS_DEMO_MODE\)/);
+  assert.match(compose, /requiresAck/);
+  assert.match(compose, /groupIds/);
+  assert.match(archive, /archiveStaffMessage/);
+  assert.match(firebase, /item\.key === "messages"/);
   assert.match(rules, /messages\/\{msgId\}[\s\S]*?allow create: if false/);
   assert.equal(categoryFor("staff_message_sent"), "drivers");
 });
 
-test("server-created message ids are acknowledged for later soft-archive sync", () => {
+test("server-created message ids are acknowledged without client message writes", () => {
   const firebase = fs.readFileSync(path.join(__dirname, "../../js/core/firebase-service.js"), "utf8");
   assert.match(firebase, /function acknowledgeServerCreatedIds/);
-  assert.match(firebase, /acknowledgeServerCreatedIds/);
+  assert.match(firebase, /item\.key === "messages"/);
 });

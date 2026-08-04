@@ -11,7 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Lucide ikone -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@0.469.0"></script>
+    <!-- PDF.js / SheetJS: lazy-loaded via js/core/office-parsers.js on first import -->
     <!-- ✅ Firebase compat SDK (v10) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -49,7 +50,7 @@
 
             <!-- Logo / Header -->
             <div class="login-header">
-                <div class="logo bc-brand" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;">
+                <div class="logo bc-brand" id="login-logo" style="cursor:default;user-select:none;">
                     <img class="bc-brand-mark bc-brand-mark--hero" src="/brand/logo-hero.png" width="80" height="80" alt="BusCommand">
                     <span class="bc-brand-text">BusCommand</span>
                 </div>
@@ -576,6 +577,18 @@
                                     <label for="lost-item-desc" data-i18n="lost_desc_label">Opis predmeta (boja, marka, detalji)</label>
                                     <textarea id="lost-item-desc" required minlength="2" maxlength="1000" data-i18n-placeholder="ph_lost_desc" placeholder="npr. Crveni kožni novčanik, Samsung telefon..."></textarea>
                                 </div>
+                                <div class="form-group">
+                                    <label for="lost-item-status" data-i18n="lost_status_label">Gde je predmet sada?</label>
+                                    <select id="lost-item-status" required>
+                                        <option value="in_depot" data-i18n="status_in_depot" selected>U depou</option>
+                                        <option value="stays_on_bus" data-i18n="status_stays_on_bus">Ostaje u autobusu</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="lost-item-photo" data-i18n="lost_photo_label">Fotografija (opciono)</label>
+                                    <input type="file" id="lost-item-photo" accept="image/jpeg,image/png,image/webp" capture="environment">
+                                    <p class="form-hint" data-i18n="lost_photo_hint">Slika se kompresuje lokalno; EXIF/GPS se uklanjaju pre slanja.</p>
+                                </div>
                                 <button type="submit" class="btn-lost-submit btn-full-width">
                                     <i data-lucide="package-plus"></i> <span data-i18n="btn_send_lost">Prijavi pronađeni predmet</span>
                                 </button>
@@ -709,6 +722,32 @@
                 <!-- PORUKE (DISPATCHER MESSAGES) -->
                 
 
+                <section id="company-admin-buses" class="content-section hidden">
+                    <header class="company-settings-heading">
+                        <div>
+                            <span class="company-page-kicker" data-i18n="ca_buses_kicker">FLOTA</span>
+                            <h2><i data-lucide="bus"></i><span data-i18n="ca_nav_buses">Autobusi</span></h2>
+                            <p id="ca-buses-readonly-note" data-i18n="ca_buses_readonly_note">Pregled flote samo za čitanje. Dispečeri povezuju i vode autobuse u dnevnim operacijama.</p>
+                        </div>
+                        <div class="company-settings-save-state is-saved"><i data-lucide="eye"></i><span id="ca-buses-count">0</span></div>
+                    </header>
+                    <div class="card full-width-card">
+                        <div class="table-container">
+                            <table class="app-table table-large">
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="table_bus">Autobus</th>
+                                        <th data-i18n="ca_col_groups">Grupe</th>
+                                        <th data-i18n="table_status">Status</th>
+                                        <th>ID</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ca-buses-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- COMPANY ADMIN — PODEŠAVANJA FIRME -->
                 
 
@@ -727,7 +766,7 @@
                 </button>
                 <button type="button" class="mob-nav-btn mob-nav-sos" id="mobnav-sos" aria-label="SOS" data-i18n-aria-label="sos_button_aria" data-sos-hold="true">
                     <i data-lucide="phone-call"></i>
-                    <span>SOS</span>
+                    <span data-i18n="nav_sos">SOS</span>
                     <span class="mob-nav-sos-progress" aria-hidden="true"></span>
                 </button>
                 <button class="mob-nav-btn" data-action="switchSection" data-action-args='["driver-reports"]' id="mobnav-reports">
@@ -833,12 +872,12 @@
     </div>
 
     <!-- SOS TRIGGER MODAL (driver activates SOS) -->
-    <div id="sos-trigger-modal" class="modal-backdrop bc-overlay-modal hidden" data-action="closeSosTriggerModal" data-action-self="true" aria-hidden="true" style="position:fixed;inset:0;z-index:19000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);">
+    <div id="sos-trigger-modal" class="modal-backdrop bc-overlay-modal hidden" role="dialog" aria-modal="true" aria-labelledby="sos-trigger-title" data-action="closeSosTriggerModal" data-action-self="true" aria-hidden="true" style="position:fixed;inset:0;z-index:19000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);">
         <div style="background:#0f0f19;border:2px solid rgba(239,68,68,0.7);border-radius:20px;padding:32px 28px;width:92%;max-width:380px;text-align:center;animation:sosModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;box-shadow:0 0 60px rgba(239,68,68,0.25);">
             <div style="width:72px;height:72px;border-radius:50%;background:rgba(239,68,68,0.15);border:2px solid rgba(239,68,68,0.5);margin:0 auto 20px;display:flex;align-items:center;justify-content:center;animation:sosPulse 0.8s ease-in-out infinite;">
                 <i data-lucide="phone-call" style="width:34px;height:34px;color:#ef4444;"></i>
             </div>
-            <h3 style="font-size:1.3rem;font-weight:800;color:#ef4444;margin-bottom:10px;" data-i18n="sos_trigger_title">SOS ALARM</h3>
+            <h3 id="sos-trigger-title" style="font-size:1.3rem;font-weight:800;color:#ef4444;margin-bottom:10px;" data-i18n="sos_trigger_title">SOS ALARM</h3>
             <p style="font-size:0.9rem;color:rgba(255,255,255,0.7);margin-bottom:24px;line-height:1.6;" data-i18n="js_confirm_sos">Möchten Sie wirklich den NOTFALL SOS-ALARM aktivieren?</p>
             <div style="display:flex;gap:12px;">
                 <button data-action="closeSosTriggerModal" style="flex:1;padding:13px;border-radius:10px;font-size:0.9rem;font-weight:600;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);cursor:pointer;" data-i18n="btn_cancel">Cancel</button>
@@ -848,7 +887,7 @@
     </div>
 
     <!-- SOS CONFIRM MODAL -->
-    <div id="sos-confirm-modal" class="modal-backdrop bc-overlay-modal hidden" data-action="closeSosConfirmModal" data-action-self="true" aria-hidden="true" style="display:none;">
+    <div id="sos-confirm-modal" class="modal-backdrop bc-overlay-modal hidden" role="dialog" aria-modal="true" aria-labelledby="sos-confirm-title" data-action="closeSosConfirmModal" data-action-self="true" aria-hidden="true" style="display:none;">
         <div style="
             background: #0f0f19;
             border: 2px solid rgba(239,68,68,0.5);
@@ -867,7 +906,7 @@
                 <i data-lucide="shield-check" style="width:34px; height:34px; color:#ef4444;"></i>
             </div>
 
-            <h3 style="font-size:1.25rem; font-weight:700; color:#fff; margin-bottom:8px;"
+            <h3 id="sos-confirm-title" style="font-size:1.25rem; font-weight:700; color:#fff; margin-bottom:8px;"
                 data-i18n="sos_confirm_title">Potvrdi rešavanje SOS alarma</h3>
 
             <p style="font-size:0.875rem; color:rgba(255,255,255,0.6); margin-bottom:8px; line-height:1.5;"
@@ -999,6 +1038,7 @@
                 </select>
                 <input type="text" id="med-shift-code-custom" class="med-control med-control--follow" data-i18n-placeholder="med_code_placeholder" placeholder="ili ukucajte šifru, npr. 310.S01"
                     data-input-action="onMedShiftCodeCustomInput">
+                <div id="med-catalog-lock-hint" class="med-date-hint" hidden aria-live="polite"></div>
                 <div id="med-duty-time-hint" class="med-date-hint" hidden aria-live="polite"></div>
             </div>
 
@@ -1012,6 +1052,9 @@
 
             <div class="monthly-day-edit-actions">
                 <button type="button" data-action="closeMonthlyDayEditModal" class="btn-secondary monthly-day-edit-cancel"><span data-i18n="btn_cancel">Otkaži</span></button>
+                <button type="button" id="med-undo-btn" data-action="undoMonthlyDayEdit" class="btn-secondary monthly-day-edit-undo">
+                    <i data-lucide="undo-2"></i> <span data-i18n="med_btn_undo">Poništi poslednju</span>
+                </button>
                 <button type="button" data-action="saveMonthlyDayEdit" class="btn-primary monthly-day-edit-save">
                     <i data-lucide="save"></i> <span data-i18n="btn_save">Sačuvaj</span>
                 </button>
@@ -1022,7 +1065,7 @@
     <!-- ===== FACTORY RESET CUSTOM MODAL ===== -->
     
 
-    <!-- ===== CLEAR SOS CUSTOM MODAL ===== -->
+    <!-- ===== CLEAR SOS CUSTOM MODAL (legacy; showModal redirects to sos-confirm-modal) ===== -->
     
 
 
@@ -1115,44 +1158,7 @@
     </div>
 
     <!-- SUPER ADMIN MODAL -->
-    <div id="superadmin-pin-modal" class="bc-overlay-modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="superadmin-modal-title" style="display:none;">
-        <div style="background:#0f0f19; border:2px solid rgba(99,102,241,0.5); border-radius:20px; padding:32px 28px; width:92%; max-width:360px; text-align:center;">
-            <h3 id="superadmin-modal-title" style="color:white; font-size:1.2rem; margin-bottom:16px;">&#x1F510; Super Admin Access</h3>
-            <!-- Demo: PIN only -->
-            <div id="superadmin-demo-fields" class="hidden" style="display:none;" aria-hidden="true">
-                <input type="password" id="superadmin-pin-input" placeholder="Enter PIN" maxlength="10" autocomplete="off"
-                    style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
-                    background:rgba(255,255,255,0.05); color:white; font-size:1rem; text-align:center;
-                    box-sizing:border-box; margin-bottom:8px; outline:none;"
-                    data-enter-action="confirmSuperAdminPin">
-            </div>
-            <!-- Produkcija: email + lozinka only -->
-            <div id="superadmin-prod-fields" class="hidden" style="display:none;" aria-hidden="true">
-                <input type="email" id="superadmin-email-input" placeholder="sa@example.com" autocomplete="username"
-                    style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
-                    background:rgba(255,255,255,0.05); color:white; font-size:0.95rem;
-                    box-sizing:border-box; margin-bottom:8px; outline:none;">
-                <input type="password" id="superadmin-pass-input" placeholder="Password" autocomplete="current-password"
-                    style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
-                    background:rgba(255,255,255,0.05); color:white; font-size:0.95rem;
-                    box-sizing:border-box; margin-bottom:8px; outline:none;"
-                    data-enter-action="confirmSuperAdminPin">
-            </div>
-            <p id="superadmin-pin-error" style="color:#ef4444; font-size:0.85rem; margin-bottom:16px; min-height:20px;"></p>
-            <div style="display:flex; gap:12px;">
-                <button type="button" data-action="closeSuperAdminModal"
-                    style="flex:1; padding:12px; border-radius:10px; background:rgba(255,255,255,0.06);
-                    border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); cursor:pointer; font-size:0.9rem;">
-                    Cancel
-                </button>
-                <button type="button" data-action="confirmSuperAdminPin"
-                    style="flex:1; padding:12px; border-radius:10px; background:linear-gradient(135deg,#6366f1,#4f46e5);
-                    border:none; color:white; cursor:pointer; font-size:0.9rem; font-weight:700;">
-                    Confirm
-                </button>
-            </div>
-        </div>
-    </div>
+    
 
     <!-- ── MOBILNI BOTTOM NAV (vidljiv samo na mobilnom, ≤640px) ── -->
     <div id="fp-mobile-nav">

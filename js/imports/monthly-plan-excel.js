@@ -221,6 +221,8 @@ function parseMonthlyPlanWorkbook(workbook, lineId) {
 }
 
 async function readExcelWorkbook(file) {
+    const { ensureXlsx } = await import("../core/office-parsers.js");
+    const XLSX = await ensureXlsx();
     const arrayBuffer = await file.arrayBuffer();
     return XLSX.read(arrayBuffer, { type: "array" });
 }

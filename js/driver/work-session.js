@@ -1,12 +1,13 @@
 import Auth from "../core/auth-client.js";
 import ApiClient from "../core/api-client.js";
 import { stopFirestoreSync } from "../core/firebase-service.js";
-import { stopDriverGpsTracking } from "../maps/gps-track.js";
+import { stopDriverGpsTracking, configureDriverGpsGate } from "../maps/gps-track.js";
 import { clearUserSession } from "../auth/login-session.js";
 import { showLoginScreen } from "../auth/login-ui.js";
 import { showToast } from "../core/utils.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import { t } from "../ui/i18n.js";
+import { saveDriverOfflineSnapshot, clearDriverSensitiveCaches } from "./offline-snapshot.js";
 
 let policy = null;
 let restTimer = null;
@@ -30,9 +31,11 @@ function clearWorkTimers() {
 
 async function terminateDriverSession(messageKey = "driver_session_ended") {
     clearWorkTimers();
+    configureDriverGpsGate({ liveGps: false, sessionActive: false });
     stopDriverGpsTracking();
     stopFirestoreSync();
     policy = null;
+    try { await clearDriverSensitiveCaches(); } catch { /* best-effort */ }
     clearUserSession();
     window.currentUser = null;
     document.getElementById("driver-rest-overlay")?.remove();
@@ -66,6 +69,10 @@ function showRestOverlay() {
 }
 
 function enterDriverRestMode() {
+    configureDriverGpsGate({
+        liveGps: policy?.features?.liveGps === true,
+        sessionActive: false
+    });
     stopDriverGpsTracking();
     stopFirestoreSync();
     if (window.state?.messages) window.state.messages = [];
@@ -107,7 +114,23 @@ async function prepareDriverWorkSession() {
         return false;
     }
     policy = result.policy;
+    configureDriverGpsGate({
+        liveGps: policy?.features?.liveGps === true,
+        sessionActive: policy?.status === "active"
+    });
+    try {
+        saveDriverOfflineSnapshot({
+            companyId: window.currentUser?.companyId,
+            driverId: window.currentUser?.id || window.currentUser?.uid,
+            policy,
+            messages: window.state?.messages || []
+        });
+    } catch { /* offline snapshot is best-effort */ }
     return true;
+}
+
+function driverLiveGpsEnabled() {
+    return IS_DEMO_MODE ? false : policy?.features?.liveGps === true;
 }
 
 async function confirmUpcomingShifts(dates = null) {
@@ -116,6 +139,10 @@ async function confirmUpcomingShifts(dates = null) {
         ? pending.filter((target) => dates.includes(target.date))
         : pending;
     if (!targets.length || policy?.status !== "active") return false;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        showToast(t("driver_critical_needs_network"), "error");
+        return false;
+    }
     const result = await ApiClient.confirmDriverShifts(targets.map((target) => target.date));
     if (!result.success) {
         showToast(result.error || t("shift_confirm_failed"), "error");
@@ -132,5 +159,5 @@ async function confirmUpcomingShifts(dates = null) {
 export {
     driverWorkPolicy, isDriverWorkSessionActive, prepareDriverWorkSession,
     startDriverWorkSessionGuard, enterDriverRestMode, terminateDriverSession,
-    confirmUpcomingShifts
+    confirmUpcomingShifts, driverLiveGpsEnabled
 };

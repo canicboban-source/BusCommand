@@ -41,7 +41,10 @@ test.describe("UI smoke", () => {
     await expect(page.getByText("Reset App", { exact: true })).toHaveCount(0);
     await expect(page.locator("body")).not.toContainText("Demo admin:");
     await expect(page.locator("body")).not.toContainText("Demo driver:");
-    await expect(page.locator("#login-error-driver")).toContainText("Preview Firebase configuration error");
+    // The driver reads a translated sentence; the internal reason stays in the
+    // console.
+    await expect(page.locator("#login-error-driver")).toContainText("Sign-in is currently unavailable");
+    await expect(page.locator("#login-error-driver")).not.toContainText("Firebase");
     await expect.poll(() => page.evaluate(() => window.firebase?.apps?.length ?? 0)).toBe(0);
   });
 
@@ -303,11 +306,12 @@ test.describe("UI smoke", () => {
     await page.locator("#ca-service-plan-file").setInputFiles(
       path.resolve(__dirname, "../../public/templates/BusCommand_Dienstplan_Import_v1.xlsx")
     );
-    await expect(page.locator("#ca-service-plan-preview")).toContainText("Ready to publish");
+    await expect(page.locator("#ca-service-plan-preview")).toContainText("Ready to activate");
     await expect(page.locator("#ca-service-plan-preview")).toContainText("First publication for this group");
     await expect(page.locator(".service-plan-table tbody tr")).toHaveCount(1);
     await expect(page.locator(".service-plan-table")).toContainText("310.S01");
-    await expect(page.locator("#ca-publish-service-plan")).toContainText("Publish version 66 for North depot");
+    await expect(page.locator("#ca-publish-service-plan")).toContainText("Activate catalog");
+    await expect(page.locator(".ca-catalog-activation-bar")).toBeVisible();
     await page.locator(".service-plan-duty-link").click();
     await expect(page.locator(".service-plan-duty-drawer")).toBeVisible();
     await expect(page.locator(".service-plan-activity-list article")).toHaveCount(25);
@@ -396,12 +400,15 @@ test.describe("UI smoke", () => {
     await expect(page.locator("#ca-service-plan-history tbody tr")).toHaveCount(2);
     await expect(page.locator("#ca-service-plan-history")).toContainText("67");
     await expect(page.locator("#ca-service-plan-history")).toContainText("66");
-    await page.locator("#ca-service-plan-history tbody tr").filter({ hasText: "66" }).getByRole("button").click();
+    await page.locator("#ca-service-plan-history tbody tr").filter({ hasText: "66" }).getByRole("button", { name: /View/i }).click();
     await expect(page.locator(".service-plan-history-detail")).toContainText("310.S01");
     await page.locator(".service-plan-history-duties summary").click();
     await expect(page.locator(".service-plan-history-detail .service-plan-activity-list article")).toHaveCount(1);
     await page.locator(".service-plan-history-detail-header .btn-secondary").click();
     await expect(page.locator(".service-plan-history-detail")).toHaveCount(0);
+    await page.locator("#ca-service-plan-history tbody tr").filter({ hasText: "66" }).getByRole("button", { name: /Restore this version/i }).click();
+    await expect(page.locator("#ca-service-plan-history")).toContainText("ACTIVE");
+    await expect(page.locator("#ca-current-service-plans")).toContainText("66");
   });
 
   test("rapid dispatcher creation double-click creates one account", async ({ page }) => {
@@ -464,6 +471,13 @@ test.describe("UI smoke", () => {
     await expect(page.locator("#company-admin-team")).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
     expect(overflow).toBe(false);
+
+    const inactiveAna = page.locator(".company-team-card").filter({ hasText: "ana@example.test" });
+    await inactiveAna.getByRole("button", { name: /Delete permanently/i }).click();
+    await expect(page.locator("#global-confirm-message")).toContainText("Historical plans and audit records remain");
+    await page.locator("#global-confirm-yes").click();
+    await expect(page.locator(".company-team-card").filter({ hasText: "ana@example.test" })).toHaveCount(0);
+    await expect(page.locator("#ca-team-stat-total")).toHaveText("1");
   });
 
   test("driver PIN login", async ({ page }) => {

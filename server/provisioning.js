@@ -50,7 +50,17 @@ async function createCompanyAtomic({ db, admin, companyId, name, country, contac
     transaction.set(settingsRef, {
       plan: "trial", status: "active", maxDrivers: 50, maxDispatchers: 5,
       trialEndsAt: admin.firestore.Timestamp.fromDate(trialEnd),
-      features: { liveMap: true, pdfSchedules: true, excelImport: true, sosAlarm: true, multiLanguage: true, reports: true, supportSession: false }
+      features: {
+        liveMap: true,
+        liveGps: false,
+        pdfSchedules: true,
+        excelImport: true,
+        sosAlarm: true,
+        multiLanguage: true,
+        reports: true,
+        supportSession: false,
+        shiftConfirmationScheduler: false
+      }
     });
     transaction.set(sosRef, { sosActive: false, sosDriver: "", sosBus: "" });
     transaction.set(auditRef, {
@@ -258,6 +268,9 @@ async function updateDispatcherGroups({ db, admin, companyId, uid, groups, actor
   if (userData.role !== "dispatcher" || userData.companyId !== companyId) {
     throw new ProvisioningError("user-not-found", "Dispatcher nije pronađen u ovoj firmi.");
   }
+  if (userData.deletionPending === true) {
+    throw new ProvisioningError("dispatcher-deleting", "Brisanje ovog disponenta je već pokrenuto.");
+  }
   await assertCompanyGroupsExist(companyRef, normalizedGroups);
   const authUser = await admin.auth().getUser(uid);
   const previousClaims = authUser.customClaims || {};
@@ -305,6 +318,9 @@ async function setDispatcherActive({ db, admin, companyId, uid, active, actorId 
   const dispatcher = await readCompanyDispatcher({ db, companyId, uid });
   const { companyRef, userRef } = dispatcher;
   uid = dispatcher.uid;
+  if (dispatcher.userData.deletionPending === true) {
+    throw new ProvisioningError("dispatcher-deleting", "Brisanje ovog disponenta je već pokrenuto.");
+  }
   if (active) {
     const [settingsSnap, dispatchersSnap] = await Promise.all([
       companyRef.collection("settings").doc("main").get(),
@@ -361,10 +377,72 @@ async function setDispatcherActive({ db, admin, companyId, uid, active, actorId 
   return { uid, active, requiresReauthentication: true };
 }
 
+async function deleteDispatcher({ db, admin, companyId, uid, confirmEmail, actorId }) {
+  uid = normalizeFirebaseUid(uid);
+  const normalizedEmail = String(confirmEmail || "").trim().toLowerCase();
+  const companyRef = db.collection("companies").doc(companyId);
+  const userRef = companyRef.collection("users").doc(uid);
+  const timestamp = admin.firestore.FieldValue.serverTimestamp();
+
+  await db.runTransaction(async transaction => {
+    const current = await transaction.get(userRef);
+    const data = current.exists ? current.data() : null;
+    if (!data || data.companyId !== companyId || data.role !== "dispatcher") {
+      throw new ProvisioningError("user-not-found", "Disponent nije pronađen u ovoj firmi.");
+    }
+    if (data.active !== false) {
+      throw new ProvisioningError("dispatcher-active", "Disponent prvo mora biti deaktiviran.");
+    }
+    if (String(data.email || "").trim().toLowerCase() !== normalizedEmail) {
+      throw new ProvisioningError("confirm-mismatch", "Potvrda email adrese se ne poklapa.");
+    }
+    transaction.set(userRef, { deletionPending: true, updatedAt: timestamp }, { merge: true });
+  });
+
+  try {
+    await admin.auth().deleteUser(uid);
+  } catch (error) {
+    if (!["auth/user-not-found", "user-not-found"].includes(error.code)) {
+      await db.runTransaction(async transaction => {
+        const current = await transaction.get(userRef);
+        if (current.exists) {
+          transaction.set(userRef, { deletionPending: false, updatedAt: timestamp }, { merge: true });
+        }
+      }).catch(() => {});
+      throw error;
+    }
+  }
+
+  try {
+    await db.runTransaction(async transaction => {
+      const current = await transaction.get(userRef);
+      const data = current.exists ? current.data() : null;
+      if (!data || data.companyId !== companyId || data.role !== "dispatcher" || data.active !== false) {
+        throw new ProvisioningError("dispatcher-delete-incomplete", "Auth nalog je uklonjen, ali profil zahteva administrativno čišćenje.");
+      }
+      transaction.delete(userRef);
+      transaction.set(companyRef.collection("audit_log").doc(), {
+        action: "dispatcher_deleted",
+        actorId,
+        details: { uid },
+        timestamp
+      });
+    });
+  } catch (error) {
+    if (error instanceof ProvisioningError) throw error;
+    throw new ProvisioningError("dispatcher-delete-incomplete", "Auth nalog je uklonjen, ali profil zahteva administrativno čišćenje.", error);
+  }
+
+  return { uid, deleted: true };
+}
+
 async function revokeDispatcherSessions({ db, admin, companyId, uid, actorId }) {
   const dispatcher = await readCompanyDispatcher({ db, companyId, uid });
   const { companyRef, userRef } = dispatcher;
   uid = dispatcher.uid;
+  if (dispatcher.userData.deletionPending === true) {
+    throw new ProvisioningError("dispatcher-deleting", "Brisanje ovog disponenta je već pokrenuto.");
+  }
   await admin.auth().getUser(uid);
   await admin.auth().revokeRefreshTokens(uid);
   const timestamp = admin.firestore.FieldValue.serverTimestamp();
@@ -387,6 +465,7 @@ module.exports = {
   COMPANY_SUBCOLLECTIONS,
   createCompanyAtomic,
   deleteCompanyAtomic,
+  deleteDispatcher,
   provisionUser,
   normalizeFirebaseUid,
   readCompanyDispatcher,

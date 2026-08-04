@@ -6,7 +6,8 @@ import { clearAllSensitiveAuthFields } from "../auth/login-ui.js";
 import { switchSection } from "./navigation.js";
 import { showPreTripModal } from "./pretrip.js";
 import { startDriverGpsTracking } from "../maps/gps-track.js";
-import { isDriverWorkSessionActive, startDriverWorkSessionGuard } from "../driver/work-session.js";
+import { isDriverWorkSessionActive, startDriverWorkSessionGuard, driverLiveGpsEnabled } from "../driver/work-session.js";
+import { startDriverNetworkStatus } from "../driver/network-status.js";
 import { t } from "../ui/i18n.js";
 import { applyUiLanguagePreference } from "../core/state.js";
 import { canUseDriverOperationalUi } from "../auth/driver-access-gate.js";
@@ -59,7 +60,11 @@ export function showAppLayout() {
     document.querySelector(".role-selector-container")?.classList.add("hidden");
 
     startDriverWorkSessionGuard();
-    if (isDriverWorkSessionActive()) startDriverGpsTracking();
+    startDriverNetworkStatus();
+    // GPS only when tenant flag is ON and session is active (§13 / O2).
+    if (isDriverWorkSessionActive() && driverLiveGpsEnabled()) {
+        startDriverGpsTracking();
+    }
     switchSection("driver-dashboard");
     checkSOSStatus();
     bindSosHoldControl();

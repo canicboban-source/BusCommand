@@ -16,19 +16,9 @@ function sanitizeCompanyId(raw) {
   return raw.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/^-+|-+$/g, "");
 }
 
-const driverLoginBody = z.object({
-  companyId: z.string().trim().min(1).max(64),
-  driverId: z.string().trim().min(1).max(128),
-  pin: z.string().trim().min(4).max(12)
-});
-
 const companyStatusBody = z.object({
   status: z.enum(["active", "suspended"]),
   reason: z.string().trim().max(500).optional().nullable()
-});
-
-const hashPinBody = z.object({
-  pin: z.string().trim().min(4).max(12)
 });
 
 const createCompanyBody = z.object({
@@ -88,6 +78,11 @@ const companyDispatcherStatusBody = z.object({
 const companyDispatcherActionBody = z.object({
   companyId: z.string().trim().min(1).max(64)
 });
+
+const companyDispatcherDeleteBody = z.object({
+  companyId: z.string().trim().min(1).max(64),
+  confirmEmail: z.string().trim().toLowerCase().email().max(254)
+}).strict();
 
 const companyAdminStatusBody = z.object({
   active: z.boolean()
@@ -203,9 +198,7 @@ module.exports = {
   validateBody,
   sanitizeCompanyId,
   assertCompanyIdUsable,
-  driverLoginBody,
   companyStatusBody,
-  hashPinBody,
   createCompanyBody,
   deleteCompanyBody,
   createUserBody,
@@ -213,6 +206,7 @@ module.exports = {
   companyDispatcherBody,
   companyDispatcherStatusBody,
   companyDispatcherActionBody,
+  companyDispatcherDeleteBody,
   companyAdminStatusBody,
   companyProfileSettingsBody,
   companyBrandingBody,

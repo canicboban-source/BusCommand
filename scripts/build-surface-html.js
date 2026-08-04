@@ -84,7 +84,10 @@ const STAFF_ONLY_IDS = [
   "factory-reset-modal",
   "print-schedule-modal",
   "clear-sos-modal",
-  "sa-pin-modal"
+  // The Super Admin entry only has handlers on the staff bundle, so on the
+  // driver surface this markup was a modal nothing could open. The id here used
+  // to be "sa-pin-modal", which matches nothing in the shell.
+  "superadmin-pin-modal"
 ];
 
 const DRIVER_ONLY_IDS = [
@@ -110,6 +113,10 @@ function buildSurfaceHtml(surface, entryScript, extras = {}) {
     html = html.replace(/<!-- PDF\.js[\s\S]*?xlsx\.full\.min\.js"><\/script>\s*/i, "");
     html = html.replace(/<!-- Leaflet\.js[\s\S]*?leaflet\.js"[^>]*><\/script>\s*/i, "");
     html = removeAllById(html, STAFF_ONLY_IDS);
+    // The logo is the Super Admin entry point, and that handler is only bundled
+    // for staff. Leaving the action here would advertise a click that does
+    // nothing.
+    html = html.replace(/\s*data-action="handleLogoClick"/g, "");
     // Hide staff login tab markup (JS also hides it)
     html = html.replace(
       /id="tab-dispatcher-btn"/,
@@ -226,7 +233,7 @@ function assertSurface(html, surface) {
     ? ["driver-dashboard", "main-driver.js", "data-app-surface=\"driver\""]
     : ["dispatcher-dashboard", "main-staff.js", "data-app-surface=\"staff\""];
   const mustNot = surface === "driver"
-    ? ["dispatcher-dashboard", "company-admin-dashboard", "leaflet"]
+    ? ["dispatcher-dashboard", "company-admin-dashboard", "leaflet", "superadmin-pin-modal", "handleLogoClick"]
     : ["driver-dashboard", "mobile-bottom-nav", "pre-trip-modal"];
   for (const needle of mustHave) {
     if (!html.includes(needle)) throw new Error(`${surface} missing: ${needle}`);

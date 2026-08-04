@@ -17,12 +17,14 @@ test("canonical brand blue matches design tokens and branding default", async ()
 
 test("confirm modal has dialog semantics and focus trap wiring", async () => {
   const modalJs = await read("../../js/ui/confirm-modal.js");
+  const trapJs = await read("../../js/ui/focus-trap.js");
   const staff = await read("../../staff.html");
   const driver = await read("../../driver.html");
   assert.match(modalJs, /aria-modal/);
-  assert.match(modalJs, /Escape/);
-  assert.match(modalJs, /_previousFocus/);
-  assert.match(modalJs, /Tab/);
+  assert.match(modalJs, /attachFocusTrap/);
+  assert.match(trapJs, /Escape/);
+  assert.match(trapJs, /previousFocus/);
+  assert.match(trapJs, /Tab/);
   assert.match(staff, /id="global-confirm-modal"[^>]*role="dialog"/);
   assert.match(driver, /id="global-confirm-modal"[^>]*role="dialog"/);
 });

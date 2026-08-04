@@ -13,6 +13,8 @@ const FILES = [
   "templates/BusCommand_Drivers_Import_v1.csv",
   "templates/BusCommand_Dienstplan_Blank_v1.csv",
   "templates/BusCommand_Dienstplan_Blank_v1.xlsx",
+  "templates/BusCommand_Monthly_Group_Plan_Blank_v1.csv",
+  "templates/BusCommand_Monthly_Group_Plan_Blank_v1.xlsx",
 ];
 
 const DIRS = [

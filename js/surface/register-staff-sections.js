@@ -9,9 +9,11 @@ import { renderCompanyAdminDashboard, renderCompanyAdminBranding } from "../admi
 import { renderCompanyAdminTeam } from "../admin/company-admin-team.js";
 import { renderCompanyAdminGroups } from "../admin/company-admin-groups.js";
 import { renderCompanyAdminServicePlan } from "../admin/company-admin-service-plan.js";
+import { renderCompanyGroupMonthlyImport } from "../admin/company-admin-monthly-import.js";
 import { renderCompanyAdminDrivers } from "../admin/company-admin-drivers.js";
 import { renderCompanyAdminAudit } from "../admin/company-admin-audit.js";
 import { renderCompanyAdminSettings } from "../admin/company-admin-settings.js";
+import { renderCompanyAdminBuses } from "../admin/company-admin-buses.js";
 import { renderDispatcherShifts } from "../dispatcher/shifts.js";
 import { renderDispatcherVacations } from "../dispatcher/vacations.js";
 import { initDispatcherLiveMap } from "../maps/live-map-core.js";
@@ -41,7 +43,11 @@ export function registerStaffSections() {
         "company-admin-branding": () => renderCompanyAdminBranding(),
         "company-admin-groups": () => renderCompanyAdminGroups(),
         "company-admin-drivers": () => renderCompanyAdminDrivers(),
-        "company-admin-service-plan": () => renderCompanyAdminServicePlan(),
+        "company-admin-buses": () => renderCompanyAdminBuses(),
+        "company-admin-service-plan": () => {
+            renderCompanyAdminServicePlan();
+            renderCompanyGroupMonthlyImport();
+        },
         "company-admin-team": () => renderCompanyAdminTeam(),
         "company-admin-audit": () => renderCompanyAdminAudit(),
         "dispatcher-daily-schedule": () => {

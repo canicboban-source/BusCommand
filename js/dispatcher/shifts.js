@@ -41,6 +41,27 @@ function warnIfBusUsedInOtherGroup(driver, date, type, start, end, busValue) {
     showToast(formatCrossGroupBusWarn(conflicts, t), "warning", 6000);
 }
 
+function applyServerShiftConflict(driver, date, conflict) {
+    const remote = conflict?.shift;
+    if (!remote || typeof remote !== "object") return;
+    if (remote.type && remote.type !== "clear") {
+        setShiftForDriverDate(driver.name, date, {
+            type: remote.type,
+            name: remote.name || "",
+            start: remote.start || null,
+            end: remote.end || null,
+            bus: remote.bus || undefined,
+            routeCode: remote.routeCode || undefined,
+            revision: Number.isInteger(conflict.currentRevision)
+                ? conflict.currentRevision
+                : (Number.isInteger(remote.revision) ? remote.revision : 0),
+            syncSchedule: true
+        });
+    } else {
+        setShiftForDriverDate(driver.name, date, { type: "clear", syncSchedule: true });
+    }
+}
+
 async function persistShift(driver, date, type, name = "", start = null, end = null, bus = null) {
     if (isOperationalReadOnly()) {
         showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
@@ -65,7 +86,10 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
         const busValue = bus != null ? String(bus) : (driver.bus || "");
         warnIfBusUsedInOtherGroup(driver, date, type, start, end, busValue);
         const existing = getShiftForDriverDate(driver.name, date);
-        const expectedRevision = Number.isInteger(existing?.revision) ? existing.revision : 0;
+        // Mirror-only cells report revision 0; never invent a positive revision locally.
+        const expectedRevision = existing?.source === "shift" && Number.isInteger(existing.revision)
+            ? existing.revision
+            : 0;
         if (!IS_DEMO_MODE) {
             const result = await ApiClient.assignStaffShift({
                 driverId: driver.id, date, type, name,
@@ -75,6 +99,7 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
             });
             if (!result.success) {
                 if (result.status === 409 || result.code === "REVISION_CONFLICT") {
+                    applyServerShiftConflict(driver, date, result.conflict);
                     showToast(t("shift_conflict_refresh") || "Raspored je izmenjen. Osvežite i pokušajte ponovo.", "error");
                 } else if (result.code === "LOCK_HELD") {
                     const who = result.lock?.holderName || result.lock?.holderUid || "";
@@ -89,7 +114,14 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
             }
             if (bus != null) driver.bus = String(bus);
             if (result.deleted) {
-                setShiftForDriverDate(driver.name, date, { type: "clear", syncSchedule: true });
+                const clearedRevision = Number.isInteger(result.revision)
+                    ? result.revision
+                    : (Number.isInteger(result.shift?.revision) ? result.shift.revision : expectedRevision + 1);
+                setShiftForDriverDate(driver.name, date, {
+                    type: "clear",
+                    syncSchedule: true,
+                    revision: clearedRevision
+                });
             } else {
                 setShiftForDriverDate(driver.name, date, {
                     type,
@@ -105,6 +137,77 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
         if (bus != null) driver.bus = String(bus);
         setShiftForDriverDate(driver.name, date, { type, name, start, end, bus: busValue || undefined, revision: expectedRevision + 1 });
         saveState();
+        return true;
+    } finally {
+        pendingShiftAssignments.delete(key);
+    }
+}
+
+async function undoShift(driver, date) {
+    if (isOperationalReadOnly()) {
+        showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+        return false;
+    }
+    if (!driver?.id || !date) return false;
+    const key = `${driver.id}:${date}:undo`;
+    if (pendingShiftAssignments.has(key)) return false;
+    pendingShiftAssignments.add(key);
+    try {
+        const existing = getShiftForDriverDate(driver.name, date);
+        const expectedRevision = existing?.source === "shift" && Number.isInteger(existing.revision)
+            ? existing.revision
+            : 0;
+        if (expectedRevision < 1) {
+            showToast(t("shift_undo_nothing") || "Nema izmene za poništavanje.", "error");
+            return false;
+        }
+        if (IS_DEMO_MODE) {
+            showToast(t("shift_undo_demo") || "Undo nije dostupan u demo režimu.", "error");
+            return false;
+        }
+        const result = await ApiClient.undoStaffShift({
+            driverId: driver.id,
+            date,
+            expectedRevision
+        });
+        if (!result.success) {
+            if (result.status === 409 || result.code === "REVISION_CONFLICT") {
+                applyServerShiftConflict(driver, date, result.conflict);
+                showToast(t("shift_conflict_refresh") || "Raspored je izmenjen. Osvežite i pokušajte ponovo.", "error");
+            } else if (result.code === "NOTHING_TO_UNDO") {
+                showToast(t("shift_undo_nothing") || "Nema izmene za poništavanje.", "error");
+            } else if (result.code === "LOCK_HELD") {
+                const who = result.lock?.holderName || result.lock?.holderUid || "";
+                showToast(
+                    (t("plan_lock_held") || "Plan is locked by {name}.").replace("{name}", who || "another dispatcher"),
+                    "error"
+                );
+            } else {
+                showToast(result.error || t("shift_undo_failed") || "Poništavanje nije uspelo.", "error");
+            }
+            return false;
+        }
+        if (result.deleted) {
+            const clearedRevision = Number.isInteger(result.revision)
+                ? result.revision
+                : (Number.isInteger(result.shift?.revision) ? result.shift.revision : expectedRevision + 1);
+            setShiftForDriverDate(driver.name, date, {
+                type: "clear",
+                syncSchedule: true,
+                revision: clearedRevision
+            });
+        } else if (result.shift) {
+            setShiftForDriverDate(driver.name, date, {
+                type: result.shift.type,
+                name: result.shift.name || "",
+                start: result.shift.start || null,
+                end: result.shift.end || null,
+                bus: result.shift.bus || undefined,
+                routeCode: result.shift.routeCode || undefined,
+                revision: result.shift.revision ?? expectedRevision + 1,
+                syncSchedule: true
+            });
+        }
         return true;
     } finally {
         pendingShiftAssignments.delete(key);
@@ -199,4 +302,4 @@ async function removeShift(driverName, dateStr) {
     renderDispatcherShifts();
 }
 
-export { renderDispatcherShifts, openShiftCell, assignShift, removeShift, persistShift };
+export { renderDispatcherShifts, openShiftCell, assignShift, removeShift, persistShift, undoShift };

@@ -86,10 +86,9 @@ Badge u gornjem lijevom uglu pokazuje trenutni režim (DEMO / PRODUCTION).
    ```bash
    npm run setup -- acme "Acme Transit"
    ```
-4. Hash PIN za vozača:
-   ```bash
-   npm run hash-pin -- 1234
-   ```
+4. Vozače uvozi Company Admin kroz aplikaciju; sistem šalje jednokratni
+   aktivacioni kod, a vozač zatim postavlja svoj lični kod od 5–12 cifara.
+   Ručno postavljanje PIN-a više ne postoji.
 5. Postavi custom claims za korisnike:
    ```bash
    npm run set-claims -- <UID> superadmin

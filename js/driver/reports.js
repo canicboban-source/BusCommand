@@ -7,6 +7,13 @@ import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import {
+    enqueueOfflineWrite,
+    isProbablyOfflineError,
+    newIdempotencyKey
+} from "./offline-queue.js";
+import { renderNetworkStatus } from "./network-status.js";
+import { sanitizeLostItemPhotoFile } from "./lost-item-photo.js";
 
 const pendingForms = new Set();
 
@@ -25,12 +32,52 @@ async function persistReport(formId, payload, localReport) {
     pendingForms.add(formId);
     try {
         if (!IS_DEMO_MODE) {
-            const result = await ApiClient.createDriverReport(payload);
-            if (!result.success) {
-                showToast(result.error || t("driver_report_failed"), "error");
+            const idempotencyKey = payload.idempotencyKey || newIdempotencyKey();
+            const body = {
+                ...payload,
+                idempotencyKey,
+                clientCreatedAt: payload.clientCreatedAt || new Date().toISOString()
+            };
+            localReport.idempotencyKey = idempotencyKey;
+            try {
+                const result = await ApiClient.createDriverReport(body);
+                if (!result.success) {
+                    if (isProbablyOfflineError(result)) {
+                        const queued = enqueueOfflineWrite({
+                            kind: "report",
+                            payload: body,
+                            localRecord: localReport
+                        });
+                        if (queued.ok) {
+                            localReport.status = "queued";
+                            localReport.syncStatus = "queued";
+                            if (!Array.isArray(window.state.reports)) window.state.reports = [];
+                            window.state.reports.unshift(localReport);
+                            renderNetworkStatus();
+                            return "queued";
+                        }
+                    }
+                    showToast(result.error || t("driver_report_failed"), "error");
+                    return false;
+                }
+                Object.assign(localReport, result.report || {}, { syncStatus: "sent" });
+            } catch {
+                const queued = enqueueOfflineWrite({
+                    kind: "report",
+                    payload: body,
+                    localRecord: localReport
+                });
+                if (queued.ok) {
+                    localReport.status = "queued";
+                    localReport.syncStatus = "queued";
+                    if (!Array.isArray(window.state.reports)) window.state.reports = [];
+                    window.state.reports.unshift(localReport);
+                    renderNetworkStatus();
+                    return "queued";
+                }
+                showToast(t("driver_report_failed"), "error");
                 return false;
             }
-            Object.assign(localReport, result.report || {});
         }
         if (!Array.isArray(window.state.reports)) window.state.reports = [];
         window.state.reports.unshift(localReport);
@@ -70,7 +117,8 @@ async function submitDelayReport(event) {
     }, report);
     if (!saved) return;
     document.getElementById("delay-report-form")?.reset();
-    showToast(t("js_alert_delay_sent"), "success");
+    showToast(saved === "queued" ? t("driver_report_queued") : t("js_alert_delay_sent"),
+        saved === "queued" ? "info" : "success");
     switchSection("driver-dashboard");
 }
 
@@ -105,7 +153,8 @@ async function submitBreakdownReport(event) {
     }, report);
     if (!saved) return;
     document.getElementById("breakdown-report-form")?.reset();
-    showToast(t("js_alert_breakdown_sent"), "success");
+    showToast(saved === "queued" ? t("driver_report_queued") : t("js_alert_breakdown_sent"),
+        saved === "queued" ? "info" : "success");
     switchSection("driver-dashboard");
 }
 
@@ -116,30 +165,105 @@ async function submitLostItem(event) {
     const type = document.getElementById("lost-item-type")?.value || "";
     const location = String(document.getElementById("lost-item-location")?.value || "").trim();
     const description = String(document.getElementById("lost-item-desc")?.value || "").trim();
+    const status = document.getElementById("lost-item-status")?.value || "in_depot";
+    const photoInput = document.getElementById("lost-item-photo");
     const validTypes = ["lost_tech", "lost_wallet", "lost_keys", "lost_bag", "lost_clothes", "lost_other"];
-    if (!validTypes.includes(type) || location.length < 2 || location.length > 200
+    const validStatuses = ["in_depot", "stays_on_bus"];
+    if (!validTypes.includes(type) || !validStatuses.includes(status)
+        || location.length < 2 || location.length > 200
         || description.length < 2 || description.length > 1000) {
         showToast(t("driver_lost_item_invalid") || t("driver_report_invalid"), "error");
         return;
     }
     const now = new Date();
+    const date = now.toISOString().slice(0, 10);
+    const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    let photo = null;
+    if (photoInput?.files?.[0]) {
+        if (typeof navigator !== "undefined" && navigator.onLine === false) {
+            showToast(t("driver_critical_needs_network"), "error");
+            return;
+        }
+        try {
+            photo = await sanitizeLostItemPhotoFile(photoInput.files[0]);
+        } catch {
+            showToast(t("lost_photo_invalid"), "error");
+            return;
+        }
+    }
     const item = {
         id: `lost-${Date.now()}`,
-        time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+        date,
+        time,
+        foundAt: now.toISOString(),
         ...identity,
         type, location, description,
         desc: description,
-        status: "in_depot"
+        status,
+        photo: photo ? { contentType: photo.contentType, dataUrl: `data:${photo.contentType};base64,${photo.dataBase64}` } : null
     };
     pendingForms.add("lost-item-form");
     try {
         if (!IS_DEMO_MODE) {
-            const result = await ApiClient.createDriverLostItem({ type, location, description, bus: identity.bus });
-            if (!result.success) {
-                showToast(result.error || t("driver_lost_item_failed"), "error");
+            const idempotencyKey = newIdempotencyKey();
+            const body = {
+                type, location, description, bus: identity.bus,
+                status, date, time,
+                foundAt: now.toISOString(),
+                photo,
+                idempotencyKey,
+                clientCreatedAt: now.toISOString()
+            };
+            item.idempotencyKey = idempotencyKey;
+            try {
+                const result = await ApiClient.createDriverLostItem(body);
+                if (!result.success) {
+                    if (!photo && isProbablyOfflineError(result)) {
+                        const queued = enqueueOfflineWrite({
+                            kind: "lost_item",
+                            payload: { ...body, photo: null },
+                            localRecord: item
+                        });
+                        if (queued.ok) {
+                            item.syncStatus = "queued";
+                            item.status = "queued";
+                            if (!Array.isArray(window.state.lostItems)) window.state.lostItems = [];
+                            window.state.lostItems.unshift(item);
+                            document.getElementById("lost-item-form")?.reset();
+                            showToast(t("driver_report_queued"), "info");
+                            renderNetworkStatus();
+                            switchSection("driver-dashboard");
+                            return;
+                        }
+                    }
+                    showToast(result.error || t("driver_lost_item_failed"), "error");
+                    return;
+                }
+                Object.assign(item, result.item || {}, { syncStatus: "sent" });
+            } catch {
+                if (photo) {
+                    showToast(t("driver_critical_needs_network"), "error");
+                    return;
+                }
+                const queued = enqueueOfflineWrite({
+                    kind: "lost_item",
+                    payload: { ...body, photo: null },
+                    localRecord: item
+                });
+                if (queued.ok) {
+                    item.syncStatus = "queued";
+                    item.status = "queued";
+                    if (!Array.isArray(window.state.lostItems)) window.state.lostItems = [];
+                    window.state.lostItems.unshift(item);
+                    document.getElementById("lost-item-form")?.reset();
+                    showToast(t("driver_report_queued"), "info");
+                    renderNetworkStatus();
+                    switchSection("driver-dashboard");
+                    return;
+                }
+                showToast(t("driver_lost_item_failed"), "error");
                 return;
             }
-            Object.assign(item, result.item || {});
         }
         if (!Array.isArray(window.state.lostItems)) window.state.lostItems = [];
         window.state.lostItems.unshift(item);
@@ -183,6 +307,10 @@ function submitVacationRequest(event) {
         pendingForms.add("vacation-form");
         try {
             if (!IS_DEMO_MODE) {
+                if (typeof navigator !== "undefined" && navigator.onLine === false) {
+                    showToast(t("driver_critical_needs_network"), "error");
+                    return;
+                }
                 const result = await ApiClient.createDriverVacation({ type, start: startVal, end: endVal, reason });
                 if (!result.success) {
                     showToast(result.error || t("driver_vacation_failed"), "error");

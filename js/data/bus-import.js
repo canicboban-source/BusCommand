@@ -124,7 +124,11 @@ async function handleBusImportFile(event) {
   const name = String(file.name || "").toLowerCase();
   try {
     if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
-      if (typeof XLSX === "undefined") {
+      let XLSX;
+      try {
+        const { ensureXlsx } = await import("../core/office-parsers.js");
+        XLSX = await ensureXlsx();
+      } catch {
         showToast(t("bus_import_xlsx_unavailable"), "error");
         return;
       }

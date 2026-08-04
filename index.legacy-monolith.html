@@ -9,10 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Lucide ikone -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- PDF.js i SheetJS za automatsko i precizno čitanje planova rada (Excel i PDF parser) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/lucide@0.469.0"></script>
+    <!-- PDF.js / SheetJS: lazy-loaded via js/core/office-parsers.js on first import -->
     <!-- Leaflet.js za mape uživo -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -395,6 +393,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["company-admin-buses"]'>
+                                <i data-lucide="bus"></i> <span data-i18n="ca_nav_buses">Autobusi</span>
+                            </a>
+                        </li>
+                        <li>
                             <a href="#" class="nav-item" data-action="switchSection" data-action-args='["company-admin-service-plan"]'>
                                 <i data-lucide="calendar-range"></i> <span data-i18n="ca_nav_service_plan">Planovi smena</span>
                             </a>
@@ -744,6 +747,18 @@
                                     <label for="lost-item-desc" data-i18n="lost_desc_label">Opis predmeta (boja, marka, detalji)</label>
                                     <textarea id="lost-item-desc" required minlength="2" maxlength="1000" data-i18n-placeholder="ph_lost_desc" placeholder="npr. Crveni kožni novčanik, Samsung telefon..."></textarea>
                                 </div>
+                                <div class="form-group">
+                                    <label for="lost-item-status" data-i18n="lost_status_label">Gde je predmet sada?</label>
+                                    <select id="lost-item-status" required>
+                                        <option value="in_depot" data-i18n="status_in_depot" selected>U depou</option>
+                                        <option value="stays_on_bus" data-i18n="status_stays_on_bus">Ostaje u autobusu</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="lost-item-photo" data-i18n="lost_photo_label">Fotografija (opciono)</label>
+                                    <input type="file" id="lost-item-photo" accept="image/jpeg,image/png,image/webp" capture="environment">
+                                    <p class="form-hint" data-i18n="lost_photo_hint">Slika se kompresuje lokalno; EXIF/GPS se uklanjaju pre slanja.</p>
+                                </div>
                                 <button type="submit" class="btn-lost-submit btn-full-width">
                                     <i data-lucide="package-plus"></i> <span data-i18n="btn_send_lost">Prijavi pronađeni predmet</span>
                                 </button>
@@ -818,6 +833,10 @@
                 <section id="superadmin-dashboard" class="content-section hidden">
                     <div class="section-header">
                         <h2 data-i18n="superadmin_title">Super Admin Dashboard</h2>
+                    </div>
+
+                    <div id="sa-platform-health" class="sa-platform-health" role="status" aria-live="polite">
+                        <span data-i18n="sa_health_loading">Checking platform health…</span>
                     </div>
                     
                     <div class="stats-grid">
@@ -954,7 +973,7 @@
                             <span><i data-lucide="shield-check"></i></span>
                             <div><strong id="ca-stat-dispatchers">0</strong><small data-i18n="ca_stat_dispatchers">Dispečeri</small></div>
                         </button>
-                        <button type="button" class="company-overview-stat is-cyan" data-action="switchSection" data-action-args='["company-admin-groups"]'>
+                        <button type="button" class="company-overview-stat is-cyan" data-action="switchSection" data-action-args='["company-admin-buses"]'>
                             <span><i data-lucide="bus"></i></span>
                             <div><strong id="ca-stat-buses">0</strong><small data-i18n="ca_stat_buses">Autobusi</small></div>
                         </button>
@@ -1149,7 +1168,7 @@
                     <div class="section-header service-plan-page-header">
                         <div>
                             <h2><i data-lucide="calendar-range" class="section-title-icon"></i> <span data-i18n="ca_plan_title">Planovi smena</span></h2>
-                            <p class="subtitle" data-i18n="ca_plan_subtitle">Uvezite zvanični plan posebno za svaku grupu. Disponenti ga koriste u rasporedu, ali ga ne mogu menjati.</p>
+                            <p class="subtitle" data-i18n="ca_plan_subtitle">Objavite katalog smena i uvezite mesečne dodele cele grupe. Disponent zatim vodi dnevnu operativu bez pristupa EID podacima.</p>
                         </div>
                     </div>
 
@@ -1210,6 +1229,58 @@
                     </div>
 
                     <div id="ca-service-plan-preview" class="service-plan-preview-host" aria-live="polite"></div>
+
+                    <div class="card ca-monthly-import-card" aria-labelledby="ca-monthly-import-title">
+                        <div class="service-plan-panel-header">
+                            <div>
+                                <span class="service-plan-kicker" data-i18n="ca_monthly_import_kicker">MESEČNE DODELE</span>
+                                <h3 id="ca-monthly-import-title" data-i18n="ca_monthly_import_title">Uvezite mesečni plan cele grupe</h3>
+                                <p data-i18n="ca_monthly_import_hint">EID iz fajla povezuje red sa vozačem. Kod smene mora postojati u aktivnom katalogu izabrane grupe. Busevi se ne uvoze ovim fajlom.</p>
+                            </div>
+                            <i data-lucide="calendar-sync" aria-hidden="true"></i>
+                        </div>
+                        <div class="ca-monthly-import-fields">
+                            <label class="form-group" for="ca-monthly-import-group">
+                                <span data-i18n="ca_plan_group">Grupa / linija</span>
+                                <select id="ca-monthly-import-group" data-change-action="invalidateCompanyGroupMonthlyPreview">
+                                    <option value="" data-i18n="ca_plan_group_placeholder">Izaberite grupu</option>
+                                </select>
+                            </label>
+                            <label class="form-group" for="ca-monthly-import-month">
+                                <span data-i18n="ca_monthly_import_month">Mesec</span>
+                                <input type="month" id="ca-monthly-import-month" data-change-action="invalidateCompanyGroupMonthlyPreview">
+                            </label>
+                            <label class="form-group" for="ca-monthly-import-mode">
+                                <span data-i18n="ca_monthly_import_mode">Način uvoza</span>
+                                <select id="ca-monthly-import-mode" data-change-action="invalidateCompanyGroupMonthlyPreview">
+                                    <option value="merge" data-i18n="ca_monthly_import_mode_merge">Dopuni ili izmeni navedene dane</option>
+                                    <option value="replace" data-i18n="ca_monthly_import_mode_replace">Zameni ceo plan grupe za mesec</option>
+                                </select>
+                            </label>
+                            <label class="form-group ca-monthly-import-reason" for="ca-monthly-import-reason">
+                                <span data-i18n="ca_monthly_import_reason">Razlog / napomena</span>
+                                <input type="text" id="ca-monthly-import-reason" maxlength="200" data-i18n-placeholder="ca_monthly_import_reason_placeholder" placeholder="Npr. Prva objava plana za septembar" data-input-action="invalidateCompanyGroupMonthlyPreview">
+                            </label>
+                        </div>
+                        <div class="ca-monthly-import-upload-row">
+                            <button type="button" class="company-drivers-dropzone" data-action="clickElementById" data-action-args='["ca-monthly-import-file"]'>
+                                <i data-lucide="file-spreadsheet" aria-hidden="true"></i>
+                                <strong data-i18n="ca_monthly_import_choose">Izaberi grupni XLSX ili CSV</strong>
+                                <span data-i18n="ca_monthly_import_file_rule">Kolone: eid, date, duty_code · do 2.500 redova</span>
+                            </button>
+                            <input type="file" id="ca-monthly-import-file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden data-change-action="handleCompanyGroupMonthlyFile" data-change-pass="event">
+                            <div class="service-plan-download-actions">
+                                <a class="btn-secondary" href="/templates/BusCommand_Monthly_Group_Plan_Blank_v1.xlsx" download>
+                                    <i data-lucide="file-spreadsheet"></i><span data-i18n="ca_monthly_import_download_xlsx">Preuzmi XLSX</span>
+                                </a>
+                                <a class="btn-secondary" href="/templates/BusCommand_Monthly_Group_Plan_Blank_v1.csv" download>
+                                    <i data-lucide="file-down"></i><span data-i18n="ca_monthly_import_download_csv">Preuzmi CSV</span>
+                                </a>
+                            </div>
+                        </div>
+                        <p class="service-plan-format-note"><i data-lucide="triangle-alert"></i> <span data-i18n="ca_monthly_import_replace_warning">„Zameni ceo plan“ uklanja postojeće dodele izabranog meseca koje nisu u fajlu. Pregled će pokazati tačan broj uklanjanja pre potvrde.</span></p>
+                        <div id="ca-monthly-import-preview" class="service-plan-preview-host" aria-live="polite"></div>
+                    </div>
 
                     <div class="card service-plan-history-panel">
                         <div class="service-plan-panel-header">
@@ -1278,7 +1349,7 @@
                                 <div class="company-drivers-filters">
                                     <label class="company-drivers-search" for="ca-drivers-search">
                                         <i data-lucide="search" aria-hidden="true"></i>
-                                        <input type="search" id="ca-drivers-search" data-i18n-placeholder="ca_drivers_search_placeholder" placeholder="Pretraži ime, email ili telefon" data-input-action="handleCompanyDriversFilter">
+                                        <input type="search" id="ca-drivers-search" data-i18n-placeholder="ca_drivers_search_placeholder" placeholder="Pretraži ime, email ili telefon" data-input-action="handleCompanyDriversSearch">
                                     </label>
                                     <select id="ca-drivers-group-filter" aria-label="Filtriraj po grupi" data-change-action="handleCompanyDriversFilter">
                                         <option value="" data-i18n="ca_drivers_all_groups">Sve grupe</option>
@@ -1818,12 +1889,15 @@
                             <div id="shift-catalog-status"></div>
                         </div>
 
-                        <div class="card hub-panel" id="hub-section-extra-import">
+                        <div class="card hub-panel" id="hub-section-extra-import" hidden data-feature="dispatcher-bulk-plan-import" aria-hidden="true">
                             <h3 class="hub-section-title hub-section-title--sm"><i data-lucide="file-up"></i> <span data-i18n="hub_extra_plans_title">Extra plans</span></h3>
-                            <div id="plan-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bulk-plan-import-files"]'
+                            <p class="subtitle" style="font-size:0.82rem;margin:0 0 8px;" data-i18n="hub_plan_import_deferred">
+                                Uvoz pripremljenih mesečnih dodela je dostupan Company Adminu (grupni mesečni uvoz). Disponentski bulk uvoz ostaje isključen dok serverski commit i oporavak ne budu potpuni.
+                            </p>
+                            <div id="plan-import-dropzone" class="hub-dropzone hub-dropzone--subtle" hidden data-action="clickElementById" data-action-args='["bulk-plan-import-files"]'
                                 data-drop-action="handleBulkPlanDrop" data-i18n="hub_plan_drop_hint">Drop PDF/Excel plans here</div>
-                            <input type="file" id="bulk-plan-import-files" multiple accept=".xlsx,.xls,.pdf,.csv,.txt" style="display:none;" data-change-action="handleBulkPlanFileInput" data-change-pass="event">
-                            <div id="plan-import-preview"></div>
+                            <input type="file" id="bulk-plan-import-files" multiple accept=".xlsx,.xls,.pdf,.csv,.txt" style="display:none;" data-change-action="handleBulkPlanFileInput" data-change-pass="event" disabled>
+                            <div id="plan-import-preview" hidden></div>
                         </div>
 
                         <div class="card hub-panel hub-panel--plans" id="hub-section-plan-shortcuts">
@@ -1953,6 +2027,16 @@
                     </div>
 
                     <div class="card full-width-card">
+                        <div class="toolbar" style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+                            <label for="dispatcher-lost-status-filter" data-i18n="table_status">Status</label>
+                            <select id="dispatcher-lost-status-filter" aria-label="Filter by status">
+                                <option value="open" data-i18n="lost_filter_open" selected>Otvoreno</option>
+                                <option value="in_depot" data-i18n="status_in_depot">U depou</option>
+                                <option value="stays_on_bus" data-i18n="status_stays_on_bus">Ostaje u autobusu</option>
+                                <option value="returned" data-i18n="status_returned">Vraćeno</option>
+                                <option value="all" data-i18n="lost_filter_all">Sve</option>
+                            </select>
+                        </div>
                         <div class="table-container">
                             <table class="app-table table-large">
                                 <thead>
@@ -1962,6 +2046,7 @@
                                         <th data-i18n="lost_type_label">Predmet</th>
                                         <th data-i18n="lost_loc_label">Gde je nađen</th>
                                         <th data-i18n="lost_desc_label">Opis</th>
+                                        <th data-i18n="lost_photo_label">Foto</th>
                                         <th data-i18n="table_status">Status</th>
                                         <th data-i18n="table_action">Akcija</th>
                                     </tr>
@@ -2060,6 +2145,32 @@
                     </div>
                 </section>
 
+                <section id="company-admin-buses" class="content-section hidden">
+                    <header class="company-settings-heading">
+                        <div>
+                            <span class="company-page-kicker" data-i18n="ca_buses_kicker">FLOTA</span>
+                            <h2><i data-lucide="bus"></i><span data-i18n="ca_nav_buses">Autobusi</span></h2>
+                            <p id="ca-buses-readonly-note" data-i18n="ca_buses_readonly_note">Pregled flote samo za čitanje. Dispečeri povezuju i vode autobuse u dnevnim operacijama.</p>
+                        </div>
+                        <div class="company-settings-save-state is-saved"><i data-lucide="eye"></i><span id="ca-buses-count">0</span></div>
+                    </header>
+                    <div class="card full-width-card">
+                        <div class="table-container">
+                            <table class="app-table table-large">
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="table_bus">Autobus</th>
+                                        <th data-i18n="ca_col_groups">Grupe</th>
+                                        <th data-i18n="table_status">Status</th>
+                                        <th>ID</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ca-buses-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- COMPANY ADMIN — PODEŠAVANJA FIRME -->
                 <section id="company-admin-settings" class="content-section hidden">
                     <header class="company-settings-heading">
@@ -2092,6 +2203,11 @@
                         <div class="company-settings-policy-grid"><article><i data-lucide="map-pin-off"></i><div><strong data-i18n="ca_settings_no_gps">Nema GPS praćenja</strong><p data-i18n="ca_settings_no_gps_hint">Lokacija se ne prati posle odjave ili van aktivnog radnog prozora.</p></div></article><article><i data-lucide="bell-off"></i><div><strong data-i18n="ca_settings_no_push">Nema push poruka</strong><p data-i18n="ca_settings_no_push_hint">Aplikacija miruje do sledeće prijave vozača.</p></div></article><article><i data-lucide="clock-3"></i><div><strong data-i18n="ca_settings_auto_logout">Automatska odjava</strong><p data-i18n="ca_settings_auto_logout_hint">Sesija se zatvara najkasnije 30 minuta posle završetka smene.</p></div></article></div>
                     </section>
 
+                    <section class="card company-settings-login-profile" aria-labelledby="ca-settings-login-title">
+                        <div class="company-panel-heading"><div><span data-i18n="ca_settings_login_kicker">SAMO ZA ČITANJE</span><h3 id="ca-settings-login-title" data-i18n="ca_settings_login_title">Login profil vozača</h3></div><i data-lucide="key-round"></i></div>
+                        <p id="ca-settings-login-profile" data-i18n="ca_settings_login_body">Vozači se prijavljuju ličnim kodom (5–12 cifara) posle SMS aktivacije. Dužina i MFA politika su zaključane do odluke O3/O4.</p>
+                    </section>
+
                     <section class="card company-settings-exports" aria-labelledby="ca-settings-export-title">
                         <div class="company-panel-heading"><div><span data-i18n="ca_settings_export_kicker">AUDITOVANI CSV</span><h3 id="ca-settings-export-title" data-i18n="export_title">Izvoz podataka</h3></div><i data-lucide="download-cloud"></i></div>
                         <p class="company-settings-hint" data-i18n="ca_settings_export_hint">Produkcijski izvoz dolazi direktno sa servera, ograničen je na ovu firmu i beleži se u aktivnostima.</p>
@@ -2119,7 +2235,7 @@
                 </button>
                 <button type="button" class="mob-nav-btn mob-nav-sos" id="mobnav-sos" aria-label="SOS" data-i18n-aria-label="sos_button_aria" data-sos-hold="true">
                     <i data-lucide="phone-call"></i>
-                    <span>SOS</span>
+                    <span data-i18n="nav_sos">SOS</span>
                     <span class="mob-nav-sos-progress" aria-hidden="true"></span>
                 </button>
                 <button class="mob-nav-btn" data-action="switchSection" data-action-args='["driver-reports"]' id="mobnav-reports">
@@ -2225,12 +2341,12 @@
     </div>
 
     <!-- SOS TRIGGER MODAL (driver activates SOS) -->
-    <div id="sos-trigger-modal" class="modal-backdrop bc-overlay-modal hidden" data-action="closeSosTriggerModal" data-action-self="true" aria-hidden="true" style="position:fixed;inset:0;z-index:19000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);">
+    <div id="sos-trigger-modal" class="modal-backdrop bc-overlay-modal hidden" role="dialog" aria-modal="true" aria-labelledby="sos-trigger-title" data-action="closeSosTriggerModal" data-action-self="true" aria-hidden="true" style="position:fixed;inset:0;z-index:19000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);">
         <div style="background:#0f0f19;border:2px solid rgba(239,68,68,0.7);border-radius:20px;padding:32px 28px;width:92%;max-width:380px;text-align:center;animation:sosModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;box-shadow:0 0 60px rgba(239,68,68,0.25);">
             <div style="width:72px;height:72px;border-radius:50%;background:rgba(239,68,68,0.15);border:2px solid rgba(239,68,68,0.5);margin:0 auto 20px;display:flex;align-items:center;justify-content:center;animation:sosPulse 0.8s ease-in-out infinite;">
                 <i data-lucide="phone-call" style="width:34px;height:34px;color:#ef4444;"></i>
             </div>
-            <h3 style="font-size:1.3rem;font-weight:800;color:#ef4444;margin-bottom:10px;" data-i18n="sos_trigger_title">SOS ALARM</h3>
+            <h3 id="sos-trigger-title" style="font-size:1.3rem;font-weight:800;color:#ef4444;margin-bottom:10px;" data-i18n="sos_trigger_title">SOS ALARM</h3>
             <p style="font-size:0.9rem;color:rgba(255,255,255,0.7);margin-bottom:24px;line-height:1.6;" data-i18n="js_confirm_sos">Möchten Sie wirklich den NOTFALL SOS-ALARM aktivieren?</p>
             <div style="display:flex;gap:12px;">
                 <button data-action="closeSosTriggerModal" style="flex:1;padding:13px;border-radius:10px;font-size:0.9rem;font-weight:600;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);cursor:pointer;" data-i18n="btn_cancel">Cancel</button>
@@ -2240,7 +2356,7 @@
     </div>
 
     <!-- SOS CONFIRM MODAL -->
-    <div id="sos-confirm-modal" class="modal-backdrop bc-overlay-modal hidden" data-action="closeSosConfirmModal" data-action-self="true" aria-hidden="true" style="display:none;">
+    <div id="sos-confirm-modal" class="modal-backdrop bc-overlay-modal hidden" role="dialog" aria-modal="true" aria-labelledby="sos-confirm-title" data-action="closeSosConfirmModal" data-action-self="true" aria-hidden="true" style="display:none;">
         <div style="
             background: #0f0f19;
             border: 2px solid rgba(239,68,68,0.5);
@@ -2259,7 +2375,7 @@
                 <i data-lucide="shield-check" style="width:34px; height:34px; color:#ef4444;"></i>
             </div>
 
-            <h3 style="font-size:1.25rem; font-weight:700; color:#fff; margin-bottom:8px;"
+            <h3 id="sos-confirm-title" style="font-size:1.25rem; font-weight:700; color:#fff; margin-bottom:8px;"
                 data-i18n="sos_confirm_title">Potvrdi rešavanje SOS alarma</h3>
 
             <p style="font-size:0.875rem; color:rgba(255,255,255,0.6); margin-bottom:8px; line-height:1.5;"
@@ -2624,6 +2740,7 @@
                 </select>
                 <input type="text" id="med-shift-code-custom" class="med-control med-control--follow" data-i18n-placeholder="med_code_placeholder" placeholder="ili ukucajte šifru, npr. 310.S01"
                     data-input-action="onMedShiftCodeCustomInput">
+                <div id="med-catalog-lock-hint" class="med-date-hint" hidden aria-live="polite"></div>
                 <div id="med-duty-time-hint" class="med-date-hint" hidden aria-live="polite"></div>
             </div>
 
@@ -2637,6 +2754,9 @@
 
             <div class="monthly-day-edit-actions">
                 <button type="button" data-action="closeMonthlyDayEditModal" class="btn-secondary monthly-day-edit-cancel"><span data-i18n="btn_cancel">Otkaži</span></button>
+                <button type="button" id="med-undo-btn" data-action="undoMonthlyDayEdit" class="btn-secondary monthly-day-edit-undo">
+                    <i data-lucide="undo-2"></i> <span data-i18n="med_btn_undo">Poništi poslednju</span>
+                </button>
                 <button type="button" data-action="saveMonthlyDayEdit" class="btn-primary monthly-day-edit-save">
                     <i data-lucide="save"></i> <span data-i18n="btn_save">Sačuvaj</span>
                 </button>
@@ -2682,8 +2802,8 @@
         </div>
     </div>
 
-    <!-- ===== CLEAR SOS CUSTOM MODAL ===== -->
-    <div id="clear-sos-modal" class="bc-overlay-modal hidden" aria-hidden="true" style="
+    <!-- ===== CLEAR SOS CUSTOM MODAL (legacy; showModal redirects to sos-confirm-modal) ===== -->
+    <div id="clear-sos-modal" class="bc-overlay-modal hidden" role="dialog" aria-modal="true" aria-labelledby="clear-sos-modal-title" aria-hidden="true" style="
         position:fixed; inset:0; z-index:9999;
         background:rgba(0,0,0,0.75); backdrop-filter:blur(8px);
         display:none; align-items:center; justify-content:center; padding:20px;">
@@ -2694,10 +2814,10 @@
             box-shadow:0 0 60px rgba(251,146,60,0.2), 0 20px 40px rgba(0,0,0,0.6);
             text-align:center;">
             <div style="font-size:3rem; margin-bottom:16px;">🚨</div>
-            <h2 style="color:#fb923c; font-size:1.2rem; font-weight:800; margin-bottom:10px;" id="clear-sos-modal-title">
+            <h2 style="color:#fb923c; font-size:1.2rem; font-weight:800; margin-bottom:10px;" id="clear-sos-modal-title" data-i18n="sos_confirm_title">
                 Confirm SOS Resolution
             </h2>
-            <p style="color:rgba(255,255,255,0.7); font-size:0.9rem; line-height:1.6; margin-bottom:24px;" id="clear-sos-modal-body">
+            <p style="color:rgba(255,255,255,0.7); font-size:0.9rem; line-height:1.6; margin-bottom:24px;" id="clear-sos-modal-body" data-i18n="sos_confirm_body">
                 Have you contacted the driver and verified the situation?
             </p>
             <div style="display:flex; gap:12px; justify-content:center;">

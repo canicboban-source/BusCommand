@@ -9,7 +9,34 @@ import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { runSingleSubmission } from "../core/submit-lock.js";
 
+async function refreshSaPlatformHealth() {
+    const el = document.getElementById("sa-platform-health");
+    if (!el) return;
+    if (IS_DEMO_MODE) {
+        el.textContent = t("sa_health_demo") || "Demo mode — platform health is local only.";
+        return;
+    }
+    try {
+        const health = await ApiClient.getPlatformHealth();
+        if (!health?.success) {
+            el.textContent = t("sa_health_unavailable") || "Platform health unavailable.";
+            return;
+        }
+        const parts = [
+            `${t("sa_health_status") || "Status"}: ${health.status || "ok"}`,
+            `${t("sa_health_mode") || "Mode"}: ${health.mode || "—"}`,
+            `${t("sa_health_version") || "Version"}: ${health.version || "—"}`,
+            `${t("sa_health_uptime") || "Uptime"}: ${Math.max(0, Number(health.uptime) || 0)}s`,
+            `Firebase: ${health.firebase ? "on" : "off"}`
+        ];
+        el.textContent = parts.join(" · ");
+    } catch {
+        el.textContent = t("sa_health_unavailable") || "Platform health unavailable.";
+    }
+}
+
 function renderSuperAdminDashboard() {
+    refreshSaPlatformHealth();
     if (!IS_DEMO_MODE && window.currentUser && window.currentUser.role === "superadmin") {
         renderSuperAdminDashboardProduction();
         return;
@@ -229,7 +256,7 @@ async function superadminToggleStatus(companyId, status) {
     showConfirm("Da li želite da " + label + " firmu " + companyId + "?", async () => {
         const res = await ApiClient.setCompanyStatus(companyId, status);
         if (res.success) {
-            showToast("Status ažuriran.", "success");
+            showToast(t("sa_status_updated"), "success");
             renderSuperAdminDashboard();
         } else {
             showToast(res.error || "Greška.", "error");
@@ -343,6 +370,75 @@ function fillCompanyDetailModal(company) {
     if (openBtn) openBtn.setAttribute("data-action-args", JSON.stringify([company.id]));
     if (copyBtn) copyBtn.setAttribute("data-action-args", JSON.stringify([company.id]));
     renderCompanyDetailAdmins(company);
+    renderCompanyDetailSettingsForm(company);
+}
+
+function renderCompanyDetailSettingsForm(company) {
+    const host = document.getElementById("sa-detail-settings");
+    if (!host) return;
+    const features = company.features || {};
+    const trialValue = company.trialEndsAt ? String(company.trialEndsAt).slice(0, 10) : "";
+    host.innerHTML = `
+        <h4 class="sa-detail-subtitle">${escapeHtml(t("sa_detail_settings_title") || "Plan, limits and flags")}</h4>
+        <div class="sa-detail-settings-grid">
+            <label>${escapeHtml(t("sa_col_plan") || "Plan")}
+                <select id="sa-edit-plan">
+                    <option value="trial"${company.plan === "trial" ? " selected" : ""}>trial</option>
+                    <option value="standard"${company.plan === "standard" ? " selected" : ""}>standard</option>
+                    <option value="enterprise"${company.plan === "enterprise" ? " selected" : ""}>enterprise</option>
+                </select>
+            </label>
+            <label>${escapeHtml(t("sa_detail_max_drivers") || "Max drivers")}
+                <input id="sa-edit-max-drivers" type="number" min="1" max="5000" value="${Number(company.maxDrivers) || 50}">
+            </label>
+            <label>${escapeHtml(t("sa_detail_max_dispatchers") || "Max dispatchers")}
+                <input id="sa-edit-max-dispatchers" type="number" min="1" max="500" value="${Number(company.maxDispatchers) || 5}">
+            </label>
+            <label>${escapeHtml(t("sa_detail_trial") || "Trial ends")}
+                <input id="sa-edit-trial-ends" type="date" value="${escapeHtml(trialValue)}">
+            </label>
+        </div>
+        <div class="sa-detail-flags">
+            <label><input type="checkbox" id="sa-flag-supportSession" ${features.supportSession ? "checked" : ""}> supportSession</label>
+            <label><input type="checkbox" id="sa-flag-shiftConfirmationScheduler" ${features.shiftConfirmationScheduler ? "checked" : ""}> shiftConfirmationScheduler</label>
+            <label><input type="checkbox" id="sa-flag-liveGps" ${features.liveGps ? "checked" : ""}> liveGps</label>
+            <label><input type="checkbox" id="sa-flag-liveMap" ${features.liveMap !== false ? "checked" : ""}> liveMap</label>
+        </div>
+        <p class="sa-detail-settings-hint">${escapeHtml(t("sa_detail_settings_hint") || "liveGps stays off until O2 retention is decided. Changing flags is audited.")}</p>
+        <button type="button" class="btn-primary" data-action="superadminSaveCompanySettings" data-action-args='${JSON.stringify([company.id])}'>
+            ${escapeHtml(t("sa_detail_save_settings") || "Save settings")}
+        </button>
+    `;
+}
+
+async function superadminSaveCompanySettings(companyId) {
+    const id = String(companyId || _pendingDetailCompanyId || "").trim();
+    if (!id || IS_DEMO_MODE) {
+        showToast(t("sa_detail_settings_demo") || "Settings patch is production-only.", "info");
+        return;
+    }
+    const payload = {
+        plan: document.getElementById("sa-edit-plan")?.value || undefined,
+        maxDrivers: Number(document.getElementById("sa-edit-max-drivers")?.value),
+        maxDispatchers: Number(document.getElementById("sa-edit-max-dispatchers")?.value),
+        trialEndsAt: document.getElementById("sa-edit-trial-ends")?.value
+            ? `${document.getElementById("sa-edit-trial-ends").value}T23:59:59.000Z`
+            : null,
+        features: {
+            supportSession: !!document.getElementById("sa-flag-supportSession")?.checked,
+            shiftConfirmationScheduler: !!document.getElementById("sa-flag-shiftConfirmationScheduler")?.checked,
+            liveGps: !!document.getElementById("sa-flag-liveGps")?.checked,
+            liveMap: !!document.getElementById("sa-flag-liveMap")?.checked
+        }
+    };
+    const result = await ApiClient.patchCompanySettings(id, payload);
+    if (!result.success) {
+        showToast(result.error || t("error_generic"), "error");
+        return;
+    }
+    showToast(t("sa_detail_settings_saved") || "Company settings saved.", "success");
+    if (result.company) fillCompanyDetailModal(result.company);
+    await renderSuperAdminDashboard();
 }
 
 async function superadminOpenCompanyDetail(companyId) {
@@ -377,6 +473,7 @@ async function superadminOpenCompanyDetail(companyId) {
             <div><span data-i18n="sa_detail_support">Support</span><strong id="sa-detail-support">—</strong></div>
         </div>
         <div id="sa-detail-counts" class="sa-detail-counts"></div>
+        <div id="sa-detail-settings"></div>
         <h4 class="sa-detail-subtitle">${escapeHtml(t("sa_detail_admins_title") || "Company admins")}</h4>
         <div id="sa-detail-admins"></div>
         <div id="sa-detail-reset-link-box" class="sa-detail-reset-box hidden"></div>
@@ -518,7 +615,7 @@ async function superadminCreateCompany() {
     }
 
     if (pin.length < 4 || pin.length > 6) {
-        showToast("PIN mora imati 4–6 cifara.", "error"); return;
+        showToast(t("sa_pin_length_error"), "error"); return;
     }
 
     const id = "disp-" + Date.now();
@@ -571,7 +668,7 @@ async function superadminCreateCompanyAdmin() {
 
     if (!window.state.companyAdmins) window.state.companyAdmins = [];
     if (window.state.companyAdmins.find(ca => ca.email === email)) {
-        showToast('Company admin sa tim emailom već postoji', 'error'); return;
+        showToast(t("sa_ca_email_exists"), "error"); return;
     }
     window.state.companyAdmins.push({
         id: 'ca-' + Date.now(), name, email, password, companyId,
@@ -582,7 +679,7 @@ async function superadminCreateCompanyAdmin() {
         if (el) el.value = '';
     });
     renderCompanyAdminList();
-    showToast('Company Admin "' + name + '" kreiran za firmu: ' + companyId, 'success');
+    showToast(t("sa_ca_created_for_company", { name, companyId }), "success");
 }
 
 function renderCompanyAdminList() {
@@ -618,7 +715,7 @@ function superadminDeleteCompanyAdmin(id) {
     if (!window.state.companyAdmins) return;
     window.state.companyAdmins = window.state.companyAdmins.filter(ca => ca.id !== id);
     renderCompanyAdminList();
-    showToast('Company Admin obrisan', 'info');
+    showToast(t("sa_ca_deleted"), "info");
 }
 
 function superadminImpersonate(dispId) {
@@ -660,7 +757,7 @@ function superadminDeleteCompany(dispId) {
         saveState();
         renderSuperAdminDashboard();
         initializeLoginSelects();
-        showToast("Company deleted.", "info");
+        showToast(t("sa_company_deleted"), "info");
     }, { danger: true, title: "Delete Company" });
 }
 
@@ -818,5 +915,6 @@ export {
     superadminStartSupport,
     superadminCancelSupportModal,
     superadminConfirmSupportStart,
-    superadminEndSupport
+    superadminEndSupport,
+    superadminSaveCompanySettings
 };

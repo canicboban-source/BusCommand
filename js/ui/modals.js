@@ -7,6 +7,7 @@ import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import { canRunCompanyAdminAction, canRunFactoryReset } from "../core/ui-permissions.js";
 import { showToast } from "../core/utils.js";
 import { t } from "./i18n.js";
+import { attachFocusTrap, detachFocusTrap } from "./focus-trap.js";
 
 const FORCE_LOGIN_KEY = "buscommand_force_login";
 
@@ -36,10 +37,6 @@ function confirmFactoryReset() {
     return true;
 }
 
-// ============================================================
-// MODAL HELPERS — showModal / closeModal
-// ============================================================
-
 function showModal(id) {
     if (id === "factory-reset-modal" && !canRunFactoryReset(window.currentUser?.role, IS_DEMO_MODE)) {
         showToast(t("error_access_denied"), "error");
@@ -50,13 +47,17 @@ function showModal(id) {
         showToast(t("error_access_denied"), "error");
         return false;
     }
+    // Prefer the i18n’d SOS confirm dialog over the legacy clear-sos duplicate.
+    if (id === "clear-sos-modal" && document.getElementById("sos-confirm-modal")) {
+        id = "sos-confirm-modal";
+    }
     const el = document.getElementById(id);
     if (el) {
         el.classList.remove("hidden");
         el.style.display = "flex";
-        if (el.hasAttribute("aria-hidden") || el.getAttribute("role") === "dialog") {
-            el.setAttribute("aria-hidden", "false");
-        }
+        el.setAttribute("aria-hidden", "false");
+        attachFocusTrap(el);
+        if (typeof lucide !== "undefined") lucide.createIcons();
         return true;
     }
     return false;
@@ -67,18 +68,14 @@ function closeModal(id) {
     if (el) {
         el.classList.add("hidden");
         el.style.display = "none";
-        if (el.hasAttribute("aria-hidden") || el.getAttribute("role") === "dialog") {
-            el.setAttribute("aria-hidden", "true");
-        }
+        el.setAttribute("aria-hidden", "true");
+        detachFocusTrap(el);
     }
 }
 
-// ============================================================
-// SOS MODAL FUNCTIONS
-// ============================================================
-
 function closeSosConfirmModal() {
     closeModal("sos-confirm-modal");
+    closeModal("clear-sos-modal");
 }
 
 function confirmResolveSOS() {
@@ -88,8 +85,10 @@ function confirmResolveSOS() {
 
 function confirmClearSOS() {
     closeModal("clear-sos-modal");
+    closeModal("sos-confirm-modal");
     resolveSOS();
 }
+
 export {
     confirmFactoryReset,
     showModal,

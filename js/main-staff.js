@@ -10,7 +10,7 @@ import { registerOnclickHandlers } from "./register-onclick-staff.js";
 import { installOperationsHealthConsistency } from "./dispatcher/operations-health-consistency.js";
 import { bootstrapBusCommand } from "./bootstrap/init.js";
 import { migrateLegacyStorage } from "./core/storage-keys.js";
-import "./core/state-observer-setup.js";
+import "./core/state-observer-setup-staff.js";
 
 window.__BUSCOMMAND_SURFACE__ = "staff";
 window.BusCommandConfig = BusCommandConfig;

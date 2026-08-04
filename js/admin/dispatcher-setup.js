@@ -160,7 +160,7 @@ function enterDispatcherActiveGroup() {
     
     const gId = select.value;
     if (!gId) {
-        showToast("Please select a group", "error");
+        showToast(t("dispatcher_select_group"), "error");
         return;
     }
     

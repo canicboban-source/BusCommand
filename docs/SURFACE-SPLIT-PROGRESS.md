@@ -33,7 +33,7 @@ Poslednje ažuriranje: 2026-07-24 (uvoz formata zaključan — opcija 1)
 - [x] Ops centar: **Reši / Dodeli** + edit autobus/smena (demo + produkcioni API)
 - [x] Dnevni plan full: edit vozač/autobus po slotu
 - [x] E2E smoke potvrđen: `npx playwright test tests/e2e/ui-smoke.spec.js` → 30 passed (~44s)
-- [ ] Smanjiti shared `state-observer` chunk (~195 KB)
+- [x] Smanjiti shared `state-observer` chunk — Ch17: staff-only `state-observer-setup-staff.js` (driver više ne preload-uje dispatcher graph)
 - [ ] VDV-455 adapter (kasnije, industrija)
 
 ## E2E napomene (iskreno)

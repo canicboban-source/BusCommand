@@ -1,8 +1,24 @@
-const ACTIVE_REPORT_STATUSES = new Set(["active", "aktivno", "open"]);
-const RESOLVED_REPORT_STATUSES = new Set(["resolved", "rešeno", "reseno", "status_resolved"]);
+const ACTIVE_REPORT_STATUSES = new Set([
+    "active",
+    "aktivno",
+    "open",
+    "acknowledged",
+    "solution_proposed",
+    "applying"
+]);
+const RESOLVED_REPORT_STATUSES = new Set([
+    "resolved",
+    "rešeno",
+    "reseno",
+    "status_resolved",
+    "cancelled"
+]);
 
 function normalizedReportStatus(value) {
-    return String(value || "active").trim().toLowerCase();
+    const raw = String(value || "open").trim().toLowerCase();
+    if (raw === "active" || raw === "aktivno") return "open";
+    if (raw === "rešeno" || raw === "reseno" || raw === "status_resolved") return "resolved";
+    return raw;
 }
 
 function isActiveReport(report) {

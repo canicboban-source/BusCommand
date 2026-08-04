@@ -11,6 +11,7 @@ const cors    = require("cors");
 const os      = require("os");
 const helmet  = require("helmet");
 const pinoHttp = require("pino-http");
+const { z } = require("zod");
 
 const { logger } = require("./server/logger");
 const { buildStartupInfo } = require("./server/startup-info");
@@ -19,6 +20,7 @@ const { rateLimit, clearRateLimit, getClientIp } = require("./server/rate-limit"
 const {
   ProvisioningError,
   createCompanyAtomic,
+  deleteDispatcher,
   deleteCompanyAtomic,
   provisionUser,
   revokeDispatcherSessions,
@@ -26,12 +28,18 @@ const {
   updateDispatcherGroups
 } = require("./server/provisioning");
 const { createRequireSuperAdmin, createSuperAdminOverviewHandler } = require("./server/superadmin-overview");
+const { createStaffAuth, parseCompanyParam } = require("./server/staff-auth");
 const {
   getCompanyDetail,
   listAllCompanyAdmins,
   setCompanyAdminActive,
   requestCompanyAdminPasswordReset
 } = require("./server/superadmin-company");
+const {
+  buildTenantSettingsPatch,
+  applyTenantSettingsPatch,
+  EDITABLE_FEATURE_KEYS
+} = require("./server/superadmin-tenant-settings");
 const { createSupportSessionHandlers } = require("./server/support-session");
 const { createConfirmationScheduler } = require("./server/confirmation-scheduler");
 const {
@@ -40,7 +48,8 @@ const {
   listServicePlanHistory,
   normalizeServicePlanGroupId,
   previewServicePlan,
-  publishServicePlan
+  publishServicePlan,
+  activateServicePlan
 } = require("./server/service-plans");
 const { assertCompanyGroupsExist } = require("./server/group-access");
 const { listAuditEvents, normalizeStateSyncDetails } = require("./server/audit-log");
@@ -48,12 +57,15 @@ const { findCompanyGroupReferences, normalizeCompanyGroupId } = require("./serve
 const { normalizeCompanyProfileSettings } = require("./server/company-settings");
 const { buildCompanyExport } = require("./server/company-export");
 const {
+  GroupMonthlyImportError,
+  commitGroupMonthlyImport,
+  prepareGroupMonthlyImport
+} = require("./server/group-monthly-plan-import");
+const {
   validateBody,
   sanitizeCompanyId,
   assertCompanyIdUsable,
-  driverLoginBody,
   companyStatusBody,
-  hashPinBody,
   createCompanyBody,
   deleteCompanyBody,
   createUserBody,
@@ -61,6 +73,7 @@ const {
   companyDispatcherBody,
   companyDispatcherStatusBody,
   companyDispatcherActionBody,
+  companyDispatcherDeleteBody,
   companyAdminStatusBody,
   companyProfileSettingsBody,
   companyBrandingBody,
@@ -129,6 +142,26 @@ if (HAS_FIREBASE) {
 }
 
 const app = express();
+
+const groupMonthlyImportPreviewBody = z.object({
+  companyId: z.string().trim().min(1).max(128),
+  groupId: z.string().trim().min(1).max(120),
+  month: z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])$/),
+  mode: z.enum(["merge", "replace"]),
+  sourceName: z.string().trim().min(1).max(255),
+  reason: z.string().trim().min(3).max(200),
+  rows: z.array(z.object({
+    eid: z.string().trim().min(1).max(128),
+    date: z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/),
+    dutyCode: z.string().trim().min(1).max(64).transform(value => value.toUpperCase()),
+    sourceRow: z.number().int().min(2).max(100000)
+  })).min(1).max(2500)
+});
+const groupMonthlyImportCommitBody = z.object({
+  companyId: z.string().trim().min(1).max(128),
+  importId: z.string().trim().min(1).max(128),
+  fingerprint: z.string().regex(/^[a-f0-9]{64}$/)
+});
 
 app.set("trust proxy", 1);
 
@@ -203,72 +236,17 @@ app.get("/staff", (_req, res) => {
 
 const requireSuperAdmin = createRequireSuperAdmin({ hasFirebase: () => HAS_FIREBASE, admin: () => admin });
 
-async function requireUserProvisioner(req, res, next) {
-  if (!HAS_FIREBASE) return res.status(503).json({ success: false, error: "Firebase nije konfigurisan." });
-  const token = req.headers.authorization?.replace("Bearer ", "");
-  if (!token) return res.status(401).json({ success: false, error: "Nema tokena." });
-  try {
-    const decoded = await admin.auth().verifyIdToken(token, true);
-    if (!["superadmin", "company_admin"].includes(decoded.role)) {
-      return res.status(403).json({ success: false, error: "Pristup odbijen." });
-    }
-    req.adminUser = decoded;
-    next();
-  } catch (err) {
-    req.log?.warn({ err }, "User provisioner token verification failed");
-    return res.status(401).json({ success: false, error: "Nevažeći token." });
-  }
-}
-
-async function requireCompanyStaff(req, res, next) {
-  if (!HAS_FIREBASE) return res.status(503).json({ success: false, error: "Firebase nije konfigurisan." });
-  const token = req.headers.authorization?.replace("Bearer ", "");
-  if (!token) return res.status(401).json({ success: false, error: "Nema tokena." });
-  try {
-    const decoded = await admin.auth().verifyIdToken(token, true);
-    if (!["company_admin", "dispatcher"].includes(decoded.role) || !decoded.companyId) {
-      return res.status(403).json({ success: false, error: "Pristup odbijen." });
-    }
-    req.staffUser = decoded;
-    next();
-  } catch (err) {
-    req.log?.warn({ err }, "Company staff token verification failed");
-    return res.status(401).json({ success: false, error: "Nevažeći token." });
-  }
-}
-
-function requireCompanyAdmin(req, res, next) {
-  return requireCompanyStaff(req, res, () => {
-    if (req.staffUser.role !== "company_admin") {
-      return res.status(403).json({ success: false, error: "Samo Company Admin može objaviti vozni plan." });
-    }
-    next();
-  });
-}
-
-function parseCompanyParam(companyId) {
-  if (!companyId || typeof companyId !== "string") {
-    return { ok: false, error: "Nedostaje companyId." };
-  }
-  const id = companyId.trim().toLowerCase();
-  if (!id || id.length > 64 || !/^[a-z0-9][a-z0-9-]*$/.test(id)) {
-    return { ok: false, error: "Nevalidan companyId." };
-  }
-  return { ok: true, id };
-}
-
-function requireOwnCompany(req, res) {
-  const parsed = parseCompanyParam(req.body?.companyId || req.query?.companyId);
-  if (!parsed.ok) {
-    res.status(400).json({ success: false, error: parsed.error });
-    return null;
-  }
-  if (parsed.id !== req.staffUser.companyId) {
-    res.status(403).json({ success: false, error: "Pristup drugoj firmi nije dozvoljen." });
-    return null;
-  }
-  return parsed.id;
-}
+const {
+  requireCompanyStaff,
+  requireCompanyAdmin,
+  requireCompanyMemberParam,
+  requireUserProvisioner,
+  requireOwnCompany
+} = createStaffAuth({
+  hasFirebase: () => HAS_FIREBASE,
+  admin: () => admin,
+  db: () => db
+});
 
 // ─── API: Konfiguracija servera ────────────────────────────
 
@@ -277,7 +255,9 @@ app.get("/api/health", (req, res) => {
     success: true,
     status: "ok",
     uptime: Math.floor(process.uptime()),
-    mode: HAS_FIREBASE ? "production" : "demo"
+    mode: HAS_FIREBASE ? "production" : "demo",
+    version: APP_VERSION,
+    firebase: HAS_FIREBASE
   });
 });
 
@@ -306,105 +286,16 @@ registerDriverRoutes(app, {
   clearRateLimit,
   getClientIp,
   logAudit: (...args) => _logAuditEvent(...args),
-  confirmationScheduler
+  confirmationScheduler,
+  staffAuth: { requireCompanyStaff }
 });
 
 confirmationScheduler.registerRoutes(app, { rateLimit });
 
-// ─── API: Driver PIN Login ─────────────────────────────────
-
-app.post(
-  "/api/legacy/auth/driver-login",
-  rateLimit(10, 5 * 60 * 1000),
-  validateBody(driverLoginBody),
-  async (req, res) => {
-    const { companyId, driverId, pin } = req.validatedBody;
-    const clientIp = getClientIp(req);
-
-    if (!HAS_FIREBASE) {
-      return res.status(503).json({
-        success: false,
-        error: "Prijava zahteva konfigurisanu Firebase vezu."
-      });
-    }
-
-    try {
-      const companyRef  = db.collection("companies").doc(companyId);
-      const companySnap = await companyRef.get();
-
-      if (!companySnap.exists) {
-        return res.status(404).json({ success: false, error: "Firma nije pronađena." });
-      }
-
-      const companySettings = (await companyRef.collection("settings").doc("main").get()).data() || {};
-      if (companySettings.status === "suspended") {
-        return res.status(403).json({
-          success: false,
-          error: "Pristup firmi je suspendovan. Kontaktirajte podršku."
-        });
-      }
-
-      const driverRef  = companyRef.collection("drivers").doc(driverId);
-      const driverSnap = await driverRef.get();
-
-      if (!driverSnap.exists) {
-        return res.status(401).json({
-          success: false,
-          error: "Pogrešan PIN ili vozač nije pronađen."
-        });
-      }
-
-      const driver = driverSnap.data();
-
-      if (driver.active === false) {
-        return res.status(403).json({ success: false, error: "Nalog je deaktiviran." });
-      }
-
-      const pinMatch = await bcrypt.compare(String(pin), driver.pin);
-      if (!pinMatch) {
-        await _logAuditEvent(companyId, driverId, "driver_login_failed", { driverId, ip: clientIp });
-        return res.status(401).json({ success: false, error: "Pogrešan PIN." });
-      }
-
-      const customToken = await admin.auth().createCustomToken(driverId, {
-        role: "driver", companyId, name: driver.name,
-        bus: driver.bus || null, driverId
-      });
-
-      await _logAuditEvent(companyId, driverId, "driver_login_success", {
-        driverName: driver.name, bus: driver.bus
-      });
-
-      clearRateLimit(clientIp);
-
-      return res.json({
-        success: true,
-        token: customToken,
-        user: { id: driverId, name: driver.name, bus: driver.bus || null, companyId }
-      });
-
-    } catch (err) {
-      req.log?.error({ err }, "Driver login greška");
-      return res.status(500).json({ success: false, error: "Server greška. Pokušajte ponovo." });
-    }
-  }
-);
-
 // ─── API: Licenca ──────────────────────────────────────────
 
-app.get("/api/license/:companyId", async (req, res) => {
-  const parsed = parseCompanyParam(req.params.companyId);
-  if (!parsed.ok) {
-    return res.status(400).json({ success: false, error: parsed.error });
-  }
-  const { id: companyId } = parsed;
-
-  if (!HAS_FIREBASE) {
-    return res.status(503).json({
-      success: false,
-      error: "Firebase nije konfigurisan."
-    });
-  }
+app.get("/api/license/:companyId", rateLimit(60, 60 * 1000), requireCompanyMemberParam, async (req, res) => {
+  const companyId = req.tenantId;
 
   try {
     const settingsSnap = await db
@@ -575,23 +466,6 @@ app.post(
 );
 
 app.post(
-  "/api/admin/hash-pin",
-  requireSuperAdmin,
-  validateBody(hashPinBody),
-  async (req, res) => {
-    const { pin } = req.validatedBody;
-
-    try {
-      const hash = await bcrypt.hash(String(pin), 12);
-      return res.json({ success: true, hash });
-    } catch (err) {
-      req.log?.error({ err }, "hash-pin greška");
-      return res.status(500).json({ success: false, error: "Greška." });
-    }
-  }
-);
-
-app.post(
   "/api/admin/create-company",
   requireSuperAdmin,
   validateBody(createCompanyBody),
@@ -690,8 +564,45 @@ app.get("/api/admin/company/:companyId", requireSuperAdmin, async (req, res) => 
   }
 });
 
+app.patch("/api/admin/company/:companyId/settings", rateLimit(20, 5 * 60 * 1000), requireSuperAdmin, async (req, res) => {
+  const parsed = parseCompanyParam(req.params.companyId);
+  if (!parsed.ok) {
+    return res.status(400).json({ success: false, error: parsed.error });
+  }
+  const built = buildTenantSettingsPatch(req.body || {});
+  if (!built.ok) {
+    return res.status(400).json({ success: false, error: built.error, details: built.details || null });
+  }
+  try {
+    const settingsRef = db.collection("companies").doc(parsed.id).collection("settings").doc("main");
+    const snap = await settingsRef.get();
+    if (!snap.exists) {
+      return res.status(404).json({ success: false, error: "Firma nije pronađena." });
+    }
+    const existing = snap.data() || {};
+    const next = applyTenantSettingsPatch(existing, built.patch, {
+      adminTimestampFromDate: (date) => admin.firestore.Timestamp.fromDate(date)
+    });
+    await settingsRef.set(next, { merge: true });
+    await _logAuditEvent("superadmin", req.adminUser.uid, "company_settings_patched", {
+      companyId: parsed.id,
+      ...built.audit
+    });
+    const company = await getCompanyDetail({ db, companyId: parsed.id });
+    return res.json({
+      success: true,
+      company,
+      editableFeatures: EDITABLE_FEATURE_KEYS
+    });
+  } catch (err) {
+    req.log?.error({ err }, "company settings patch greška");
+    return res.status(500).json({ success: false, error: "Podešavanja firme nisu sačuvana." });
+  }
+});
+
 app.patch(
   "/api/admin/company/:companyId/admins/:uid/status",
+  rateLimit(20, 5 * 60 * 1000),
   requireSuperAdmin,
   validateBody(companyAdminStatusBody),
   async (req, res) => {
@@ -725,6 +636,7 @@ app.patch(
 
 app.post(
   "/api/admin/company/:companyId/admins/:uid/reset-password",
+  rateLimit(10, 5 * 60 * 1000),
   requireSuperAdmin,
   async (req, res) => {
     const parsed = parseCompanyParam(req.params.companyId);
@@ -760,6 +672,7 @@ app.post(
 
 app.post(
   "/api/admin/create-user",
+  rateLimit(20, 5 * 60 * 1000),
   requireUserProvisioner,
   validateBody(createUserBody),
   async (req, res) => {
@@ -794,6 +707,7 @@ app.post(
 
 app.put(
   "/api/admin/users/:uid/groups",
+  rateLimit(30, 5 * 60 * 1000),
   requireUserProvisioner,
   validateBody(updateUserGroupsBody),
   async (req, res) => {
@@ -1022,6 +936,40 @@ app.post(
       if (err.code === "user-not-found") return res.status(404).json({ success: false, error: err.message });
       req.log?.error({ err, code: err.code }, "Company dispatcher session revoke failed");
       return res.status(500).json({ success: false, error: "Sesije dispatchera nisu opozvane." });
+    }
+  }
+);
+
+app.delete(
+  "/api/company-admin/dispatchers/:uid",
+  rateLimit(10, 5 * 60 * 1000),
+  requireCompanyAdmin,
+  validateBody(companyDispatcherDeleteBody),
+  async (req, res) => {
+    const companyId = requireOwnCompany(req, res);
+    if (!companyId) return;
+    try {
+      const result = await deleteDispatcher({
+        db,
+        admin,
+        companyId,
+        uid: req.params.uid,
+        confirmEmail: req.validatedBody.confirmEmail,
+        actorId: req.staffUser.uid
+      });
+      return res.json({ success: true, ...result });
+    } catch (err) {
+      if (["invalid-uid", "confirm-mismatch"].includes(err.code)) {
+        return res.status(400).json({ success: false, code: err.code, error: err.message });
+      }
+      if (err.code === "user-not-found") {
+        return res.status(404).json({ success: false, code: err.code, error: err.message });
+      }
+      if (["dispatcher-active", "dispatcher-deleting", "dispatcher-delete-incomplete"].includes(err.code)) {
+        return res.status(409).json({ success: false, code: err.code, error: err.message });
+      }
+      req.log?.error({ err, code: err.code }, "Company dispatcher delete failed");
+      return res.status(500).json({ success: false, code: "DISPATCHER_DELETE_FAILED", error: "Disponent nije obrisan." });
     }
   }
 );
@@ -1416,18 +1364,26 @@ app.put(
         companyId,
         groupId: req.body?.groupId,
         actorId: req.staffUser.uid,
-        plan: req.body?.plan
+        plan: req.body?.plan,
+        source: req.body?.source || {}
       });
-      await _logAuditEvent(companyId, req.staffUser.uid, "service_plan_published", {
+      await _logAuditEvent(companyId, req.staffUser.uid, "service_plan_staged", {
         planId: result.planId,
         groupId: result.plan.groupId,
         planCode: result.plan.planCode,
         planVersion: result.plan.planVersion,
         validFrom: result.plan.validFrom,
+        sourceHash: result.sourceHash,
         dutyCount: result.summary.dutyCount,
         activityCount: result.summary.activityCount
       });
-      return res.json({ success: true, planId: result.planId, summary: result.summary });
+      return res.json({
+        success: true,
+        planId: result.planId,
+        status: result.status,
+        sourceHash: result.sourceHash,
+        summary: result.summary
+      });
     } catch (err) {
       if (err.code === "validation-failed") {
         return res.status(422).json({ success: false, error: err.message, details: err.details });
@@ -1439,7 +1395,148 @@ app.put(
         return res.status(err.code === "group-not-found" ? 404 : 400).json({ success: false, error: err.message });
       }
       req.log?.error({ err }, "Service plan publish failed");
-      return res.status(500).json({ success: false, error: "Vozni plan nije objavljen." });
+      return res.status(500).json({ success: false, error: "Vozni plan nije sačuvan." });
+    }
+  }
+);
+
+app.post(
+  "/api/company-admin/service-plans/:planId/activate",
+  rateLimit(10, 5 * 60 * 1000),
+  requireCompanyAdmin,
+  async (req, res) => {
+    const companyId = requireOwnCompany(req, res);
+    if (!companyId) return;
+    try {
+      const result = await activateServicePlan({
+        db,
+        admin,
+        companyId,
+        groupId: req.body?.groupId,
+        actorId: req.staffUser.uid,
+        planId: req.params.planId
+      });
+      await _logAuditEvent(companyId, req.staffUser.uid, result.previousActivePlanId
+        ? "service_plan_rolled_back"
+        : "service_plan_activated", {
+        planId: result.planId,
+        groupId: req.body?.groupId,
+        previousActivePlanId: result.previousActivePlanId,
+        alreadyActive: result.alreadyActive
+      });
+      return res.json({
+        success: true,
+        planId: result.planId,
+        status: result.status,
+        previousActivePlanId: result.previousActivePlanId,
+        alreadyActive: result.alreadyActive
+      });
+    } catch (err) {
+      if (err.code === "plan-not-found") {
+        return res.status(404).json({ success: false, error: err.message });
+      }
+      if (err.code === "invalid-status" || err.code === "invalid-plan-id") {
+        return res.status(400).json({ success: false, error: err.message });
+      }
+      if (["invalid-group", "group-not-found"].includes(err.code)) {
+        return res.status(err.code === "group-not-found" ? 404 : 400).json({ success: false, error: err.message });
+      }
+      req.log?.error({ err }, "Service plan activate failed");
+      return res.status(500).json({ success: false, error: "Katalog nije aktiviran." });
+    }
+  }
+);
+
+app.post(
+  "/api/company-admin/monthly-plans/import/preview",
+  rateLimit(20, 5 * 60 * 1000),
+  requireCompanyAdmin,
+  async (req, res) => {
+    const companyId = requireOwnCompany(req, res);
+    if (!companyId) return;
+    const parsed = groupMonthlyImportPreviewBody.safeParse(req.body);
+    if (!parsed.success || parsed.data.companyId !== companyId) {
+      return res.status(400).json({ success: false, code: "INVALID_MONTHLY_IMPORT", error: "Fajl mesečnog plana nije ispravan." });
+    }
+    try {
+      const groupId = normalizeServicePlanGroupId(parsed.data.groupId);
+      await assertCompanyGroupsExist(db.collection("companies").doc(companyId), [groupId]);
+      const activePlan = await getActiveServicePlan({ db, companyId, groupId });
+      if (!activePlan) {
+        return res.status(409).json({
+          success: false,
+          code: "ACTIVE_SERVICE_PLAN_REQUIRED",
+          error: "Grupa mora imati aktivan katalog smena pre uvoza mesečnog plana."
+        });
+      }
+      const preview = await prepareGroupMonthlyImport({
+        db,
+        admin,
+        companyId,
+        actorId: req.staffUser.uid,
+        ...parsed.data,
+        groupId,
+        activePlan
+      });
+      await _logAuditEvent(companyId, req.staffUser.uid, "group_monthly_plan_import_previewed", {
+        importId: preview.id,
+        groupId,
+        month: parsed.data.month,
+        mode: parsed.data.mode,
+        sourceName: parsed.data.sourceName,
+        reason: parsed.data.reason,
+        summary: preview.summary
+      }, { actorRole: req.staffUser.role, actorName: req.staffUser.name || null });
+      return res.json({ success: true, preview });
+    } catch (err) {
+      if (err instanceof GroupMonthlyImportError) {
+        return res.status(err.status).json({ success: false, code: err.code, error: "Mesečni plan mora biti ispravljen.", details: err.details });
+      }
+      if (["invalid-group", "group-not-found"].includes(err.code)) {
+        return res.status(err.code === "group-not-found" ? 404 : 400).json({ success: false, code: err.code, error: err.message });
+      }
+      req.log?.error({ err }, "Company monthly plan import preview failed");
+      return res.status(500).json({ success: false, code: "MONTHLY_IMPORT_PREVIEW_FAILED", error: "Pregled mesečnog plana nije pripremljen." });
+    }
+  }
+);
+
+app.put(
+  "/api/company-admin/monthly-plans/import/commit",
+  rateLimit(10, 5 * 60 * 1000),
+  requireCompanyAdmin,
+  async (req, res) => {
+    const companyId = requireOwnCompany(req, res);
+    if (!companyId) return;
+    const parsed = groupMonthlyImportCommitBody.safeParse(req.body);
+    if (!parsed.success || parsed.data.companyId !== companyId) {
+      return res.status(400).json({ success: false, code: "INVALID_MONTHLY_IMPORT_COMMIT", error: "Potvrda uvoza nije ispravna." });
+    }
+    try {
+      const result = await commitGroupMonthlyImport({
+        db,
+        admin,
+        companyId,
+        actorId: req.staffUser.uid,
+        importId: parsed.data.importId,
+        fingerprint: parsed.data.fingerprint
+      });
+      await _logAuditEvent(companyId, req.staffUser.uid, "group_monthly_plan_import_committed", {
+        importId: result.id,
+        summary: result.summary,
+        idempotent: result.idempotent
+      }, { actorRole: req.staffUser.role, actorName: req.staffUser.name || null });
+      return res.json({ success: true, ...result });
+    } catch (err) {
+      await _logAuditEvent(companyId, req.staffUser.uid, "group_monthly_plan_import_failed", {
+        importId: parsed.data.importId,
+        code: err.code || "MONTHLY_IMPORT_COMMIT_FAILED"
+      }, { actorRole: req.staffUser.role, actorName: req.staffUser.name || null }).catch(() => {});
+      if (err instanceof GroupMonthlyImportError) {
+        return res.status(err.status).json({ success: false, code: err.code, error: "Mesečni plan nije objavljen.", details: err.details });
+      }
+      req.log?.error({ err }, "Company monthly plan import commit failed");
+      return res.status(500).json({ success: false, code: "MONTHLY_IMPORT_COMMIT_FAILED", error: "Mesečni plan nije objavljen. Bezbedno pokušajte ponovo." });
     }
   }
 );
@@ -1546,7 +1643,8 @@ app.get(
       return res.status(400).json({ success: false, error: err.message });
     }
     if (req.staffUser.role === "dispatcher") {
-      const groups = Array.isArray(req.staffUser.groups) ? req.staffUser.groups.map(String) : [];
+      // Grupe dolaze iz tenant profila (staff-auth), ne iz token claims-a.
+      const groups = req.staffUser.groups;
       if (!groups.includes(groupId)) {
         return res.status(403).json({ success: false, error: "Plan nije u dodeljenim grupama disponenta." });
       }

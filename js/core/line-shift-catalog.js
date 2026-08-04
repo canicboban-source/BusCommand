@@ -105,10 +105,12 @@ function getShiftCatalogForLine(lineId) {
     }
 
     if (!window.state.shiftCatalogs[id]) {
+        // Empty shell — do not invent fallback duties; active CA plan locks real codes (§7).
         window.state.shiftCatalogs[id] = {
             line: id,
             lineId: id,
-            entries: { ...buildFallbackCatalogEntries(id) }
+            entries: {},
+            locked: false
         };
     }
 
@@ -121,21 +123,39 @@ function activateShiftCatalogForLine(lineId) {
     return cat;
 }
 
-function ensureShiftCatalogForEdit(lineId) {
+/**
+ * Prepare catalog for edit UI.
+ * When locked (active CA service plan), never invent codes.
+ * When unlocked and empty, optionally seed fallbacks only if explicitly allowed.
+ */
+function ensureShiftCatalogForEdit(lineId, opts = {}) {
     const id = String(lineId || getActiveLineId() || "").trim();
     if (!id) return null;
 
     const cat = getShiftCatalogForLine(id);
-    if (cat.locked === true) {
+    if (cat.locked === true || cat.source === "company-service-plan") {
         activateShiftCatalogForLine(id);
         return cat;
     }
-    const fallback = buildFallbackCatalogEntries(id);
-    cat.entries = { ...fallback, ...cat.entries };
+    const allowFallback = opts.allowFallback === true;
+    if (allowFallback) {
+        const fallback = buildFallbackCatalogEntries(id);
+        cat.entries = { ...fallback, ...cat.entries };
+    }
     cat.line = id;
     cat.lineId = id;
     activateShiftCatalogForLine(id);
     return cat;
+}
+
+function isCatalogLockedForLine(lineId) {
+    const cat = getShiftCatalogForLine(lineId);
+    return cat?.locked === true || cat?.source === "company-service-plan";
+}
+
+function listAssignableCatalogCodes(lineId) {
+    const cat = ensureShiftCatalogForEdit(lineId);
+    return Object.keys(cat?.entries || {}).sort();
 }
 
 function persistCatalogForLine(lineId, entries, meta = {}) {
@@ -187,5 +207,7 @@ export {
     getShiftCatalogForLine,
     activateShiftCatalogForLine,
     ensureShiftCatalogForEdit,
+    isCatalogLockedForLine,
+    listAssignableCatalogCodes,
     persistCatalogForLine
 };

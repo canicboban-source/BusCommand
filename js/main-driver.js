@@ -9,7 +9,6 @@ import { installDriverSurface } from "./install-driver.js";
 import { registerOnclickHandlers } from "./register-onclick-driver.js";
 import { bootstrapBusCommand } from "./bootstrap/init.js";
 import { migrateLegacyStorage } from "./core/storage-keys.js";
-import "./core/state-observer-setup.js";
 
 window.__BUSCOMMAND_SURFACE__ = "driver";
 window.BusCommandConfig = BusCommandConfig;
@@ -34,7 +33,7 @@ if (document.readyState === "loading") {
 
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw-driver.js").catch((err) => {
+        navigator.serviceWorker.register("/sw-driver.js", { scope: "/driver.html" }).catch((err) => {
             console.warn("[PWA] SW register failed:", err.message);
         });
     });

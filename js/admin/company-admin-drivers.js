@@ -30,6 +30,7 @@ let pendingImport = null;
 let currentPage = 1;
 let importPending = false;
 let editSavePending = false;
+let driversFilterTimer = null;
 const statusPending = new Set();
 
 function normalizeHeader(value) {
@@ -434,6 +435,15 @@ function handleCompanyDriversFilter() {
     renderDirectory();
 }
 
+/** Debounced text search only — selects stay immediate (Ch17). */
+function handleCompanyDriversSearch() {
+    clearTimeout(driversFilterTimer);
+    driversFilterTimer = setTimeout(() => {
+        currentPage = 1;
+        renderDirectory();
+    }, 250);
+}
+
 function changeCompanyDriversPage(page) {
     currentPage = Math.max(1, Number(page) || 1);
     renderDirectory();
@@ -625,6 +635,7 @@ export {
     clearCompanyDriversImport,
     confirmCompanyDriversImport,
     handleCompanyDriversFilter,
+    handleCompanyDriversSearch,
     changeCompanyDriversPage,
     toggleCompanyDriverStatus,
     openCompanyDriverEdit,

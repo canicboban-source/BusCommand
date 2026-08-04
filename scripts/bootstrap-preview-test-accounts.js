@@ -102,7 +102,8 @@ async function ensureCompany(admin, db, companyId, companyName, { enableSupportS
   const features = {
     ...(settingsSnap.data()?.features || {}),
     supportSession: enableSupportSession === true,
-    shiftConfirmationScheduler: false
+    shiftConfirmationScheduler: false,
+    liveGps: false
   };
   await settingsRef.set({
     features,

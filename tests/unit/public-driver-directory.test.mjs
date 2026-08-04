@@ -5,22 +5,27 @@ import { URL } from "node:url";
 
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
-test("public driver directory is disabled; production login uses EID identify", async () => {
-  const [routes, selects, login] = await Promise.all([
+test("no unauthenticated endpoint answers questions about who works here", async () => {
+  const [routes, selects, login, authClient] = await Promise.all([
     read("../../server/driver-routes.js"),
     read("../../js/auth/login-selects.js"),
-    read("../../js/auth/login-driver.js")
+    read("../../js/auth/login-driver.js"),
+    read("../../js/core/auth-client.js")
   ]);
 
+  // The roster dump and the EID lookup are both retired; each answers 410.
   assert.match(routes, /PUBLIC_DRIVER_DIRECTORY_DISABLED/);
-  assert.match(routes, /status\(410\)/);
-  assert.match(routes, /\/api\/public\/drivers\/identify/);
+  assert.match(routes, /DRIVER_IDENTIFY_DISABLED/);
   assert.doesNotMatch(routes, /collection\("drivers"\)\.where\("active"/);
+
+  // Nothing in the login path may resolve a driver before authentication.
+  assert.doesNotMatch(login, /\/api\/public\/drivers\/identify/);
+  assert.doesNotMatch(authClient, /\/api\/public\/drivers\/identify/);
+  assert.match(authClient, /body: JSON\.stringify\(\{ companyId, eid, loginCode \}\)/);
 
   assert.match(selects, /IS_DEMO_MODE/);
   assert.match(selects, /configureProductionDriverLoginFields/);
   assert.doesNotMatch(selects, /\/api\/public\/companies\/\$\{encodeURIComponent\(COMPANY_ID\)\}\/drivers/);
 
-  assert.match(login, /login_eid_required_toast|Unesite EID/);
-  assert.match(login, /\/api\/public\/drivers\/identify/);
+  assert.match(login, /login_eid_required_toast/);
 });

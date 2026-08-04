@@ -33,6 +33,8 @@ async function extractTextFromScheduleFile(file) {
     let extractedText = "";
 
     if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+        const { ensureXlsx } = await import("../core/office-parsers.js");
+        const XLSX = await ensureXlsx();
         const arrayBuffer = await readFileAsArrayBuffer(file);
         const workbook = XLSX.read(arrayBuffer, { type: "array" });
         const sheetName = workbook.SheetNames[0];
@@ -45,6 +47,8 @@ async function extractTextFromScheduleFile(file) {
     } else if (name.endsWith(".csv")) {
         extractedText = await readFileAsText(file);
     } else if (name.endsWith(".pdf") || file.type === "application/pdf") {
+        const { ensurePdfJs } = await import("../core/office-parsers.js");
+        const pdfjsLib = await ensurePdfJs();
         const arrayBuffer = await readFileAsArrayBuffer(file);
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         for (let i = 1; i <= pdf.numPages; i++) {

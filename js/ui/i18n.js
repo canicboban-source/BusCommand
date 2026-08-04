@@ -1,10 +1,16 @@
 // BusCommand ESM v9.5
 import { getBaseState, saveState, resolveUiLanguage, applyUiLanguagePreference } from "../core/state.js";
 import { DEFAULT_BRAND_COLOR, normalizeBrandColor, normalizeBrandLogoUrl } from "../admin/company-admin-branding-model.js";
-import { populateTemplateSelect } from "../dispatcher/msg-compose.js";
 import { initializeLoginSelects } from "../auth/login-selects.js";
 import { switchSection } from "../layout/navigation.js";
 import { tp } from "./i18n-plural.js";
+import { isStaffSurface } from "../core/app-surface.js";
+
+// The Super Admin entry hides behind repeated logo clicks, and only the staff
+// bundle registers that handler.
+function superAdminEntryAttr() {
+    return isStaffSurface() ? ' data-action="handleLogoClick"' : "";
+}
 
 function changeLanguage(lang) {
     if (!window.TRANSLATIONS[lang]) {
@@ -94,9 +100,16 @@ function translateUI() {
         if (val) el.setAttribute("aria-label", val);
     });
 
-    // Obnovi template selectove na novom jeziku
-    populateTemplateSelect("message-template");
-    populateTemplateSelect("message-template-messages");
+    // Staff-only: message templates live in the dispatcher compose module.
+    // Dynamic import keeps that graph out of the driver bundle (Ch17).
+    if (isStaffSurface()) {
+        import("../dispatcher/msg-compose.js")
+            .then(({ populateTemplateSelect }) => {
+                populateTemplateSelect("message-template");
+                populateTemplateSelect("message-template-messages");
+            })
+            .catch(() => {});
+    }
 
     const loginScreen = document.getElementById("login-screen");
     if (loginScreen && !loginScreen.classList.contains("hidden")) {
@@ -178,7 +191,7 @@ function applyBrandingToUI() {
             ? `<img class="bc-tenant-logo" src="${escapeAttr(logoUrl)}" alt="${safeName}" referrerpolicy="no-referrer" style="max-height: 40px; max-width: 160px; object-fit: contain; margin-top: 10px;">`
             : "";
         loginHeaderLogo.innerHTML = `
-            <div class="logo bc-brand" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;flex-direction:column;align-items:center;">
+            <div class="logo bc-brand" id="login-logo"${superAdminEntryAttr()} style="cursor:default;user-select:none;flex-direction:column;align-items:center;">
                 <img class="bc-brand-mark bc-brand-mark--hero" src="/brand/logo-hero.png" width="80" height="80" alt="BusCommand">
                 <span class="bc-brand-text">${productLogoHtml(displayName)}</span>
                 ${tenantLogo}

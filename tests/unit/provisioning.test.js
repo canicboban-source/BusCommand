@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   createCompanyAtomic,
+  deleteDispatcher,
   deleteCompanyAtomic,
   normalizeFirebaseUid,
   provisionUser,
@@ -62,10 +63,16 @@ function fakeFirestore({ initial = {}, failTransactionSetAt = null } = {}) {
           setCount += 1;
           if (setCount === failTransactionSetAt) throw new Error("simulated transaction failure");
           staged.push([documentRef.path, value, options]);
+        },
+        delete(documentRef) {
+          staged.push([documentRef.path, null, { delete: true }]);
         }
       };
       await callback(transaction);
-      staged.forEach(([path, value, options]) => store.set(path, options?.merge ? { ...(store.get(path) || {}), ...value } : value));
+      staged.forEach(([path, value, options]) => {
+        if (options?.delete) store.delete(path);
+        else store.set(path, options?.merge ? { ...(store.get(path) || {}), ...value } : value);
+      });
     }
   };
 }
@@ -265,6 +272,61 @@ test("dispatcher reactivation fails closed when the licensed active-seat limit i
   );
   assert.equal(admin.updated.length, 0);
   assert.equal(db.store.get("companies/alpha/users/dispatcher-1").active, false);
+});
+
+test("dispatcher deletion requires inactive tenant profile and exact email confirmation", async () => {
+  const db = fakeFirestore({ initial: {
+    "companies/alpha": {},
+    "companies/alpha/users/dispatcher-1": {
+      id: "dispatcher-1",
+      role: "dispatcher",
+      companyId: "alpha",
+      email: "dispatcher@example.test",
+      active: true
+    }
+  } });
+  const admin = fakeAdmin();
+  await assert.rejects(
+    deleteDispatcher({
+      db, admin, companyId: "alpha", uid: "dispatcher-1",
+      confirmEmail: "dispatcher@example.test", actorId: "admin-1"
+    }),
+    error => error.code === "dispatcher-active"
+  );
+  db.store.get("companies/alpha/users/dispatcher-1").active = false;
+  await assert.rejects(
+    deleteDispatcher({
+      db, admin, companyId: "alpha", uid: "dispatcher-1",
+      confirmEmail: "wrong@example.test", actorId: "admin-1"
+    }),
+    error => error.code === "confirm-mismatch"
+  );
+  assert.equal(admin.deleted.length, 0);
+  assert.equal(db.store.has("companies/alpha/users/dispatcher-1"), true);
+});
+
+test("dispatcher deletion removes Auth and active profile but preserves an audit record", async () => {
+  const db = fakeFirestore({ initial: {
+    "companies/alpha": {},
+    "companies/alpha/users/dispatcher-1": {
+      id: "dispatcher-1",
+      role: "dispatcher",
+      companyId: "alpha",
+      email: "dispatcher@example.test",
+      active: false
+    }
+  } });
+  const admin = fakeAdmin();
+  const result = await deleteDispatcher({
+    db, admin, companyId: "alpha", uid: "dispatcher-1",
+    confirmEmail: " DISPATCHER@example.test ", actorId: "admin-1"
+  });
+  assert.equal(result.deleted, true);
+  assert.deepEqual(admin.deleted, ["dispatcher-1"]);
+  assert.equal(db.store.has("companies/alpha/users/dispatcher-1"), false);
+  const audit = [...db.store.values()].find(value => value.action === "dispatcher_deleted");
+  assert.equal(audit.actorId, "admin-1");
+  assert.deepEqual(audit.details, { uid: "dispatcher-1" });
 });
 
 test("session revocation rejects foreign-tenant IDs and audits valid dispatcher", async () => {
