@@ -1,6 +1,8 @@
 // BusCommand ESM — Auth (email/lozinka + PIN login)
 import { staffAuthErrorKey } from "../auth/staff-login-errors.js";
 
+const KNOWN_ROLES = new Set(["driver", "dispatcher", "company-admin", "superadmin"]);
+
 const Auth = (() => {
     let _currentUser = null;
     const _listeners = [];
@@ -15,17 +17,24 @@ const Auth = (() => {
                 try {
                     const tokenResult = await firebaseUser.getIdTokenResult(true);
                     const claims = tokenResult.claims;
-                    _currentUser = {
-                        uid: firebaseUser.uid,
-                        email: firebaseUser.email || null,
-                        name: claims.name || firebaseUser.displayName || firebaseUser.email || "Korisnik",
-                        role: normalizeRoleClaim(claims.role || "driver"),
-                        companyId: claims.companyId || null,
-                        bus: claims.bus || null,
-                        permissions: claims.permissions || {},
-                        groups: Array.isArray(claims.groups) ? claims.groups : [],
-                        mustChangeLoginCode: claims.mustChangeLoginCode === true
-                    };
+                    const role = normalizeRoleClaim(claims.role);
+                    if (!role) {
+                        console.warn("Auth: missing or unknown role claim — signing out.");
+                        _currentUser = null;
+                        try { await firebase.auth().signOut(); } catch { /* ignore */ }
+                    } else {
+                        _currentUser = {
+                            uid: firebaseUser.uid,
+                            email: firebaseUser.email || null,
+                            name: claims.name || firebaseUser.displayName || firebaseUser.email || "Korisnik",
+                            role,
+                            companyId: claims.companyId || null,
+                            bus: claims.bus || null,
+                            permissions: claims.permissions || {},
+                            groups: Array.isArray(claims.groups) ? claims.groups : [],
+                            mustChangeLoginCode: claims.mustChangeLoginCode === true
+                        };
+                    }
                 } catch (err) {
                     console.warn("Auth: ne mogu čitati claims:", err);
                     _currentUser = null;
@@ -43,13 +52,22 @@ const Auth = (() => {
                 .signInWithEmailAndPassword(email.trim(), password);
             const tokenResult = await credential.user.getIdTokenResult(true);
             const claims = tokenResult.claims;
+            const role = normalizeRoleClaim(claims.role);
+            if (!role) {
+                try { await firebase.auth().signOut(); } catch { /* ignore */ }
+                return {
+                    success: false,
+                    code: "auth/invalid-role",
+                    errorKey: staffAuthErrorKey("auth/invalid-credentials")
+                };
+            }
             return {
                 success: true,
                 user: {
                     uid: credential.user.uid,
                     email: credential.user.email,
                     name: claims.name || credential.user.displayName || credential.user.email,
-                    role: normalizeRoleClaim(claims.role || "dispatcher"),
+                    role,
                     companyId: claims.companyId || null,
                     groups: Array.isArray(claims.groups) ? claims.groups : []
                 }
@@ -157,8 +175,9 @@ const Auth = (() => {
     }
 
     function normalizeRoleClaim(role) {
-        if (role === "company_admin") return "company-admin";
-        return role;
+        if (!role) return null;
+        const normalized = role === "company_admin" ? "company-admin" : String(role);
+        return KNOWN_ROLES.has(normalized) ? normalized : null;
     }
 
     return {

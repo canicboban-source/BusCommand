@@ -213,6 +213,14 @@ const DIST_DIR = path.join(__dirname, "dist");
 const HAS_DIST = fs.existsSync(path.join(DIST_DIR, "index.html"));
 const STATIC_DIR = HAS_DIST ? DIST_DIR : __dirname;
 
+function sendStaffApp(res) {
+  res.setHeader("Cache-Control", "no-cache");
+  return res.sendFile(path.join(STATIC_DIR, "staff.html"));
+}
+
+// Preview / desktop entry: `/` is BusCommand (email + password). No driver-PWA gate.
+app.get(["/", "/index.html"], (_req, res) => sendStaffApp(res));
+
 app.use(express.static(STATIC_DIR, {
   etag: true,
   lastModified: true,
@@ -229,10 +237,7 @@ app.get("/driver", (_req, res) => {
   res.sendFile(path.join(STATIC_DIR, "driver.html"));
 });
 
-app.get("/staff", (_req, res) => {
-  res.setHeader("Cache-Control", "no-cache");
-  res.sendFile(path.join(STATIC_DIR, "staff.html"));
-});
+app.get("/staff", (_req, res) => sendStaffApp(res));
 
 const requireSuperAdmin = createRequireSuperAdmin({ hasFirebase: () => HAS_FIREBASE, admin: () => admin });
 
@@ -1674,9 +1679,10 @@ app.get("*", (req, res) => {
     return res.sendFile(path.join(STATIC_DIR, "driver.html"));
   }
   if (req.path.startsWith("/staff")) {
-    return res.sendFile(path.join(STATIC_DIR, "staff.html"));
+    return sendStaffApp(res);
   }
-  res.sendFile(path.join(STATIC_DIR, "index.html"));
+  // Fallback HTML routes open BusCommand staff app (email + password), not a surface chooser
+  return sendStaffApp(res);
 });
 
 // ─── Error handler ─────────────────────────────────────────

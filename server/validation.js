@@ -32,25 +32,19 @@ const deleteCompanyBody = z.object({
   confirmCompanyId: z.string().trim().min(1).max(64)
 });
 
+// Super Admin accounts are bootstrap-only — never mint via this public admin API.
 const createUserBody = z.object({
   email: z.string().trim().email().max(254),
   password: z.string().min(6).max(128),
   name: z.string().trim().max(200).optional(),
-  role: z.enum(["superadmin", "company_admin", "dispatcher"]),
-  companyId: z.string().trim().max(64).optional(),
+  role: z.enum(["company_admin", "dispatcher"]),
+  companyId: z.string().trim().max(64),
   groups: z.array(z.string().trim().min(1).max(64)).max(100).optional().default([])
 }).superRefine((data, ctx) => {
-  if (data.role !== "superadmin" && !data.companyId) {
+  if (!data.companyId) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "companyId je obavezan za ovu ulogu.",
-      path: ["companyId"]
-    });
-  }
-  if (data.role === "superadmin" && data.companyId) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Superadmin ne smije imati companyId.",
       path: ["companyId"]
     });
   }

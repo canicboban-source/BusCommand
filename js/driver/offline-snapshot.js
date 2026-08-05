@@ -77,11 +77,8 @@ function clearDriverOfflineSnapshot() {
 }
 
 async function clearDriverSensitiveCaches() {
+  // Keep pending offline writes — they were promised for sync. Only drop snapshot/caches.
   clearDriverOfflineSnapshot();
-  try {
-    const { clearOfflineQueue } = await import("./offline-queue.js");
-    clearOfflineQueue();
-  } catch { /* ignore */ }
   if (typeof caches === "undefined") return;
   try {
     const keys = await caches.keys();

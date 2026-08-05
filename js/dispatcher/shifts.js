@@ -270,6 +270,30 @@ function openShiftCell(driverName, dateStr) {
     }, 0);
 }
 
+function isCoveredWorkingShift(shift) {
+    if (!shift) return false;
+    const type = String(shift.type || "").toLowerCase();
+    return type && !["clear", "off", "vacation", "sick", "slobodan", "odmor", "bolovanje"].includes(type);
+}
+
+/** Today’s covered duty must go through incident → guided resolution, not silent clear/absence. */
+function requireIncidentForTodayCoveredChange(driver, date, nextType) {
+    if (!driver || date !== todayDateStr()) return false;
+    const existing = getShiftForDriverDate(driver.name, date);
+    if (!isCoveredWorkingShift(existing)) return false;
+    const next = String(nextType || "").toLowerCase();
+    if (!["clear", "off", "vacation", "sick"].includes(next)) return false;
+    showToast(
+        t("shift_today_needs_incident")
+            || "Za današnju smenu prvo otvorite problem u operativnom centru, pa vodite zamenu.",
+        "error"
+    );
+    if (typeof window.openOperationalIncident === "function") {
+        window.openOperationalIncident(driver.name);
+    }
+    return true;
+}
+
 async function assignShift() {
     const driverName = document.getElementById("shift-driver-select")?.value || "";
     const date = document.getElementById("shift-date-input")?.value || "";
@@ -285,6 +309,7 @@ async function assignShift() {
         showToast(t("shift_err_required"), "error");
         return;
     }
+    if (requireIncidentForTodayCoveredChange(driver, date, type)) return;
     const saved = await persistShift(driver, date, type, name, working ? start : null, working ? end : null);
     if (!saved) return;
     showToast(`✓ ${driver.name} — ${date}`, "success");
@@ -296,6 +321,7 @@ async function assignShift() {
 async function removeShift(driverName, dateStr) {
     const driver = driverByName(driverName);
     if (!driver || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return;
+    if (requireIncidentForTodayCoveredChange(driver, dateStr, "clear")) return;
     const saved = await persistShift(driver, dateStr, "clear");
     if (!saved) return;
     showToast(t("shift_removed"), "info");

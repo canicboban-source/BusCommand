@@ -36,11 +36,23 @@ export function isStaffSurface() {
     return getAppSurface() === "staff";
 }
 
-export function assertSurfaceRole(role) {
-    const surface = getAppSurface();
-    const normalized = role === "company_admin" ? "company-admin" : role;
-    if (surface === "driver") return normalized === "driver";
+export function normalizeSurfaceRole(role) {
+    if (role === "company_admin") return "company-admin";
+    return role;
+}
+
+/** Staff surfaces accept only dispatcher / company-admin / superadmin. */
+export function isStaffRole(role) {
+    const normalized = normalizeSurfaceRole(role);
     return normalized === "dispatcher"
         || normalized === "company-admin"
         || normalized === "superadmin";
+}
+
+export function assertSurfaceRole(role) {
+    const surface = getAppSurface();
+    const normalized = normalizeSurfaceRole(role);
+    if (!normalized) return false;
+    if (surface === "driver") return normalized === "driver";
+    return isStaffRole(normalized);
 }

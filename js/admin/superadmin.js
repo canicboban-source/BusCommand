@@ -719,21 +719,26 @@ function superadminDeleteCompanyAdmin(id) {
 }
 
 function superadminImpersonate(dispId) {
+    // Production uses audited support sessions — never fake a dispatcher token locally.
+    if (!IS_DEMO_MODE) {
+        showToast(t("sa_impersonate_demo_only") || "Stealth inspect is demo-only. Use a support session in production.", "error");
+        return;
+    }
     const disp = window.state.dispatchers.find(d => d.id === dispId);
     if (!disp) return;
-    
+
     window.currentUser = {
         role: "dispatcher",
         name: disp.name,
         id: disp.id,
         activeGroupId: disp.activeGroupId || (disp.groups && disp.groups.length > 0 ? disp.groups[0] : null),
         impersonated: true,
-        readOnly: true  // Super Admin stealth mode — view only, no changes
+        readOnly: true
     };
-    
+
     persistUserSession(window.currentUser);
     showAppLayout();
-    showToast(`👁️ Stealth Inspect: ${disp.name} (Read-Only)`, "info");
+    showToast(`Stealth Inspect: ${disp.name} (Read-Only)`, "info");
 }
 
 function superadminResetPin(dispId) {

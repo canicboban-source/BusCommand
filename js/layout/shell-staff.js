@@ -4,7 +4,7 @@ import { renderSuperAdminDashboard } from "../admin/superadmin.js";
 import { checkSOSStatus } from "../maps/sos-siren.js";
 import { showCompanyAdminOnboarding, shouldShowCompanyAdminOnboarding } from "../admin/company-admin-onboarding.js";
 import { rejectDispatcherWithoutGroups, clearAllSensitiveAuthFields } from "../auth/login-ui.js";
-import { syncUserSession } from "../auth/login-session.js";
+import { clearUserSession, syncUserSession } from "../auth/login-session.js";
 import { switchSection } from "./navigation.js";
 import { requestNotificationPermission } from "../maps/gps-track.js";
 import { initDispatcherLiveMap } from "../maps/live-map-core.js";
@@ -20,6 +20,10 @@ export function showAppLayout() {
     const role = window.currentUser?.role;
     if (!role || role === "driver") {
         console.warn("[shell-staff] driver role not allowed on staff surface");
+        try { window.Auth?.logout?.(); } catch { /* ignore */ }
+        clearUserSession();
+        clearAllSensitiveAuthFields();
+        window.currentUser = null;
         return false;
     }
 

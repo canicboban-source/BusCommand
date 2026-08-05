@@ -109,6 +109,46 @@ test("server shift document preserves catalog times, clears bus and carries impo
   assert.equal(lockDocumentId("310", "2026-09"), lockDocumentId("310", "2026-09"));
 });
 
+test("merge import preserves bus and confirmation when duty identity is unchanged", () => {
+  const preserved = buildShiftDocument({
+    driverId: "driver-100",
+    driverName: "Ana Driver",
+    date: "2026-09-01",
+    type: "morning",
+    name: "310.S01",
+    start: "04:02",
+    end: "14:35",
+    expectedRevision: 1
+  }, "310", "ca-1", "import-2", "timestamp", {
+    type: "morning",
+    name: "310.S01",
+    start: "04:02",
+    end: "14:35",
+    bus: "4401",
+    confirmedByDriver: true
+  }, { preserveOps: true });
+  assert.equal(preserved.bus, "4401");
+  assert.equal(preserved.confirmedByDriver, true);
+
+  const replaced = buildShiftDocument({
+    driverId: "driver-100",
+    driverName: "Ana Driver",
+    date: "2026-09-01",
+    type: "morning",
+    name: "310.S01",
+    start: "04:02",
+    end: "14:35",
+    expectedRevision: 1
+  }, "310", "ca-1", "import-3", "timestamp", {
+    type: "morning",
+    name: "310.S01",
+    bus: "4401",
+    confirmedByDriver: true
+  }, { preserveOps: false });
+  assert.equal(replaced.bus, "");
+  assert.equal(replaced.confirmedByDriver, false);
+});
+
 test("CA import routes are server-owned, audited and block concurrent dispatcher edits", () => {
   const root = path.join(__dirname, "../..");
   const api = fs.readFileSync(path.join(root, "api-server.js"), "utf8");

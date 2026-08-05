@@ -6,50 +6,15 @@
   <title>BusCommand</title>
   <link rel="icon" type="image/png" href="/brand/logo-hero.png">
   <link rel="apple-touch-icon" href="/brand/logo-hero.png">
-  <link rel="stylesheet" href="css/design-tokens.css">
-  <link rel="stylesheet" href="css/brand.css">
-  <link rel="stylesheet" href="style.css">
-  <style>
-    body { min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0;
-      background: var(--bg-darker, #07070f); font-family: Outfit, system-ui, sans-serif; color: #e8eef7; }
-    .gate { width: min(420px, 92vw); text-align: center; }
-    .gate h1 { font-size: 1.6rem; margin: 0 0 8px; }
-    .gate p { color: #94a3b8; margin: 0 0 28px; font-size: 0.95rem; }
-    .gate a { display: block; text-decoration: none; color: inherit; padding: 16px 18px; margin-bottom: 12px;
-      border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03);
-      font-weight: 600; transition: border-color .15s, background .15s; }
-    .gate a:hover { border-color: #3b82f6; background: rgba(59,130,246,0.12); }
-    .gate a span { display: block; font-size: 0.8rem; font-weight: 400; color: #94a3b8; margin-top: 4px; }
-  </style>
+  <meta http-equiv="refresh" content="0;url=/staff.html">
+  <link rel="canonical" href="/staff.html">
+  <script>
+    location.replace("/staff.html" + location.search + location.hash);
+  </script>
 </head>
 <body>
-  <div class="gate">
-    <div class="bc-brand" style="justify-content:center;margin-bottom:14px;">
-      <img class="bc-brand-mark bc-brand-mark--hero" src="/brand/logo-hero.png" width="80" height="80" alt="BusCommand">
-      <span class="bc-brand-text" style="font-size:1.6rem;">BusCommand</span>
-    </div>
-    <p>Izaberite površinu aplikacije</p>
-    <a href="/driver.html">Vozač (PWA)<span>Mobilni rad · smene · SOS · prijave</span></a>
-    <a href="/staff.html">Dispečer & Admin<span>Desktop · planovi · mapa · uprava</span></a>
-  </div>
-  <script>
-    (function () {
-      var q = new URLSearchParams(location.search);
-      var mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-      if (q.get("demo") === "driver" || q.get("surface") === "driver") {
-        location.replace("/driver.html" + location.search);
-        return;
-      }
-      if (q.get("demo") === "dispatcher" || q.get("demo") === "admin" || q.get("surface") === "staff") {
-        location.replace("/staff.html" + location.search);
-        return;
-      }
-      if (q.get("mode") === "demo" || q.get("mode") === "production") {
-        location.replace((mobile ? "/driver.html" : "/staff.html") + location.search);
-        return;
-      }
-      if (mobile) location.replace("/driver.html" + location.search);
-    })();
-  </script>
+  <p style="font-family:system-ui,sans-serif;text-align:center;margin-top:20vh;color:#94a3b8;">
+    <a href="/staff.html" style="color:#3b82f6;font-weight:600;text-decoration:none;">BusCommand</a>
+  </p>
 </body>
 </html>

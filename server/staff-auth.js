@@ -94,6 +94,23 @@ function createStaffAuth({ hasFirebase, admin, db }) {
       res.status(401).json({ success: false, code: "SESSION_SUPERSEDED", error: "Sesija je poništena. Prijavite se ponovo." });
       return null;
     }
+    try {
+      const settingsSnap = await db().collection("companies").doc(decoded.companyId)
+        .collection("settings").doc("main").get();
+      const companyStatus = settingsSnap.exists ? settingsSnap.data()?.status : null;
+      if (companyStatus === "suspended") {
+        res.status(403).json({
+          success: false,
+          code: "COMPANY_SUSPENDED",
+          error: "Licenca firme je suspendovana."
+        });
+        return null;
+      }
+    } catch (err) {
+      req.log?.error({ err }, "Company status lookup failed");
+      res.status(503).json({ success: false, error: "Nalog trenutno nije moguće proveriti." });
+      return null;
+    }
     return { ...decoded, groups: normalizeGroups(profile.groups), name: decoded.name || profile.name || null };
   }
 
