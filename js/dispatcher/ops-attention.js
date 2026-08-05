@@ -236,8 +236,11 @@ function collectOpsAttentionItems() {
         if (!isOperationalDuty(duty)) continue;
         if (coveredDriverIds.has(String(id))) continue;
 
+        const dutyType = String(duty.type || "").toLowerCase();
+        const needsBus = ["morning", "afternoon", "night"].includes(dutyType);
         const bus = duty.bus || driver.bus || "";
-        if (!bus) {
+        // Standby / bereitschaft without a bus is normal — do not block the panel.
+        if (needsBus && !bus) {
             const buses = freeBusPools(groupId, today, id, "");
             items.push({
                 id: `bus:${id}`,
@@ -261,7 +264,6 @@ function collectOpsAttentionItems() {
         ensureShiftCatalogForEdit(groupId);
         const codes = listAssignableCatalogCodes(groupId);
         const routeCode = String(duty.routeCode || "").trim();
-        const dutyType = String(duty.type || "").toLowerCase();
         const needsDutyCode = ["morning", "afternoon", "night"].includes(dutyType);
         const unknownCode = codes.length > 0 && routeCode && !codes.includes(routeCode);
         // Standby / already-coded duties should not block the fast path.
@@ -631,6 +633,8 @@ async function applyOpsAttentionFix(itemId) {
     _pendingApply = true;
     const applyBtn = card.querySelector(".ops-attention-apply");
     if (applyBtn) applyBtn.disabled = true;
+    card.classList.add("is-pending");
+    if (statusEl) statusEl.textContent = t("report_resolving") || "Rešavanje…";
     try {
         if (item.kind === "missing_bus") {
             const bus = String(cardField(card, "bus")?.value || "");
@@ -639,7 +643,10 @@ async function applyOpsAttentionFix(itemId) {
                 return;
             }
             const driver = findDriverById(item.driverId);
-            if (!driver) return;
+            if (!driver) {
+                if (statusEl) statusEl.textContent = t("ops_resolver_failed") || "Rešenje nije primenjeno.";
+                return;
+            }
             const existing = getShiftForDriverDate(driver.name, item.date);
             const saved = await persistShift(
                 driver,
@@ -650,14 +657,25 @@ async function applyOpsAttentionFix(itemId) {
                 existing?.end || null,
                 bus
             );
-            if (!saved) return;
+            if (!saved) {
+                if (statusEl) {
+                    statusEl.textContent = t("shift_conflict_refresh")
+                        || t("ops_resolver_failed")
+                        || "Raspored je izmenjen. Osvežite i pokušajte ponovo.";
+                }
+                refreshOpsAttentionPanelIfOpen();
+                return;
+            }
             showToast(t("ops_bus_assigned", { bus, driver: driver.name }) || `Bus ${bus} → ${driver.name}`, "success");
             notifyOpsChanged({ date: item.date });
         } else if (item.kind === "coverage") {
             const driverId = String(cardField(card, "driver")?.value || "");
             const bus = String(cardField(card, "bus")?.value || "");
             const ok = await applyCoverageResolution(item.reportId, driverId, bus, statusEl);
-            if (!ok) return;
+            if (!ok) {
+                refreshOpsAttentionPanelIfOpen();
+                return;
+            }
         } else if (item.kind === "wrong_shift") {
             const code = String(cardField(card, "duty")?.value || "");
             const duty = item.duties.find(row => row.code === code);
@@ -676,7 +694,15 @@ async function applyOpsAttentionFix(itemId) {
                 duty.end || existing?.end || null,
                 existing?.bus || driver.bus || ""
             );
-            if (!saved) return;
+            if (!saved) {
+                if (statusEl) {
+                    statusEl.textContent = t("shift_conflict_refresh")
+                        || t("ops_resolver_failed")
+                        || "Raspored je izmenjen. Osvežite i pokušajte ponovo.";
+                }
+                refreshOpsAttentionPanelIfOpen();
+                return;
+            }
             showToast(t("ops_attn_shift_applied", { driver: driver.name, duty: duty.code }) || `${driver.name} · ${duty.code}`, "success");
             notifyOpsChanged({ date: item.date });
         } else if (item.kind === "report") {
@@ -693,10 +719,12 @@ async function applyOpsAttentionFix(itemId) {
                 return;
             }
             showToast(t("ops_attn_report_closed") || "Prijava zatvorena.", "success");
-            // resolveReport already refreshes dashboard; close if this was the only focus.
             _focusItemId = "";
             notifyOpsChanged({ date: item.date });
         } else if (item.kind === "confirm") {
+            // Navigation away is explicit user intent after choosing this card action.
+            _pendingApply = false;
+            card.classList.remove("is-pending");
             closeOpsAttentionPanel();
             switchSection("dispatcher-messages");
             return;
@@ -706,9 +734,11 @@ async function applyOpsAttentionFix(itemId) {
         const message = error?.message || t("ops_resolver_failed") || "Rešenje nije primenjeno.";
         if (statusEl) statusEl.textContent = message;
         showToast(message, "error");
+        refreshOpsAttentionPanelIfOpen();
     } finally {
         _pendingApply = false;
-        if (applyBtn) applyBtn.disabled = false;
+        card.classList.remove("is-pending");
+        if (applyBtn && document.body.contains(applyBtn)) applyBtn.disabled = false;
     }
 }
 

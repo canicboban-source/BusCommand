@@ -2641,6 +2641,11 @@ html[data-app-surface="staff"] .ops-attention-card.is-warning {
     box-shadow: inset 3px 0 0 #f59e0b;
 }
 
+html[data-app-surface="staff"] .ops-attention-card.is-pending {
+    opacity: 0.78;
+    pointer-events: none;
+}
+
 html[data-app-surface="staff"] .ops-attention-card.is-focused {
     outline: 2px solid rgba(96, 165, 250, 0.55);
     outline-offset: 1px;
