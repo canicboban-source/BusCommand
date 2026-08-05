@@ -10,6 +10,24 @@ html[data-app-surface="staff"] {
 
 html[data-app-surface="staff"] .app-layout {
     background: var(--bg-darker);
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+}
+
+html[data-app-surface="staff"] .app-body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+html[data-app-surface="staff"] .app-main,
+html[data-app-surface="staff"] main.content-area {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 html[data-app-surface="staff"] .app-header {
@@ -530,7 +548,21 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-action-card {
     border: 1px solid rgba(148, 163, 184, 0.14);
     border-radius: 12px;
     overflow: hidden;
-    background: var(--staff-panel-2);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), var(--staff-panel-2));
+    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-action-card:hover {
+    border-color: rgba(148, 163, 184, 0.28);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+}
+
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-action-card.is-critical {
+    border-color: rgba(248, 113, 113, 0.28);
+}
+
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-action-card.is-warning {
+    border-color: rgba(251, 191, 36, 0.28);
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-action-rail {
@@ -594,10 +626,16 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-crew-card {
     display: grid;
     grid-template-columns: 40px 1fr;
     gap: 10px;
-    padding: 10px;
+    padding: 11px 12px;
     border-radius: 12px;
     border: 1px solid rgba(148, 163, 184, 0.12);
-    background: var(--staff-panel-2);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.025), var(--staff-panel-2));
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-crew-card:hover {
+    border-color: rgba(148, 163, 184, 0.26);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-crew-avatar {
@@ -695,28 +733,18 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-assign-btn {
     font-weight: 700;
 }
 
-#ops-incident-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 20000;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    background: rgba(2, 8, 23, .82);
-    backdrop-filter: blur(8px);
-}
-
-#ops-incident-modal.hidden {
-    display: none;
-}
-
+/* Incident create dialog — shares ops-modal-layer chrome with coverage resolver */
 .ops-incident-dialog {
     width: min(520px, 100%);
-    padding: 26px;
+    padding: 26px 28px;
     border: 1px solid rgba(248, 113, 113, .42);
     border-radius: 18px;
-    background: #0f1a2d;
-    box-shadow: 0 28px 80px rgba(0, 0, 0, .55);
+    background:
+        linear-gradient(165deg, rgba(30, 41, 59, 0.55) 0%, rgba(15, 26, 45, 0.98) 42%, #0b1424 100%);
+    box-shadow:
+        0 28px 80px rgba(0, 0, 0, .55),
+        0 0 0 1px rgba(248, 113, 113, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .ops-incident-heading {
@@ -1821,6 +1849,75 @@ html[data-app-surface="staff"] .plan-empty-cta {
     min-height: 40px;
     font-weight: 800;
     box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.24);
+}
+
+/* ── Daily plan table ── */
+html[data-app-surface="staff"] .daily-plan-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+html[data-app-surface="staff"] .daily-plan-table--compact {
+    font-size: 0.78rem;
+}
+
+html[data-app-surface="staff"] .daily-plan-table thead tr {
+    color: var(--text-muted);
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+html[data-app-surface="staff"] .daily-plan-table th,
+html[data-app-surface="staff"] .daily-plan-table td {
+    padding: 10px 12px;
+    vertical-align: middle;
+}
+
+html[data-app-surface="staff"] .daily-plan-table--compact th,
+html[data-app-surface="staff"] .daily-plan-table--compact td {
+    padding: 6px 8px;
+}
+
+html[data-app-surface="staff"] .daily-plan-table .daily-plan-col-pos {
+    width: 48px;
+    font-weight: 700;
+}
+
+html[data-app-surface="staff"] .daily-plan-table .daily-plan-col-pos.is-standby,
+html[data-app-surface="staff"] .daily-plan-table .daily-plan-row--standby .daily-plan-col-pos {
+    color: #f59e0b;
+}
+
+html[data-app-surface="staff"] .daily-plan-table .daily-plan-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background-color 0.15s ease;
+}
+
+html[data-app-surface="staff"] .daily-plan-table .daily-plan-row:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+html[data-app-surface="staff"] .daily-plan-table .daily-plan-row--standby {
+    background: rgba(245, 158, 11, 0.08);
+}
+
+html[data-app-surface="staff"] .daily-plan-table .daily-plan-row--standby:hover {
+    background: rgba(245, 158, 11, 0.12);
+}
+
+html[data-app-surface="staff"] .daily-plan-table .daily-plan-driver {
+    font-weight: 600;
+}
+
+html[data-app-surface="staff"] .daily-plan-table .daily-plan-time {
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+html[data-app-surface="staff"] .daily-plan-table .daily-plan-pick-hint {
+    color: var(--text-muted);
+    font-size: 0.75rem;
 }
 
 /* ── Daily plan assign selects ── */

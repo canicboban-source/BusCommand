@@ -1,5 +1,6 @@
 // BusCommand — jedinstveni izvor istine za smene / mesečne planove
 import { getActiveLineId } from "../data/groups.js";
+import { driverBelongsToLine } from "../data/group-membership.js";
 import { getBereitschaftCode } from "./line-shift-catalog.js";
 import { getScheduleByKey, todayDateStr } from "./utils.js";
 
@@ -85,14 +86,34 @@ function applyBereitschaftForMonth(driverName, month) {
     return schedule;
 }
 
+function driverDisplayName(driver) {
+    if (!driver) return "";
+    const name = String(driver.name || "").trim();
+    if (name) return name;
+    return `${driver.firstName || ""} ${driver.lastName || ""}`.trim();
+}
+
+function resolveDriverName(duty) {
+    const byName = String(duty?.driverName || "").trim();
+    if (byName) return byName;
+    const id = duty?.driverId;
+    if (!id) return "";
+    const match = (window.state.drivers || []).find(driver =>
+        driver.id === id || driver.uid === id
+    );
+    return driverDisplayName(match);
+}
+
 function getDailyPlanForDate(dateStr) {
-    const drivers = window.state.drivers || [];
+    ensureShiftsArray();
+    const lineId = getActiveLineId();
+    const drivers = (window.state.drivers || []).filter(driver => driverBelongsToLine(driver, lineId));
     const catalog = window.state.shiftCatalog?.entries || {};
     const slots = [];
     const isWeekday = isWeekdayDateStr(dateStr);
     const bereitchaftDriver = getBereitschaftDriverName();
-
     const brCode = getActiveBereitschaftCode();
+
     if (isWeekday && bereitchaftDriver && brCode) {
         const meta = catalog[brCode] || {};
         const brDuty = getShiftForDriverDate(bereitchaftDriver, dateStr);
@@ -103,30 +124,71 @@ function getDailyPlanForDate(dateStr) {
             name: meta.label || "Bereitschaft",
             type: "bereitschaft",
             driverName: bereitchaftDriver,
+            driverId: brDuty?.driverId || driverIdForName(bereitchaftDriver),
             start: brDuty?.start || meta.start || null,
             end: brDuty?.end || meta.end || null
         });
     }
 
-    let position = slots.length ? 2 : 1;
-    drivers.forEach(drv => {
-        if (isWeekday && drv.name === bereitchaftDriver) return;
-
-        const duty = getShiftForDriverDate(drv.name, dateStr);
-        if (!duty || ["off", "vacation", "sick"].includes(duty.type)) return;
-        if (duty.routeCode === brCode || duty.type === "bereitschaft") return;
-
-        const meta = duty.routeCode ? catalog[duty.routeCode] : null;
-        slots.push({
-            position: position++,
-            code: duty.routeCode || duty.name,
-            name: meta?.label || duty.name,
-            type: duty.type,
-            driverName: drv.name,
-            start: duty.start || meta?.start || null,
-            end: duty.end || meta?.end || null
-        });
+    // Prefer canonical shifts[] for the active group/day so monthly import
+    // assignments always appear with the correct selected driver.
+    const dayShifts = (window.state.shifts || []).filter(shift => {
+        if (shift?.date !== dateStr) return false;
+        if (["off", "vacation", "sick", "clear"].includes(shift.type)) return false;
+        if (lineId && shift.groupId && String(shift.groupId) !== String(lineId)) return false;
+        if (shift.routeCode === brCode || shift.type === "bereitschaft") return false;
+        const name = resolveDriverName(shift);
+        if (isWeekday && name && name === bereitchaftDriver) return false;
+        if (lineId && name) {
+            const driver = drivers.find(row => row.name === name)
+                || (window.state.drivers || []).find(row => row.id === shift.driverId || row.uid === shift.driverId);
+            if (driver && !driverBelongsToLine(driver, lineId)) return false;
+        }
+        return true;
     });
+
+    let position = slots.length ? 2 : 1;
+    const seen = new Set();
+    if (dayShifts.length) {
+        for (const duty of dayShifts) {
+            const driverName = resolveDriverName(duty);
+            const key = duty.driverId || driverName || duty.routeCode || duty.name;
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            const routeCode = duty.routeCode || duty.name || "";
+            const meta = routeCode ? catalog[routeCode] : null;
+            slots.push({
+                position: position++,
+                code: routeCode,
+                name: meta?.label || duty.name || routeCode,
+                type: duty.type || "morning",
+                driverName,
+                driverId: duty.driverId || driverIdForName(driverName),
+                start: duty.start || meta?.start || null,
+                end: duty.end || meta?.end || null
+            });
+        }
+    } else {
+        drivers.forEach(drv => {
+            if (isWeekday && drv.name === bereitchaftDriver) return;
+
+            const duty = getShiftForDriverDate(drv.name, dateStr);
+            if (!duty || ["off", "vacation", "sick"].includes(duty.type)) return;
+            if (duty.routeCode === brCode || duty.type === "bereitschaft") return;
+
+            const meta = duty.routeCode ? catalog[duty.routeCode] : null;
+            slots.push({
+                position: position++,
+                code: duty.routeCode || duty.name,
+                name: meta?.label || duty.name,
+                type: duty.type,
+                driverName: drv.name,
+                driverId: drv.id || drv.uid || duty.driverId || null,
+                start: duty.start || meta?.start || null,
+                end: duty.end || meta?.end || null
+            });
+        });
+    }
 
     return {
         date: dateStr,

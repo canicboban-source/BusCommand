@@ -26,8 +26,13 @@ function getVisibleDrivers() {
     }
     if (window.currentUser.role === 'dispatcher') {
         const myGroups = (() => {
-            const disp = (window.state.dispatchers || []).find(d => d.id === window.currentUser.id);
-            return disp ? (disp.groups || []) : [window.currentUser.activeGroupId].filter(Boolean);
+            const disp = (window.state.dispatchers || []).find(d =>
+                d.id === window.currentUser.id || d.uid === window.currentUser.uid
+            );
+            const fromDoc = Array.isArray(disp?.groups) ? disp.groups : [];
+            const fromClaims = Array.isArray(window.currentUser.groups) ? window.currentUser.groups : [];
+            const fromActive = [window.currentUser.activeGroupId].filter(Boolean);
+            return [...new Set([...fromDoc, ...fromClaims, ...fromActive].map(String).filter(Boolean))];
         })();
 
         return myGroups.length
@@ -47,9 +52,14 @@ function getVisibleGroups() {
         return cId ? all.filter(g => g.companyId === cId || !g.companyId) : all;
     }
     if (window.currentUser.role === 'dispatcher') {
-        const disp = (window.state.dispatchers || []).find(d => d.id === window.currentUser.id);
-        const myGroups = disp ? (disp.groups || []) : [window.currentUser.activeGroupId].filter(Boolean);
-        return myGroups.length ? all.filter(g => myGroups.includes(g.id)) : [];
+        const disp = (window.state.dispatchers || []).find(d =>
+            d.id === window.currentUser.id || d.uid === window.currentUser.uid
+        );
+        const fromDoc = Array.isArray(disp?.groups) ? disp.groups : [];
+        const fromClaims = Array.isArray(window.currentUser.groups) ? window.currentUser.groups : [];
+        const fromActive = [window.currentUser.activeGroupId].filter(Boolean);
+        const myGroups = [...new Set([...fromDoc, ...fromClaims, ...fromActive].map(String).filter(Boolean))];
+        return myGroups.length ? all.filter(g => myGroups.includes(String(g.id))) : [];
     }
     return all;
 }
