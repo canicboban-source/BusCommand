@@ -15,6 +15,30 @@ function getBaseState() {
 }
 
 /**
+ * Demo-only platform SA account for local QA (not a tenant / company).
+ * Credentials match tests/e2e/helpers.js — never used in production builds' auth path.
+ */
+function ensureDemoPlatformAdmin(state) {
+    if (!IS_DEMO_MODE || !state) return state;
+    if (!Array.isArray(state.dispatchers)) state.dispatchers = [];
+    const hasSa = state.dispatchers.some(
+        (d) => d && (d.id === "superadmin" || d.isSuperAdmin === true)
+    );
+    if (hasSa) return state;
+    state.dispatchers = [
+        {
+            id: "superadmin",
+            name: "Super Admin",
+            email: "sa@demo.local",
+            password: "sa-demo-ok",
+            isSuperAdmin: true
+        },
+        ...state.dispatchers
+    ];
+    return state;
+}
+
+/**
  * UI locale source of truth: buscommand_lang (survives tenant reset).
  * Never trust FRESH_STATE.language ("en") over the user's language select.
  */
@@ -98,6 +122,7 @@ function clearAllTenantStateCaches({ keepCompanyId = null } = {}) {
 
 function resetInMemoryTenantState(language) {
     window.state = { ...getBaseState(), language: resolveUiLanguage(language) };
+    ensureDemoPlatformAdmin(window.state);
     window._licenseInfo = null;
 }
 
@@ -121,11 +146,13 @@ function loadStateFromStorage(companyId) {
             if (window.state.branding && window.state.branding.logo === undefined) window.state.branding.logo = null;
             if (!window.state.shiftCatalogs) window.state.shiftCatalogs = {};
             migrateLegacyShiftCatalog();
+            ensureDemoPlatformAdmin(window.state);
             applyUiLanguagePreference();
             return;
         } catch { /* fall through */ }
     }
     window.state = { ...base };
+    ensureDemoPlatformAdmin(window.state);
     applyUiLanguagePreference();
 }
 
@@ -154,6 +181,7 @@ function saveState() {
 }
 export {
     getBaseState,
+    ensureDemoPlatformAdmin,
     getStateStorageKey,
     resolveAuthenticatedCompanyId,
     resolveUiLanguage,

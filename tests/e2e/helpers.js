@@ -9,7 +9,13 @@ function minimalDemoState() {
     sosBus: "",
     groups: [{ id: "101", name: "Line 101", color: "#3D7EF5", active: true, companyId: "demo" }],
     dispatchers: [
-      { id: "superadmin", name: "Super Admin", pin: "admin123", isSuperAdmin: true },
+      {
+        id: "superadmin",
+        name: "Super Admin",
+        email: "sa@demo.local",
+        password: "sa-demo-ok",
+        isSuperAdmin: true
+      },
       {
         id: "dispo-1",
         name: "Demo Dispatcher",
@@ -17,7 +23,8 @@ function minimalDemoState() {
         password: "demo123",
         passwordChanged: true,
         groups: ["101"],
-        companyId: "demo"
+        companyId: "demo",
+        country: "DE"
       }
     ],
     drivers: [
@@ -122,9 +129,25 @@ async function loginDriver(page, name = "E2E Driver", pin = "1234") {
   await expect(page.locator("#app-container")).not.toHaveClass(/hidden/, { timeout: 10000 });
 }
 
+async function loginSuperAdmin(page, email = "sa@demo.local", password = "sa-demo-ok") {
+  if (!/staff\.html/i.test(page.url())) {
+    await page.goto("/staff.html?mode=demo");
+  }
+  const tab = page.locator("#tab-dispatcher-btn");
+  if (await tab.isVisible().catch(() => false)) {
+    await tab.click();
+  }
+  await page.locator("#login-dispatcher-email").fill(email);
+  await page.locator("#login-dispatcher-password").fill(password);
+  await page.locator("#dispatcher-login-btn").click();
+  await expect(page.locator("#app-container")).not.toHaveClass(/hidden/);
+  await expect(page.locator("#superadmin-dashboard")).not.toHaveClass(/hidden/);
+}
+
 module.exports = {
   minimalDemoState,
   seedDemoState,
   loginDispatcher,
-  loginDriver
+  loginDriver,
+  loginSuperAdmin
 };

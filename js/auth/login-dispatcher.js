@@ -194,9 +194,14 @@ async function loginAsDispatcher() {
         return;
     }
 
-    // Dispatcher
-    if (disp.id === "superadmin") {
-        window.currentUser = { role: "superadmin", name: "Super Admin", id: "superadmin" };
+    // Dispatcher / platform Super Admin (id or isSuperAdmin flag)
+    if (disp.id === "superadmin" || disp.isSuperAdmin === true) {
+        window.currentUser = {
+            role: "superadmin",
+            name: disp.name || "Super Admin",
+            id: disp.id || "superadmin",
+            email: disp.email || email
+        };
     } else {
         if (disp.active === false) {
             passInput.value = "";

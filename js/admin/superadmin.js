@@ -181,67 +181,109 @@ async function superadminCopyCompanyId(companyId) {
     }
 }
 
+function _demoCompanyPlan(company) {
+    const pay = String(company.paymentStatus || "").toLowerCase();
+    if (pay === "paid") return "standard";
+    if (pay === "overdue") return "trial";
+    return company.plan || "trial";
+}
+
+function _demoCompanyStatus(company) {
+    if (company.active === false || company.status === "suspended") return "suspended";
+    return company.passwordChanged ? "active" : "pending";
+}
+
+function _findDemoCompanyDispatcher(companyRef) {
+    const key = String(companyRef || "").trim();
+    if (!key) return null;
+    return (window.state.dispatchers || []).find((d) =>
+        d
+        && d.id !== "superadmin"
+        && !d.isSuperAdmin
+        && (d.companyId === key || d.id === key)
+    ) || null;
+}
+
 function _renderSuperAdminDashboardDemo() {
     const listContainer = document.getElementById("superadmin-companies-list");
     if (!listContainer) return;
     document.getElementById("sa-demo-company-pin")?.classList.remove("hidden");
     listContainer.innerHTML = "";
-    
+
     const dispatchers = window.state.dispatchers || [];
-    const companies = dispatchers.filter(d => d.id !== "superadmin");
-    
+    const companies = dispatchers.filter(d => d.id !== "superadmin" && !d.isSuperAdmin);
+
     const totalCompEl = document.getElementById("superadmin-total-companies");
-    if (totalCompEl) totalCompEl.innerText = companies.length;
-    
-    // Calculate totals for stat cards
-    let totalUsers = 0;
-    let totalGroups = 0;
+    if (totalCompEl) totalCompEl.textContent = String(companies.length);
+
+    let totalDrivers = 0;
     companies.forEach(c => {
-        const groupCount = (c.groups || []).length;
-        totalGroups += groupCount;
         (c.groups || []).forEach(gId => {
-            totalUsers += (window.state.drivers || []).filter(d => d.groupId === gId).length;
+            totalDrivers += (window.state.drivers || []).filter(d => d.groupId === gId).length;
         });
     });
+    // Drivers without a dispatcher group still count toward the tenant total.
+    if (!companies.length) {
+        totalDrivers = (window.state.drivers || []).length;
+    }
     const totalUsersEl = document.getElementById("superadmin-total-users");
-    if (totalUsersEl) totalUsersEl.innerText = totalUsers;
-    const totalGroupsEl = document.getElementById("superadmin-total-groups");
-    if (totalGroupsEl) totalGroupsEl.innerText = totalGroups;
-    
+    if (totalUsersEl) totalUsersEl.textContent = String(totalDrivers);
+    const totalDispatchersEl = document.getElementById("superadmin-total-dispatchers");
+    if (totalDispatchersEl) totalDispatchersEl.textContent = String(companies.length);
+
+    if (!companies.length) {
+        listContainer.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:18px;">${escapeHtml(t("sa_companies_empty") || "No companies yet.")}</td></tr>`;
+        renderCompanyAdminList();
+        lucide.createIcons();
+        return;
+    }
+
     companies.forEach(c => {
         const tr = document.createElement("tr");
-        const statusText = c.passwordChanged ? "Active" : "New / Inactive";
-        const statusClass = c.passwordChanged ? "badge-success" : "badge-pending";
-        
-        // Payment status
-        const payStatus = c.paymentStatus || "Trial";
-        const payClass = payStatus === "Paid" ? "badge-success" : payStatus === "Overdue" ? "badge-critical" : "badge-pending";
-        const trialDays = c.trialDaysLeft !== null && c.trialDaysLeft !== undefined ? c.trialDaysLeft + "d" : "-";
-        
-        // Group and user counts
-        const groupCount = (c.groups || []).length;
-        let userCount = 0;
-        (c.groups || []).forEach(gId => {
-            userCount += (window.state.drivers || []).filter(d => d.groupId === gId).length;
-        });
-        
+        const status = _demoCompanyStatus(c);
+        const plan = _demoCompanyPlan(c);
+        const statusClass = status === "active" ? "badge-success" : status === "suspended" ? "badge-critical" : "badge-pending";
+        const planClass = plan === "trial" ? "badge-pending" : "badge-success";
+        const companyKey = c.companyId || c.id;
+        const supportEnabled = c.features?.supportSession !== false;
+        const supportActive = !!c.supportSessionActive;
+
         tr.innerHTML = `
-            <td><strong>${c.name}</strong></td>
-            <td><span class="badge ${statusClass}">${statusText}</span></td>
-            <td><span class="badge ${payClass}">${payStatus}</span></td>
-            <td>${payStatus === "Trial" ? trialDays : "-"}</td>
-            <td>${groupCount}</td>
-            <td>${userCount}</td>
-            <td style="font-size:0.8rem;">${c.email ? '<code style="font-size:0.75rem;">' + c.email + '</code>' : (c.pin ? '<code>' + c.pin + '</code>' : '<span style="color:var(--text-muted)">—</span>')}</td>
+            <td><strong>${escapeHtml(c.name || companyKey)}</strong></td>
+            <td>
+                <div class="sa-company-id-cell">
+                    <code class="sa-company-id-code" title="${escapeHtml(t("company_id_label") || "Company ID")}: ${escapeHtml(companyKey)}">${escapeHtml(companyKey)}</code>
+                    <button type="button" class="btn-secondary sa-company-id-copy" ${actionAttr("superadminCopyCompanyId", [companyKey])} title="${escapeHtml(t("sa_copy_company_id") || "Copy ID")}" aria-label="${escapeHtml(t("sa_copy_company_id") || "Copy ID")}">
+                        <i data-lucide="copy" style="width:14px;height:14px;"></i>
+                    </button>
+                </div>
+            </td>
+            <td><span class="badge ${statusClass}">${escapeHtml(status)}</span></td>
+            <td><span class="badge ${planClass}">${escapeHtml(plan)}</span></td>
+            <td>${escapeHtml(c.country || "—")}</td>
+            <td style="font-size:0.8rem;">${c.email ? '<code style="font-size:0.75rem;">' + escapeHtml(c.email) + '</code>' : '—'}</td>
             <td style="white-space:nowrap;">
-                <button class="btn-primary" ${actionAttr("superadminImpersonate", [c.id])} style="padding: 4px 10px; font-size: 0.8rem; height: auto; margin-right: 6px;">
-                    <i data-lucide="eye" style="width:14px; height:14px; display:inline-block; vertical-align:middle;"></i> Inspect
+                <button class="btn-primary" ${actionAttr("superadminOpenCompanyDetail", [c.id])} style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;">
+                    <i data-lucide="panel-right-open" style="width:14px;height:14px;display:inline-block;vertical-align:middle;"></i> ${escapeHtml(t("sa_detail_open") || "Details")}
                 </button>
-                <button class="btn-secondary" ${actionAttr("superadminResetPin", [c.id])} style="padding: 4px 10px; font-size: 0.8rem; height: auto; margin-right: 6px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(255,255,255,0.1);">
-                    <i data-lucide="key" style="width:14px; height:14px; display:inline-block; vertical-align:middle;"></i> Reset PIN
+                ${supportActive
+                    ? `<button class="btn-secondary" ${actionAttr("superadminEndSupport", [companyKey])} style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;">${escapeHtml(t("sa_support_end"))}</button>`
+                    : (supportEnabled
+                        ? `<button class="btn-secondary" ${actionAttr("superadminStartSupport", [companyKey])} style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;">${escapeHtml(t("sa_support_start"))}</button>`
+                        : `<button class="btn-secondary" disabled style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;opacity:0.5;">${escapeHtml(t("sa_support_start"))}</button>`)
+                }
+                ${status === "suspended"
+                    ? `<button class="btn-secondary" ${actionAttr("superadminToggleStatus", [companyKey, "active"])} style="padding:4px 10px;font-size:0.8rem;height:auto;background:#10b981;color:white;border:none;margin-right:6px;">${t("btn_activate")}</button>`
+                    : `<button class="btn-secondary" ${actionAttr("superadminToggleStatus", [companyKey, "suspended"])} style="padding:4px 10px;font-size:0.8rem;height:auto;background:#ff4d4d;color:white;border:none;margin-right:6px;">${t("btn_suspend")}</button>`
+                }
+                <button class="btn-secondary" ${actionAttr("superadminImpersonate", [c.id])} style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;">
+                    <i data-lucide="eye" style="width:14px;height:14px;display:inline-block;vertical-align:middle;"></i> Inspect
                 </button>
-                <button class="btn-secondary" ${actionAttr("superadminDeleteCompany", [c.id])} style="padding: 4px 10px; font-size: 0.8rem; height: auto; background:#ff4d4d; color:white; border:none;">
-                    <i data-lucide="trash-2" style="width:14px; height:14px; display:inline-block; vertical-align:middle;"></i> Delete
+                <button class="btn-secondary" ${actionAttr("superadminResetPin", [c.id])} style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;background:rgba(255,255,255,0.05);color:white;border:1px solid rgba(255,255,255,0.1);">
+                    <i data-lucide="key" style="width:14px;height:14px;display:inline-block;vertical-align:middle;"></i> Reset PIN
+                </button>
+                <button class="btn-secondary" ${actionAttr("superadminDeleteCompany", [companyKey])} style="padding:4px 10px;font-size:0.8rem;height:auto;background:#7f1d1d;color:white;border:none;">
+                    <i data-lucide="trash-2" style="width:14px;height:14px;display:inline-block;vertical-align:middle;"></i> ${escapeHtml(t("sa_delete_company") || "Delete")}
                 </button>
             </td>
         `;
@@ -254,6 +296,19 @@ function _renderSuperAdminDashboardDemo() {
 async function superadminToggleStatus(companyId, status) {
     const label = status === "suspended" ? "suspendovati" : "aktivirati";
     showConfirm("Da li želite da " + label + " firmu " + companyId + "?", async () => {
+        if (IS_DEMO_MODE) {
+            const disp = _findDemoCompanyDispatcher(companyId);
+            if (!disp) {
+                showToast(t("error_generic"), "error");
+                return;
+            }
+            disp.active = status !== "suspended";
+            disp.status = status === "suspended" ? "suspended" : "active";
+            saveState();
+            showToast(t("sa_status_updated"), "success");
+            renderSuperAdminDashboard();
+            return;
+        }
         const res = await ApiClient.setCompanyStatus(companyId, status);
         if (res.success) {
             showToast(t("sa_status_updated"), "success");
@@ -486,15 +541,38 @@ async function superadminOpenCompanyDetail(companyId) {
     }
 
     if (IS_DEMO_MODE) {
+        const disp = (window.state.dispatchers || []).find(d => d.id === id) || null;
+        const companyKey = disp?.companyId || disp?.id || id;
+        const groupIds = Array.isArray(disp?.groups) ? disp.groups : [];
+        const drivers = (window.state.drivers || []).filter(d => groupIds.includes(d.groupId));
+        const admins = (window.state.companyAdmins || [])
+            .filter(ca => ca.companyId === companyKey || ca.companyId === id)
+            .map(ca => ({
+                id: ca.id,
+                name: ca.name || ca.email || ca.id,
+                email: ca.email || "",
+                active: ca.active !== false
+            }));
         fillCompanyDetailModal({
-            id,
-            name: id,
-            status: "active",
-            plan: "trial",
-            country: "—",
-            contactEmail: null,
-            counts: { companyAdmins: 0, dispatchers: 0, drivers: 0, groups: 0 },
-            admins: []
+            id: companyKey,
+            name: disp?.name || companyKey,
+            status: disp ? _demoCompanyStatus(disp) : "active",
+            plan: disp ? _demoCompanyPlan(disp) : "trial",
+            country: disp?.country || "—",
+            contactEmail: disp?.email || null,
+            trialEndsAt: disp?.trialEndsAt || null,
+            maxDrivers: disp?.maxDrivers || 50,
+            maxDispatchers: disp?.maxDispatchers || 5,
+            features: disp?.features || {},
+            supportSessionEnabled: disp?.features?.supportSession !== false,
+            supportSessionActive: !!disp?.supportSessionActive,
+            counts: {
+                companyAdmins: admins.length,
+                dispatchers: disp ? 1 : 0,
+                drivers: drivers.length,
+                groups: groupIds.length
+            },
+            admins
         });
         showDetailModal();
         lucide.createIcons();
@@ -536,6 +614,26 @@ async function superadminSetCompanyAdminStatus(companyId, uid, active) {
         ? (t("sa_detail_confirm_enable") || "Enable this company admin?")
         : (t("sa_detail_confirm_disable") || "Disable this company admin?");
     showConfirm(label, async () => {
+        if (IS_DEMO_MODE) {
+            const match = (window.state.companyAdmins || []).find((admin) =>
+                String(admin.id) === String(uid)
+            );
+            if (!match) {
+                showToast(t("error_generic"), "error");
+                return;
+            }
+            match.active = nextActive;
+            saveState();
+            showToast(
+                nextActive
+                    ? (t("sa_detail_admin_enabled") || "Company admin enabled.")
+                    : (t("sa_detail_admin_disabled") || "Company admin disabled."),
+                "success"
+            );
+            await superadminRefreshCompanyDetail();
+            await renderSuperAdminDashboard();
+            return;
+        }
         const res = await ApiClient.setCompanyAdminStatus(companyId, uid, nextActive);
         if (!res.success) {
             showToast(res.error || t("error_generic"), "error");
@@ -554,6 +652,30 @@ async function superadminSetCompanyAdminStatus(companyId, uid, active) {
 
 async function superadminResetCompanyAdminPassword(companyId, uid) {
     showConfirm(t("sa_detail_confirm_reset") || "Generate a password reset link for this company admin?", async () => {
+        if (IS_DEMO_MODE) {
+            const match = (window.state.companyAdmins || []).find((admin) => String(admin.id) === String(uid));
+            if (!match) {
+                showToast(t("error_generic"), "error");
+                return;
+            }
+            const tempPass = `demo-reset-${Math.floor(1000 + Math.random() * 9000)}`;
+            match.password = tempPass;
+            saveState();
+            const box = document.getElementById("sa-detail-reset-link-box");
+            if (box) {
+                box.classList.remove("hidden");
+                box.innerHTML = `
+                    <p>${escapeHtml(t("sa_detail_reset_ready", { email: match.email }) || `Demo password for ${match.email}:`)}</p>
+                    <code class="sa-detail-reset-link">${escapeHtml(tempPass)}</code>
+                    <button type="button" class="btn-secondary" ${actionAttr("superadminCopyText", [tempPass])}>
+                        ${escapeHtml(t("sa_detail_copy_reset_link") || "Copy password")}
+                    </button>
+                `;
+            }
+            showToast(t("sa_detail_reset_done") || "Password reset link ready.", "success");
+            lucide.createIcons();
+            return;
+        }
         const res = await ApiClient.resetCompanyAdminPassword(companyId, uid);
         if (!res.success) {
             showToast(res.error || t("error_generic"), "error");
@@ -620,7 +742,16 @@ async function superadminCreateCompany() {
 
     const id = "disp-" + Date.now();
     window.state.dispatchers = window.state.dispatchers || [];
-    window.state.dispatchers.push({ id, name, pin, passwordChanged: false, groups: [], companyId: "demo" });
+    window.state.dispatchers.push({
+        id,
+        name,
+        pin,
+        passwordChanged: false,
+        groups: [],
+        companyId,
+        email: "",
+        country: "—"
+    });
     saveState();
     nameInput.value = ""; pinInput.value = "";
     renderSuperAdminDashboard();
@@ -752,13 +883,18 @@ function superadminResetPin(dispId) {
     showToast(`PIN reset to 1234 for ${disp.name}`);
 }
 
-function superadminDeleteCompany(dispId) {
-    if (!IS_DEMO_MODE && window.currentUser?.role === "superadmin") {
-        superadminOpenDeleteCompanyModal(dispId);
+function superadminDeleteCompany(companyRef) {
+    const key = String(companyRef || "").trim();
+    if (!key) return;
+    // Typed company-ID confirm for Super Admin (demo + production).
+    if (window.currentUser?.role === "superadmin") {
+        const disp = _findDemoCompanyDispatcher(key);
+        const typedId = disp?.companyId || key;
+        superadminOpenDeleteCompanyModal(typedId);
         return;
     }
     showConfirm("Are you sure you want to delete this company account? This cannot be undone.", function() {
-        window.state.dispatchers = window.state.dispatchers.filter(d => d.id !== dispId);
+        window.state.dispatchers = window.state.dispatchers.filter(d => d.id !== key && d.companyId !== key);
         saveState();
         renderSuperAdminDashboard();
         initializeLoginSelects();
@@ -807,6 +943,21 @@ async function superadminConfirmDeleteCompany() {
             error.textContent = t("sa_delete_company_mismatch") || "companyId se ne poklapa.";
             error.classList.remove("hidden");
         }
+        return;
+    }
+    if (IS_DEMO_MODE) {
+        window.state.dispatchers = (window.state.dispatchers || []).filter((d) => {
+            if (d.id === "superadmin" || d.isSuperAdmin) return true;
+            return d.companyId !== companyId && d.id !== companyId;
+        });
+        window.state.companyAdmins = (window.state.companyAdmins || []).filter(
+            (ca) => ca.companyId !== companyId
+        );
+        saveState();
+        superadminCancelDeleteCompanyModal();
+        showToast(t("sa_delete_company_done") || t("sa_company_deleted") || "Firma obrisana.", "success");
+        renderSuperAdminDashboard();
+        initializeLoginSelects();
         return;
     }
     const res = await ApiClient.deleteCompany(companyId, typed);
@@ -863,6 +1014,36 @@ async function superadminConfirmSupportStart() {
         }
         return;
     }
+    if (IS_DEMO_MODE) {
+        const disp = _findDemoCompanyDispatcher(companyId);
+        if (!disp) {
+            if (error) {
+                error.textContent = t("error_generic");
+                error.classList.remove("hidden");
+            }
+            return;
+        }
+        disp.features = { ...(disp.features || {}), supportSession: true };
+        disp.supportSessionActive = true;
+        disp.supportSessionMeta = { category, reason, startedAt: new Date().toISOString() };
+        saveState();
+        superadminCancelSupportModal();
+        showToast(t("sa_support_started"), "success");
+        // Enter read-only tenant view (same guardrails as Inspect).
+        window.currentUser = {
+            role: "dispatcher",
+            name: disp.name,
+            id: disp.id,
+            companyId: disp.companyId || companyId,
+            activeGroupId: disp.activeGroupId || (disp.groups && disp.groups[0]) || null,
+            impersonated: true,
+            readOnly: true,
+            supportSession: true
+        };
+        persistUserSession(window.currentUser);
+        showAppLayout();
+        return;
+    }
     const res = await ApiClient.startSupportSession(companyId, { category, reason });
     if (!res.success) {
         if (error) {
@@ -878,6 +1059,22 @@ async function superadminConfirmSupportStart() {
 }
 
 async function superadminEndSupport(companyId) {
+    if (IS_DEMO_MODE) {
+        const disp = _findDemoCompanyDispatcher(companyId);
+        if (!disp || !disp.supportSessionActive) {
+            showToast(t("sa_support_none"), "info");
+            renderSuperAdminDashboard();
+            return;
+        }
+        showConfirm(t("sa_support_end_confirm"), () => {
+            disp.supportSessionActive = false;
+            disp.supportSessionMeta = null;
+            saveState();
+            showToast(t("sa_support_ended"), "success");
+            renderSuperAdminDashboard();
+        });
+        return;
+    }
     const active = await ApiClient.getActiveSupportSessionAdmin(companyId);
     if (!active.success || !active.session?.id) {
         showToast(t("sa_support_none"), "info");
