@@ -22,10 +22,12 @@ function currentPlanDate() {
     return todayDateStr();
 }
 
-function driverOptions(selectedName) {
-    return getVisibleDrivers().map(driver =>
-        `<option value="${escapeHtml(driver.name)}" ${driver.name === selectedName ? "selected" : ""}>${escapeHtml(driver.name)}</option>`
-    ).join("");
+function driverOptions(selectedName, selectedId = "") {
+    return getVisibleDrivers().map(driver => {
+        const selected = (selectedId && (driver.id === selectedId || driver.uid === selectedId))
+            || (selectedName && driver.name === selectedName);
+        return `<option value="${escapeHtml(driver.name)}" ${selected ? "selected" : ""}>${escapeHtml(driver.name)}</option>`;
+    }).join("");
 }
 
 function busOptions(selectedBus) {
@@ -39,59 +41,59 @@ function busOptions(selectedBus) {
 function buildDailyPlanTable(slots, { compact = false, editable = false, dateStr = "" } = {}) {
     if (!slots.length) return "";
 
-    const fontSize = compact ? "0.78rem" : "0.9rem";
-    const pad = compact ? "6px 8px" : "10px 12px";
     const date = dateStr || currentPlanDate();
+    const tableClass = compact ? "daily-plan-table daily-plan-table--compact" : "daily-plan-table";
 
     return `
-        <table class="daily-plan-table" style="width:100%;border-collapse:collapse;font-size:${fontSize};">
+        <table class="${tableClass}">
             <thead>
-                <tr style="color:var(--text-muted);text-align:left;border-bottom:1px solid rgba(255,255,255,0.08);">
-                    <th style="padding:${pad};width:48px;">${t("daily_col_pos")}</th>
-                    <th style="padding:${pad};">${t("daily_col_shift")}</th>
-                    <th style="padding:${pad};">${t("daily_col_driver")}</th>
-                    <th style="padding:${pad};">${t("table_bus") || "Autobus"}</th>
-                    <th style="padding:${pad};">${t("daily_col_time")}</th>
-                    ${editable ? `<th style="padding:${pad};">${t("table_actions") || "Akcija"}</th>` : ""}
+                <tr>
+                    <th class="daily-plan-col-pos">${t("daily_col_pos")}</th>
+                    <th>${t("daily_col_shift")}</th>
+                    <th>${t("daily_col_driver")}</th>
+                    <th>${t("table_bus") || "Autobus"}</th>
+                    <th>${t("daily_col_time")}</th>
+                    ${editable ? `<th>${t("table_actions") || "Akcija"}</th>` : ""}
                 </tr>
             </thead>
             <tbody>
                 ${slots.map((slot) => {
                     const isBr = slot.position === 1 && slot.type === "bereitschaft";
-                    const rowBg = isBr ? "rgba(245,158,11,0.08)" : "transparent";
                     const codeLabel = slot.shortName ? `${slot.code} (${slot.shortName})` : (slot.code || slot.name);
                     const time = slot.start && slot.end ? `${slot.start}\u2013${slot.end}` : "\u2014";
                     const driverName = slot.driverName || "";
+                    const driverId = slot.driverId || "";
                     const shift = driverName ? getShiftForDriverDate(driverName, date) : null;
                     const bus = shift?.bus || "";
+                    const rowClass = isBr ? "daily-plan-row daily-plan-row--standby" : "daily-plan-row";
                     if (!editable) {
-                        return `<tr style="background:${rowBg};border-bottom:1px solid rgba(255,255,255,0.04);">
-                            <td style="padding:${pad};font-weight:700;color:${isBr ? "#f59e0b" : "var(--text-main)"};">${escapeHtml(String(slot.position ?? ""))}</td>
-                            <td style="padding:${pad};">${escapeHtml(codeLabel || "")}</td>
-                            <td style="padding:${pad};font-weight:600;">${escapeHtml(driverName || "\u2014")}</td>
-                            <td style="padding:${pad};">${escapeHtml(bus || "\u2014")}</td>
-                            <td style="padding:${pad};color:var(--text-muted);">${escapeHtml(time)}</td>
+                        return `<tr class="${rowClass}">
+                            <td class="daily-plan-col-pos${isBr ? " is-standby" : ""}">${escapeHtml(String(slot.position ?? ""))}</td>
+                            <td>${escapeHtml(codeLabel || "")}</td>
+                            <td class="daily-plan-driver">${escapeHtml(driverName || "\u2014")}</td>
+                            <td>${escapeHtml(bus || "\u2014")}</td>
+                            <td class="daily-plan-time">${escapeHtml(time)}</td>
                         </tr>`;
                     }
-                    return `<tr style="background:${rowBg};border-bottom:1px solid rgba(255,255,255,0.04);">
-                        <td style="padding:${pad};font-weight:700;color:${isBr ? "#f59e0b" : "var(--text-main)"};">${escapeHtml(String(slot.position ?? ""))}</td>
-                        <td style="padding:${pad};">${escapeHtml(codeLabel || "")}</td>
-                        <td style="padding:${pad};">
+                    return `<tr class="${rowClass}">
+                        <td class="daily-plan-col-pos${isBr ? " is-standby" : ""}">${escapeHtml(String(slot.position ?? ""))}</td>
+                        <td>${escapeHtml(codeLabel || "")}</td>
+                        <td>
                             <select class="ops-edit-select" ${changeAttr("dailyPlanAssignDriver", [date, slot.type || "morning", slot.code || ""], "args-value")} aria-label="${escapeHtml(t("daily_col_driver") || "Vozač")}">
                                 <option value="">—</option>
-                                ${driverOptions(driverName)}
+                                ${driverOptions(driverName, driverId)}
                             </select>
                         </td>
-                        <td style="padding:${pad};">
+                        <td>
                             <select class="ops-edit-select" ${driverName ? changeAttr("updateDriverBusInline", [driverName], "args-value") : "disabled"} aria-label="${escapeHtml(t("table_bus") || "Bus")}">
                                 ${busOptions(bus)}
                             </select>
                         </td>
-                        <td style="padding:${pad};color:var(--text-muted);">${escapeHtml(time)}</td>
-                        <td style="padding:${pad};">
+                        <td class="daily-plan-time">${escapeHtml(time)}</td>
+                        <td>
                             ${driverName
                                 ? `<button type="button" class="btn-secondary" ${actionAttr("openShiftCell", [driverName, date])}>${escapeHtml(t("ops_btn_edit") || "Izmeni")}</button>`
-                                : `<span style="color:var(--text-muted);font-size:0.75rem;">${escapeHtml(t("ops_pick_driver") || "Izaberite vozača")}</span>`}
+                                : `<span class="daily-plan-pick-hint">${escapeHtml(t("ops_pick_driver") || "Izaberite vozača")}</span>`}
                         </td>
                     </tr>`;
                 }).join("")}

@@ -810,16 +810,17 @@ function ensureIncidentModal() {
     if (modal) return modal;
     modal = document.createElement("div");
     modal.id = "ops-incident-modal";
-    modal.className = "bc-overlay-modal hidden";
+    modal.className = "ops-modal-layer hidden";
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-labelledby", "ops-incident-title");
     modal.setAttribute("aria-hidden", "true");
     modal.innerHTML = `
         <form id="ops-incident-form" class="ops-incident-dialog">
             <div class="ops-incident-heading">
                 <span class="ops-incident-icon"><i data-lucide="user-x"></i></span>
                 <div>
-                    <h2>${escapeHtml(t("ops_incident_title") || "Vozač ne može da nastavi smenu")}</h2>
+                    <h2 id="ops-incident-title">${escapeHtml(t("ops_incident_title") || "Vozač ne može da nastavi smenu")}</h2>
                     <p id="ops-incident-driver"></p>
                 </div>
             </div>

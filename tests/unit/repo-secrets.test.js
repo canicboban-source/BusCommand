@@ -7,6 +7,12 @@ const root = path.resolve(__dirname, "..", "..");
 const ignoredDirectories = new Set([
   ".git", "node_modules", "dist", "build", ".cache", "test-results", "playwright-report", ".firebase"
 ]);
+// Local bootstrap keys are gitignored but may exist on a developer machine.
+// Scan must not treat a working-tree-only admin key as a commit failure.
+const ignoredFileNames = new Set([
+  "firebase-admin-key.json",
+  "firebase-admin-key.json.json"
+]);
 const scannedExtensions = new Set([
   ".css", ".html", ".js", ".json", ".mjs", ".md", ".rules", ".txt", ".yaml", ".yml"
 ]);
@@ -28,6 +34,8 @@ function collectFiles(directory) {
     if (ignoredDirectories.has(entry.name)) continue;
     const filePath = path.join(directory, entry.name);
     if (entry.isDirectory()) files.push(...collectFiles(filePath));
+    else if (ignoredFileNames.has(entry.name)) continue;
+    else if (/^serviceAccount.*\.json$/i.test(entry.name)) continue;
     else if (scannedExtensions.has(path.extname(entry.name).toLowerCase())) files.push(filePath);
   }
   return files;
@@ -78,4 +86,12 @@ test("live smoke script resolves its target and Web API key from the environment
   assert.match(script, /process\.env\.L7_SMOKE_BASE_URL/);
   assert.match(script, /process\.env\.VITE_FIREBASE_API_KEY/);
   assert.match(script, /if \(!API_KEY\)/);
+});
+
+test("incident live smoke resolves its target and Web API key from the environment", () => {
+  const script = fs.readFileSync(path.join(root, "scripts", "live-incident-smoke.js"), "utf8");
+  assert.match(script, /process\.env\.L7_SMOKE_BASE_URL/);
+  assert.match(script, /process\.env\.VITE_FIREBASE_API_KEY/);
+  assert.match(script, /if \(!API_KEY\)/);
+  assert.doesNotMatch(script, /AIzaSy/);
 });
