@@ -511,12 +511,12 @@ function paintOpsAttentionPanel(items) {
     if (subtitle) {
         subtitle.textContent = items.length
             ? (t("ops_attn_subtitle", { count: items.length }) || `${items.length} stavki — rešite ih ovde, bez skakanja po panelima.`)
-            : (t("ops_attn_empty") || "Trenutno nema stavki koje zahtevaju pažnju.");
+            : "";
     }
     if (!list) return;
     list.innerHTML = items.length
         ? items.map(renderAttentionCard).join("")
-        : `<div class="ops-attention-empty">${escapeHtml(t("ops_attn_empty") || "Sve je u redu.")}</div>`;
+        : `<div class="ops-attention-empty">${escapeHtml(t("ops_attn_empty") || "Trenutno nema stavki koje zahtevaju pažnju.")}</div>`;
 
     if (_focusItemId) {
         const card = list.querySelector(`[data-attn-id="${_focusItemId.replace(/"/g, "")}"]`);
@@ -535,6 +535,12 @@ function openOpsAttentionPanel(focusItemId = "") {
     if (focusItemId && typeof focusItemId === "object") focusItemId = "";
     _focusItemId = String(focusItemId || "");
     const items = collectOpsAttentionItems();
+    // Ultimate §8: never open an empty solution sheet for plan-only gaps.
+    if (!items.length && !_focusItemId) {
+        showToast(t("ops_plan_gap_hint") || "Kliknite za dnevni plan.", "info");
+        switchSection("dispatcher-daily-plan-pick");
+        return false;
+    }
     const layer = ensureOpsAttentionPanel();
     paintOpsAttentionPanel(items);
     layer.classList.remove("hidden");

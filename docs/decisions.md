@@ -202,7 +202,7 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
 - Odluka:
   1. §35 ne definiše KB/TTI; soft-pilot budžeti su:
      - driver app JS excl. translations ≤ 220 KB raw;
-     - staff app JS excl. translations ≤ 521 KB raw (D21/D22 bus ops + concurrency);
+     - staff app JS excl. translations ≤ 522 KB raw (D21/D22 + health/plan-gap fix);
      - max single driver chunk ≤ 150 KB;
      - translations chunk ≤ 360 KB;
      - driver ne sme ugraditi dispatcher UI implementaciju.
