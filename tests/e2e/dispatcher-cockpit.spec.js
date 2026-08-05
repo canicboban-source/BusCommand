@@ -122,6 +122,75 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await expect(page.locator('.ops-attention-card').filter({ hasText: /Traffic|delay|kašnjen/i })).toHaveCount(0);
   });
 
+  test("wrong shift code is corrected from catalog inside Needs attention", async ({ page }) => {
+    const date = todayIso();
+    const state = cockpitState();
+    state.shiftCatalogs = {
+      "101": {
+        line: "101",
+        lineId: "101",
+        locked: false,
+        entries: {
+          "101.S01": {
+            code: "101.S01",
+            label: "101.S01",
+            type: "morning",
+            start: "05:15",
+            end: "13:15"
+          },
+          "101.S02": {
+            code: "101.S02",
+            label: "101.S02",
+            type: "morning",
+            start: "06:00",
+            end: "14:00"
+          }
+        }
+      }
+    };
+    state.drivers = [{
+      id: "drv-wrong",
+      name: "Wrong Code Driver",
+      groupId: "101",
+      lineId: "101",
+      active: true,
+      bus: "BUS-1",
+      email: "wrong@example.test",
+      phone: "+4310000004"
+    }];
+    state.buses = [
+      { id: "bus-1", number: "BUS-1", groupId: "101", lineId: "101", groupIds: ["101"], active: true }
+    ];
+    state.shifts = [{
+      id: `shf-wrong-${date}`,
+      driverId: "drv-wrong",
+      driverName: "Wrong Code Driver",
+      date,
+      type: "morning",
+      name: "LEGACY.X",
+      routeCode: "LEGACY.X",
+      bus: "BUS-1",
+      start: "05:15",
+      end: "13:15",
+      revision: 1
+    }];
+    await seedDemoState(page, state);
+    await page.goto("/staff.html?mode=demo");
+    await loginDispatcher(page);
+
+    await page.evaluate(() => window.openOpsAttentionPanel());
+    const card = page.locator(".ops-attention-card").filter({ hasText: /Wrong Code Driver|pogrešn|wrong|falsch/i }).first();
+    await expect(card).toBeVisible();
+    await card.locator('[data-attn-field="duty"]').selectOption("101.S02");
+    await card.locator("button.ops-attention-apply").click();
+
+    await expect.poll(async () => page.evaluate(() => {
+      const shift = window.state.shifts.find(item => item.driverId === "drv-wrong");
+      return shift?.routeCode || shift?.name || "";
+    })).toBe("101.S02");
+    await expect(page.locator(".ops-attention-card").filter({ hasText: /Wrong Code Driver/i })).toHaveCount(0);
+  });
+
   test("missing bus pools order same group then company then other groups and assign applies", async ({ page }) => {
     const date = todayIso();
     const state = cockpitState();
