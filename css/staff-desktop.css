@@ -2544,6 +2544,204 @@ html[data-app-surface="staff"] .ops-resolution-status {
     font-size: .86rem;
 }
 
+/* ── Fast attention panel (one place for every fix) ── */
+html[data-app-surface="staff"] #ops-plan-health.is-attention.is-clickable {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+html[data-app-surface="staff"] #ops-plan-health.is-attention.is-clickable:hover,
+html[data-app-surface="staff"] #ops-plan-health.is-attention.is-clickable:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+    outline: none;
+}
+
+html[data-app-surface="staff"] .ops-attention-layer {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-ops-modal, 20000);
+    display: flex;
+    justify-content: flex-end;
+    align-items: stretch;
+    padding: 0;
+    background: rgba(2, 8, 23, 0.72);
+    backdrop-filter: blur(6px);
+}
+
+html[data-app-surface="staff"] .ops-attention-layer.hidden {
+    display: none;
+}
+
+html[data-app-surface="staff"] .ops-attention-sheet {
+    width: min(480px, 100%);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background:
+        linear-gradient(165deg, rgba(30, 41, 59, 0.55) 0%, rgba(15, 26, 45, 0.98) 40%, #0b1424 100%);
+    border-left: 1px solid rgba(148, 163, 184, 0.22);
+    box-shadow: -18px 0 48px rgba(0, 0, 0, 0.45);
+}
+
+html[data-app-surface="staff"] .ops-attention-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 20px 20px 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+html[data-app-surface="staff"] .ops-attention-kicker {
+    margin: 0 0 4px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #fbbf24;
+}
+
+html[data-app-surface="staff"] .ops-attention-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+html[data-app-surface="staff"] .ops-attention-subtitle {
+    margin: 6px 0 0;
+    color: #94a3b8;
+    font-size: 0.86rem;
+    line-height: 1.4;
+}
+
+html[data-app-surface="staff"] .ops-attention-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 14px 16px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+html[data-app-surface="staff"] .ops-attention-card {
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 14px;
+    padding: 14px 14px 12px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+html[data-app-surface="staff"] .ops-attention-card.is-critical {
+    border-color: rgba(248, 113, 113, 0.35);
+    box-shadow: inset 3px 0 0 #ef4444;
+}
+
+html[data-app-surface="staff"] .ops-attention-card.is-warning {
+    border-color: rgba(251, 191, 36, 0.3);
+    box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+html[data-app-surface="staff"] .ops-attention-card.is-pending {
+    opacity: 0.78;
+    pointer-events: none;
+}
+
+html[data-app-surface="staff"] .ops-attention-card.is-focused {
+    outline: 2px solid rgba(96, 165, 250, 0.55);
+    outline-offset: 1px;
+}
+
+html[data-app-surface="staff"] .ops-attention-card-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: baseline;
+    margin-bottom: 6px;
+}
+
+html[data-app-surface="staff"] .ops-attention-badge {
+    font-weight: 800;
+    font-size: 0.95rem;
+}
+
+html[data-app-surface="staff"] .ops-attention-sev {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+
+html[data-app-surface="staff"] .ops-attention-meta,
+html[data-app-surface="staff"] .ops-attention-summary {
+    margin: 0 0 6px;
+    color: #cbd5e1;
+    font-size: 0.84rem;
+    line-height: 1.4;
+}
+
+html[data-app-surface="staff"] .ops-attention-solution {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+html[data-app-surface="staff"] .ops-attention-solution-label {
+    margin: 0 0 8px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #fbbf24;
+}
+
+html[data-app-surface="staff"] .ops-attention-label {
+    display: block;
+    margin: 8px 0 5px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #dbeafe;
+}
+
+html[data-app-surface="staff"] .ops-attention-select,
+html[data-app-surface="staff"] .ops-attention-note {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 11px;
+    border: 1px solid #475569;
+    border-radius: 10px;
+    color: #f8fafc;
+    background: #0b1424;
+    font: inherit;
+}
+
+html[data-app-surface="staff"] .ops-attention-apply {
+    margin-top: 12px;
+    width: 100%;
+    min-height: 42px;
+    justify-content: center;
+}
+
+html[data-app-surface="staff"] .ops-attention-status {
+    min-height: 18px;
+    margin: 8px 0 0;
+    color: #fde68a;
+    font-size: 0.8rem;
+}
+
+html[data-app-surface="staff"] .ops-attention-soft {
+    margin: 0 0 8px;
+    color: #94a3b8;
+    font-size: 0.84rem;
+}
+
+html[data-app-surface="staff"] .ops-attention-empty {
+    padding: 28px 12px;
+    text-align: center;
+    color: #94a3b8;
+}
+
 html[data-app-surface="staff"] select {
     color-scheme: dark;
 }

@@ -1,5 +1,8 @@
 # BusCommand — master prompt za nastavak razvoja, proveru i završetak aplikacije (v3.2)
 
+> **Operativni zakon (čitaj prvo):** `docs/BusCommand-ULTIMATE-OPERATING-CONTRACT.md` (v2.1).  
+> Ovaj master prompt je referenca / dubina / istorija. Ne nadjačava Ultimate Operating Contract.
+
 **Usvojena vizuelna dopuna:** 1. avgust 2026. — semantika hitnih akcija, sticky potvrda uvoza i jedinstveni SOS tok.
 
 **Dopune v3.2, odluka vlasnika 4. avgusta 2026.** Numeracija poglavlja 1–31 je

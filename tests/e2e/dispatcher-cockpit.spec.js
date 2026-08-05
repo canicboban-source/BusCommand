@@ -102,21 +102,87 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await loginDispatcher(page);
 
     const resolve = page.locator("#dispatcher-live-alerts .urgent-action").first();
-    await expect(resolve).toContainText("Resolve issue");
+    await expect(resolve).toContainText(/Resolve now|Reši odmah|Sofort lösen/i);
     await resolve.click();
-    await expect(page.locator("#report-resolution-modal")).toBeVisible();
+    await expect(page.locator("#ops-attention-panel")).toBeVisible();
 
-    await page.locator("#report-resolution-type").selectOption("restored");
-    await page.locator("#report-resolution-summary").fill("Traffic cleared and service was verified.");
-    await page.locator("#report-resolution-modal button[type='submit']").click();
+    const card = page.locator(".ops-attention-card").filter({ hasText: /delay|kašnjen|verspät/i }).first();
+    await card.locator('[data-attn-field="resolutionType"]').selectOption("restored");
+    await card.locator('[data-attn-field="note"]').fill("Traffic cleared and service was verified.");
+    await card.locator("button.ops-attention-apply").click();
 
-    await expect(page.locator("#report-resolution-modal")).toBeHidden();
+    await expect.poll(async () => page.evaluate(() =>
+      window.state.reports.find(item => item.id === "report-delay-1")?.status
+    )).toBe("resolved");
     const report = await page.evaluate(() => window.state.reports.find(item => item.id === "report-delay-1"));
-    expect(report.status).toBe("resolved");
     expect(report.resolution).toEqual(expect.objectContaining({
       type: "restored",
       summary: "Traffic cleared and service was verified."
     }));
+    await expect(page.locator('.ops-attention-card').filter({ hasText: /Traffic|delay|kašnjen/i })).toHaveCount(0);
+  });
+
+  test("missing bus pools order same group then company then other groups and assign applies", async ({ page }) => {
+    const date = todayIso();
+    const state = cockpitState();
+    state.groups = [
+      { id: "101", name: "Line 101", color: "#3D7EF5", active: true, companyId: "demo" },
+      { id: "202", name: "Line 202", color: "#22C55E", active: true, companyId: "demo" }
+    ];
+    state.drivers = [
+      {
+        id: "drv-nobus",
+        name: "No Bus Driver",
+        groupId: "101",
+        lineId: "101",
+        active: true,
+        bus: "",
+        email: "nobus@example.test",
+        phone: "+4310000003"
+      }
+    ];
+    state.buses = [
+      { id: "bus-same", number: "BUS-SAME", groupId: "101", lineId: "101", groupIds: ["101"], active: true },
+      { id: "bus-co", number: "BUS-CO", groupId: "", lineId: "", groupIds: [], active: true },
+      { id: "bus-other", number: "BUS-OTHER", groupId: "202", lineId: "202", groupIds: ["202"], active: true }
+    ];
+    state.shifts = [{
+      id: `shf-nobus-${date}`,
+      driverId: "drv-nobus",
+      driverName: "No Bus Driver",
+      date,
+      type: "morning",
+      name: "101.S01",
+      routeCode: "101.S01",
+      bus: "",
+      start: "05:15",
+      end: "13:15",
+      revision: 1
+    }];
+    await seedDemoState(page, state);
+    await page.goto("/staff.html?mode=demo");
+    await loginDispatcher(page);
+
+    await page.evaluate(() => window.openOpsAttentionPanel());
+    await expect(page.locator("#ops-attention-panel")).toBeVisible();
+
+    const card = page.locator(".ops-attention-card").filter({ hasText: /No Bus Driver|nema autobusa|missing bus|kein bus/i }).first();
+    await expect(card).toBeVisible();
+    const busSelect = card.locator('[data-attn-field="bus"]');
+    await expect(busSelect.locator("optgroup").nth(0)).toHaveAttribute("label", /This group|Ova grupa|Diese Gruppe/i);
+    await expect(busSelect.locator("optgroup").nth(1)).toHaveAttribute("label", /Company|Firma/i);
+    await expect(busSelect.locator("optgroup").nth(2)).toHaveAttribute("label", /Other groups|Druge grupe|Andere Gruppen/i);
+    await expect(busSelect.locator("optgroup").nth(0).locator("option")).toHaveAttribute("value", "BUS-SAME");
+    await expect(busSelect.locator("optgroup").nth(1).locator("option")).toHaveAttribute("value", "BUS-CO");
+    await expect(busSelect.locator("optgroup").nth(2).locator("option")).toHaveAttribute("value", "BUS-OTHER");
+
+    await busSelect.selectOption("BUS-SAME");
+    await card.locator("button.ops-attention-apply").click();
+
+    await expect.poll(async () => page.evaluate(() =>
+      window.state.shifts.find(item => item.driverId === "drv-nobus")?.bus
+    )).toBe("BUS-SAME");
+    await expect(page.locator(".ops-attention-card").filter({ hasText: /No Bus Driver/i })).toHaveCount(0);
   });
 
   test("daily replacement records the incident first and applies one guided resolution", async ({ page }) => {
@@ -141,11 +207,13 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await page.locator("#ops-incident-reason").fill("Driver reported unavailable");
     await page.locator("#ops-incident-modal button[type='submit']").click();
 
-    await expect(page.locator("#ops-coverage-resolver-modal")).toBeVisible();
-    await expect(page.locator("#ops-coverage-driver")).toHaveValue("drv-standby");
-    await expect(page.locator("#ops-coverage-bus")).toHaveValue("BUS-1");
-    await page.locator("#ops-coverage-resolver-modal button[type='submit']").click();
-    await expect(page.locator("#ops-coverage-resolver-modal")).toBeHidden();
+    await expect(page.locator("#ops-attention-panel")).toBeVisible();
+    const coverageCard = page.locator(".ops-attention-card").filter({ hasText: /unavailable|nedostupan|nicht verfügbar/i }).first();
+    await expect(coverageCard).toBeVisible();
+    await expect(coverageCard.locator('[data-attn-field="driver"]')).toHaveValue("drv-standby");
+    await expect(coverageCard.locator('[data-attn-field="bus"]')).toHaveValue("BUS-1");
+    await coverageCard.locator("button.ops-attention-apply").click();
+    await expect(page.locator("#ops-attention-panel")).toBeHidden();
 
     const after = await page.evaluate(() => ({
       report: window.state.reports.find(item => item.type === "coverage:disruption"),

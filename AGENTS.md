@@ -1,9 +1,18 @@
 # BusCommand agent instructions
 
-The authoritative product, engineering, security, privacy, UX and QA instructions are in:
+## Primary authority (read first)
 
-- `docs/BusCommand-MASTER-PROMPT.md` (v3.1 or newer)
+- `docs/BusCommand-ULTIMATE-OPERATING-CONTRACT.md` (**v2.1**) — daily operating law for every AI agent.
 
-Before changing code, read that document in full. Work on one approved chapter at a time, preserve the last known-good state, use an isolated branch/worktree, run the required verification after every change, and do not deploy without an explicit release decision.
+Before changing code: follow that contract (Pre-flight → smallest correct change → proof). Do not deploy, push, or release without an explicit owner decision.
 
-If repository documentation conflicts, the master prompt and the owner's latest explicit decision take precedence. Never add secrets, production credentials, shared activation codes, demo tenants or foreign-project data to the repository.
+## Reference / depth (does not override the Operating Contract)
+
+- `docs/BusCommand-MASTER-PROMPT.md` (v3.2 or newer) — product history, chapter detail, privacy/QA depth.
+- Owner Task Contract for the current iteration (when provided) overrides implementation preference, not security or this Operating Contract.
+
+## Conflict rule
+
+If instructions conflict, use the hierarchy in the Ultimate Operating Contract §0. Security, privacy, tenant isolation, and credential boundaries always win.
+
+Never add secrets, production credentials, shared activation codes, demo tenants, or foreign-project data to the repository.

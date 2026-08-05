@@ -2121,18 +2121,14 @@ function registerDriverRoutes(app, deps) {
       }
       const originalDriver = originalDriverSnap.data();
       const replacementDriver = replacementDriverSnap.data();
-      const originalGroupId = originalDriver.groupId || originalDriver.lineId || null;
-      const replacementGroupId = replacementDriver.groupId || replacementDriver.lineId || null;
-      if (replacementDriver.active === false || originalGroupId !== groupId || replacementGroupId !== groupId) {
-        return res.status(409).json({ success: false, code: "DRIVER_NOT_AVAILABLE", error: "Izabrani vozač nije aktivan i dostupan u ovoj grupi." });
+      // Fast ops path: replacement may come from another group / company pool
+      // as long as the dispatcher owns the incident group and the driver is active.
+      if (replacementDriver.active === false) {
+        return res.status(409).json({ success: false, code: "DRIVER_NOT_AVAILABLE", error: "Izabrani vozač nije aktivan." });
       }
-      const { busHasGroup } = require("./bus-group-membership");
-      const busSnap = busQuery.docs.find((doc) => {
-        const bus = doc.data();
-        return bus.active !== false && busHasGroup(bus, groupId);
-      });
+      const busSnap = busQuery.docs.find((doc) => doc.data().active !== false);
       if (!busSnap) {
-        return res.status(409).json({ success: false, code: "BUS_NOT_AVAILABLE", error: "Izabrani autobus nije aktivan i dostupan u ovoj grupi." });
+        return res.status(409).json({ success: false, code: "BUS_NOT_AVAILABLE", error: "Izabrani autobus nije aktivan." });
       }
 
       const date = initialReport.date;

@@ -17,6 +17,15 @@ import { persistShift } from "./shifts.js";
 import { ApiClient } from "../core/api-client.js";
 import { saveState } from "../core/state.js";
 import { busHasGroup } from "../data/bus-group-membership.js";
+import {
+    collectOpsAttentionItems,
+    openOpsAttentionPanel,
+    closeOpsAttentionPanel,
+    refreshOpsAttentionPanelIfOpen,
+    applyOpsAttentionFix,
+    applyCoverageResolution,
+    syncOpsPlanHealthAttentionState
+} from "./ops-attention.js";
 
 const SHIFT_TYPE_OPTIONS = Object.freeze([
     { value: "morning", labelKey: "shift_type_morning", fallback: "Prepodne" },
@@ -165,10 +174,9 @@ function toastConfirmFetchFailureOnce() {
 function updateOpsPlanHealth({ openReportsCount, pendingConfirms, failedDeliveries }) {
     const health = document.getElementById("ops-plan-health");
     if (!health) return;
-    const needsAttention = openReportsCount > 0
-        || pendingConfirms.length > 0
-        || failedDeliveries > 0
-        || _confirmFetchFailed;
+    const attentionItems = collectOpsAttentionItems();
+    const attentionCount = attentionItems.length;
+    const needsAttention = attentionCount > 0 || _confirmFetchFailed;
     health.classList.toggle("is-attention", needsAttention);
     health.classList.toggle("is-loading", _confirmFetchInFlight);
     health.setAttribute("aria-busy", _confirmFetchInFlight ? "true" : "false");
@@ -180,6 +188,7 @@ function updateOpsPlanHealth({ openReportsCount, pendingConfirms, failedDeliveri
     if (_confirmFetchFailed) {
         titleEl.textContent = t("ops_plan_stale") || "Podaci potvrda nisu ažurni";
         hintEl.textContent = t("ops_plan_stale_hint") || "Provera potvrda smena nije uspela — prikaz može biti zastareo.";
+        syncOpsPlanHealthAttentionState(true, attentionCount);
         return;
     }
     if (needsAttention) {
@@ -188,11 +197,16 @@ function updateOpsPlanHealth({ openReportsCount, pendingConfirms, failedDeliveri
         if (openReportsCount > 0) parts.push(`${openReportsCount} ${t("ops_plan_attention_reports") || "prijava"}`);
         if (pendingConfirms.length > 0) parts.push(`${pendingConfirms.length} ${t("ops_plan_attention_confirms") || "potvrda"}`);
         if (failedDeliveries > 0) parts.push(`${failedDeliveries} ${t("ops_plan_attention_failed") || "neuspelo slanje"}`);
-        hintEl.textContent = parts.join(" · ") || (t("ops_plan_attention_hint") || "Otvorite kolonu „Čeka akciju“.");
+        const missingBus = attentionItems.filter(i => i.kind === "missing_bus").length;
+        if (missingBus) parts.push(`${missingBus} ${t("ops_attn_missing_bus_title") || "bez autobusa"}`);
+        hintEl.textContent = parts.join(" · ")
+            || (t("ops_plan_attention_hint") || "Kliknite ovde — jedan panel za sva rešenja.");
+        syncOpsPlanHealthAttentionState(true, attentionCount);
         return;
     }
     titleEl.textContent = t("ops_plan_healthy") || "Plan je zdrav";
     hintEl.textContent = t("ops_plan_healthy_hint") || "Sve je u skladu sa planom";
+    syncOpsPlanHealthAttentionState(false, 0);
 }
 
 function visibleOperationalReports() {
@@ -380,6 +394,7 @@ function renderDispatcherDashboard() {
                 const attemptsHint = Number(row.attempts || 0) > 0
                     ? ` · ${escapeHtml(t("confirmation_attempts") || "Pokušaji")}: ${Number(row.attempts)}`
                     : "";
+                const focusId = `confirm:${row.driverId}:${row.targetDate}`;
                 div.innerHTML = `
                     <div class="ops-action-rail" aria-hidden="true"></div>
                     <div class="alert-item-content ops-action-body">
@@ -389,6 +404,11 @@ function renderDispatcherDashboard() {
                         </div>
                         <span class="alert-item-desc">${escapeHtml(label)}${attemptsHint}${errorHint}</span>
                         <span class="alert-item-meta">${escapeHtml(t("driver") || "Vozač")}: <strong>${escapeHtml(drv?.name || row.driverId || "—")}</strong></span>
+                        <div class="alert-item-actions">
+                            <button type="button" class="urgent-action alert-item-resolve" ${actionAttr("openOpsAttentionPanel", [focusId])}>
+                                <i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}
+                            </button>
+                        </div>
                     </div>
                 `;
                 alertsContainer.appendChild(div);
@@ -400,14 +420,11 @@ function renderDispatcherDashboard() {
                 const isCoverage = kind.kind === "coverage";
                 div.className = `ops-action-card alert-item ${isBreakdown || isCoverage ? "alert-breakdown is-critical" : "alert-delay is-warning"}`;
                 const displayReason = [t(rep.reason) || rep.reason || "", rep.description || ""].filter(Boolean).join(" · ");
-                const resolveAction = isCoverage ? "openCoverageResolver" : "openReportResolution";
+                const focusId = isCoverage ? `coverage:${rep.id}` : `report:${rep.id}`;
                 const statusChip = `<span class="ops-lifecycle-chip" data-status="${escapeHtml(String(rep.status || "open"))}">${escapeHtml(problemStatusLabel(rep.status))}</span>`;
                 const entityHint = rep.affectedEntity === "vehicle"
                     ? `${escapeHtml(t("vehicle") || "Vozilo")}: <strong>${escapeHtml(rep.bus || "—")}</strong>`
                     : `${escapeHtml(t("driver") || "Vozač")}: <strong>${escapeHtml(rep.driver || "—")}</strong> · ${escapeHtml(t("vehicle") || "Vozilo")}: <strong>${escapeHtml(rep.bus || "—")}</strong>`;
-                const ackBtn = isCoverage && ["open", "active"].includes(String(rep.status || "open"))
-                    ? `<button type="button" class="btn-secondary alert-item-ack" ${actionAttr("transitionOperationalIncident", [rep.id, "acknowledged"])}>${escapeHtml(t("problem_btn_ack") || "Potvrdi")}</button>`
-                    : "";
 
                 div.innerHTML = `
                     <div class="ops-action-rail" aria-hidden="true"></div>
@@ -419,14 +436,16 @@ function renderDispatcherDashboard() {
                         <span class="alert-item-desc">${escapeHtml(displayReason)}</span>
                         <span class="alert-item-meta">${entityHint}</span>
                         <div class="alert-item-actions">
-                            ${ackBtn}
-                            <button type="button" class="btn-table-action alert-item-resolve urgent-action" ${actionAttr(resolveAction, [rep.id])}><i data-lucide="wrench"></i> ${escapeHtml(t("ops_btn_resolve"))}</button>
+                            <button type="button" class="urgent-action alert-item-resolve" ${actionAttr("openOpsAttentionPanel", [focusId])}>
+                                <i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}
+                            </button>
                         </div>
                     </div>
                 `;
                 alertsContainer.appendChild(div);
             });
         }
+        refreshOpsAttentionPanelIfOpen();
     }
 
     renderMessagesPreview();
@@ -466,9 +485,11 @@ function renderDispatcherDashboard() {
                     ? `<button type="button" class="btn-danger-ghost ops-row-action" ${actionAttr("openVehicleOperationalIncident", [busNum, drv.name])} aria-label="${escapeHtml(t("ops_bus_out") || "Vozilo van operacije")}"><i data-lucide="bus"></i></button>`
                     : "";
                 const actionBtn = incident
-                    ? `<button type="button" class="ops-row-action urgent-action" ${actionAttr("openCoverageResolver", [incident.id])}><i data-lucide="wrench"></i> ${escapeHtml(t("ops_btn_resolve"))}</button>`
+                    ? `<button type="button" class="ops-row-action urgent-action" ${actionAttr("openOpsAttentionPanel", [`coverage:${incident.id}`])}><i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}</button>`
                     : uncovered
-                    ? `<button type="button" class="ops-row-action urgent-action" ${actionAttr("opsAssignDriver", [drv.name, "morning"])}><i data-lucide="user-plus"></i> ${escapeHtml(t("ops_btn_resolve"))}</button>`
+                    ? `<button type="button" class="ops-row-action urgent-action" ${actionAttr("openOpsAttentionPanel", [])}><i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}</button>`
+                    : !busNum
+                    ? `<button type="button" class="ops-row-action urgent-action" ${actionAttr("openOpsAttentionPanel", [`bus:${driverUid(drv)}`])}><i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}</button>`
                     : `<span class="ops-row-actions">${busOutBtn}<button type="button" class="btn-danger-ghost ops-row-action" ${actionAttr("openOperationalIncident", [drv.name])} aria-label="${escapeHtml(t("ops_incident_open") || "Prijavi problem")}"><i data-lucide="user-x"></i> ${escapeHtml(t("ops_incident_open") || "Problem")}</button></span>`;
                 return `<tr class="${rowClass}">
                     <td><strong>${escapeHtml(drv.name || "")}</strong></td>
@@ -716,92 +737,20 @@ function closeCoverageResolver() {
 async function submitCoverageResolution(event) {
     event.preventDefault();
     const modal = document.getElementById("ops-coverage-resolver-modal");
-    const report = (window.state.reports || []).find(item =>
-        item.id === modal?.dataset.reportId && isActiveReport(item)
-    );
+    const reportId = String(modal?.dataset.reportId || "");
     const replacementDriverId = String(modal?.querySelector("#ops-coverage-driver")?.value || "");
     const replacementBus = String(modal?.querySelector("#ops-coverage-bus")?.value || "");
-    const replacement = getVisibleDrivers().find(driver => driverUid(driver) === replacementDriverId);
-    const original = getVisibleDrivers().find(driver => driverUid(driver) === report?.driverId);
     const status = modal?.querySelector("#ops-coverage-resolver-status");
-    if (!report || !replacement || !original || !replacementBus) {
-        if (status) status.textContent = t("ops_coverage_selection_required");
-        return;
-    }
-    const originalShift = getShiftForDriverDate(original.name, report.date);
-    const replacementShift = getShiftForDriverDate(replacement.name, report.date);
-    const submit = modal.querySelector("button[type='submit']");
+    const submit = modal?.querySelector("button[type='submit']");
+    if (!modal || !reportId) return;
     modal.dataset.pending = "true";
-    submit.disabled = true;
-    if (status) status.textContent = t("report_resolving");
+    if (submit) submit.disabled = true;
     try {
-        let result;
-        if (IS_DEMO_MODE) {
-            result = {
-                success: true,
-                report: {
-                    id: report.id,
-                    status: "resolved",
-                    resolution: {
-                        type: "replacement",
-                        summary: `${replacement.name} / ${replacementBus}`,
-                        replacementDriverId,
-                        replacementBus
-                    }
-                },
-                shift: {
-                    type: report.shiftType || originalShift?.type || "morning",
-                    name: report.shiftName || originalShift?.name || "",
-                    routeCode: originalShift?.routeCode || report.shiftName || "",
-                    start: originalShift?.start || null,
-                    end: originalShift?.end || null,
-                    bus: replacementBus,
-                    revision: Number(replacementShift?.revision || 0) + 1
-                }
-            };
-        } else {
-            result = await ApiClient.resolveStaffOperationalIncident(report.id, {
-                replacementDriverId,
-                replacementBus,
-                expectedOriginalRevision: Number(originalShift?.revision || 0),
-                expectedReplacementRevision: Number(replacementShift?.revision || 0)
-            });
-        }
-        if (!result?.success) {
-            const message = result?.error || t("ops_resolver_failed");
-            if (status) status.textContent = message;
-            showToast(message, "error");
-            return;
-        }
-        setShiftForDriverDate(original.name, report.date, { type: "clear" });
-        const assigned = result.shift || {};
-        setShiftForDriverDate(replacement.name, report.date, {
-            type: assigned.type || report.shiftType || originalShift?.type || "morning",
-            name: assigned.name || report.shiftName || originalShift?.name || "",
-            bus: assigned.bus || replacementBus,
-            routeCode: assigned.routeCode || originalShift?.routeCode || "",
-            start: assigned.start || originalShift?.start || null,
-            end: assigned.end || originalShift?.end || null,
-            revision: Number.isInteger(assigned.revision) ? assigned.revision : Number(replacementShift?.revision || 0) + 1
-        });
-        Object.assign(report, result.report || {}, {
-            status: "resolved",
-            resolvedAt: result.report?.resolvedAt || new Date().toISOString(),
-            resolvedBy: result.report?.resolvedBy || window.currentUser?.uid || window.currentUser?.id
-        });
-        if (IS_DEMO_MODE) saveState();
-        delete modal.dataset.pending;
-        closeCoverageResolver();
-        showToast(t("ops_resolver_success", { driver: replacement.name, bus: replacementBus }), "success");
-        window.dispatchEvent(new CustomEvent("buscommand:plan-updated", { detail: { date: report.date } }));
-        renderDispatcherDashboard();
-    } catch (error) {
-        const message = error?.message || t("ops_resolver_failed");
-        if (status) status.textContent = message;
-        showToast(message, "error");
+        const ok = await applyCoverageResolution(reportId, replacementDriverId, replacementBus, status);
+        if (ok) closeCoverageResolver();
     } finally {
         delete modal.dataset.pending;
-        submit.disabled = false;
+        if (submit) submit.disabled = false;
     }
 }
 
@@ -1072,7 +1021,11 @@ async function submitOperationalIncident(event) {
         closeOperationalIncident();
         showToast(t("ops_incident_created"), "success");
         renderDispatcherDashboard();
-        if (result.report?.id) openCoverageResolver(result.report.id, preferredReplacementDriverId);
+        if (result.report?.id) {
+            openOpsAttentionPanel(`coverage:${result.report.id}`);
+        } else if (preferredReplacementDriverId) {
+            openOpsAttentionPanel();
+        }
     } finally {
         submit.disabled = false;
     }
@@ -1107,5 +1060,11 @@ export {
     closeOperationalIncident,
     openCoverageResolver,
     closeCoverageResolver,
-    transitionOperationalIncident
+    transitionOperationalIncident,
+    openOpsAttentionPanel,
+    closeOpsAttentionPanel,
+    applyOpsAttentionFix
 };
+
+window.openCoverageResolver = openCoverageResolver;
+window.openOpsAttentionPanel = openOpsAttentionPanel;
