@@ -31,7 +31,7 @@ const SHIFT_TYPES = {
     sick: "shift_type_sick"
 };
 
-const WEEKDAY_SHORT = ["Ned", "Pon", "Uto", "Sre", "Čet", "Pet", "Sub"];
+const ABSENCE_TYPES = new Set(["off", "vacation", "sick", "clear"]);
 
 function escapeHtml(str) {
     if (str == null) return "";
@@ -45,19 +45,35 @@ function escapeHtml(str) {
 
 function formatPlanDate(year, monthNum, day) {
     const d = new Date(year, monthNum - 1, day);
-    const wd = WEEKDAY_SHORT[d.getDay()];
+    const lang = window.state?.language || "en";
+    const wd = new Intl.DateTimeFormat(lang, { weekday: "short" }).format(d);
     return `${String(day).padStart(2, "0")}.${String(monthNum).padStart(2, "0")}.${year}. (${wd})`;
 }
 
 function getShiftTypeLabel(type) {
-    const key = SHIFT_TYPES[type];
-    return (key ? t(key) : null) || t(`shift_${type}`) || type || "—";
+    const normalized = type === "clear" ? "off" : type;
+    const key = SHIFT_TYPES[normalized];
+    return (key ? t(key) : null) || t(`shift_${normalized}`) || normalized || "—";
+}
+
+/** Compact matrix markers — language-specific (SR O/B, EN V/S, DE U/K). */
+function absenceCellCode(type) {
+    if (type === "vacation") return t("shift_code_vacation");
+    if (type === "sick") return t("shift_code_sick");
+    if (type === "off" || type === "clear") return t("shift_code_off");
+    return null;
 }
 
 function getShiftDisplayName(shift) {
     if (!shift) return "—";
+    // Absence types must follow UI language, never a frozen import/save label.
+    if (ABSENCE_TYPES.has(shift.type) && !shift.routeCode) {
+        return getShiftTypeLabel(shift.type);
+    }
     if (shift.routeCode) return shift.routeCode;
-    if (shift.name && shift.name !== "Frei") return shift.name;
+    if (shift.name && !/^(frei|slobodno|off|urlaub|vacation|krank|sick|bolovanje)$/i.test(String(shift.name).trim())) {
+        return shift.name;
+    }
     return getShiftTypeLabel(shift.type);
 }
 
@@ -357,10 +373,8 @@ function renderDriverDayTable(schedule, scheduleKey, year, monthNum, totalDays) 
 
 function cellLabelForMatrix(schedule, day) {
     const shift = getShiftForPlanDay(schedule, day);
-    if (!shift || isPlanDayEmpty(shift)) return "·";
-    if (shift.type === "vacation") return "U";
-    if (shift.type === "sick") return "B";
-    if (shift.type === "off") return "·";
+    if (!shift || isPlanDayEmpty(shift)) return t("shift_code_off");
+    if (ABSENCE_TYPES.has(shift.type)) return absenceCellCode(shift.type);
     return (shift.routeCode || parseRouteCodeFromText(shift.name) || shift.type || "?").slice(0, 8);
 }
 
@@ -841,10 +855,7 @@ async function saveMonthlyDayEdit() {
 
     let name = code;
     if (!name) {
-        if (type === "off") name = t("shift_off") || "Frei";
-        else if (type === "vacation") name = t("shift_vacation") || "Urlaub";
-        else if (type === "sick") name = t("shift_sick") || "Krank";
-        else name = getShiftTypeLabel(type);
+        name = getShiftTypeLabel(type);
     }
 
     const displayName = bus ? `${name} (Bus ${bus})` : name;
@@ -954,10 +965,7 @@ async function applyMonthlyMassAbsence(days, type) {
 
     ensureLocalScheduleShell(ctx.scheduleKey, ctx.driverName, ctx.month, ctx.totalDays, driver.id);
 
-    let name = getShiftTypeLabel(type);
-    if (type === "off") name = t("shift_off") || "Frei";
-    else if (type === "vacation") name = t("shift_vacation") || "Urlaub";
-    else if (type === "sick") name = t("shift_sick") || "Krank";
+    const name = getShiftTypeLabel(type);
 
     let ok = 0;
     let fail = 0;
@@ -1096,5 +1104,7 @@ export {
     onMedDaySelectChange,
     onMedCatalogSelectChange,
     onMedShiftTypeChange,
-    onMedShiftCodeCustomInput
+    onMedShiftCodeCustomInput,
+    absenceCellCode,
+    getShiftDisplayName
 };

@@ -102,21 +102,24 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await loginDispatcher(page);
 
     const resolve = page.locator("#dispatcher-live-alerts .urgent-action").first();
-    await expect(resolve).toContainText("Resolve issue");
+    await expect(resolve).toContainText(/Resolve now|Reši odmah|Sofort lösen/i);
     await resolve.click();
-    await expect(page.locator("#report-resolution-modal")).toBeVisible();
+    await expect(page.locator("#ops-attention-panel")).toBeVisible();
 
-    await page.locator("#report-resolution-type").selectOption("restored");
-    await page.locator("#report-resolution-summary").fill("Traffic cleared and service was verified.");
-    await page.locator("#report-resolution-modal button[type='submit']").click();
+    const card = page.locator(".ops-attention-card").filter({ hasText: /delay|kašnjen|verspät/i }).first();
+    await card.locator('[data-attn-field="resolutionType"]').selectOption("restored");
+    await card.locator('[data-attn-field="note"]').fill("Traffic cleared and service was verified.");
+    await card.locator("button.ops-attention-apply").click();
 
-    await expect(page.locator("#report-resolution-modal")).toBeHidden();
+    await expect.poll(async () => page.evaluate(() =>
+      window.state.reports.find(item => item.id === "report-delay-1")?.status
+    )).toBe("resolved");
     const report = await page.evaluate(() => window.state.reports.find(item => item.id === "report-delay-1"));
-    expect(report.status).toBe("resolved");
     expect(report.resolution).toEqual(expect.objectContaining({
       type: "restored",
       summary: "Traffic cleared and service was verified."
     }));
+    await expect(page.locator('.ops-attention-card').filter({ hasText: /Traffic|delay|kašnjen/i })).toHaveCount(0);
   });
 
   test("daily replacement records the incident first and applies one guided resolution", async ({ page }) => {
@@ -141,11 +144,13 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await page.locator("#ops-incident-reason").fill("Driver reported unavailable");
     await page.locator("#ops-incident-modal button[type='submit']").click();
 
-    await expect(page.locator("#ops-coverage-resolver-modal")).toBeVisible();
-    await expect(page.locator("#ops-coverage-driver")).toHaveValue("drv-standby");
-    await expect(page.locator("#ops-coverage-bus")).toHaveValue("BUS-1");
-    await page.locator("#ops-coverage-resolver-modal button[type='submit']").click();
-    await expect(page.locator("#ops-coverage-resolver-modal")).toBeHidden();
+    await expect(page.locator("#ops-attention-panel")).toBeVisible();
+    const coverageCard = page.locator(".ops-attention-card").filter({ hasText: /unavailable|nedostupan|nicht verfügbar/i }).first();
+    await expect(coverageCard).toBeVisible();
+    await expect(coverageCard.locator('[data-attn-field="driver"]')).toHaveValue("drv-standby");
+    await expect(coverageCard.locator('[data-attn-field="bus"]')).toHaveValue("BUS-1");
+    await coverageCard.locator("button.ops-attention-apply").click();
+    await expect(page.locator("#ops-attention-panel")).toBeHidden();
 
     const after = await page.evaluate(() => ({
       report: window.state.reports.find(item => item.type === "coverage:disruption"),

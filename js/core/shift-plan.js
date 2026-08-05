@@ -24,6 +24,20 @@ const SHIFT_TYPE_LABELS = {
     sick: "Krank"
 };
 
+const ABSENCE_SHIFT_TYPES = new Set(["off", "vacation", "sick", "clear"]);
+
+function localizedShiftTypeLabel(type) {
+    const normalized = type === "clear" ? "off" : type;
+    if (!normalized) return "";
+    const lang = window.state?.language || "en";
+    const dict = window.TRANSLATIONS?.[lang] || {};
+    const fallback = window.TRANSLATIONS?.en || {};
+    return dict[`shift_type_${normalized}`]
+        || fallback[`shift_type_${normalized}`]
+        || SHIFT_TYPE_LABELS[normalized]
+        || normalized;
+}
+
 function isWeekdayDateStr(dateStr) {
     const d = new Date(`${dateStr}T12:00:00`);
     const day = d.getDay();
@@ -435,7 +449,9 @@ function getDriverDutySummary(driverName, dateStr) {
     const bus = shift?.bus || driver?.bus || "—";
     const routeCode = shift?.routeCode || parseRouteCodeFromText(shift?.name);
     const route = findRouteForDriver(driver, routeCode);
-    const shiftLabel = shift?.name || (shift?.type ? SHIFT_TYPE_LABELS[shift.type] : "—");
+    const shiftLabel = (shift?.type && ABSENCE_SHIFT_TYPES.has(shift.type) && !shift.routeCode)
+        ? localizedShiftTypeLabel(shift.type)
+        : (shift?.routeCode || shift?.name || (shift?.type ? localizedShiftTypeLabel(shift.type) : "—"));
 
     const catalog = window.state.shiftCatalog?.entries;
     const code = shift?.routeCode || routeCode;

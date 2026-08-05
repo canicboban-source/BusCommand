@@ -27,7 +27,20 @@ import {
 import { addDriver, editDriver, toggleDriverActive } from "./data/drivers.js";
 import { deleteGroup, setGroupFilter } from "./data/groups.js";
 import { clearScheduleFile, clearScheduleText, deleteScheduleEntry, formatScheduleText, handleScheduleDrop, handleScheduleFileSelect, insertScheduleTable, sendScheduleToDrivers, switchScheduleTab } from "./data/schedules.js";
-import { updateDriverBusInline, updateDriverShiftInline, opsAssignDriver, openOperationalIncident, openVehicleOperationalIncident, closeOperationalIncident, openCoverageResolver, closeCoverageResolver, transitionOperationalIncident } from "./dispatcher/dashboard.js";
+import {
+    updateDriverBusInline,
+    updateDriverShiftInline,
+    opsAssignDriver,
+    openOperationalIncident,
+    openVehicleOperationalIncident,
+    closeOperationalIncident,
+    openCoverageResolver,
+    closeCoverageResolver,
+    transitionOperationalIncident,
+    openOpsAttentionPanel,
+    closeOpsAttentionPanel,
+    applyOpsAttentionFix
+} from "./dispatcher/dashboard.js";
 import { removeDispatcher } from "./dispatcher/dispatchers.js";
 import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlansFull, scrollHubSection } from "./dispatcher/group-hub.js";
 import { returnLostItem, setLostItemStatus, openLostItemPhoto } from "./dispatcher/lost-items.js";
@@ -174,6 +187,9 @@ const HANDLERS = {
     openVehicleOperationalIncident,
     transitionOperationalIncident,
     openCoverageResolver,
+    openOpsAttentionPanel,
+    closeOpsAttentionPanel,
+    applyOpsAttentionFix,
     openReportResolution,
     openMonthlyPlanForGroup,
     openMonthlyPlansFull,
