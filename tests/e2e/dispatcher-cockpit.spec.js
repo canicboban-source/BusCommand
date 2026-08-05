@@ -122,6 +122,163 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await expect(page.locator('.ops-attention-card').filter({ hasText: /Traffic|delay|kašnjen/i })).toHaveCount(0);
   });
 
+  test("drivers who know the target line sort ahead in Needs attention pools", async ({ page }) => {
+    const date = todayIso();
+    const state = cockpitState();
+    state.groups = [
+      { id: "101", name: "Line 101", color: "#3D7EF5", active: true, companyId: "demo" },
+      { id: "202", name: "Line 202", color: "#22C55E", active: true, companyId: "demo" }
+    ];
+    state.drivers = [
+      {
+        id: "drv-original",
+        name: "Original Driver",
+        groupId: "101",
+        lineId: "101",
+        knownGroupIds: ["101"],
+        active: true,
+        bus: "BUS-1",
+        email: "original@example.test",
+        phone: "+4310000001"
+      },
+      {
+        id: "drv-knows",
+        name: "Knows Line Driver",
+        groupId: "202",
+        lineId: "202",
+        knownGroupIds: ["202", "101"],
+        active: true,
+        bus: "",
+        email: "knows@example.test",
+        phone: "+4310000005"
+      },
+      {
+        id: "drv-other",
+        name: "Other Line Driver",
+        groupId: "202",
+        lineId: "202",
+        knownGroupIds: ["202"],
+        active: true,
+        bus: "",
+        email: "other@example.test",
+        phone: "+4310000006"
+      }
+    ];
+    state.buses = [
+      { id: "bus-1", number: "BUS-1", groupId: "101", lineId: "101", groupIds: ["101"], active: true }
+    ];
+    state.shifts = [
+      {
+        id: `shf-original-${date}`,
+        driverId: "drv-original",
+        driverName: "Original Driver",
+        date,
+        type: "morning",
+        name: "101.S01",
+        routeCode: "101.S01",
+        bus: "BUS-1",
+        start: "05:15",
+        end: "13:15",
+        revision: 1
+      }
+    ];
+    state.reports = [{
+      id: "report-coverage-knows",
+      type: "coverage:disruption",
+      status: "active",
+      severity: "sev_high",
+      date,
+      time: "08:00",
+      driverId: "drv-original",
+      driver: "Original Driver",
+      groupId: "101",
+      bus: "BUS-1",
+      reason: "ops_coverage_unavailable",
+      description: "Driver reported unavailable"
+    }];
+    await seedDemoState(page, state);
+    await page.goto("/staff.html?mode=demo");
+    await loginDispatcher(page);
+
+    await page.evaluate(() => window.openOpsAttentionPanel("coverage:report-coverage-knows"));
+    const card = page.locator(".ops-attention-card").filter({ hasText: /unavailable|nedostupan|nicht verfügbar/i }).first();
+    await expect(card).toBeVisible();
+    const otherGroup = card.locator('[data-attn-field="driver"] optgroup').filter({
+      has: page.locator('option[value="drv-knows"]')
+    });
+    await expect(otherGroup.locator("option").nth(0)).toHaveAttribute("value", "drv-knows");
+    await expect(otherGroup.locator("option[value='drv-knows']")).toContainText(/knows 101|zna 101|kennt 101/i);
+  });
+
+  test("wrong shift code is corrected from catalog inside Needs attention", async ({ page }) => {
+    const date = todayIso();
+    const state = cockpitState();
+    state.shiftCatalogs = {
+      "101": {
+        line: "101",
+        lineId: "101",
+        locked: false,
+        entries: {
+          "101.S01": {
+            code: "101.S01",
+            label: "101.S01",
+            type: "morning",
+            start: "05:15",
+            end: "13:15"
+          },
+          "101.S02": {
+            code: "101.S02",
+            label: "101.S02",
+            type: "morning",
+            start: "06:00",
+            end: "14:00"
+          }
+        }
+      }
+    };
+    state.drivers = [{
+      id: "drv-wrong",
+      name: "Wrong Code Driver",
+      groupId: "101",
+      lineId: "101",
+      active: true,
+      bus: "BUS-1",
+      email: "wrong@example.test",
+      phone: "+4310000004"
+    }];
+    state.buses = [
+      { id: "bus-1", number: "BUS-1", groupId: "101", lineId: "101", groupIds: ["101"], active: true }
+    ];
+    state.shifts = [{
+      id: `shf-wrong-${date}`,
+      driverId: "drv-wrong",
+      driverName: "Wrong Code Driver",
+      date,
+      type: "morning",
+      name: "LEGACY.X",
+      routeCode: "LEGACY.X",
+      bus: "BUS-1",
+      start: "05:15",
+      end: "13:15",
+      revision: 1
+    }];
+    await seedDemoState(page, state);
+    await page.goto("/staff.html?mode=demo");
+    await loginDispatcher(page);
+
+    await page.evaluate(() => window.openOpsAttentionPanel());
+    const card = page.locator(".ops-attention-card").filter({ hasText: /Wrong Code Driver|pogrešn|wrong|falsch/i }).first();
+    await expect(card).toBeVisible();
+    await card.locator('[data-attn-field="duty"]').selectOption("101.S02");
+    await card.locator("button.ops-attention-apply").click();
+
+    await expect.poll(async () => page.evaluate(() => {
+      const shift = window.state.shifts.find(item => item.driverId === "drv-wrong");
+      return shift?.routeCode || shift?.name || "";
+    })).toBe("101.S02");
+    await expect(page.locator(".ops-attention-card").filter({ hasText: /Wrong Code Driver/i })).toHaveCount(0);
+  });
+
   test("missing bus pools order same group then company then other groups and assign applies", async ({ page }) => {
     const date = todayIso();
     const state = cockpitState();

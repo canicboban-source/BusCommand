@@ -1163,6 +1163,11 @@ app.get(
           batch.update(doc.ref, { eid });
           backfill += 1;
         }
+        const homeGroup = data.groupId || data.lineId || "";
+        const known = Array.isArray(data.knownGroupIds)
+          ? data.knownGroupIds.map((id) => String(id || "").trim()).filter(Boolean)
+          : [];
+        if (homeGroup && !known.includes(homeGroup)) known.unshift(homeGroup);
         return {
           id: doc.id,
           firstName: data.firstName || "",
@@ -1170,8 +1175,9 @@ app.get(
           name: data.name || `${data.firstName || ""} ${data.lastName || ""}`.trim(),
           phone: data.phone || "",
           email: data.email || "",
-          groupId: data.groupId || data.lineId || "",
+          groupId: homeGroup,
           lineId: data.lineId || data.groupId || "",
+          knownGroupIds: known,
           companyId,
           eid,
           active: data.active !== false,
@@ -1267,11 +1273,17 @@ app.patch(
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(driverId)) {
       return res.status(400).json({ success: false, error: "Nevažeći vozač." });
     }
-    const { firstName, lastName, phone, email, groupId } = req.validatedBody;
+    const { firstName, lastName, phone, email, groupId, knownGroupIds: rawKnown = [] } = req.validatedBody;
     const companyRef = db.collection("companies").doc(companyId);
     const profileRef = companyRef.collection("drivers").doc(driverId);
     try {
-      await assertCompanyGroupsExist(companyRef, [groupId]);
+      const knownGroupIds = [];
+      for (const value of rawKnown) {
+        const id = String(value || "").trim();
+        if (id && !knownGroupIds.includes(id)) knownGroupIds.push(id);
+      }
+      if (!knownGroupIds.includes(groupId)) knownGroupIds.unshift(groupId);
+      await assertCompanyGroupsExist(companyRef, knownGroupIds);
       const profileSnap = await profileRef.get();
       if (!profileSnap.exists) {
         return res.status(404).json({ success: false, error: "Vozač nije pronađen." });
@@ -1286,6 +1298,7 @@ app.patch(
         email,
         groupId,
         lineId: groupId,
+        knownGroupIds,
         profileUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
         profileUpdatedBy: req.staffUser.uid
       });
@@ -1296,9 +1309,10 @@ app.patch(
           lastName: previous.lastName || null,
           phone: previous.phone || null,
           email: previous.email || null,
-          groupId: previous.groupId || previous.lineId || null
+          groupId: previous.groupId || previous.lineId || null,
+          knownGroupIds: Array.isArray(previous.knownGroupIds) ? previous.knownGroupIds : []
         },
-        next: { firstName, lastName, phone, email, groupId }
+        next: { firstName, lastName, phone, email, groupId, knownGroupIds }
       }, {
         actorRole: req.staffUser.role,
         actorName: req.staffUser.name || null
@@ -1314,6 +1328,7 @@ app.patch(
           email,
           groupId,
           lineId: groupId,
+          knownGroupIds,
           companyId
         }
       });

@@ -148,7 +148,11 @@ const companyDriverProfileBody = z.object({
   lastName: z.string().trim().min(1).max(80),
   phone: z.string().trim().min(3).max(40),
   email: z.string().trim().toLowerCase().email().max(254),
-  groupId: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/)
+  groupId: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/),
+  /** Extra lines the driver can operate (home groupId is always stored too). */
+  knownGroupIds: z.array(
+    z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/)
+  ).max(40).optional().default([])
 }).strict();
 
 /** CA-only: set a new personal login code (PIN) — plaintext returned once. Must match driver login rules. */

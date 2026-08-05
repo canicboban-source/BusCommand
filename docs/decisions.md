@@ -216,6 +216,38 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
 
 ---
 
+### D18 — Poznate linije vozača (knownGroupIds)
+
+- Datum: 2026-08-06 · Status: **Odlučeno**
+- Pitanje: da li CA unosi linije koje vozač zna (310, 550…) da Dispo brže bira zamenu?
+- Odluka vlasnika: da. Polje `knownGroupIds` na vozaču; matična grupa je uvek
+  uključena; **samo CA** unosi i **uvek može menjati** spisak (npr. kad vozač
+  nauči novu liniju). Dispo vidi hint/redosled u Needs attention poolu, ne
+  uređuje polje i ne vidi credentials.
+- Posledica: `server/validation.js`, CA edit modal, `ops-attention` sort/label.
+
+### D19 — Adresa / proximity (odloženo)
+
+- Datum: 2026-08-06 · Status: **Odlučeno** (odloženo za kasnije)
+- Pitanje: puna adresa vs sistemski proximity za rangiranje zamene?
+- Odluka vlasnika: Dispo **ne** vidi punu adresu. Ako ikad uđe, sistem može
+  koristiti zonu/PTT samo za redosled; UI dobija samo rank/label. **Nije u
+  ovom ciklusu** — prvo known lines (CA), zatim garaža na busu (**Dispo**, vidi D20).
+
+### D20 — Vlasništvo master podataka: CA = vozači, Dispo = busovi
+
+- Datum: 2026-08-06 · Status: **Odlučeno**
+- Pitanje: ko unosi i održava vozače vs busove?
+- Odluka vlasnika:
+  - **Company Admin** — vozači: profil, matična grupa, `knownGroupIds`, uvoz
+    vozača; Dispo to ne uređuje.
+  - **Disponent** — autobusi: unos, grupna pripadnost, garaža/status kad se
+    uvede, operativna dodela i zamena pri kvaru; CA nije vlasnik bus operativa.
+- Posledica: known lines samo u CA edit/API; Needs attention čita CA podatke
+  za vozače i Dispo-održane busove za vozila. Budući bus garage UI = Dispo.
+
+---
+
 ## Otvorena pitanja
 
 ### O1 — Kredencijali staging projekta
