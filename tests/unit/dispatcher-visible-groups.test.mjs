@@ -10,7 +10,7 @@ globalThis.window = {
 const { getVisibleDrivers, getVisibleGroups } = await import("../../js/core/utils.js");
 
 function seedStaleDispatcherDoc() {
-  window.state = {
+  globalThis.window.state = {
     drivers: [
       { id: "a", name: "A", groupId: "320", companyId: "bc-test" },
       { id: "b", name: "B", groupId: "310", companyId: "bc-test" },
@@ -26,7 +26,7 @@ function seedStaleDispatcherDoc() {
       { id: "disp-1", groups: ["310"], companyId: "bc-test" }
     ]
   };
-  window.currentUser = {
+  globalThis.window.currentUser = {
     id: "disp-1",
     role: "dispatcher",
     companyId: "bc-test",

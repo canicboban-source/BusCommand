@@ -10,7 +10,7 @@ globalThis.window = {
 const { getDailyPlanForDate } = await import("../../js/core/shift-plan.js");
 
 function seedState() {
-  window.state = {
+  globalThis.window.state = {
     activeGroupHubId: "320",
     drivers: [
       { id: "d1", name: "Marko Petrović", groupId: "320", companyId: "bc-test", active: true },
@@ -62,7 +62,7 @@ function seedState() {
     ],
     schedules: []
   };
-  window.currentUser = {
+  globalThis.window.currentUser = {
     id: "disp-1",
     role: "dispatcher",
     companyId: "bc-test",
@@ -85,7 +85,7 @@ test("daily plan builds selected drivers from group shifts after monthly import"
 
 test("daily plan resolves driver name from driverId when name is missing", () => {
   seedState();
-  window.state.shifts = [{
+  globalThis.window.state.shifts = [{
     id: "anon",
     driverId: "d1",
     driverName: "",
@@ -104,7 +104,7 @@ test("daily plan resolves driver name from driverId when name is missing", () =>
 
 test("daily plan builds display name from firstName/lastName when name is empty", () => {
   seedState();
-  window.state.drivers = [{
+  globalThis.window.state.drivers = [{
     id: "d1",
     name: "",
     firstName: "Marko",
@@ -113,7 +113,7 @@ test("daily plan builds display name from firstName/lastName when name is empty"
     companyId: "bc-test",
     active: true
   }];
-  window.state.shifts = [{
+  globalThis.window.state.shifts = [{
     id: "anon",
     driverId: "d1",
     driverName: "",
