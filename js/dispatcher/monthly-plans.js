@@ -1,5 +1,9 @@
 // BusCommand — mesečni plan: pregled po vozaču, izmena po danu
-import { parseBusFromText, parseRouteCodeFromText } from "../core/shift-plan.js";
+import {
+    getShiftForDriverDate,
+    parseBusFromText,
+    parseRouteCodeFromText
+} from "../core/shift-plan.js";
 import {
     ensureShiftCatalogForEdit,
     inferOperationalShiftType,
@@ -20,6 +24,27 @@ import { previewMassDayRange } from "../core/monthly-plan-ops.js";
 
 let _selectedGroupId = null;
 let _editCtx = null;
+
+/**
+ * Canonical schedule lookup: driverId_YYYY-MM first, then name_YYYY-MM.
+ * Same rule as shift-plan sync — matrix and edit must share one document.
+ */
+function resolveScheduleForDriverMonth(driverName, month, driverId = null) {
+    if (!Array.isArray(window.state.schedules)) window.state.schedules = [];
+    const id = driverId || window.state.drivers?.find((d) => d.name === driverName)?.id || null;
+    const byId = id ? window.state.schedules.find((s) => s.id === `${id}_${month}` && s.parsedShifts) : null;
+    if (byId) return byId;
+    const byName = window.state.schedules.find((s) => s.id === `${driverName}_${month}` && s.parsedShifts);
+    if (byName) return byName;
+    return window.state.schedules.find((s) =>
+        s?.month === month
+        && s?.parsedShifts
+        && (
+            (id && s.driverId === id)
+            || s.driverName === driverName
+        )
+    ) || null;
+}
 
 const SHIFT_TYPES = {
     morning: "shift_type_morning",
@@ -126,11 +151,11 @@ function getScheduleContext() {
 
     const [year, monthNum] = month.split("-").map(Number);
     const totalDays = new Date(year, monthNum, 0).getDate();
-    const scheduleKey = `${driverName}_${month}`;
-    if (!Array.isArray(window.state.schedules)) window.state.schedules = [];
-    const schedule = window.state.schedules.find(s => s.id === scheduleKey);
+    const driver = window.state.drivers?.find((d) => d.name === driverName);
+    const schedule = resolveScheduleForDriverMonth(driverName, month, driver?.id || null);
+    const scheduleKey = schedule?.id || (driver?.id ? `${driver.id}_${month}` : `${driverName}_${month}`);
 
-    return { driverName, month, year, monthNum, totalDays, scheduleKey, schedule };
+    return { driverName, month, year, monthNum, totalDays, scheduleKey, schedule, driverId: driver?.id || null };
 }
 
 function renderMonthlyPlansView() {
@@ -229,14 +254,20 @@ function updateMonthlyPlanSummary(ctx) {
 
 function ensureLocalScheduleShell(scheduleKey, driverName, month, totalDays, driverId = null) {
     if (!Array.isArray(window.state.schedules)) window.state.schedules = [];
-    let schedule = window.state.schedules.find(s => s.id === scheduleKey);
+    // Never create an empty name-keyed shell that shadows a populated id-keyed plan.
+    const existing = resolveScheduleForDriverMonth(driverName, month, driverId);
+    if (existing) return existing;
+
+    const canonicalKey = driverId ? `${driverId}_${month}` : scheduleKey;
+    let schedule = window.state.schedules.find((s) => s.id === canonicalKey);
     if (schedule) return schedule;
+
     const emptyShifts = {};
     for (let d = 1; d <= totalDays; d++) {
         emptyShifts[d] = { type: "off", name: "Frei" };
     }
     schedule = {
-        id: scheduleKey,
+        id: canonicalKey,
         fileName: `plan-${driverName}-${month}.local`,
         fileType: "application/json",
         fileData: "",
@@ -371,10 +402,12 @@ function renderDriverDayTable(schedule, scheduleKey, year, monthNum, totalDays) 
     return html;
 }
 
-function cellLabelForMatrix(schedule, day) {
-    const shift = getShiftForPlanDay(schedule, day);
-    if (!shift || isPlanDayEmpty(shift)) return t("shift_code_off");
-    if (ABSENCE_TYPES.has(shift.type)) return absenceCellCode(shift.type);
+function cellLabelForMatrix(schedule, day, liveShift = null) {
+    const shift = liveShift && !ABSENCE_TYPES.has(String(liveShift.type || ""))
+        ? liveShift
+        : (getShiftForPlanDay(schedule, day) || liveShift);
+    if (!shift || isPlanDayEmpty(shift) || shift.type === "clear") return t("shift_code_off");
+    if (ABSENCE_TYPES.has(shift.type) && !shift.routeCode) return absenceCellCode(shift.type);
     return (shift.routeCode || parseRouteCodeFromText(shift.name) || shift.type || "?").slice(0, 8);
 }
 
@@ -393,15 +426,13 @@ function renderGroupMonthMatrix(drivers, year, monthNum, totalDays, month) {
     html += `</tr></thead><tbody>`;
 
     for (const driver of drivers) {
-        const scheduleKey = `${driver.name}_${month}`;
-        const schedule = window.state.schedules?.find(s =>
-            s.id === scheduleKey
-            || (driver.id && s.id === `${driver.id}_${month}`)
-        );
+        const schedule = resolveScheduleForDriverMonth(driver.name, month, driver.id || null);
         html += `<tr>
           <th class="monthly-matrix-driver" scope="row" title="${escapeHtml(driver.name)}">${escapeHtml(driver.name)}</th>`;
         for (let day = 1; day <= totalDays; day++) {
-            const label = cellLabelForMatrix(schedule, day);
+            const dateStr = `${year}-${String(monthNum).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+            const live = getShiftForDriverDate(driver.name, dateStr);
+            const label = cellLabelForMatrix(schedule, day, live);
             const isWeekend = [0, 6].includes(new Date(year, monthNum - 1, day).getDay());
             html += `<td class="monthly-matrix-cell${isWeekend ? " is-weekend" : ""}">
               <button type="button" class="monthly-matrix-btn"
@@ -416,8 +447,9 @@ function renderGroupMonthMatrix(drivers, year, monthNum, totalDays, month) {
 }
 
 function getActiveLineForEdit() {
-    return window.state.activeGroupHubId
-        || _selectedGroupId
+    // Prefer the monthly-plan group being edited over a stale hub/filter line.
+    return _selectedGroupId
+        || window.state.activeGroupHubId
         || getActiveLineId()
         || null;
 }
@@ -436,18 +468,18 @@ function isPlanDayEmpty(shift) {
     return !name || name === "frei" || name.includes("slobod");
 }
 
-function collectShiftCodesForEdit(schedule) {
+function collectShiftCodesForEdit(schedule, keepCode = "") {
     const lineId = getActiveLineForEdit();
     if (lineId) ensureShiftCatalogForEdit(lineId);
     const codes = new Set();
     const catalog = window.state.shiftCatalog?.entries || {};
-    Object.keys(catalog).forEach(k => codes.add(k));
+    Object.keys(catalog).forEach((k) => codes.add(k));
 
     // When catalog is locked to active CA plan, do not surface invented/legacy codes
-    // that are not in the catalog — only keep in-plan schedule codes already assigned.
+    // that are not in the catalog — except the code already on the day being edited.
     const locked = lineId ? isCatalogLockedForLine(lineId) : false;
     if (!locked) {
-        Object.values(schedule?.parsedShifts || {}).forEach(s => {
+        Object.values(schedule?.parsedShifts || {}).forEach((s) => {
             if (s.routeCode) codes.add(s.routeCode);
             else if (s.name && !isPlanDayEmpty(s)) {
                 const c = parseRouteCodeFromText(s.name);
@@ -455,13 +487,14 @@ function collectShiftCodesForEdit(schedule) {
             }
         });
     } else {
-        Object.values(schedule?.parsedShifts || {}).forEach(s => {
+        Object.values(schedule?.parsedShifts || {}).forEach((s) => {
             const code = s.routeCode || (s.name ? parseRouteCodeFromText(s.name) : "");
             if (code && catalog[code]) codes.add(code);
         });
     }
+    if (keepCode) codes.add(String(keepCode).trim());
 
-    return [...codes].sort();
+    return [...codes].filter(Boolean).sort();
 }
 
 function inferTypeFromShiftCode(code, catalogEntry) {
@@ -496,19 +529,20 @@ function fillMedCatalogSelect(schedule, selectedCode) {
 
     const lineId = getActiveLineForEdit();
     ensureShiftCatalogForEdit(lineId);
-    const codes = collectShiftCodesForEdit(schedule);
+    const codes = collectShiftCodesForEdit(schedule, selectedCode);
     const catalog = window.state.shiftCatalog?.entries || {};
     const locked = lineId ? isCatalogLockedForLine(lineId) : false;
 
     sel.innerHTML = `<option value="">${t("med_code_none")}</option>`;
 
-    codes.forEach(code => {
+    codes.forEach((code) => {
         const e = catalog[code];
         const opt = document.createElement("option");
         opt.value = code;
+        const orphan = selectedCode && code === selectedCode && !e;
         opt.textContent = e
             ? `${code}${e.shortName ? ` (${e.shortName})` : ""}${e.start ? ` ${e.start}–${e.end}` : ""}`
-            : code;
+            : (orphan ? `${code} · ${t("med_code_on_plan") || "na planu"}` : code);
         if (code === selectedCode) opt.selected = true;
         sel.appendChild(opt);
     });
@@ -517,7 +551,7 @@ function fillMedCatalogSelect(schedule, selectedCode) {
     if (custom) {
         custom.hidden = locked;
         custom.disabled = locked;
-        if (locked) custom.value = selectedCode && catalog[selectedCode] ? selectedCode : (custom.value || "");
+        custom.value = selectedCode || "";
     }
     const lockHint = document.getElementById("med-catalog-lock-hint");
     if (lockHint) {
@@ -585,9 +619,12 @@ function applyMedFormValues({ type, code, bus }, schedule) {
     fillMedCatalogSelect(schedule, code);
     fillMedBusSelect(bus);
 
-    if (typeSelect) typeSelect.value = type || "off";
+    if (typeSelect) {
+        const allowed = [...typeSelect.options].map((o) => o.value);
+        typeSelect.value = allowed.includes(type) ? type : (code ? "morning" : "off");
+    }
 
-    const codesInList = collectShiftCodesForEdit(schedule);
+    const codesInList = collectShiftCodesForEdit(schedule, code);
     const codeInList = code && codesInList.includes(code);
 
     if (codeSelect) codeSelect.value = codeInList ? code : "";
@@ -601,12 +638,18 @@ function applyMedFormValues({ type, code, bus }, schedule) {
 }
 
 function shiftToFormValues(shift) {
-    if (!shift || isPlanDayEmpty(shift)) {
+    if (!shift || shift.type === "clear" || isPlanDayEmpty(shift)) {
         return { type: "off", code: "", bus: "" };
     }
+    const code = shift.routeCode || parseRouteCodeFromText(shift.name) || "";
+    let type = shift.type || "off";
+    if (code && ABSENCE_TYPES.has(type)) {
+        type = inferTypeFromShiftCode(code, window.state.shiftCatalog?.entries?.[code]);
+    }
+    if (!type || type === "clear") type = code ? "morning" : "off";
     return {
-        type: shift.type || "morning",
-        code: shift.routeCode || parseRouteCodeFromText(shift.name) || "",
+        type,
+        code,
         bus: shift.bus || parseBusFromText(shift.name) || ""
     };
 }
@@ -614,21 +657,29 @@ function shiftToFormValues(shift) {
 function loadMonthlyDayEditForm(day, opts = {}) {
     if (!_editCtx) return;
 
-    const schedule = window.state.schedules.find(s => s.id === _editCtx.scheduleKey);
+    const schedule = resolveScheduleForDriverMonth(
+        _editCtx.driverName,
+        _editCtx.month,
+        _editCtx.driverId || null
+    ) || window.state.schedules.find((s) => s.id === _editCtx.scheduleKey);
     if (!schedule) return;
+    _editCtx.scheduleKey = schedule.id;
 
     const daySelect = document.getElementById("med-day-select");
+    const dateStr = `${_editCtx.year}-${String(_editCtx.monthNum).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const live = getShiftForDriverDate(_editCtx.driverName, dateStr);
+    const planShift = getShiftForPlanDay(schedule, day);
+    const values = opts.formValues || shiftToFormValues(live || planShift);
 
     if (!opts.preserveLists) {
         fillMedDaySelect(_editCtx.year, _editCtx.monthNum, _editCtx.totalDays, day);
-        ensureShiftCatalogForEdit();
-        fillMedCatalogSelect(schedule, "");
-        fillMedBusSelect("");
+        ensureShiftCatalogForEdit(getActiveLineForEdit());
+        fillMedCatalogSelect(schedule, values.code || "");
+        fillMedBusSelect(values.bus || "");
     }
 
     if (daySelect) daySelect.value = String(day);
 
-    const values = opts.formValues || shiftToFormValues(getShiftForPlanDay(schedule, day));
     applyMedFormValues(values, schedule);
     const code = values.code;
     updateMedDutyTimeHint(code ? window.state.shiftCatalog?.entries?.[code] : null);
@@ -642,8 +693,14 @@ function onMedDaySelectChange() {
     if (!daySelect || !_editCtx) return;
 
     const newDay = Number(daySelect.value) || 1;
-    const schedule = window.state.schedules.find(s => s.id === _editCtx.scheduleKey);
-    const existing = getShiftForPlanDay(schedule, newDay);
+    const schedule = resolveScheduleForDriverMonth(
+        _editCtx.driverName,
+        _editCtx.month,
+        _editCtx.driverId || null
+    ) || window.state.schedules.find((s) => s.id === _editCtx.scheduleKey);
+    const dateStr = `${_editCtx.year}-${String(_editCtx.monthNum).padStart(2, "0")}-${String(newDay).padStart(2, "0")}`;
+    const existing = getShiftForDriverDate(_editCtx.driverName, dateStr)
+        || getShiftForPlanDay(schedule, newDay);
     const currentForm = readMedFormValues();
     const userPickedWorkShift = currentForm.type !== "off"
         && currentForm.type !== "vacation"
@@ -759,11 +816,14 @@ function openMonthlyDayEdit(scheduleKey, day) {
     const parts = String(scheduleKey || "").match(/^(.+)_(\d{4}-\d{2})$/);
     if (!parts) return;
 
-    const driverName = parts[1];
+    let driverName = parts[1];
     const month = parts[2];
     const [year, monthNum] = month.split("-").map(Number);
     const totalDays = new Date(year, monthNum, 0).getDate();
-    const driver = window.state.drivers?.find(d => d.name === driverName);
+    // scheduleKey may be driverId_month or driverName_month
+    let driver = window.state.drivers?.find((d) => d.name === driverName)
+        || window.state.drivers?.find((d) => d.id === driverName || d.uid === driverName);
+    if (driver) driverName = driver.name;
     const schedule = ensureLocalScheduleShell(
         scheduleKey,
         driverName,
@@ -774,8 +834,9 @@ function openMonthlyDayEdit(scheduleKey, day) {
 
     const safeDay = Math.min(Math.max(1, day || 1), totalDays);
     _editCtx = {
-        scheduleKey,
+        scheduleKey: schedule.id,
         driverName: schedule.driverName || driverName,
+        driverId: schedule.driverId || driver?.id || null,
         month,
         year,
         monthNum,
@@ -828,13 +889,18 @@ async function saveMonthlyDayEdit() {
     const code = (codeCustom?.value || codeSelect?.value || "").trim();
     const bus = (busCustom?.value || busSelect?.value || "").trim().replace(/^bus\s*/i, "");
 
-    const schedule = window.state.schedules.find(s => s.id === _editCtx.scheduleKey);
+    const schedule = resolveScheduleForDriverMonth(
+        _editCtx.driverName,
+        _editCtx.month,
+        _editCtx.driverId || null
+    ) || window.state.schedules.find((s) => s.id === _editCtx.scheduleKey);
     if (!schedule) {
         showToast(t("med_plan_not_found"), "error");
         return;
     }
+    _editCtx.scheduleKey = schedule.id;
 
-    const driver = window.state.drivers?.find(d =>
+    const driver = window.state.drivers?.find((d) =>
         d.name === _editCtx.driverName || (schedule.driverId && d.id === schedule.driverId)
     );
     if (!driver?.id) {
@@ -886,8 +952,12 @@ async function undoMonthlyDayEdit() {
     }
 
     const day = _editCtx.day;
-    const schedule = window.state.schedules.find(s => s.id === _editCtx.scheduleKey);
-    const driver = window.state.drivers?.find(d =>
+    const schedule = resolveScheduleForDriverMonth(
+        _editCtx.driverName,
+        _editCtx.month,
+        _editCtx.driverId || null
+    ) || window.state.schedules.find((s) => s.id === _editCtx.scheduleKey);
+    const driver = window.state.drivers?.find((d) =>
         d.name === _editCtx.driverName || (schedule?.driverId && d.id === schedule.driverId)
     );
     if (!driver?.id) {
@@ -1085,6 +1155,7 @@ function renderMonthlyPlansFullPage() {
 }
 
 export {
+    resolveScheduleForDriverMonth,
     renderMonthlyPlansView,
     renderMonthlyPlansFullPage,
     renderHubMonthlyPreview,
