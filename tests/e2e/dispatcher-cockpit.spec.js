@@ -69,6 +69,146 @@ function cockpitState() {
 }
 
 test.describe("Dispatcher cockpit resolution flows", () => {
+  test("live view keeps action and daily-plan columns usable at desktop widths", async ({ page }) => {
+    const date = todayIso();
+    const state = cockpitState();
+    state.drivers = [
+      ...state.drivers,
+      {
+        id: "drv-nobus",
+        name: "No Bus Driver",
+        groupId: "101",
+        lineId: "101",
+        active: true,
+        bus: "",
+        email: "nobus@example.test",
+        phone: "+4310000003"
+      }
+    ];
+    state.buses = [
+      { id: "bus-1", number: "BUS-1", groupId: "101", lineId: "101", groupIds: ["101"], active: true, garage: "Depot A", opsStatus: "ready", revision: 0 },
+      { id: "bus-2", number: "BUS-2", groupId: "101", lineId: "101", groupIds: ["101"], active: true, garage: "Depot A", opsStatus: "ready", revision: 0 }
+    ];
+    state.shifts = [
+      ...state.shifts,
+      {
+        id: `shf-nobus-${date}`,
+        driverId: "drv-nobus",
+        driverName: "No Bus Driver",
+        date,
+        type: "morning",
+        name: "101.S02",
+        routeCode: "101.S02",
+        bus: "",
+        start: "05:30",
+        end: "13:30",
+        revision: 1
+      }
+    ];
+    state.reports = [
+      {
+        id: "report-delay-layout",
+        type: "delay:10",
+        status: "active",
+        severity: "sev_medium",
+        date,
+        time: "10:15",
+        driverId: "drv-original",
+        driver: "Original Driver",
+        groupId: "101",
+        bus: "BUS-1",
+        reason: "Traffic"
+      },
+      {
+        id: "report-coverage-layout",
+        type: "coverage:disruption",
+        status: "active",
+        severity: "sev_high",
+        date,
+        time: "11:00",
+        driverId: "drv-standby",
+        driver: "Standby Driver",
+        groupId: "101",
+        bus: "",
+        reason: "ops_coverage_unavailable",
+        description: "Driver reported unavailable",
+        affectedEntity: "driver"
+      },
+      {
+        id: "report-breakdown-layout",
+        type: "breakdown:bd_engine",
+        status: "active",
+        severity: "sev_high",
+        date,
+        time: "11:30",
+        driverId: "drv-original",
+        driver: "Original Driver",
+        groupId: "101",
+        bus: "BUS-1",
+        reason: "Engine",
+        affectedEntity: "vehicle"
+      }
+    ];
+    await seedDemoState(page, state);
+
+    async function assertCockpitColumns() {
+      await expect(page.locator("#dispatcher-dashboard")).toBeVisible();
+      await expect(page.locator("#dispatcher-live-alerts")).toBeVisible();
+      await expect(page.locator(".ops-col-plan")).toBeVisible();
+      await expect(page.locator("#ops-daily-plan-rows")).toBeVisible();
+      const widths = await page.evaluate(() => {
+        const action = document.querySelector(".ops-col-action");
+        const plan = document.querySelector(".ops-col-plan");
+        return {
+          action: action ? Math.round(action.getBoundingClientRect().width) : 0,
+          plan: plan ? Math.round(plan.getBoundingClientRect().width) : 0
+        };
+      });
+      expect(widths.action).toBeGreaterThanOrEqual(200);
+      expect(widths.plan).toBeGreaterThanOrEqual(280);
+    }
+
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto("/staff.html?mode=demo");
+    await loginDispatcher(page);
+    await assertCockpitColumns();
+    await expect(page.locator("#dispatcher-live-alerts .urgent-action").first()).toBeVisible();
+    await expect(page.locator("#dispatcher-live-alerts .urgent-action")).toHaveCount(3);
+
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await assertCockpitColumns();
+
+    // Cursor Live View / side preview widths — stack, do not crush the plan column.
+    await page.setViewportSize({ width: 900, height: 900 });
+    await expect(page.locator(".ops-col-action")).toBeVisible();
+    await expect(page.locator(".ops-col-plan")).toBeVisible();
+    await expect(page.locator("#ops-daily-plan-rows")).toBeVisible();
+    const stacked = await page.evaluate(() => {
+      const action = document.querySelector(".ops-col-action").getBoundingClientRect();
+      const plan = document.querySelector(".ops-col-plan").getBoundingClientRect();
+      return {
+        actionWidth: Math.round(action.width),
+        planWidth: Math.round(plan.width),
+        planBelow: plan.top >= action.bottom - 2
+      };
+    });
+    expect(stacked.actionWidth).toBeGreaterThanOrEqual(280);
+    expect(stacked.planWidth).toBeGreaterThanOrEqual(280);
+    expect(stacked.planBelow).toBe(true);
+
+    await page.locator("#dispatcher-live-alerts .urgent-action").first().click();
+    await expect(page.locator("#ops-attention-panel")).toBeVisible();
+
+    const delayCard = page.locator(".ops-attention-card").filter({ hasText: /delay|kašnjen|verspät|Traffic/i }).first();
+    await expect(delayCard).toBeVisible();
+    await delayCard.locator('[data-attn-field="resolutionType"]').selectOption("restored");
+    await delayCard.locator('[data-attn-field="note"]').fill("Live View layout check — traffic cleared.");
+    await delayCard.locator("button.ops-attention-apply").click();
+    await expect.poll(async () => page.evaluate(() =>
+      window.state.reports.find((item) => item.id === "report-delay-layout")?.status
+    )).toBe("resolved");
+  });
+
   test("group overview actions focus the real driver and bus sections", async ({ page }) => {
     await seedDemoState(page, cockpitState());
     await page.goto("/staff.html?mode=demo");

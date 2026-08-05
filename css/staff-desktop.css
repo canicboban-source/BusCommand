@@ -455,7 +455,8 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-stats-strip {
 html[data-app-surface="staff"] #dispatcher-dashboard .dispatcher-dashboard-grid,
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-center-grid {
     display: grid;
-    grid-template-columns: minmax(240px, 0.85fr) minmax(0, 1.25fr) minmax(240px, 0.9fr);
+    /* Middle plan must not collapse to 0 when sidebar + narrow viewport squeeze the row. */
+    grid-template-columns: minmax(220px, 0.9fr) minmax(320px, 1.4fr) minmax(220px, 0.85fr);
     gap: 14px;
     align-items: start;
 }
@@ -465,6 +466,7 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-col-plan,
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-col-crew {
     padding: 14px 16px 16px;
     min-height: 320px;
+    min-width: 0;
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-panel-kicker {
@@ -484,8 +486,9 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-plan-hint {
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table-wrap {
-    overflow: auto;
-    max-height: 280px;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 320px;
     border: 1px solid rgba(148, 163, 184, 0.12);
     border-radius: 12px;
     margin-bottom: 4px;
@@ -493,20 +496,21 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table-wrap {
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table {
     width: 100%;
+    min-width: 420px;
     border-collapse: collapse;
-    font-size: 0.8rem;
+    font-size: 0.88rem;
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table th,
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table td {
-    padding: 9px 10px;
+    padding: 10px 12px;
     text-align: left;
     border-bottom: 1px solid rgba(148, 163, 184, 0.1);
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table th {
     color: #94A3B8;
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     background: rgba(255, 255, 255, 0.02);
@@ -839,10 +843,14 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table td {
     vertical-align: middle;
 }
 
-@media (max-width: 1200px) {
+/*
+ * Viewport includes sidebar (~238px). Also covers Cursor Live View / side preview
+ * panes where the embedded viewport is much narrower than a full browser window.
+ */
+@media (max-width: 1400px) {
     html[data-app-surface="staff"] #dispatcher-dashboard .dispatcher-dashboard-grid,
     html[data-app-surface="staff"] #dispatcher-dashboard .ops-center-grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(240px, 0.95fr) minmax(320px, 1.35fr);
     }
 
     html[data-app-surface="staff"] #dispatcher-dashboard .ops-col-crew {
@@ -850,10 +858,23 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table td {
     }
 }
 
-@media (max-width: 820px) {
+/* Narrow / Live View: stack so plan + crew never collapse beside alerts. */
+@media (max-width: 1100px) {
     html[data-app-surface="staff"] #dispatcher-dashboard .dispatcher-dashboard-grid,
     html[data-app-surface="staff"] #dispatcher-dashboard .ops-center-grid {
         grid-template-columns: 1fr;
+    }
+
+    html[data-app-surface="staff"] #dispatcher-dashboard .ops-col-action,
+    html[data-app-surface="staff"] #dispatcher-dashboard .ops-col-plan,
+    html[data-app-surface="staff"] #dispatcher-dashboard .ops-col-crew {
+        grid-column: auto;
+        min-height: 0;
+    }
+
+    html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table {
+        min-width: 0;
+        font-size: 0.9rem;
     }
 }
 
