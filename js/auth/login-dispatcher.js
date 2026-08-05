@@ -1,4 +1,4 @@
-// BusCommand ESM v9.5
+﻿// BusCommand ESM v9.5
 import Auth from "../core/auth-client.js";
 import { showLoginScreen, switchLoginTab, rejectDispatcherWithoutGroups } from "./login-ui.js";
 import { persistUserSession, clearUserSession } from "./login-session.js";
@@ -12,10 +12,16 @@ import { showAppLayout } from "../layout/shell.js";
 import { t, applyBrandingToUI } from "../ui/i18n.js";
 import { EXPECTED_FIREBASE_PROJECT_ID } from "../core/firebase-web-config.js";
 import { confirmedTenantId } from "../core/production-auth-gate.js";
-import { isDriverSurface } from "../core/app-surface.js";
+import { isDriverSurface, isStaffRole } from "../core/app-surface.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import { isHardStaffAuthError, staffAuthErrorKey } from "./staff-login-errors.js";
 import { clearDriverSensitiveCaches } from "../driver/offline-snapshot.js";
+
+async function rejectNonStaffFirebaseSession() {
+    try { await firebase.auth().signOut(); } catch { /* ignore */ }
+    clearUserSession();
+    window.currentUser = null;
+}
 
 function showDispatcherError(msg) {
     const el = document.getElementById("login-error-dispatcher");
@@ -31,7 +37,7 @@ async function loginAsDispatcher() {
         window.location.href = "/staff.html" + window.location.search;
         return;
     }
-    // Blokada mobilnih uređaja
+    // Blokada mobilnih uredjaja
     if (isMobileDevice()) {
         switchLoginTab("dispatcher");
         return;
@@ -81,11 +87,20 @@ async function loginAsDispatcher() {
                 throw error;
             }
 
+            const staffRole = normalizeRole(claims.role);
+            if (!isStaffRole(staffRole)) {
+                await rejectNonStaffFirebaseSession();
+                if (btn) { btn.disabled = false; btn.style.opacity = ""; }
+                showDispatcherError(t(staffAuthErrorKey("auth/invalid-credentials")));
+                passInput.value = "";
+                return;
+            }
+
             window.currentUser = {
                 uid:       credential.user.uid,
                 email:     credential.user.email,
                 name:      claims.name || credential.user.displayName || credential.user.email || "Korisnik",
-                role:      normalizeRole(claims.role || "dispatcher"),
+                role:      staffRole,
                 companyId: confirmedCompanyId,
                 id:        credential.user.uid,
                 groups:    Array.isArray(claims.groups) ? claims.groups : [],
@@ -102,6 +117,17 @@ async function loginAsDispatcher() {
             }
 
             await checkCompanyLicense(confirmedCompanyId);
+            if (isCompanyAccessBlocked()) {
+                await rejectNonStaffFirebaseSession();
+                if (btn) { btn.disabled = false; btn.style.opacity = ""; }
+                showDispatcherError(
+                    t("company_access_blocked")
+                    || t("license_suspended_banner")
+                    || "Company access is suspended."
+                );
+                passInput.value = "";
+                return;
+            }
             await initFirebase(confirmedCompanyId);
             persistUserSession(window.currentUser);
             if (btn) { btn.disabled = false; btn.style.opacity = ""; }
@@ -131,7 +157,7 @@ async function loginAsDispatcher() {
         }
     }
 
-    // ── FALLBACK: lokalni login (samo demo mod) ─────────────────────────────
+    // FALLBACK: lokalni login (samo demo mod)
     if (!IS_DEMO_MODE) {
         showDispatcherError(t("error_invalid_credentials"));
         passInput.value = "";
@@ -148,13 +174,13 @@ async function loginAsDispatcher() {
         return;
     }
 
-    if (localFound.password && localFound.password !== password) {
+    if (!localFound.password || localFound.password !== password) {
         passInput.value = "";
         showDispatcherError(t("error_invalid_credentials"));
         return;
     }
 
-    // ── Company Admin ──
+    // Company Admin
     if (companyAdmin) {
         window.currentUser = {
             role: "company-admin",
@@ -168,7 +194,7 @@ async function loginAsDispatcher() {
         return;
     }
 
-    // ── Dispatcher ──
+    // Dispatcher
     if (disp.id === "superadmin") {
         window.currentUser = { role: "superadmin", name: "Super Admin", id: "superadmin" };
     } else {

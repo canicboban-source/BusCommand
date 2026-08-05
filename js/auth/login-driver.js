@@ -76,7 +76,7 @@ function _loginDriverDemo(driver, name, pin, companyId = "demo") {
     const route = window.state.routes.find(r => r.groupId === driver.groupId) || window.state.routes[0];
     window.currentUser = {
         role: "driver", name, id: driver.id,
-        bus: driver.bus || "91022",
+        bus: driver.bus || "",
         routeId: route ? route.id : null,
         currentStopIndex: 0, companyId: companyId || "demo", isDemo: true
     };
@@ -138,7 +138,7 @@ async function _completeDriverProductionLogin(driver, name, authenticatedUser, b
         role: "driver",
         name: authenticatedUser?.name || name,
         id: driver.id,
-        bus: authenticatedUser?.bus || driver.bus || "91022",
+        bus: authenticatedUser?.bus || driver.bus || "",
         routeId: route ? route.id : null,
         currentStopIndex: 0,
         companyId

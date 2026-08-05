@@ -6386,7 +6386,11 @@ Object.assign(TRANSLATIONS.en, {
     plan_lock_break_confirm: "Force-release this plan lock? This is audited.",
     plan_lock_broken: "Lock broken.",
     plan_lock_break_failed: "Break failed.",
-    ops_bus_cross_group_warn: "Bus {bus} is already on an active shift in group {group} ({driver}). Assignment saved — check coverage."
+    ops_bus_cross_group_warn: "Bus {bus} is already on an active shift in group {group} ({driver}). Assignment saved — check coverage.",
+    shift_today_needs_incident: "For today's covered duty, open a problem in the ops centre first, then run the guided replacement.",
+    ops_readonly_blocked: "Operational changes are dispatcher-only.",
+    ops_readonly_hint: "View only",
+    sa_impersonate_demo_only: "Stealth inspect is demo-only. Use a support session in production."
 });
 Object.assign(TRANSLATIONS.de, {
     hub_add_bus_btn: "Bus hinzufügen",
@@ -6408,7 +6412,11 @@ Object.assign(TRANSLATIONS.de, {
     plan_lock_break_confirm: "Diese Plansperre erzwingen freigeben? Wird auditiert.",
     plan_lock_broken: "Sperre aufgehoben.",
     plan_lock_break_failed: "Aufheben fehlgeschlagen.",
-    ops_bus_cross_group_warn: "Bus {bus} ist bereits in Gruppe {group} aktiv ({driver}). Zuweisung gespeichert — Einsatz prüfen."
+    ops_bus_cross_group_warn: "Bus {bus} ist bereits in Gruppe {group} aktiv ({driver}). Zuweisung gespeichert — Einsatz prüfen.",
+    shift_today_needs_incident: "Für den heutigen besetzten Dienst zuerst ein Problem im Ops-Center öffnen und dann die geführte Ersetzung nutzen.",
+    ops_readonly_blocked: "Operative Änderungen nur für Disponenten.",
+    ops_readonly_hint: "Nur Ansicht",
+    sa_impersonate_demo_only: "Stealth-Inspect nur im Demo. In Produktion Support-Session verwenden."
 });
 Object.assign(TRANSLATIONS.sr, {
     hub_add_bus_btn: "Dodaj autobus",
@@ -6430,7 +6438,11 @@ Object.assign(TRANSLATIONS.sr, {
     plan_lock_break_confirm: "Forsirano skinuti lock? Akcija se auditira.",
     plan_lock_broken: "Lock skinut.",
     plan_lock_break_failed: "Skidanje nije uspelo.",
-    ops_bus_cross_group_warn: "Autobus {bus} je već na aktivnoj smeni u grupi {group} ({driver}). Dodela sačuvana — proverite pokrivenost."
+    ops_bus_cross_group_warn: "Autobus {bus} je već na aktivnoj smeni u grupi {group} ({driver}). Dodela sačuvana — proverite pokrivenost.",
+    shift_today_needs_incident: "Za današnju pokrivenu smenu prvo otvorite problem u operativnom centru, pa vodite zamenu.",
+    ops_readonly_blocked: "Operativne izmene su samo za dispečera.",
+    ops_readonly_hint: "Samo pregled",
+    sa_impersonate_demo_only: "Stealth inspect je samo u demou. U produkciji koristite support sesiju."
 });
 
 // Propagate new EN keys to all languages (after MISSING_* merges)

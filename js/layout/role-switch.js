@@ -1,11 +1,18 @@
-// BusCommand ESM v9.5
+// BusCommand ESM v9.5 — demo-only role toggle (never production)
 import { saveState } from "../core/state.js";
 import { persistUserSession } from "../auth/login-session.js";
 import { showAppLayout } from "./shell.js";
+import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { showToast } from "../core/utils.js";
+import { t } from "../ui/i18n.js";
 
 function toggleRoleDirectly() {
+    if (!IS_DEMO_MODE) {
+        showToast(t("error_invalid_credentials") || "Role switch is disabled.", "error");
+        return;
+    }
+    if (!window.currentUser) return;
     if (window.currentUser.role === "driver") {
-        // Označi trenutnog vozača kao neaktivnog i resetuj proveru pre prelaska u dispečera
         const driver = window.state.drivers.find(d => d.name === window.currentUser.name);
         if (driver) {
             driver.active = false;
@@ -22,8 +29,7 @@ function toggleRoleDirectly() {
         window.currentUser.bus = window.state.drivers[0].bus || window.state.buses[0].number;
         window.currentUser.routeId = window.state.routes[0].id;
         window.currentUser.currentStopIndex = 0;
-        
-        // Označi ovog novog vozača kao aktivnog
+
         const driver = window.state.drivers.find(d => d.name === window.currentUser.name);
         if (driver) {
             driver.active = true;

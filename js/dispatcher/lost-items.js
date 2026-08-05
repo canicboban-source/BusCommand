@@ -1,10 +1,11 @@
 // BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
-import { escapeHtml, formatDateTime, showToast } from "../core/utils.js";
+import { escapeHtml, formatDateTime, getVisibleDrivers, showToast } from "../core/utils.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
 import ApiClient from "../core/api-client.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { isOperationalReadOnly } from "../core/access.js";
 
 const pendingLostItemStatus = new Set();
 let statusFilter = "open";
@@ -54,7 +55,31 @@ function bindLostItemFilter() {
     });
 }
 
+function matchesDispatcherScope(item) {
+    if (window.currentUser?.role !== "dispatcher") return true;
+    const visible = getVisibleDrivers();
+    const keys = new Set();
+    for (const driver of visible) {
+        if (driver?.id) keys.add(String(driver.id));
+        if (driver?.uid) keys.add(String(driver.uid));
+        if (driver?.name) keys.add(String(driver.name));
+    }
+    const groupIds = new Set();
+    for (const driver of visible) {
+        if (driver?.groupId) groupIds.add(String(driver.groupId));
+        if (driver?.lineId) groupIds.add(String(driver.lineId));
+    }
+    if (item?.groupId && groupIds.has(String(item.groupId))) return true;
+    if (item?.lineId && groupIds.has(String(item.lineId))) return true;
+    const driverKey = item?.driverId || item?.driver || item?.driverName;
+    if (driverKey && keys.has(String(driverKey))) return true;
+    // Items without linkage stay visible only when dispatcher has no group scope data yet.
+    if (!item?.groupId && !item?.lineId && !driverKey) return true;
+    return false;
+}
+
 function matchesFilter(item) {
+    if (!matchesDispatcherScope(item)) return false;
     const status = normalizeStatus(item.status);
     if (statusFilter === "all") return true;
     if (statusFilter === "open") return status === "in_depot" || status === "stays_on_bus";
@@ -135,7 +160,7 @@ function renderDispatcherLostItems() {
 
 async function setLostItemStatus(id, nextStatus) {
     if (!id || !nextStatus || pendingLostItemStatus.has(id)) return false;
-    if (window.currentUser?.role && !["dispatcher", "company-admin"].includes(window.currentUser.role) && !IS_DEMO_MODE) {
+    if (isOperationalReadOnly() || (window.currentUser?.role && window.currentUser.role !== "dispatcher" && !IS_DEMO_MODE)) {
         showToast(t("lost_return_denied") || "Samo disponent može menjati status.", "error");
         return false;
     }

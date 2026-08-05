@@ -7,7 +7,9 @@ function groupItemBelongsToCompany(item, companyId, isDemoMode = false) {
 
 function groupRecordMatches(record, groupId) {
     const id = String(groupId);
-    return String(record?.groupId || "") === id || String(record?.lineId || "") === id;
+    if (String(record?.groupId || "") === id || String(record?.lineId || "") === id) return true;
+    const multi = Array.isArray(record?.groupIds) ? record.groupIds.map(String) : [];
+    return multi.includes(id);
 }
 
 function getCompanyGroupsScope(state, currentUser, isDemoMode = false) {

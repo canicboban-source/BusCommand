@@ -7,8 +7,7 @@ const {
   getServicePlanVersion,
   listServicePlanHistory,
   publishServicePlan,
-  servicePlanId,
-  sourceHashForPlan
+  servicePlanId
 } = require("../../server/service-plans");
 
 function validPlan(version = "66") {

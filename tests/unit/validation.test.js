@@ -44,7 +44,7 @@ test("createUserBody requires companyId for dispatcher", () => {
   assert.equal(result.success, false);
 });
 
-test("createUserBody rejects companyId for superadmin", () => {
+test("createUserBody rejects minting superadmin via admin API", () => {
   const result = createUserBody.safeParse({
     email: "root@example.test",
     password: "unit-test-password",

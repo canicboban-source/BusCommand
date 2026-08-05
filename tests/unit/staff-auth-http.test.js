@@ -36,8 +36,20 @@ function fakeDb(profiles) {
       assert.equal(companies, "companies");
       return {
         doc: (companyId) => ({
-          collection: (users) => {
-            assert.equal(users, "users");
+          collection: (name) => {
+            if (name === "settings") {
+              return {
+                doc: (settingsId) => ({
+                  async get() {
+                    assert.equal(settingsId, "main");
+                    const status = profiles.companyStatus?.get?.(companyId) || "active";
+                    if (status === "missing") return { exists: false, data: () => null };
+                    return { exists: true, data: () => ({ status }) };
+                  }
+                })
+              };
+            }
+            assert.equal(name, "users");
             return {
               doc: (uid) => ({
                 async get() {
@@ -189,6 +201,19 @@ test("deactivated, missing and role-drifted profiles are refused even with a val
       assert.equal(response.status, 403, `token ${token} must be refused`);
       assert.equal(response.body.error, "Nalog nije aktivan.");
     }
+  } finally {
+    await server.close();
+  }
+});
+
+test("suspended company blocks staff API even with an active profile", async () => {
+  const { tokens, profiles } = fixture();
+  profiles.companyStatus = new Map([["alpha", "suspended"]]);
+  const server = await startServer({ tokens, profiles });
+  try {
+    const response = await server.request("/staff/echo", { token: "disp-alpha" });
+    assert.equal(response.status, 403);
+    assert.equal(response.body.code, "COMPANY_SUSPENDED");
   } finally {
     await server.close();
   }

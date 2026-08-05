@@ -44,8 +44,9 @@ function renderDriverDashboard() {
 
     const shiftName = String(todayShift?.name || todayShift?.routeCode || "");
     if (todayShift && todayShift.type !== "off" && todayShift.type !== "vacation") {
-        const parsedBus = shiftName.match(/\b(91\d{3})\b/);
-        if (parsedBus) window.currentUser.bus = parsedBus[1];
+        // Never invent a bus — use the assigned shift bus only.
+        const assignedBus = String(todayShift.bus || "").trim();
+        if (assignedBus) window.currentUser.bus = assignedBus;
 
         const lineCode = shiftName.match(/^(\d{3})/);
         if (lineCode) {

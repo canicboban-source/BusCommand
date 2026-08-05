@@ -174,8 +174,8 @@ async function assertNoActiveGroupMonthlyImport({ db, companyId, groupId, month 
   return { ok: false, code: "MONTHLY_IMPORT_IN_PROGRESS", importId: lock.importId || null };
 }
 
-function buildShiftDocument(row, groupId, actorId, importId, assignedAt) {
-  return {
+function buildShiftDocument(row, groupId, actorId, importId, assignedAt, existing = null, { preserveOps = false } = {}) {
+  const next = {
     driverId: row.driverId,
     driverName: row.driverName,
     groupId,
@@ -192,6 +192,16 @@ function buildShiftDocument(row, groupId, actorId, importId, assignedAt) {
     revision: row.expectedRevision + 1,
     importId
   };
+  // Merge/update: keep dispatcher bus assignment and driver confirmation when the duty identity is unchanged.
+  if (preserveOps && existing && String(existing.type || "") === String(row.type || "")) {
+    const sameDuty =
+      String(existing.name || "") === String(row.name || "")
+      && String(existing.start || "") === String(row.start || "")
+      && String(existing.end || "") === String(row.end || "");
+    if (existing.bus) next.bus = existing.bus;
+    if (sameDuty && existing.confirmedByDriver === true) next.confirmedByDriver = true;
+  }
+  return next;
 }
 
 function buildScheduleEntry(shift) {
@@ -332,7 +342,17 @@ async function commitGroupMonthlyImport({ db, admin, companyId, actorId, importI
           }], 409);
         }
         if (row.type === "clear") batch.delete(ref);
-        else batch.set(ref, buildShiftDocument(row, job.groupId, actorId, importId, assignedAt));
+        else {
+          batch.set(ref, buildShiftDocument(
+            row,
+            job.groupId,
+            actorId,
+            importId,
+            assignedAt,
+            current,
+            { preserveOps: String(job.mode || "") !== "replace" }
+          ));
+        }
       });
       batch.set(importRef, { appliedChunks: Math.floor(offset / WRITE_CHUNK_SIZE) + 1 }, { merge: true });
       await batch.commit();

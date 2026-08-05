@@ -9,7 +9,7 @@ test("parses quoted EN, semicolon DE and tab SR CSV", () => {
   assert.equal(detectDelimiter("a\tb\tc"), "\t");
 });
 
-test("parses pilot pack ime_prezime;firma_id;licni_kod and uniquifies shared codes", () => {
+test("parses pilot pack ime_prezime;firma_id and ignores licni_kod as login PIN", () => {
   const csv = [
     "ime_prezime;email;firma_id;licni_kod_za_app;telefon;grupa",
     "Marko Petrović;marko.petrovic@example.com;100601;12345;+43 000 000 1001;G1",
@@ -21,8 +21,9 @@ test("parses pilot pack ime_prezime;firma_id;licni_kod and uniquifies shared cod
   assert.equal(drivers[0].first_name, "Marko");
   assert.equal(drivers[0].last_name, "Petrović");
   assert.equal(drivers[0].group, "G1");
-  assert.equal(drivers[0].company_code, "12345-100601");
-  assert.equal(drivers[1].company_code, "12345-100602");
+  // Personal/login codes are not imported from CSV (OTP + personal-code API only).
+  assert.equal(drivers[0].company_code, "");
+  assert.equal(drivers[1].company_code, "");
 });
 
 test("accepts the secure activation format without a plaintext personal/company code", () => {

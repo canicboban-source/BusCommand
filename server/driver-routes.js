@@ -1274,19 +1274,34 @@ function registerDriverRoutes(app, deps) {
   });
 
   app.put("/api/staff/vacations/:vacationId/status", requireStaff, async (req, res) => {
+    if (req.staff.role !== "dispatcher") {
+      return res.status(403).json({ success: false, error: "Samo disponent može obrađivati zahteve za odmor." });
+    }
     const vacationId = vacationIdSchema.safeParse(req.params.vacationId);
     const status = vacationStatusSchema.safeParse(req.body);
     if (!vacationId.success || !status.success) {
       return res.status(400).json({ success: false, error: "Neva\u017ee\u0107i status zahteva." });
     }
     try {
-      const vacationRef = db().collection("companies").doc(req.staff.companyId)
-        .collection("vacations").doc(vacationId.data);
+      const companyRef = db().collection("companies").doc(req.staff.companyId);
+      const vacationRef = companyRef.collection("vacations").doc(vacationId.data);
       const snapshot = await vacationRef.get();
       if (!snapshot.exists) return res.status(404).json({ success: false, error: "Zahtev nije prona\u0111en." });
-      const currentStatus = snapshot.data().status;
+      const vacation = snapshot.data() || {};
+      const currentStatus = vacation.status;
       if (!["pending", "Na \u010dekanju"].includes(currentStatus)) {
         return res.status(409).json({ success: false, error: "Zahtev je ve\u0107 obra\u0111en." });
+      }
+      let groupId = vacation.groupId || vacation.lineId || null;
+      if (!groupId && vacation.driverId) {
+        const driverSnap = await companyRef.collection("drivers").doc(vacation.driverId).get();
+        if (driverSnap.exists) {
+          const driver = driverSnap.data() || {};
+          groupId = driver.groupId || driver.lineId || null;
+        }
+      }
+      if (!dispatcherCanAccessGroup(req.staff.groups, groupId)) {
+        return res.status(403).json({ success: false, error: "Zahtev nije u dodeljenoj grupi." });
       }
       await vacationRef.update({
         status: status.data.status,
@@ -1294,12 +1309,12 @@ function registerDriverRoutes(app, deps) {
         reviewedBy: req.staff.uid
       });
       await logAudit(req.staff.companyId, req.staff.uid, `vacation_${status.data.status}`, {
-        vacationId: vacationId.data, driverId: snapshot.data().driverId || null
+        vacationId: vacationId.data, driverId: vacation.driverId || null, groupId: groupId || null
       });
       return res.json({ success: true, status: status.data.status });
     } catch (error) {
       req.log?.error?.({ err: error }, "Obrada zahteva za odmor nije uspela");
-      return res.status(500).json({ success: false, error: "Zahtev nije mogao biti obraÄ‘en." });
+      return res.status(500).json({ success: false, error: "Zahtev nije mogao biti obrađen." });
     }
   });
 
@@ -1535,7 +1550,8 @@ function registerDriverRoutes(app, deps) {
   });
 
   app.put("/api/staff/lost-items/:itemId/status", rateLimit(30, 60_000), requireStaff, async (req, res) => {
-    if (!["dispatcher", "company_admin"].includes(req.staff.role)) {
+    // Align with CA operational read-only: only dispatchers mutate lost-item status.
+    if (req.staff.role !== "dispatcher") {
       return res.status(403).json({ success: false, error: "Pristup odbijen." });
     }
     const itemId = lostItemIdSchema.safeParse(req.params.itemId);

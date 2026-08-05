@@ -5,9 +5,9 @@ const HEADER_ALIASES = {
   full_name: ["ime_prezime", "name", "vozac", "vozač", "full_name", "fullname"],
   phone: ["phone", "telephone", "telefon", "telefonnummer"],
   email: ["email", "e-mail", "e_mail"],
+  // Do not alias pin/login_code — personal login codes are set via staff personal-code API, not CSV.
   company_code: [
-    "company_code", "companycode", "firmencode", "firmen_code", "firmin_kod", "firmin kod", "kod_firme",
-    "licni_kod_za_app", "licni_kod", "kod_za_app", "pin", "login_code"
+    "company_code", "companycode", "firmencode", "firmen_code", "firmin_kod", "firmin kod", "kod_firme"
   ],
   group: ["grupa", "grupa_csv", "group", "group_id", "groupid", "linie", "line", "linija"]
 };

@@ -7,6 +7,7 @@ import {
     restoreUserSession
 } from "../auth/login-session.js";
 import { initPasswordFieldGuards } from "../auth/password-fields.js";
+import Auth from "../core/auth-client.js";
 import { initFirebase, initializeFirebaseClient } from "../core/firebase-service.js";
 import { checkCompanyLicense } from "../core/license.js";
 import { getBaseState, loadStateFromStorage, clearTenantStateCache, resetInMemoryTenantState, applyUiLanguagePreference, resolveUiLanguage } from "../core/state.js";
@@ -20,7 +21,8 @@ import { createProductionAuthGate } from "../core/production-auth-gate.js";
 import { closeDriverActivationForSignedOut, openDriverActivation } from "../auth/driver-activation.js";
 import { setDriverActivationPending } from "../auth/driver-access-gate.js";
 import { prepareDriverWorkSession } from "../driver/work-session.js";
-import { isDriverSurface, isStaffSurface } from "../core/app-surface.js";
+import { assertSurfaceRole, isDriverSurface, isStaffSurface } from "../core/app-surface.js";
+import { IS_DEMO_MODE, COMPANY_ID } from "../core/runtime-config.js";
 
 function setAuthLoading(visible, errorKey = null) {
     let overlay = document.getElementById("production-auth-loading");
@@ -206,6 +208,14 @@ async function bootstrapBusCommand() {
                 openDriverActivation();
             },
             onAuthenticated: async (authUser, confirmedCompanyId) => {
+                if (!assertSurfaceRole(authUser.role)) {
+                    try { await Auth.logout(); } catch { /* ignore */ }
+                    clearUserSession();
+                    window.currentUser = null;
+                    setAuthLoading(false);
+                    showLoginScreen(isStaffSurface());
+                    return;
+                }
                 setDriverActivationPending(false);
                 window.currentUser = {
                     uid: authUser.uid, email: authUser.email, name: authUser.name,
@@ -220,7 +230,7 @@ async function bootstrapBusCommand() {
                 }
                 try {
                     await checkCompanyLicense(confirmedCompanyId);
-                    if (authUser.role === "driver" && !(await prepareDriverWorkSession())) {
+                    if (authUser.role === "driver" && isDriverSurface() && !(await prepareDriverWorkSession())) {
                         setAuthLoading(false);
                         return;
                     }

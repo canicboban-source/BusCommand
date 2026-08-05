@@ -22,6 +22,8 @@ async function findCompanyGroupReferences(companyRef, groupId) {
     ["drivers", "drivers", "lineId", "=="],
     ["buses", "buses", "groupId", "=="],
     ["buses", "buses", "lineId", "=="],
+    // Multi-group fleet membership (primary groupId alone is not enough)
+    ["buses", "buses", "groupIds", "array-contains"],
     ["dispatchers", "users", "groups", "array-contains"],
     ["plans", "service_plans", "groupId", "=="],
     ["shifts", "shifts", "groupId", "=="],

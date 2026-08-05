@@ -19,9 +19,9 @@ const HEADER_ALIASES = Object.freeze({
     full_name: ["ime_prezime", "name", "vozac", "vozač", "full_name", "fullname"],
     phone: ["phone", "telephone", "telefon", "telefonnummer"],
     email: ["email", "e-mail", "e_mail"],
+    // company_code is legacy hash-only field — NEVER alias pin/login_code here (those are personal login codes set via API).
     company_code: [
-        "company_code", "companycode", "firmencode", "firmen_code", "firmin_kod", "firmin kod", "kod_firme",
-        "licni_kod_za_app", "licni_kod", "kod_za_app", "pin", "login_code"
+        "company_code", "companycode", "firmencode", "firmen_code", "firmin_kod", "firmin kod", "kod_firme"
     ],
     group: ["grupa", "grupa_csv", "group", "group_id", "groupid", "linie", "line", "linija"]
 });

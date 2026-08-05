@@ -46,3 +46,10 @@ test("server detects every supported group dependency without duplicate labels",
 test("server reports an empty group as unreferenced", async () => {
   assert.deepEqual(await findCompanyGroupReferences(companyRefWith(), "105"), []);
 });
+
+test("server blocks delete when bus only references group via groupIds", async () => {
+  const refs = await findCompanyGroupReferences(companyRefWith({
+    buses: [{ groupId: "310", groupIds: ["310", "105"] }]
+  }), "105");
+  assert.ok(refs.includes("buses"));
+});

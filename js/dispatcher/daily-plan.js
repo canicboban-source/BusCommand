@@ -7,6 +7,7 @@ import { actionAttr, changeAttr } from "../core/action-delegate.js";
 import { persistShift } from "./shifts.js";
 import { isOperationalReadOnly } from "../core/access.js";
 import { refreshPlanLockBanner } from "./plan-edit-lock-ui.js";
+import { isActiveReport } from "./report-model.js";
 
 function getActiveHubGroupId() {
     return window.state.activeGroupHubId || null;
@@ -235,7 +236,7 @@ async function dailyPlanAssignDriver(dateStr, shiftType, routeCode, driverName) 
     if (previousDriver) {
         const previousDriverId = previousDriver.id || previousDriver.uid;
         const incident = (window.state.reports || []).find(report =>
-            report.status === "active"
+            isActiveReport(report)
             && report.type === "coverage:disruption"
             && report.driverId === previousDriverId
             && report.date === today

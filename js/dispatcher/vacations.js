@@ -1,13 +1,39 @@
 // BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
-import { showToast } from "../core/utils.js";
+import { getVisibleDrivers, showToast } from "../core/utils.js";
 import { formatDate } from "../maps/helpers.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { isOperationalReadOnly } from "../core/access.js";
 
 const pendingVacationActions = new Set();
+
+function visibleDriverKeys() {
+    const drivers = getVisibleDrivers();
+    const keys = new Set();
+    for (const driver of drivers) {
+        if (driver?.id) keys.add(String(driver.id));
+        if (driver?.uid) keys.add(String(driver.uid));
+        if (driver?.name) keys.add(String(driver.name));
+        if (driver?.eid) keys.add(String(driver.eid));
+    }
+    return keys;
+}
+
+function vacationVisibleToDispatcher(vacation, visibleKeys) {
+    if (!vacation) return false;
+    const candidates = [
+        vacation.driverId,
+        vacation.driverUid,
+        vacation.driver,
+        vacation.driverName,
+        vacation.eid
+    ].filter(Boolean).map(String);
+    if (candidates.length === 0) return false;
+    return candidates.some((key) => visibleKeys.has(key));
+}
 
 function appendAction(actions, vacationId, status, className, label) {
     const button = document.createElement("button");
@@ -25,8 +51,17 @@ function renderDispatcherVacations() {
     if (!tbody) return;
     tbody.replaceChildren();
 
+    const readOnly = isOperationalReadOnly();
+    const visibleKeys = visibleDriverKeys();
     const pendingVacations = (window.state.vacations || [])
-        .filter(vacation => ["pending", "Na čekanju"].includes(vacation.status));
+        .filter(vacation => ["pending", "Na čekanju"].includes(vacation.status))
+        .filter(vacation => {
+            if (window.currentUser?.role === "dispatcher") {
+                return vacationVisibleToDispatcher(vacation, visibleKeys);
+            }
+            // CA may view nothing here (ops RO) — keep empty rather than show unscoped actions.
+            return false;
+        });
 
     if (pendingVacations.length === 0) {
         const row = tbody.insertRow();
@@ -61,17 +96,29 @@ function renderDispatcherVacations() {
         reasonCell.appendChild(reason);
 
         const actionsCell = row.insertCell();
-        const actions = document.createElement("div");
-        actions.style.display = "flex";
-        actions.style.gap = "8px";
-        appendAction(actions, vacation.id, "approved", "btn-approve", "btn_approve");
-        appendAction(actions, vacation.id, "rejected", "btn-reject", "btn_reject");
-        actionsCell.appendChild(actions);
+        if (readOnly) {
+            const note = document.createElement("span");
+            note.style.fontSize = "12px";
+            note.style.color = "var(--text-muted)";
+            note.textContent = t("ops_readonly_hint") || "Samo pregled";
+            actionsCell.appendChild(note);
+        } else {
+            const actions = document.createElement("div");
+            actions.style.display = "flex";
+            actions.style.gap = "8px";
+            appendAction(actions, vacation.id, "approved", "btn-approve", "btn_approve");
+            appendAction(actions, vacation.id, "rejected", "btn-reject", "btn_reject");
+            actionsCell.appendChild(actions);
+        }
     });
 }
 
 function handleVacation(id, status) {
     if (!id || !["approved", "rejected"].includes(status) || pendingVacationActions.has(id)) return;
+    if (isOperationalReadOnly()) {
+        showToast(t("ops_readonly_blocked") || "Operativne izmene su samo za dispečera.", "error");
+        return;
+    }
     const vacation = (window.state.vacations || []).find(item => item.id === id);
     if (!vacation || !["pending", "Na čekanju"].includes(vacation.status)) return;
     const actionLabel = status === "approved" ? t("btn_approve") : t("btn_reject");
@@ -101,4 +148,7 @@ function handleVacation(id, status) {
     );
 }
 
-export { renderDispatcherVacations, handleVacation };
+export {
+    renderDispatcherVacations,
+    handleVacation
+};
