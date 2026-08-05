@@ -18,8 +18,8 @@ const BUDGETS = {
    */
   /** After cutting dispatcher graph from shared i18n (target ~init+driver+shell). */
   driverAppJsBytesExclTranslations: 220 * 1024,
-  /** Same for staff.html (dispatcher graph; CDN parsers are deferred). */
-  staffAppJsBytesExclTranslations: 520 * 1024,
+  /** Same for staff.html (dispatcher graph; CDN parsers are deferred). +1KB for D21/D22 bus ops + concurrency. */
+  staffAppJsBytesExclTranslations: 521 * 1024,
   /** Soft-pilot ceiling for shared init/firebase chunk on driver (no dispatcher UI). */
   maxSingleDriverChunkBytes: 150 * 1024,
   /** Shared EN/DE/SR dictionary chunk. */

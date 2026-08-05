@@ -202,7 +202,7 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
 - Odluka:
   1. §35 ne definiše KB/TTI; soft-pilot budžeti su:
      - driver app JS excl. translations ≤ 220 KB raw;
-     - staff app JS excl. translations ≤ 520 KB raw;
+     - staff app JS excl. translations ≤ 521 KB raw (D21/D22 bus ops + concurrency);
      - max single driver chunk ≤ 150 KB;
      - translations chunk ≤ 360 KB;
      - driver ne sme ugraditi dispatcher UI implementaciju.
@@ -246,7 +246,30 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
 - Posledica: known lines samo u CA edit/API; Needs attention čita CA podatke
   za vozače i Dispo-održane busove za vozila. Budući bus garage UI = Dispo.
 
+### D21 — Bus opsStatus + garage (Dispo edit)
+
+- Datum: 2026-08-06 · Status: **Odlučeno** (implementacija korak 2)
+- Polja na bus dokumentu:
+  - `garage` — slobodan tekst (max 40), uvek menjiv od Dispa
+  - `opsStatus` — `ready | breakdown | technical | out`
+  - `active` — i dalje hard on/off (deactivate); ostaje odvojeno
+- Needs attention / coverage: samo `active !== false` i `opsStatus === ready`
+  (osim keep trenutnog busa na smeni).
+- UI: Group Hub lista — inline edit garaže i statusa.
+
+### D22 — Dispo concurrency bez „šta/zašto“ polja
+
+- Datum: 2026-08-06 · Status: **Odlučeno**
+- Cilj: ušteda Dispo vremena — nema opisnih polja za razlog izmene.
+- Zabrana: dva disponenta ne smeju uspešno upisati različite izmene za
+  **istog vozača** (postojeći shift `expectedRevision`), **isti bus**
+  (`bus.revision` + `expectedRevision`), **istu garažu** (kratki soft lock
+  po labeli garaže, 2 min, po `holderUid`).
+- UX pri konfliktu: toast „osvežite“ + lokalni state osvežen iz servera; bez
+  forme za opis konflikta.
+
 ---
+
 
 ## Otvorena pitanja
 

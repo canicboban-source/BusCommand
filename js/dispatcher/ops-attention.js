@@ -14,6 +14,7 @@ import { persistShift } from "./shifts.js";
 import { ApiClient } from "../core/api-client.js";
 import { saveState } from "../core/state.js";
 import { busHasGroup } from "../data/bus-group-membership.js";
+import { busIsAssignable, normalizeBusGarage } from "../data/bus-ops.js";
 import { listAssignableCatalogCodes, ensureShiftCatalogForEdit } from "../core/line-shift-catalog.js";
 import { getGroupById } from "../data/groups.js";
 import { driverKnowsGroup, normalizeKnownGroupIds } from "../data/driver-known-groups.js";
@@ -135,23 +136,30 @@ function freeBusPools(groupId, dateStr, excludeDriverId, keepBus = "") {
     const company = [];
     const otherGroups = [];
     for (const bus of (window.state.buses || [])) {
-        if (bus.active === false) continue;
+        if (!busIsAssignable(bus) && String(bus.number || "") !== String(keepBus || "")) continue;
         const number = String(bus.number || "");
         if (!number) continue;
         if (used.has(number) && number !== String(keepBus || "")) continue;
         const groups = (bus.groupIds || [bus.groupId || bus.lineId].filter(Boolean)).map(String);
         const inTarget = target && busHasGroup(bus, target);
         const unassigned = groups.length === 0;
-        const label = (!inTarget && groups[0]) ? `Bus ${number} · ${groupLabel(groups[0])}` : `Bus ${number}`;
-        const row = { number, label, bus };
+        const garage = normalizeBusGarage(bus);
+        const parts = [`Bus ${number}`];
+        if (!inTarget && groups[0]) parts.push(groupLabel(groups[0]));
+        if (garage) parts.push(garage);
+        const row = { number, label: parts.join(" · "), garage, bus };
         if (inTarget) same.push(row);
         else if (unassigned) company.push(row);
         else otherGroups.push(row);
     }
-    const sortNum = (a, b) => String(a.number).localeCompare(String(b.number), undefined, { numeric: true });
-    same.sort(sortNum);
-    company.sort(sortNum);
-    otherGroups.sort(sortNum);
+    const sortPool = (a, b) => {
+        const g = String(a.garage || "").localeCompare(String(b.garage || ""), undefined, { sensitivity: "base" });
+        if (g) return g;
+        return String(a.number).localeCompare(String(b.number), undefined, { numeric: true });
+    };
+    same.sort(sortPool);
+    company.sort(sortPool);
+    otherGroups.sort(sortPool);
     return { same, company, otherGroups, all: [...same, ...company, ...otherGroups] };
 }
 

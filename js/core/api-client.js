@@ -32,6 +32,7 @@ const ApiClient = (() => {
                 code: data && data.code,
                 conflict: data && data.conflict,
                 lock: data && data.lock,
+                bus: data && data.bus,
                 details: data && (data.details || data.errors)
             };
         }
@@ -330,16 +331,30 @@ const ApiClient = (() => {
             body: JSON.stringify(resolution || {})
         });
     }
-    async function createStaffBus(number, groupId) {
+    async function createStaffBus(number, groupId, extras = {}) {
         return apiFetch("/api/staff/buses", {
             method: "POST",
-            body: JSON.stringify({ number, groupId })
+            body: JSON.stringify({
+                number,
+                groupId,
+                garage: extras.garage || "",
+                opsStatus: extras.opsStatus || "ready"
+            })
         });
     }
-    async function setStaffBusActive(busId, active) {
+    async function updateStaffBus(busId, payload) {
+        return apiFetch("/api/staff/buses/" + encodeURIComponent(busId), {
+            method: "PUT",
+            body: JSON.stringify(payload || {})
+        });
+    }
+    async function setStaffBusActive(busId, active, expectedRevision = 0) {
         return apiFetch("/api/staff/buses/" + encodeURIComponent(busId) + "/status", {
             method: "PUT",
-            body: JSON.stringify({ active })
+            body: JSON.stringify({
+                active,
+                expectedRevision: Number.isInteger(expectedRevision) ? expectedRevision : 0
+            })
         });
     }
     async function createStaffOperationalIncident(incident) {
@@ -466,7 +481,7 @@ const ApiClient = (() => {
         updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode,
         createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage, ackDriverMessage,
         createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, transitionStaffOperationalIncident, resolveStaffOperationalIncident, getStaffOpsActivity, resolveStaffSos,
-        setLostItemStatus, createStaffBus, setStaffBusActive, assignStaffShift, undoStaffShift,
+        setLostItemStatus, createStaffBus, updateStaffBus, setStaffBusActive, assignStaffShift, undoStaffShift,
         acquirePlanLock, heartbeatPlanLock, releasePlanLock, breakPlanLock, getPlanLock,
         sendStaffMessage, archiveStaffMessage, getDriverWorkSession, postDriverLocation, reportStaffMapAccess, confirmDriverShifts, getStaffShiftConfirmations,
         startSupportSession, getActiveSupportSessionAdmin, endSupportSessionAdmin,

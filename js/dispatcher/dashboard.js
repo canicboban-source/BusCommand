@@ -647,9 +647,11 @@ function coverageBusCandidates(report) {
     });
     return (window.state.buses || []).filter(bus => {
         const number = String(bus.number || "");
-        return bus.active !== false
-            && busHasGroup(bus, groupId)
-            && (!used.has(number) || number === String(report.bus || ""));
+        const keep = number === String(report.bus || "");
+        if (!keep && bus.active === false) return false;
+        if (!keep && String(bus.opsStatus || "ready") !== "ready") return false;
+        return busHasGroup(bus, groupId)
+            && (!used.has(number) || keep);
     });
 }
 

@@ -279,6 +279,69 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await expect(page.locator(".ops-attention-card").filter({ hasText: /Wrong Code Driver/i })).toHaveCount(0);
   });
 
+  test("dispatcher can edit bus garage and ops status; breakdown leaves the free pool", async ({ page }) => {
+    const date = todayIso();
+    const state = cockpitState();
+    state.buses = [
+      {
+        id: "bus-edit",
+        number: "BUS-EDIT",
+        groupId: "101",
+        lineId: "101",
+        groupIds: ["101"],
+        active: true,
+        garage: "Depot A",
+        opsStatus: "ready",
+        revision: 0
+      }
+    ];
+    state.drivers = [{
+      id: "drv-nobus-2",
+      name: "Needs Bus Driver",
+      groupId: "101",
+      lineId: "101",
+      active: true,
+      bus: "",
+      email: "needsbus@example.test",
+      phone: "+4310000007"
+    }];
+    state.shifts = [{
+      id: `shf-needsbus-${date}`,
+      driverId: "drv-nobus-2",
+      driverName: "Needs Bus Driver",
+      date,
+      type: "morning",
+      name: "101.S01",
+      routeCode: "101.S01",
+      bus: "",
+      start: "05:15",
+      end: "13:15",
+      revision: 1
+    }];
+    await seedDemoState(page, state);
+    await page.goto("/staff.html?mode=demo");
+    await loginDispatcher(page);
+
+    await page.evaluate(() => window.openGroupHub("101"));
+    await expect(page.locator("#hub-section-buses")).toBeVisible();
+    await page.locator('.hub-bus-item[data-bus-id="bus-edit"] button.hub-bus-edit-btn').click();
+    const form = page.locator('[data-bus-edit="bus-edit"]');
+    await expect(form).toBeVisible();
+    await form.locator('input[name="garage"]').fill("Depot B");
+    await form.locator('select[name="opsStatus"]').selectOption("breakdown");
+    await form.locator('button[type="submit"]').click();
+
+    await expect.poll(async () => page.evaluate(() => {
+      const bus = window.state.buses.find(item => item.id === "bus-edit");
+      return `${bus?.garage}|${bus?.opsStatus}|${bus?.revision}`;
+    })).toBe("Depot B|breakdown|1");
+
+    await page.evaluate(() => window.openOpsAttentionPanel());
+    const card = page.locator(".ops-attention-card").filter({ hasText: /Needs Bus Driver|nema autobusa|missing bus|kein bus/i }).first();
+    await expect(card).toBeVisible();
+    await expect(card.locator('[data-attn-field="bus"] option[value="BUS-EDIT"]')).toHaveCount(0);
+  });
+
   test("missing bus pools order same group then company then other groups and assign applies", async ({ page }) => {
     const date = todayIso();
     const state = cockpitState();

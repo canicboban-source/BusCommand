@@ -101,11 +101,46 @@ const importSchema = z.object({ companyId: companySchema, groupId: groupIdSchema
 const driverIdSchema = z.string().uuid();
 const driverStatusSchema = z.object({ active: z.boolean() });
 const busIdSchema = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/);
+const busOpsStatusSchema = z.enum(["ready", "breakdown", "technical", "out"]);
+const busGarageSchema = z.string().trim().max(40).optional().default("");
 const busCreateSchema = z.object({
   number: z.string().trim().min(1).max(32).regex(/^[\p{L}\p{N} ._/-]+$/u),
-  groupId: groupIdSchema
+  groupId: groupIdSchema,
+  garage: busGarageSchema,
+  opsStatus: busOpsStatusSchema.optional().default("ready")
 });
-const busStatusSchema = z.object({ active: z.boolean() });
+const busStatusSchema = z.object({
+  active: z.boolean(),
+  expectedRevision: z.number().int().min(0)
+});
+const busProfileSchema = z.object({
+  garage: busGarageSchema,
+  opsStatus: busOpsStatusSchema,
+  expectedRevision: z.number().int().min(0)
+});
+
+function busRevisionOf(data = {}) {
+  const revision = Number(data.revision);
+  return Number.isInteger(revision) && revision >= 0 ? revision : 0;
+}
+
+function publicBusPayload(id, data = {}) {
+  const { normalizeGroupIds } = require("./bus-group-membership");
+  return {
+    id,
+    number: data.number || "",
+    groupId: data.groupId || null,
+    lineId: data.lineId || data.groupId || null,
+    groupIds: normalizeGroupIds(data),
+    active: data.active !== false,
+    garage: String(data.garage || "").trim().slice(0, 40),
+    opsStatus: ["ready", "breakdown", "technical", "out"].includes(String(data.opsStatus || ""))
+      ? String(data.opsStatus)
+      : "ready",
+    revision: busRevisionOf(data),
+    createdAt: null
+  };
+}
 const idempotencyKeySchema = z.string().trim().min(8).max(64).regex(/^[A-Za-z0-9_-]+$/).optional();
 const quickReportSchema = z.object({
   type: z.enum([
@@ -1710,15 +1745,11 @@ function registerDriverRoutes(app, deps) {
             success: true,
             attached: false,
             alreadyInGroup: true,
-            bus: {
-              id: doc.id,
-              number: existing.number,
+            bus: publicBusPayload(doc.id, {
+              ...existing,
               groupId: existing.groupId || parsed.data.groupId,
-              lineId: existing.lineId || existing.groupId || parsed.data.groupId,
-              groupIds: normalizeGroupIds(existing),
-              active: existing.active !== false,
-              createdAt: null
-            }
+              lineId: existing.lineId || existing.groupId || parsed.data.groupId
+            })
           });
         }
         const attached = withAttachedGroup(existing, parsed.data.groupId);
@@ -1737,15 +1768,7 @@ function registerDriverRoutes(app, deps) {
           success: true,
           attached: true,
           alreadyInGroup: false,
-          bus: {
-            id: doc.id,
-            number: attached.number,
-            groupId: attached.groupId,
-            lineId: attached.lineId,
-            groupIds: attached.groupIds,
-            active: attached.active !== false,
-            createdAt: null
-          }
+          bus: publicBusPayload(doc.id, attached)
         });
       }
       const busRef = companyRef.collection("buses").doc();
@@ -1755,6 +1778,9 @@ function registerDriverRoutes(app, deps) {
         ...groups,
         companyId: req.staff.companyId,
         active: true,
+        garage: String(parsed.data.garage || "").trim().slice(0, 40),
+        opsStatus: parsed.data.opsStatus || "ready",
+        revision: 0,
         createdAt: admin().firestore.FieldValue.serverTimestamp(),
         createdBy: req.staff.uid
       };
@@ -1762,10 +1788,125 @@ function registerDriverRoutes(app, deps) {
       await logAudit(req.staff.companyId, req.staff.uid, "bus_created", {
         busId: busRef.id, number: parsed.data.number, groupId: parsed.data.groupId, groupIds: groups.groupIds
       });
-      return res.status(201).json({ success: true, attached: false, bus: { id: busRef.id, ...payload, createdAt: null } });
+      return res.status(201).json({ success: true, attached: false, bus: publicBusPayload(busRef.id, payload) });
     } catch (error) {
       req.log?.error?.({ err: error }, "Dodavanje autobusa nije uspelo");
       return res.status(500).json({ success: false, error: "Autobus nije mogao biti dodat." });
+    }
+  });
+
+  app.put("/api/staff/buses/:busId", requireStaff, async (req, res) => {
+    if (req.staff.role !== "dispatcher") {
+      return res.status(403).json({ success: false, error: "Samo disponent može upravljati autobusima." });
+    }
+    const busId = busIdSchema.safeParse(req.params.busId);
+    const profile = busProfileSchema.safeParse(req.body);
+    if (!busId.success || !profile.success) {
+      return res.status(400).json({ success: false, error: "Nevažeći podaci autobusa." });
+    }
+    try {
+      const companyRef = db().collection("companies").doc(req.staff.companyId);
+      const busRef = companyRef.collection("buses").doc(busId.data);
+      const garage = String(profile.data.garage || "").trim().slice(0, 40);
+      const opsStatus = profile.data.opsStatus;
+      const expectedRevision = profile.data.expectedRevision;
+      const result = await db().runTransaction(async (tx) => {
+        const snapshot = await tx.get(busRef);
+        if (!snapshot.exists) {
+          const err = new Error("not_found");
+          err.code = "not_found";
+          throw err;
+        }
+        const bus = snapshot.data() || {};
+        const { normalizeGroupIds } = require("./bus-group-membership");
+        const groupIds = normalizeGroupIds(bus);
+        const canAccess = groupIds.some((gid) => dispatcherCanAccessGroup(req.staff.groups, gid));
+        if (!groupIds.length || !canAccess) {
+          const err = new Error("forbidden");
+          err.code = "forbidden";
+          throw err;
+        }
+        const currentRevision = busRevisionOf(bus);
+        if (currentRevision !== expectedRevision) {
+          const err = new Error("revision_conflict");
+          err.code = "revision_conflict";
+          err.bus = publicBusPayload(busId.data, bus);
+          throw err;
+        }
+        const nextRevision = currentRevision + 1;
+        const prevGarage = String(bus.garage || "").trim().slice(0, 40);
+        // Soft mutex per garage label: second dispatcher cannot save into a garage
+        // another dispatcher is actively writing (2 min). Same dispatcher can continue.
+        if (garage) {
+          const garageKey = garage.toLowerCase().replace(/[^a-z0-9_-]+/g, "_").slice(0, 48) || "garage";
+          const garageLockRef = companyRef.collection("ops_locks").doc(`garage_${garageKey}`);
+          const garageSnap = await tx.get(garageLockRef);
+          const lock = garageSnap.exists ? garageSnap.data() : null;
+          const lockUid = String(lock?.holderUid || "");
+          if (lock && lockUid && lockUid !== req.staff.uid && Number(lock?.expiresAtMs || 0) > Date.now()) {
+            const err = new Error("garage_busy");
+            err.code = "garage_busy";
+            err.holderUid = lockUid;
+            throw err;
+          }
+          tx.set(garageLockRef, {
+            type: "garage",
+            garage,
+            busId: busId.data,
+            holderUid: req.staff.uid,
+            expiresAtMs: Date.now() + 2 * 60 * 1000,
+            updatedAtMs: Date.now()
+          }, { merge: true });
+        }
+        tx.update(busRef, {
+          garage,
+          opsStatus,
+          revision: nextRevision,
+          profileUpdatedAt: admin().firestore.FieldValue.serverTimestamp(),
+          profileUpdatedBy: req.staff.uid
+        });
+        return {
+          previous: { garage: prevGarage, opsStatus: bus.opsStatus || "ready", revision: currentRevision },
+          next: { garage, opsStatus, revision: nextRevision },
+          groupIds,
+          bus: { ...bus, garage, opsStatus, revision: nextRevision, groupIds }
+        };
+      });
+      await logAudit(req.staff.companyId, req.staff.uid, "bus_profile_updated", {
+        busId: busId.data,
+        groupId: result.groupIds[0],
+        groupIds: result.groupIds,
+        previous: result.previous,
+        next: result.next
+      });
+      return res.json({
+        success: true,
+        bus: publicBusPayload(busId.data, result.bus)
+      });
+    } catch (error) {
+      if (error.code === "not_found") {
+        return res.status(404).json({ success: false, error: "Autobus nije pronađen." });
+      }
+      if (error.code === "forbidden") {
+        return res.status(403).json({ success: false, error: "Autobus nije u dodeljenoj grupi." });
+      }
+      if (error.code === "revision_conflict") {
+        return res.status(409).json({
+          success: false,
+          code: "REVISION_CONFLICT",
+          error: "Autobus je izmenjen. Osvežite i pokušajte ponovo.",
+          bus: error.bus || null
+        });
+      }
+      if (error.code === "garage_busy") {
+        return res.status(409).json({
+          success: false,
+          code: "GARAGE_BUSY",
+          error: "Drugi disponent trenutno menja tu garažu. Osvežite i pokušajte ponovo."
+        });
+      }
+      req.log?.error?.({ err: error }, "Izmena autobusa nije uspela");
+      return res.status(500).json({ success: false, error: "Autobus nije mogao biti izmenjen." });
     }
   });
 
@@ -1778,25 +1919,57 @@ function registerDriverRoutes(app, deps) {
     if (!busId.success || !status.success) return res.status(400).json({ success: false, error: "Nevažeći zahtev." });
     try {
       const busRef = db().collection("companies").doc(req.staff.companyId).collection("buses").doc(busId.data);
-      const snapshot = await busRef.get();
-      if (!snapshot.exists) return res.status(404).json({ success: false, error: "Autobus nije pronađen." });
-      const bus = snapshot.data() || {};
-      const { normalizeGroupIds } = require("./bus-group-membership");
-      const groupIds = normalizeGroupIds(bus);
-      const canAccess = groupIds.some((gid) => dispatcherCanAccessGroup(req.staff.groups, gid));
-      if (!groupIds.length || !canAccess) {
+      const result = await db().runTransaction(async (tx) => {
+        const snapshot = await tx.get(busRef);
+        if (!snapshot.exists) {
+          const err = new Error("not_found");
+          err.code = "not_found";
+          throw err;
+        }
+        const bus = snapshot.data() || {};
+        const { normalizeGroupIds } = require("./bus-group-membership");
+        const groupIds = normalizeGroupIds(bus);
+        const canAccess = groupIds.some((gid) => dispatcherCanAccessGroup(req.staff.groups, gid));
+        if (!groupIds.length || !canAccess) {
+          const err = new Error("forbidden");
+          err.code = "forbidden";
+          throw err;
+        }
+        const currentRevision = busRevisionOf(bus);
+        if (currentRevision !== status.data.expectedRevision) {
+          const err = new Error("revision_conflict");
+          err.code = "revision_conflict";
+          err.bus = publicBusPayload(busId.data, bus);
+          throw err;
+        }
+        const nextRevision = currentRevision + 1;
+        tx.update(busRef, {
+          active: status.data.active,
+          revision: nextRevision,
+          statusChangedAt: admin().firestore.FieldValue.serverTimestamp(),
+          statusChangedBy: req.staff.uid
+        });
+        return { active: status.data.active, revision: nextRevision, groupIds, bus: { ...bus, active: status.data.active, revision: nextRevision } };
+      });
+      await logAudit(req.staff.companyId, req.staff.uid, result.active ? "bus_activated" : "bus_deactivated", {
+        busId: busId.data, groupId: result.groupIds[0], groupIds: result.groupIds, revision: result.revision
+      });
+      return res.json({ success: true, active: result.active, revision: result.revision, bus: publicBusPayload(busId.data, result.bus) });
+    } catch (error) {
+      if (error.code === "not_found") {
+        return res.status(404).json({ success: false, error: "Autobus nije pronađen." });
+      }
+      if (error.code === "forbidden") {
         return res.status(403).json({ success: false, error: "Autobus nije u dodeljenoj grupi." });
       }
-      await busRef.update({
-        active: status.data.active,
-        statusChangedAt: admin().firestore.FieldValue.serverTimestamp(),
-        statusChangedBy: req.staff.uid
-      });
-      await logAudit(req.staff.companyId, req.staff.uid, status.data.active ? "bus_activated" : "bus_deactivated", {
-        busId: busId.data, groupId: groupIds[0], groupIds
-      });
-      return res.json({ success: true, active: status.data.active });
-    } catch (error) {
+      if (error.code === "revision_conflict") {
+        return res.status(409).json({
+          success: false,
+          code: "REVISION_CONFLICT",
+          error: "Autobus je izmenjen. Osvežite i pokušajte ponovo.",
+          bus: error.bus || null
+        });
+      }
       req.log?.error?.({ err: error }, "Promena statusa autobusa nije uspela");
       return res.status(500).json({ success: false, error: "Status autobusa nije mogao biti promenjen." });
     }

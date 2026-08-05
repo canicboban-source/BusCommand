@@ -16,7 +16,7 @@ import { closeSuperAdminModal, confirmSuperAdminPin, handleLogoClick } from "./a
 import { clickElementById, installActionDelegates, removeElementById } from "./core/action-delegate.js";
 import { exportDriversCSV, exportLostItemsCSV, exportReportsCSV } from "./core/export-csv.js";
 import { getScheduleByKey } from "./core/utils.js";
-import { addBus, deleteBus, deleteRoute } from "./data/buses-routes.js";
+import { addBus, deleteBus, deleteRoute, toggleBusEdit, saveBusOpsProfile } from "./data/buses-routes.js";
 import {
     clearBusImportPreview,
     confirmBusImport,
@@ -76,6 +76,8 @@ import { canInvokeActionDuringDriverActivation } from "./auth/driver-access-gate
 
 const HANDLERS = {
     addBus,
+    toggleBusEdit,
+    saveBusOpsProfile,
     clearBusImportPreview,
     confirmBusImport,
     handleBusImportDrop,

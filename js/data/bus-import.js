@@ -252,13 +252,21 @@ async function confirmBusImport() {
       for (const item of classification.toReactivate) {
         try {
           if (!IS_DEMO_MODE) {
-            const result = await ApiClient.setStaffBusActive(item.id, true);
+            const local = window.state.buses.find((b) => b.id === item.id);
+            const expectedRevision = Number.isInteger(Number(local?.revision)) && Number(local.revision) >= 0
+              ? Number(local.revision)
+              : 0;
+            const result = await ApiClient.setStaffBusActive(item.id, true, expectedRevision);
             if (!result?.success) {
               failed += 1;
               continue;
             }
             const bus = window.state.buses.find((b) => b.id === item.id);
-            if (bus) bus.active = true;
+            if (bus) {
+              bus.active = true;
+              if (Number.isInteger(result.revision)) bus.revision = result.revision;
+              else if (result.bus?.revision != null) bus.revision = result.bus.revision;
+            }
           } else {
             const bus = window.state.buses.find((b) => b.id === item.id);
             if (bus) bus.active = true;

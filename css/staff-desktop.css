@@ -3007,3 +3007,89 @@ html[data-app-surface="staff"] .company-driver-known-empty {
   font-size: 0.8rem;
   color: var(--text-muted, #94a3b8);
 }
+
+html[data-app-surface="staff"] .hub-bus-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+html[data-app-surface="staff"] .hub-bus-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+html[data-app-surface="staff"] .hub-bus-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+html[data-app-surface="staff"] .hub-bus-identity small {
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.75rem;
+}
+
+html[data-app-surface="staff"] .hub-bus-toggle {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid currentColor;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+html[data-app-surface="staff"] .hub-bus-toggle.is-active {
+  color: #ef4444;
+}
+html[data-app-surface="staff"] .hub-bus-toggle.is-inactive {
+  color: #16a34a;
+}
+html[data-app-surface="staff"] .hub-bus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+html[data-app-surface="staff"] .hub-bus-edit-form {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.08);
+}
+
+html[data-app-surface="staff"] .hub-bus-edit-form.hidden {
+  display: none;
+}
+
+html[data-app-surface="staff"] .hub-bus-edit-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+}
+
+html[data-app-surface="staff"] .hub-bus-edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+html[data-app-surface="staff"] .hub-bus-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+html[data-app-surface="staff"] .hub-bus-form input {
+  min-width: 120px;
+  flex: 1;
+}
