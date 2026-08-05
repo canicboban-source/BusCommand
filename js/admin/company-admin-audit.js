@@ -130,7 +130,28 @@ async function loadCompanyAudit({ append = false } = {}) {
     }
 }
 
-function renderCompanyAdminAudit() { loadCompanyAudit(); }
+/** Browsers/password managers often dump a saved login email into the first "User" filter. */
+function scrubAuditCredentialAutofill() {
+    for (const id of ["ca-audit-actor", "ca-audit-action"]) {
+        const node = document.getElementById(id);
+        if (!node) continue;
+        const filled = String(node.value || "");
+        let autofilled = false;
+        try { autofilled = node.matches(":-webkit-autofill"); } catch { /* non-WebKit */ }
+        if (autofilled || filled.includes("@")) {
+            node.value = "";
+        }
+    }
+}
+
+function renderCompanyAdminAudit() {
+    scrubAuditCredentialAutofill();
+    // Late password-manager fills often arrive after first paint.
+    requestAnimationFrame(scrubAuditCredentialAutofill);
+    setTimeout(scrubAuditCredentialAutofill, 80);
+    setTimeout(scrubAuditCredentialAutofill, 400);
+    loadCompanyAudit();
+}
 function refreshCompanyAudit() { loadCompanyAudit(); }
 function loadMoreCompanyAudit() { loadCompanyAudit({ append: true }); }
 function handleCompanyAuditFilters() { clearTimeout(filterTimer); filterTimer = setTimeout(() => loadCompanyAudit(), 250); }

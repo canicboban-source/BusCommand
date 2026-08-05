@@ -25,6 +25,9 @@ test("company admin activity page exposes filters and server source status", () 
   const module = read("../../js/admin/company-admin-audit.js");
   assert.match(html, /id="company-admin-audit"/);
   assert.match(html, /id="ca-audit-category"/);
+  assert.match(html, /id="ca-audit-actor"[^>]*autocomplete="off"/);
+  assert.match(html, /name="bc-audit-actor-filter"/);
   assert.match(module, /ApiClient\.getCompanyAudit/);
   assert.match(module, /ca_audit_source_server/);
+  assert.match(module, /scrubAuditCredentialAutofill/);
 });
