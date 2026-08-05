@@ -1019,6 +1019,11 @@
                                     <input type="text" id="ca-driver-edit-pin" maxlength="64" autocomplete="off" placeholder="••••">
                                 </label>
                             </div>
+                            <fieldset class="company-driver-known-fieldset">
+                                <legend data-i18n="ca_drivers_known_lines">Linije koje zna</legend>
+                                <p class="company-driver-known-hint" data-i18n="ca_drivers_known_hint">Matična grupa je uvek uključena. Dodatne linije možete uvek menjati (npr. kad vozač nauči novu liniju). Disponent vidi redosled zamene.</p>
+                                <div id="ca-driver-edit-known-groups" class="company-driver-known-grid" role="group" aria-label="Known lines"></div>
+                            </fieldset>
                             <p id="ca-driver-edit-pin-note" style="margin:0 0 12px;font-size:0.78rem;color:var(--text-muted);" data-i18n="ca_drivers_pin_note">Postojeći PIN je sačuvan kao hash — unesite novi samo ako želite zamenu. Prikaže se jednom posle čuvanja.</p>
                             <div style="display:flex;gap:10px;margin-top:18px;">
                                 <button type="button" class="btn-secondary" style="flex:1;height:42px;" data-action="closeCompanyDriverEdit"><span data-i18n="btn_cancel">Otkaži</span></button>

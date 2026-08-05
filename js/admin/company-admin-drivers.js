@@ -4,6 +4,10 @@ import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { escapeHtml, showToast } from "../core/utils.js";
+import {
+    normalizeKnownGroupIds,
+    readKnownGroupIdsFromDom
+} from "../data/driver-known-groups.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { closeModal, showModal } from "../ui/modals.js";
 import { t, tp } from "../ui/i18n.js";
@@ -303,6 +307,7 @@ function renderDirectory() {
             <td data-label="${t("ca_drivers_eid")}"><code class="company-driver-eid">${escapeHtml(driver.eid || "—")}</code></td>
             <td data-label="${t("ca_drivers_name")}"><div class="company-driver-identity"><span>${escapeHtml(driverName(driver).split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase())}</span><div><strong>${escapeHtml(driverName(driver))}</strong><small>${escapeHtml(driver.email || "—")}</small></div></div></td>
             <td data-label="${t("ca_plan_group")}">${group ? `<span class="company-driver-group-dot" style="--driver-group-color:${escapeHtml(group.color || "#3d7ef5")}"></span>${escapeHtml(group.name)}` : `<span class="company-driver-unassigned">${t("ca_drivers_unassigned")}</span>`}</td>
+            <td data-label="${t("ca_drivers_known_lines")}">${escapeHtml(knownLinesLabel(driver))}</td>
             <td data-label="${t("ca_drivers_phone")}">${escapeHtml(driver.phone || "—")}</td>
             <td data-label="${t("ca_drivers_pin_short")}"><span class="company-driver-pin-status">${driver.hasPersonalCode === false ? "—" : escapeHtml(t("ca_drivers_pin_set") || "Postavljen")}</span></td>
             <td data-label="${t("ca_col_status")}"><span class="company-driver-status ${active ? "is-active" : "is-inactive"}"><i data-lucide="${active ? "circle-check" : "circle-pause"}"></i>${t(active ? "driver_status_active" : "driver_status_inactive")}</span></td>
@@ -315,7 +320,7 @@ function renderDirectory() {
     container.innerHTML = `
         <div class="company-drivers-results-count">${tp("ca_drivers_results", drivers.length, { count: drivers.length })}</div>
         <div class="company-drivers-table-wrap"><table class="company-drivers-table company-drivers-directory-table">
-            <thead><tr><th>${t("ca_drivers_eid")}</th><th>${t("ca_drivers_name")}</th><th>${t("ca_plan_group")}</th><th>${t("ca_drivers_phone")}</th><th>${t("ca_drivers_pin_short")}</th><th>${t("ca_col_status")}</th><th>${t("table_actions")}</th></tr></thead>
+            <thead><tr><th>${t("ca_drivers_eid")}</th><th>${t("ca_drivers_name")}</th><th>${t("ca_plan_group")}</th><th>${t("ca_drivers_known_lines")}</th><th>${t("ca_drivers_phone")}</th><th>${t("ca_drivers_pin_short")}</th><th>${t("ca_col_status")}</th><th>${t("table_actions")}</th></tr></thead>
             <tbody>${rows}</tbody>
         </table></div>
         ${pageCount > 1 ? `<nav class="company-drivers-pagination" aria-label="${escapeHtml(t("ca_drivers_pagination"))}">
@@ -502,9 +507,44 @@ function openCompanyDriverEdit(driverId) {
     phone.value = String(driver.phone || "");
     email.value = String(driver.email || "");
     fillGroupSelect(group, "ca_plan_group_placeholder", driverGroupId(driver));
+    paintKnownGroupChecks(driver.knownGroupIds || [], driverGroupId(driver));
+    group.onchange = () => {
+        const selected = readKnownGroupIdsFromDom(document.getElementById("ca-driver-edit-known-groups"));
+        paintKnownGroupChecks(selected, group.value);
+    };
     showModal("ca-driver-edit-modal");
     if (typeof lucide !== "undefined") lucide.createIcons();
     firstName.focus();
+}
+
+function knownLinesLabel(driver) {
+    const ids = normalizeKnownGroupIds(driver);
+    if (!ids.length) return "—";
+    return ids.join(", ");
+}
+
+function paintKnownGroupChecks(selectedIds = [], primaryGroupId = "") {
+    const host = document.getElementById("ca-driver-edit-known-groups");
+    if (!host) return;
+    const selected = new Set(
+        normalizeKnownGroupIds({ knownGroupIds: selectedIds, groupId: primaryGroupId }, primaryGroupId)
+    );
+    const groups = companyGroups().slice().sort((a, b) =>
+        String(a.id).localeCompare(String(b.id), undefined, { numeric: true })
+    );
+    if (!groups.length) {
+        host.innerHTML = `<p class="company-driver-known-empty">${escapeHtml(t("ca_drivers_known_empty") || "Nema grupa.")}</p>`;
+        return;
+    }
+    host.innerHTML = groups.map((group) => {
+        const id = String(group.id);
+        const isPrimary = id === String(primaryGroupId || "");
+        const checked = selected.has(id) || isPrimary;
+        return `<label class="company-driver-known-option">
+            <input type="checkbox" data-known-group value="${escapeHtml(id)}" ${checked ? "checked" : ""} ${isPrimary ? "disabled" : ""}>
+            <span><strong>${escapeHtml(id)}</strong> ${escapeHtml(group.name || "")}${isPrimary ? ` · ${escapeHtml(t("ca_drivers_known_home") || "matična")}` : ""}</span>
+        </label>`;
+    }).join("");
 }
 
 function closeCompanyDriverEdit() {
@@ -512,6 +552,8 @@ function closeCompanyDriverEdit() {
     closeModal("ca-driver-edit-modal");
     const idInput = document.getElementById("ca-driver-edit-id");
     if (idInput) idInput.value = "";
+    const host = document.getElementById("ca-driver-edit-known-groups");
+    if (host) host.innerHTML = "";
 }
 
 async function saveCompanyDriverEdit() {
@@ -541,7 +583,9 @@ async function saveCompanyDriverEdit() {
         return;
     }
 
-    const payload = { firstName, lastName, phone, email, groupId };
+    const knownFromDom = readKnownGroupIdsFromDom(document.getElementById("ca-driver-edit-known-groups"));
+    const knownGroupIds = normalizeKnownGroupIds({ knownGroupIds: knownFromDom, groupId }, groupId);
+    const payload = { firstName, lastName, phone, email, groupId, knownGroupIds };
     editSavePending = true;
     const saveBtn = document.getElementById("ca-driver-edit-save");
     if (saveBtn) saveBtn.disabled = true;
@@ -551,6 +595,7 @@ async function saveCompanyDriverEdit() {
                 ...payload,
                 name: `${firstName} ${lastName}`.trim(),
                 lineId: groupId,
+                knownGroupIds,
                 ...(personalCode ? { pin: personalCode, company_code: personalCode, hasPersonalCode: true, codeActivated: true } : {})
             });
             saveState();
@@ -607,6 +652,9 @@ async function enrichCompanyDriversFromApi() {
             email: enriched.email || driver.email,
             groupId: enriched.groupId || driver.groupId,
             lineId: enriched.lineId || driver.lineId,
+            knownGroupIds: Array.isArray(enriched.knownGroupIds)
+                ? enriched.knownGroupIds
+                : normalizeKnownGroupIds(driver),
             active: enriched.active !== false
         };
     });

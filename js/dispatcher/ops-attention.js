@@ -16,6 +16,7 @@ import { saveState } from "../core/state.js";
 import { busHasGroup } from "../data/bus-group-membership.js";
 import { listAssignableCatalogCodes, ensureShiftCatalogForEdit } from "../core/line-shift-catalog.js";
 import { getGroupById } from "../data/groups.js";
+import { driverKnowsGroup, normalizeKnownGroupIds } from "../data/driver-known-groups.js";
 import { switchSection } from "../layout/navigation.js";
 
 function domSafeId(id) {
@@ -84,23 +85,36 @@ function freeDriverPools(groupId, excludeDriverId, dateStr) {
     const same = [];
     const company = [];
     const otherGroups = [];
+    const knowsHint = t("ops_attn_knows_line") || "zna";
     for (const driver of companyDrivers()) {
         const id = driverUid(driver);
         if (!id || id === excludeDriverId) continue;
         if (!isDriverFree(driver, dateStr)) continue;
         const gid = String(driver.groupId || driver.lineId || "").trim();
-        const label = gid && gid !== target
-            ? `${driver.name} · ${groupLabel(gid)}`
-            : driver.name;
-        const row = { id, name: driver.name, groupId: gid, label, driver };
+        const knows = driverKnowsGroup(driver, target);
+        const parts = [driver.name];
+        if (gid && gid !== target) parts.push(groupLabel(gid));
+        if (knows && target) parts.push(`${knowsHint} ${target}`);
+        const row = {
+            id,
+            name: driver.name,
+            groupId: gid,
+            knowsTarget: knows,
+            label: parts.join(" · "),
+            driver,
+            knownGroupIds: normalizeKnownGroupIds(driver)
+        };
         if (gid && gid === target) same.push(row);
         else if (!gid) company.push(row);
         else otherGroups.push(row);
     }
-    const sortName = (a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" });
-    same.sort(sortName);
-    company.sort(sortName);
-    otherGroups.sort(sortName);
+    const sortPool = (a, b) => {
+        if (Boolean(a.knowsTarget) !== Boolean(b.knowsTarget)) return a.knowsTarget ? -1 : 1;
+        return String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" });
+    };
+    same.sort(sortPool);
+    company.sort(sortPool);
+    otherGroups.sort(sortPool);
     return { same, company, otherGroups, all: [...same, ...company, ...otherGroups] };
 }
 

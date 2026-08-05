@@ -2956,3 +2956,54 @@ html[data-app-surface="staff"] .alert-item-actions {
   gap: 12px 18px;
   margin: 8px 0 12px;
 }
+
+html[data-app-surface="staff"] .company-driver-known-fieldset {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 10px;
+  min-width: 0;
+}
+
+html[data-app-surface="staff"] .company-driver-known-fieldset legend {
+  padding: 0 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+html[data-app-surface="staff"] .company-driver-known-hint {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  color: var(--text-muted, #94a3b8);
+  line-height: 1.4;
+}
+
+html[data-app-surface="staff"] .company-driver-known-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  max-height: 180px;
+  overflow: auto;
+}
+
+html[data-app-surface="staff"] .company-driver-known-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.08);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+html[data-app-surface="staff"] .company-driver-known-option input {
+  margin-top: 2px;
+}
+
+html[data-app-surface="staff"] .company-driver-known-empty {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted, #94a3b8);
+}
