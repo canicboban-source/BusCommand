@@ -149,16 +149,14 @@ test("merge import preserves bus and confirmation when duty identity is unchange
   assert.equal(replaced.confirmedByDriver, false);
 });
 
-test("CA import routes are server-owned, audited and block concurrent dispatcher edits", () => {
+test("CA monthly assignment routes are closed; dispatcher assignment still lock-aware (D21)", () => {
   const root = path.join(__dirname, "../..");
   const api = fs.readFileSync(path.join(root, "api-server.js"), "utf8");
   const driverRoutes = fs.readFileSync(path.join(root, "server/driver-routes.js"), "utf8");
-  assert.match(api, /company-admin\/monthly-plans\/import\/preview[\s\S]*?requireCompanyAdmin/);
-  assert.match(api, /company-admin\/monthly-plans\/import\/commit[\s\S]*?requireCompanyAdmin/);
-  assert.match(api, /getActiveServicePlan/);
-  assert.match(api, /group_monthly_plan_import_previewed/);
-  assert.match(api, /group_monthly_plan_import_committed/);
-  assert.match(api, /group_monthly_plan_import_failed/);
+  assert.match(api, /company-admin\/monthly-plans\/import\/preview[\s\S]*?MONTHLY_ASSIGNMENTS_DISPATCHER_ONLY/);
+  assert.match(api, /company-admin\/monthly-plans\/import\/commit[\s\S]*?MONTHLY_ASSIGNMENTS_DISPATCHER_ONLY/);
+  assert.doesNotMatch(api, /prepareGroupMonthlyImport/);
+  assert.doesNotMatch(api, /commitGroupMonthlyImport/);
   assert.match(driverRoutes, /assertNoActiveGroupMonthlyImport/);
   assert.match(driverRoutes, /code: importLock\.code/);
 });

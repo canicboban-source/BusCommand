@@ -46,15 +46,13 @@ test("group monthly parser accepts semicolon CSV and quoted EID", () => {
   assert.equal(rows[0].dutyCode, "310.S01");
 });
 
-test("Company Admin page exposes group monthly preview and official blank downloads", () => {
+test("Company Admin page no longer exposes group monthly assignment import (D21)", () => {
   const html = fs.readFileSync(path.join(root, "index.legacy-monolith.html"), "utf8");
-  const client = fs.readFileSync(path.join(root, "js/admin/company-admin-monthly-import.js"), "utf8");
-  assert.match(html, /id="ca-monthly-import-group"/);
-  assert.match(html, /id="ca-monthly-import-month"/);
-  assert.match(html, /id="ca-monthly-import-mode"/);
-  assert.match(html, /BusCommand_Monthly_Group_Plan_Blank_v1\.xlsx/);
-  assert.match(html, /BusCommand_Monthly_Group_Plan_Blank_v1\.csv/);
-  assert.match(client, /previewGroupMonthlyPlanImport/);
-  assert.match(client, /commitGroupMonthlyPlanImport/);
-  assert.doesNotMatch(client, /findDriverByName|normalizePersonName/);
+  const api = fs.readFileSync(path.join(root, "api-server.js"), "utf8");
+  assert.doesNotMatch(html, /id="ca-monthly-import-group"/);
+  assert.doesNotMatch(html, /id="ca-monthly-import-file"/);
+  assert.doesNotMatch(html, /ca-monthly-import-card/);
+  assert.match(html, /id="dispo-monthly-plan-import"/);
+  assert.match(html, /id="bulk-plan-import-files"/);
+  assert.match(api, /MONTHLY_ASSIGNMENTS_DISPATCHER_ONLY/);
 });

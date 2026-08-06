@@ -135,9 +135,11 @@ test("monthly plan UI no longer saveState on empty shell; mass + undo actions ex
   assert.match(monthly, /recordDemoChangeReason/);
 });
 
-test("dispatcher hub bulk plan import is deferred in staff HTML", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../../staff.html"), "utf8");
-  assert.match(html, /hub-section-extra-import" hidden/);
+test("dispatcher monthly plan import is enabled on monthly full page (D21)", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../../index.legacy-monolith.html"), "utf8");
+  assert.match(html, /id="dispo-monthly-plan-import"/);
+  assert.match(html, /id="bulk-plan-import-files"/);
+  assert.doesNotMatch(html, /id="bulk-plan-import-files"[^>]*\sdisabled/);
   assert.match(html, /med-undo-btn/);
   assert.match(html, /undoMonthlyDayEdit/);
 });

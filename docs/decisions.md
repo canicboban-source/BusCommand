@@ -79,18 +79,31 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
 
 ### D8 — Mesečni plan: undo + aktivni katalog + bez dispo bulk importa
 
-- Datum: 2026-08-04 · Status: **Odlučeno** (Poglavlje 8)
+- Datum: 2026-08-04 · Status: **Odlučeno** (Poglavlje 8) — tačka 3 **zamenjena** odlukom **D21** (2026-08-07)
 - Odluka:
   1. Kontrolisani undo = jedan nivo `priorSnapshot` + soft-clear tombstone;
      audit `shift_undone`; bez brisanja istorije.
   2. Edit modal nudi samo šifre aktivnog (locked) CA kataloga; bez izmišljenih
      fallback F/S kodova.
-  3. Disponentski bulk uvoz mesečnog plana ostaje sakriven u UI dok commit /
-     partial-recovery ne dostignu CA nivo (CA group monthly import ostaje put).
+  3. ~~Disponentski bulk uvoz mesečnog plana ostaje sakriven…~~ → vidi **D21**.
   4. Masovno odsustvo (off/vacation/sick) samo uz preview + potvrdu; svaki dan
      ide kroz postojeći `PUT …/assignment`.
 - Posledica: `server/shift-assignment.js`, `POST …/assignment/undo`,
   `js/dispatcher/monthly-plans.js`.
+
+### D21 — CA = V66/katalog; Dispo = mesečne dodele vozača (uvoz + edit)
+
+- Datum: 2026-08-07 · Status: **Odlučeno** (vlasnik, eksplicitno)
+- Pitanje: ko uvozi mesečne planove vozača vs plan vožnje (V66)?
+- Odluka vlasnika:
+  1. CA formira grupe, dodeljuje dispečere i uvozi **plan vožnje / V66 (katalog
+     smena)**. CA **nema** pravo uvoza mesečnih planova vozača (EID/date/duty).
+  2. Dispo **uvozi i edituje** mesečne planove vozača (smene, busevi, statusi);
+     Ops radi iz tih dodela + aktivnog CA kataloga.
+  3. Dispo i dalje **nikada** ne vidi EID, PIN niti credential podatke.
+- Posledica: uklonjen CA monthly-import UI; CA preview/commit API → 403;
+  Dispo uvoz omogućen na mesečnom planu (ime → driverId, bez EID);
+  Ultimate §4 hard rule 1 usklađen; D8.3 zamenjen.
 
 ### D9 — Problem lifecycle + vehicle out + ops activity
 

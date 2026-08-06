@@ -305,6 +305,8 @@ function applyOperationalReadOnlyToHub() {
     if (packageImport) packageImport.style.display = readOnly ? "none" : "";
     const extraImport = document.getElementById("hub-section-extra-import");
     if (extraImport) extraImport.style.display = readOnly ? "none" : "";
+    const monthlyImport = document.getElementById("dispo-monthly-plan-import");
+    if (monthlyImport) monthlyImport.style.display = readOnly ? "none" : "";
 }
 
 function getDashboardLineGroups() {

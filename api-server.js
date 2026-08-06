@@ -11,7 +11,6 @@ const cors    = require("cors");
 const os      = require("os");
 const helmet  = require("helmet");
 const pinoHttp = require("pino-http");
-const { z } = require("zod");
 
 const { logger } = require("./server/logger");
 const { buildStartupInfo } = require("./server/startup-info");
@@ -56,11 +55,6 @@ const { listAuditEvents, normalizeStateSyncDetails } = require("./server/audit-l
 const { findCompanyGroupReferences, normalizeCompanyGroupId } = require("./server/company-groups");
 const { normalizeCompanyProfileSettings } = require("./server/company-settings");
 const { buildCompanyExport } = require("./server/company-export");
-const {
-  GroupMonthlyImportError,
-  commitGroupMonthlyImport,
-  prepareGroupMonthlyImport
-} = require("./server/group-monthly-plan-import");
 const {
   validateBody,
   sanitizeCompanyId,
@@ -142,26 +136,6 @@ if (HAS_FIREBASE) {
 }
 
 const app = express();
-
-const groupMonthlyImportPreviewBody = z.object({
-  companyId: z.string().trim().min(1).max(128),
-  groupId: z.string().trim().min(1).max(120),
-  month: z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])$/),
-  mode: z.enum(["merge", "replace"]),
-  sourceName: z.string().trim().min(1).max(255),
-  reason: z.string().trim().min(3).max(200),
-  rows: z.array(z.object({
-    eid: z.string().trim().min(1).max(128),
-    date: z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/),
-    dutyCode: z.string().trim().min(1).max(64).transform(value => value.toUpperCase()),
-    sourceRow: z.number().int().min(2).max(100000)
-  })).min(1).max(2500)
-});
-const groupMonthlyImportCommitBody = z.object({
-  companyId: z.string().trim().min(1).max(128),
-  importId: z.string().trim().min(1).max(128),
-  fingerprint: z.string().regex(/^[a-f0-9]{64}$/)
-});
 
 app.set("trust proxy", 1);
 
@@ -1467,57 +1441,17 @@ app.post(
   }
 );
 
+// D21 (2026-08-07): monthly driver assignments belong to Dispo. CA keeps V66/catalog only.
 app.post(
   "/api/company-admin/monthly-plans/import/preview",
   rateLimit(20, 5 * 60 * 1000),
   requireCompanyAdmin,
-  async (req, res) => {
-    const companyId = requireOwnCompany(req, res);
-    if (!companyId) return;
-    const parsed = groupMonthlyImportPreviewBody.safeParse(req.body);
-    if (!parsed.success || parsed.data.companyId !== companyId) {
-      return res.status(400).json({ success: false, code: "INVALID_MONTHLY_IMPORT", error: "Fajl mesečnog plana nije ispravan." });
-    }
-    try {
-      const groupId = normalizeServicePlanGroupId(parsed.data.groupId);
-      await assertCompanyGroupsExist(db.collection("companies").doc(companyId), [groupId]);
-      const activePlan = await getActiveServicePlan({ db, companyId, groupId });
-      if (!activePlan) {
-        return res.status(409).json({
-          success: false,
-          code: "ACTIVE_SERVICE_PLAN_REQUIRED",
-          error: "Grupa mora imati aktivan katalog smena pre uvoza mesečnog plana."
-        });
-      }
-      const preview = await prepareGroupMonthlyImport({
-        db,
-        admin,
-        companyId,
-        actorId: req.staffUser.uid,
-        ...parsed.data,
-        groupId,
-        activePlan
-      });
-      await _logAuditEvent(companyId, req.staffUser.uid, "group_monthly_plan_import_previewed", {
-        importId: preview.id,
-        groupId,
-        month: parsed.data.month,
-        mode: parsed.data.mode,
-        sourceName: parsed.data.sourceName,
-        reason: parsed.data.reason,
-        summary: preview.summary
-      }, { actorRole: req.staffUser.role, actorName: req.staffUser.name || null });
-      return res.json({ success: true, preview });
-    } catch (err) {
-      if (err instanceof GroupMonthlyImportError) {
-        return res.status(err.status).json({ success: false, code: err.code, error: "Mesečni plan mora biti ispravljen.", details: err.details });
-      }
-      if (["invalid-group", "group-not-found"].includes(err.code)) {
-        return res.status(err.code === "group-not-found" ? 404 : 400).json({ success: false, code: err.code, error: err.message });
-      }
-      req.log?.error({ err }, "Company monthly plan import preview failed");
-      return res.status(500).json({ success: false, code: "MONTHLY_IMPORT_PREVIEW_FAILED", error: "Pregled mesečnog plana nije pripremljen." });
-    }
+  async (_req, res) => {
+    return res.status(403).json({
+      success: false,
+      code: "MONTHLY_ASSIGNMENTS_DISPATCHER_ONLY",
+      error: "Mesečne dodele vozača uvozi disponent. Company Admin objavljuje samo katalog smena (V66)."
+    });
   }
 );
 
@@ -1525,39 +1459,12 @@ app.put(
   "/api/company-admin/monthly-plans/import/commit",
   rateLimit(10, 5 * 60 * 1000),
   requireCompanyAdmin,
-  async (req, res) => {
-    const companyId = requireOwnCompany(req, res);
-    if (!companyId) return;
-    const parsed = groupMonthlyImportCommitBody.safeParse(req.body);
-    if (!parsed.success || parsed.data.companyId !== companyId) {
-      return res.status(400).json({ success: false, code: "INVALID_MONTHLY_IMPORT_COMMIT", error: "Potvrda uvoza nije ispravna." });
-    }
-    try {
-      const result = await commitGroupMonthlyImport({
-        db,
-        admin,
-        companyId,
-        actorId: req.staffUser.uid,
-        importId: parsed.data.importId,
-        fingerprint: parsed.data.fingerprint
-      });
-      await _logAuditEvent(companyId, req.staffUser.uid, "group_monthly_plan_import_committed", {
-        importId: result.id,
-        summary: result.summary,
-        idempotent: result.idempotent
-      }, { actorRole: req.staffUser.role, actorName: req.staffUser.name || null });
-      return res.json({ success: true, ...result });
-    } catch (err) {
-      await _logAuditEvent(companyId, req.staffUser.uid, "group_monthly_plan_import_failed", {
-        importId: parsed.data.importId,
-        code: err.code || "MONTHLY_IMPORT_COMMIT_FAILED"
-      }, { actorRole: req.staffUser.role, actorName: req.staffUser.name || null }).catch(() => {});
-      if (err instanceof GroupMonthlyImportError) {
-        return res.status(err.status).json({ success: false, code: err.code, error: "Mesečni plan nije objavljen.", details: err.details });
-      }
-      req.log?.error({ err }, "Company monthly plan import commit failed");
-      return res.status(500).json({ success: false, code: "MONTHLY_IMPORT_COMMIT_FAILED", error: "Mesečni plan nije objavljen. Bezbedno pokušajte ponovo." });
-    }
+  async (_req, res) => {
+    return res.status(403).json({
+      success: false,
+      code: "MONTHLY_ASSIGNMENTS_DISPATCHER_ONLY",
+      error: "Mesečne dodele vozača uvozi disponent. Company Admin objavljuje samo katalog smena (V66)."
+    });
   }
 );
 
