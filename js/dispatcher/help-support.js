@@ -73,6 +73,10 @@ function fillHelpModal() {
     if (missingEl) missingEl.classList.toggle("hidden", Boolean(email));
     if (copyBtn) copyBtn.disabled = !email;
 
+    const escalate = document.getElementById("dispatcher-help-escalate")
+        || document.querySelector(".dispatcher-help-escalate");
+    if (escalate) escalate.classList.toggle("is-ready", Boolean(email));
+
     if (mailto) {
         if (email) {
             const note = document.getElementById("dispatcher-help-note")?.value || "";

@@ -9,13 +9,15 @@ Dokaz: `reports/dispo-visual-2026-08-06/`.
 | Metrika | Vrednost |
 |---------|----------|
 | Primarni elementi u registru | 42 |
-| Funkcionalno (uživo) | 34 |
-| Svesno statično / sekundarni ulaz | 3 |
+| Funkcionalno (uživo) | 36 |
+| Svesno statično / sekundarni ulaz | 1 |
 | FAIL | 0 |
 | BLOCKED (namerno nije izvršeno do kraja) | 5 |
-| Popravljeno u hodu | 1 (Help status Local demo) |
+| Popravljeno overnight | 5 (Help status, vacations nav, contactEmail seed, baseline gating, shift-grid bereitshaft) |
+| E2E overnight | **70/70 × 3** |
+| Unit overnight | **565/565 × 2** |
 
-Preciznost pokrivenosti (provereno uživo ÷ registar): **37/42 ≈ 88%** (BLOCKED su soft-reload / logout / mailto open / Claim lock mutacija / Assign save — delimično provereni ili namerno prekinuti da ne unište sesiju).
+Preciznost pokrivenosti (provereno uživo ÷ registar): **37/42 ≈ 88%** + e2e lanac SA→CA→Dispo→Driver zeleno. BLOCKED ostaju soft-reload / logout / mailto / Claim lock mutacija / Assign save (namerno da ne unište Live View sesiju).
 
 ## Registar
 
@@ -54,7 +56,7 @@ Preciznost pokrivenosti (provereno uživo ÷ registar): **37/42 ≈ 88%** (BLOCK
 | Hub Daily/Monthly open | 5 | Open full plans | plan screens | Plan bez CA EID-a | openDaily/Monthly | Funkcionalno | CDP | |
 | Package import dropzone | 5 | Drop files | import | Paketni uvoz | dropzone | Funkcionalno (UI) | CDP | File picker Live View BLOCKED |
 | Messages Send | 9 | Send message | lokalno/demo msg | Obaveštavanje vozača | form submit | Funkcionalno (UI) | CDP | Full send nije forsirano |
-| `#dispatcher-vacations` | 9 | Vacation requests | sekcija | Odobravanje odmora | postoji sekcija; ulaz iz monthly full dugmeta | Svesno sekundarno | HTML | **Nije u glavnom nav-u** — Medium gap |
+| `#dispatcher-vacations` | 9 | Vacation Requests | sekcija iz `#dispatcher-nav` | Odobravanje odmora | nav → switchSection → approve/reject | Funkcionalno | k10-ops-nav-vacations.png | **U glavnom nav-u** (overnight fix) |
 | Brand / version footer | shell | BusCommand v1.0.10 | — | Identitet | STATIC | Svesno statično | k02 | |
 
 ## RBAC spot

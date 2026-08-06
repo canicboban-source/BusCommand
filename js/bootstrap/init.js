@@ -77,6 +77,8 @@ async function bootstrapBusCommand() {
 
     if (IS_DEMO_MODE) {
         loadStateFromStorage(COMPANY_ID);
+        const { ensureDemoOpsBaseline } = await import("../core/demo-ops-baseline.js");
+        ensureDemoOpsBaseline(window.state);
         applyUiLanguagePreference(savedLang);
     } else {
         window.state = { ...getBaseState(), language: savedLang };
@@ -122,6 +124,8 @@ async function bootstrapBusCommand() {
         window.currentUser = null;
         if (IS_DEMO_MODE) {
             loadStateFromStorage(COMPANY_ID);
+            const { ensureDemoOpsBaseline } = await import("../core/demo-ops-baseline.js");
+            ensureDemoOpsBaseline(window.state);
         } else {
             window.state = { ...getBaseState(), language: savedLang };
         }
