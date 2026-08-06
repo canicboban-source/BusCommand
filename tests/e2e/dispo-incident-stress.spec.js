@@ -201,10 +201,18 @@ async function ensureAttentionOpen(page) {
   await expect(panel).toBeVisible();
 }
 
-async function resolveReportCard(page, attnId, { type = "restored", note = "Resolved in stress run." } = {}) {
+async function focusAttentionCard(page, attnId) {
   await ensureAttentionOpen(page);
+  await page.evaluate((id) => {
+    if (typeof window.openOpsAttentionPanel === "function") window.openOpsAttentionPanel(id);
+  }, attnId);
   const card = page.locator(`.ops-attention-card[data-attn-id="${attnId}"]`);
   await expect(card).toBeVisible({ timeout: 15_000 });
+  return card;
+}
+
+async function resolveReportCard(page, attnId, { type = "restored", note = "Resolved in stress run." } = {}) {
+  const card = await focusAttentionCard(page, attnId);
   await card.scrollIntoViewIfNeeded();
   await card.locator('[data-attn-field="resolutionType"]').selectOption(type, { timeout: 10_000 });
   await card.locator('[data-attn-field="note"]').fill(note);
@@ -227,10 +235,14 @@ test.describe("Dispo incident + fleet stress", () => {
 
     await expect(page.locator("#dispatcher-dashboard")).toBeVisible();
     await expect(page.locator("#ops-plan-health")).toBeVisible();
-    await expect(page.locator("#dispatcher-live-alerts .urgent-action")).toHaveCount(3, { timeout: 10_000 });
+    // Live alerts share Needs attention SoT (field reports + missing bus / wrong shift / …).
+    await expect(page.locator("#dispatcher-live-alerts .urgent-action").first()).toBeVisible({ timeout: 10_000 });
+    expect(await page.locator("#dispatcher-live-alerts .urgent-action").count()).toBeGreaterThanOrEqual(5);
 
     await openAttention(page);
-    expect(await page.locator(".ops-attention-card").count()).toBeGreaterThanOrEqual(5);
+    // Single-card UI: queue length is nav items (one detail card visible).
+    expect(await page.locator(".ops-attention-nav-item").count()).toBeGreaterThanOrEqual(5);
+    expect(await page.locator(".ops-attention-card").count()).toBe(1);
 
     // 1) Delay
     await resolveReportCard(page, "report:inc-delay", {
@@ -242,9 +254,7 @@ test.describe("Dispo incident + fleet stress", () => {
     ).toBe("resolved");
 
     // 2) Missing bus Driver 02
-    await ensureAttentionOpen(page);
-    const missingBus = page.locator('.ops-attention-card[data-attn-id="bus:drv-2"]');
-    await expect(missingBus).toBeVisible();
+    const missingBus = await focusAttentionCard(page, "bus:drv-2");
     await missingBus.scrollIntoViewIfNeeded();
     const busSelect = missingBus.locator('[data-attn-field="bus"]');
     const firstBus = await busSelect.locator("option:not([disabled])").first().getAttribute("value");
@@ -256,9 +266,7 @@ test.describe("Dispo incident + fleet stress", () => {
     ).not.toBe("");
 
     // 3) Wrong shift Driver 03
-    await ensureAttentionOpen(page);
-    const wrongShift = page.locator('.ops-attention-card[data-attn-id="shift:drv-3"]');
-    await expect(wrongShift).toBeVisible();
+    const wrongShift = await focusAttentionCard(page, "shift:drv-3");
     await wrongShift.scrollIntoViewIfNeeded();
     const dutySelect = wrongShift.locator('[data-attn-field="duty"]');
     const dutyVal = await dutySelect.locator("option:not([disabled])").first().getAttribute("value");
@@ -278,9 +286,7 @@ test.describe("Dispo incident + fleet stress", () => {
     ).toBe("resolved");
 
     // 5) Coverage replacement
-    await ensureAttentionOpen(page);
-    const coverage = page.locator('.ops-attention-card[data-attn-id="coverage:inc-coverage"]');
-    await expect(coverage).toBeVisible();
+    const coverage = await focusAttentionCard(page, "coverage:inc-coverage");
     await coverage.scrollIntoViewIfNeeded();
     const drvSel = coverage.locator('[data-attn-field="driver"]');
     const busSel = coverage.locator('[data-attn-field="bus"]');
@@ -329,8 +335,16 @@ test.describe("Dispo incident + fleet stress", () => {
       await page.locator("#ops-plan-health").click();
       await expect(page.locator("#ops-attention-panel")).toBeVisible({ timeout: 20_000 });
       const openMs = Date.now() - t0;
-      const cards = await page.locator(".ops-attention-card").count();
+      const navCount = await page.locator(".ops-attention-nav-item").count();
+      const cards = Math.max(await page.locator(".ops-attention-card").count(), navCount > 0 ? 1 : 0);
 
+      // Prefer a field-report card in the single-card queue.
+      await page.evaluate(() => {
+        const delay = (window.state.reports || []).find((r) => r.id === "inc-delay" && r.status === "active");
+        if (delay && typeof window.openOpsAttentionPanel === "function") {
+          window.openOpsAttentionPanel(`report:${delay.id}`);
+        }
+      });
       const reportCard = page.locator(".ops-attention-card").filter({
         has: page.locator('[data-attn-field="resolutionType"]')
       }).first();
@@ -430,8 +444,12 @@ test.describe("Dispo incident + fleet stress", () => {
     await firstApply.focus();
     await expect(firstApply).toBeFocused();
 
-    await page.keyboard.press("Escape").catch(() => {});
-    // Escape may not be wired — close button must work.
+    await page.keyboard.press("Escape");
+    await expect(panel).toBeHidden();
+
+    // Close button also dismisses after reopen.
+    await openAttention(page);
+    await expect(panel).toBeVisible();
     await page.locator(".ops-attention-close").click();
     await expect(panel).toBeHidden();
 

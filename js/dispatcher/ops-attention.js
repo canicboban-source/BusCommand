@@ -714,15 +714,16 @@ function closeOpsAttentionPanel() {
 function refreshOpsAttentionPanelIfOpen() {
     const layer = document.getElementById("ops-attention-panel");
     if (!layer || layer.classList.contains("hidden")) return;
-    const real = collectOpsAttentionItems();
-    // Soft plan gaps stay on the banner; after a real fix, close when critical items are gone.
-    if (!real.length) {
+    // Include soft plan-gap cards — closing on "real-only" empty made gap panels
+    // flash open then vanish when Ops/dashboard refreshed (~1s later).
+    const items = collectAllAttentionItems();
+    if (!items.length) {
         paintOpsAttentionPanel([]);
         closeOpsAttentionPanel();
         showToast(t("ops_attn_all_clear") || "Sve stavke su rešene.", "success");
         return;
     }
-    paintOpsAttentionPanel(collectAllAttentionItems());
+    paintOpsAttentionPanel(items);
 }
 
 function cardField(card, field) {
@@ -760,10 +761,10 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
             },
             shift: {
                 type: report.shiftType || originalShift?.type || "morning",
-                name: report.shiftName || originalShift?.name || "",
-                routeCode: originalShift?.routeCode || report.shiftName || "",
-                start: originalShift?.start || null,
-                end: originalShift?.end || null,
+                name: report.shiftName || originalShift?.name || report.routeCode || "",
+                routeCode: report.routeCode || originalShift?.routeCode || report.shiftName || "",
+                start: report.start || originalShift?.start || null,
+                end: report.end || originalShift?.end || null,
                 bus: replacementBus,
                 revision: Number(replacementShift?.revision || 0) + 1
             }
@@ -786,11 +787,11 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
     const assigned = result.shift || {};
     setShiftForDriverDate(replacement.name, report.date, {
         type: assigned.type || report.shiftType || originalShift?.type || "morning",
-        name: assigned.name || report.shiftName || originalShift?.name || "",
+        name: assigned.name || report.shiftName || originalShift?.name || report.routeCode || "",
         bus: assigned.bus || replacementBus,
-        routeCode: assigned.routeCode || originalShift?.routeCode || "",
-        start: assigned.start || originalShift?.start || null,
-        end: assigned.end || originalShift?.end || null,
+        routeCode: assigned.routeCode || report.routeCode || originalShift?.routeCode || "",
+        start: assigned.start || report.start || originalShift?.start || null,
+        end: assigned.end || report.end || originalShift?.end || null,
         revision: Number.isInteger(assigned.revision) ? assigned.revision : Number(replacementShift?.revision || 0) + 1
     });
     Object.assign(report, result.report || {}, {

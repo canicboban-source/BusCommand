@@ -19,6 +19,7 @@ import { saveState } from "../core/state.js";
 import { busHasGroup } from "../data/bus-group-membership.js";
 import {
     collectOpsAttentionItems,
+    collectAllAttentionItems,
     openOpsAttentionPanel,
     closeOpsAttentionPanel,
     focusOpsAttentionItem,
@@ -28,6 +29,12 @@ import {
     syncOpsPlanHealthAttentionState
 } from "./ops-attention.js";
 import { paintPlanHealthBanner } from "./plan-health-banner.js";
+import {
+    dispoBusIncidentReasonOptions,
+    dispoDriverIncidentReasonOptions,
+    reasonLabel,
+    recordDemoChangeReason
+} from "./change-reason.js";
 
 const SHIFT_TYPE_OPTIONS = Object.freeze([
     { value: "morning", labelKey: "shift_type_morning", fallback: "Prepodne" },
@@ -358,6 +365,8 @@ function renderDispatcherDashboard() {
     const unreadCount = countUnreadMessages();
     const pendingConfirms = confirmationAttentionRows();
     const failedDeliveries = pendingConfirms.filter((row) => row.kind === "delivery_failed").length;
+    // Single source of truth with Needs attention / plan-health (includes missing bus, gaps, confirms).
+    const liveAttentionItems = collectAllAttentionItems();
 
     const elActiveDrivers = document.getElementById("stat-active-drivers-count");
     const elActiveBuses = document.getElementById("stat-active-buses-count");
@@ -366,7 +375,7 @@ function renderDispatcherDashboard() {
 
     if (elActiveDrivers) elActiveDrivers.innerText = activeDriversCount;
     if (elActiveBuses) elActiveBuses.innerText = activeBusesCount;
-    if (elOpenProblems) elOpenProblems.innerText = openReportsCount + pendingConfirms.length;
+    if (elOpenProblems) elOpenProblems.innerText = liveAttentionItems.length;
     if (elUnread) elUnread.innerText = unreadCount;
     updateMessagesNavBadge(unreadCount);
 
@@ -375,74 +384,34 @@ function renderDispatcherDashboard() {
     const alertsContainer = document.getElementById("dispatcher-live-alerts");
     if (alertsContainer) {
         alertsContainer.innerHTML = "";
-        const filteredReports = operationalReports;
-        const driversById = new Map(allDrivers.map((drv) => [driverUid(drv), drv]));
 
-        if (_confirmFetchInFlight && !_confirmFetchAt && filteredReports.length === 0 && pendingConfirms.length === 0) {
+        if (_confirmFetchInFlight && !_confirmFetchAt && liveAttentionItems.length === 0) {
             alertsContainer.innerHTML = `<div class="ops-empty ops-loading" aria-busy="true">${escapeHtml(t("loading") || "Učitavanje…")}</div>`;
-        } else if (_confirmFetchFailed && filteredReports.length === 0 && pendingConfirms.length === 0) {
+        } else if (_confirmFetchFailed && liveAttentionItems.length === 0) {
             alertsContainer.innerHTML = `<div class="ops-empty is-error" role="status">${escapeHtml(t("ops_confirmations_load_failed") || "Potvrde smena nisu mogle biti učitane.")}</div>`;
-        } else if (filteredReports.length === 0 && pendingConfirms.length === 0) {
-            alertsContainer.innerHTML = `<div class="ops-empty">${t("js_no_alerts") || "Nema aktivnih prijava"}</div>`;
+        } else if (liveAttentionItems.length === 0) {
+            alertsContainer.innerHTML = `<div class="ops-empty">${escapeHtml(t("ops_attn_empty") || t("js_no_alerts") || "Nema aktivnih stavki")}</div>`;
         } else {
-            pendingConfirms.slice(0, 5).forEach((row) => {
-                const drv = driversById.get(row.driverId);
+            liveAttentionItems.slice(0, 6).forEach((item) => {
                 const div = document.createElement("article");
-                const isFailed = row.kind === "delivery_failed";
-                const isExpired = row.kind === "expired";
-                div.className = `ops-action-card alert-item ${isFailed ? "alert-breakdown is-critical" : "alert-delay is-warning"}`;
-                const label = row.label && row.label !== "next_shift"
-                    ? (t(`confirm_label_${row.label}`) || row.label)
-                    : (t("confirm_label_next_shift") || "Sledeća smena");
-                const errorHint = isFailed && row.lastError
-                    ? ` · ${escapeHtml(String(row.lastError).slice(0, 80))}`
-                    : (isExpired ? ` · ${escapeHtml(t("status_confirmation_expired") || "Isteklo")}` : "");
-                const attemptsHint = Number(row.attempts || 0) > 0
-                    ? ` · ${escapeHtml(t("confirmation_attempts") || "Pokušaji")}: ${Number(row.attempts)}`
-                    : "";
-                const focusId = `confirm:${row.driverId}:${row.targetDate}`;
+                const critical = item.severity === "critical";
+                div.className = `ops-action-card alert-item ${critical ? "alert-breakdown is-critical" : "alert-delay is-warning"}`;
+                const metaParts = [
+                    item.driverName || "",
+                    item.dutyCode || item.bus || "",
+                    item.date || ""
+                ].filter(Boolean);
                 div.innerHTML = `
                     <div class="ops-action-rail" aria-hidden="true"></div>
                     <div class="alert-item-content ops-action-body">
                         <div class="alert-item-title">
-                            <span>${escapeHtml(confirmationAttentionTitle(row))}</span>
-                            <span class="alert-item-time">${escapeHtml(row.targetDate || "")}</span>
+                            <span>${escapeHtml(item.title || item.kind || "—")}</span>
+                            <span class="alert-item-time">${escapeHtml(item.date || "")}</span>
                         </div>
-                        <span class="alert-item-desc">${escapeHtml(label)}${attemptsHint}${errorHint}</span>
-                        <span class="alert-item-meta">${escapeHtml(t("driver") || "Vozač")}: <strong>${escapeHtml(drv?.name || row.driverId || "—")}</strong></span>
+                        <span class="alert-item-desc">${escapeHtml(item.summary || item.detail || "—")}</span>
+                        <span class="alert-item-meta">${escapeHtml(metaParts.join(" · ") || "—")}</span>
                         <div class="alert-item-actions">
-                            <button type="button" class="urgent-action alert-item-resolve" ${actionAttr("openOpsAttentionPanel", [focusId])}>
-                                <i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}
-                            </button>
-                        </div>
-                    </div>
-                `;
-                alertsContainer.appendChild(div);
-            });
-            filteredReports.slice(0, 5).forEach(rep => {
-                const div = document.createElement("article");
-                const kind = reportKind(rep);
-                const isBreakdown = kind.kind === "breakdown";
-                const isCoverage = kind.kind === "coverage";
-                div.className = `ops-action-card alert-item ${isBreakdown || isCoverage ? "alert-breakdown is-critical" : "alert-delay is-warning"}`;
-                const displayReason = [t(rep.reason) || rep.reason || "", rep.description || ""].filter(Boolean).join(" · ");
-                const focusId = isCoverage ? `coverage:${rep.id}` : `report:${rep.id}`;
-                const statusChip = `<span class="ops-lifecycle-chip" data-status="${escapeHtml(String(rep.status || "open"))}">${escapeHtml(problemStatusLabel(rep.status))}</span>`;
-                const entityHint = rep.affectedEntity === "vehicle"
-                    ? `${escapeHtml(t("vehicle") || "Vozilo")}: <strong>${escapeHtml(rep.bus || "—")}</strong>`
-                    : `${escapeHtml(t("driver") || "Vozač")}: <strong>${escapeHtml(rep.driver || "—")}</strong> · ${escapeHtml(t("vehicle") || "Vozilo")}: <strong>${escapeHtml(rep.bus || "—")}</strong>`;
-
-                div.innerHTML = `
-                    <div class="ops-action-rail" aria-hidden="true"></div>
-                    <div class="alert-item-content ops-action-body">
-                        <div class="alert-item-title">
-                            <span>${escapeHtml(dashboardReportType(rep))} ${statusChip}</span>
-                            <span class="alert-item-time">${escapeHtml(dashboardReportWhen(rep))}</span>
-                        </div>
-                        <span class="alert-item-desc">${escapeHtml(displayReason)}</span>
-                        <span class="alert-item-meta">${entityHint}</span>
-                        <div class="alert-item-actions">
-                            <button type="button" class="urgent-action alert-item-resolve" ${actionAttr("openOpsAttentionPanel", [focusId])}>
+                            <button type="button" class="urgent-action alert-item-resolve" ${actionAttr("openOpsAttentionPanel", [item.id])}>
                                 <i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}
                             </button>
                         </div>
@@ -762,8 +731,55 @@ async function submitCoverageResolution(event) {
     }
 }
 
+function incidentReasonSelectHtml(options) {
+    const opts = (options || [])
+        .map((row) => `<option value="${escapeHtml(row.value)}">${escapeHtml(row.label)}</option>`)
+        .join("");
+    return `
+        <label for="ops-incident-reason-code">${escapeHtml(t("dispo_reason_label") || "Razlog")}</label>
+        <select id="ops-incident-reason-code" name="reasonCode" class="ops-incident-reason-select" required>
+            <option value="">${escapeHtml(t("dispo_reason_placeholder") || "Izaberite razlog")}</option>
+            ${opts}
+        </select>
+        <label for="ops-incident-description" id="ops-incident-note-label" class="hidden">${escapeHtml(t("dispo_reason_note_label") || "Napomena (opciono)")}</label>
+        <textarea id="ops-incident-description" name="description" class="hidden" maxlength="120" rows="2"
+            placeholder="${escapeHtml(t("dispo_reason_note_placeholder") || "Kratka napomena — samo ako treba")}"></textarea>
+    `;
+}
+
+function bindIncidentReasonUi(modal) {
+    const select = modal.querySelector("#ops-incident-reason-code");
+    const note = modal.querySelector("#ops-incident-description");
+    const noteLabel = modal.querySelector("#ops-incident-note-label");
+    if (!select || select.dataset.bound === "1") return;
+    select.dataset.bound = "1";
+    const sync = () => {
+        const show = select.value === "other";
+        note?.classList.toggle("hidden", !show);
+        noteLabel?.classList.toggle("hidden", !show);
+        if (!show && note) note.value = "";
+    };
+    select.addEventListener("change", sync);
+    sync();
+}
+
+function paintIncidentReasonOptions(modal, affectedEntity) {
+    const options = affectedEntity === "vehicle"
+        ? dispoBusIncidentReasonOptions()
+        : dispoDriverIncidentReasonOptions();
+    const host = modal.querySelector("#ops-incident-reason-host");
+    if (!host) return;
+    host.innerHTML = incidentReasonSelectHtml(options);
+    bindIncidentReasonUi(modal);
+}
+
 function ensureIncidentModal() {
     let modal = document.getElementById("ops-incident-modal");
+    const needsRebuild = modal && !modal.querySelector("#ops-incident-reason-code");
+    if (needsRebuild) {
+        modal.remove();
+        modal = null;
+    }
     if (modal) return modal;
     modal = document.createElement("div");
     modal.id = "ops-incident-modal";
@@ -781,12 +797,8 @@ function ensureIncidentModal() {
                     <p id="ops-incident-driver"></p>
                 </div>
             </div>
-            <label for="ops-incident-reason">${escapeHtml(t("ops_incident_reason") || "Šta se dogodilo?")}</label>
-            <input id="ops-incident-reason" name="reason" maxlength="200" minlength="2" required
-                placeholder="${escapeHtml(t("ops_incident_reason_placeholder") || "Kratak razlog, npr. vozač kasni")}" />
-            <label for="ops-incident-description">${escapeHtml(t("ops_incident_details") || "Napomena (opciono)")}</label>
-            <textarea id="ops-incident-description" name="description" maxlength="1000" rows="3"></textarea>
-            <div class="ops-incident-warning">${escapeHtml(t("ops_incident_effect") || "Smena će biti označena kao nepokrivena dok disponent ne dodeli zamenu.")}</div>
+            <div id="ops-incident-reason-host"></div>
+            <div class="ops-incident-warning">${escapeHtml(t("ops_incident_effect") || "Plan će pokazati rupu dok ne dodelite zamenu.")}</div>
             <div class="ops-incident-actions">
                 <button type="button" class="btn-secondary" ${actionAttr("closeOperationalIncident")}>${escapeHtml(t("btn_cancel") || "Otkaži")}</button>
                 <button type="submit" class="btn-danger-ghost ops-incident-submit">${escapeHtml(t("ops_incident_confirm") || "Označi i traži zamenu")}</button>
@@ -853,11 +865,11 @@ function openVehicleOperationalIncident(busNumber, driverName = "") {
         `${t("vehicle") || "Vozilo"} ${bus}${driverName ? ` · ${driverName}` : ""}`;
     const title = modal.querySelector("h2");
     if (title) title.textContent = t("ops_bus_incident_title") || "Vozilo ne može da nastavi smenu";
-    modal.querySelector("form").reset();
+    paintIncidentReasonOptions(modal, "vehicle");
     modal.classList.remove("hidden");
     modal.style.display = "flex";
     modal.setAttribute("aria-hidden", "false");
-    setTimeout(() => modal.querySelector("#ops-incident-reason")?.focus(), 0);
+    setTimeout(() => modal.querySelector("#ops-incident-reason-code")?.focus(), 0);
 }
 
 function opsActivityLabel(event) {
@@ -949,11 +961,11 @@ function openOperationalIncident(driverName, preferredReplacementDriverId = "") 
     const title = modal.querySelector("h2");
     if (title) title.textContent = t("ops_incident_title") || "Vozač ne može da nastavi smenu";
     modal.querySelector("#ops-incident-driver").textContent = driverName;
-    modal.querySelector("form").reset();
+    paintIncidentReasonOptions(modal, "driver");
     modal.classList.remove("hidden");
     modal.style.display = "flex";
     modal.setAttribute("aria-hidden", "false");
-    setTimeout(() => modal.querySelector("#ops-incident-reason")?.focus(), 0);
+    setTimeout(() => modal.querySelector("#ops-incident-reason-code")?.focus(), 0);
 }
 
 function closeOperationalIncident() {
@@ -968,17 +980,65 @@ function closeOperationalIncident() {
     delete modal.dataset.busNumber;
 }
 
+function alignPlanAfterDriverIncident(driver, reasonCode, today) {
+    if (!driver?.name) return;
+    const shiftType = reasonCode === "sick" ? "sick" : "clear";
+    const label = reasonCode === "sick"
+        ? (t("shift_type_sick") || "Bolovanje")
+        : "";
+    // Bypass persistShift gate: incident is already being opened.
+    setShiftForDriverDate(driver.name, today, {
+        type: shiftType,
+        name: label,
+        bus: "",
+        syncSchedule: true
+    });
+}
+
+function alignPlanAfterBusIncident(busNumber, reasonCode, today) {
+    const number = String(busNumber || "").trim();
+    if (!number) return;
+    const bus = (window.state.buses || []).find(
+        (b) => String(b.number || "").trim() === number
+    );
+    if (bus) {
+        const outOfService = reasonCode === "sold_out";
+        bus.opsStatus = outOfService ? "out" : "breakdown";
+        if (outOfService) bus.active = false;
+        bus.revision = (Number.isInteger(bus.revision) ? bus.revision : 0) + 1;
+    }
+    for (const drv of getVisibleDrivers()) {
+        const shift = getShiftForDriverDate(drv.name, today);
+        if (!shift || String(shift.bus || "") !== number) continue;
+        setShiftForDriverDate(drv.name, today, {
+            type: shift.type || "morning",
+            name: shift.name || "",
+            bus: "",
+            start: shift.start || null,
+            end: shift.end || null,
+            routeCode: shift.routeCode || null,
+            syncSchedule: true
+        });
+    }
+}
+
 async function submitOperationalIncident(event) {
     event.preventDefault();
     const modal = document.getElementById("ops-incident-modal");
     const affectedEntity = modal?.dataset.affectedEntity === "vehicle" ? "vehicle" : "driver";
     const driver = driverByName(modal?.dataset.driverName);
     const busNumber = String(modal?.dataset.busNumber || "").trim();
-    const reason = String(modal?.querySelector("#ops-incident-reason")?.value || "").trim();
-    const description = String(modal?.querySelector("#ops-incident-description")?.value || "").trim();
-    if (reason.length < 2) return;
+    const reasonCode = String(modal?.querySelector("#ops-incident-reason-code")?.value || "").trim();
+    const description = String(modal?.querySelector("#ops-incident-description")?.value || "").trim().slice(0, 120);
+    if (!reasonCode) {
+        showToast(t("dispo_reason_required") || "Select a reason.", "error");
+        modal?.querySelector("#ops-incident-reason-code")?.focus();
+        return;
+    }
     if (affectedEntity === "driver" && !driver) return;
     if (affectedEntity === "vehicle" && !busNumber) return;
+    const prefix = affectedEntity === "vehicle" ? "dispo_inc_bus_" : "dispo_inc_driver_";
+    const reason = reasonLabel(reasonCode, prefix) || reasonCode;
     const submit = modal.querySelector("button[type='submit']");
     submit.disabled = true;
     const today = todayDateStr();
@@ -998,11 +1058,19 @@ async function submitOperationalIncident(event) {
             date: today,
             driverId: driver ? driverUid(driver) : null,
             driver: driver?.name || "",
-            groupId: driver?.groupId || driver?.lineId || "",
+            groupId: driver?.groupId || driver?.lineId || window.state?.activeGroupHubId || "",
             reason,
+            reasonCode,
             description,
             bus,
-            createdAt: new Date().toISOString()
+            // Snapshot duty before plan align clears the original (needed for replacement apply).
+            shiftType: shift?.type || "",
+            shiftName: shift?.name || shift?.routeCode || "",
+            routeCode: shift?.routeCode || "",
+            start: shift?.start || null,
+            end: shift?.end || null,
+            createdAt: new Date().toISOString(),
+            createdBy: window.currentUser?.uid || window.currentUser?.id || null
         }
     };
     try {
@@ -1012,7 +1080,7 @@ async function submitOperationalIncident(event) {
                 driverId: driver ? driverUid(driver) : undefined,
                 date: today,
                 reason,
-                description,
+                description: [reasonCode, description].filter(Boolean).join(": ").slice(0, 1000),
                 bus,
                 shiftType: shift?.type || "",
                 shiftName: shift?.name || ""
@@ -1022,13 +1090,33 @@ async function submitOperationalIncident(event) {
             showToast(result?.error || t("ops_incident_save_failed") || "Incident nije sačuvan.", "error");
             return;
         }
+        if (result.report && !result.report.reasonCode) result.report.reasonCode = reasonCode;
         window.state.reports = Array.isArray(window.state.reports) ? window.state.reports : [];
         window.state.reports.push(result.report);
+
+        if (affectedEntity === "driver") {
+            alignPlanAfterDriverIncident(driver, reasonCode, today);
+        } else {
+            alignPlanAfterBusIncident(busNumber, reasonCode, today);
+        }
+
+        recordDemoChangeReason({
+            type: affectedEntity === "vehicle" ? "bus_incident_opened" : "driver_incident_opened",
+            reason: reasonCode,
+            note: description,
+            driverId: driver ? driverUid(driver) : null,
+            bus: bus || null,
+            reportId: result.report?.id || null,
+            date: today
+        });
         if (IS_DEMO_MODE) saveState();
+
         const preferredReplacementDriverId = String(modal.dataset.preferredReplacementDriverId || "");
         closeOperationalIncident();
         showToast(t("ops_incident_created"), "success");
         renderDispatcherDashboard();
+        paintPlanHealthBanner("ops-plan-health");
+        paintPlanHealthBanner("daily-plan-health");
         if (result.report?.id) {
             openOpsAttentionPanel(`coverage:${result.report.id}`);
         } else if (preferredReplacementDriverId) {
@@ -1077,3 +1165,5 @@ export {
 
 window.openCoverageResolver = openCoverageResolver;
 window.openOpsAttentionPanel = openOpsAttentionPanel;
+window.focusOpsAttentionItem = focusOpsAttentionItem;
+window.closeOpsAttentionPanel = closeOpsAttentionPanel;

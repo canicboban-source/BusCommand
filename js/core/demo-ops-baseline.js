@@ -178,9 +178,12 @@ export function ensureDemoOpsBaseline(state) {
         state.vacations.push({
             id: "vac-demo-1",
             driverId: drv.id,
+            driver: drv.name,
             driverName: drv.name,
-            from: today,
-            to: today,
+            type: "lt_vacation",
+            start: today,
+            end: today,
+            days: 1,
             status: "pending",
             companyId: "demo",
             reason: "Demo leave request"

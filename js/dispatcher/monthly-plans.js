@@ -24,6 +24,7 @@ import { paintPlanHealthBanner } from "./plan-health-banner.js";
 import { persistShift, undoShift } from "./shifts.js";
 import { isOperationalReadOnly } from "../core/access.js";
 import { previewMassDayRange } from "../core/monthly-plan-ops.js";
+import { dispoChangeReasonOptions, recordDemoChangeReason } from "./change-reason.js";
 
 let _selectedGroupId = null;
 let _editCtx = null;
@@ -1172,7 +1173,9 @@ async function deleteMonthlyPlan(scheduleKey, driverName, month) {
         .replace("{driver}", name)
         .replace("{month}", monthKey);
 
-    showConfirm(msg, async () => {
+    showConfirm(msg, async (payload) => {
+        const reason = payload?.reason || "";
+        const note = payload?.note || "";
         const [year, mon] = monthKey.split("-").map(Number);
         const totalDays = new Date(year, mon, 0).getDate();
         const driver = window.state.drivers?.find((d) => d.name === name) || null;
@@ -1189,6 +1192,14 @@ async function deleteMonthlyPlan(scheduleKey, driverName, month) {
         }
 
         window.state.schedules = (window.state.schedules || []).filter((s) => s.id !== key && s.id !== schedule.id);
+        recordDemoChangeReason({
+            type: "monthly_plan_cleared",
+            driverId: driver?.id || null,
+            driverName: name,
+            month: monthKey,
+            reason,
+            note
+        });
         saveState();
         loadMonthlyPlanForDriver();
         if (typeof window.renderDispatcherDashboard === "function") window.renderDispatcherDashboard();
@@ -1201,7 +1212,8 @@ async function deleteMonthlyPlan(scheduleKey, driverName, month) {
     }, {
         danger: true,
         title: t("dispo_delete_month_plan") || "Delete this month's plan",
-        confirmText: t("dispo_delete_month_plan") || "Delete this month's plan"
+        confirmText: t("dispo_delete_month_plan") || "Delete this month's plan",
+        reasons: dispoChangeReasonOptions()
     });
 }
 

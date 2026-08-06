@@ -15,6 +15,7 @@ import { actionAttr } from "../core/action-delegate.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import ApiClient from "../core/api-client.js";
 import { isOperationalReadOnly } from "../core/access.js";
+import { dispoChangeReasonOptions, recordDemoChangeReason } from "../dispatcher/change-reason.js";
 
 function findCompanyBusByNumber(number) {
     const key = String(number || "").trim().toLowerCase();
@@ -252,10 +253,12 @@ function deleteBus(id) {
         nextActive
             ? (t("confirm_activate_bus") || "Activate this bus?")
             : (t("dispo_confirm_bus_deactivate") || t("confirm_deactivate_bus") || "Deactivate this bus? It will stay in the company but will not be assignable."),
-        async function() {
+        async function(payload) {
+        const reason = payload?.reason || "";
+        const note = payload?.note || "";
         const expectedRevision = busRevisionOf(bus);
         if (!IS_DEMO_MODE) {
-            const result = await ApiClient.setStaffBusActive(id, nextActive, expectedRevision);
+            const result = await ApiClient.setStaffBusActive(id, nextActive, expectedRevision, nextActive ? {} : { reason, note });
             if (!result?.success) {
                 if (result?.status === 409 || result?.code === "REVISION_CONFLICT") toastBusWriteConflict(result);
                 else showToast(result?.error || t("bus_status_failed"), "error");
@@ -266,11 +269,22 @@ function deleteBus(id) {
             upsertLocalBusFromApi(result.bus || { id, active: result.active, revision: expectedRevision + 1 });
         } else {
             Object.assign(bus, { active: nextActive, revision: expectedRevision + 1 });
+            if (!nextActive) {
+                recordDemoChangeReason({
+                    type: "bus_deactivated",
+                    busId: id,
+                    reason,
+                    note
+                });
+            }
             saveState();
         }
         renderBusesList();
         lucide.createIcons();
-    }, { danger: !nextActive });
+    }, {
+        danger: !nextActive,
+        reasons: nextActive ? undefined : dispoChangeReasonOptions()
+    });
 }
 
 function renderRoutesList() {

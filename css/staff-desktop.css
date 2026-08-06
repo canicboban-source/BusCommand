@@ -846,6 +846,7 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-assign-btn {
 }
 
 .ops-incident-dialog input,
+.ops-incident-dialog select,
 .ops-incident-dialog textarea {
     box-sizing: border-box;
     width: 100%;
@@ -857,9 +858,49 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-assign-btn {
 }
 
 .ops-incident-dialog input:focus,
+.ops-incident-dialog select:focus,
 .ops-incident-dialog textarea:focus {
     border-color: #60a5fa;
     outline: 3px solid rgba(59, 130, 246, .18);
+}
+
+.ops-incident-dialog .hidden {
+    display: none !important;
+}
+
+.global-confirm-extras {
+    text-align: left;
+    margin: 0 0 18px;
+}
+
+.global-confirm-extras.hidden {
+    display: none;
+}
+
+.global-confirm-reason-label,
+.global-confirm-note-label {
+    display: block;
+    margin: 0 0 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.global-confirm-reason,
+.global-confirm-note {
+    box-sizing: border-box;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text-main);
+}
+
+.global-confirm-note.hidden,
+.global-confirm-note-label.hidden {
+    display: none !important;
 }
 
 .ops-incident-warning {

@@ -20,6 +20,11 @@ const {
   lineDetachGroupIds
 } = await import("../../js/data/group-membership.js");
 const { getVisibleDrivers } = await import("../../js/core/utils.js");
+const {
+  dispoDriverIncidentReasonOptions,
+  dispoBusIncidentReasonOptions,
+  recordDemoChangeReason
+} = await import("../../js/dispatcher/change-reason.js");
 
 function seedDispatcherLine() {
   globalThis.window.state = {
@@ -94,4 +99,21 @@ test("lineDetachGroupIds includes subgroups", () => {
   seedDispatcherLine();
   const ids = [...lineDetachGroupIds("101")].sort();
   assert.deepEqual(ids, ["101", "grp-g1"]);
+});
+
+test("incident reason lists include sick and ac_climate", () => {
+  globalThis.window.TRANSLATIONS = {
+    en: {
+      dispo_inc_driver_sick: "Sick leave",
+      dispo_inc_bus_ac_climate: "AC / comfort"
+    }
+  };
+  globalThis.window.state = { language: "en", opsChangeLog: [] };
+  const driverReasons = dispoDriverIncidentReasonOptions().map((r) => r.value);
+  const busReasons = dispoBusIncidentReasonOptions().map((r) => r.value);
+  assert.ok(driverReasons.includes("sick"));
+  assert.ok(busReasons.includes("ac_climate"));
+  recordDemoChangeReason({ type: "driver_incident_opened", reason: "sick" });
+  assert.equal(window.state.opsChangeLog[0].reason, "sick");
+  assert.ok(window.state.opsChangeLog[0].at);
 });

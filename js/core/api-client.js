@@ -241,19 +241,26 @@ const ApiClient = (() => {
             body: JSON.stringify({ active })
         });
     }
-    async function detachStaffDriverFromLine(driverId, groupId) {
+    async function detachStaffDriverFromLine(driverId, groupId, extras = {}) {
         return apiFetch("/api/staff/drivers/" + encodeURIComponent(driverId) + "/line", {
             method: "PUT",
-            body: JSON.stringify({ groupId, action: "detach" })
+            body: JSON.stringify({
+                groupId,
+                action: "detach",
+                reason: extras.reason || undefined,
+                note: extras.note || undefined
+            })
         });
     }
-    async function detachStaffBusFromLine(busId, groupId, expectedRevision = 0) {
+    async function detachStaffBusFromLine(busId, groupId, expectedRevision = 0, extras = {}) {
         return apiFetch("/api/staff/buses/" + encodeURIComponent(busId) + "/groups", {
             method: "PUT",
             body: JSON.stringify({
                 groupId,
                 action: "detach",
-                expectedRevision: Number.isInteger(expectedRevision) ? expectedRevision : 0
+                expectedRevision: Number.isInteger(expectedRevision) ? expectedRevision : 0,
+                reason: extras.reason || undefined,
+                note: extras.note || undefined
             })
         });
     }
@@ -364,12 +371,14 @@ const ApiClient = (() => {
             body: JSON.stringify(payload || {})
         });
     }
-    async function setStaffBusActive(busId, active, expectedRevision = 0) {
+    async function setStaffBusActive(busId, active, expectedRevision = 0, extras = {}) {
         return apiFetch("/api/staff/buses/" + encodeURIComponent(busId) + "/status", {
             method: "PUT",
             body: JSON.stringify({
                 active,
-                expectedRevision: Number.isInteger(expectedRevision) ? expectedRevision : 0
+                expectedRevision: Number.isInteger(expectedRevision) ? expectedRevision : 0,
+                reason: extras.reason || undefined,
+                note: extras.note || undefined
             })
         });
     }

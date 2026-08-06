@@ -175,7 +175,8 @@ function renderDispatcherReports() {
         const cell = row.insertCell();
         cell.colSpan = 6;
         cell.className = "dispatcher-reports-empty";
-        cell.textContent = window.state.activeGroupFilter ? t("no_drivers_in_group") : t("js_no_alerts");
+        // Empty reports ≠ empty roster — keep field-report copy (plan gaps live in Needs attention).
+        cell.textContent = t("js_no_alerts");
         return;
     }
 

@@ -77,8 +77,14 @@ function softRemoveState() {
   };
 }
 
-async function confirmModal(page) {
-  const confirmBtn = page.locator("#global-confirm-modal [data-action='confirmModalYes'], #global-confirm-modal button.btn-primary").first();
+async function confirmModal(page, reason = "plan_correction") {
+  const modal = page.locator("#global-confirm-modal");
+  await expect(modal).toBeVisible();
+  const reasonSelect = modal.locator("#global-confirm-reason");
+  if (await reasonSelect.count()) {
+    await reasonSelect.selectOption(reason);
+  }
+  const confirmBtn = modal.locator("[data-action='confirmModalYes'], #global-confirm-yes, button.btn-primary").first();
   await expect(confirmBtn).toBeVisible();
   await confirmBtn.click();
 }

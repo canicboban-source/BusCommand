@@ -173,7 +173,8 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await loginDispatcher(page);
     await assertCockpitColumns();
     await expect(page.locator("#dispatcher-live-alerts .urgent-action").first()).toBeVisible();
-    await expect(page.locator("#dispatcher-live-alerts .urgent-action")).toHaveCount(3);
+    // Live alerts = Needs attention SoT (reports + plan ops gaps); count can exceed field reports alone.
+    expect(await page.locator("#dispatcher-live-alerts .urgent-action").count()).toBeGreaterThanOrEqual(3);
 
     await page.setViewportSize({ width: 1280, height: 800 });
     await assertCockpitColumns();
@@ -567,16 +568,29 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     expect(before.original.type).toBe("morning");
     expect(before.standby.type).toBe("bereitschaft");
 
-    await page.locator("#ops-incident-reason").fill("Driver reported unavailable");
+    await page.locator("#ops-incident-reason-code").selectOption("no_show");
     await page.locator("#ops-incident-modal button[type='submit']").click();
 
     await expect(page.locator("#ops-attention-panel")).toBeVisible();
-    const coverageCard = page.locator(".ops-attention-card").filter({ hasText: /unavailable|nedostupan|nicht verfügbar/i }).first();
+    // Single-card sheet: focus coverage item then apply guided replacement.
+    await page.evaluate(() => {
+      const coverage = (window.state.reports || []).find((r) =>
+        r.type === "coverage:disruption" && (r.status === "open" || r.status === "active")
+      );
+      const id = coverage ? `coverage:${coverage.id}` : "";
+      if (id && typeof window.openOpsAttentionPanel === "function") window.openOpsAttentionPanel(id);
+    });
+    const coverageCard = page.locator(".ops-attention-card").filter({ hasText: /unavailable|nedostupan|nicht verfügbar|No show|no_show|Nije se pojavio/i }).first();
     await expect(coverageCard).toBeVisible();
     await expect(coverageCard.locator('[data-attn-field="driver"]')).toHaveValue("drv-standby");
     await expect(coverageCard.locator('[data-attn-field="bus"]')).toHaveValue("BUS-1");
     await coverageCard.locator("button.ops-attention-apply").click();
-    await expect(page.locator("#ops-attention-panel")).toBeHidden();
+
+    await expect.poll(async () => page.evaluate(() =>
+      window.state.reports.find(item => item.type === "coverage:disruption")?.status
+    )).toBe("resolved");
+    // Panel may remain open if other attention items remain in the shared queue.
+    await expect(page.locator(".ops-attention-card").filter({ hasText: /unavailable|nedostupan|nicht verfügbar/i })).toHaveCount(0);
 
     const after = await page.evaluate(() => ({
       report: window.state.reports.find(item => item.type === "coverage:disruption"),

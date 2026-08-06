@@ -78,14 +78,22 @@ function renderDispatcherVacations() {
         const row = tbody.insertRow();
         const driverCell = row.insertCell();
         const driver = document.createElement("strong");
-        driver.textContent = vacation.driver || "—";
+        const driverName = vacation.driver || vacation.driverName || "—";
+        driver.textContent = driverName;
         driverCell.appendChild(driver);
-        row.insertCell().textContent = t(vacation.type);
-        row.insertCell().textContent = `${formatDate(vacation.start)} - ${formatDate(vacation.end)}`;
+        const leaveType = vacation.type || "lt_vacation";
+        row.insertCell().textContent = t(leaveType) || leaveType;
+        const start = vacation.start || vacation.from || "";
+        const end = vacation.end || vacation.to || start;
+        row.insertCell().textContent = `${formatDate(start)} - ${formatDate(end)}`;
 
         const daysCell = row.insertCell();
         const days = document.createElement("strong");
-        days.textContent = `${vacation.days} ${t("table_days").toLowerCase()}`;
+        let dayCount = Number(vacation.days);
+        if (!Number.isFinite(dayCount) || dayCount <= 0) {
+            dayCount = start && end ? 1 : 0;
+        }
+        days.textContent = `${dayCount} ${t("table_days").toLowerCase()}`;
         daysCell.appendChild(days);
 
         const reasonCell = row.insertCell();

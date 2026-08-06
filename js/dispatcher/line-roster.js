@@ -14,6 +14,8 @@ import {
 } from "../data/group-membership.js";
 import { withDetachedGroup, busHasGroup } from "../data/bus-group-membership.js";
 import { busRevisionOf } from "../data/bus-ops.js";
+import { dispoChangeReasonOptions, recordDemoChangeReason } from "./change-reason.js";
+
 async function refreshLineRosterViews() {
     // Dynamic imports keep line-roster off the staff HTML preload graph (D17).
     try {
@@ -71,9 +73,11 @@ async function detachDriverFromLine(driverId, groupId) {
         .replace("{driver}", driverName)
         .replace("{line}", line);
 
-    showConfirm(confirmMsg, async () => {
+    showConfirm(confirmMsg, async (payload) => {
+        const reason = payload?.reason || "";
+        const note = payload?.note || "";
         if (!IS_DEMO_MODE) {
-            const result = await ApiClient.detachStaffDriverFromLine(id, gid);
+            const result = await ApiClient.detachStaffDriverFromLine(id, gid, { reason, note });
             if (!result?.success) {
                 showToast(result?.error || t("dispo_detach_driver_failed") || "Could not remove driver from line.", "error");
                 return;
@@ -81,6 +85,14 @@ async function detachDriverFromLine(driverId, groupId) {
             applyLocalDriverDetach(driver);
         } else {
             applyLocalDriverDetach(driver);
+            recordDemoChangeReason({
+                type: "driver_detached_from_group",
+                driverId: id,
+                groupId: gid,
+                reason,
+                note
+            });
+            saveState();
         }
         showToast(
             (t("dispo_detach_driver_done") || "{driver} removed from {line}.")
@@ -92,7 +104,8 @@ async function detachDriverFromLine(driverId, groupId) {
     }, {
         danger: true,
         title: t("dispo_remove_from_line") || "Remove from line",
-        confirmText: t("dispo_remove_from_line") || "Remove from line"
+        confirmText: t("dispo_remove_from_line") || "Remove from line",
+        reasons: dispoChangeReasonOptions()
     });
 }
 
@@ -123,10 +136,12 @@ async function detachBusFromLine(busId, groupId) {
         .replace("{bus}", String(bus.number || id))
         .replace("{line}", line);
 
-    showConfirm(confirmMsg, async () => {
+    showConfirm(confirmMsg, async (payload) => {
+        const reason = payload?.reason || "";
+        const note = payload?.note || "";
         const expectedRevision = busRevisionOf(bus);
         if (!IS_DEMO_MODE) {
-            const result = await ApiClient.detachStaffBusFromLine(id, gid, expectedRevision);
+            const result = await ApiClient.detachStaffBusFromLine(id, gid, expectedRevision, { reason, note });
             if (!result?.success) {
                 showToast(result?.error || t("dispo_detach_bus_failed") || "Could not remove bus from line.", "error");
                 await refreshLineRosterViews();
@@ -141,6 +156,13 @@ async function detachBusFromLine(busId, groupId) {
             }
         } else {
             Object.assign(bus, withDetachedGroup(bus, detachIds), { revision: expectedRevision + 1 });
+            recordDemoChangeReason({
+                type: "bus_detached_from_group",
+                busId: id,
+                groupId: gid,
+                reason,
+                note
+            });
             saveState();
         }
         showToast(
@@ -153,7 +175,8 @@ async function detachBusFromLine(busId, groupId) {
     }, {
         danger: true,
         title: t("dispo_bus_remove_from_line") || "Remove from this line",
-        confirmText: t("dispo_bus_remove_from_line") || "Remove from this line"
+        confirmText: t("dispo_bus_remove_from_line") || "Remove from this line",
+        reasons: dispoChangeReasonOptions()
     });
 }
 

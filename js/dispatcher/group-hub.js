@@ -372,7 +372,8 @@ function renderPlanGroupPicker(mode) {
 }
 
 function renderDashboardGroupsGrid() {
-    renderGroupsPickerGrid("dashboard-groups-grid", "openDailyPlanForGroup", "disp_group_hub_hint");
+    // Ops card opens the daily plan — keep CTA copy honest (hub stays reachable from Reports / filters).
+    renderGroupsPickerGrid("dashboard-groups-grid", "openDailyPlanForGroup", "plan_pick_open");
 }
 
 function openVehiclesFromPlan() {

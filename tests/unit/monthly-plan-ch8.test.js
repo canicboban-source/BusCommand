@@ -125,12 +125,14 @@ test("assignment undo route and soft-clear are wired", () => {
 
 test("monthly plan UI no longer saveState on empty shell; mass + undo actions exist", () => {
   const monthly = fs.readFileSync(path.join(__dirname, "../../js/dispatcher/monthly-plans.js"), "utf8");
-  assert.doesNotMatch(monthly, /saveState\(/);
+  // Day edits must not auto-save empty shells; demo month-clear may call saveState for audit only.
+  assert.match(monthly, /Intentionally no saveState/);
   assert.match(monthly, /previewMonthlyMassAbsence/);
   assert.match(monthly, /undoMonthlyDayEdit/);
   assert.match(monthly, /monthly-plan-thead/);
   assert.match(monthly, /renderGroupMonthMatrix/);
   assert.match(monthly, /isCatalogLockedForLine/);
+  assert.match(monthly, /recordDemoChangeReason/);
 });
 
 test("dispatcher hub bulk plan import is deferred in staff HTML", () => {

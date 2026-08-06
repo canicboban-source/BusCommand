@@ -35,24 +35,9 @@ function syncDailyIssuesPill(groupId) {
     }
 }
 
-function renderDailySituationPanel(dateStr, groupId) {
-    const body = document.getElementById("daily-plan-situation-body");
+function renderDailySituationPanel(_dateStr, groupId) {
+    // B2 layout: no situation aside — issues pill + Needs attention are the SoT.
     syncDailyIssuesPill(groupId);
-    if (!body) return;
-    const items = collectAllAttentionItems(groupId).filter((item) => {
-        if (!groupId) return true;
-        return !item.groupId || String(item.groupId) === String(groupId);
-    }).slice(0, 8);
-    if (!items.length) {
-        body.innerHTML = `<p class="subtitle" style="margin:0;">${escapeHtml(t("daily_situation_clear") || "No open issues for this group today.")}</p>`;
-        return;
-    }
-    body.innerHTML = items.map((item) => `
-        <div class="daily-situation-item">
-            <strong>${escapeHtml(item.title || item.kind || "Issue")}</strong>
-            <span>${escapeHtml(item.detail || item.driverName || "")}</span>
-        </div>
-    `).join("");
 }
 
 function getDailyPlanDateInput() {

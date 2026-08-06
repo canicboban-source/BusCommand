@@ -111,21 +111,29 @@ const busCreateSchema = z.object({
 });
 const busStatusSchema = z.object({
   active: z.boolean(),
-  expectedRevision: z.number().int().min(0)
+  expectedRevision: z.number().int().min(0),
+  reason: z.string().trim().max(40).optional(),
+  note: z.string().trim().max(120).optional()
 });
 const busProfileSchema = z.object({
   garage: busGarageSchema,
   opsStatus: busOpsStatusSchema,
   expectedRevision: z.number().int().min(0)
 });
+const changeReasonSchema = z.string().trim().max(40).optional();
+const changeNoteSchema = z.string().trim().max(120).optional();
 const lineDetachSchema = z.object({
   groupId: groupIdSchema,
-  action: z.literal("detach")
+  action: z.literal("detach"),
+  reason: changeReasonSchema,
+  note: changeNoteSchema
 });
 const busGroupDetachSchema = z.object({
   groupId: groupIdSchema,
   action: z.literal("detach"),
-  expectedRevision: z.number().int().min(0)
+  expectedRevision: z.number().int().min(0),
+  reason: changeReasonSchema,
+  note: changeNoteSchema
 });
 
 function busRevisionOf(data = {}) {
@@ -1374,7 +1382,9 @@ function registerDriverRoutes(app, deps) {
       await logAudit(req.staff.companyId, req.staff.uid, "driver_detached_from_group", {
         driverId: driverId.data,
         groupId: targetGroupId,
-        previousGroupId: currentGroup || null
+        previousGroupId: currentGroup || null,
+        reason: body.data.reason || null,
+        note: body.data.note || null
       });
       return res.json({
         success: true,
@@ -2033,7 +2043,12 @@ function registerDriverRoutes(app, deps) {
         return { active: status.data.active, revision: nextRevision, groupIds, bus: { ...bus, active: status.data.active, revision: nextRevision } };
       });
       await logAudit(req.staff.companyId, req.staff.uid, result.active ? "bus_activated" : "bus_deactivated", {
-        busId: busId.data, groupId: result.groupIds[0], groupIds: result.groupIds, revision: result.revision
+        busId: busId.data,
+        groupId: result.groupIds[0],
+        groupIds: result.groupIds,
+        revision: result.revision,
+        reason: status.data.reason || null,
+        note: status.data.note || null
       });
       return res.json({ success: true, active: result.active, revision: result.revision, bus: publicBusPayload(busId.data, result.bus) });
     } catch (error) {
@@ -2134,7 +2149,9 @@ function registerDriverRoutes(app, deps) {
         groupId: targetGroupId,
         previousGroupIds: result.previousGroupIds,
         groupIds: result.bus.groupIds,
-        revision: result.revision
+        revision: result.revision,
+        reason: body.data.reason || null,
+        note: body.data.note || null
       });
       return res.json({
         success: true,

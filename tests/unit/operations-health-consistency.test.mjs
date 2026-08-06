@@ -20,8 +20,10 @@ test("health consistency opens solutions panel for plan gaps", () => {
 
 test("ops attention includes plan-gap cards with solutions", () => {
   const attn = readFileSync(join(root, "js/dispatcher/ops-attention.js"), "utf8");
-  assert.match(attn, /subtitle\.textContent = items\.length/);
-  assert.match(attn, /subtitle\.textContent = items\.length[\s\S]*: ""/);
+  // Single-card sheet: progress subtitle + left nav for the queue.
+  assert.match(attn, /ops_attn_progress/);
+  assert.match(attn, /subtitle\.textContent = t\("ops_attn_progress"/);
+  assert.match(attn, /ops-attention-nav-item/);
   assert.match(attn, /collectPlanGapAttentionItems/);
   assert.match(attn, /collectAllAttentionItems/);
   assert.match(attn, /plan_gap_driver/);

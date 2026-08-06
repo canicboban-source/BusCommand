@@ -21,8 +21,9 @@ test("dispatcher incident endpoint is today-only, group-scoped and audited", asy
 test("operations center requires a reason and keeps the shift until replacement", async () => {
     const dashboard = await read("../../js/dispatcher/dashboard.js");
     assert.match(dashboard, /openOperationalIncident/);
-    assert.match(dashboard, /ops-incident-reason/);
-    assert.match(dashboard, /minlength="2"/);
+    assert.match(dashboard, /ops-incident-reason-code/);
+    assert.match(dashboard, /reasonCode/);
+    assert.match(dashboard, /dispoDriverIncidentReasonOptions|dispoBusIncidentReasonOptions/);
     assert.match(dashboard, /ApiClient\.createStaffOperationalIncident/);
     const submit = dashboard.slice(
         dashboard.indexOf("async function submitOperationalIncident"),
