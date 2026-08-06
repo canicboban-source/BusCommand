@@ -48,6 +48,34 @@ function assignDriverToLine(driver, lineId, subGroupName = "") {
     return driver;
 }
 
+/**
+ * Soft-remove: clear line/group membership for a driver.
+ * Does not deactivate or delete the company roster profile.
+ */
+function clearDriverLineMembership(driver) {
+    if (!driver) return driver;
+    driver.groupId = "";
+    driver.lineId = "";
+    driver.subGroup = "";
+    if (Array.isArray(driver.groupIds)) driver.groupIds = [];
+    return driver;
+}
+
+/** Group ids that count as “this line” for detach (line + subgroups). */
+function lineDetachGroupIds(lineOrGroupId) {
+    const root = String(lineOrGroupId || "").trim();
+    const ids = new Set();
+    if (!root) return ids;
+    ids.add(root);
+    for (const g of (window.state.groups || [])) {
+        if (!g) continue;
+        if (String(g.id) === root || String(g.lineId) === root) {
+            ids.add(String(g.id));
+        }
+    }
+    return ids;
+}
+
 function countDriversForLineGroup(lineOrGroupId) {
     return getDriversForLineGroup(lineOrGroupId).length;
 }
@@ -106,6 +134,8 @@ export {
     getBusesForLineGroup,
     getSubgroupsForLine,
     assignDriverToLine,
+    clearDriverLineMembership,
+    lineDetachGroupIds,
     countDriversForLineGroup,
     countPlansForLineGroup,
     countBusesForLineGroup

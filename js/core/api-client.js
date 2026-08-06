@@ -241,6 +241,22 @@ const ApiClient = (() => {
             body: JSON.stringify({ active })
         });
     }
+    async function detachStaffDriverFromLine(driverId, groupId) {
+        return apiFetch("/api/staff/drivers/" + encodeURIComponent(driverId) + "/line", {
+            method: "PUT",
+            body: JSON.stringify({ groupId, action: "detach" })
+        });
+    }
+    async function detachStaffBusFromLine(busId, groupId, expectedRevision = 0) {
+        return apiFetch("/api/staff/buses/" + encodeURIComponent(busId) + "/groups", {
+            method: "PUT",
+            body: JSON.stringify({
+                groupId,
+                action: "detach",
+                expectedRevision: Number.isInteger(expectedRevision) ? expectedRevision : 0
+            })
+        });
+    }
     async function updateCompanyDriver(companyId, driverId, payload) {
         return apiFetch("/api/company-admin/drivers/" + encodeURIComponent(driverId), {
             method: "PATCH",
@@ -478,6 +494,7 @@ const ApiClient = (() => {
         previewServicePlan, publishServicePlan, activateServicePlan, previewGroupMonthlyPlanImport, commitGroupMonthlyPlanImport,
         getActiveServicePlan, getServicePlanHistory, getServicePlanVersion, getCompanyAudit, updateCompanyBranding,
         createCompanyGroup, updateCompanyGroup, deleteCompanyGroup, reportStateSync, importDriversCsv, setDriverActive,
+        detachStaffDriverFromLine, detachStaffBusFromLine,
         updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode,
         createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage, ackDriverMessage,
         createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, transitionStaffOperationalIncident, resolveStaffOperationalIncident, getStaffOpsActivity, resolveStaffSos,

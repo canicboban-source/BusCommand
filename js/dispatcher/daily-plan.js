@@ -4,21 +4,42 @@ import { todayDateStr, escapeHtml, getVisibleDrivers, showToast } from "../core/
 import { getGroupById } from "../data/groups.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr, changeAttr } from "../core/action-delegate.js";
-import { persistShift } from "./shifts.js";
+import { persistShift, removeShift } from "./shifts.js";
+import { showConfirm } from "../ui/confirm-modal.js";
 import { isOperationalReadOnly } from "../core/access.js";
 import { refreshPlanLockBanner } from "./plan-edit-lock-ui.js";
 import { isActiveReport } from "./report-model.js";
 import { paintPlanHealthBanner } from "./plan-health-banner.js";
-import { collectOpsAttentionItems } from "./ops-attention.js";
+import { collectAllAttentionItems } from "./ops-attention.js";
 
 function getActiveHubGroupId() {
     return window.state.activeGroupHubId || null;
 }
 
+function syncDailyIssuesPill(groupId) {
+    const pill = document.getElementById("daily-plan-issues-pill");
+    if (!pill) return;
+    const items = collectAllAttentionItems(groupId).filter((item) => {
+        if (!groupId) return true;
+        return !item.groupId || String(item.groupId) === String(groupId);
+    });
+    const label = pill.querySelector("[data-daily-issues-label]");
+    if (!items.length) {
+        pill.classList.add("hidden");
+        if (label) label.textContent = "0";
+        return;
+    }
+    pill.classList.remove("hidden");
+    if (label) {
+        label.textContent = t("daily_issues_pill", { count: items.length }) || `${items.length} issues`;
+    }
+}
+
 function renderDailySituationPanel(dateStr, groupId) {
     const body = document.getElementById("daily-plan-situation-body");
+    syncDailyIssuesPill(groupId);
     if (!body) return;
-    const items = collectOpsAttentionItems().filter((item) => {
+    const items = collectAllAttentionItems(groupId).filter((item) => {
         if (!groupId) return true;
         return !item.groupId || String(item.groupId) === String(groupId);
     }).slice(0, 8);
@@ -113,7 +134,10 @@ function buildDailyPlanTable(slots, { compact = false, editable = false, dateStr
                         <td class="daily-plan-time">${escapeHtml(time)}</td>
                         <td>
                             ${driverName
-                                ? `<button type="button" class="btn-secondary" ${actionAttr("openShiftCell", [driverName, date])}>${escapeHtml(t("ops_btn_edit") || "Izmeni")}</button>`
+                                ? `<div class="daily-plan-row-actions">
+                                    <button type="button" class="btn-secondary" ${actionAttr("openShiftCell", [driverName, date])}>${escapeHtml(t("ops_btn_edit") || "Izmeni")}</button>
+                                    <button type="button" class="btn-secondary daily-plan-clear-btn" ${actionAttr("clearDailyShift", [driverName, date])}>${escapeHtml(t("dispo_clear_shift") || "Clear shift")}</button>
+                                   </div>`
                                 : `<span class="daily-plan-pick-hint">${escapeHtml(t("ops_pick_driver") || "Izaberite vozača")}</span>`}
                         </td>
                     </tr>`;
@@ -233,6 +257,34 @@ function refreshDailyPlanOnDateChange() {
     renderDailyPlanPanel(picker?.value);
 }
 
+function clearDailyShift(driverName, dateStr) {
+    if (isOperationalReadOnly()) {
+        showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+        return;
+    }
+    const name = String(driverName || "").trim();
+    const date = String(dateStr || "").trim();
+    if (!name || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+    const shift = getShiftForDriverDate(name, date);
+    if (!shift || shift.type === "clear" || shift.type === "off") {
+        showToast(t("dispo_clear_shift_empty") || "No shift to clear for this day.", "info");
+        return;
+    }
+    const msg = (t("dispo_confirm_clear_shift") || "Remove the shift for {driver} on {date}?")
+        .replace("{driver}", name)
+        .replace("{date}", date);
+    showConfirm(msg, async () => {
+        await removeShift(name, date);
+        renderDailyPlanFullPage();
+        renderDailyPlanPanel(date);
+        if (typeof window.renderDispatcherDashboard === "function") window.renderDispatcherDashboard();
+    }, {
+        danger: true,
+        title: t("dispo_clear_shift") || "Clear shift",
+        confirmText: t("dispo_clear_shift") || "Clear shift"
+    });
+}
+
 /**
  * Assign selected driver to a daily-plan slot type for the given date.
  * changeAttr passes the select value as the last argument.
@@ -310,5 +362,6 @@ export {
     renderHubDailyPreview,
     bindDailyPlanFullPage,
     refreshDailyPlanOnDateChange,
-    dailyPlanAssignDriver
+    dailyPlanAssignDriver,
+    clearDailyShift
 };

@@ -118,6 +118,15 @@ const busProfileSchema = z.object({
   opsStatus: busOpsStatusSchema,
   expectedRevision: z.number().int().min(0)
 });
+const lineDetachSchema = z.object({
+  groupId: groupIdSchema,
+  action: z.literal("detach")
+});
+const busGroupDetachSchema = z.object({
+  groupId: groupIdSchema,
+  action: z.literal("detach"),
+  expectedRevision: z.number().int().min(0)
+});
 
 function busRevisionOf(data = {}) {
   const revision = Number(data.revision);
@@ -1308,6 +1317,78 @@ function registerDriverRoutes(app, deps) {
     }
   });
 
+  /** Soft-remove driver from a line/group list — keeps company roster (active unchanged). */
+  app.put("/api/staff/drivers/:driverId/line", rateLimit(30, 5 * 60_000), requireStaff, async (req, res) => {
+    if (req.staff.role !== "dispatcher") {
+      return res.status(403).json({ success: false, error: "Samo disponent može skidati vozača sa linije." });
+    }
+    const driverId = driverIdSchema.safeParse(req.params.driverId);
+    const body = lineDetachSchema.safeParse(req.body);
+    if (!driverId.success || !body.success) {
+      return res.status(400).json({ success: false, error: "Nevažeći zahtev za skidanje sa linije." });
+    }
+    const targetGroupId = body.data.groupId;
+    if (!dispatcherCanAccessGroup(req.staff.groups, targetGroupId)) {
+      return res.status(403).json({ success: false, error: "Linija nije u dodeljenim grupama." });
+    }
+    try {
+      const companyRef = db().collection("companies").doc(req.staff.companyId);
+      const profileRef = companyRef.collection("drivers").doc(driverId.data);
+      const profileSnap = await profileRef.get();
+      if (!profileSnap.exists) {
+        return res.status(404).json({ success: false, error: "Vozač nije pronađen." });
+      }
+      const driver = profileSnap.data() || {};
+      const currentGroup = String(driver.groupId || driver.lineId || "").trim();
+      const groupsSnap = await companyRef.collection("groups").get();
+      const detachIds = new Set([targetGroupId]);
+      groupsSnap.forEach((doc) => {
+        const data = doc.data() || {};
+        if (doc.id === targetGroupId || String(data.lineId || "") === targetGroupId) {
+          detachIds.add(doc.id);
+        }
+      });
+      const onLine = detachIds.has(currentGroup)
+        || detachIds.has(String(driver.lineId || "").trim())
+        || (Array.isArray(driver.groupIds) && driver.groupIds.some((g) => detachIds.has(String(g))));
+      if (!onLine) {
+        return res.status(409).json({ success: false, error: "Vozač nije na toj liniji." });
+      }
+      if (currentGroup && !dispatcherCanAccessGroup(req.staff.groups, currentGroup)
+        && !dispatcherCanAccessGroup(req.staff.groups, String(driver.lineId || ""))) {
+        // Allow when current membership is a subgroup of an assigned line.
+        const currentIsSub = [...detachIds].some((id) => dispatcherCanAccessGroup(req.staff.groups, id));
+        if (!currentIsSub) {
+          return res.status(403).json({ success: false, error: "Vozač nije u dodeljenoj grupi." });
+        }
+      }
+      await profileRef.update({
+        groupId: admin().firestore.FieldValue.delete(),
+        lineId: admin().firestore.FieldValue.delete(),
+        subGroup: admin().firestore.FieldValue.delete(),
+        groupIds: [],
+        lineDetachedAt: admin().firestore.FieldValue.serverTimestamp(),
+        lineDetachedBy: req.staff.uid,
+        lineDetachedFrom: targetGroupId
+      });
+      await logAudit(req.staff.companyId, req.staff.uid, "driver_detached_from_group", {
+        driverId: driverId.data,
+        groupId: targetGroupId,
+        previousGroupId: currentGroup || null
+      });
+      return res.json({
+        success: true,
+        driverId: driverId.data,
+        groupId: null,
+        lineId: null,
+        detachedFrom: targetGroupId
+      });
+    } catch (error) {
+      req.log?.error?.({ err: error }, "Skidanje vozača sa linije nije uspelo");
+      return res.status(500).json({ success: false, error: "Vozač nije mogao biti skinut sa linije." });
+    }
+  });
+
   app.put("/api/staff/vacations/:vacationId/status", requireStaff, async (req, res) => {
     if (req.staff.role !== "dispatcher") {
       return res.status(403).json({ success: false, error: "Samo disponent može obrađivati zahteve za odmor." });
@@ -1972,6 +2053,114 @@ function registerDriverRoutes(app, deps) {
       }
       req.log?.error?.({ err: error }, "Promena statusa autobusa nije uspela");
       return res.status(500).json({ success: false, error: "Status autobusa nije mogao biti promenjen." });
+    }
+  });
+
+  /** Soft-remove bus from a line/group — stays in company fleet (active unchanged). */
+  app.put("/api/staff/buses/:busId/groups", requireStaff, async (req, res) => {
+    if (req.staff.role !== "dispatcher") {
+      return res.status(403).json({ success: false, error: "Samo disponent može skidati autobus sa linije." });
+    }
+    const busId = busIdSchema.safeParse(req.params.busId);
+    const body = busGroupDetachSchema.safeParse(req.body);
+    if (!busId.success || !body.success) {
+      return res.status(400).json({ success: false, error: "Nevažeći zahtev za skidanje autobusa." });
+    }
+    const targetGroupId = body.data.groupId;
+    if (!dispatcherCanAccessGroup(req.staff.groups, targetGroupId)) {
+      return res.status(403).json({ success: false, error: "Linija nije u dodeljenim grupama." });
+    }
+    try {
+      const companyRef = db().collection("companies").doc(req.staff.companyId);
+      const busRef = companyRef.collection("buses").doc(busId.data);
+      const groupsSnap = await companyRef.collection("groups").get();
+      const detachIds = [targetGroupId];
+      groupsSnap.forEach((doc) => {
+        const data = doc.data() || {};
+        if (doc.id === targetGroupId || String(data.lineId || "") === targetGroupId) {
+          if (!detachIds.includes(doc.id)) detachIds.push(doc.id);
+        }
+      });
+      const result = await db().runTransaction(async (tx) => {
+        const snapshot = await tx.get(busRef);
+        if (!snapshot.exists) {
+          const err = new Error("not_found");
+          err.code = "not_found";
+          throw err;
+        }
+        const bus = snapshot.data() || {};
+        const { normalizeGroupIds, withDetachedGroup, busHasGroup } = require("./bus-group-membership");
+        const beforeIds = normalizeGroupIds(bus);
+        const onLine = detachIds.some((gid) => busHasGroup(bus, gid));
+        if (!onLine) {
+          const err = new Error("not_on_line");
+          err.code = "not_on_line";
+          throw err;
+        }
+        const canAccess = beforeIds.some((gid) => dispatcherCanAccessGroup(req.staff.groups, gid))
+          || detachIds.some((gid) => dispatcherCanAccessGroup(req.staff.groups, gid));
+        if (!canAccess) {
+          const err = new Error("forbidden");
+          err.code = "forbidden";
+          throw err;
+        }
+        const currentRevision = busRevisionOf(bus);
+        if (currentRevision !== body.data.expectedRevision) {
+          const err = new Error("revision_conflict");
+          err.code = "revision_conflict";
+          err.bus = publicBusPayload(busId.data, bus);
+          throw err;
+        }
+        const next = withDetachedGroup(bus, detachIds);
+        const nextRevision = currentRevision + 1;
+        const update = {
+          groupIds: next.groupIds,
+          groupId: next.groupId || admin().firestore.FieldValue.delete(),
+          lineId: next.lineId || admin().firestore.FieldValue.delete(),
+          revision: nextRevision,
+          lineDetachedAt: admin().firestore.FieldValue.serverTimestamp(),
+          lineDetachedBy: req.staff.uid,
+          lineDetachedFrom: targetGroupId
+        };
+        tx.update(busRef, update);
+        return {
+          revision: nextRevision,
+          previousGroupIds: beforeIds,
+          bus: { ...bus, ...next, revision: nextRevision }
+        };
+      });
+      await logAudit(req.staff.companyId, req.staff.uid, "bus_detached_from_group", {
+        busId: busId.data,
+        groupId: targetGroupId,
+        previousGroupIds: result.previousGroupIds,
+        groupIds: result.bus.groupIds,
+        revision: result.revision
+      });
+      return res.json({
+        success: true,
+        bus: publicBusPayload(busId.data, result.bus),
+        detachedFrom: targetGroupId
+      });
+    } catch (error) {
+      if (error.code === "not_found") {
+        return res.status(404).json({ success: false, error: "Autobus nije pronađen." });
+      }
+      if (error.code === "forbidden") {
+        return res.status(403).json({ success: false, error: "Autobus nije u dodeljenoj grupi." });
+      }
+      if (error.code === "not_on_line") {
+        return res.status(409).json({ success: false, error: "Autobus nije na toj liniji." });
+      }
+      if (error.code === "revision_conflict") {
+        return res.status(409).json({
+          success: false,
+          code: "REVISION_CONFLICT",
+          error: "Autobus je izmenjen. Osvežite i pokušajte ponovo.",
+          bus: error.bus || null
+        });
+      }
+      req.log?.error?.({ err: error }, "Skidanje autobusa sa linije nije uspelo");
+      return res.status(500).json({ success: false, error: "Autobus nije mogao biti skinut sa linije." });
     }
   });
 

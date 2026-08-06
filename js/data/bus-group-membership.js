@@ -43,9 +43,35 @@ function buildNewBusGroups(groupId) {
   };
 }
 
+/** Remove one group (or a set) from bus membership; bus stays in company fleet. */
+function withDetachedGroup(bus, groupIdOrIds) {
+  const remove = new Set(
+    (Array.isArray(groupIdOrIds) ? groupIdOrIds : [groupIdOrIds])
+      .map((id) => String(id || "").trim())
+      .filter(Boolean)
+  );
+  if (!remove.size) {
+    return {
+      ...bus,
+      groupIds: normalizeGroupIds(bus),
+      groupId: bus?.groupId || null,
+      lineId: bus?.lineId || bus?.groupId || null
+    };
+  }
+  const groupIds = normalizeGroupIds(bus).filter((id) => !remove.has(id));
+  const primary = groupIds[0] || null;
+  return {
+    ...bus,
+    groupIds,
+    groupId: primary,
+    lineId: primary
+  };
+}
+
 export {
   normalizeGroupIds,
   busHasGroup,
   withAttachedGroup,
+  withDetachedGroup,
   buildNewBusGroups
 };

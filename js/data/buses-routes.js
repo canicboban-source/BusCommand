@@ -66,8 +66,13 @@ function renderBusesList() {
         ].join(" · ");
         const deleteBtn = readOnly
             ? ""
-            : `<button type="button" class="hub-bus-toggle ${active ? "is-active" : "is-inactive"}" ${actionAttr("deleteBus", [b.id])}>
-                ${active ? t("btn_deactivate") : t("btn_activate")}
+            : `<button type="button" class="hub-bus-toggle ${active ? "is-active" : "is-inactive"}" ${actionAttr("deleteBus", [b.id])} title="${escapeHtml(active ? (t("dispo_bus_deactivate_hint") || "") : (t("btn_activate") || ""))}">
+                ${active ? (t("dispo_bus_deactivate") || t("btn_deactivate")) : t("btn_activate")}
+            </button>`;
+        const detachBtn = readOnly || !activeGrp
+            ? ""
+            : `<button type="button" class="btn-secondary hub-bus-detach-btn" ${actionAttr("detachBusFromLine", [b.id, activeGrp])}>
+                ${escapeHtml(t("dispo_bus_remove_from_line") || "Remove from this line")}
             </button>`;
         const editBtn = readOnly
             ? ""
@@ -78,7 +83,7 @@ function renderBusesList() {
                     <strong>${escapeHtml(t("vehicle"))} ${escapeHtml(b.number)}</strong>
                     <small>${escapeHtml(meta)}${active ? "" : ` · ${escapeHtml(t("driver_status_inactive"))}`}</small>
                 </div>
-                <div class="hub-bus-actions">${editBtn}${deleteBtn}</div>
+                <div class="hub-bus-actions">${editBtn}${detachBtn}${deleteBtn}</div>
             </div>
             <form class="hub-bus-edit-form hidden" data-bus-edit="${escapeHtml(b.id)}" data-submit-action="saveBusOpsProfile">
                 <label>
@@ -243,7 +248,11 @@ function deleteBus(id) {
     const bus = window.state.buses.find((item) => item.id === id);
     if (!bus) return;
     const nextActive = bus.active === false;
-    showConfirm(nextActive ? t("confirm_activate_bus") : t("confirm_deactivate_bus"), async function() {
+    showConfirm(
+        nextActive
+            ? (t("confirm_activate_bus") || "Activate this bus?")
+            : (t("dispo_confirm_bus_deactivate") || t("confirm_deactivate_bus") || "Deactivate this bus? It will stay in the company but will not be assignable."),
+        async function() {
         const expectedRevision = busRevisionOf(bus);
         if (!IS_DEMO_MODE) {
             const result = await ApiClient.setStaffBusActive(id, nextActive, expectedRevision);
@@ -354,5 +363,6 @@ export {
     saveBusOpsProfile,
     renderRoutesList,
     addRoute,
-    deleteRoute
+    deleteRoute,
+    upsertLocalBusFromApi
 };

@@ -22,6 +22,8 @@ function renderDriversList() {
     let myDrivers = hubId ? getDriversForLineGroup(hubId) : getVisibleDrivers();
     
     const canDeleteDrivers = IS_DEMO_MODE || window.currentUser?.role === "company-admin";
+    const canDetachFromLine = IS_DEMO_MODE || window.currentUser?.role === "dispatcher";
+    const detachGroupId = hubId || window.currentUser?.activeGroupId || "";
 
     myDrivers.forEach(d => {
         const grp = getGroupById(d.groupId);
@@ -38,6 +40,11 @@ function renderDriversList() {
         const idBadge = isDispatcher
             ? ""
             : `<span style="color: var(--primary-color); font-size: 12px; font-weight: normal; margin-left: 8px;">(${escapeHtml(t("label_company_id") || "ID")}: ${escapeHtml(d.companyId || "N/A")})</span>`;
+        const detachBtn = canDetachFromLine && detachGroupId && d.id
+            ? `<button type="button" class="btn-secondary" ${actionAttr("detachDriverFromLine", [d.id, detachGroupId])} title="${escapeHtml(t("dispo_remove_from_line_hint") || "")}" style="padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;white-space:nowrap;">
+                ${escapeHtml(t("dispo_remove_from_line") || "Remove from line")}
+            </button>`
+            : "";
         li.innerHTML = `
             <div style="display: flex; flex-direction: column; gap: 4px; text-align: left;">
                 <span style="font-weight: 600; color: var(--text-main);">${escapeHtml(driverName)}
@@ -51,6 +58,7 @@ function renderDriversList() {
                 ${IS_DEMO_MODE ? `<button class="btn-edit-item" ${actionAttr("editDriver", [d.id])} style="background:rgba(59,130,246,0.08);color:#3b82f6;border:1px solid rgba(59,130,246,0.2);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;white-space:nowrap;">
                     ${t("btn_edit")}
                 </button>` : ""}
+                ${detachBtn}
                 ${canDeleteDrivers ? `<button class="btn-delete-item" ${actionAttr("toggleDriverActive", [d.id])} aria-label="${escapeHtml(statusAction)}" title="${escapeHtml(statusAction)}" style="background:rgba(239,68,68,0.08);color:${active ? "#ef4444" : "#16a34a"};border:1px solid currentColor;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;white-space:nowrap;">
                     ${escapeHtml(statusAction)}
                 </button>` : ""}

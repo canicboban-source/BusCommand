@@ -39,12 +39,13 @@ import {
     transitionOperationalIncident,
     openOpsAttentionPanel,
     closeOpsAttentionPanel,
+    focusOpsAttentionItem,
     applyOpsAttentionFix
 } from "./dispatcher/dashboard.js";
 import { removeDispatcher } from "./dispatcher/dispatchers.js";
 import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlansFull, openVehiclesFromPlan, scrollHubSection } from "./dispatcher/group-hub.js";
 import { returnLostItem, setLostItemStatus, openLostItemPhoto } from "./dispatcher/lost-items.js";
-import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, focusMonthlyDriverPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, openMonthlyDayEditForDriver, previewMonthlyMassAbsence, saveMonthlyDayEdit, selectMonthlyPlanGroup, undoMonthlyDayEdit } from "./dispatcher/monthly-plans.js";
+import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, deleteMonthlyPlan, focusMonthlyDriverPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, openMonthlyDayEditForDriver, previewMonthlyMassAbsence, saveMonthlyDayEdit, selectMonthlyPlanGroup, undoMonthlyDayEdit } from "./dispatcher/monthly-plans.js";
 import { goToOpsPlanProblems } from "./dispatcher/plan-health-banner.js";
 import { openVehiclesForGroup } from "./dispatcher/vehicles-panel.js";
 import { setMessagesPageTab, submitDispatcherMessage } from "./dispatcher/msg-compose.js";
@@ -53,7 +54,7 @@ import { resolveReport, openReportResolution, closeReportResolution } from "./di
 import { archiveAllDispatcherMessages, archiveDispatcherMessage } from "./dispatcher/sent-messages.js";
 import { shiftWeekNav } from "./dispatcher/shift-utils.js";
 import { assignShift, openShiftCell, persistShift, removeShift } from "./dispatcher/shifts.js";
-import { dailyPlanAssignDriver } from "./dispatcher/daily-plan.js";
+import { dailyPlanAssignDriver, clearDailyShift } from "./dispatcher/daily-plan.js";
 import {
     acquirePlanEditLock,
     releasePlanEditLock,
@@ -176,6 +177,16 @@ const HANDLERS = {
     confirmSuperAdminPin,
     createDispatcherGroup,
     createEmptyMonthlyPlan,
+    deleteMonthlyPlan,
+    clearDailyShift,
+    async detachDriverFromLine(...args) {
+        const mod = await import("./dispatcher/line-roster.js");
+        return mod.detachDriverFromLine(...args);
+    },
+    async detachBusFromLine(...args) {
+        const mod = await import("./dispatcher/line-roster.js");
+        return mod.detachBusFromLine(...args);
+    },
     deleteBus,
     deleteCompanyGroup,
     deleteGroup,
@@ -244,6 +255,7 @@ const HANDLERS = {
     openCoverageResolver,
     openOpsAttentionPanel,
     closeOpsAttentionPanel,
+    focusOpsAttentionItem,
     applyOpsAttentionFix,
     openReportResolution,
     openMonthlyPlanForGroup,

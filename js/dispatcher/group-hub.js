@@ -142,16 +142,27 @@ function renderGroupOverviewDetail(groupId) {
     const subgroups = getSubgroupsForLine(groupId);
     const plans = countPlansForLineGroup(groupId);
 
+    const readOnly = isOperationalReadOnly();
     const driverRows = drivers.length
         ? drivers.map(d => {
             const driverName = d.name || [d.firstName, d.lastName].filter(Boolean).join(" ") || "—";
+            const detachCell = readOnly || !d.id
+                ? `<td class="hub-ov-muted">—</td>`
+                : `<td class="hub-ov-actions">
+                    <button type="button" class="btn-secondary hub-ov-detach-btn"
+                        ${actionAttr("detachDriverFromLine", [d.id, groupId])}
+                        title="${escapeHtml(t("dispo_remove_from_line_hint") || "")}">
+                        ${escapeHtml(t("dispo_remove_from_line") || "Remove from line")}
+                    </button>
+                </td>`;
             return `<tr>
                 <td class="hub-ov-name">${escapeHtml(driverName)}</td>
                 <td class="hub-ov-muted">${escapeHtml(d.email || "—")}</td>
                 <td class="hub-ov-muted">${escapeHtml(d.phone || "—")}</td>
+                ${detachCell}
             </tr>`;
         }).join("")
-        : `<tr><td colspan="3" class="hub-ov-empty">${t("hub_no_drivers")}</td></tr>`;
+        : `<tr><td colspan="4" class="hub-ov-empty">${t("hub_no_drivers")}</td></tr>`;
 
     const busChips = buses.length
         ? buses.map(b => `<span class="hub-bus-chip">${escapeHtml(String(b.number))}</span>`).join("")
@@ -176,6 +187,7 @@ function renderGroupOverviewDetail(groupId) {
                             <th>${t("table_name")}</th>
                             <th>${t("table_email") || "Email"}</th>
                             <th>${t("table_phone")}</th>
+                            <th>${t("table_actions") || "Action"}</th>
                         </tr></thead>
                         <tbody>${driverRows}</tbody>
                     </table>

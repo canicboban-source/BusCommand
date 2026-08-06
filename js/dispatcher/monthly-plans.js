@@ -2,8 +2,10 @@
 import {
     getShiftForDriverDate,
     parseBusFromText,
-    parseRouteCodeFromText
+    parseRouteCodeFromText,
+    setShiftForDriverDate
 } from "../core/shift-plan.js";
+import { saveState } from "../core/state.js";
 import {
     ensureShiftCatalogForEdit,
     inferOperationalShiftType,
@@ -367,7 +369,10 @@ function renderMonthlyBelowZone(ctx) {
             <p class="subtitle">${t("monthly_below_entry_hint") || "Click a day in the matrix or open day 1 to edit."}</p>
             <button type="button" class="btn-secondary" ${actionAttr("openMonthlyDayEdit", [scheduleKey, 1])}>
                 ${t("monthly_edit_day") || "Edit day"}
-            </button>`;
+            </button>
+            ${isOperationalReadOnly() ? "" : `<button type="button" class="btn-secondary" style="margin-left:8px;" ${actionAttr("deleteMonthlyPlan", [scheduleKey, escapeHtml(driverName), month])}>
+                ${t("dispo_delete_month_plan") || "Delete this month's plan"}
+            </button>`}`;
     }
 
     let emptyDays = 0;
@@ -467,6 +472,9 @@ function renderDriverDayTable(schedule, scheduleKey, year, monthNum, totalDays) 
             <button type="button" class="btn-primary" ${actionAttr("openMonthlyDayEdit", [scheduleKey, 1])}>
                 <i data-lucide="calendar-days"></i> ${t("monthly_btn_edit_pick")}
             </button>
+            ${isOperationalReadOnly() ? "" : `<button type="button" class="btn-secondary monthly-plan-delete-btn" ${actionAttr("deleteMonthlyPlan", [scheduleKey, escapeHtml(schedule.driverName || ""), schedule.month || ""])}>
+                <i data-lucide="trash-2"></i> ${t("dispo_delete_month_plan") || "Delete this month's plan"}
+            </button>`}
         </div>`;
     return html;
 }
@@ -1138,6 +1146,65 @@ function createEmptyMonthlyPlan(scheduleKey, driverName, month, totalDays) {
     showToast(t("monthly_shell_ready") || "Prazan plan je otvoren. Dan se čuva tek posle potvrde servera.", "info");
 }
 
+/**
+ * Soft-delete: remove the monthly plan shell for one driver-month.
+ * Does not touch the CA service-plan catalog. Clears local day entries;
+ * production days that were persisted are cleared via assign clear where needed.
+ */
+async function deleteMonthlyPlan(scheduleKey, driverName, month) {
+    if (isOperationalReadOnly()) {
+        showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+        return;
+    }
+    const key = String(scheduleKey || "").trim();
+    const name = String(driverName || "").trim();
+    const monthKey = String(month || "").trim();
+    if (!key || !name || !/^\d{4}-\d{2}$/.test(monthKey)) return;
+
+    const schedule = (window.state.schedules || []).find((s) => s.id === key)
+        || resolveScheduleForDriverMonth(name, monthKey);
+    if (!schedule?.parsedShifts) {
+        showToast(t("dispo_delete_month_plan_empty") || "No plan for this month.", "info");
+        return;
+    }
+
+    const msg = (t("dispo_confirm_delete_month_plan") || "Delete the monthly plan for {driver} ({month})? This does not remove the driver from the company.")
+        .replace("{driver}", name)
+        .replace("{month}", monthKey);
+
+    showConfirm(msg, async () => {
+        const [year, mon] = monthKey.split("-").map(Number);
+        const totalDays = new Date(year, mon, 0).getDate();
+        const driver = window.state.drivers?.find((d) => d.name === name) || null;
+
+        for (let day = 1; day <= totalDays; day++) {
+            const dateStr = `${monthKey}-${String(day).padStart(2, "0")}`;
+            const existing = getShiftForDriverDate(name, dateStr);
+            if (!existing || existing.type === "clear" || existing.type === "off") continue;
+            if (driver && existing.source === "shift") {
+                await persistShift(driver, dateStr, "clear");
+            } else {
+                setShiftForDriverDate(name, dateStr, { type: "clear", syncSchedule: true });
+            }
+        }
+
+        window.state.schedules = (window.state.schedules || []).filter((s) => s.id !== key && s.id !== schedule.id);
+        saveState();
+        loadMonthlyPlanForDriver();
+        if (typeof window.renderDispatcherDashboard === "function") window.renderDispatcherDashboard();
+        showToast(
+            (t("dispo_delete_month_plan_done") || "Monthly plan cleared for {driver} ({month}).")
+                .replace("{driver}", name)
+                .replace("{month}", monthKey),
+            "success"
+        );
+    }, {
+        danger: true,
+        title: t("dispo_delete_month_plan") || "Delete this month's plan",
+        confirmText: t("dispo_delete_month_plan") || "Delete this month's plan"
+    });
+}
+
 /** @deprecated koristi openMonthlyDayEdit + saveMonthlyDayEdit */
 function updateMonthlyPlanDay(scheduleKey, day, field, value) {
     const schedule = window.state.schedules.find(s => s.id === scheduleKey);
@@ -1240,6 +1307,7 @@ export {
     loadMonthlyPlanForDriver,
     focusMonthlyDriverPlan,
     createEmptyMonthlyPlan,
+    deleteMonthlyPlan,
     updateMonthlyPlanDay,
     openMonthlyDayEdit,
     openMonthlyDayEditForDriver,
