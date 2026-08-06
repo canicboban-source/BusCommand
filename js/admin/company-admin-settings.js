@@ -11,6 +11,7 @@ import {
     timezoneForCountry,
     validateCompanySettingsDraft
 } from "./company-admin-settings-model.js";
+import { getCompanyLicenseInfo } from "./company-admin-overview-model.js";
 
 let savedSettings = null;
 let settingsCompanyId = null;
@@ -89,17 +90,25 @@ function writeDraftToForm(draft) {
 
 function renderLicenseFacts() {
     const settings = window.state.settings || {};
+    const companyId = currentCompanyId();
+    const license = getCompanyLicenseInfo(companyId, {
+        licenseInfo: window._licenseInfo,
+        state: window.state,
+        isDemoMode: IS_DEMO_MODE
+    });
     const formatLimit = value => {
         const number = Number(value);
         return value !== null && value !== undefined && value !== "" && Number.isInteger(number) && number > 0
             ? String(number)
             : "—";
     };
+    const plan = settings.plan || (license.available ? license.plan : "") || "";
+    const status = settings.status || (license.available ? license.status : "") || "";
     const fields = {
-        "ca-settings-plan": settings.plan || t("ca_value_unavailable"),
-        "ca-settings-license-status": settings.status || t("ca_value_unavailable"),
-        "ca-settings-max-drivers": formatLimit(settings.maxDrivers),
-        "ca-settings-max-dispatchers": formatLimit(settings.maxDispatchers)
+        "ca-settings-plan": plan || t("ca_value_unavailable"),
+        "ca-settings-license-status": status || t("ca_value_unavailable"),
+        "ca-settings-max-drivers": formatLimit(settings.maxDrivers ?? license.maxDrivers),
+        "ca-settings-max-dispatchers": formatLimit(settings.maxDispatchers ?? license.maxDispatchers)
     };
     for (const [id, value] of Object.entries(fields)) {
         const element = document.getElementById(id);

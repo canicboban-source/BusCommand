@@ -74,6 +74,46 @@ import { closeModal, closeSosConfirmModal, confirmClearSOS, confirmFactoryReset,
 import { toggleTheme } from "./ui/theme.js";
 import { canInvokeActionDuringDriverActivation } from "./auth/driver-access-gate.js";
 
+/** Lazy Dispo Help chunk — keeps D17 staff budget under soft ceiling. */
+function loadDispatcherHelp() {
+    return import("./dispatcher/help-support.js");
+}
+
+async function openDispatcherHelp(...args) {
+    const mod = await loadDispatcherHelp();
+    return mod.openDispatcherHelp(...args);
+}
+
+function closeDispatcherHelp() {
+    closeModal("dispatcher-help-modal");
+    return true;
+}
+
+async function dispatcherHelpSoftReload(...args) {
+    const mod = await loadDispatcherHelp();
+    return mod.dispatcherHelpSoftReload(...args);
+}
+
+async function dispatcherHelpLogout(...args) {
+    const mod = await loadDispatcherHelp();
+    return mod.dispatcherHelpLogout(...args);
+}
+
+async function dispatcherHelpCopyEmail(...args) {
+    const mod = await loadDispatcherHelp();
+    return mod.dispatcherHelpCopyEmail(...args);
+}
+
+async function dispatcherHelpOpenMailto(...args) {
+    const mod = await loadDispatcherHelp();
+    return mod.dispatcherHelpOpenMailto(...args);
+}
+
+async function fillHelpModal(...args) {
+    const mod = await loadDispatcherHelp();
+    return mod.fillHelpModal(...args);
+}
+
 const HANDLERS = {
     addBus,
     toggleBusEdit,
@@ -115,6 +155,7 @@ const HANDLERS = {
     closeCompanyServicePlanDuty,
     closeCompanyServicePlanHistory,
     closeConfirmModal,
+    closeDispatcherHelp,
     closeGroupHub,
     closeModal,
     closeMonthlyDayEditModal,
@@ -139,6 +180,10 @@ const HANDLERS = {
     deleteRoute,
     deleteScheduleEntry,
     editDriver,
+    dispatcherHelpCopyEmail,
+    dispatcherHelpLogout,
+    dispatcherHelpOpenMailto,
+    dispatcherHelpSoftReload,
     endCompanySupportSession,
     openCompanyOpsOverview,
     enterDispatcherActiveGroup,
@@ -146,6 +191,7 @@ const HANDLERS = {
     exportDriversCSV,
     exportLostItemsCSV,
     exportReportsCSV,
+    fillHelpModal,
     focusCompanyDispatcherForm,
     focusCompanyGroupForm,
     forgotDispatcherPassword,
@@ -181,6 +227,7 @@ const HANDLERS = {
     openCompanyServicePlanHistory,
     openDailyPlanForGroup,
     openDailyPlanFull,
+    openDispatcherHelp,
     openGroupHub,
     openMonthlyDayEdit,
     openMonthlyDayEditForDriver,

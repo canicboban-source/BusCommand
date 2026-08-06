@@ -49,7 +49,9 @@ function renderCompanyAdminBuses() {
         const statusCell = row.insertCell();
         const active = bus.active !== false;
         statusCell.innerHTML = `<span class="badge ${active ? "approved" : "pending"}">${escapeHtml(
-            active ? (t("status_active") || "Active") : (t("status_inactive") || "Inactive")
+            active
+                ? (t("js_status_active") || "Active")
+                : (t("driver_status_inactive") || "Inactive")
         )}</span>`;
         row.insertCell().textContent = bus.id || "—";
     }

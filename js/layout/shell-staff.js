@@ -118,5 +118,8 @@ export function showAppLayout() {
     }
 
     checkSOSStatus();
+    import("../dispatcher/help-support.js")
+        .then((mod) => mod.syncDispatcherHelpButton())
+        .catch(() => {});
     return true;
 }

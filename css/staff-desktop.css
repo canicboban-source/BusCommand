@@ -3164,3 +3164,181 @@ html[data-app-surface="staff"] .hub-bus-form input {
   min-width: 120px;
   flex: 1;
 }
+
+/* Dispatcher help / self-recovery */
+html[data-app-surface="staff"] .dispatcher-help-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+  padding: 0 10px;
+  min-width: auto;
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+html[data-app-surface="staff"] .dispatcher-help-btn.hidden,
+html[data-app-surface="staff"] .dispatcher-help-btn[hidden] {
+  display: none !important;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-btn-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-modal:not(.hidden) {
+  display: flex;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-panel {
+  width: min(560px, 100%);
+  max-height: min(90vh, 840px);
+  overflow: auto;
+  background: var(--staff-panel, #121826);
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  border-radius: 16px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+}
+
+html[data-app-surface="staff"] .dispatcher-help-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-kicker {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: #fbbf24;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-header p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-steps > li {
+  border: 1px solid var(--panel-border, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  counter-increment: none;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-step-body strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-step-body p {
+  margin: 0 0 10px;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-status-line {
+  margin: 0 !important;
+  font-size: 0.82rem;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-escalate {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-border, rgba(255,255,255,0.08));
+}
+
+html[data-app-surface="staff"] .dispatcher-help-escalate h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-escalate > p {
+  margin: 0 0 10px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-note-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+  margin-bottom: 10px;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-note-label textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border, rgba(255,255,255,0.12));
+  background: var(--input-bg, rgba(0,0,0,0.25));
+  color: var(--text-main);
+  padding: 10px 12px;
+  font: inherit;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-contact-line {
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-contact-missing {
+  color: #fbbf24;
+  font-size: 0.84rem;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-escalate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-mailto.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  html[data-app-surface="staff"] .dispatcher-help-btn-label {
+    display: none;
+  }
+}

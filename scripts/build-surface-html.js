@@ -82,6 +82,8 @@ const STAFF_ONLY_IDS = [
   "onboarding-wizard",
   "ca-onboarding-wizard",
   "factory-reset-modal",
+  "dispatcher-help-btn",
+  "dispatcher-help-modal",
   "print-schedule-modal",
   "clear-sos-modal",
   // The Super Admin entry only has handlers on the staff bundle, so on the

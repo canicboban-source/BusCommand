@@ -318,6 +318,11 @@
                     <i data-lucide="moon" id="theme-icon" aria-hidden="true"></i>
                 </button>
 
+                <button id="dispatcher-help-btn" class="btn-logout dispatcher-help-btn hidden" type="button" data-action="openDispatcherHelp" title="Help" data-i18n-title="dispo_help_aria" aria-label="Help" data-i18n-aria-label="dispo_help_aria">
+                    <i data-lucide="life-buoy" aria-hidden="true"></i>
+                    <span class="dispatcher-help-btn-label" data-i18n="dispo_help_btn">Help</span>
+                </button>
+
                 <button class="btn-logout" type="button" data-action="logout" title="Logout" data-i18n-title="logout_aria" aria-label="Logout" data-i18n-aria-label="logout_aria">
                     <i data-lucide="log-out" aria-hidden="true"></i>
                 </button>
@@ -2767,6 +2772,82 @@
                     <i data-lucide="save"></i> <span data-i18n="btn_save">Sačuvaj</span>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- ===== DISPATCHER HELP / SELF-RECOVERY ===== -->
+    <div id="dispatcher-help-modal" class="bc-overlay-modal dispatcher-help-modal hidden" role="dialog" aria-modal="true" aria-labelledby="dispatcher-help-title" aria-hidden="true" style="display:none;" data-action="closeDispatcherHelp" data-action-self="true">
+        <div class="dispatcher-help-panel" role="document" data-action-stop-propagation="true">
+            <header class="dispatcher-help-header">
+                <div>
+                    <span class="dispatcher-help-kicker" data-i18n="dispo_help_kicker">SELF-HELP FIRST</span>
+                    <h2 id="dispatcher-help-title" data-i18n="dispo_help_title">Help &amp; recovery</h2>
+                    <p data-i18n="dispo_help_intro">Try these steps in order before contacting support. Do not spam refresh.</p>
+                </div>
+                <button type="button" class="btn-icon-nav" data-action="closeDispatcherHelp" aria-label="Close" data-i18n-aria-label="dispo_help_close">
+                    <i data-lucide="x" aria-hidden="true"></i>
+                </button>
+            </header>
+
+            <ol class="dispatcher-help-steps">
+                <li>
+                    <div class="dispatcher-help-step-body">
+                        <strong data-i18n="dispo_help_step1_title">1. Refresh data</strong>
+                        <p data-i18n="dispo_help_step1_body">Reload the app once to re-sync plans and sessions. Prefer this button over random F5 spam.</p>
+                        <button type="button" class="btn-secondary" data-action="dispatcherHelpSoftReload">
+                            <i data-lucide="refresh-cw" aria-hidden="true"></i>
+                            <span data-i18n="dispo_help_step1_btn">Refresh data now</span>
+                        </button>
+                    </div>
+                </li>
+                <li>
+                    <div class="dispatcher-help-step-body">
+                        <strong data-i18n="dispo_help_step2_title">2. Sign out and sign in</strong>
+                        <p data-i18n="dispo_help_step2_body">If the session looks stuck, sign out and sign back in with your dispatcher email.</p>
+                        <button type="button" class="btn-secondary" data-action="dispatcherHelpLogout">
+                            <i data-lucide="log-out" aria-hidden="true"></i>
+                            <span data-i18n="dispo_help_step2_btn">Sign out</span>
+                        </button>
+                    </div>
+                </li>
+                <li>
+                    <div class="dispatcher-help-step-body">
+                        <strong data-i18n="dispo_help_step3_title">3. Check network</strong>
+                        <p data-i18n="dispo_help_step3_body">Look at the small cloud status (bottom-left). If it shows offline or error, wait for connection, then do step 1 again.</p>
+                        <p class="dispatcher-help-status-line"><span data-i18n="dispo_help_status_label">Current status:</span> <strong id="dispatcher-help-firebase-status">—</strong></p>
+                    </div>
+                </li>
+                <li>
+                    <div class="dispatcher-help-step-body">
+                        <strong data-i18n="dispo_help_step4_title">4. Drivers signed out in bulk</strong>
+                        <p data-i18n="dispo_help_step4_body">Drivers sign back in with their personal code. If an account is inactive, Company Admin reactivates it. Do not wipe company data.</p>
+                    </div>
+                </li>
+            </ol>
+
+            <section class="dispatcher-help-escalate" aria-labelledby="dispatcher-help-escalate-title">
+                <h3 id="dispatcher-help-escalate-title" data-i18n="dispo_help_escalate_title">Still broken? Contact support</h3>
+                <p data-i18n="dispo_help_escalate_hint">Only after steps 1–4. Opens email to the company contact with safe diagnostic context (no passwords or PINs).</p>
+                <label class="dispatcher-help-note-label" for="dispatcher-help-note">
+                    <span data-i18n="dispo_help_note_label">What happened? (optional)</span>
+                    <textarea id="dispatcher-help-note" rows="3" maxlength="500" data-i18n-placeholder="dispo_help_note_placeholder" placeholder="e.g. About 10 drivers were signed out at once after a freeze." data-input-action="fillHelpModal"></textarea>
+                </label>
+                <p class="dispatcher-help-contact-line">
+                    <span data-i18n="dispo_help_contact_label">Contact:</span>
+                    <strong id="dispatcher-help-contact-email">—</strong>
+                </p>
+                <p id="dispatcher-help-contact-missing" class="dispatcher-help-contact-missing hidden" data-i18n="dispo_help_contact_missing">No business contact email is set. Ask Company Admin to add it under Company Settings.</p>
+                <div class="dispatcher-help-escalate-actions">
+                    <button type="button" class="btn-secondary" id="dispatcher-help-copy-email" data-action="dispatcherHelpCopyEmail" disabled>
+                        <i data-lucide="copy" aria-hidden="true"></i>
+                        <span data-i18n="dispo_help_copy">Copy email</span>
+                    </button>
+                    <a class="btn-primary dispatcher-help-mailto" id="dispatcher-help-mailto" href="#" data-action="dispatcherHelpOpenMailto">
+                        <i data-lucide="mail" aria-hidden="true"></i>
+                        <span data-i18n="dispo_help_mailto">Open email</span>
+                    </a>
+                </div>
+            </section>
         </div>
     </div>
 
