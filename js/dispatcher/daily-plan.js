@@ -8,9 +8,30 @@ import { persistShift } from "./shifts.js";
 import { isOperationalReadOnly } from "../core/access.js";
 import { refreshPlanLockBanner } from "./plan-edit-lock-ui.js";
 import { isActiveReport } from "./report-model.js";
+import { paintPlanHealthBanner } from "./plan-health-banner.js";
+import { collectOpsAttentionItems } from "./ops-attention.js";
 
 function getActiveHubGroupId() {
     return window.state.activeGroupHubId || null;
+}
+
+function renderDailySituationPanel(dateStr, groupId) {
+    const body = document.getElementById("daily-plan-situation-body");
+    if (!body) return;
+    const items = collectOpsAttentionItems().filter((item) => {
+        if (!groupId) return true;
+        return !item.groupId || String(item.groupId) === String(groupId);
+    }).slice(0, 8);
+    if (!items.length) {
+        body.innerHTML = `<p class="subtitle" style="margin:0;">${escapeHtml(t("daily_situation_clear") || "No open issues for this group today.")}</p>`;
+        return;
+    }
+    body.innerHTML = items.map((item) => `
+        <div class="daily-situation-item">
+            <strong>${escapeHtml(item.title || item.kind || "Issue")}</strong>
+            <span>${escapeHtml(item.detail || item.driverName || "")}</span>
+        </div>
+    `).join("");
 }
 
 function getDailyPlanDateInput() {
@@ -152,6 +173,9 @@ function renderDailyPlanFullPage() {
     const groupId = getActiveHubGroupId();
     const group = groupId ? getGroupById(groupId) : null;
     if (subtitle && group) subtitle.textContent = t("daily_full_subtitle", { name: group.name, id: group.id });
+
+    paintPlanHealthBanner("daily-plan-health", { groupId, dateStr: today });
+    renderDailySituationPanel(today, groupId);
 
     const date = today;
     const plan = getDailyPlanForDate(date);

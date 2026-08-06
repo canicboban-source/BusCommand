@@ -26,6 +26,7 @@ import {
     applyCoverageResolution,
     syncOpsPlanHealthAttentionState
 } from "./ops-attention.js";
+import { paintPlanHealthBanner } from "./plan-health-banner.js";
 
 const SHIFT_TYPE_OPTIONS = Object.freeze([
     { value: "morning", labelKey: "shift_type_morning", fallback: "Prepodne" },
@@ -177,36 +178,40 @@ function updateOpsPlanHealth({ openReportsCount, pendingConfirms, failedDeliveri
     const attentionItems = collectOpsAttentionItems();
     const attentionCount = attentionItems.length;
     const needsAttention = attentionCount > 0 || _confirmFetchFailed;
-    health.classList.toggle("is-attention", needsAttention);
     health.classList.toggle("is-loading", _confirmFetchInFlight);
     health.setAttribute("aria-busy", _confirmFetchInFlight ? "true" : "false");
 
-    const titleEl = health.querySelector("strong");
-    const hintEl = health.querySelector("span:not(.dot)");
-    if (!titleEl || !hintEl) return;
-
     if (_confirmFetchFailed) {
-        titleEl.textContent = t("ops_plan_stale") || "Podaci potvrda nisu ažurni";
-        hintEl.textContent = t("ops_plan_stale_hint") || "Provera potvrda smena nije uspela — prikaz može biti zastareo.";
+        health.classList.add("is-attention");
+        health.classList.remove("is-plan-gap");
+        paintPlanHealthBanner(health);
+        const titleEl = health.querySelector("[data-plan-health-title]");
+        const hintEl = health.querySelector("[data-plan-health-hint]");
+        if (titleEl) titleEl.textContent = t("ops_plan_stale") || "Podaci potvrda nisu ažurni";
+        if (hintEl) {
+            hintEl.textContent = t("ops_plan_stale_hint")
+                || "Provera potvrda smena nije uspela — prikaz može biti zastareo.";
+        }
         syncOpsPlanHealthAttentionState(true, attentionCount);
         return;
     }
-    if (needsAttention) {
-        titleEl.textContent = t("ops_plan_attention") || "Plan zahteva pažnju";
-        const parts = [];
-        if (openReportsCount > 0) parts.push(`${openReportsCount} ${t("ops_plan_attention_reports") || "prijava"}`);
-        if (pendingConfirms.length > 0) parts.push(`${pendingConfirms.length} ${t("ops_plan_attention_confirms") || "potvrda"}`);
-        if (failedDeliveries > 0) parts.push(`${failedDeliveries} ${t("ops_plan_attention_failed") || "neuspelo slanje"}`);
-        const missingBus = attentionItems.filter(i => i.kind === "missing_bus").length;
-        if (missingBus) parts.push(`${missingBus} ${t("ops_attn_missing_bus_title") || "bez autobusa"}`);
-        hintEl.textContent = parts.join(" · ")
-            || (t("ops_plan_attention_hint") || "Kliknite ovde — jedan panel za sva rešenja.");
-        syncOpsPlanHealthAttentionState(true, attentionCount);
-        return;
+
+    // Shared status window: problems stacked one under another; click opens that fix.
+    paintPlanHealthBanner(health);
+    if (needsAttention && attentionCount === 0 && (openReportsCount || pendingConfirms.length || failedDeliveries)) {
+        const titleEl = health.querySelector("[data-plan-health-title]");
+        const hintEl = health.querySelector("[data-plan-health-hint]");
+        if (titleEl) titleEl.textContent = t("ops_plan_attention") || "Plan zahteva pažnju";
+        if (hintEl) {
+            const parts = [];
+            if (openReportsCount > 0) parts.push(`${openReportsCount} ${t("ops_plan_attention_reports") || "prijava"}`);
+            if (pendingConfirms.length > 0) parts.push(`${pendingConfirms.length} ${t("ops_plan_attention_confirms") || "potvrda"}`);
+            if (failedDeliveries > 0) parts.push(`${failedDeliveries} ${t("ops_plan_attention_failed") || "neuspelo slanje"}`);
+            hintEl.textContent = parts.join(" · ")
+                || (t("ops_plan_attention_hint") || "Kliknite — problemi su ispod.");
+        }
     }
-    titleEl.textContent = t("ops_plan_healthy") || "Plan je zdrav";
-    hintEl.textContent = t("ops_plan_healthy_hint") || "Sve je u skladu sa planom";
-    syncOpsPlanHealthAttentionState(false, 0);
+    syncOpsPlanHealthAttentionState(needsAttention, attentionCount);
 }
 
 function visibleOperationalReports() {

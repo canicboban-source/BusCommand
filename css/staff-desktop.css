@@ -2807,6 +2807,17 @@ html[data-app-surface="staff"] .ops-attention-soft {
     font-size: 0.84rem;
 }
 
+html[data-app-surface="staff"] .ops-attention-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: stretch;
+}
+
+html[data-app-surface="staff"] .ops-attention-actions .ops-attention-apply {
+    flex: 1 1 140px;
+}
+
 html[data-app-surface="staff"] .ops-attention-empty {
     padding: 28px 12px;
     text-align: center;
@@ -3359,3 +3370,194 @@ html[data-app-surface="staff"] .dispatcher-help-mailto.is-disabled {
     display: none;
   }
 }
+
+/* Dispo panel split: Daily / Monthly / Vehicles / Assign Shift */
+html[data-app-surface="staff"] .ops-health {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+html[data-app-surface="staff"] .ops-health .dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  flex-shrink: 0;
+}
+
+html[data-app-surface="staff"] .ops-health-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+html[data-app-surface="staff"] .ops-health-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+html[data-app-surface="staff"] .ops-health-problems {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+html[data-app-surface="staff"] .ops-health-problem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+html[data-app-surface="staff"] .ops-health-problem:hover,
+html[data-app-surface="staff"] .ops-health-problem:focus-visible {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+html[data-app-surface="staff"] .ops-health-problem.is-critical {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+html[data-app-surface="staff"] .ops-health-problem strong {
+  font-size: 0.88rem;
+}
+
+html[data-app-surface="staff"] .ops-health-problem span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+html[data-app-surface="staff"] .ops-health.is-clickable {
+  cursor: pointer;
+}
+
+html[data-app-surface="staff"] .ops-health strong {
+  font-size: 0.92rem;
+}
+
+html[data-app-surface="staff"] .ops-health span,
+html[data-app-surface="staff"] .ops-health [data-plan-health-hint] {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+html[data-app-surface="staff"] .ops-health.is-attention,
+html[data-app-surface="staff"] .ops-health.is-plan-gap {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+html[data-app-surface="staff"] .ops-health.is-attention .dot,
+html[data-app-surface="staff"] .ops-health.is-plan-gap .dot {
+  background: #f59e0b;
+}
+
+html[data-app-surface="staff"] .daily-plan-work-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  gap: 16px;
+  align-items: start;
+}
+
+html[data-app-surface="staff"] .daily-plan-situation-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 120px;
+}
+
+html[data-app-surface="staff"] .daily-situation-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  font-size: 0.82rem;
+}
+
+html[data-app-surface="staff"] .monthly-plan-below {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+html[data-app-surface="staff"] .monthly-matrix-driver-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+html[data-app-surface="staff"] .monthly-driver-plan-focus {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--panel-border);
+}
+
+html[data-app-surface="staff"] .shift-form-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 16px;
+}
+
+html[data-app-surface="staff"] .shift-form-driver select {
+  min-height: 48px;
+  font-size: 1.05rem;
+}
+
+html[data-app-surface="staff"] .shift-duty-resolved {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  min-height: 1.2em;
+}
+
+html[data-app-surface="staff"] .shift-assign-hint {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+}
+
+html[data-app-surface="staff"] .vehicles-panel-card {
+  max-width: 720px;
+}
+
+@media (max-width: 960px) {
+  html[data-app-surface="staff"] .daily-plan-work-grid,
+  html[data-app-surface="staff"] .monthly-plan-below,
+  html[data-app-surface="staff"] .shift-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

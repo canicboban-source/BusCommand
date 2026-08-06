@@ -16,6 +16,7 @@ import {
 
 test("CA can open operational view sections but cannot write roster", () => {
   assert.equal(canOpenSection("company-admin", "dispatcher-group-hub"), true);
+  assert.equal(canOpenSection("company-admin", "dispatcher-vehicles"), true);
   assert.equal(canOpenSection("company-admin", "dispatcher-daily-plan-full"), true);
   assert.equal(canOpenSection("company-admin", "dispatcher-monthly-plans-full"), true);
   assert.equal(canOpenSection("company-admin", "dispatcher-messages"), false);

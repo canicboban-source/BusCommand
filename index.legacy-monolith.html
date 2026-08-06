@@ -436,6 +436,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["dispatcher-vehicles"]'>
+                                <i data-lucide="bus"></i> <span data-i18n="nav_vehicles">Vozila</span>
+                            </a>
+                        </li>
+                        <li>
                             <a href="#" class="nav-item" data-action="switchSection" data-action-args='["dispatcher-messages"]' style="position:relative;">
                                 <i data-lucide="message-circle"></i> <span data-i18n="nav_messages">Poruke</span>
                                 <span id="nav-badge-disp-unread" class="nav-notification-badge hidden"></span>
@@ -1534,13 +1539,14 @@
                         </div>
                     </div>
 
-                    <!-- FORMA ZA DODELU SMENE -->
+                    <!-- FORMA ZA DODELU SMENE — tip/vreme iz CA uvezеног plana -->
                     <div class="card" style="margin-bottom:20px;">
                         <h3><i data-lucide="plus-circle"></i> <span data-i18n="shift_assign_title">Dodeli smenu vozaču</span></h3>
-                        <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr 1fr 0.8fr 0.8fr auto; gap:12px; align-items:end; margin-top:16px;" class="shift-form-grid">
-                            <div class="form-group" style="margin-bottom:0;">
+                        <p class="subtitle shift-assign-hint" data-i18n="shift_assign_from_plan_hint">Tip i vreme dolaze iz CA uvezеног plana — unesite samo vozača, datum i oznaku smene.</p>
+                        <div class="shift-form-grid">
+                            <div class="form-group shift-form-driver" style="margin-bottom:0;">
                                 <label data-i18n="select_driver">Vozač</label>
-                                <select id="shift-driver-select" style="cursor:pointer;">
+                                <select id="shift-driver-select" style="cursor:pointer;width:100%;min-height:48px;font-size:1.05rem;">
                                     <!-- Popunjava JS -->
                                 </select>
                             </div>
@@ -1549,32 +1555,15 @@
                                 <input type="date" id="shift-date-input">
                             </div>
                             <div class="form-group" style="margin-bottom:0;">
-                                <label data-i18n="shift_type_label">Tip smene</label>
-                                <select id="shift-type-select" style="cursor:pointer;">
-                                    <option value="morning" data-i18n="shift_morning">Prepodne (Frühdienst)</option>
-                                    <option value="afternoon" data-i18n="shift_afternoon">Popodne (Spätdienst)</option>
-                                    <option value="night" data-i18n="shift_night">Noćna (Nachtdienst)</option>
-                                    <option value="off" data-i18n="shift_off">Slobodan dan</option>
-                                    <option value="vacation" data-i18n="shift_vacation_type">Godišnji odmor</option>
-                                    <option value="sick" data-i18n="shift_sick_type">Bolovanje</option>
-                                </select>
+                                <label for="shift-name-input" data-i18n="shift_name_label">Oznaka smene</label>
+                                <input type="text" id="shift-name-input" list="shift-duty-datalist" placeholder="npr. 101.S08" maxlength="30" autocomplete="off">
+                                <datalist id="shift-duty-datalist"></datalist>
                             </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label data-i18n="shift_name_label">Oznaka smene (opciono)</label>
-                                <input type="text" id="shift-name-input" placeholder="npr. 320.S08" maxlength="30">
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label for="shift-start-input" data-i18n="shift_start_label">Početak</label>
-                                <input type="time" id="shift-start-input" required>
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label for="shift-end-input" data-i18n="shift_end_label">Kraj</label>
-                                <input type="time" id="shift-end-input" required>
-                            </div>
-                            <button data-action="assignShift" class="btn-primary" style="height:46px; white-space:nowrap;">
+                            <button data-action="assignShift" class="btn-primary" style="height:48px; white-space:nowrap;">
                                 <i data-lucide="check"></i> <span data-i18n="btn_assign_shift">Dodeli</span>
                             </button>
                         </div>
+                        <p id="shift-duty-resolved" class="shift-duty-resolved" aria-live="polite"></p>
                     </div>
 
                     <!-- SEDMIČNI PREGLED PO VOZAČIMA -->
@@ -1842,9 +1831,9 @@
 
                     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;">
                         <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="scrollHubSection" data-action-args='["group-hub-overview-detail"]'><span id="hub-stat-drivers" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_drivers" style="font-size:0.75rem;">Vozači</label></div>
-                        <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="scrollHubSection" data-action-args='["hub-section-buses"]'><span id="hub-stat-buses" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_buses" style="font-size:0.75rem;">Autobusi</label></div>
+                        <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="openVehiclesFromPlan"><span id="hub-stat-buses" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_buses" style="font-size:0.75rem;">Autobusi</label></div>
                         <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="openMonthlyPlansFull"><span id="hub-stat-plans" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_plans" style="font-size:0.75rem;">Planovi</label></div>
-                        <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="scrollHubSection" data-action-args='["hub-section-catalog"]'><span id="hub-stat-catalog" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_catalog" style="font-size:0.75rem;">Smena V66</label></div>
+                        <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="openDailyPlanFull"><span id="hub-stat-catalog" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_catalog" style="font-size:0.75rem;">Smena V66</label></div>
                     </div>
 
                     <div class="card hub-overview-card" id="group-hub-overview-detail"></div>
@@ -1878,26 +1867,12 @@
                             <ul class="crud-list" id="settings-drivers-list" style="max-height:220px;overflow-y:auto;"></ul>
                         </div>
 
-                        <div class="card hub-panel" id="hub-section-buses">
+                        <div class="card hub-panel hub-panel--split-redirect" id="hub-section-buses">
                             <h3 class="hub-section-title"><i data-lucide="bus"></i> <span data-i18n="hub_stat_buses">Buses</span></h3>
-                            <form id="add-bus-form" data-submit-action="addBus" class="crud-form hub-bus-form" style="margin-bottom:10px;">
-                                <input type="text" id="new-bus-num" required placeholder="e.g. 91504" aria-label="Bus number" data-i18n-aria-label="hub_add_bus_label" data-i18n-placeholder="hub_add_bus_placeholder">
-                                <input type="text" id="new-bus-garage" maxlength="40" placeholder="Depot A" aria-label="Garage" data-i18n-aria-label="bus_garage" data-i18n-placeholder="bus_garage_placeholder">
-                                <button type="submit" class="btn-primary hub-add-bus-btn" data-i18n="hub_add_bus_btn" aria-label="Add bus" data-i18n-aria-label="hub_add_bus_aria">Add bus</button>
-                            </form>
-                            <div class="hub-bus-import" style="margin-bottom:12px;">
-                                <p class="subtitle" style="font-size:0.8rem;margin:0 0 8px;" data-i18n="bus_import_hint">Import buses: TXT, CSV, XLSX or paste — one number per line.</p>
-                                <div id="bus-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bus-import-file"]'
-                                    data-drop-action="handleBusImportDrop" data-i18n="bus_import_drop">Drop TXT / CSV / XLSX here</div>
-                                <input type="file" id="bus-import-file" accept=".txt,.csv,.tsv,.xlsx,.xls" style="display:none;" data-change-action="handleBusImportFile" data-change-pass="event">
-                                <textarea id="bus-import-paste" rows="3" style="width:100%;margin-top:8px;box-sizing:border-box;" data-i18n-placeholder="bus_import_paste_placeholder" placeholder="Paste bus numbers…"></textarea>
-                                <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-                                    <button type="button" class="btn-secondary" data-action="handleBusImportPaste" data-i18n="bus_import_preview_btn">Preview import</button>
-                                    <button type="button" class="btn-secondary" data-action="clearBusImportPreview" data-i18n="bus_import_cancel">Clear</button>
-                                </div>
-                                <div id="bus-import-preview"></div>
-                            </div>
-                            <ul class="crud-list" id="settings-buses-list" style="max-height:280px;overflow-y:auto;"></ul>
+                            <p class="subtitle hub-panel-hint" data-i18n="hub_buses_moved_hint">Bus import and changes moved to the Vehicles panel.</p>
+                            <button type="button" class="btn-primary" data-action="openVehiclesFromPlan">
+                                <i data-lucide="arrow-right"></i> <span data-i18n="nav_vehicles">Vozila</span>
+                            </button>
                         </div>
 
                         <div class="card hub-panel" id="hub-section-catalog">
@@ -1946,9 +1921,45 @@
                     </div>
                 </section>
 
+                <!-- VOZILA — uvoz, izmene, grupe (razdvojeno iz Group Hub) -->
+                <section id="dispatcher-vehicles" class="content-section hidden">
+                    <div class="section-header">
+                        <div>
+                            <h2 id="vehicles-panel-title" data-i18n="nav_vehicles">Vozila</h2>
+                            <p id="vehicles-panel-subtitle" class="subtitle" data-i18n="vehicles_panel_sub">Uvoz, izmene i dodela grupama.</p>
+                        </div>
+                        <button type="button" class="btn-secondary" data-action="switchSection" data-action-args='["dispatcher-dashboard"]'>
+                            <i data-lucide="layout-dashboard"></i> <span data-i18n="nav_ops_center">Operativni centar</span>
+                        </button>
+                    </div>
+
+                    <div class="ops-health" id="vehicles-plan-health" role="status" aria-live="polite"></div>
+
+                    <div class="card vehicles-panel-card">
+                        <form id="add-bus-form" data-submit-action="addBus" class="crud-form hub-bus-form" style="margin-bottom:10px;">
+                            <input type="text" id="new-bus-num" required placeholder="e.g. 91504" aria-label="Bus number" data-i18n-aria-label="hub_add_bus_label" data-i18n-placeholder="hub_add_bus_placeholder">
+                            <input type="text" id="new-bus-garage" maxlength="40" placeholder="Depot A" aria-label="Garage" data-i18n-aria-label="bus_garage" data-i18n-placeholder="bus_garage_placeholder">
+                            <button type="submit" class="btn-primary hub-add-bus-btn" data-i18n="hub_add_bus_btn" aria-label="Add bus" data-i18n-aria-label="hub_add_bus_aria">Add bus</button>
+                        </form>
+                        <div class="vehicles-bus-import hub-bus-import" style="margin-bottom:12px;">
+                            <p class="subtitle" style="font-size:0.8rem;margin:0 0 8px;" data-i18n="bus_import_hint">Import buses: TXT, CSV, XLSX or paste — one number per line.</p>
+                            <div id="bus-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bus-import-file"]'
+                                data-drop-action="handleBusImportDrop" data-i18n="bus_import_drop">Drop TXT / CSV / XLSX here</div>
+                            <input type="file" id="bus-import-file" accept=".txt,.csv,.tsv,.xlsx,.xls" style="display:none;" data-change-action="handleBusImportFile" data-change-pass="event">
+                            <textarea id="bus-import-paste" rows="3" style="width:100%;margin-top:8px;box-sizing:border-box;" data-i18n-placeholder="bus_import_paste_placeholder" placeholder="Paste bus numbers…"></textarea>
+                            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                                <button type="button" class="btn-secondary" data-action="handleBusImportPaste" data-i18n="bus_import_preview_btn">Preview import</button>
+                                <button type="button" class="btn-secondary" data-action="clearBusImportPreview" data-i18n="bus_import_cancel">Clear</button>
+                            </div>
+                            <div id="bus-import-preview"></div>
+                        </div>
+                        <ul class="crud-list" id="settings-buses-list" style="max-height:420px;overflow-y:auto;"></ul>
+                    </div>
+                </section>
+
                 <!-- MESEČNI PLAN — pun ekran -->
                 <section id="dispatcher-monthly-plans-full" class="content-section hidden">
-                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
                         <button type="button" class="btn-secondary" data-action="backFromPlanFullPage" style="height:40px;padding:0 14px;">
                             <i data-lucide="arrow-left"></i> <span data-i18n="btn_back">Nazad</span>
                         </button>
@@ -1963,11 +1974,13 @@
                         </button>
                     </div>
 
+                    <div class="ops-health" id="monthly-plan-health" role="status" aria-live="polite"></div>
+
                     <div class="card full-width-card" style="margin-bottom:16px;">
-                        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;flex-wrap:wrap;">
+                        <div style="display:grid;grid-template-columns:1.6fr 1fr auto;gap:12px;align-items:end;flex-wrap:wrap;">
                             <div>
                                 <label data-i18n="monthly_label_driver" style="font-size:0.75rem;color:var(--text-muted);">Vozač</label>
-                                <select id="monthly-driver-select" data-change-action="loadMonthlyPlanForDriver" style="width:100%;padding:10px;font-size:0.9rem;"></select>
+                                <select id="monthly-driver-select" data-change-action="loadMonthlyPlanForDriver" style="width:100%;padding:12px;font-size:1.05rem;min-height:48px;"></select>
                             </div>
                             <div>
                                 <label data-i18n="monthly_label_month" style="font-size:0.75rem;color:var(--text-muted);">Mesec</label>
@@ -1978,14 +1991,29 @@
                         <div id="monthly-plan-driver-summary" style="font-size:0.88rem;color:var(--text-muted);margin-top:14px;min-height:1.2em;"></div>
                     </div>
 
-                    <div class="card full-width-card">
-                        <div id="monthly-plan-grid-container" style="overflow-x:auto;min-height:60vh;"></div>
+                    <div class="card full-width-card" style="margin-bottom:16px;">
+                        <div id="monthly-plan-grid-container" style="overflow-x:auto;min-height:40vh;"></div>
+                    </div>
+
+                    <div class="monthly-plan-below" id="monthly-plan-below">
+                        <div class="card monthly-below-card">
+                            <h3 class="hub-section-title" style="margin-top:0;"><i data-lucide="file-plus"></i> <span data-i18n="monthly_below_entry">Unos planova</span></h3>
+                            <div id="monthly-below-entry"></div>
+                        </div>
+                        <div class="card monthly-below-card">
+                            <h3 class="hub-section-title" style="margin-top:0;"><i data-lucide="alert-triangle"></i> <span data-i18n="monthly_below_problems">Problemi</span></h3>
+                            <div id="monthly-below-problems"></div>
+                        </div>
+                        <div class="card monthly-below-card">
+                            <h3 class="hub-section-title" style="margin-top:0;"><i data-lucide="wrench"></i> <span data-i18n="monthly_below_solutions">Rešenja</span></h3>
+                            <div id="monthly-below-solutions"></div>
+                        </div>
                     </div>
                 </section>
 
                 <!-- DNEVNI PLAN — pun ekran -->
                 <section id="dispatcher-daily-plan-full" class="content-section hidden">
-                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
                         <button type="button" class="btn-secondary" data-action="backFromPlanFullPage" style="height:40px;padding:0 14px;">
                             <i data-lucide="arrow-left"></i> <span data-i18n="btn_back">Nazad</span>
                         </button>
@@ -1998,9 +2026,26 @@
                         <input type="date" id="daily-plan-date-picker" style="padding:10px 14px;border-radius:var(--radius-sm);font-size:0.9rem;">
                     </div>
 
-                    <div class="card full-width-card">
-                        <div id="daily-plan-full-meta" style="font-size:0.9rem;margin-bottom:16px;color:var(--text-muted);"></div>
-                        <div id="daily-plan-full-slots" style="min-height:50vh;"></div>
+                    <div class="ops-health" id="daily-plan-health" role="status" aria-live="polite"></div>
+
+                    <div class="daily-plan-work-grid">
+                        <div class="card full-width-card daily-plan-main">
+                            <div id="daily-plan-full-meta" style="font-size:0.9rem;margin-bottom:16px;color:var(--text-muted);"></div>
+                            <div id="daily-plan-full-slots" style="min-height:40vh;"></div>
+                        </div>
+                        <aside class="card daily-plan-situation" aria-label="Situation overview">
+                            <h3 class="hub-section-title" style="margin-top:0;">
+                                <i data-lucide="radar"></i>
+                                <span data-i18n="daily_situation_title">Pregled situacije</span>
+                            </h3>
+                            <div id="daily-plan-situation-body" class="daily-plan-situation-body"></div>
+                            <button type="button" class="btn-secondary" style="width:100%;margin-top:12px;" data-action="switchSection" data-action-args='["dispatcher-dashboard"]'>
+                                <span data-i18n="nav_ops_center">Operativni centar</span>
+                            </button>
+                            <button type="button" class="btn-secondary" style="width:100%;margin-top:8px;" data-action="openVehiclesFromPlan">
+                                <i data-lucide="bus"></i> <span data-i18n="nav_vehicles">Vozila</span>
+                            </button>
+                        </aside>
                     </div>
                 </section>
 

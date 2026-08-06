@@ -18,8 +18,11 @@ test.describe("CA operational read-only (chapter 2)", () => {
     await page.locator('[data-action="openCompanyOpsOverview"]').click();
     await expect(page.locator("#dispatcher-group-hub")).not.toHaveClass(/hidden/);
     await expect(page.locator("#ops-readonly-banner")).toBeVisible();
+
+    await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("101"));
+    await expect(page.locator("#dispatcher-vehicles")).toBeVisible();
     await expect(page.locator("#add-bus-form")).toBeHidden();
-    await expect(page.locator(".hub-bus-import")).toBeHidden();
+    await expect(page.locator(".vehicles-bus-import")).toBeHidden();
     await expect(page.locator("#settings-buses-list")).toContainText("100");
 
     const blocked = await page.evaluate(async () => {

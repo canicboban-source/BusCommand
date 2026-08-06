@@ -197,7 +197,7 @@ function renderGroupOverviewDetail(groupId) {
         </div>
         <div class="hub-overview-actions">
             <button type="button" class="btn-secondary hub-action-btn" ${actionAttr("scrollHubSection", ["hub-section-drivers"])}>${t("hub_edit_drivers")}</button>
-            <button type="button" class="btn-primary hub-action-btn" ${actionAttr("scrollHubSection", ["hub-section-buses"])}>${t("hub_edit_buses")}</button>
+            <button type="button" class="btn-primary hub-action-btn" ${actionAttr("openVehiclesFromPlan")}>${t("hub_edit_buses")}</button>
             <button type="button" class="btn-secondary hub-action-btn" ${actionAttr("openDailyPlanFull")}>${t("hub_daily_plan")}</button>
             <button type="button" class="btn-secondary hub-action-btn" ${actionAttr("openMonthlyPlansFull")}>${t("hub_monthly_plan")}</button>
         </div>`;
@@ -287,7 +287,7 @@ function applyOperationalReadOnlyToHub() {
 
     const addForm = document.getElementById("add-bus-form");
     if (addForm) addForm.style.display = readOnly ? "none" : "";
-    const importBox = document.querySelector(".hub-bus-import");
+    const importBox = document.querySelector(".hub-bus-import, .vehicles-bus-import");
     if (importBox) importBox.style.display = readOnly ? "none" : "";
     const packageImport = document.getElementById("group-hub-step-import");
     if (packageImport) packageImport.style.display = readOnly ? "none" : "";
@@ -360,7 +360,22 @@ function renderPlanGroupPicker(mode) {
 }
 
 function renderDashboardGroupsGrid() {
-    renderGroupsPickerGrid("dashboard-groups-grid", "openGroupHub", "disp_group_hub_hint");
+    renderGroupsPickerGrid("dashboard-groups-grid", "openDailyPlanForGroup", "disp_group_hub_hint");
+}
+
+function openVehiclesFromPlan() {
+    const groupId = getHubGroupId() || window.state.activeGroupFilter;
+    if (!groupId) {
+        switchSection("dispatcher-vehicles");
+        return;
+    }
+    // Lazy import avoided — register window.openVehiclesForGroup from vehicles-panel.
+    if (typeof window.openVehiclesForGroup === "function") {
+        window.openVehiclesForGroup(groupId);
+        return;
+    }
+    window.state.activeGroupHubId = groupId;
+    switchSection("dispatcher-vehicles");
 }
 
 /** @deprecated koristi scrollHubSection */
@@ -376,6 +391,7 @@ export {
     openDailyPlanFull,
     openDailyPlanForGroup,
     openMonthlyPlanForGroup,
+    openVehiclesFromPlan,
     backFromPlanFullPage,
     scrollHubSection,
     setGroupHubTab,

@@ -215,11 +215,11 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openGroupHub("101"));
-    await page.getByRole("button", { name: "View drivers" }).click();
+    await page.getByRole("button", { name: /View drivers|Uredi vozače|Fahrer/i }).click();
     await expect(page.locator("#hub-section-drivers")).toBeFocused();
 
-    await page.locator('.hub-overview-actions [data-action="scrollHubSection"]').nth(1).click();
-    await expect(page.locator("#hub-section-buses")).toBeFocused();
+    await page.locator('.hub-overview-actions [data-action="openVehiclesFromPlan"]').click();
+    await expect(page.locator("#dispatcher-vehicles")).toBeVisible();
   });
 
   test("generic report requires a verified resolution record", async ({ page }) => {
@@ -462,8 +462,8 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await page.goto("/staff.html?mode=demo");
     await loginDispatcher(page);
 
-    await page.evaluate(() => window.openGroupHub("101"));
-    await expect(page.locator("#hub-section-buses")).toBeVisible();
+    await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("101"));
+    await expect(page.locator("#dispatcher-vehicles")).toBeVisible();
     await page.locator('.hub-bus-item[data-bus-id="bus-edit"] button.hub-bus-edit-btn').click();
     const form = page.locator('[data-bus-edit="bus-edit"]');
     await expect(form).toBeVisible();

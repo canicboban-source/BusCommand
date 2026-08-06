@@ -73,6 +73,7 @@ const STAFF_ONLY_IDS = [
   "dispatcher-monthly-plan-pick",
   "dispatcher-live-map-section",
   "dispatcher-group-hub",
+  "dispatcher-vehicles",
   "dispatcher-monthly-plans-full",
   "dispatcher-daily-plan-full",
   "dispatcher-reports",

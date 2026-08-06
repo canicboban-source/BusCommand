@@ -18,6 +18,7 @@ import { closeModal, showModal } from "../ui/modals.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
+import { paintPlanHealthBanner } from "./plan-health-banner.js";
 import { persistShift, undoShift } from "./shifts.js";
 import { isOperationalReadOnly } from "../core/access.js";
 import { previewMassDayRange } from "../core/monthly-plan-ops.js";
@@ -289,6 +290,7 @@ function loadMonthlyPlanForDriver() {
     if (!ctx) {
         container.innerHTML = `<p class="plan-empty-state">${t("monthly_select_prompt")}</p>`;
         updateMonthlyPlanSummary(null);
+        renderMonthlyBelowZone(null);
         return;
     }
 
@@ -300,7 +302,7 @@ function loadMonthlyPlanForDriver() {
 
     if (!schedule) {
         container.innerHTML = `
-            <div class="plan-empty-state plan-empty-state--action">
+            <div class="plan-empty-state plan-empty-state--action" id="monthly-driver-plan-focus">
                 <p class="plan-empty-title">${t("monthly_no_plan_for", { driver: escapeHtml(driverName), month })}</p>
                 <p class="plan-empty-hint">${t("monthly_empty_shell_hint") || t("monthly_import_hint")}</p>
                 <button type="button" class="btn-primary plan-empty-cta" ${actionAttr("createEmptyMonthlyPlan", [scheduleKey, escapeHtml(driverName), month, totalDays])}>
@@ -308,6 +310,7 @@ function loadMonthlyPlanForDriver() {
                 </button>
             </div>
             ${drivers.length > 1 ? renderGroupMonthMatrix(drivers, year, monthNum, totalDays, month) : ""}`;
+        renderMonthlyBelowZone(ctx);
         if (typeof lucide !== "undefined") lucide.createIcons();
         return;
     }
@@ -316,11 +319,77 @@ function loadMonthlyPlanForDriver() {
     if (drivers.length > 1) {
         html += renderGroupMonthMatrix(drivers, year, monthNum, totalDays, month);
     }
+    html += `<div id="monthly-driver-plan-focus" class="monthly-driver-plan-focus">`;
     html += renderMassOpsToolbar(totalDays);
     html += renderDriverDayTable(schedule, scheduleKey, year, monthNum, totalDays);
+    html += `</div>`;
 
     container.innerHTML = html;
+    renderMonthlyBelowZone(ctx);
     if (typeof lucide !== "undefined") lucide.createIcons();
+}
+
+function focusMonthlyDriverPlan(driverName) {
+    const driverSelect = document.getElementById("monthly-driver-select");
+    if (!driverSelect || !driverName) return;
+    const match = [...driverSelect.options].find((opt) => opt.value === driverName || opt.textContent === driverName);
+    if (match) driverSelect.value = match.value;
+    else driverSelect.value = driverName;
+    loadMonthlyPlanForDriver();
+    window.setTimeout(() => {
+        document.getElementById("monthly-driver-plan-focus")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        driverSelect.focus();
+    }, 0);
+}
+
+function renderMonthlyBelowZone(ctx) {
+    const entry = document.getElementById("monthly-below-entry");
+    const problems = document.getElementById("monthly-below-problems");
+    const solutions = document.getElementById("monthly-below-solutions");
+    if (!entry || !problems || !solutions) return;
+
+    if (!ctx) {
+        entry.innerHTML = `<p class="subtitle">${t("monthly_select_prompt") || "Select a driver and month."}</p>`;
+        problems.innerHTML = "";
+        solutions.innerHTML = "";
+        return;
+    }
+
+    const { driverName, month, scheduleKey, schedule, totalDays } = ctx;
+    if (!schedule) {
+        entry.innerHTML = `
+            <p class="subtitle">${t("monthly_empty_shell_hint") || "Create an empty month shell, then edit days."}</p>
+            <button type="button" class="btn-primary" ${actionAttr("createEmptyMonthlyPlan", [scheduleKey, escapeHtml(driverName), month, totalDays])}>
+                ${t("monthly_create_empty")}
+            </button>`;
+    } else {
+        entry.innerHTML = `
+            <p class="subtitle">${t("monthly_below_entry_hint") || "Click a day in the matrix or open day 1 to edit."}</p>
+            <button type="button" class="btn-secondary" ${actionAttr("openMonthlyDayEdit", [scheduleKey, 1])}>
+                ${t("monthly_edit_day") || "Edit day"}
+            </button>`;
+    }
+
+    let emptyDays = 0;
+    if (schedule?.parsedShifts) {
+        for (let d = 1; d <= totalDays; d++) {
+            const shift = getShiftForPlanDay(schedule, d);
+            if (isPlanDayEmpty(shift)) emptyDays += 1;
+        }
+    } else {
+        emptyDays = totalDays;
+    }
+    problems.innerHTML = emptyDays > 0
+        ? `<p><strong>${emptyDays}</strong> ${t("monthly_below_empty_days") || "days without a duty code"}</p>`
+        : `<p class="subtitle">${t("monthly_below_no_problems") || "No open gaps in this month view."}</p>`;
+
+    solutions.innerHTML = `
+        <button type="button" class="btn-secondary" style="width:100%;margin-bottom:8px;" ${actionAttr("switchSection", ["dispatcher-dashboard"])}>
+            ${t("nav_ops_center") || "Operations center"}
+        </button>
+        <button type="button" class="btn-secondary" style="width:100%;" ${actionAttr("openVehiclesFromPlan")}>
+            ${t("nav_vehicles") || "Vehicles"}
+        </button>`;
 }
 
 function renderMassOpsToolbar(totalDays) {
@@ -428,7 +497,11 @@ function renderGroupMonthMatrix(drivers, year, monthNum, totalDays, month) {
     for (const driver of drivers) {
         const schedule = resolveScheduleForDriverMonth(driver.name, month, driver.id || null);
         html += `<tr>
-          <th class="monthly-matrix-driver" scope="row" title="${escapeHtml(driver.name)}">${escapeHtml(driver.name)}</th>`;
+          <th class="monthly-matrix-driver" scope="row" title="${escapeHtml(driver.name)}">
+            <button type="button" class="monthly-matrix-driver-btn"
+              ${actionAttr("focusMonthlyDriverPlan", [driver.name])}
+              title="${escapeHtml(t("monthly_open_driver_plan") || "Open full monthly plan")}">${escapeHtml(driver.name)}</button>
+          </th>`;
         for (let day = 1; day <= totalDays; day++) {
             const dateStr = `${year}-${String(monthNum).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
             const live = getShiftForDriverDate(driver.name, dateStr);
@@ -1149,6 +1222,7 @@ function renderMonthlyPlansFullPage() {
         subtitle.textContent = t("monthly_full_subtitle", { name: group.name, id: group.id });
     }
 
+    paintPlanHealthBanner("monthly-plan-health", { groupId: hubId });
     renderMonthlyPlansView();
     populateUploadScheduleDrivers();
     if (typeof lucide !== "undefined") lucide.createIcons();
@@ -1164,6 +1238,7 @@ export {
     ensureMonthlyMonthOptions,
     populateMonthlyPlanDrivers,
     loadMonthlyPlanForDriver,
+    focusMonthlyDriverPlan,
     createEmptyMonthlyPlan,
     updateMonthlyPlanDay,
     openMonthlyDayEdit,

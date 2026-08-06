@@ -533,16 +533,34 @@ test.describe("UI smoke", () => {
     await seedDemoState(page);
     await page.goto("/staff.html?mode=demo");
     await loginDispatcher(page);
+    await page.evaluate(() => {
+      window.state.shiftCatalogs = window.state.shiftCatalogs || {};
+      window.state.shiftCatalogs["101"] = {
+        line: "101",
+        lineId: "101",
+        entries: {
+          "310.E2E": {
+            code: "310.E2E",
+            type: "morning",
+            start: "06:00",
+            end: "14:00",
+            label: "E2E duty"
+          }
+        }
+      };
+      window.state.shiftCatalog = window.state.shiftCatalogs["101"];
+      window.state.activeGroupFilter = "101";
+      window.state.activeGroupHubId = "101";
+    });
     await page.evaluate(() => window.switchSection("dispatcher-shifts"));
     await expect(page.locator("#dispatcher-shifts")).toBeVisible();
     await page.locator("#shift-driver-select").selectOption("E2E Driver");
     const today = new Date().toISOString().slice(0, 10);
     await page.locator("#shift-date-input").fill(today);
-    await page.locator("#shift-type-select").selectOption({ index: 1 });
     await page.locator("#shift-name-input").fill("310.E2E");
-    await page.locator("#shift-start-input").fill("06:00");
-    await page.locator("#shift-end-input").fill("14:00");
-    await page.getByRole("button", { name: /Assign Shift/i }).click();
+    await expect(page.locator("#shift-type-select")).toHaveCount(0);
+    await expect(page.locator("#shift-start-input")).toHaveCount(0);
+    await page.getByRole("button", { name: /Assign Shift|Dodeli/i }).click();
     const shiftCount = await page.evaluate(() => {
       const today = new Date().toISOString().slice(0, 10);
       return (window.state.shifts || []).filter(

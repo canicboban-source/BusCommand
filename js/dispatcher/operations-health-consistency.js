@@ -1,12 +1,11 @@
 /**
  * Aligns the ops health banner with actionable Needs attention items (Ultimate §8).
- * Never invent "6 uncovered" attention that opens an empty panel.
+ * Plan gaps open the solutions panel (synthetic gap cards), never a dead screen.
  */
 import { getVisibleDrivers, todayDateStr } from "../core/utils.js";
 import { getDriverDutySummary } from "../core/shift-plan.js";
 import { t } from "../ui/i18n.js";
-import { collectOpsAttentionItems } from "./ops-attention.js";
-import { switchSection } from "../layout/navigation.js";
+import { collectOpsAttentionItems, openOpsAttentionPanel } from "./ops-attention.js";
 
 let installed = false;
 let scheduled = false;
@@ -63,14 +62,13 @@ function wirePlanGapClick(health) {
     planGapBound = true;
     health.addEventListener("click", () => {
         if (!health.classList.contains("is-plan-gap")) return;
-        // Plan gaps are fixed in the daily plan — not in an empty Needs attention sheet.
-        switchSection("dispatcher-daily-plan-pick");
+        openOpsAttentionPanel();
     });
     health.addEventListener("keydown", (event) => {
         if (!health.classList.contains("is-plan-gap")) return;
         if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
-            switchSection("dispatcher-daily-plan-pick");
+            openOpsAttentionPanel();
         }
     });
 }
@@ -80,6 +78,15 @@ function syncOperationsHealth() {
     const dashboard = document.getElementById("dispatcher-dashboard");
     const health = document.getElementById("ops-plan-health");
     if (!dashboard || dashboard.classList.contains("hidden") || !health) return;
+
+    // Shared banner owns DOM after paintPlanHealthBanner — do not fight it with legacy selectors.
+    if (health.querySelector("[data-plan-health-title]")) {
+        const panelCount = collectOpsAttentionItems().length;
+        if (panelCount > 0) {
+            clearPlanGap(health);
+        }
+        return;
+    }
 
     const title = health.querySelector("strong");
     const hint = health.querySelector("span:not(.dot)");
@@ -104,7 +111,6 @@ function syncOperationsHealth() {
         return;
     }
 
-    // Soft plan-gap only: never is-attention without panel items (empty sheet bug).
     health.classList.remove("is-attention");
     health.classList.add("is-plan-gap", "is-clickable");
     health.dataset.planGap = "true";
@@ -115,10 +121,10 @@ function syncOperationsHealth() {
     if (summary.uncovered) parts.push(`${summary.uncovered} · ${t("ops_shift_uncovered")}`);
     if (summary.pending) parts.push(`${summary.pending} · ${t("status_pending_confirmation")}`);
     setText(title, t("ops_plan_gap_title") || "Dnevni plan ima praznine");
-    setText(hint, parts.join(" · ") + " — " + (t("ops_plan_gap_hint") || "Kliknite za dnevni plan."));
+    setText(hint, parts.join(" · ") + " — " + (t("ops_plan_gap_hint") || "Kliknite za problem i rešenja."));
     health.setAttribute(
         "aria-label",
-        t("ops_plan_gap_aria") || "Dnevni plan ima praznine. Otvorite dnevni plan."
+        t("ops_plan_gap_aria") || "Dnevni plan ima praznine. Otvorite panel rešenja."
     );
     wirePlanGapClick(health);
 }

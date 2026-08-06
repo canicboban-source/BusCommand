@@ -1,6 +1,6 @@
 // BusCommand — jedan panel „Zahteva pažnju“: problem + rešenje na istom mestu
 import { getVisibleDrivers, showToast, escapeHtml, todayDateStr } from "../core/utils.js";
-import { getShiftForDriverDate, setShiftForDriverDate } from "../core/shift-plan.js";
+import { getShiftForDriverDate, setShiftForDriverDate, getDriverDutySummary, getDailyPlanForDate } from "../core/shift-plan.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { t } from "../ui/i18n.js";
 import { IS_DEMO_MODE } from "../core/runtime-config.js";
@@ -10,7 +10,7 @@ import {
     scopedDispatcherReports,
     sortReportsForOperations
 } from "./report-model.js";
-import { persistShift } from "./shifts.js";
+import { persistShift, openShiftCell } from "./shifts.js";
 import { ApiClient } from "../core/api-client.js";
 import { saveState } from "../core/state.js";
 import { busHasGroup } from "../data/bus-group-membership.js";
@@ -342,6 +342,84 @@ function collectOpsAttentionItems() {
     return items.sort((a, b) => (rank[a.severity] ?? 9) - (rank[b.severity] ?? 9));
 }
 
+/** Soft plan gaps (uncovered drivers / empty slots) as Needs-attention cards with solutions. */
+function collectPlanGapAttentionItems(groupId = null, dateStr = null) {
+    const today = dateStr || todayDateStr();
+    const scope = groupId || window.state?.activeGroupHubId || window.state?.activeGroupFilter || "";
+    const items = [];
+
+    getVisibleDrivers().forEach((driver) => {
+        if (driver.active === false) return;
+        const gid = driver.groupId || driver.lineId || "";
+        if (scope && gid && String(gid) !== String(scope)) return;
+        const duty = getDriverDutySummary(driver.name, today);
+        const type = duty?.shift?.type;
+        if (duty?.shift && type !== "off" && type !== "clear") return;
+        const id = driverUid(driver) || driver.name;
+        items.push({
+            id: `gap:driver:${id}`,
+            kind: "plan_gap_driver",
+            severity: "warning",
+            driverId: id,
+            driverName: driver.name,
+            groupId: gid || scope,
+            date: today,
+            title: t("ops_plan_gap_driver") || "Nepokriven vozač",
+            summary: t("ops_attn_gap_driver_summary", { driver: driver.name })
+                || `${driver.name} nema smenu za danas — dodelite smenu ili otvorite dnevni plan.`
+        });
+    });
+
+    const prevHub = window.state?.activeGroupHubId;
+    const prevFilter = window.state?.activeGroupFilter;
+    let slots = [];
+    try {
+        if (scope && window.state) {
+            window.state.activeGroupHubId = scope;
+            window.state.activeGroupFilter = scope;
+        }
+        slots = (getDailyPlanForDate(today).slots || []).filter((slot) =>
+            slot && !String(slot.driverName || "").trim()
+        );
+    } finally {
+        if (window.state) {
+            window.state.activeGroupHubId = prevHub;
+            window.state.activeGroupFilter = prevFilter;
+        }
+    }
+
+    slots.slice(0, 12).forEach((slot, index) => {
+        const code = String(slot.code || slot.name || `slot-${index}`);
+        items.push({
+            id: `gap:slot:${code}`,
+            kind: "plan_gap_slot",
+            severity: "warning",
+            groupId: scope,
+            date: today,
+            dutyCode: code,
+            title: t("ops_plan_gap_slot") || "Prazan slot u planu",
+            summary: t("ops_attn_gap_slot_summary", { code })
+                || `Slot ${code} nema vozača — otvorite dnevni plan i dodelite pokriće.`
+        });
+    });
+
+    return items;
+}
+
+/** Real attention + plan-gap cards (one list for the solutions panel). */
+function collectAllAttentionItems(groupId = null, dateStr = null) {
+    const real = collectOpsAttentionItems();
+    const gaps = collectPlanGapAttentionItems(groupId, dateStr);
+    const seen = new Set(real.map((row) => row.id));
+    const merged = real.slice();
+    for (const gap of gaps) {
+        if (seen.has(gap.id)) continue;
+        seen.add(gap.id);
+        merged.push(gap);
+    }
+    return merged;
+}
+
 function ensureOpsAttentionPanel() {
     let layer = document.getElementById("ops-attention-panel");
     if (layer) return layer;
@@ -480,6 +558,23 @@ function renderAttentionCard(item) {
             <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id])}>
                 <i data-lucide="check"></i> ${escapeHtml(t("ops_attn_apply") || "Zatvori prijavu")}
             </button>`;
+    } else if (item.kind === "plan_gap_driver") {
+        solution = `
+            <p class="ops-attention-soft">${escapeHtml(t("ops_attn_gap_driver_hint") || "Rešenje: dodelite smenu ovom vozaču ili otvorite dnevni plan grupe.")}</p>
+            <div class="ops-attention-actions">
+                <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id, "assign"])}>
+                    <i data-lucide="user-plus"></i> ${escapeHtml(t("ops_attn_gap_assign") || "Dodeli smenu")}
+                </button>
+                <button type="button" class="btn-secondary ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id, "daily"])}>
+                    <i data-lucide="calendar-days"></i> ${escapeHtml(t("ops_attn_gap_open_daily") || "Otvori dnevni plan")}
+                </button>
+            </div>`;
+    } else if (item.kind === "plan_gap_slot") {
+        solution = `
+            <p class="ops-attention-soft">${escapeHtml(t("ops_attn_gap_slot_hint") || "Rešenje: otvorite dnevni plan i dodelite vozača na ovaj slot.")}</p>
+            <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id, "daily"])}>
+                <i data-lucide="calendar-days"></i> ${escapeHtml(t("ops_attn_gap_open_daily") || "Otvori dnevni plan")}
+            </button>`;
     } else {
         solution = `
             <p class="ops-attention-soft">${escapeHtml(t("ops_attn_confirm_hint") || "Potvrda još nije stigla — proverite poruke ili sačekajte odgovor vozača.")}</p>
@@ -534,11 +629,9 @@ function openOpsAttentionPanel(focusItemId = "") {
     // data-action with [] passes the click event as the first arg.
     if (focusItemId && typeof focusItemId === "object") focusItemId = "";
     _focusItemId = String(focusItemId || "");
-    const items = collectOpsAttentionItems();
-    // Ultimate §8: never open an empty solution sheet for plan-only gaps.
+    const items = collectAllAttentionItems();
     if (!items.length && !_focusItemId) {
-        showToast(t("ops_plan_gap_hint") || "Kliknite za dnevni plan.", "info");
-        switchSection("dispatcher-daily-plan-pick");
+        showToast(t("ops_attn_empty") || "Nema otvorenih stavki.", "info");
         return false;
     }
     const layer = ensureOpsAttentionPanel();
@@ -564,12 +657,15 @@ function closeOpsAttentionPanel() {
 function refreshOpsAttentionPanelIfOpen() {
     const layer = document.getElementById("ops-attention-panel");
     if (!layer || layer.classList.contains("hidden")) return;
-    const items = collectOpsAttentionItems();
-    paintOpsAttentionPanel(items);
-    if (!items.length) {
-        showToast(t("ops_attn_all_clear") || "Sve stavke su rešene.", "success");
+    const real = collectOpsAttentionItems();
+    // Soft plan gaps stay on the banner; after a real fix, close when critical items are gone.
+    if (!real.length) {
+        paintOpsAttentionPanel([]);
         closeOpsAttentionPanel();
+        showToast(t("ops_attn_all_clear") || "Sve stavke su rešene.", "success");
+        return;
     }
+    paintOpsAttentionPanel(collectAllAttentionItems());
 }
 
 function cardField(card, field) {
@@ -651,12 +747,30 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
     return true;
 }
 
-async function applyOpsAttentionFix(itemId) {
-    const items = collectOpsAttentionItems();
+async function applyOpsAttentionFix(itemId, fixAction = "") {
+    const items = collectAllAttentionItems();
     const item = items.find(row => row.id === itemId);
     const card = document.querySelector(`[data-attn-id="${String(itemId).replace(/"/g, "")}"]`);
     const statusEl = card?.querySelector("[data-attn-status]");
     if (!item || !card) return;
+
+    if (item.kind === "plan_gap_driver" || item.kind === "plan_gap_slot") {
+        const action = String(fixAction || "daily");
+        closeOpsAttentionPanel();
+        if (action === "assign" && item.driverName) {
+            openShiftCell(item.driverName, item.date || todayDateStr());
+            return;
+        }
+        const groupId = item.groupId || window.state?.activeGroupHubId || window.state?.activeGroupFilter;
+        if (groupId) {
+            const { openDailyPlanForGroup } = await import("./group-hub.js");
+            await openDailyPlanForGroup(groupId);
+        } else {
+            switchSection("dispatcher-daily-plan-pick");
+        }
+        return;
+    }
+
     if (_pendingApply) return;
     _pendingApply = true;
     const applyBtn = card.querySelector(".ops-attention-apply");
@@ -773,13 +887,17 @@ async function applyOpsAttentionFix(itemId) {
 function wireOpsPlanHealthAttention() {
     const health = document.getElementById("ops-plan-health");
     if (!health || health.dataset.attnBound === "true") return;
+    // Shared plan-health banner owns click → stacked problems when present.
+    if (health.querySelector("[data-plan-health-problems]") || health.dataset.planHealthBound === "1") {
+        return;
+    }
     health.dataset.attnBound = "true";
     health.addEventListener("click", () => {
-        if (!health.classList.contains("is-attention")) return;
+        if (!health.classList.contains("is-attention") && !health.classList.contains("is-plan-gap")) return;
         openOpsAttentionPanel();
     });
     health.addEventListener("keydown", (event) => {
-        if (!health.classList.contains("is-attention")) return;
+        if (!health.classList.contains("is-attention") && !health.classList.contains("is-plan-gap")) return;
         if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             openOpsAttentionPanel();
@@ -805,6 +923,8 @@ function syncOpsPlanHealthAttentionState(needsAttention, count) {
 
 export {
     collectOpsAttentionItems,
+    collectPlanGapAttentionItems,
+    collectAllAttentionItems,
     openOpsAttentionPanel,
     closeOpsAttentionPanel,
     refreshOpsAttentionPanelIfOpen,

@@ -18,12 +18,13 @@ test.describe("Dispatcher bus import smoke", () => {
     await loginDispatcher(page);
 
     await page.evaluate(() => {
-      const fn = window.openGroupHub;
-      if (typeof fn !== "function") throw new Error("openGroupHub missing");
+      const fn = window.openVehiclesForGroup || window.openGroupHub;
+      if (typeof fn !== "function") throw new Error("openVehiclesForGroup missing");
       fn("101");
     });
 
-    await expect(page.locator("#hub-section-buses")).toBeVisible();
+    await expect(page.locator("#dispatcher-vehicles")).toBeVisible();
+    await expect(page.locator("#add-bus-form")).toBeVisible();
     await page.locator("#bus-import-paste").fill("91103\n91104\n90001\n");
     await page.locator('[data-action="handleBusImportPaste"]').click();
 
@@ -45,7 +46,7 @@ test.describe("Dispatcher bus import smoke", () => {
     await page.goto("/staff.html?mode=demo");
     await loginDispatcher(page);
 
-    await page.evaluate(() => window.openGroupHub("101"));
+    await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("101"));
     await page.locator("#bus-import-paste").fill("   \n  ");
     await page.locator('[data-action="handleBusImportPaste"]').click();
 

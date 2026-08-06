@@ -21,12 +21,14 @@ import { renderScheduleHistory } from "../data/schedules.js";
 import { refreshDailyPlanOnDateChange, renderDailyPlanFullPage, bindDailyPlanFullPage } from "../dispatcher/daily-plan.js";
 import { renderMonthlyPlansView, renderMonthlyPlansFullPage } from "../dispatcher/monthly-plans.js";
 import { renderGroupHub, renderPlanGroupPicker } from "../dispatcher/group-hub.js";
+import { renderDispatcherVehicles, openVehiclesForGroup } from "../dispatcher/vehicles-panel.js";
 
 export function registerStaffSections() {
     registerSectionHandlers({
         "dispatcher-dashboard": () => renderDispatcherDashboard(),
         "dispatcher-daily-plan-pick": () => renderPlanGroupPicker("daily"),
         "dispatcher-monthly-plan-pick": () => renderPlanGroupPicker("monthly"),
+        "dispatcher-vehicles": () => renderDispatcherVehicles(),
         "dispatcher-live-map-section": () => {
             setTimeout(() => initDispatcherLiveMap(), 100);
         },
@@ -67,4 +69,6 @@ export function registerStaffSections() {
         },
         "superadmin-dashboard": () => {}
     });
+
+    window.openVehiclesForGroup = openVehiclesForGroup;
 }

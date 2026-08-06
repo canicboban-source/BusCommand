@@ -42,9 +42,11 @@ import {
     applyOpsAttentionFix
 } from "./dispatcher/dashboard.js";
 import { removeDispatcher } from "./dispatcher/dispatchers.js";
-import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlansFull, scrollHubSection } from "./dispatcher/group-hub.js";
+import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlansFull, openVehiclesFromPlan, scrollHubSection } from "./dispatcher/group-hub.js";
 import { returnLostItem, setLostItemStatus, openLostItemPhoto } from "./dispatcher/lost-items.js";
-import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, openMonthlyDayEditForDriver, previewMonthlyMassAbsence, saveMonthlyDayEdit, selectMonthlyPlanGroup, undoMonthlyDayEdit } from "./dispatcher/monthly-plans.js";
+import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, focusMonthlyDriverPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, openMonthlyDayEditForDriver, previewMonthlyMassAbsence, saveMonthlyDayEdit, selectMonthlyPlanGroup, undoMonthlyDayEdit } from "./dispatcher/monthly-plans.js";
+import { goToOpsPlanProblems } from "./dispatcher/plan-health-banner.js";
+import { openVehiclesForGroup } from "./dispatcher/vehicles-panel.js";
 import { setMessagesPageTab, submitDispatcherMessage } from "./dispatcher/msg-compose.js";
 import { clearPendingPlanImports, confirmBulkPlanImport, handleBulkPlanDrop, handleBulkPlanFileInput, removePendingImport, updatePendingImportDriver, updatePendingImportMonth } from "./dispatcher/plan-import.js";
 import { resolveReport, openReportResolution, closeReportResolution } from "./dispatcher/reports.js";
@@ -216,6 +218,7 @@ const HANDLERS = {
     handleVacation,
     insertScheduleTable,
     loadMonthlyPlanForDriver,
+    focusMonthlyDriverPlan,
     loadMoreCompanyAudit,
     loginAsDispatcher,
     logout,
@@ -229,6 +232,9 @@ const HANDLERS = {
     openDailyPlanFull,
     openDispatcherHelp,
     openGroupHub,
+    openVehiclesForGroup,
+    openVehiclesFromPlan,
+    openOpsPlanHealthProblems: goToOpsPlanProblems,
     openMonthlyDayEdit,
     openMonthlyDayEditForDriver,
     previewMonthlyMassAbsence,

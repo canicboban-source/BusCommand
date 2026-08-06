@@ -40,8 +40,8 @@ test.describe("Bus multi-group pool", () => {
     await page.goto("/staff.html?mode=demo");
     await loginDispatcher(page);
 
-    await page.evaluate(() => window.openGroupHub("320"));
-    await expect(page.locator("#hub-section-buses")).toBeVisible();
+    await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("320"));
+    await expect(page.locator("#dispatcher-vehicles")).toBeVisible();
     await expect(page.locator("#settings-buses-list")).not.toContainText("91504");
 
     await page.locator("#bus-import-paste").fill("91504\n");
@@ -99,7 +99,7 @@ test.describe("Bus multi-group pool", () => {
     await seedDemoState(page, state);
     await page.goto("/staff.html?mode=demo");
     await loginDispatcher(page);
-    await page.evaluate(() => window.openGroupHub("320"));
+    await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("320"));
 
     await page.locator("#bus-import-paste").fill("  \n");
     await page.locator('[data-action="handleBusImportPaste"]').click();
