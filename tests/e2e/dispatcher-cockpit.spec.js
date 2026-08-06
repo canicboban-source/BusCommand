@@ -199,6 +199,9 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await page.locator("#dispatcher-live-alerts .urgent-action").first().click();
     await expect(page.locator("#ops-attention-panel")).toBeVisible();
 
+    // Attention B2 shows one focused card — pick Delay from the left index.
+    const delayNav = page.locator(".ops-attention-nav-item").filter({ hasText: /delay|kašnjen|verspät|Traffic/i }).first();
+    if (await delayNav.count()) await delayNav.click();
     const delayCard = page.locator(".ops-attention-card").filter({ hasText: /delay|kašnjen|verspät|Traffic/i }).first();
     await expect(delayCard).toBeVisible();
     await delayCard.locator('[data-attn-field="resolutionType"]').selectOption("restored");

@@ -1671,7 +1671,7 @@
                 </section>
 
                 <!-- KONTROLNA TABLA — Operativni centar -->
-                <section id="dispatcher-dashboard" class="content-section hidden ops-center">
+                <section id="dispatcher-dashboard" class="content-section hidden ops-center ops-layout-b">
                     <div class="section-header ops-center-top">
                         <div>
                             <h2 data-i18n="nav_ops_center">Operativni centar</h2>
@@ -1688,7 +1688,7 @@
 
                     <div id="dashboard-groups-grid" class="ops-line-chips" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:16px;"></div>
 
-                    <div class="stats-grid ops-stats-strip">
+                    <div class="stats-grid ops-stats-strip ops-stats-strip-compact">
                         <div class="stat-card">
                             <div class="stat-icon-wrapper blue-icon">
                                 <i data-lucide="users"></i>
@@ -2012,8 +2012,8 @@
                 </section>
 
                 <!-- DNEVNI PLAN — pun ekran -->
-                <section id="dispatcher-daily-plan-full" class="content-section hidden">
-                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+                <section id="dispatcher-daily-plan-full" class="content-section hidden daily-plan-layout-b2">
+                    <div class="daily-plan-full-toolbar">
                         <button type="button" class="btn-secondary" data-action="backFromPlanFullPage" style="height:40px;padding:0 14px;">
                             <i data-lucide="arrow-left"></i> <span data-i18n="btn_back">Nazad</span>
                         </button>
@@ -2023,17 +2023,21 @@
                             </h2>
                             <p id="daily-full-subtitle" class="subtitle" style="margin:6px 0 0;font-size:0.85rem;" data-i18n="daily_full_subtitle">Pozicija 1 = x2 Bereitschaft (pon–pet)</p>
                         </div>
+                        <button type="button" id="daily-plan-issues-pill" class="daily-plan-issues-pill hidden" data-action="openOpsAttentionPanel" data-action-args='[]'>
+                            <i data-lucide="alert-triangle"></i>
+                            <span data-daily-issues-label>0</span>
+                        </button>
                         <input type="date" id="daily-plan-date-picker" style="padding:10px 14px;border-radius:var(--radius-sm);font-size:0.9rem;">
                     </div>
 
-                    <div class="ops-health" id="daily-plan-health" role="status" aria-live="polite"></div>
+                    <div class="ops-health daily-plan-health-slim" id="daily-plan-health" role="status" aria-live="polite"></div>
 
                     <div class="daily-plan-work-grid">
                         <div class="card full-width-card daily-plan-main">
                             <div id="daily-plan-full-meta" style="font-size:0.9rem;margin-bottom:16px;color:var(--text-muted);"></div>
                             <div id="daily-plan-full-slots" style="min-height:40vh;"></div>
                         </div>
-                        <aside class="card daily-plan-situation" aria-label="Situation overview">
+                        <aside class="card daily-plan-situation" aria-label="Situation overview" hidden>
                             <h3 class="hub-section-title" style="margin-top:0;">
                                 <i data-lucide="radar"></i>
                                 <span data-i18n="daily_situation_title">Pregled situacije</span>

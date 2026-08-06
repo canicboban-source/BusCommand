@@ -21,6 +21,7 @@ import {
     collectOpsAttentionItems,
     openOpsAttentionPanel,
     closeOpsAttentionPanel,
+    focusOpsAttentionItem,
     refreshOpsAttentionPanelIfOpen,
     applyOpsAttentionFix,
     applyCoverageResolution,
@@ -1070,6 +1071,7 @@ export {
     transitionOperationalIncident,
     openOpsAttentionPanel,
     closeOpsAttentionPanel,
+    focusOpsAttentionItem,
     applyOpsAttentionFix
 };
 

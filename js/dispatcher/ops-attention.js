@@ -422,6 +422,11 @@ function collectAllAttentionItems(groupId = null, dateStr = null) {
 
 function ensureOpsAttentionPanel() {
     let layer = document.getElementById("ops-attention-panel");
+    const needsRebuild = layer && !layer.querySelector("#ops-attention-nav");
+    if (layer && needsRebuild) {
+        layer.remove();
+        layer = null;
+    }
     if (layer) return layer;
     layer = document.createElement("div");
     layer.id = "ops-attention-panel";
@@ -442,12 +447,27 @@ function ensureOpsAttentionPanel() {
                     <i data-lucide="x"></i>
                 </button>
             </header>
-            <div id="ops-attention-list" class="ops-attention-list"></div>
+            <div class="ops-attention-body">
+                <nav id="ops-attention-nav" class="ops-attention-nav" aria-label="${escapeHtml(t("ops_attn_title") || "Needs attention")}"></nav>
+                <div id="ops-attention-detail" class="ops-attention-detail">
+                    <div id="ops-attention-list" class="ops-attention-list"></div>
+                </div>
+            </div>
         </aside>`;
     document.body.appendChild(layer);
     layer.addEventListener("click", (event) => {
         if (event.target === layer) closeOpsAttentionPanel();
     });
+    if (!layer.dataset.escBound) {
+        layer.dataset.escBound = "1";
+        document.addEventListener("keydown", (event) => {
+            if (event.key !== "Escape") return;
+            const open = document.getElementById("ops-attention-panel");
+            if (!open || open.classList.contains("hidden")) return;
+            event.preventDefault();
+            closeOpsAttentionPanel();
+        });
+    }
     return layer;
 }
 
@@ -587,7 +607,9 @@ function renderAttentionCard(item) {
         <article class="ops-attention-card ${severity}" data-attn-id="${escapeHtml(item.id)}" id="ops-attn-card-${sid}">
             <div class="ops-attention-card-top">
                 <span class="ops-attention-badge">${escapeHtml(item.title)}</span>
-                <span class="ops-attention-sev">${escapeHtml(item.severity === "critical" ? (t("sev_critical") || "Kritično") : (t("sev_warning") || "Upozorenje"))}</span>
+                <span class="ops-attention-sev">${escapeHtml(item.severity === "critical"
+                    ? (t("ops_attn_sev_critical") || "Critical")
+                    : (t("ops_attn_sev_warning") || "Warning"))}</span>
             </div>
             <p class="ops-attention-meta">${escapeHtml(meta)}</p>
             <p class="ops-attention-summary">${escapeHtml(item.summary || "")}</p>
@@ -602,27 +624,61 @@ function renderAttentionCard(item) {
 function paintOpsAttentionPanel(items) {
     const layer = ensureOpsAttentionPanel();
     const list = layer.querySelector("#ops-attention-list");
+    const nav = layer.querySelector("#ops-attention-nav");
     const subtitle = layer.querySelector("#ops-attention-subtitle");
-    if (subtitle) {
-        subtitle.textContent = items.length
-            ? (t("ops_attn_subtitle", { count: items.length }) || `${items.length} stavki — rešite ih ovde, bez skakanja po panelima.`)
-            : "";
-    }
-    if (!list) return;
-    list.innerHTML = items.length
-        ? items.map(renderAttentionCard).join("")
-        : `<div class="ops-attention-empty">${escapeHtml(t("ops_attn_empty") || "Trenutno nema stavki koje zahtevaju pažnju.")}</div>`;
-
-    if (_focusItemId) {
-        const card = list.querySelector(`[data-attn-id="${_focusItemId.replace(/"/g, "")}"]`);
-        if (card) {
-            card.classList.add("is-focused");
-            card.scrollIntoView({ block: "nearest", behavior: "smooth" });
-            const firstControl = card.querySelector("select, textarea, button.ops-attention-apply");
-            setTimeout(() => firstControl?.focus(), 0);
+    if (!items.length) {
+        if (subtitle) subtitle.textContent = "";
+        if (nav) nav.innerHTML = "";
+        if (list) {
+            list.innerHTML = `<div class="ops-attention-empty">${escapeHtml(t("ops_attn_empty") || "Trenutno nema stavki koje zahtevaju pažnju.")}</div>`;
         }
+        if (typeof lucide !== "undefined") lucide.createIcons();
+        return;
+    }
+
+    if (!_focusItemId || !items.some((row) => row.id === _focusItemId)) {
+        _focusItemId = items[0].id;
+    }
+    const focusIndex = Math.max(0, items.findIndex((row) => row.id === _focusItemId));
+    const active = items[focusIndex] || items[0];
+
+    if (subtitle) {
+        subtitle.textContent = t("ops_attn_progress", {
+            current: focusIndex + 1,
+            total: items.length
+        }) || `${focusIndex + 1} of ${items.length}`;
+    }
+
+    if (nav) {
+        nav.innerHTML = items.map((item, index) => {
+            const sev = item.severity === "critical" ? "is-critical" : "is-warning";
+            const activeClass = item.id === active.id ? "is-active" : "";
+            return `
+                <button type="button" class="ops-attention-nav-item ${sev} ${activeClass}"
+                    ${actionAttr("focusOpsAttentionItem", [item.id])}>
+                    <strong>${escapeHtml(item.title || item.kind || `#${index + 1}`)}</strong>
+                    <span>${escapeHtml(item.driverName || item.dutyCode || item.summary || "")}</span>
+                </button>`;
+        }).join("");
+    }
+
+    if (!list) return;
+    list.innerHTML = renderAttentionCard(active);
+    const card = list.querySelector(`[data-attn-id="${String(active.id).replace(/"/g, "")}"]`);
+    if (card) {
+        card.classList.add("is-focused");
+        const firstControl = card.querySelector("select, textarea, button.ops-attention-apply");
+        setTimeout(() => firstControl?.focus(), 0);
     }
     if (typeof lucide !== "undefined") lucide.createIcons();
+}
+
+function focusOpsAttentionItem(itemId = "") {
+    if (itemId && typeof itemId === "object") itemId = "";
+    const id = String(itemId || "");
+    if (!id) return;
+    _focusItemId = id;
+    paintOpsAttentionPanel(collectAllAttentionItems());
 }
 
 function openOpsAttentionPanel(focusItemId = "") {
@@ -644,7 +700,8 @@ function openOpsAttentionPanel(focusItemId = "") {
 }
 
 function closeOpsAttentionPanel() {
-    if (_pendingApply) return;
+    // Always allow dismiss — pending apply should not trap the dispatcher.
+    _pendingApply = false;
     const layer = document.getElementById("ops-attention-panel");
     if (!layer) return;
     layer.classList.add("hidden");
@@ -927,6 +984,7 @@ export {
     collectAllAttentionItems,
     openOpsAttentionPanel,
     closeOpsAttentionPanel,
+    focusOpsAttentionItem,
     refreshOpsAttentionPanelIfOpen,
     applyOpsAttentionFix,
     applyCoverageResolution,
