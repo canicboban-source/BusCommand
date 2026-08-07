@@ -119,6 +119,7 @@ function switchLoginTab(role) {
     const dispTab = document.getElementById("tab-dispatcher-btn");
     const driverForm = document.getElementById("driver-login-form");
     const dispForm = document.getElementById("dispatcher-login-form");
+    const staffHint = document.getElementById("staff-login-role-hint");
 
     clearAllPasswordFields();
     clearAuthSetupFields();
@@ -128,6 +129,7 @@ function switchLoginTab(role) {
         dispTab?.classList.remove("active");
         driverForm?.classList.remove("hidden");
         dispForm?.classList.add("hidden");
+        staffHint?.classList.add("hidden");
         const passInput = document.getElementById("login-dispatcher-password");
         const emailInput = document.getElementById("login-dispatcher-email");
         if (passInput) passInput.value = "";
@@ -137,6 +139,7 @@ function switchLoginTab(role) {
         dispTab?.classList.add("active");
         driverForm?.classList.add("hidden");
         dispForm?.classList.remove("hidden");
+        staffHint?.classList.remove("hidden");
 
         const pinInput = document.getElementById("login-driver-pin");
         if (pinInput) pinInput.value = "";

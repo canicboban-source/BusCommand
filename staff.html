@@ -71,9 +71,12 @@
                     </button>
                     <button id="tab-dispatcher-btn" class="login-tab" data-action="switchLoginTab" data-action-args='["dispatcher"]'>
                         <i data-lucide="shield"></i>
-                        <span data-i18n="dispatcher">Dispatcher</span>
+                        <span data-i18n="staff_login_tab">Staff</span>
                     </button>
                 </div>
+                <p id="staff-login-role-hint" class="subtitle" style="margin:8px 0 14px;font-size:0.8rem;line-height:1.35;color:var(--text-muted);" data-i18n="staff_login_role_hint">
+                    Staff: Dispo, Company Admin or Super Admin (own email). Drivers: Driver tab.
+                </p>
 
                 <!-- Forma za vozača -->
                 <div id="driver-login-form" class="login-form-content hidden" hidden>
@@ -1378,6 +1381,7 @@
 
                 <!-- GROUP HUB — upravljanje podacima po grupi -->
                 <section id="dispatcher-group-hub" class="content-section hidden">
+                    <div id="ops-readonly-banner-slot" aria-live="polite"></div>
                     <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;">
                         <button type="button" class="btn-secondary" data-action="closeGroupHub" style="height:40px;padding:0 14px;">
                             <i data-lucide="arrow-left"></i> <span data-i18n="hub_back">Back to Hub</span>
@@ -1545,7 +1549,7 @@
                             Uvezite pripremljene mesečne dodele po vozaču (Excel/CSV/PDF/TXT/slika). Format se prepoznaje automatski; povezivanje je po imenu — bez EID i PIN.
                         </p>
                         <div id="plan-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bulk-plan-import-files"]'
-                            data-drop-action="handleBulkPlanDrop" data-i18n="hub_plan_drop_hint">Drop PDF/Excel/CSV/image plans here</div>
+                            data-drop-action="handleBulkPlanDrop" data-i18n="hub_plan_drop_hint">Drop Excel/CSV/PDF/TXT/image (OCR)</div>
                         <input type="file" id="bulk-plan-import-files" multiple accept=".xlsx,.xls,.pdf,.csv,.txt,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display:none;" data-change-action="handleBulkPlanFileInput" data-change-pass="event">
                         <div id="plan-import-preview" hidden></div>
                     </div>

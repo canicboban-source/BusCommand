@@ -21,9 +21,42 @@ import { renderHubMonthlyPreview } from "./monthly-plans.js";
 import { switchSection } from "../layout/navigation.js";
 import { escapeHtml } from "../core/utils.js";
 import { isOperationalReadOnly } from "../core/access.js";
+import { syncUserSession } from "../auth/login-session.js";
 
 function getHubGroupId() {
     return window.state.activeGroupHubId || null;
+}
+
+/** Keep header "Active group" and dispatcher record aligned with the open hub (D1). */
+function adoptActiveGroup(groupId) {
+    if (!groupId) return;
+    window.state.activeGroupHubId = groupId;
+    window.state.activeGroupFilter = groupId;
+
+    const role = String(window.currentUser?.role || "");
+    const isDispatcher = role === "dispatcher" || role === "disp";
+    if (!isDispatcher || !window.currentUser) return;
+
+    window.currentUser.activeGroupId = groupId;
+    syncUserSession(window.currentUser);
+
+    const disp = (window.state.dispatchers || []).find((d) => d.id === window.currentUser.id);
+    if (disp && disp.activeGroupId !== groupId) {
+        disp.activeGroupId = groupId;
+        saveState();
+    }
+
+    const sub = document.getElementById("header-user-sub");
+    if (!sub) return;
+    const activeGroup = (window.state.groups || []).find((g) => String(g.id) === String(groupId));
+    const groupName = escapeHtml(String(activeGroup?.name || groupId));
+    const switchLabel = escapeHtml(t("btn_switch") || "Switch");
+    const activeLabel = escapeHtml(t("active_group_short") || "Active group");
+    let html = `${activeLabel}: ${groupName} <button type="button" ${actionAttr("switchToGroupSetup")} style="background:rgba(255,255,255,0.1); border:none; color:var(--primary-color); border-radius:4px; padding:2px 8px; margin-left:8px; font-size:0.75rem; cursor:pointer;">${switchLabel}</button>`;
+    if (window.currentUser.impersonated) {
+        html += ` <button type="button" ${actionAttr("exitImpersonation")} style="background:var(--danger-color); border:none; color:#fff; border-radius:4px; padding:3px 12px; margin-left:8px; font-size:0.75rem; cursor:pointer; font-weight:600;">${escapeHtml(t("btn_exit_inspect") || "Exit inspect")}</button>`;
+    }
+    sub.innerHTML = html;
 }
 
 function migrateLineMembership(lineId) {
@@ -62,12 +95,12 @@ function migrateLineMembership(lineId) {
 
 function openGroupHub(groupId) {
     if (!groupId) return;
-    window.state.activeGroupHubId = groupId;
-    window.state.activeGroupFilter = groupId;
+    adoptActiveGroup(groupId);
     migrateLineMembership(groupId);
     activateShiftCatalogForLine(groupId);
     ensureShiftCatalogForEdit(groupId);
     switchSection("dispatcher-group-hub");
+    renderGroupHub();
     loadActiveServicePlanForLine(groupId)
         .then(plan => { if (plan && getHubGroupId() === groupId) renderGroupHub(); })
         .catch(error => console.warn("Published service plan could not be loaded", error));
@@ -87,8 +120,7 @@ function openDailyPlanFull() {
 
 async function openDailyPlanForGroup(groupId) {
     if (!groupId) return;
-    window.state.activeGroupHubId = groupId;
-    window.state.activeGroupFilter = groupId;
+    adoptActiveGroup(groupId);
     migrateLineMembership(groupId);
     activateShiftCatalogForLine(groupId);
     ensureShiftCatalogForEdit(groupId);
@@ -99,8 +131,7 @@ async function openDailyPlanForGroup(groupId) {
 
 async function openMonthlyPlanForGroup(groupId) {
     if (!groupId) return;
-    window.state.activeGroupHubId = groupId;
-    window.state.activeGroupFilter = groupId;
+    adoptActiveGroup(groupId);
     migrateLineMembership(groupId);
     activateShiftCatalogForLine(groupId);
     ensureShiftCatalogForEdit(groupId);
@@ -283,18 +314,22 @@ function applyOperationalReadOnlyToHub() {
     const bannerId = "ops-readonly-banner";
     let banner = document.getElementById(bannerId);
     const hub = document.getElementById("dispatcher-group-hub");
+    const slot = document.getElementById("ops-readonly-banner-slot");
     if (readOnly && hub) {
         if (!banner) {
             banner = document.createElement("div");
             banner.id = bannerId;
             banner.setAttribute("role", "status");
-            banner.style.cssText = "margin:0 0 12px;padding:10px 14px;border-radius:10px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.45);color:#fbbf24;font-size:0.85rem;font-weight:600;";
-            hub.insertBefore(banner, hub.firstChild);
+            banner.setAttribute("data-i18n", "ops_readonly_banner");
+            banner.style.cssText = "position:sticky;top:0;z-index:40;margin:0 0 12px;padding:12px 14px;border-radius:10px;background:rgba(245,158,11,0.18);border:1px solid rgba(245,158,11,0.55);color:#fbbf24;font-size:0.9rem;font-weight:700;letter-spacing:0.01em;box-shadow:0 4px 16px rgba(0,0,0,0.25);";
+            (slot || hub).insertBefore(banner, (slot || hub).firstChild);
         }
-        banner.textContent = t("ops_readonly_banner") || "Read-only operational view — Company Admin cannot change plans or buses.";
+        banner.textContent = t("ops_readonly_banner") || "Read-only view — Company Admin can inspect groups but cannot change plans, buses, or assignments.";
         banner.classList.remove("hidden");
+        banner.removeAttribute("hidden");
     } else if (banner) {
         banner.classList.add("hidden");
+        banner.setAttribute("hidden", "");
     }
 
     const addForm = document.getElementById("add-bus-form");
@@ -384,12 +419,12 @@ function openVehiclesFromPlan() {
         switchSection("dispatcher-vehicles");
         return;
     }
+    adoptActiveGroup(groupId);
     // Lazy import avoided — register window.openVehiclesForGroup from vehicles-panel.
     if (typeof window.openVehiclesForGroup === "function") {
         window.openVehiclesForGroup(groupId);
         return;
     }
-    window.state.activeGroupHubId = groupId;
     switchSection("dispatcher-vehicles");
 }
 
