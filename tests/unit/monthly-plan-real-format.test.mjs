@@ -68,6 +68,21 @@ test("overview matrices are not silently treated as import plans", () => {
     assert.equal(parseDienstplanSheet(rows, "320"), null);
 });
 
+test("raspored-style Datum/Vozač/Smena sheet parses without being named Detaljno", () => {
+    const rows = [
+        ["Raspored vozača - Avgust 2026. (linija 320)"],
+        ["Datum", "Dan", "Vozač", "Bus", "Smena (Dienst)", "Tip", "Napomena"],
+        [46235, "Subota", "Vozač 01", "91101", "320.601", "Vikend", ""],
+        [46237, "Ponedeljak", "Vozač 01", "91101", "320.F05", "Ferije", ""]
+    ];
+    const parsed = parseDetaljnoSheet(rows, "320");
+    assert.ok(parsed);
+    assert.equal(parsed.month, "2026-08");
+    assert.equal(parsed.byDriver["Vozač 01"].parsedShifts[1].routeCode, "320.601");
+    assert.equal(parsed.byDriver["Vozač 01"].parsedShifts[1].bus, "91101");
+    assert.equal(parsed.byDriver["Vozač 01"].parsedShifts[3].routeCode, "320.F05");
+});
+
 test("Detaljno sheet recognizes Serbian Vozač header with diacritics", () => {
     const rows = [
         ["Datum", "Dan", "Vozač", "Grupa", "Tip dana", "Smena/Dienst", "Status", "Početak", "Kraj", "Linije"],

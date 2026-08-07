@@ -193,6 +193,9 @@ export function ensureDemoOpsBaseline(state) {
     if (state.onboardingDone == null) state.onboardingDone = true;
     if (state.companyAdminOnboardingDone == null) state.companyAdminOnboardingDone = true;
 
+    // Owner test driver on VOR 310/320 — always available in demo (no wipe of e2e fixtures).
+    ensureOwnerTestDriver(state);
+
     try {
         const key = "buscommand_demo_state_v3";
         const payload = JSON.stringify(state);
@@ -201,4 +204,78 @@ export function ensureDemoOpsBaseline(state) {
     } catch { /* ignore quota */ }
 
     return state;
+}
+
+function ensureOwnerTestDriver(state) {
+    for (const group of [
+        { id: "310", name: "VOR 310", color: "#0EA5E9" },
+        { id: "320", name: "VOR 320", color: "#3D7EF5" }
+    ]) {
+        if (!state.groups.some((g) => String(g?.id) === group.id)) {
+            state.groups.push({
+                id: group.id,
+                name: group.name,
+                color: group.color,
+                active: true,
+                companyId: "demo"
+            });
+        }
+        if (!state.routes.some((r) => String(r?.groupId) === group.id)) {
+            state.routes.push({
+                id: `route-${group.id}`,
+                name: `Line ${group.id}`,
+                groupId: group.id
+            });
+        }
+    }
+
+    const ownerDriverId = "drv-canic-boban";
+    if (!state.drivers.some((d) => d && d.id === ownerDriverId)) {
+        state.drivers.push({
+            id: ownerDriverId,
+            name: "Canic Boban",
+            first_name: "Boban",
+            last_name: "Canic",
+            email: "cane@gmx.at",
+            phone: "+4369917137535",
+            // CA-only fields (Dispo UI must not surface these).
+            eid: "100615",
+            pin: "59991",
+            company_code: "100615",
+            bus: "91504",
+            groupId: "320",
+            lineId: "320",
+            knownGroupIds: ["310", "320"],
+            companyId: "demo",
+            active: true
+        });
+    }
+
+    for (const number of ["91503", "91504", "91505", "91103", "91104"]) {
+        if (!state.buses.some((b) => String(b?.number || b?.id) === number)) {
+            state.buses.push({
+                id: `bus-vor-${number}`,
+                number,
+                groupId: "320",
+                lineId: "320",
+                groupIds: ["310", "320"],
+                companyId: "demo",
+                active: true,
+                garage: "VOR",
+                opsStatus: "ready"
+            });
+        }
+    }
+
+    // Make owner driver visible to demo dispatchers on 320.
+    state.dispatchers.forEach((d) => {
+        if (!d || d.isSuperAdmin) return;
+        const groups = Array.isArray(d.groups) ? d.groups.map(String) : [];
+        if (!groups.includes("320")) {
+            d.groups = [...groups, "320"];
+        }
+        if (!groups.includes("310") && !d.groups.map(String).includes("310")) {
+            d.groups = [...d.groups.map(String), "310"];
+        }
+    });
 }

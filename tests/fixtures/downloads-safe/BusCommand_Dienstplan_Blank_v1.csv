@@ -1,0 +1,6 @@
+section,key,value,duty_code,day_type,work_start,first_trip_start,last_trip_end,work_end,start_location,end_location,sequence,activity_type,start,end,line,course,from,to
+PLAN,template_version,BUSCOMMAND-DIENSTPLAN-1,,,,,,,,,,,,,,,,
+PLAN,plan_code,,,,,,,,,,,,,,,,,
+PLAN,plan_version,,,,,,,,,,,,,,,,,
+PLAN,valid_from,,,,,,,,,,,,,,,,,
+PLAN,timezone,Europe/Vienna,,,,,,,,,,,,,,,,,

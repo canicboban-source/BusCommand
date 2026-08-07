@@ -1542,11 +1542,11 @@
                             <i data-lucide="file-up"></i> <span data-i18n="hub_extra_plans_title">Uvoz mesečnih planova</span>
                         </h3>
                         <p class="subtitle" style="font-size:0.82rem;margin:0 0 10px;" data-i18n="hub_plan_import_hint">
-                            Uvezite pripremljene mesečne dodele po vozaču (PDF/Excel/CSV). Povezivanje je po imenu — bez EID i PIN.
+                            Uvezite pripremljene mesečne dodele po vozaču (Excel/CSV/PDF/TXT/slika). Format se prepoznaje automatski; povezivanje je po imenu — bez EID i PIN.
                         </p>
                         <div id="plan-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bulk-plan-import-files"]'
-                            data-drop-action="handleBulkPlanDrop" data-i18n="hub_plan_drop_hint">Drop PDF/Excel plans here</div>
-                        <input type="file" id="bulk-plan-import-files" multiple accept=".xlsx,.xls,.pdf,.csv,.txt" style="display:none;" data-change-action="handleBulkPlanFileInput" data-change-pass="event">
+                            data-drop-action="handleBulkPlanDrop" data-i18n="hub_plan_drop_hint">Drop PDF/Excel/CSV/image plans here</div>
+                        <input type="file" id="bulk-plan-import-files" multiple accept=".xlsx,.xls,.pdf,.csv,.txt,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display:none;" data-change-action="handleBulkPlanFileInput" data-change-pass="event">
                         <div id="plan-import-preview" hidden></div>
                     </div>
 

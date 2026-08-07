@@ -37,6 +37,7 @@ function parseDetaljnoSheet(rows, lineId) {
     const iGrupa = colIndex(headers, ["grupa", "group"]);
     const iTip = colIndex(headers, ["tip dana", "tip"]);
     const iSmena = colIndex(headers, ["smena", "dienst"]);
+    const iBus = colIndex(headers, ["bus", "autobus"]);
     const iStatus = colIndex(headers, ["status"]);
     const iStart = colIndex(headers, ["pocetak", "start"]);
     const iEnd = colIndex(headers, ["kraj", "end"]);
@@ -76,6 +77,9 @@ function parseDetaljnoSheet(rows, lineId) {
             dayType: r[iTip],
             status
         });
+        if (iBus >= 0) {
+            shift.bus = String(r[iBus] || "").trim() || null;
+        }
 
         if (!byDriver[driverName]) byDriver[driverName] = { groupName: String(r[iGrupa] ?? "").trim(), parsedShifts: {} };
         if (r[iGrupa]) byDriver[driverName].groupName = String(r[iGrupa]).trim();
@@ -145,7 +149,12 @@ function parseDienstplanSheet(rows, lineId) {
 
     const titleRow = rows.find((row) => row.some((cell) => /dienstplan\s+f(?:ü|u)r\s*:/i.test(String(cell))));
     const titleIndex = titleRow?.findIndex((cell) => /dienstplan\s+f(?:ü|u)r\s*:/i.test(String(cell))) ?? -1;
-    const driverName = titleIndex >= 0 ? String(titleRow[titleIndex + 1] || "").trim() : "";
+    let driverName = "";
+    if (titleIndex >= 0) {
+        const titleCell = String(titleRow[titleIndex] || "");
+        const inline = titleCell.match(/dienstplan\s+f(?:ü|u)r\s*:\s*(.+)$/i);
+        driverName = String(inline?.[1] || titleRow[titleIndex + 1] || "").trim();
+    }
     if (!driverName) return null;
 
     const parsedShifts = {};
@@ -187,21 +196,36 @@ function parseMonthlyPlanWorkbook(workbook, lineId) {
         sheets: sheetNames
     };
 
-    if (detaljnoName) {
-        const rows = sheetToRows(workbook.Sheets[detaljnoName]);
-        const parsed = parseDetaljnoSheet(rows, lineId);
-        if (parsed) {
-            result.month = parsed.month;
-            result.byDriver = parsed.byDriver;
-            result.rowCount = parsed.rowCount;
-        } else {
-            result.errors.push("Sheet Detaljno — header nije prepoznat.");
+    // Prefer named Detaljno, then scan every sheet for Detaljno OR single-driver Dienstplan layout.
+    const preferredDetaljno = detaljnoName
+        ? [detaljnoName, ...sheetNames.filter((name) => name !== detaljnoName)]
+        : sheetNames;
+    let detaljnoParsed = null;
+    for (const sheetName of preferredDetaljno) {
+        detaljnoParsed = parseDetaljnoSheet(sheetToRows(workbook.Sheets[sheetName]), lineId);
+        if (detaljnoParsed?.rowCount) {
+            result.format = detaljnoName && sheetName === detaljnoName
+                ? "monthly-excel"
+                : "monthly-excel-detaljno-scan";
+            result.month = detaljnoParsed.month;
+            result.byDriver = detaljnoParsed.byDriver;
+            result.rowCount = detaljnoParsed.rowCount;
+            break;
         }
-    } else {
-        const dienstplanName = findSheetName(sheetNames, ["dienstplan"]);
-        const parsed = dienstplanName
-            ? parseDienstplanSheet(sheetToRows(workbook.Sheets[dienstplanName]), lineId)
-            : null;
+        detaljnoParsed = null;
+    }
+
+    if (!detaljnoParsed) {
+        const preferredDienst = findSheetName(sheetNames, ["dienstplan"]);
+        const ordered = preferredDienst
+            ? [preferredDienst, ...sheetNames.filter((name) => name !== preferredDienst)]
+            : sheetNames;
+        let parsed = null;
+        for (const sheetName of ordered) {
+            parsed = parseDienstplanSheet(sheetToRows(workbook.Sheets[sheetName]), lineId);
+            if (parsed?.rowCount) break;
+            parsed = null;
+        }
         if (parsed) {
             result.format = "driver-dienstplan-excel";
             result.month = parsed.month;

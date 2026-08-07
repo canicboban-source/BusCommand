@@ -6,6 +6,7 @@
 const XLSX_SRC = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
 const PDFJS_SRC = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js";
 const PDFJS_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+const TESSERACT_SRC = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
 
 const pending = new Map();
 
@@ -59,4 +60,13 @@ async function ensurePdfJs() {
   return globalThis.pdfjsLib;
 }
 
-export { ensureXlsx, ensurePdfJs, XLSX_SRC, PDFJS_SRC };
+async function ensureTesseract() {
+  if (typeof globalThis.Tesseract !== "undefined") return globalThis.Tesseract;
+  await loadScript(TESSERACT_SRC);
+  if (typeof globalThis.Tesseract === "undefined") {
+    throw new Error("ca_plan_err_tesseract_missing");
+  }
+  return globalThis.Tesseract;
+}
+
+export { ensureXlsx, ensurePdfJs, ensureTesseract, XLSX_SRC, PDFJS_SRC, TESSERACT_SRC };

@@ -140,6 +140,7 @@ test("dispatcher monthly plan import is enabled on monthly full page (D21)", () 
   assert.match(html, /id="dispo-monthly-plan-import"/);
   assert.match(html, /id="bulk-plan-import-files"/);
   assert.doesNotMatch(html, /id="bulk-plan-import-files"[^>]*\sdisabled/);
+  assert.match(html, /id="bulk-plan-import-files"[^>]*accept="[^"]*\.xlsx[^"]*\.csv[^"]*\.jpg/);
   assert.match(html, /med-undo-btn/);
   assert.match(html, /undoMonthlyDayEdit/);
 });
