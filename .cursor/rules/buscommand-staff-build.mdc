@@ -1,0 +1,33 @@
+---
+description: Staff surface build — edit sources, full Vite build, never surfaces-only
+globs: index.html,index.legacy-monolith.html,staff.html,driver.html,js/**/*.{js,mjs},scripts/build-surface-html.js,vite*.{js,ts,mjs},package.json
+alwaysApply: false
+---
+
+# Staff / driver build discipline
+
+## Source of truth
+
+- Staff monolith edits belong in the **legacy source** the build reads (typically `index.legacy-monolith.html` / Vite entry), not only generated `dist/staff.html`.
+- After JS/HTML/CSS that ships to users: run **`npm run build`** (full). Runtime and Playwright often serve **`dist/`**.
+
+## Critical pitfall
+
+```text
+❌ npm run build:surfaces   alone
+   → can rewrite staff.html with stale/hashed asset refs → 404 / blank app
+
+✅ npm run build
+   → Vite bundle + surfaces + assets coherent
+```
+
+## Checklist after UI/JS change
+
+1. Edit source modules under `js/` (or the correct HTML entry).
+2. `npm run build`
+3. Re-run the relevant unit/e2e that hit staff/driver surfaces.
+4. Do not commit broken `dist/` half-builds; prefer regenerating via the full build script used by the project.
+
+## Surfaces script
+
+`build:surfaces` is a **step inside** the full build, not a substitute for it when verifying the app.
