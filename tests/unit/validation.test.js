@@ -47,11 +47,29 @@ test("createUserBody requires companyId for dispatcher", () => {
 test("createUserBody rejects minting superadmin via admin API", () => {
   const result = createUserBody.safeParse({
     email: "root@example.test",
-    password: "unit-test-password",
+    password: "unit-test-password1",
     role: "superadmin",
     companyId: "alpha"
   });
   assert.equal(result.success, false);
+});
+
+test("createUserBody rejects password without letter and digit", () => {
+  const weak = createUserBody.safeParse({
+    email: "ca@acme.com",
+    password: "abcdef",
+    role: "company_admin",
+    companyId: "acme"
+  });
+  assert.equal(weak.success, false);
+
+  const ok = createUserBody.safeParse({
+    email: "ca@acme.com",
+    password: "abcdef1",
+    role: "company_admin",
+    companyId: "acme"
+  });
+  assert.equal(ok.success, true);
 });
 
 test("assertCompanyIdUsable blocks reserved demo id", () => {

@@ -769,8 +769,9 @@ async function superadminCreateCompanyAdmin() {
     if (!name || !email || !password || !companyId) {
         showToast(t("error_fill_admin_fields"), 'error'); return false;
     }
-    if (password.length < 6) {
-        showToast(t("ca_password_min"), 'error'); return false;
+    if (password.length < 6 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+        showToast(t("ca_password_min"), "error");
+        return false;
     }
 
     if (!IS_DEMO_MODE) {

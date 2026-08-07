@@ -21,6 +21,7 @@ test.describe("Company Admin monthly assignment import removed (D21)", () => {
       sessionStorage.setItem("buscommand_tab_session", tabSessionId);
       localStorage.setItem("buscommand_device_id", deviceId);
       localStorage.setItem("buscommand_active_session", JSON.stringify({ deviceId, tabSessionId, at: Date.now() }));
+      window.firebase = window.firebase || {};
       window.firebase.auth = () => ({
         currentUser: { getIdToken: async () => "e2e-token" }
       });

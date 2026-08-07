@@ -217,13 +217,15 @@ async function loginAsDispatcher() {
             document.getElementById("setup-confirm-pin").value = "";
             return;
         }
+        const dispGroups = Array.isArray(disp.groups) ? disp.groups.map(String) : [];
         window.currentUser = {
             role: "dispatcher",
             name: disp.name,
             id: disp.id,
             email: disp.email,
             companyId: disp.companyId || null,
-            activeGroupId: disp.activeGroupId || (disp.groups && disp.groups.length > 0 ? disp.groups[0] : null)
+            groups: dispGroups,
+            activeGroupId: disp.activeGroupId || (dispGroups[0] || null)
         };
     }
 

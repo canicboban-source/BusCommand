@@ -1,0 +1,38 @@
+FILE	DRIVER	MONTH	PARSED DAYS	STATUS	
+vor320-group-plan-2026-08.csv	
+Canic Boban
+Marko Petrović
+Nikola Jovanović
+Stefan Ilić
+Aleksandar Nikolić
+		24	OK	Remove
+vor320-group-plan-2026-08.csv	
+Canic Boban
+Marko Petrović
+Nikola Jovanović
+Stefan Ilić
+Aleksandar Nikolić
+		24	OK	Remove
+vor320-group-plan-2026-08.csv	
+Canic Boban
+Marko Petrović
+Nikola Jovanović
+Stefan Ilić
+Aleksandar Nikolić
+		24	OK	Remove
+vor320-group-plan-2026-08.csv	
+Canic Boban
+Marko Petrović
+Nikola Jovanović
+Stefan Ilić
+Aleksandar Nikolić
+		24	OK	Remove
+vor320-group-plan-2026-08.csv	
+Canic Boban
+Marko Petrović
+Nikola Jovanović
+Stefan Ilić
+Aleksandar Nikolić
+		24	OK	Remove
+Save all plans (5)
+Clear preview

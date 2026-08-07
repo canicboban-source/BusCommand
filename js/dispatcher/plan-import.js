@@ -11,9 +11,24 @@ import { IS_DEMO_MODE } from "../core/runtime-config.js";
 import { persistImportedMonthlyPlan } from "../imports/monthly-plan-persist.js";
 import { loadStateFromFirestore } from "../core/firebase-service.js";
 import { getActiveLineId } from "../data/groups.js";
+import { driverBelongsToLine } from "../data/group-membership.js";
 import { parseMonthlyPlanWorkbook, readExcelWorkbook, parseDienstplanSheet } from "../imports/monthly-plan-excel.js";
 import { isMonthlyPlanCsv, parseMonthlyPlanCsv } from "../imports/monthly-plan-csv.js";
 import { sheetToRows } from "../imports/import-parse-utils.js";
+
+/** Drivers eligible for the open group hub (Dispo assigned groups + hub filter). */
+function driversForPlanImport() {
+    const hubId = String(window.state?.activeGroupHubId || getActiveLineId?.() || "").trim();
+    const visible = getVisibleDrivers();
+    if (hubId) {
+        const inHub = visible.filter((d) => driverBelongsToLine(d, hubId));
+        if (inHub.length) return inHub;
+        // Demo / just-seeded: hub drivers exist but visibility groups lag one tick.
+        const seeded = (window.state?.drivers || []).filter((d) => driverBelongsToLine(d, hubId));
+        if (seeded.length) return seeded;
+    }
+    return visible;
+}
 
 let _pendingImports = [];
 
@@ -197,7 +212,7 @@ function renderPlanImportPreview() {
                         <td style="font-size:0.85rem;">${item.fileName}</td>
                         <td>
                             <select ${changeAttr("updatePendingImportDriver", [idx], "args-value")} style="width:100%;padding:6px;background:rgba(0,0,0,0.3);border:1px solid var(--panel-border);color:white;border-radius:6px;">
-                                ${getVisibleDrivers().map(d => `<option value="${d.name}" ${d.name === item.driverName ? "selected" : ""}>${d.name}</option>`).join("")}
+                                ${driversForPlanImport().map(d => `<option value="${d.name}" ${d.name === item.driverName ? "selected" : ""}>${d.name}</option>`).join("")}
                             </select>
                         </td>
                         <td>
@@ -235,7 +250,7 @@ async function handleBulkPlanFiles(fileList) {
     const files = Array.from(fileList || []);
     if (!files.length) return;
 
-    const drivers = getVisibleDrivers();
+    const drivers = driversForPlanImport();
     let added = 0;
 
     for (const file of files) {

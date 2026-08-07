@@ -1,0 +1,113 @@
+{
+  "crew": [
+    {
+      "eid": "100615",
+      "name": "Canic Boban",
+      "first": "Boban",
+      "last": "Canic",
+      "email": "cane@gmx.at",
+      "phone": "+4369917137535",
+      "pin": "59991",
+      "bus": "91504",
+      "home": null
+    },
+    {
+      "eid": "100601",
+      "name": "Marko Petrović",
+      "first": "Marko",
+      "last": "Petrović",
+      "email": "marko.petrovic@example.com",
+      "phone": "+430000001001",
+      "pin": "12345",
+      "bus": "91503",
+      "home": "F05"
+    },
+    {
+      "eid": "100602",
+      "name": "Nikola Jovanović",
+      "first": "Nikola",
+      "last": "Jovanović",
+      "email": "nikola.jovanovic@example.com",
+      "phone": "+430000001002",
+      "pin": "12345",
+      "bus": "91505",
+      "home": "F07"
+    },
+    {
+      "eid": "100603",
+      "name": "Stefan Ilić",
+      "first": "Stefan",
+      "last": "Ilić",
+      "email": "stefan.ilic@example.com",
+      "phone": "+430000001003",
+      "pin": "12345",
+      "bus": "91101",
+      "home": "F09"
+    },
+    {
+      "eid": "100604",
+      "name": "Aleksandar Nikolić",
+      "first": "Aleksandar",
+      "last": "Nikolić",
+      "email": "aleksandar.nikolic@example.com",
+      "phone": "+430000001004",
+      "pin": "12345",
+      "bus": "91104",
+      "home": "F08"
+    }
+  ],
+  "coverageSample": [
+    {
+      "date": "02.08.2026",
+      "boban": "320.701",
+      "covered": [
+        "SLOBODNO×4"
+      ]
+    },
+    {
+      "date": "03.08.2026",
+      "boban": "320.F06",
+      "covered": [
+        "320.F05",
+        "320.F06",
+        "320.F07",
+        "320.F08",
+        "320.F09"
+      ]
+    },
+    {
+      "date": "04.08.2026",
+      "boban": "320.F08",
+      "covered": [
+        "320.F05",
+        "320.F06",
+        "320.F07",
+        "320.F08",
+        "320.F09"
+      ]
+    },
+    {
+      "date": "05.08.2026",
+      "boban": "320.F06",
+      "covered": [
+        "320.F05",
+        "320.F06",
+        "320.F07",
+        "320.F08",
+        "320.F09"
+      ]
+    },
+    {
+      "date": "06.08.2026",
+      "boban": "320.F08",
+      "covered": [
+        "320.F05",
+        "320.F06",
+        "320.F07",
+        "320.F08",
+        "320.F09"
+      ]
+    }
+  ],
+  "days": 24
+}

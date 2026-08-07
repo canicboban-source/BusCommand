@@ -35,7 +35,9 @@ const deleteCompanyBody = z.object({
 // Super Admin accounts are bootstrap-only — never mint via this public admin API.
 const createUserBody = z.object({
   email: z.string().trim().email().max(254),
-  password: z.string().min(6).max(128),
+  // Align SA→CA with CA→dispatcher: min 6 + letter + digit (MASTER §4 interim floor).
+  password: z.string().min(6).max(128)
+    .refine((value) => /[A-Za-z]/.test(value) && /\d/.test(value), "Lozinka mora sadrzati slovo i broj."),
   name: z.string().trim().max(200).optional(),
   role: z.enum(["company_admin", "dispatcher"]),
   companyId: z.string().trim().max(64),

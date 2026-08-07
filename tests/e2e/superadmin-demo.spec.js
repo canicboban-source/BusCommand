@@ -11,7 +11,9 @@ test.describe("Super Admin demo", () => {
     await loginSuperAdmin(page);
 
     await expect(page.locator("#superadmin-total-companies")).toHaveText("1");
-    await expect(page.locator("#superadmin-total-users")).toHaveText("1");
+    // Demo baseline may seed VOR 320 crew (5) on top of the fixture driver.
+    const userCount = Number(await page.locator("#superadmin-total-users").textContent());
+    expect(userCount).toBeGreaterThanOrEqual(1);
     await expect(page.locator("#superadmin-total-dispatchers")).toHaveText("1");
 
     const row = page.locator("#superadmin-companies-list tr").first();

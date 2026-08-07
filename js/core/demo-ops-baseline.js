@@ -229,20 +229,74 @@ function ensureOwnerTestDriver(state) {
         }
     }
 
-    const ownerDriverId = "drv-canic-boban";
-    if (!state.drivers.some((d) => d && d.id === ownerDriverId)) {
-        state.drivers.push({
-            id: ownerDriverId,
+    // VOR 320 crew of 5 — owner + 4 colleagues from vozaci_test list (F05–F09 / S05–S09).
+    const crew = [
+        {
+            id: "drv-canic-boban",
             name: "Canic Boban",
             first_name: "Boban",
             last_name: "Canic",
             email: "cane@gmx.at",
             phone: "+4369917137535",
-            // CA-only fields (Dispo UI must not surface these).
             eid: "100615",
             pin: "59991",
             company_code: "100615",
-            bus: "91504",
+            bus: "91504"
+        },
+        {
+            id: "drv-marko-petrovic",
+            name: "Marko Petrović",
+            first_name: "Marko",
+            last_name: "Petrović",
+            email: "marko.petrovic@example.com",
+            phone: "+430000001001",
+            eid: "100601",
+            pin: "12345",
+            company_code: "100601",
+            bus: "91503"
+        },
+        {
+            id: "drv-nikola-jovanovic",
+            name: "Nikola Jovanović",
+            first_name: "Nikola",
+            last_name: "Jovanović",
+            email: "nikola.jovanovic@example.com",
+            phone: "+430000001002",
+            eid: "100602",
+            pin: "12345",
+            company_code: "100602",
+            bus: "91505"
+        },
+        {
+            id: "drv-stefan-ilic",
+            name: "Stefan Ilić",
+            first_name: "Stefan",
+            last_name: "Ilić",
+            email: "stefan.ilic@example.com",
+            phone: "+430000001003",
+            eid: "100603",
+            pin: "12345",
+            company_code: "100603",
+            bus: "91101"
+        },
+        {
+            id: "drv-aleksandar-nikolic",
+            name: "Aleksandar Nikolić",
+            first_name: "Aleksandar",
+            last_name: "Nikolić",
+            email: "aleksandar.nikolic@example.com",
+            phone: "+430000001004",
+            eid: "100604",
+            pin: "12345",
+            company_code: "100604",
+            bus: "91104"
+        }
+    ];
+
+    for (const member of crew) {
+        if (state.drivers.some((d) => d && (d.id === member.id || d.eid === member.eid))) continue;
+        state.drivers.push({
+            ...member,
             groupId: "320",
             lineId: "320",
             knownGroupIds: ["310", "320"],
@@ -251,7 +305,7 @@ function ensureOwnerTestDriver(state) {
         });
     }
 
-    for (const number of ["91503", "91504", "91505", "91103", "91104"]) {
+    for (const number of ["91503", "91504", "91505", "91101", "91103", "91104"]) {
         if (!state.buses.some((b) => String(b?.number || b?.id) === number)) {
             state.buses.push({
                 id: `bus-vor-${number}`,
@@ -267,15 +321,18 @@ function ensureOwnerTestDriver(state) {
         }
     }
 
-    // Make owner driver visible to demo dispatchers on 320.
+    // Make VOR crew visible to demo dispatchers on 310/320.
     state.dispatchers.forEach((d) => {
         if (!d || d.isSuperAdmin) return;
-        const groups = Array.isArray(d.groups) ? d.groups.map(String) : [];
-        if (!groups.includes("320")) {
-            d.groups = [...groups, "320"];
-        }
-        if (!groups.includes("310") && !d.groups.map(String).includes("310")) {
-            d.groups = [...d.groups.map(String), "310"];
-        }
+        const groups = new Set((Array.isArray(d.groups) ? d.groups : []).map(String));
+        groups.add("310");
+        groups.add("320");
+        d.groups = [...groups];
     });
+    if (typeof window !== "undefined" && window.currentUser?.role === "dispatcher") {
+        const groups = new Set((Array.isArray(window.currentUser.groups) ? window.currentUser.groups : []).map(String));
+        groups.add("310");
+        groups.add("320");
+        window.currentUser.groups = [...groups];
+    }
 }
