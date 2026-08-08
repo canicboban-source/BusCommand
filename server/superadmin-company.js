@@ -106,6 +106,7 @@ async function getCompanyDetail({ db, companyId }) {
     licenseStatus: license.licenseStatus,
     trialValidUntil: license.trialValidUntil,
     packageLabel: license.packageLabel,
+    daysRemaining: license.daysRemaining,
     maxDrivers: license.maxDrivers,
     maxDispatchers: Number.isInteger(Number(settings.maxDispatchers)) ? Number(settings.maxDispatchers) : null,
     features: settings.features && typeof settings.features === "object" ? settings.features : {},

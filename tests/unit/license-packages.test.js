@@ -9,9 +9,13 @@ const {
 
 test("package caps match Phase 2 model", () => {
   assert.equal(PACKAGES.starter.maxDrivers, 15);
+  assert.equal(PACKAGES.starter.maxDispatchers, 2);
   assert.equal(PACKAGES.pro.maxDrivers, 50);
+  assert.equal(PACKAGES.pro.maxDispatchers, 5);
   assert.equal(PACKAGES.fleet_master.maxDrivers, 200);
+  assert.equal(PACKAGES.fleet_master.maxDispatchers, 15);
   assert.equal(PACKAGES.enterprise.maxDrivers, null);
+  assert.equal(PACKAGES.enterprise.maxDispatchers, 50);
 });
 
 test("legacy plan values normalize to package types", () => {

@@ -1,7 +1,7 @@
 // BusCommand — staff surface action handlers
 import { handleCompanyAuditFilters, loadMoreCompanyAudit, refreshCompanyAudit, resetCompanyAuditFilters } from "./admin/company-admin-audit.js";
 import { applyBrandingSettings, clearCompanyBrandingLogo, handleCompanyBrandingLogoFile } from "./admin/company-admin-branding.js";
-import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriverEdit, confirmCompanyDriversImport, handleCompanyDriversFile, handleCompanyDriversFilter, handleCompanyDriversSearch, openCompanyDriverEdit, saveCompanyDriverEdit, submitCompanyDriverManualAdd, toggleCompanyDriverStatus } from "./admin/company-admin-drivers.js";
+import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriverAddModal, closeCompanyDriverEdit, confirmCompanyDriversImport, handleCompanyDriversFile, handleCompanyDriversFilter, handleCompanyDriversSearch, openCompanyDriverAddModal, openCompanyDriverEdit, saveCompanyDriverEdit, submitCompanyDriverManualAdd, toggleCompanyDriverStatus } from "./admin/company-admin-drivers.js";
 import { cancelCompanyGroupEdit, deleteCompanyGroup, focusCompanyGroupForm, saveCompanyGroup, startEditCompanyGroup } from "./admin/company-admin-groups.js";
 import { caWizardBack, caWizardNext, caWizardSelectColor, caWizardSelectColorFromHex, caWizardSelectColorFromPicker, caWizardHandleLogo, caWizardSkip } from "./admin/company-admin-onboarding.js";
 import { clearCompanyServicePlanPreview, closeCompanyServicePlanDuty, closeCompanyServicePlanHistory, handleCompanyServicePlanFile, handleCompanyServicePlanGroupChange, openCompanyServicePlanDuty, openCompanyServicePlanHistory, publishCompanyServicePlan, activateCompanyServicePlanVersion } from "./admin/company-admin-service-plan.js";
@@ -9,7 +9,7 @@ import { handleCompanySettingsCountry, handleCompanySettingsInput, resetCompanyS
 import { addCompanyDispatcher, focusCompanyDispatcherForm, removeCompanyDispatcher, resetCompanyDispatcherPassword, revokeCompanyDispatcherSessions, saveCompanyDispatcherGroups, saveCompanyDispatcherProfile, toggleCaDispGroupsEdit, toggleCaDispProfileEdit, toggleCompanyDispatcherStatus } from "./admin/company-admin-team.js";
 import { endCompanySupportSession, openCompanyOpsOverview } from "./admin/company-admin.js";
 import { createDispatcherGroup, enterDispatcherActiveGroup, exitImpersonation, saveNewDispatcherPassword, switchToGroupSetup } from "./admin/dispatcher-setup.js";
-import { superadminCreateCompany, superadminCreateCompanyAdmin, superadminDeleteCompany, superadminCancelDeleteCompanyModal, superadminConfirmDeleteCompany, superadminDeleteCompanyAdmin, superadminFocusCompanies, superadminCopyCompanyId, superadminCopyText, superadminImpersonate, superadminOpenCompany, superadminOpenCompanyDetail, superadminCloseCompanyDetail, superadminSetCompanyAdminStatus, superadminResetCompanyAdminPassword, superadminResetPin, superadminToggleStatus, superadminStartSupport, superadminCancelSupportModal, superadminConfirmSupportStart, superadminEndSupport, superadminSaveCompanySettings, superadminSaveDemoCompanyProfile, superadminOpenCreateModal, superadminCloseCreateModal, superadminSubmitCreateModal } from "./admin/superadmin.js";
+import { superadminCreateCompany, superadminCreateCompanyAdmin, superadminDeleteCompany, superadminCancelDeleteCompanyModal, superadminConfirmDeleteCompany, superadminDeleteCompanyAdmin, superadminFocusCompanies, superadminCopyCompanyId, superadminCopyText, superadminImpersonate, superadminOpenCompany, superadminOpenCompanyDetail, superadminCloseCompanyDetail, superadminSetCompanyAdminStatus, superadminResetCompanyAdminPassword, superadminResetPin, superadminToggleStatus, superadminStartSupport, superadminCancelSupportModal, superadminConfirmSupportStart, superadminEndSupport, superadminSaveCompanySettings, superadminOnPlanChange, superadminSaveDemoCompanyProfile, superadminOpenCreateModal, superadminCloseCreateModal, superadminSubmitCreateModal } from "./admin/superadmin.js";
 import { forgotDispatcherPassword, loginAsDispatcher, logout } from "./auth/login-dispatcher.js";
 import { closeSuperAdminModal, confirmSuperAdminPin, handleLogoClick } from "./auth/superadmin.js";
 import { clickElementById, installActionDelegates, removeElementById } from "./core/action-delegate.js";
@@ -42,7 +42,7 @@ import {
     applyOpsAttentionFix
 } from "./dispatcher/dashboard.js";
 import { removeDispatcher } from "./dispatcher/dispatchers.js";
-import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlansFull, openVehiclesFromPlan, scrollHubSection } from "./dispatcher/group-hub.js";
+import { backFromPlanFullPage, closeGroupHub, closeNewPlanModal, confirmNewPlan, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlansFull, openNewPlanModal, openVehiclesFromPlan, scrollHubSection } from "./dispatcher/group-hub.js";
 import { returnLostItem, setLostItemStatus, openLostItemPhoto } from "./dispatcher/lost-items.js";
 import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, deleteMonthlyPlan, focusMonthlyDriverPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, openMonthlyDayEditForDriver, previewMonthlyMassAbsence, saveMonthlyDayEdit, selectMonthlyPlanGroup, undoMonthlyDayEdit } from "./dispatcher/monthly-plans.js";
 import { goToOpsPlanProblems } from "./dispatcher/plan-health-banner.js";
@@ -153,7 +153,10 @@ const HANDLERS = {
     clearScheduleFile,
     clearScheduleText,
     clickElementById,
+    closeCompanyDriverAddModal,
     closeCompanyDriverEdit,
+    closeNewPlanModal,
+    confirmNewPlan,
     closeCompanyServicePlanDuty,
     closeCompanyServicePlanHistory,
     closeConfirmModal,
@@ -235,7 +238,9 @@ const HANDLERS = {
     onMedCatalogSelectChange,
     onMedDaySelectChange,
     onMedShiftTypeChange,
+    openCompanyDriverAddModal,
     openCompanyDriverEdit,
+    openNewPlanModal,
     openCompanyServicePlanDuty,
     openCompanyServicePlanHistory,
     openDailyPlanForGroup,
@@ -326,6 +331,7 @@ const HANDLERS = {
     superadminConfirmSupportStart,
     superadminEndSupport,
     superadminSaveCompanySettings,
+    superadminOnPlanChange,
     superadminSaveDemoCompanyProfile,
     switchScheduleTab,
     switchSection,

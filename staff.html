@@ -927,50 +927,10 @@
                                 </div>
                                 <i data-lucide="user-plus" aria-hidden="true"></i>
                             </div>
-                            <form id="ca-driver-add-form" class="company-drivers-add-form" data-submit-action="submitCompanyDriverManualAdd" novalidate>
-                                <div class="company-drivers-add-grid">
-                                    <label class="form-group" for="ca-driver-add-eid">
-                                        <span data-i18n="ca_drivers_eid">EID</span>
-                                        <input type="text" id="ca-driver-add-eid" maxlength="128" autocomplete="off" required>
-                                    </label>
-                                    <label class="form-group" for="ca-driver-add-first-name">
-                                        <span data-i18n="ca_drivers_edit_first_name">Ime</span>
-                                        <input type="text" id="ca-driver-add-first-name" maxlength="80" autocomplete="given-name" required>
-                                    </label>
-                                    <label class="form-group" for="ca-driver-add-last-name">
-                                        <span data-i18n="ca_drivers_edit_last_name">Prezime</span>
-                                        <input type="text" id="ca-driver-add-last-name" maxlength="80" autocomplete="family-name" required>
-                                    </label>
-                                    <label class="form-group" for="ca-driver-add-email">
-                                        <span data-i18n="email">Email</span>
-                                        <input type="email" id="ca-driver-add-email" maxlength="254" autocomplete="email" required>
-                                    </label>
-                                    <label class="form-group" for="ca-driver-add-phone">
-                                        <span data-i18n="ca_drivers_phone">Telefon (E.164)</span>
-                                        <input type="tel" id="ca-driver-add-phone" maxlength="40" inputmode="tel" autocomplete="tel" placeholder="+43699…" required>
-                                    </label>
-                                    <label class="form-group" for="ca-driver-add-pin">
-                                        <span data-i18n="ca_drivers_add_pin">PIN (5–12 cifara)</span>
-                                        <input type="password" id="ca-driver-add-pin" inputmode="numeric" pattern="[0-9]{5,12}" minlength="5" maxlength="12" autocomplete="new-password" required>
-                                    </label>
-                                    <label class="form-group company-drivers-add-primary-group" for="ca-driver-add-group">
-                                        <span data-i18n="ca_drivers_add_primary_group">Primarna grupa</span>
-                                        <select id="ca-driver-add-group" required>
-                                            <option value="" data-i18n="ca_plan_group_placeholder">Izaberite grupu</option>
-                                        </select>
-                                    </label>
-                                </div>
-                                <fieldset class="company-driver-known-fieldset company-drivers-add-known">
-                                    <legend data-i18n="ca_drivers_add_extra_groups">Dodatne grupe (opciono)</legend>
-                                    <p class="company-driver-known-hint" data-i18n="ca_drivers_add_extra_groups_hint">Disponenti svih označenih grupa vide ovog vozača.</p>
-                                    <div id="ca-driver-add-known-groups" class="company-driver-known-grid"></div>
-                                </fieldset>
-                                <p class="company-drivers-security-note"><i data-lucide="smartphone"></i> <span data-i18n="ca_drivers_add_sms_note">SMS aktivacija na telefon; uneti PIN postaje prijavni kod.</span></p>
-                                <button type="submit" id="ca-driver-add-submit" class="btn-primary company-drivers-add-submit">
-                                    <i data-lucide="user-plus"></i>
-                                    <span data-i18n="ca_drivers_add_submit">Dodaj vozača i pošalji SMS</span>
-                                </button>
-                            </form>
+                            <button type="button" id="ca-driver-add-open" class="btn-primary company-drivers-add-open" data-action="openCompanyDriverAddModal">
+                                <i data-lucide="user-plus"></i>
+                                <span data-i18n="ca_drivers_add_open">+ Dodaj vozača</span>
+                            </button>
                         </div>
 
                         <div class="card company-drivers-import-card">
@@ -1021,6 +981,71 @@
                                 </div>
                             </div>
                             <div id="ca-drivers-directory" aria-live="polite"></div>
+                        </div>
+                    </div>
+
+                    <div id="ca-driver-add-modal" class="bc-overlay-modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="ca-driver-add-modal-title" data-action="closeCompanyDriverAddModal" data-action-self="true" style="
+                        position:fixed; inset:0; z-index:9999;
+                        background:rgba(0,0,0,0.75); backdrop-filter:blur(8px);
+                        display:none; align-items:center; justify-content:center; padding:20px;">
+                        <div class="company-driver-add-panel" role="document">
+                            <div class="company-driver-add-panel-head">
+                                <h3 id="ca-driver-add-modal-title" style="margin:0;font-size:1.15rem;display:flex;align-items:center;gap:8px;">
+                                    <i data-lucide="user-plus" style="width:20px;height:20px;color:var(--primary-color);"></i>
+                                    <span data-i18n="ca_drivers_add_open">+ Dodaj vozača</span>
+                                </h3>
+                                <button type="button" class="btn-secondary" data-action="closeCompanyDriverAddModal" aria-label="Close">
+                                    <i data-lucide="x" style="width:16px;height:16px;"></i>
+                                </button>
+                            </div>
+                            <p style="margin:0 0 16px;font-size:0.85rem;color:var(--text-muted);" data-i18n="ca_drivers_add_hint">Redosled: EID, ime, prezime, email, telefon, PIN, grupa(e).</p>
+                            <form id="ca-driver-add-form" class="company-drivers-add-form" data-submit-action="submitCompanyDriverManualAdd" novalidate>
+                                <div class="company-drivers-add-fields">
+                                    <label class="form-group" for="ca-driver-add-eid">
+                                        <span data-i18n="ca_drivers_eid">EID</span>
+                                        <input type="text" id="ca-driver-add-eid" maxlength="128" autocomplete="off" required>
+                                    </label>
+                                    <label class="form-group" for="ca-driver-add-first-name">
+                                        <span data-i18n="ca_drivers_edit_first_name">Ime</span>
+                                        <input type="text" id="ca-driver-add-first-name" maxlength="80" autocomplete="given-name" required>
+                                    </label>
+                                    <label class="form-group" for="ca-driver-add-last-name">
+                                        <span data-i18n="ca_drivers_edit_last_name">Prezime</span>
+                                        <input type="text" id="ca-driver-add-last-name" maxlength="80" autocomplete="family-name" required>
+                                    </label>
+                                    <label class="form-group" for="ca-driver-add-email">
+                                        <span data-i18n="email">E-mail</span>
+                                        <input type="email" id="ca-driver-add-email" maxlength="254" autocomplete="email" required>
+                                    </label>
+                                    <label class="form-group" for="ca-driver-add-phone">
+                                        <span data-i18n="ca_drivers_phone">Telefon (E.164)</span>
+                                        <input type="tel" id="ca-driver-add-phone" maxlength="40" inputmode="tel" autocomplete="tel" placeholder="+43699…" required>
+                                    </label>
+                                    <label class="form-group" for="ca-driver-add-pin">
+                                        <span data-i18n="ca_drivers_add_pin">PIN (5–12 cifara)</span>
+                                        <input type="password" id="ca-driver-add-pin" inputmode="numeric" pattern="[0-9]{5,12}" minlength="5" maxlength="12" autocomplete="new-password" required>
+                                    </label>
+                                    <label class="form-group" for="ca-driver-add-group">
+                                        <span data-i18n="ca_drivers_add_primary_group">Primarna grupa</span>
+                                        <select id="ca-driver-add-group" required>
+                                            <option value="" data-i18n="ca_plan_group_placeholder">Izaberite grupu</option>
+                                        </select>
+                                    </label>
+                                </div>
+                                <fieldset class="company-driver-known-fieldset company-drivers-add-known">
+                                    <legend data-i18n="ca_drivers_add_extra_groups">Dodatne grupe (opciono)</legend>
+                                    <p class="company-driver-known-hint" data-i18n="ca_drivers_add_extra_groups_hint">Disponenti svih označenih grupa vide ovog vozača.</p>
+                                    <div id="ca-driver-add-known-groups" class="company-driver-known-grid"></div>
+                                </fieldset>
+                                <p class="company-drivers-security-note"><i data-lucide="smartphone"></i> <span data-i18n="ca_drivers_add_sms_note">SMS aktivacija na telefon; uneti PIN postaje prijavni kod.</span></p>
+                                <div class="company-driver-add-actions">
+                                    <button type="button" class="btn-secondary" data-action="closeCompanyDriverAddModal"><span data-i18n="btn_cancel">Otkaži</span></button>
+                                    <button type="submit" id="ca-driver-add-submit" class="btn-primary company-drivers-add-submit">
+                                        <i data-lucide="user-plus"></i>
+                                        <span data-i18n="ca_drivers_add_submit">Dodaj vozača i pošalji SMS</span>
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
 
@@ -1547,9 +1572,14 @@
                                         <span id="hub-daily-date-label" class="hub-plan-preview-meta"></span>
                                     </div>
                                     <div id="hub-daily-preview" class="hub-plan-preview-body"></div>
-                                    <button type="button" class="btn-primary hub-plan-open-btn" data-action="openDailyPlanFull">
-                                        <i data-lucide="maximize-2"></i> <span data-i18n="hub_open_daily_full">Otvori pun dnevni plan</span>
-                                    </button>
+                                    <div class="hub-plan-preview-actions">
+                                        <button type="button" class="btn-secondary hub-plan-new-btn" data-action="openNewPlanModal" data-action-args='["daily"]'>
+                                            <i data-lucide="plus"></i> <span data-i18n="hub_new_plan">+ Novi Plan</span>
+                                        </button>
+                                        <button type="button" class="btn-primary hub-plan-open-btn" data-action="openDailyPlanFull">
+                                            <i data-lucide="maximize-2"></i> <span data-i18n="hub_open_daily_full">Otvori pun dnevni plan</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="hub-plan-preview-card hub-plan-preview-card--monthly">
                                     <div class="hub-plan-preview-head">
@@ -1557,9 +1587,14 @@
                                         <span id="hub-monthly-month-label" class="hub-plan-preview-meta"></span>
                                     </div>
                                     <div id="hub-monthly-preview" class="hub-plan-preview-body"></div>
-                                    <button type="button" class="btn-primary hub-plan-open-btn" data-action="openMonthlyPlansFull">
-                                        <i data-lucide="maximize-2"></i> <span data-i18n="hub_open_monthly_full">Otvori mesečni plan</span>
-                                    </button>
+                                    <div class="hub-plan-preview-actions">
+                                        <button type="button" class="btn-secondary hub-plan-new-btn" data-action="openNewPlanModal" data-action-args='["monthly"]'>
+                                            <i data-lucide="plus"></i> <span data-i18n="hub_new_plan">+ Novi Plan</span>
+                                        </button>
+                                        <button type="button" class="btn-primary hub-plan-open-btn" data-action="openMonthlyPlansFull">
+                                            <i data-lucide="maximize-2"></i> <span data-i18n="hub_open_monthly_full">Otvori mesečni plan</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2495,6 +2530,36 @@
                     background:linear-gradient(135deg,var(--danger-color),#b91c1c); border:none;
                     color:#fff; cursor:pointer; box-shadow:0 4px 14px rgba(220,38,38,0.35);" data-i18n="btn_yes">
                     Da
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW PLAN (Dispo / CA hub) -->
+    <div id="new-plan-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="new-plan-modal-title" style="display:none;" hidden>
+        <div class="modal-content new-plan-modal-card">
+            <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <h3 id="new-plan-modal-title" data-i18n="hub_new_plan_title">+ Novi Plan</h3>
+                <button type="button" class="btn-secondary" data-action="closeNewPlanModal" aria-label="Close">
+                    <i data-lucide="x" style="width:16px;height:16px;"></i>
+                </button>
+            </div>
+            <p class="subtitle" style="margin:0 0 14px;" data-i18n="hub_new_plan_hint">Kreirajte prazan plan za aktivnu grupu, zatim dodelite smene.</p>
+            <label class="form-group" for="new-plan-kind">
+                <span data-i18n="hub_new_plan_kind">Tip plana</span>
+                <select id="new-plan-kind">
+                    <option value="daily" data-i18n="hub_daily_plan">Dnevni plan</option>
+                    <option value="monthly" data-i18n="hub_monthly_plan">Mesečni plan</option>
+                </select>
+            </label>
+            <label class="form-group" for="new-plan-month" id="new-plan-month-wrap">
+                <span data-i18n="hub_monthly_plan">Mesečni plan</span>
+                <input type="month" id="new-plan-month">
+            </label>
+            <div class="new-plan-modal-actions" style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+                <button type="button" class="btn-secondary" data-action="closeNewPlanModal" data-i18n="btn_cancel">Otkaži</button>
+                <button type="button" class="btn-primary" data-action="confirmNewPlan">
+                    <i data-lucide="plus"></i> <span data-i18n="hub_new_plan_create">Kreiraj plan</span>
                 </button>
             </div>
         </div>

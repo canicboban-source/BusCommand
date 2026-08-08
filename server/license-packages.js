@@ -7,10 +7,10 @@
 const LICENSE_TYPES = Object.freeze(["starter", "pro", "fleet_master", "enterprise"]);
 
 const PACKAGES = Object.freeze({
-  starter: { licenseType: "starter", maxDrivers: 15, label: "STARTER" },
-  pro: { licenseType: "pro", maxDrivers: 50, label: "PRO" },
-  fleet_master: { licenseType: "fleet_master", maxDrivers: 200, label: "FLEET MASTER" },
-  enterprise: { licenseType: "enterprise", maxDrivers: null, label: "ENTERPRISE" }
+  starter: { licenseType: "starter", maxDrivers: 15, maxDispatchers: 2, label: "STARTER" },
+  pro: { licenseType: "pro", maxDrivers: 50, maxDispatchers: 5, label: "PRO" },
+  fleet_master: { licenseType: "fleet_master", maxDrivers: 200, maxDispatchers: 15, label: "FLEET MASTER" },
+  enterprise: { licenseType: "enterprise", maxDrivers: null, maxDispatchers: 50, label: "ENTERPRISE" }
 });
 
 /** Map legacy plan values → package type. */
@@ -28,6 +28,11 @@ function packageForType(licenseType) {
 
 function maxDriversForType(licenseType) {
   return packageForType(licenseType).maxDrivers;
+}
+
+function maxDispatchersForType(licenseType) {
+  const pkg = packageForType(licenseType);
+  return pkg.maxDispatchers != null ? pkg.maxDispatchers : 50;
 }
 
 function toMillis(value) {
@@ -130,7 +135,7 @@ function buildNewCompanyLicenseFields({ licenseType = "pro", admin, trialDays = 
     licenseStatus: "trial",
     status: "active",
     maxDrivers,
-    maxDispatchers: type === "enterprise" ? 50 : type === "fleet_master" ? 15 : type === "pro" ? 5 : 2,
+    maxDispatchers: maxDispatchersForType(type),
     trialEndsAt: admin.firestore.Timestamp.fromDate(trialEnd),
     trialValidUntil: admin.firestore.Timestamp.fromDate(trialEnd)
   };
@@ -142,6 +147,7 @@ module.exports = {
   normalizeLicenseType,
   packageForType,
   maxDriversForType,
+  maxDispatchersForType,
   resolveLicenseSnapshot,
   buildNewCompanyLicenseFields,
   defaultTrialEnd

@@ -387,6 +387,7 @@ app.get("/api/admin/companies", requireSuperAdmin, async (req, res) => {
         licenseStatus: license.licenseStatus,
         trialValidUntil: license.trialValidUntil,
         packageLabel: license.packageLabel,
+        daysRemaining: license.daysRemaining,
         email: profile.contactEmail,
         adminName: primaryAdmin?.name || null,
         adminEmail: primaryAdmin?.email || profile.contactEmail || null,

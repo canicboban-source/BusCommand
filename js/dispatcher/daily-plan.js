@@ -144,12 +144,25 @@ function renderDailyPlanMeta(plan, metaEl, { full = false } = {}) {
     metaEl.textContent = t(key, replacements);
 }
 
-function renderEmptyState(container, message) {
+function renderEmptyState(container, message, { showNewPlan = false } = {}) {
     container.replaceChildren();
-    const empty = document.createElement("p");
-    empty.className = "plan-empty-state";
-    empty.textContent = message;
+    const empty = document.createElement("div");
+    empty.className = "plan-empty-state plan-empty-state--action";
+    const p = document.createElement("p");
+    p.className = "plan-empty-title";
+    p.textContent = message;
+    empty.appendChild(p);
+    if (showNewPlan && !isOperationalReadOnly()) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn-primary plan-empty-cta";
+        btn.setAttribute("data-action", "openNewPlanModal");
+        btn.setAttribute("data-action-args", '["daily"]');
+        btn.innerHTML = `<i data-lucide="plus"></i> <span>${escapeHtml(t("hub_new_plan") || "+ Novi Plan")}</span>`;
+        empty.appendChild(btn);
+    }
     container.appendChild(empty);
+    if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
 function renderDailyPlanPanel(dateStr) {
@@ -160,7 +173,7 @@ function renderDailyPlanPanel(dateStr) {
     const date = dateStr || getDailyPlanDateInput()?.value || todayDateStr();
     const plan = getDailyPlanForDate(date);
     renderDailyPlanMeta(plan, metaEl);
-    if (!plan.slots.length) return renderEmptyState(container, t("daily_no_shifts", { date }));
+    if (!plan.slots.length) return renderEmptyState(container, t("daily_no_shifts", { date }), { showNewPlan: true });
     container.innerHTML = buildDailyPlanTable(plan.slots, { editable: !isOperationalReadOnly(), dateStr: date });
     if (typeof lucide !== "undefined") lucide.createIcons();
 }
@@ -190,7 +203,7 @@ function renderDailyPlanFullPage() {
     const plan = getDailyPlanForDate(date);
     renderDailyPlanMeta(plan, metaEl, { full: true });
     if (!plan.slots.length) {
-        renderEmptyState(container, t("daily_no_shifts_full", { date }));
+        renderEmptyState(container, t("daily_no_shifts_full", { date }), { showNewPlan: true });
         void refreshPlanLockBanner();
         return;
     }
@@ -221,7 +234,7 @@ function renderHubDailyPreview() {
         dateLabel.textContent = d.toLocaleDateString(lang === "sr" ? "sr-RS" : lang, { weekday: "short", day: "numeric", month: "short" });
     }
     const plan = getDailyPlanForDate(date);
-    if (!plan.slots.length) return renderEmptyState(el, t("daily_no_shifts_today"));
+    if (!plan.slots.length) return renderEmptyState(el, t("daily_no_shifts_today"), { showNewPlan: true });
 
     const preview = plan.slots.slice(0, 4);
     el.innerHTML = buildDailyPlanTable(preview, { compact: true, editable: false, dateStr: date });

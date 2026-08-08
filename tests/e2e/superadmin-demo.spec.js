@@ -16,15 +16,14 @@ test.describe("Super Admin demo", () => {
     expect(userCount).toBeGreaterThanOrEqual(1);
     await expect(page.locator("#superadmin-total-dispatchers")).toHaveText("1");
 
-    const card = page.locator("#superadmin-companies-list .sa-company-card").first();
-    await expect(card.locator(".sa-company-card-name")).toContainText("QA Dispatcher");
-    await expect(card.locator(".sa-company-id-code")).toContainText("qa-local");
-    await expect(card.locator(".sa-company-card-status")).toContainText("active");
-    await expect(card).toContainText("trial");
-    await expect(card).toContainText("DE");
-    await expect(card).toContainText("dispo@qa.local");
-    await expect(card.locator('[data-action="superadminToggleStatus"]')).toBeVisible();
-    await expect(card.locator('[data-action="superadminStartSupport"]')).toBeVisible();
+    const row = page.locator("#superadmin-companies-list .sa-company-row").first();
+    await expect(row.locator(".sa-col-name")).toContainText("QA Dispatcher");
+    await expect(row.locator(".sa-col-tenant")).toContainText("qa-local");
+    // Unique license badge: TRIAL shows remaining days (yellow), not contradictory PRO/Paid chips.
+    await expect(row.locator(".sa-col-status .badge")).toContainText(/Trial|Probni|Testphase|\d+/i);
+    await expect(row).toContainText("DE");
+    await expect(row).toContainText("dispo@qa.local");
+    await expect(row.locator('[data-action="superadminOpenCompanyDetail"]')).toBeVisible();
   });
 
   test("company detail hydrates from demo dispatcher state", async ({ page }) => {
@@ -43,6 +42,8 @@ test.describe("Super Admin demo", () => {
     await page.goto("/staff.html");
     await loginSuperAdmin(page);
 
+    await page.locator('[data-action="superadminOpenCreateModal"]').click();
+    await expect(page.locator("#sa-create-company-modal")).toBeVisible();
     await page.locator("#sa-new-name").fill("Alpine Transit");
     await page.locator("#sa-new-pin").fill("4321");
     await page.locator("#sa-create-company-btn").click();

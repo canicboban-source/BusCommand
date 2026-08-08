@@ -383,6 +383,7 @@ async function submitCompanyDriverManualAdd(event) {
             await enrichCompanyDriversFromApi();
         }
         clearManualDriverForm();
+        closeCompanyDriverAddModal();
         currentPage = 1;
         await renderCompanyAdminDrivers();
         showToast(t("ca_drivers_add_success"), "success", 6000);
@@ -669,6 +670,18 @@ function toggleCompanyDriverStatus(driverId) {
     }, { danger: !nextActive });
 }
 
+function openCompanyDriverAddModal() {
+    populateGroupControls();
+    clearManualDriverForm();
+    showModal("ca-driver-add-modal");
+    if (typeof lucide !== "undefined") lucide.createIcons();
+    document.getElementById("ca-driver-add-eid")?.focus();
+}
+
+function closeCompanyDriverAddModal() {
+    closeModal("ca-driver-add-modal");
+}
+
 function openCompanyDriverEdit(driverId) {
     const driver = companyDrivers().find((entry) => entry.id === driverId);
     if (!driver || editSavePending) return;
@@ -875,6 +888,8 @@ export {
     handleCompanyDriversSearch,
     changeCompanyDriversPage,
     toggleCompanyDriverStatus,
+    openCompanyDriverAddModal,
+    closeCompanyDriverAddModal,
     openCompanyDriverEdit,
     closeCompanyDriverEdit,
     saveCompanyDriverEdit

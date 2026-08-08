@@ -1148,6 +1148,32 @@ function createEmptyMonthlyPlan(scheduleKey, driverName, month, totalDays) {
 }
 
 /**
+ * Create empty monthly plan shells for every driver in the active hub group
+ * that does not yet have a plan for the month.
+ * @returns {{ created: number, month: string, totalDays: number }}
+ */
+function createGroupMonthlyPlans(monthKey) {
+    const month = /^\d{4}-\d{2}$/.test(String(monthKey || ""))
+        ? String(monthKey)
+        : currentMonthKey();
+    const [year, mon] = month.split("-").map(Number);
+    const totalDays = new Date(year, mon, 0).getDate();
+    const hubId = window.state.activeGroupHubId || _selectedGroupId || getActiveLineId();
+    const drivers = hubId ? getDriversForLineGroup(hubId) : (window.state.drivers || []);
+    let created = 0;
+    for (const driver of drivers) {
+        const name = String(driver.name || "").trim();
+        if (!name) continue;
+        const existing = resolveScheduleForDriverMonth(name, month, driver.id || null);
+        if (existing?.parsedShifts) continue;
+        const scheduleKey = driver.id ? `${driver.id}_${month}` : `${name}_${month}`;
+        ensureLocalScheduleShell(scheduleKey, name, month, totalDays, driver.id || null);
+        created += 1;
+    }
+    return { created, month, totalDays };
+}
+
+/**
  * Soft-delete: remove the monthly plan shell for one driver-month.
  * Does not touch the CA service-plan catalog. Clears local day entries;
  * production days that were persisted are cleared via assign clear where needed.
@@ -1271,7 +1297,12 @@ function renderHubMonthlyPreview() {
         <p style="margin:0 0 8px;color:var(--text-muted);">${t("hub_monthly_stats", { count: drivers.length, plans: planCount, withPlans })}</p>
         ${snippet
             ? `<div style="margin-top:6px;font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;">${escapeHtml(first.name)}:</div>${snippet}`
-            : `<p style="color:var(--text-muted);margin:8px 0 0;">${t("hub_monthly_no_plan", { month })}</p>`}`;
+            : `<div class="plan-empty-state plan-empty-state--action" style="margin-top:8px;">
+                <p class="plan-empty-title" style="margin:0 0 8px;">${t("hub_monthly_no_plan", { month })}</p>
+                ${isOperationalReadOnly() ? "" : `<button type="button" class="btn-primary plan-empty-cta" ${actionAttr("openNewPlanModal", ["monthly"])}>
+                    <i data-lucide="plus"></i> ${escapeHtml(t("hub_new_plan") || "+ Novi Plan")}
+                </button>`}
+               </div>`}`;
 }
 
 function populateUploadScheduleDrivers() {
@@ -1319,6 +1350,8 @@ export {
     loadMonthlyPlanForDriver,
     focusMonthlyDriverPlan,
     createEmptyMonthlyPlan,
+    createGroupMonthlyPlans,
+    currentMonthKey,
     deleteMonthlyPlan,
     updateMonthlyPlanDay,
     openMonthlyDayEdit,
