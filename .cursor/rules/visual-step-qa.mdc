@@ -1,0 +1,21 @@
+---
+description: Every UI/QA test must be a full visual step log with screenshots in the side browser.
+alwaysApply: true
+---
+
+# Visual step QA (owner mandate)
+
+For every manual or agent UI test / verification pass:
+
+1. **Open the Cursor browser on the right** (`position: "side"`) so the owner can watch each step live.
+2. **Screenshot every step** after each meaningful action (navigate, click, open modal, fill field, submit, toast, section change, error).
+3. **Log the full trail** in the final report (and keep it while testing):
+   - what was done / clicked
+   - what opened or changed on screen
+   - what was typed or selected
+   - what the function’s job is and what it actually changed (state / API / UI)
+   - whether it worked (pass / fail / blocked)
+   - whether it follows product business logic and the real app workflow
+4. Do not summarize only the end state. The owner wants the **path**, not just the verdict.
+5. Prefer an **isolated QA / emulator harness** with ephemeral test-factory data (never `?mode=demo`, never packaged demo tenants). Clean product runtime must start empty.
+6. Never claim a control “works” without a screenshot or equivalent live observation for that step.

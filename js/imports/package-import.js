@@ -16,7 +16,7 @@ import { isMonthlyPlanCsv, parseMonthlyPlanCsv } from "./monthly-plan-csv.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { loadStateFromFirestore } from "../core/firebase-service.js";
 import { persistImportedMonthlyPlan } from "./monthly-plan-persist.js";
 
@@ -262,11 +262,11 @@ async function processPackageFiles(fileList) {
                     pkg.planDrivers += Object.keys(parsed.byDriver || {}).length;
                     pkg.month = pkg.month || parsed.month;
                     pkg.driverNames.push(...Object.keys(parsed.byDriver || {}));
-                } else if (window.currentUser?.role !== "company-admin" && !IS_DEMO_MODE) {
+                } else if (window.currentUser?.role !== "company-admin" && !USE_LOCAL_STATE) {
                     pkg.errors.push(t("pkg_driver_csv_admin_only"));
                 } else if (pkg.driverCsvText) {
                     pkg.errors.push(t("pkg_only_one_driver_csv") || `Only one driver CSV is allowed: ${file.name}`);
-                } else if (IS_DEMO_MODE) {
+                } else if (USE_LOCAL_STATE) {
                     pkg.driverCsvText = text;
                     const parsed = parseDriverCsv(text);
                     if (parsed.errors?.length) pkg.errors.push(...parsed.errors);
@@ -347,7 +347,7 @@ async function confirmPackageImport() {
     }
 
     if (p.drivers?.drivers?.length) {
-        if (IS_DEMO_MODE) {
+        if (USE_LOCAL_STATE) {
             const n = applyDriversFromCsv(p.drivers);
             msg.push(t("pkg_saved_drivers", { count: n }));
         } else {
@@ -382,7 +382,7 @@ async function confirmPackageImport() {
             totals.driverPlans += result.driverPlans;
             totals.totalDays += result.totalDays;
         }
-        if (!IS_DEMO_MODE && totals.month) {
+        if (!USE_LOCAL_STATE && totals.month) {
             showToast(t("pkg_saving_plan") !== "pkg_saving_plan" ? t("pkg_saving_plan") : "Saving plan to server…", "info", 4000);
             let serverOk = 0;
             let serverFail = 0;

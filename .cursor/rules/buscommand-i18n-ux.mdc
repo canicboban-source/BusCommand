@@ -1,0 +1,15 @@
+---
+description: i18n SR/DE/EN and real UX states — no hard-coded strings
+globs: translations.js,js/ui/i18n.js,js/**/*.{js,mjs},index.legacy-monolith.html,staff.html,driver.html
+alwaysApply: false
+---
+
+# i18n and UX states
+
+- No new user-facing string hard-coded in JS/HTML.
+- Add **SR + DE + EN** keys together in the existing i18n system (`translations.js` / project helpers).
+- Errors: what happened + next safe action.
+- Disabled controls: reason when not obvious.
+- Loading / success / error / conflict / empty must be real states, not visual improvisation.
+- Preserve existing a11y patterns (labels, focus, keyboard).
+- Do not introduce a parallel design system; reuse BusCommand tokens/components.

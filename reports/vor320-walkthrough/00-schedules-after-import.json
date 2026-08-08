@@ -1,0 +1,32 @@
+[
+  {
+    "id": "Canic Boban_2026-08",
+    "driver": "Canic Boban",
+    "days": 24,
+    "d3": "320.F06"
+  },
+  {
+    "id": "Marko Petrović_2026-08",
+    "driver": "Marko Petrović",
+    "days": 24,
+    "d3": "320.F05"
+  },
+  {
+    "id": "Nikola Jovanović_2026-08",
+    "driver": "Nikola Jovanović",
+    "days": 24,
+    "d3": "320.F07"
+  },
+  {
+    "id": "Stefan Ilić_2026-08",
+    "driver": "Stefan Ilić",
+    "days": 24,
+    "d3": "320.F09"
+  },
+  {
+    "id": "Aleksandar Nikolić_2026-08",
+    "driver": "Aleksandar Nikolić",
+    "days": 24,
+    "d3": "320.F08"
+  }
+]

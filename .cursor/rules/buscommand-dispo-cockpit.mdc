@@ -1,0 +1,42 @@
+---
+description: Dispo Needs attention / guided resolution UX and concurrency
+globs: js/dispatcher/**/*,js/ops/**/*,server/problem-resolution.js,server/shift-assignment.js,server/**/*ops*
+alwaysApply: false
+---
+
+# Dispo command surface
+
+## Needs attention
+
+One panel resolves active problems. No modal chains, no “press F5”, no dead ends.
+
+For each item (no bus, missing/sick driver, wrong code, report, coverage hole, supported incident types):
+
+1. Show problem, affected trip/group, ops impact
+2. Safe options in the **same** panel
+3. One clear Apply
+4. Stay pending until server responds
+5. Success → confirm + refresh canonical state
+6. Reject → rollback optimistic UI, keep context, readable error
+7. Conflict → offer refreshed state + re-choose; **never** silent overwrite
+
+Health/banners/alerts deep-link into the matching item + action.
+
+## Pool order (drivers & buses)
+
+1. This group — free  
+2. Company — free or unassigned  
+3. Other groups — free  
+
+Unavailable candidates must not assign successfully even if stale client still lists them.
+
+## Concurrency (existing mechanisms only)
+
+- Shifts: `expectedRevision` / project revision guards (`D6`)
+- Buses: `bus.revision` + `expectedRevision` (`D22`)
+- No “why did you change this?” forms — toast + refresh from server on conflict
+- Soft-remove / guided incidents stay aligned with Live Issues ↔ Needs attention
+
+## Canonical plan
+
+`shifts/{driverId}_{date}` is SoT; `schedules` is server-owned monthly projection. Do not invent a second temporary SoT for UI convenience.

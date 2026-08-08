@@ -1939,6 +1939,16 @@ body {
     top: 62px;
     height: calc(100vh - 62px);
 }
+/* Must follow the sticky full-height rule above — earlier 768px block alone loses the cascade. */
+@media (max-width: 768px) {
+    .app-sidebar {
+        width: 100%;
+        height: auto;
+        max-height: none;
+        position: relative;
+        top: auto;
+    }
+}
 .nav-item {
     padding: 10px 14px;
     border-radius: var(--radius-sm);

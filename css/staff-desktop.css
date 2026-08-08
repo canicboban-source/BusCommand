@@ -42,6 +42,38 @@ html[data-app-surface="staff"] .app-sidebar {
     border-right: 1px solid var(--panel-border);
 }
 
+/* Narrow Live View / phone: staff width rule (238px) beats generic .app-sidebar —
+   must restate full-bleed sidebar + unlock layout overflow so main is not ~70px. */
+@media (max-width: 768px) {
+    html[data-app-surface="staff"] .app-layout {
+        height: auto;
+        max-height: none;
+        overflow: visible;
+    }
+
+    html[data-app-surface="staff"] .app-body {
+        overflow: visible;
+        min-height: 0;
+    }
+
+    html[data-app-surface="staff"] .app-sidebar {
+        width: 100%;
+        height: auto;
+        max-height: none;
+        position: relative;
+        top: auto;
+        flex: 0 0 auto;
+        overflow: visible;
+    }
+
+    html[data-app-surface="staff"] .app-main,
+    html[data-app-surface="staff"] main.content-area {
+        flex: 1 1 auto;
+        min-height: min(70vh, 640px);
+        overflow-y: visible;
+    }
+}
+
 html[data-app-surface="staff"] .sidebar-nav .nav-item {
     border-radius: 10px;
     margin: 2px 10px;
@@ -426,14 +458,20 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-health span {
     opacity: 0.9;
 }
 
-html[data-app-surface="staff"] #dispatcher-dashboard .ops-health.is-attention {
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-health.is-attention,
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-health.is-plan-gap {
     color: var(--warning-color);
     border-color: rgba(251, 191, 36, 0.35);
     background: rgba(251, 191, 36, 0.08);
 }
 
-html[data-app-surface="staff"] #dispatcher-dashboard .ops-health.is-attention span {
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-health.is-attention span,
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-health.is-plan-gap span {
     color: var(--text-secondary);
+}
+
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-health.is-plan-gap.is-clickable {
+    cursor: pointer;
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-health.is-loading {
@@ -455,9 +493,31 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-stats-strip {
 html[data-app-surface="staff"] #dispatcher-dashboard .dispatcher-dashboard-grid,
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-center-grid {
     display: grid;
-    grid-template-columns: minmax(240px, 0.85fr) minmax(0, 1.25fr) minmax(240px, 0.9fr);
+    /* Ops layout B — dense control room: problems | daily plan, crew below. */
+    grid-template-columns: minmax(280px, 1.05fr) minmax(340px, 1.2fr);
     gap: 14px;
     align-items: start;
+}
+
+html[data-app-surface="staff"] #dispatcher-dashboard.ops-layout-b .ops-col-crew {
+    grid-column: 1 / -1;
+    min-height: 0;
+}
+
+html[data-app-surface="staff"] #dispatcher-dashboard.ops-layout-b .ops-stats-strip-compact {
+    gap: 10px;
+}
+
+html[data-app-surface="staff"] #dispatcher-dashboard.ops-layout-b .ops-stats-strip-compact .stat-card {
+    padding: 10px 12px;
+}
+
+html[data-app-surface="staff"] #dispatcher-dashboard.ops-layout-b .ops-col-plan .alerts-list {
+    display: none;
+}
+
+html[data-app-surface="staff"] #dispatcher-dashboard.ops-layout-b .ops-daily-table-wrap {
+    max-height: min(52vh, 480px);
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-col-action,
@@ -465,6 +525,7 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-col-plan,
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-col-crew {
     padding: 14px 16px 16px;
     min-height: 320px;
+    min-width: 0;
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-panel-kicker {
@@ -484,8 +545,9 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-plan-hint {
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table-wrap {
-    overflow: auto;
-    max-height: 280px;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 320px;
     border: 1px solid rgba(148, 163, 184, 0.12);
     border-radius: 12px;
     margin-bottom: 4px;
@@ -493,20 +555,21 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table-wrap {
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table {
     width: 100%;
+    min-width: 420px;
     border-collapse: collapse;
-    font-size: 0.8rem;
+    font-size: 0.88rem;
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table th,
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table td {
-    padding: 9px 10px;
+    padding: 10px 12px;
     text-align: left;
     border-bottom: 1px solid rgba(148, 163, 184, 0.1);
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table th {
     color: #94A3B8;
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     background: rgba(255, 255, 255, 0.02);
@@ -783,6 +846,7 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-assign-btn {
 }
 
 .ops-incident-dialog input,
+.ops-incident-dialog select,
 .ops-incident-dialog textarea {
     box-sizing: border-box;
     width: 100%;
@@ -794,9 +858,49 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-assign-btn {
 }
 
 .ops-incident-dialog input:focus,
+.ops-incident-dialog select:focus,
 .ops-incident-dialog textarea:focus {
     border-color: #60a5fa;
     outline: 3px solid rgba(59, 130, 246, .18);
+}
+
+.ops-incident-dialog .hidden {
+    display: none !important;
+}
+
+.global-confirm-extras {
+    text-align: left;
+    margin: 0 0 18px;
+}
+
+.global-confirm-extras.hidden {
+    display: none;
+}
+
+.global-confirm-reason-label,
+.global-confirm-note-label {
+    display: block;
+    margin: 0 0 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.global-confirm-reason,
+.global-confirm-note {
+    box-sizing: border-box;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text-main);
+}
+
+.global-confirm-note.hidden,
+.global-confirm-note-label.hidden {
+    display: none !important;
 }
 
 .ops-incident-warning {
@@ -839,10 +943,14 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table td {
     vertical-align: middle;
 }
 
-@media (max-width: 1200px) {
+/*
+ * Viewport includes sidebar (~238px). Also covers Cursor Live View / side preview
+ * panes where the embedded viewport is much narrower than a full browser window.
+ */
+@media (max-width: 1400px) {
     html[data-app-surface="staff"] #dispatcher-dashboard .dispatcher-dashboard-grid,
     html[data-app-surface="staff"] #dispatcher-dashboard .ops-center-grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(240px, 0.95fr) minmax(320px, 1.35fr);
     }
 
     html[data-app-surface="staff"] #dispatcher-dashboard .ops-col-crew {
@@ -850,10 +958,23 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table td {
     }
 }
 
-@media (max-width: 820px) {
+/* Narrow / Live View: stack so plan + crew never collapse beside alerts. */
+@media (max-width: 1100px) {
     html[data-app-surface="staff"] #dispatcher-dashboard .dispatcher-dashboard-grid,
     html[data-app-surface="staff"] #dispatcher-dashboard .ops-center-grid {
         grid-template-columns: 1fr;
+    }
+
+    html[data-app-surface="staff"] #dispatcher-dashboard .ops-col-action,
+    html[data-app-surface="staff"] #dispatcher-dashboard .ops-col-plan,
+    html[data-app-surface="staff"] #dispatcher-dashboard .ops-col-crew {
+        grid-column: auto;
+        min-height: 0;
+    }
+
+    html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table {
+        min-width: 0;
+        font-size: 0.9rem;
     }
 }
 
@@ -1208,13 +1329,25 @@ html[data-app-surface="staff"] .modal-overlay .modal-content > p {
     line-height: 1.45;
 }
 
-/* ── SA companies panel ── */
-html[data-app-surface="staff"] #sa-companies-panel {
+/* ── SA companies panel (stacked cards — no horizontal scroll) ── */
+html[data-app-surface="staff"] #sa-companies-panel,
+html[data-app-surface="staff"] .sa-companies-panel {
     margin-top: 4px;
+    background: var(--staff-panel);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-md);
+    padding: 16px 18px;
+    overflow-x: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
 }
 
-html[data-app-surface="staff"] #sa-companies-panel > div:first-child {
-    margin-bottom: 14px !important;
+html[data-app-surface="staff"] .sa-companies-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
     padding-bottom: 12px;
     border-bottom: 1px solid rgba(148, 163, 184, 0.1);
 }
@@ -1223,6 +1356,156 @@ html[data-app-surface="staff"] #sa-companies-panel h3 {
     font-size: 1.05rem;
     font-weight: 750;
     letter-spacing: -0.01em;
+    color: var(--text-main);
+}
+
+html[data-app-surface="staff"] .sa-companies-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+html[data-app-surface="staff"] .sa-companies-empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 18px 8px;
+}
+
+html[data-app-surface="staff"] .sa-company-card {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 14px 14px 12px;
+    background: rgba(255, 255, 255, 0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+html[data-app-surface="staff"] .sa-company-card-top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+html[data-app-surface="staff"] .sa-company-card-title {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    flex: 1 1 180px;
+}
+
+html[data-app-surface="staff"] .sa-company-card-name {
+    font-size: 1rem;
+    word-break: break-word;
+}
+
+html[data-app-surface="staff"] .sa-company-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+html[data-app-surface="staff"] .sa-company-card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    min-width: 0;
+}
+
+html[data-app-surface="staff"] .sa-company-meta-label {
+    color: var(--text-muted);
+    margin-right: 6px;
+    opacity: 0.85;
+}
+
+html[data-app-surface="staff"] .sa-company-card-meta code {
+    font-size: 0.78rem;
+    word-break: break-all;
+}
+
+html[data-app-surface="staff"] .sa-company-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+html[data-app-surface="staff"] .sa-company-card-actions .btn-primary,
+html[data-app-surface="staff"] .sa-company-card-actions .btn-secondary {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    height: auto;
+    min-height: 34px;
+}
+
+html[data-app-surface="staff"] .sa-company-btn-suspend {
+    background: #ff4d4d !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+html[data-app-surface="staff"] .sa-company-btn-activate {
+    background: #10b981 !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+html[data-app-surface="staff"] .sa-company-btn-delete {
+    background: #7f1d1d !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+html[data-app-surface="staff"] .sa-detail-settings-grid,
+html[data-app-surface="staff"] .sa-detail-flags,
+html[data-app-surface="staff"] .sa-detail-counts {
+    grid-template-columns: 1fr !important;
+}
+
+html[data-app-surface="staff"] .sa-detail-modal {
+    max-width: min(520px, 96vw);
+    width: min(520px, 96vw);
+    overflow-x: hidden;
+}
+
+html[data-app-surface="staff"] .sa-detail-admin-actions {
+    flex-wrap: wrap;
+}
+
+html[data-app-surface="staff"] .sa-detail-profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+    min-width: 0;
+}
+
+html[data-app-surface="staff"] .sa-detail-profile-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+html[data-app-surface="staff"] .sa-detail-profile-form input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.25);
     color: var(--text-main);
 }
 
@@ -1285,6 +1568,113 @@ html[data-app-surface="staff"] .company-group-actions .btn-secondary,
 html[data-app-surface="staff"] .company-group-actions .btn-danger-ghost {
     min-height: 34px;
     padding: 6px 10px;
+}
+
+/* Safe row overflow menu (⋯) — destructive actions stay behind confirm */
+html[data-app-surface="staff"] .row-actions {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+html[data-app-surface="staff"] .row-actions-trigger {
+    min-width: 36px;
+    min-height: 34px;
+    padding: 6px 8px;
+}
+
+html[data-app-surface="staff"] .row-actions-trigger svg {
+    width: 16px;
+    height: 16px;
+}
+
+html[data-app-surface="staff"] .row-actions-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 40;
+    min-width: 180px;
+    padding: 6px;
+    border-radius: 10px;
+    border: 1px solid var(--panel-border);
+    background: var(--panel-bg-solid);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+html[data-app-surface="staff"] .row-actions-menu.hidden {
+    display: none;
+}
+
+html[data-app-surface="staff"] .row-actions-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 36px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-main);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+}
+
+html[data-app-surface="staff"] .row-actions-item:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+html[data-app-surface="staff"] .row-actions-item.is-danger {
+    color: #fecaca;
+}
+
+html[data-app-surface="staff"] .row-actions-item.is-danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.14);
+}
+
+html[data-app-surface="staff"] .row-actions-item:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+html[data-app-surface="staff"] .row-actions-item svg {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 15px;
+}
+
+html[data-app-surface="staff"] .header-connection-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 28px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(74, 222, 128, 0.35);
+    background: rgba(74, 222, 128, 0.12);
+    color: #bbf7d0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+html[data-app-surface="staff"] .header-connection-status[data-state="offline"] {
+    border-color: rgba(248, 113, 113, 0.4);
+    background: rgba(248, 113, 113, 0.12);
+    color: #fecaca;
+}
+
+html[data-app-surface="staff"] .trial-indicator,
+html[data-app-surface="staff"] #app-trial-badge,
+html[data-app-surface="staff"] #login-trial-badge {
+    display: none !important;
 }
 
 html[data-app-surface="staff"] .company-groups-empty {
@@ -1741,6 +2131,23 @@ html[data-app-surface="staff"] #dispatcher-group-hub .hub-ov-empty {
 html[data-app-surface="staff"] #dispatcher-group-hub .hub-ov-empty-inline {
     color: var(--text-muted);
     font-size: 0.85rem;
+}
+
+html[data-app-surface="staff"] #dispatcher-group-hub .hub-ov-actions {
+    white-space: nowrap;
+    text-align: right;
+}
+
+html[data-app-surface="staff"] #dispatcher-group-hub .hub-ov-detach-btn {
+    font-size: 0.72rem;
+    padding: 4px 8px;
+    color: var(--text-muted);
+    border-color: rgba(148, 163, 184, 0.35);
+}
+
+html[data-app-surface="staff"] #dispatcher-group-hub .hub-ov-detach-btn:hover {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.4);
 }
 
 html[data-app-surface="staff"] #dispatcher-group-hub .hub-bus-chip-wrap {
@@ -2312,6 +2719,8 @@ html[data-app-surface="staff"] .sa-company-id-cell {
     align-items: center;
     gap: 8px;
     max-width: 100%;
+    min-width: 0;
+    flex-wrap: nowrap;
 }
 html[data-app-surface="staff"] .sa-company-id-code {
     display: inline-block;
@@ -2323,17 +2732,27 @@ html[data-app-surface="staff"] .sa-company-id-code {
     font-size: 0.88rem;
     font-weight: 700;
     letter-spacing: 0.02em;
-    word-break: break-all;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: min(12rem, 40vw);
+    word-break: normal;
+}
+html[data-app-surface="staff"] #superadmin-companies-list td:nth-child(2) {
+    min-width: 9rem;
+    max-width: 14rem;
 }
 html[data-app-surface="staff"] .sa-company-id-copy {
     padding: 6px 8px;
     min-height: 32px;
     height: auto;
+    flex-shrink: 0;
 }
 
 html[data-app-surface="staff"] .sa-detail-modal {
-    max-width: 720px;
-    width: min(720px, 94vw);
+    max-width: min(520px, 96vw);
+    width: min(520px, 96vw);
+    overflow-x: hidden;
 }
 html[data-app-surface="staff"] .sa-detail-header,
 html[data-app-surface="staff"] .sa-detail-footer {
@@ -2341,6 +2760,7 @@ html[data-app-surface="staff"] .sa-detail-footer {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    flex-wrap: wrap;
 }
 html[data-app-surface="staff"] .sa-detail-footer {
     justify-content: flex-end;
@@ -2348,8 +2768,8 @@ html[data-app-surface="staff"] .sa-detail-footer {
 }
 html[data-app-surface="staff"] .sa-detail-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px 16px;
+    grid-template-columns: 1fr;
+    gap: 12px;
     margin: 12px 0 16px;
 }
 html[data-app-surface="staff"] .sa-detail-grid > div {
@@ -2545,6 +2965,7 @@ html[data-app-surface="staff"] .ops-resolution-status {
 }
 
 /* ── Fast attention panel (one place for every fix) ── */
+html[data-app-surface="staff"] #ops-plan-health.is-plan-gap.is-clickable,
 html[data-app-surface="staff"] #ops-plan-health.is-attention.is-clickable {
     cursor: pointer;
     transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
@@ -2574,7 +2995,7 @@ html[data-app-surface="staff"] .ops-attention-layer.hidden {
 }
 
 html[data-app-surface="staff"] .ops-attention-sheet {
-    width: min(480px, 100%);
+    width: min(720px, 100%);
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -2584,13 +3005,99 @@ html[data-app-surface="staff"] .ops-attention-sheet {
     box-shadow: -18px 0 48px rgba(0, 0, 0, 0.45);
 }
 
+/* Attention B2 — left index + one focused solution */
+html[data-app-surface="staff"] .ops-attention-body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
+}
+
+html[data-app-surface="staff"] .ops-attention-nav {
+    overflow-y: auto;
+    padding: 12px 10px 20px;
+    border-right: 1px solid rgba(148, 163, 184, 0.14);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+html[data-app-surface="staff"] .ops-attention-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+    text-align: left;
+    padding: 10px 10px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #e2e8f0;
+    cursor: pointer;
+    font: inherit;
+}
+
+html[data-app-surface="staff"] .ops-attention-nav-item strong {
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+html[data-app-surface="staff"] .ops-attention-nav-item span {
+    font-size: 0.72rem;
+    color: #94a3b8;
+}
+
+html[data-app-surface="staff"] .ops-attention-nav-item.is-active {
+    background: rgba(61, 126, 245, 0.16);
+    border-color: rgba(61, 126, 245, 0.45);
+}
+
+html[data-app-surface="staff"] .ops-attention-nav-item.is-critical {
+    box-shadow: inset 3px 0 0 #ef4444;
+}
+
+html[data-app-surface="staff"] .ops-attention-nav-item.is-warning {
+    box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+html[data-app-surface="staff"] .ops-attention-detail {
+    overflow-y: auto;
+    padding: 14px 16px 28px;
+    min-width: 0;
+}
+
+@media (max-width: 720px) {
+    html[data-app-surface="staff"] .ops-attention-body {
+        grid-template-columns: 1fr;
+    }
+
+    html[data-app-surface="staff"] .ops-attention-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        border-right: none;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+        max-height: 140px;
+    }
+
+    html[data-app-surface="staff"] .ops-attention-nav-item {
+        flex: 1 1 140px;
+    }
+}
+
+html[data-app-surface="staff"] .ops-attention-sheet {
+    border-color: rgba(var(--urgent-action-rgb), 0.42);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(var(--urgent-action-rgb), 0.18);
+}
+
 html[data-app-surface="staff"] .ops-attention-header {
     display: flex;
     justify-content: space-between;
     gap: 12px;
     align-items: flex-start;
     padding: 20px 20px 14px;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    border-bottom: 1px solid rgba(var(--urgent-action-rgb), 0.28);
+    background: linear-gradient(180deg, rgba(var(--urgent-action-rgb), 0.12), transparent);
 }
 
 html[data-app-surface="staff"] .ops-attention-kicker {
@@ -2734,6 +3241,17 @@ html[data-app-surface="staff"] .ops-attention-soft {
     margin: 0 0 8px;
     color: #94a3b8;
     font-size: 0.84rem;
+}
+
+html[data-app-surface="staff"] .ops-attention-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: stretch;
+}
+
+html[data-app-surface="staff"] .ops-attention-actions .ops-attention-apply {
+    flex: 1 1 140px;
 }
 
 html[data-app-surface="staff"] .ops-attention-empty {
@@ -3007,3 +3525,604 @@ html[data-app-surface="staff"] .company-driver-known-empty {
   font-size: 0.8rem;
   color: var(--text-muted, #94a3b8);
 }
+
+html[data-app-surface="staff"] .hub-bus-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+html[data-app-surface="staff"] .hub-bus-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+html[data-app-surface="staff"] .hub-bus-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+html[data-app-surface="staff"] .hub-bus-identity small {
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.75rem;
+}
+
+html[data-app-surface="staff"] .hub-bus-toggle {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid currentColor;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+html[data-app-surface="staff"] .hub-bus-toggle.is-active {
+  color: #ef4444;
+}
+html[data-app-surface="staff"] .hub-bus-toggle.is-inactive {
+  color: #16a34a;
+}
+html[data-app-surface="staff"] .hub-bus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+html[data-app-surface="staff"] .hub-bus-detach-btn {
+  font-size: 0.72rem;
+  padding: 4px 8px;
+  color: var(--text-muted);
+}
+
+html[data-app-surface="staff"] .daily-plan-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+html[data-app-surface="staff"] .daily-plan-clear-btn,
+html[data-app-surface="staff"] .monthly-plan-delete-btn {
+  color: var(--text-muted);
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+html[data-app-surface="staff"] .daily-plan-clear-btn:hover,
+html[data-app-surface="staff"] .monthly-plan-delete-btn:hover {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+html[data-app-surface="staff"] .hub-bus-edit-form {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.08);
+}
+
+html[data-app-surface="staff"] .hub-bus-edit-form.hidden {
+  display: none;
+}
+
+html[data-app-surface="staff"] .hub-bus-edit-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+}
+
+html[data-app-surface="staff"] .hub-bus-edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+html[data-app-surface="staff"] .hub-bus-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+html[data-app-surface="staff"] .hub-bus-form input {
+  min-width: 120px;
+  flex: 1;
+}
+
+/* Dispatcher help / self-recovery */
+html[data-app-surface="staff"] .dispatcher-help-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+  padding: 0 10px;
+  min-width: auto;
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+html[data-app-surface="staff"] .dispatcher-help-btn.hidden,
+html[data-app-surface="staff"] .dispatcher-help-btn[hidden] {
+  display: none !important;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-btn-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-modal:not(.hidden) {
+  display: flex;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-panel {
+  width: min(560px, 100%);
+  max-height: min(90vh, 840px);
+  overflow: auto;
+  background: var(--staff-panel, #121826);
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  border-radius: 16px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+}
+
+html[data-app-surface="staff"] .dispatcher-help-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-kicker {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: #fbbf24;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-header p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-steps > li {
+  border: 1px solid var(--panel-border, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  counter-increment: none;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-step-body strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-step-body p {
+  margin: 0 0 10px;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-status-line {
+  margin: 0 !important;
+  font-size: 0.82rem;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-escalate {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-border, rgba(255,255,255,0.08));
+}
+
+html[data-app-surface="staff"] .dispatcher-help-escalate.is-ready {
+  border-top-color: color-mix(in srgb, var(--urgent-action, #f59e0b) 45%, transparent);
+}
+
+html[data-app-surface="staff"] .dispatcher-help-contact-line strong {
+  color: var(--text-main, #f8fafc);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+html[data-app-surface="staff"] .ops-attention-sheet {
+  border: 1px solid color-mix(in srgb, var(--urgent-action, #f59e0b) 28%, var(--panel-border, rgba(255,255,255,0.1)));
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.45),
+    0 0 0 1px color-mix(in srgb, var(--urgent-action, #f59e0b) 12%, transparent);
+}
+
+html[data-app-surface="staff"] .dispatcher-help-escalate h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-escalate > p {
+  margin: 0 0 10px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-note-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+  margin-bottom: 10px;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-note-label textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border, rgba(255,255,255,0.12));
+  background: var(--input-bg, rgba(0,0,0,0.25));
+  color: var(--text-main);
+  padding: 10px 12px;
+  font: inherit;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-contact-line {
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-contact-missing {
+  color: #fbbf24;
+  font-size: 0.84rem;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-escalate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+html[data-app-surface="staff"] .dispatcher-help-mailto.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  html[data-app-surface="staff"] .dispatcher-help-btn-label {
+    display: none;
+  }
+}
+
+/* Dispo panel split: Daily / Monthly / Vehicles / Assign Shift */
+html[data-app-surface="staff"] .ops-health {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+html[data-app-surface="staff"] .ops-health .dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  flex-shrink: 0;
+}
+
+html[data-app-surface="staff"] .ops-health-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+html[data-app-surface="staff"] .ops-health-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+html[data-app-surface="staff"] .ops-health-problems {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+html[data-app-surface="staff"] .ops-health-problem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+html[data-app-surface="staff"] .ops-health-problem:hover,
+html[data-app-surface="staff"] .ops-health-problem:focus-visible {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+html[data-app-surface="staff"] .ops-health-problem.is-critical {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+html[data-app-surface="staff"] .ops-health-problem strong {
+  font-size: 0.88rem;
+}
+
+html[data-app-surface="staff"] .ops-health-problem span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+html[data-app-surface="staff"] .ops-health.is-clickable {
+  cursor: pointer;
+}
+
+html[data-app-surface="staff"] .ops-health strong {
+  font-size: 0.92rem;
+}
+
+html[data-app-surface="staff"] .ops-health span,
+html[data-app-surface="staff"] .ops-health [data-plan-health-hint] {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+html[data-app-surface="staff"] .ops-health.is-attention,
+html[data-app-surface="staff"] .ops-health.is-plan-gap {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+html[data-app-surface="staff"] .ops-health.is-attention .dot,
+html[data-app-surface="staff"] .ops-health.is-plan-gap .dot {
+  background: #f59e0b;
+}
+
+html[data-app-surface="staff"] .daily-plan-work-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  gap: 16px;
+  align-items: start;
+}
+
+/* Daily B2 — full-width table, situation rail hidden, issues pill */
+html[data-app-surface="staff"] .daily-plan-layout-b2 .daily-plan-work-grid {
+  grid-template-columns: 1fr;
+}
+
+html[data-app-surface="staff"] .daily-plan-layout-b2 .daily-plan-situation[hidden] {
+  display: none !important;
+}
+
+html[data-app-surface="staff"] .daily-plan-full-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+html[data-app-surface="staff"] .daily-plan-issues-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 158, 11, 0.55);
+  background: rgba(245, 158, 11, 0.16);
+  color: #fde68a;
+  font-weight: 800;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+html[data-app-surface="staff"] .daily-plan-issues-pill.hidden {
+  display: none;
+}
+
+html[data-app-surface="staff"] .daily-plan-issues-pill i {
+  width: 16px;
+  height: 16px;
+}
+
+html[data-app-surface="staff"] .daily-plan-layout-b2 .daily-plan-health-slim {
+  margin-bottom: 10px;
+}
+
+html[data-app-surface="staff"] .daily-plan-layout-b2 .daily-plan-health-slim [data-plan-health-problems] {
+  display: none;
+}
+
+html[data-app-surface="staff"] .daily-plan-situation-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 120px;
+}
+
+html[data-app-surface="staff"] .daily-situation-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  font-size: 0.82rem;
+}
+
+html[data-app-surface="staff"] .monthly-plan-below {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+html[data-app-surface="staff"] .monthly-matrix-driver-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+html[data-app-surface="staff"] .monthly-driver-plan-focus {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--panel-border);
+}
+
+html[data-app-surface="staff"] .shift-form-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 16px;
+}
+
+html[data-app-surface="staff"] .shift-form-driver select {
+  min-height: 48px;
+  font-size: 1.05rem;
+}
+
+html[data-app-surface="staff"] .shift-duty-resolved {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  min-height: 1.2em;
+}
+
+html[data-app-surface="staff"] .shift-assign-hint {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+}
+
+html[data-app-surface="staff"] .vehicles-panel-card {
+  max-width: 720px;
+}
+
+@media (max-width: 960px) {
+  html[data-app-surface="staff"] .daily-plan-work-grid,
+  html[data-app-surface="staff"] .monthly-plan-below,
+  html[data-app-surface="staff"] .shift-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Phase 3 responsive: prevent horizontal overflow on staff surface */
+html[data-app-surface="staff"],
+html[data-app-surface="staff"] body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+html[data-app-surface="staff"] .app-layout,
+html[data-app-surface="staff"] .main-content,
+html[data-app-surface="staff"] main,
+html[data-app-surface="staff"] .content-section {
+  min-width: 0;
+  max-width: 100%;
+}
+
+html[data-app-surface="staff"] .app-header {
+  gap: 10px;
+}
+
+html[data-app-surface="staff"] .header-left {
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+html[data-app-surface="staff"] .bc-brand-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: min(42vw, 280px);
+}
+
+html[data-app-surface="staff"] table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+  html[data-app-surface="staff"] .company-group-row,
+  html[data-app-surface="staff"] .company-team-card {
+    grid-template-columns: 1fr;
+  }
+
+  html[data-app-surface="staff"] .company-group-actions,
+  html[data-app-surface="staff"] .company-team-actions {
+    justify-content: flex-start;
+  }
+
+  html[data-app-surface="staff"] .header-connection-status {
+    font-size: 0.68rem;
+    padding: 3px 8px;
+  }
+}
+

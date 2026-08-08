@@ -38,6 +38,7 @@ function renderShiftsWeeklyGrid(weekDays) {
         morning:   { bg: "rgba(14,165,233,0.18)", border: "rgba(14,165,233,0.5)", text: "#7dd3fc", icon: "🌅" },
         afternoon: { bg: "rgba(245,158,11,0.18)", border: "rgba(245,158,11,0.5)", text: "#fcd34d", icon: "🌇" },
         night:     { bg: "rgba(139,92,246,0.18)", border: "rgba(139,92,246,0.5)", text: "#c4b5fd", icon: "🌙" },
+        bereitschaft: { bg: "rgba(99,102,241,0.18)", border: "rgba(99,102,241,0.5)", text: "#a5b4fc", icon: "⏸️" },
         off:       { bg: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.08)", text: "rgba(255,255,255,0.3)", icon: "💤" },
         vacation:  { bg: "rgba(16,185,129,0.15)", border: "rgba(16,185,129,0.4)", text: "#6ee7b7", icon: "🏖️" },
         sick:      { bg: "rgba(239,68,68,0.15)", border: "rgba(239,68,68,0.4)", text: "#fca5a5", icon: "🤒" },
@@ -79,7 +80,7 @@ function renderShiftsWeeklyGrid(weekDays) {
             const shift = getShiftForDriverDate(driver.name, dStr);
             const isToday = dStr === todayStr;
             const isPast  = dStr < todayStr;
-            const style = shiftColors[shift ? shift.type : "empty"];
+            const style = shiftColors[shift ? shift.type : "empty"] || shiftColors.empty;
 
             html += `<td style="padding:3px;">
                 <div style="background:${style.bg}; border:1px solid ${isToday ? "var(--primary-color)" : style.border};

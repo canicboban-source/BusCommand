@@ -7,17 +7,72 @@ import { renderShiftsWeeklyGrid } from "./shift-grid.js";
 import { getWeekDates } from "./shift-utils.js";
 import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { switchSection } from "../layout/navigation.js";
 import { isOperationalReadOnly } from "../core/access.js";
-import { ensureDemoDayLock } from "./plan-edit-lock-demo.js";
+import { ensureLocalDayLock } from "./plan-edit-lock-local.js";
 import {
     findCrossGroupBusConflicts,
     formatCrossGroupBusWarn,
     ACTIVE_DUTY_TYPES
 } from "../core/bus-shift-conflicts.js";
+import {
+    ensureShiftCatalogForEdit,
+    getShiftCatalogForLine,
+    inferOperationalShiftType
+} from "../core/line-shift-catalog.js";
 
 const pendingShiftAssignments = new Set();
+
+function resolveDutyFromCaPlan(dutyCode, lineId) {
+    const code = String(dutyCode || "").trim();
+    if (!code) return null;
+    const id = String(lineId || "").trim();
+    if (id) ensureShiftCatalogForEdit(id);
+    const cat = getShiftCatalogForLine(id);
+    const entry = cat?.entries?.[code] || null;
+    if (!entry) return null;
+    const start = entry.start || entry.workStart || null;
+    const end = entry.end || entry.workEnd || null;
+    const type = inferOperationalShiftType({
+        code: entry.code || code,
+        type: entry.type,
+        start,
+        end,
+        endDayOffset: entry.endDayOffset
+    });
+    return {
+        code: entry.code || code,
+        type,
+        start: start || null,
+        end: end || null,
+        label: entry.label || entry.shortName || code
+    };
+}
+
+function fillDutyDatalist(lineId) {
+    const list = document.getElementById("shift-duty-datalist");
+    if (!list) return;
+    if (lineId) ensureShiftCatalogForEdit(lineId);
+    const entries = getShiftCatalogForLine(lineId)?.entries || {};
+    list.replaceChildren();
+    Object.keys(entries).sort().forEach((code) => {
+        const opt = document.createElement("option");
+        opt.value = code;
+        list.appendChild(opt);
+    });
+}
+
+function paintResolvedDutyHint(duty) {
+    const el = document.getElementById("shift-duty-resolved");
+    if (!el) return;
+    if (!duty) {
+        el.textContent = "";
+        return;
+    }
+    const time = duty.start && duty.end ? `${duty.start}–${duty.end}` : (t("shift_time_from_plan_missing") || "Time not set in CA plan");
+    el.textContent = `${duty.code} · ${duty.type} · ${time}`;
+}
 
 function driverByName(driverName) {
     return getVisibleDrivers().find(driver => driver.name === driverName) || null;
@@ -68,8 +123,8 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
         return false;
     }
     const groupId = driver.groupId || driver.lineId || window.state?.activeGroupHubId || null;
-    if (IS_DEMO_MODE && groupId) {
-        const lock = ensureDemoDayLock(groupId, date);
+    if (USE_LOCAL_STATE && groupId) {
+        const lock = ensureLocalDayLock(groupId, date);
         if (!lock.ok) {
             const who = lock.lock?.holderName || lock.lock?.holderUid || "";
             showToast(
@@ -90,7 +145,7 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
         const expectedRevision = existing?.source === "shift" && Number.isInteger(existing.revision)
             ? existing.revision
             : 0;
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             const result = await ApiClient.assignStaffShift({
                 driverId: driver.id, date, type, name,
                 bus: busValue, routeCode: parseRouteCodeFromText(name) || "",
@@ -161,7 +216,7 @@ async function undoShift(driver, date) {
             showToast(t("shift_undo_nothing") || "Nema izmene za poništavanje.", "error");
             return false;
         }
-        if (IS_DEMO_MODE) {
+        if (USE_LOCAL_STATE) {
             showToast(t("shift_undo_demo") || "Undo nije dostupan u demo režimu.", "error");
             return false;
         }
@@ -235,6 +290,24 @@ function renderDispatcherShifts() {
     const dateInput = document.getElementById("shift-date-input");
     if (dateInput && !dateInput.value) dateInput.value = todayDateStr();
 
+    const lineId = window.state.activeGroupFilter || window.state.activeGroupHubId
+        || drivers[0]?.groupId || drivers[0]?.lineId || null;
+    fillDutyDatalist(lineId);
+
+    const nameInput = document.getElementById("shift-name-input");
+    if (nameInput && !nameInput.dataset.dutyHintBound) {
+        nameInput.dataset.dutyHintBound = "1";
+        nameInput.addEventListener("input", () => {
+            const drv = driverByName(driverSelect?.value || "");
+            const lid = drv?.groupId || drv?.lineId || lineId;
+            paintResolvedDutyHint(resolveDutyFromCaPlan(nameInput.value, lid));
+        });
+    }
+    if (nameInput?.value) {
+        const drv = driverByName(driverSelect?.value || "");
+        paintResolvedDutyHint(resolveDutyFromCaPlan(nameInput.value, drv?.groupId || drv?.lineId || lineId));
+    }
+
     const weekDays = getWeekDates(window.currentShiftWeekOffset);
     const label = document.getElementById("shifts-week-label");
     if (label) {
@@ -255,14 +328,11 @@ function openShiftCell(driverName, dateStr) {
     if (driverSelect) driverSelect.value = driver.name;
     if (dateInput) dateInput.value = dateStr;
     const shift = getShiftForDriverDate(driver.name, dateStr);
-    const typeInput = document.getElementById("shift-type-select");
     const nameInput = document.getElementById("shift-name-input");
-    const startInput = document.getElementById("shift-start-input");
-    const endInput = document.getElementById("shift-end-input");
-    if (typeInput && shift?.type) typeInput.value = shift.type;
-    if (nameInput) nameInput.value = shift?.routeCode || shift?.name || "";
-    if (startInput) startInput.value = shift?.start || "";
-    if (endInput) endInput.value = shift?.end || "";
+    const code = shift?.routeCode || parseRouteCodeFromText(shift?.name) || shift?.name || "";
+    if (nameInput) nameInput.value = code;
+    fillDutyDatalist(driver.groupId || driver.lineId);
+    paintResolvedDutyHint(resolveDutyFromCaPlan(code, driver.groupId || driver.lineId));
     window.setTimeout(() => {
         const form = document.querySelector(".shift-form-grid");
         form?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -297,24 +367,43 @@ function requireIncidentForTodayCoveredChange(driver, date, nextType) {
 async function assignShift() {
     const driverName = document.getElementById("shift-driver-select")?.value || "";
     const date = document.getElementById("shift-date-input")?.value || "";
-    const type = document.getElementById("shift-type-select")?.value || "";
     const name = String(document.getElementById("shift-name-input")?.value || "").trim();
-    const start = document.getElementById("shift-start-input")?.value || "";
-    const end = document.getElementById("shift-end-input")?.value || "";
     const driver = driverByName(driverName);
-    const types = ["morning", "afternoon", "night", "bereitschaft", "off", "vacation", "sick"];
-    const working = !["off", "vacation", "sick"].includes(type);
-    if (!driver || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !types.includes(type) || name.length > 120
-        || (working && (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)))) {
+    if (!driver || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !name || name.length > 120) {
         showToast(t("shift_err_required"), "error");
         return;
     }
+    const lineId = driver.groupId || driver.lineId || window.state.activeGroupHubId || null;
+    const duty = resolveDutyFromCaPlan(name, lineId);
+    if (!duty) {
+        showToast(
+            t("shift_err_duty_not_in_plan")
+                || "Duty code is not in the CA-published plan. Import or pick a catalog code.",
+            "error"
+        );
+        paintResolvedDutyHint(null);
+        return;
+    }
+    const type = duty.type;
+    const start = duty.start;
+    const end = duty.end;
+    const working = !["off", "vacation", "sick"].includes(type);
+    if (working && (!/^\d{2}:\d{2}$/.test(String(start || "")) || !/^\d{2}:\d{2}$/.test(String(end || "")))) {
+        showToast(
+            t("shift_err_duty_times_missing")
+                || "CA plan has this duty but no start/end time — cannot invent times.",
+            "error"
+        );
+        paintResolvedDutyHint(duty);
+        return;
+    }
     if (requireIncidentForTodayCoveredChange(driver, date, type)) return;
-    const saved = await persistShift(driver, date, type, name, working ? start : null, working ? end : null);
+    const saved = await persistShift(driver, date, type, duty.code || name, working ? start : null, working ? end : null);
     if (!saved) return;
     showToast(`✓ ${driver.name} — ${date}`, "success");
     const nameInput = document.getElementById("shift-name-input");
     if (nameInput) nameInput.value = "";
+    paintResolvedDutyHint(null);
     renderDispatcherShifts();
 }
 

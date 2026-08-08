@@ -79,18 +79,31 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
 
 ### D8 — Mesečni plan: undo + aktivni katalog + bez dispo bulk importa
 
-- Datum: 2026-08-04 · Status: **Odlučeno** (Poglavlje 8)
+- Datum: 2026-08-04 · Status: **Odlučeno** (Poglavlje 8) — tačka 3 **zamenjena** odlukom **D21** (2026-08-07)
 - Odluka:
   1. Kontrolisani undo = jedan nivo `priorSnapshot` + soft-clear tombstone;
      audit `shift_undone`; bez brisanja istorije.
   2. Edit modal nudi samo šifre aktivnog (locked) CA kataloga; bez izmišljenih
      fallback F/S kodova.
-  3. Disponentski bulk uvoz mesečnog plana ostaje sakriven u UI dok commit /
-     partial-recovery ne dostignu CA nivo (CA group monthly import ostaje put).
+  3. ~~Disponentski bulk uvoz mesečnog plana ostaje sakriven…~~ → vidi **D21**.
   4. Masovno odsustvo (off/vacation/sick) samo uz preview + potvrdu; svaki dan
      ide kroz postojeći `PUT …/assignment`.
 - Posledica: `server/shift-assignment.js`, `POST …/assignment/undo`,
   `js/dispatcher/monthly-plans.js`.
+
+### D21 — CA = V66/katalog; Dispo = mesečne dodele vozača (uvoz + edit)
+
+- Datum: 2026-08-07 · Status: **Odlučeno** (vlasnik, eksplicitno)
+- Pitanje: ko uvozi mesečne planove vozača vs plan vožnje (V66)?
+- Odluka vlasnika:
+  1. CA formira grupe, dodeljuje dispečere i uvozi **plan vožnje / V66 (katalog
+     smena)**. CA **nema** pravo uvoza mesečnih planova vozača (EID/date/duty).
+  2. Dispo **uvozi i edituje** mesečne planove vozača (smene, busevi, statusi);
+     Ops radi iz tih dodela + aktivnog CA kataloga.
+  3. Dispo i dalje **nikada** ne vidi EID, PIN niti credential podatke.
+- Posledica: uklonjen CA monthly-import UI; CA preview/commit API → 403;
+  Dispo uvoz omogućen na mesečnom planu (ime → driverId, bez EID);
+  Ultimate §4 hard rule 1 usklađen; D8.3 zamenjen.
 
 ### D9 — Problem lifecycle + vehicle out + ops activity
 
@@ -202,7 +215,7 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
 - Odluka:
   1. §35 ne definiše KB/TTI; soft-pilot budžeti su:
      - driver app JS excl. translations ≤ 220 KB raw;
-     - staff app JS excl. translations ≤ 520 KB raw;
+     - staff app JS excl. translations ≤ 530 KB raw (D21/D22 + health/plan-gap + month edit sync + SU demo table/detail + demo support/suspend/typed-delete parity);
      - max single driver chunk ≤ 150 KB;
      - translations chunk ≤ 360 KB;
      - driver ne sme ugraditi dispatcher UI implementaciju.
@@ -246,7 +259,30 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
 - Posledica: known lines samo u CA edit/API; Needs attention čita CA podatke
   za vozače i Dispo-održane busove za vozila. Budući bus garage UI = Dispo.
 
+### D21 — Bus opsStatus + garage (Dispo edit)
+
+- Datum: 2026-08-06 · Status: **Odlučeno** (implementacija korak 2)
+- Polja na bus dokumentu:
+  - `garage` — slobodan tekst (max 40), uvek menjiv od Dispa
+  - `opsStatus` — `ready | breakdown | technical | out`
+  - `active` — i dalje hard on/off (deactivate); ostaje odvojeno
+- Needs attention / coverage: samo `active !== false` i `opsStatus === ready`
+  (osim keep trenutnog busa na smeni).
+- UI: Group Hub lista — inline edit garaže i statusa.
+
+### D22 — Dispo concurrency bez „šta/zašto“ polja
+
+- Datum: 2026-08-06 · Status: **Odlučeno**
+- Cilj: ušteda Dispo vremena — nema opisnih polja za razlog izmene.
+- Zabrana: dva disponenta ne smeju uspešno upisati različite izmene za
+  **istog vozača** (postojeći shift `expectedRevision`), **isti bus**
+  (`bus.revision` + `expectedRevision`), **istu garažu** (kratki soft lock
+  po labeli garaže, 2 min, po `holderUid`).
+- UX pri konfliktu: toast „osvežite“ + lokalni state osvežen iz servera; bez
+  forme za opis konflikta.
+
 ---
+
 
 ## Otvorena pitanja
 

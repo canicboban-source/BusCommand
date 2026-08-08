@@ -1,6 +1,10 @@
 const { test, expect } = require("@playwright/test");
 
-test.describe("Company Admin whole-group monthly import", () => {
+/**
+ * D21: Company Admin no longer imports monthly driver assignments.
+ * CA keeps duty catalog; Dispo owns monthly plans (no EID).
+ */
+test.describe("Company Admin monthly assignment import removed (D21)", () => {
   async function openCompanyPlanPage(page) {
     await page.goto("/staff.html?mode=production", { waitUntil: "networkidle" });
     await page.evaluate(() => {
@@ -17,6 +21,7 @@ test.describe("Company Admin whole-group monthly import", () => {
       sessionStorage.setItem("buscommand_tab_session", tabSessionId);
       localStorage.setItem("buscommand_device_id", deviceId);
       localStorage.setItem("buscommand_active_session", JSON.stringify({ deviceId, tabSessionId, at: Date.now() }));
+      window.firebase = window.firebase || {};
       window.firebase.auth = () => ({
         currentUser: { getIdToken: async () => "e2e-token" }
       });
@@ -30,71 +35,34 @@ test.describe("Company Admin whole-group monthly import", () => {
     await expect(page.locator("#company-admin-service-plan")).toBeVisible();
   }
 
-  test("previews and commits an EID group CSV", async ({ page }) => {
-    let committed = false;
-    await page.route("**/api/company-admin/monthly-plans/import/preview", route => route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        preview: {
-          id: "import-1",
-          fingerprint: "a".repeat(64),
-          summary: { drivers: 2, assignments: 3, removals: 0 },
-          rows: [
-            { driverName: "Ana Driver", date: "2026-09-01", dutyCode: "310.S01", action: "assign" },
-            { driverName: "Boris Driver", date: "2026-09-01", dutyCode: "310.F01", action: "assign" }
-          ]
-        }
-      })
-    }));
-    await page.route("**/api/company-admin/monthly-plans/import/commit", async route => {
-      const payload = route.request().postDataJSON();
-      committed = payload.importId === "import-1" && payload.fingerprint === "a".repeat(64);
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          id: "import-1",
-          summary: { drivers: 2, assignments: 3, removals: 0 }
-        })
-      });
-    });
-
+  test("CA service plan page has catalog import but no monthly assignment card", async ({ page }) => {
     await openCompanyPlanPage(page);
-    await page.locator("#ca-monthly-import-group").selectOption("310");
-    await page.locator("#ca-monthly-import-month").fill("2026-09");
-    await page.locator("#ca-monthly-import-reason").fill("September roster");
-    await page.locator("#ca-monthly-import-file").setInputFiles({
-      name: "monthly-310-2026-09.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from("eid,date,duty_code\nE-100,2026-09-01,310.S01\nE-200,2026-09-01,310.F01")
-    });
-
-    await expect(page.locator("#ca-monthly-import-preview")).toContainText("Rows recognized: 2");
-    await page.getByRole("button", { name: "Validate plan" }).click();
-    await expect(page.locator("#ca-monthly-import-preview")).toContainText("Ana Driver");
-    await expect(page.locator("#ca-monthly-import-preview")).toContainText("Assignments");
-    await page.getByRole("button", { name: "Publish monthly plan" }).click();
-    await expect.poll(() => committed).toBe(true);
-    await expect(page.locator("#ca-monthly-import-preview")).toContainText("Choose a group, month and file");
+    await expect(page.locator("#ca-service-plan-file")).toHaveCount(1);
+    await expect(page.locator("#ca-monthly-import-file")).toHaveCount(0);
+    await expect(page.locator("#ca-monthly-import-group")).toHaveCount(0);
+    await expect(page.locator(".ca-monthly-import-card")).toHaveCount(0);
   });
 
-  test("rejects a duplicate EID/date before any server request", async ({ page }) => {
-    let previewRequests = 0;
-    await page.route("**/api/company-admin/monthly-plans/import/preview", route => {
-      previewRequests += 1;
-      return route.abort();
-    });
+  test("CA monthly import API returns dispatcher-only forbidden", async ({ page }) => {
     await openCompanyPlanPage(page);
-    await page.locator("#ca-monthly-import-month").fill("2026-09");
-    await page.locator("#ca-monthly-import-file").setInputFiles({
-      name: "duplicate.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from("eid,date,duty_code\nE-100,2026-09-01,310.S01\nE-100,2026-09-01,310.S02")
+    const preview = await page.evaluate(async () => {
+      const res = await fetch("/api/company-admin/monthly-plans/import/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer e2e-token" },
+        body: JSON.stringify({
+          companyId: "alpha",
+          groupId: "310",
+          month: "2026-09",
+          mode: "merge",
+          sourceName: "x.csv",
+          reason: "should be blocked",
+          rows: [{ eid: "E-1", date: "2026-09-01", dutyCode: "310.S01", sourceRow: 2 }]
+        })
+      });
+      return { status: res.status, body: await res.json().catch(() => ({})) };
     });
-    await expect(page.locator("#ca-monthly-import-preview")).toContainText("Choose a group, month and file");
-    await expect.poll(() => previewRequests).toBe(0);
+    // Without real CA auth token the gate may be 401/403 — never success.
+    expect(preview.status).toBeGreaterThanOrEqual(400);
+    expect(preview.body?.success).not.toBe(true);
   });
 });

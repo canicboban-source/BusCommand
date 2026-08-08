@@ -1,0 +1,36 @@
+---
+description: Commit/push/deploy gates and how to report proof
+alwaysApply: true
+---
+
+# Git, secrets, and proof
+
+## Owner gates
+
+| Action | Default |
+|--------|---------|
+| Commit | Only when owner asks |
+| Push | Only when owner asks |
+| Deploy / release / prod migration | Only explicit “yes” |
+| Schema / new dependency | Only explicit “yes” |
+
+Never `--no-verify`, force-push main, or amend others’ commits.
+
+## Secrets
+
+Never add `.env` production secrets, Firebase admin JSON, shared activation codes, real customer PII dumps, or foreign-project credentials to git.
+
+## Noise to exclude from commits
+
+Unless owner asks: local `reports/*-pass*.txt`, stress logs, accidental report trims, Playwright `test-results/`, ad-hoc eval scripts not part of the agreed deliverable.
+
+## Final answer shape (after implementation)
+
+- **What** changed (user-visible behavior)
+- **Why** (ops problem)
+- **Security** (RBAC / tenant / credentials / conflict)
+- **Proof** (commands + exit codes)
+- **Files** touched
+- **Risk** / **Not done**
+
+If unproven, say so — never claim “done” or “deployed” without evidence.

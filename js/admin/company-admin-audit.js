@@ -1,5 +1,5 @@
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { escapeHtml, showToast } from "../core/utils.js";
 import { t } from "../ui/i18n.js";
@@ -113,7 +113,7 @@ async function loadCompanyAudit({ append = false } = {}) {
     renderAuditList();
     try {
         const filters = readFilters();
-        if (IS_DEMO_MODE) {
+        if (USE_LOCAL_STATE) {
             events = filteredDemoEvents(filters);
             nextCursor = null;
         } else {

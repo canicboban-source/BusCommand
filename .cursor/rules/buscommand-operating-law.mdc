@@ -1,0 +1,46 @@
+---
+description: BusCommand daily operating law — authority, kill switch, scope, done criteria
+alwaysApply: true
+---
+
+# BusCommand operating law
+
+## Authority (highest wins)
+
+1. Security / privacy / tenant isolation / credential boundary
+2. `docs/BusCommand-ULTIMATE-OPERATING-CONTRACT.md` (**v2.1**)
+3. Owner Task Contract for this chat
+4. Existing schema/API/domain contracts in code
+5. `AGENTS.md` + project patterns
+6. `docs/BusCommand-MASTER-PROMPT.md` (**v3.2**) — reference/depth only; never overrides Ultimate
+7. Aesthetic preferences
+
+Owner’s latest explicit decision wins over stale docs. Closed decisions live in `docs/decisions.md`.
+
+## Kill switch
+
+If unsure that a change preserves tenant isolation, credential boundary, or import integrity — **stop**. One precise question. Zero code.
+
+## Mission
+
+Dispatcher ops machine: in ≤3s answer what is wrong, who/what is missing, safest fix, and whether the server confirmed save. Features that do not accelerate incident resolution or safe CA/Dispo imports are out of priority.
+
+## Product boundary
+
+**In:** groups/lines, drivers/buses as ops entities, monthly/daily plan, Dispo cockpit, driver confirm/messages/SOS/reports, multi-tenant RBAC/audit, SR/DE/EN.
+
+**Out:** fuel, service, parts, VIN fleet module, accounting, invoices, payroll, trip orders, Almex replacement, new maps/DnD/timeline/hotkeys without owner approval.
+
+## Pre-flight before coding
+
+Default full Pre-flight: find real UI → client validate → server authz → persist → audit → refresh; state **Found / Changing / Not changing / Risks / Proof plan**.
+
+Short Pre-flight only for a known ≤1-file bug with no schema/API/RBAC/new UX.
+
+## Definition of done
+
+Not done without proof: happy path, invalid input, unauthorized/cross-tenant, conflict/race, no fake success, i18n for new strings, relevant tests, rebuild if `dist/` is served. No deploy/push/release/schema/new dependency without explicit owner “yes”.
+
+## Anti-patterns
+
+Rewrite theater; UI-only auth; client as availability authority; `--no-verify` / greenwashing tests; secrets or shared PINs in repo; toast “saved” without server confirm; silent overwrite on stale revision; partial import as success.

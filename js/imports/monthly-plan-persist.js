@@ -1,7 +1,7 @@
 // Persist imported monthly plan days through the staff assignment API (server + schedule mirror).
 import ApiClient from "../core/api-client.js";
 import { getShiftForDriverDate } from "../core/shift-plan.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { findDriverByName, normalizeType } from "./monthly-plan-persist-utils.js";
 
 function padDay(day) {
@@ -16,7 +16,7 @@ async function persistImportedMonthlyPlan(byDriver, month, {
     drivers = window.state?.drivers || [],
     concurrency = 4
 } = {}) {
-    if (IS_DEMO_MODE) {
+    if (USE_LOCAL_STATE) {
         return { ok: 0, fail: 0, skipped: 0, errors: [] };
     }
     if (!month || !/^\d{4}-\d{2}$/.test(month)) {

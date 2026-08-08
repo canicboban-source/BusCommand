@@ -3,6 +3,7 @@
 ## Primary authority (read first)
 
 - `docs/BusCommand-ULTIMATE-OPERATING-CONTRACT.md` (**v2.1**) — daily operating law for every AI agent.
+- `.cursor/rules/*.mdc` — condensed always-on + scoped Cursor rules derived from that contract (D21, build, imports, Dispo, i18n, git/proof).
 
 Before changing code: follow that contract (Pre-flight → smallest correct change → proof). Do not deploy, push, or release without an explicit owner decision.
 

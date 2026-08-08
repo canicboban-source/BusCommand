@@ -14,16 +14,17 @@ test.describe("Dispatcher bus import smoke", () => {
       ]
     };
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => {
-      const fn = window.openGroupHub;
-      if (typeof fn !== "function") throw new Error("openGroupHub missing");
+      const fn = window.openVehiclesForGroup || window.openGroupHub;
+      if (typeof fn !== "function") throw new Error("openVehiclesForGroup missing");
       fn("101");
     });
 
-    await expect(page.locator("#hub-section-buses")).toBeVisible();
+    await expect(page.locator("#dispatcher-vehicles")).toBeVisible();
+    await expect(page.locator("#add-bus-form")).toBeVisible();
     await page.locator("#bus-import-paste").fill("91103\n91104\n90001\n");
     await page.locator('[data-action="handleBusImportPaste"]').click();
 
@@ -42,10 +43,10 @@ test.describe("Dispatcher bus import smoke", () => {
 
   test("fail: empty paste shows error and does not invent buses", async ({ page }) => {
     await seedDemoState(page, minimalDemoState());
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
-    await page.evaluate(() => window.openGroupHub("101"));
+    await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("101"));
     await page.locator("#bus-import-paste").fill("   \n  ");
     await page.locator('[data-action="handleBusImportPaste"]').click();
 

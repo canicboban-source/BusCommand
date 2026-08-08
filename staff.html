@@ -54,10 +54,7 @@
                     <span class="bc-brand-text">BusCommand</span>
                 </div>
                 <p data-i18n="login_subtitle">Fleet Management Platform</p>
-                <div class="trial-badge-login hidden" id="login-trial-badge">
-                    <i data-lucide="clock" style="width:11px;height:11px;"></i>
-                    <span data-i18n="trial_badge_login">30 DAYS TRIAL</span>
-                </div>
+                <div class="trial-badge-login hidden" id="login-trial-badge" hidden aria-hidden="true"></div>
             </div>
 
             <!-- ── Driver / Dispatcher tabovi — direktno bez Company ID ── -->
@@ -71,9 +68,12 @@
                     </button>
                     <button id="tab-dispatcher-btn" class="login-tab" data-action="switchLoginTab" data-action-args='["dispatcher"]'>
                         <i data-lucide="shield"></i>
-                        <span data-i18n="dispatcher">Dispatcher</span>
+                        <span data-i18n="staff_login_tab">Staff</span>
                     </button>
                 </div>
+                <p id="staff-login-role-hint" class="subtitle" style="margin:8px 0 14px;font-size:0.8rem;line-height:1.35;color:var(--text-muted);" data-i18n="staff_login_role_hint">
+                    Staff: Dispo, Company Admin or Super Admin (own email). Drivers: Driver tab.
+                </p>
 
                 <!-- Forma za vozača -->
                 <div id="driver-login-form" class="login-form-content hidden" hidden>
@@ -263,9 +263,8 @@
                         <span class="bc-brand-text" id="app-branding-title">BusCommand</span>
                     </div>
                 </div>
-                <div class="trial-indicator hidden" id="app-trial-badge">
-                    <i data-lucide="clock"></i> <span data-i18n="trial_indicator_text">Probni period: 29 dana preostalo</span>
-                </div>
+                <div class="trial-indicator hidden" id="app-trial-badge" hidden aria-hidden="true"></div>
+                <div id="header-connection-status" class="header-connection-status" data-state="online" role="status" aria-live="polite">Online</div>
             </div>
             
             <div class="header-right">
@@ -300,6 +299,11 @@
                 <!-- Dark/Light mode toggle -->
                 <button id="theme-toggle-btn" class="btn-logout" type="button" data-action="toggleTheme" title="Toggle dark/light mode" data-i18n-title="theme_toggle_aria" aria-label="Toggle dark/light mode" data-i18n-aria-label="theme_toggle_aria" style="margin-right:4px;">
                     <i data-lucide="moon" id="theme-icon" aria-hidden="true"></i>
+                </button>
+
+                <button id="dispatcher-help-btn" class="btn-logout dispatcher-help-btn hidden" type="button" data-action="openDispatcherHelp" title="Help" data-i18n-title="dispo_help_aria" aria-label="Help" data-i18n-aria-label="dispo_help_aria">
+                    <i data-lucide="life-buoy" aria-hidden="true"></i>
+                    <span class="dispatcher-help-btn-label" data-i18n="dispo_help_btn">Help</span>
                 </button>
 
                 <button class="btn-logout" type="button" data-action="logout" title="Logout" data-i18n-title="logout_aria" aria-label="Logout" data-i18n-aria-label="logout_aria">
@@ -393,6 +397,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["dispatcher-vehicles"]'>
+                                <i data-lucide="bus"></i> <span data-i18n="nav_vehicles">Vozila</span>
+                            </a>
+                        </li>
+                        <li>
                             <a href="#" class="nav-item" data-action="switchSection" data-action-args='["dispatcher-messages"]' style="position:relative;">
                                 <i data-lucide="message-circle"></i> <span data-i18n="nav_messages">Poruke</span>
                                 <span id="nav-badge-disp-unread" class="nav-notification-badge hidden"></span>
@@ -411,6 +420,11 @@
                         <li>
                             <a href="#" class="nav-item" data-action="switchSection" data-action-args='["dispatcher-lost-found"]'>
                                 <i data-lucide="package-search"></i> <span data-i18n="nav_lost_found">Izgubljene stvari</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["dispatcher-vacations"]'>
+                                <i data-lucide="calendar-check"></i> <span data-i18n="nav_vacation_requests">Zahtevi za odmor</span>
                             </a>
                         </li>
                     </ul>
@@ -518,7 +532,7 @@
                             </div>
                             <div class="form-group" style="flex:1;min-width:140px;margin:0;">
                                 <label style="font-size:0.75rem;margin-bottom:4px;display:block;" data-i18n="password_label">Password</label>
-                                <input type="password" id="sa-ca-password" data-i18n-placeholder="password_min_placeholder" placeholder="min 6 chars" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-md);padding:10px;color:white;width:100%;outline:none;box-sizing:border-box;">
+                                <input type="password" id="sa-ca-password" data-i18n-placeholder="ca_team_password_placeholder" placeholder="Min. 6 chars, letter + number" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-md);padding:10px;color:white;width:100%;outline:none;box-sizing:border-box;">
                             </div>
                             <div class="form-group" style="flex:1;min-width:140px;margin:0;">
                                 <label style="font-size:0.75rem;margin-bottom:4px;display:block;" data-i18n="company_id_label">Company ID</label>
@@ -779,7 +793,7 @@
                     <div class="section-header service-plan-page-header">
                         <div>
                             <h2><i data-lucide="calendar-range" class="section-title-icon"></i> <span data-i18n="ca_plan_title">Planovi smena</span></h2>
-                            <p class="subtitle" data-i18n="ca_plan_subtitle">Objavite katalog smena i uvezite mesečne dodele cele grupe. Disponent zatim vodi dnevnu operativu bez pristupa EID podacima.</p>
+                            <p class="subtitle" data-i18n="ca_plan_subtitle">Objavite katalog smena po grupi. Disponent uvozi i uređuje mesečne dodele vozača — bez pristupa EID i PIN podacima.</p>
                         </div>
                     </div>
 
@@ -841,57 +855,7 @@
 
                     <div id="ca-service-plan-preview" class="service-plan-preview-host" aria-live="polite"></div>
 
-                    <div class="card ca-monthly-import-card" aria-labelledby="ca-monthly-import-title">
-                        <div class="service-plan-panel-header">
-                            <div>
-                                <span class="service-plan-kicker" data-i18n="ca_monthly_import_kicker">MESEČNE DODELE</span>
-                                <h3 id="ca-monthly-import-title" data-i18n="ca_monthly_import_title">Uvezite mesečni plan cele grupe</h3>
-                                <p data-i18n="ca_monthly_import_hint">EID iz fajla povezuje red sa vozačem. Kod smene mora postojati u aktivnom katalogu izabrane grupe. Busevi se ne uvoze ovim fajlom.</p>
-                            </div>
-                            <i data-lucide="calendar-sync" aria-hidden="true"></i>
-                        </div>
-                        <div class="ca-monthly-import-fields">
-                            <label class="form-group" for="ca-monthly-import-group">
-                                <span data-i18n="ca_plan_group">Grupa / linija</span>
-                                <select id="ca-monthly-import-group" data-change-action="invalidateCompanyGroupMonthlyPreview">
-                                    <option value="" data-i18n="ca_plan_group_placeholder">Izaberite grupu</option>
-                                </select>
-                            </label>
-                            <label class="form-group" for="ca-monthly-import-month">
-                                <span data-i18n="ca_monthly_import_month">Mesec</span>
-                                <input type="month" id="ca-monthly-import-month" data-change-action="invalidateCompanyGroupMonthlyPreview">
-                            </label>
-                            <label class="form-group" for="ca-monthly-import-mode">
-                                <span data-i18n="ca_monthly_import_mode">Način uvoza</span>
-                                <select id="ca-monthly-import-mode" data-change-action="invalidateCompanyGroupMonthlyPreview">
-                                    <option value="merge" data-i18n="ca_monthly_import_mode_merge">Dopuni ili izmeni navedene dane</option>
-                                    <option value="replace" data-i18n="ca_monthly_import_mode_replace">Zameni ceo plan grupe za mesec</option>
-                                </select>
-                            </label>
-                            <label class="form-group ca-monthly-import-reason" for="ca-monthly-import-reason">
-                                <span data-i18n="ca_monthly_import_reason">Razlog / napomena</span>
-                                <input type="text" id="ca-monthly-import-reason" maxlength="200" data-i18n-placeholder="ca_monthly_import_reason_placeholder" placeholder="Npr. Prva objava plana za septembar" data-input-action="invalidateCompanyGroupMonthlyPreview">
-                            </label>
-                        </div>
-                        <div class="ca-monthly-import-upload-row">
-                            <button type="button" class="company-drivers-dropzone" data-action="clickElementById" data-action-args='["ca-monthly-import-file"]'>
-                                <i data-lucide="file-spreadsheet" aria-hidden="true"></i>
-                                <strong data-i18n="ca_monthly_import_choose">Izaberi grupni XLSX ili CSV</strong>
-                                <span data-i18n="ca_monthly_import_file_rule">Kolone: eid, date, duty_code · do 2.500 redova</span>
-                            </button>
-                            <input type="file" id="ca-monthly-import-file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden data-change-action="handleCompanyGroupMonthlyFile" data-change-pass="event">
-                            <div class="service-plan-download-actions">
-                                <a class="btn-secondary" href="/templates/BusCommand_Monthly_Group_Plan_Blank_v1.xlsx" download>
-                                    <i data-lucide="file-spreadsheet"></i><span data-i18n="ca_monthly_import_download_xlsx">Preuzmi XLSX</span>
-                                </a>
-                                <a class="btn-secondary" href="/templates/BusCommand_Monthly_Group_Plan_Blank_v1.csv" download>
-                                    <i data-lucide="file-down"></i><span data-i18n="ca_monthly_import_download_csv">Preuzmi CSV</span>
-                                </a>
-                            </div>
-                        </div>
-                        <p class="service-plan-format-note"><i data-lucide="triangle-alert"></i> <span data-i18n="ca_monthly_import_replace_warning">„Zameni ceo plan“ uklanja postojeće dodele izabranog meseca koje nisu u fajlu. Pregled će pokazati tačan broj uklanjanja pre potvrde.</span></p>
-                        <div id="ca-monthly-import-preview" class="service-plan-preview-host" aria-live="polite"></div>
-                    </div>
+                    <!-- D21: CA monthly driver-assignment import removed — Dispo owns that flow (no EID). -->
 
                     <div class="card service-plan-history-panel">
                         <div class="service-plan-panel-header">
@@ -1135,13 +1099,14 @@
                         </div>
                     </div>
 
-                    <!-- FORMA ZA DODELU SMENE -->
+                    <!-- FORMA ZA DODELU SMENE — tip/vreme iz CA uvezеног plana -->
                     <div class="card" style="margin-bottom:20px;">
                         <h3><i data-lucide="plus-circle"></i> <span data-i18n="shift_assign_title">Dodeli smenu vozaču</span></h3>
-                        <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr 1fr 0.8fr 0.8fr auto; gap:12px; align-items:end; margin-top:16px;" class="shift-form-grid">
-                            <div class="form-group" style="margin-bottom:0;">
+                        <p class="subtitle shift-assign-hint" data-i18n="shift_assign_from_plan_hint">Tip i vreme dolaze iz CA uvezеног plana — unesite samo vozača, datum i oznaku smene.</p>
+                        <div class="shift-form-grid">
+                            <div class="form-group shift-form-driver" style="margin-bottom:0;">
                                 <label data-i18n="select_driver">Vozač</label>
-                                <select id="shift-driver-select" style="cursor:pointer;">
+                                <select id="shift-driver-select" style="cursor:pointer;width:100%;min-height:48px;font-size:1.05rem;">
                                     <!-- Popunjava JS -->
                                 </select>
                             </div>
@@ -1150,32 +1115,15 @@
                                 <input type="date" id="shift-date-input">
                             </div>
                             <div class="form-group" style="margin-bottom:0;">
-                                <label data-i18n="shift_type_label">Tip smene</label>
-                                <select id="shift-type-select" style="cursor:pointer;">
-                                    <option value="morning" data-i18n="shift_morning">Prepodne (Frühdienst)</option>
-                                    <option value="afternoon" data-i18n="shift_afternoon">Popodne (Spätdienst)</option>
-                                    <option value="night" data-i18n="shift_night">Noćna (Nachtdienst)</option>
-                                    <option value="off" data-i18n="shift_off">Slobodan dan</option>
-                                    <option value="vacation" data-i18n="shift_vacation_type">Godišnji odmor</option>
-                                    <option value="sick" data-i18n="shift_sick_type">Bolovanje</option>
-                                </select>
+                                <label for="shift-name-input" data-i18n="shift_name_label">Oznaka smene</label>
+                                <input type="text" id="shift-name-input" list="shift-duty-datalist" placeholder="npr. 101.S08" maxlength="30" autocomplete="off">
+                                <datalist id="shift-duty-datalist"></datalist>
                             </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label data-i18n="shift_name_label">Oznaka smene (opciono)</label>
-                                <input type="text" id="shift-name-input" placeholder="npr. 320.S08" maxlength="30">
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label for="shift-start-input" data-i18n="shift_start_label">Početak</label>
-                                <input type="time" id="shift-start-input" required>
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label for="shift-end-input" data-i18n="shift_end_label">Kraj</label>
-                                <input type="time" id="shift-end-input" required>
-                            </div>
-                            <button data-action="assignShift" class="btn-primary" style="height:46px; white-space:nowrap;">
+                            <button data-action="assignShift" class="btn-primary" style="height:48px; white-space:nowrap;">
                                 <i data-lucide="check"></i> <span data-i18n="btn_assign_shift">Dodeli</span>
                             </button>
                         </div>
+                        <p id="shift-duty-resolved" class="shift-duty-resolved" aria-live="polite"></p>
                     </div>
 
                     <!-- SEDMIČNI PREGLED PO VOZAČIMA -->
@@ -1189,7 +1137,8 @@
 
 
                 <!-- ══ DNEVNI RASPORED ══════════════════════════════════════════ -->
-                <section id="dispatcher-daily-schedule" class="content-section hidden">
+                <!-- Legacy schedule history (not in dispatcher nav). Kept for schedule-date-picker fallback / import history. -->
+                <section id="dispatcher-daily-schedule" class="content-section hidden" data-legacy="schedule-history" aria-hidden="true">
                     <div class="section-header">
                         <div>
                             <h2 data-i18n="upload_schedule_title">Dnevni raspored</h2>
@@ -1283,7 +1232,7 @@
                 </section>
 
                 <!-- KONTROLNA TABLA — Operativni centar -->
-                <section id="dispatcher-dashboard" class="content-section hidden ops-center">
+                <section id="dispatcher-dashboard" class="content-section hidden ops-center ops-layout-b">
                     <div class="section-header ops-center-top">
                         <div>
                             <h2 data-i18n="nav_ops_center">Operativni centar</h2>
@@ -1300,7 +1249,7 @@
 
                     <div id="dashboard-groups-grid" class="ops-line-chips" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:16px;"></div>
 
-                    <div class="stats-grid ops-stats-strip">
+                    <div class="stats-grid ops-stats-strip ops-stats-strip-compact">
                         <div class="stat-card">
                             <div class="stat-icon-wrapper blue-icon">
                                 <i data-lucide="users"></i>
@@ -1328,7 +1277,7 @@
                                 <label data-i18n="stat_unread_messages">Nepročitane poruke</label>
                             </div>
                         </div>
-                        <div class="stat-card" style="cursor:pointer;" data-action="switchSection" data-action-args='["dispatcher-reports"]'>
+                        <div class="stat-card" style="cursor:pointer;" data-action="openOpsAttentionPanel">
                             <div class="stat-icon-wrapper red-icon">
                                 <i data-lucide="alert-octagon"></i>
                             </div>
@@ -1343,8 +1292,8 @@
                         <div class="card live-alerts-card ops-col-action">
                             <div class="ops-panel-kicker" data-i18n="ops_waiting_action">Čeka akciju</div>
                             <div class="card-header-with-action">
-                                <h3 data-i18n="live_alerts_title">Najnovije prijave sa terena</h3>
-                                <button class="btn-text-only" data-action="switchSection" data-action-args='["dispatcher-reports"]' data-i18n="btn_see_all">Vidi sve</button>
+                                <h3 data-i18n="live_alerts_title">Šta zahteva pažnju</h3>
+                                <button class="btn-text-only" data-action="openOpsAttentionPanel" data-i18n="btn_see_all">Vidi sve</button>
                             </div>
                             <div class="alerts-list" id="dispatcher-live-alerts">
                                 <!-- Dinamičke prijave iz JS -->
@@ -1428,6 +1377,7 @@
 
                 <!-- GROUP HUB — upravljanje podacima po grupi -->
                 <section id="dispatcher-group-hub" class="content-section hidden">
+                    <div id="ops-readonly-banner-slot" aria-live="polite"></div>
                     <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;">
                         <button type="button" class="btn-secondary" data-action="closeGroupHub" style="height:40px;padding:0 14px;">
                             <i data-lucide="arrow-left"></i> <span data-i18n="hub_back">Back to Hub</span>
@@ -1443,9 +1393,9 @@
 
                     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;">
                         <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="scrollHubSection" data-action-args='["group-hub-overview-detail"]'><span id="hub-stat-drivers" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_drivers" style="font-size:0.75rem;">Vozači</label></div>
-                        <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="scrollHubSection" data-action-args='["hub-section-buses"]'><span id="hub-stat-buses" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_buses" style="font-size:0.75rem;">Autobusi</label></div>
+                        <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="openVehiclesFromPlan"><span id="hub-stat-buses" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_buses" style="font-size:0.75rem;">Autobusi</label></div>
                         <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="openMonthlyPlansFull"><span id="hub-stat-plans" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_plans" style="font-size:0.75rem;">Planovi</label></div>
-                        <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="scrollHubSection" data-action-args='["hub-section-catalog"]'><span id="hub-stat-catalog" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_catalog" style="font-size:0.75rem;">Smena V66</label></div>
+                        <div class="stat-card" style="padding:14px;cursor:pointer;" data-action="openDailyPlanFull"><span id="hub-stat-catalog" style="font-size:1.4rem;font-weight:700;">0</span><label data-i18n="hub_stat_catalog" style="font-size:0.75rem;">Katalog smena</label></div>
                     </div>
 
                     <div class="card hub-overview-card" id="group-hub-overview-detail"></div>
@@ -1458,7 +1408,7 @@
                     <div class="card hub-import-card" id="group-hub-step-import">
                         <h3 class="hub-section-title" style="margin-top:0;display:flex;align-items:center;gap:8px;">
                             <span class="hub-step-badge">1</span>
-                            <span data-i18n="import_all_title">Uvezi sve odjednom (vozači + plan + V66)</span>
+                            <span data-i18n="import_all_title">Uvezi sve odjednom (vozači + mesečni plan)</span>
                         </h3>
                         <p class="subtitle" style="font-size:0.85rem;margin-bottom:12px;" data-i18n="import_all_subtitle">CSV vozača + Excel mesečni plan — jedan drop, jedan klik Snimi.</p>
                         <div id="package-import-dropzone" class="hub-dropzone hub-dropzone--primary" data-action="clickElementById" data-action-args='["package-import-files"]'
@@ -1479,41 +1429,27 @@
                             <ul class="crud-list" id="settings-drivers-list" style="max-height:220px;overflow-y:auto;"></ul>
                         </div>
 
-                        <div class="card hub-panel" id="hub-section-buses">
+                        <div class="card hub-panel hub-panel--split-redirect" id="hub-section-buses">
                             <h3 class="hub-section-title"><i data-lucide="bus"></i> <span data-i18n="hub_stat_buses">Buses</span></h3>
-                            <form id="add-bus-form" data-submit-action="addBus" class="crud-form hub-bus-form" style="margin-bottom:10px;">
-                                <input type="text" id="new-bus-num" required placeholder="e.g. 91504" aria-label="Bus number" data-i18n-aria-label="hub_add_bus_label" data-i18n-placeholder="hub_add_bus_placeholder">
-                                <button type="submit" class="btn-primary hub-add-bus-btn" data-i18n="hub_add_bus_btn" aria-label="Add bus" data-i18n-aria-label="hub_add_bus_aria">Add bus</button>
-                            </form>
-                            <div class="hub-bus-import" style="margin-bottom:12px;">
-                                <p class="subtitle" style="font-size:0.8rem;margin:0 0 8px;" data-i18n="bus_import_hint">Import buses: TXT, CSV, XLSX or paste — one number per line.</p>
-                                <div id="bus-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bus-import-file"]'
-                                    data-drop-action="handleBusImportDrop" data-i18n="bus_import_drop">Drop TXT / CSV / XLSX here</div>
-                                <input type="file" id="bus-import-file" accept=".txt,.csv,.tsv,.xlsx,.xls" style="display:none;" data-change-action="handleBusImportFile" data-change-pass="event">
-                                <textarea id="bus-import-paste" rows="3" style="width:100%;margin-top:8px;box-sizing:border-box;" data-i18n-placeholder="bus_import_paste_placeholder" placeholder="Paste bus numbers…"></textarea>
-                                <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-                                    <button type="button" class="btn-secondary" data-action="handleBusImportPaste" data-i18n="bus_import_preview_btn">Preview import</button>
-                                    <button type="button" class="btn-secondary" data-action="clearBusImportPreview" data-i18n="bus_import_cancel">Clear</button>
-                                </div>
-                                <div id="bus-import-preview"></div>
-                            </div>
-                            <ul class="crud-list" id="settings-buses-list" style="max-height:280px;overflow-y:auto;"></ul>
+                            <p class="subtitle hub-panel-hint" data-i18n="hub_buses_moved_hint">Bus import and changes moved to the Vehicles panel.</p>
+                            <button type="button" class="btn-primary" data-action="openVehiclesFromPlan">
+                                <i data-lucide="arrow-right"></i> <span data-i18n="nav_vehicles">Vozila</span>
+                            </button>
                         </div>
 
                         <div class="card hub-panel" id="hub-section-catalog">
-                            <h3 class="hub-section-title hub-section-title--sm"><i data-lucide="book-open"></i> <span data-i18n="hub_catalog_title">Shift catalog V66</span></h3>
+                            <h3 class="hub-section-title hub-section-title--sm"><i data-lucide="book-open"></i> <span data-i18n="hub_catalog_title">Shift catalog</span></h3>
                             <div id="shift-catalog-status"></div>
                         </div>
 
-                        <div class="card hub-panel" id="hub-section-extra-import" hidden data-feature="dispatcher-bulk-plan-import" aria-hidden="true">
+                        <div class="card hub-panel" id="hub-section-extra-import" data-feature="dispatcher-bulk-plan-import">
                             <h3 class="hub-section-title hub-section-title--sm"><i data-lucide="file-up"></i> <span data-i18n="hub_extra_plans_title">Extra plans</span></h3>
-                            <p class="subtitle" style="font-size:0.82rem;margin:0 0 8px;" data-i18n="hub_plan_import_deferred">
-                                Uvoz pripremljenih mesečnih dodela je dostupan Company Adminu (grupni mesečni uvoz). Disponentski bulk uvoz ostaje isključen dok serverski commit i oporavak ne budu potpuni.
+                            <p class="subtitle" style="font-size:0.82rem;margin:0 0 8px;" data-i18n="hub_plan_import_hint">
+                                Mesečne dodele vozača uvozite i menjate na ekranu Mesečni plan (po imenu vozača — bez EID).
                             </p>
-                            <div id="plan-import-dropzone" class="hub-dropzone hub-dropzone--subtle" hidden data-action="clickElementById" data-action-args='["bulk-plan-import-files"]'
-                                data-drop-action="handleBulkPlanDrop" data-i18n="hub_plan_drop_hint">Drop PDF/Excel plans here</div>
-                            <input type="file" id="bulk-plan-import-files" multiple accept=".xlsx,.xls,.pdf,.csv,.txt" style="display:none;" data-change-action="handleBulkPlanFileInput" data-change-pass="event" disabled>
-                            <div id="plan-import-preview" hidden></div>
+                            <button type="button" class="btn-primary" data-action="openMonthlyPlanFull" style="width:100%;">
+                                <i data-lucide="calendar-range"></i> <span data-i18n="hub_open_monthly_full">Otvori mesečni plan</span>
+                            </button>
                         </div>
 
                         <div class="card hub-panel hub-panel--plans" id="hub-section-plan-shortcuts">
@@ -1546,9 +1482,45 @@
                     </div>
                 </section>
 
+                <!-- VOZILA — uvoz, izmene, grupe (razdvojeno iz Group Hub) -->
+                <section id="dispatcher-vehicles" class="content-section hidden">
+                    <div class="section-header">
+                        <div>
+                            <h2 id="vehicles-panel-title" data-i18n="nav_vehicles">Vozila</h2>
+                            <p id="vehicles-panel-subtitle" class="subtitle" data-i18n="vehicles_panel_sub">Uvoz, izmene i dodela grupama.</p>
+                        </div>
+                        <button type="button" class="btn-secondary" data-action="switchSection" data-action-args='["dispatcher-dashboard"]'>
+                            <i data-lucide="layout-dashboard"></i> <span data-i18n="nav_ops_center">Operativni centar</span>
+                        </button>
+                    </div>
+
+                    <div class="ops-health" id="vehicles-plan-health" role="status" aria-live="polite"></div>
+
+                    <div class="card vehicles-panel-card">
+                        <form id="add-bus-form" data-submit-action="addBus" class="crud-form hub-bus-form" style="margin-bottom:10px;">
+                            <input type="text" id="new-bus-num" required placeholder="e.g. 91504" aria-label="Bus number" data-i18n-aria-label="hub_add_bus_label" data-i18n-placeholder="hub_add_bus_placeholder">
+                            <input type="text" id="new-bus-garage" maxlength="40" placeholder="Depot A" aria-label="Garage" data-i18n-aria-label="bus_garage" data-i18n-placeholder="bus_garage_placeholder">
+                            <button type="submit" class="btn-primary hub-add-bus-btn" data-i18n="hub_add_bus_btn" aria-label="Add bus" data-i18n-aria-label="hub_add_bus_aria">Add bus</button>
+                        </form>
+                        <div class="vehicles-bus-import hub-bus-import" style="margin-bottom:12px;">
+                            <p class="subtitle" style="font-size:0.8rem;margin:0 0 8px;" data-i18n="bus_import_hint">Import buses: TXT, CSV, XLSX or paste — one number per line.</p>
+                            <div id="bus-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bus-import-file"]'
+                                data-drop-action="handleBusImportDrop" data-i18n="bus_import_drop">Drop TXT / CSV / XLSX here</div>
+                            <input type="file" id="bus-import-file" accept=".txt,.csv,.tsv,.xlsx,.xls" style="display:none;" data-change-action="handleBusImportFile" data-change-pass="event">
+                            <textarea id="bus-import-paste" rows="3" style="width:100%;margin-top:8px;box-sizing:border-box;" data-i18n-placeholder="bus_import_paste_placeholder" placeholder="Paste bus numbers…"></textarea>
+                            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                                <button type="button" class="btn-secondary" data-action="handleBusImportPaste" data-i18n="bus_import_preview_btn">Preview import</button>
+                                <button type="button" class="btn-secondary" data-action="clearBusImportPreview" data-i18n="bus_import_cancel">Clear</button>
+                            </div>
+                            <div id="bus-import-preview"></div>
+                        </div>
+                        <ul class="crud-list" id="settings-buses-list" style="max-height:420px;overflow-y:auto;"></ul>
+                    </div>
+                </section>
+
                 <!-- MESEČNI PLAN — pun ekran -->
                 <section id="dispatcher-monthly-plans-full" class="content-section hidden">
-                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
                         <button type="button" class="btn-secondary" data-action="backFromPlanFullPage" style="height:40px;padding:0 14px;">
                             <i data-lucide="arrow-left"></i> <span data-i18n="btn_back">Nazad</span>
                         </button>
@@ -1563,11 +1535,26 @@
                         </button>
                     </div>
 
+                    <div class="ops-health" id="monthly-plan-health" role="status" aria-live="polite"></div>
+
+                    <div class="card full-width-card" id="dispo-monthly-plan-import" data-feature="dispatcher-bulk-plan-import" style="margin-bottom:16px;">
+                        <h3 class="hub-section-title" style="margin-top:0;">
+                            <i data-lucide="file-up"></i> <span data-i18n="hub_extra_plans_title">Uvoz mesečnih planova</span>
+                        </h3>
+                        <p class="subtitle" style="font-size:0.82rem;margin:0 0 10px;" data-i18n="hub_plan_import_hint">
+                            Uvezite pripremljene mesečne dodele po vozaču (Excel/CSV/PDF/TXT/slika). Format se prepoznaje automatski; povezivanje je po imenu — bez EID i PIN.
+                        </p>
+                        <div id="plan-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bulk-plan-import-files"]'
+                            data-drop-action="handleBulkPlanDrop" data-i18n="hub_plan_drop_hint">Drop Excel/CSV/PDF/TXT/image (OCR)</div>
+                        <input type="file" id="bulk-plan-import-files" multiple accept=".xlsx,.xls,.pdf,.csv,.txt,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display:none;" data-change-action="handleBulkPlanFileInput" data-change-pass="event">
+                        <div id="plan-import-preview" hidden></div>
+                    </div>
+
                     <div class="card full-width-card" style="margin-bottom:16px;">
-                        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;flex-wrap:wrap;">
+                        <div style="display:grid;grid-template-columns:1.6fr 1fr auto;gap:12px;align-items:end;flex-wrap:wrap;">
                             <div>
                                 <label data-i18n="monthly_label_driver" style="font-size:0.75rem;color:var(--text-muted);">Vozač</label>
-                                <select id="monthly-driver-select" data-change-action="loadMonthlyPlanForDriver" style="width:100%;padding:10px;font-size:0.9rem;"></select>
+                                <select id="monthly-driver-select" data-change-action="loadMonthlyPlanForDriver" style="width:100%;padding:12px;font-size:1.05rem;min-height:48px;"></select>
                             </div>
                             <div>
                                 <label data-i18n="monthly_label_month" style="font-size:0.75rem;color:var(--text-muted);">Mesec</label>
@@ -1578,14 +1565,29 @@
                         <div id="monthly-plan-driver-summary" style="font-size:0.88rem;color:var(--text-muted);margin-top:14px;min-height:1.2em;"></div>
                     </div>
 
-                    <div class="card full-width-card">
-                        <div id="monthly-plan-grid-container" style="overflow-x:auto;min-height:60vh;"></div>
+                    <div class="card full-width-card" style="margin-bottom:16px;">
+                        <div id="monthly-plan-grid-container" style="overflow-x:auto;min-height:40vh;"></div>
+                    </div>
+
+                    <div class="monthly-plan-below" id="monthly-plan-below">
+                        <div class="card monthly-below-card">
+                            <h3 class="hub-section-title" style="margin-top:0;"><i data-lucide="file-plus"></i> <span data-i18n="monthly_below_entry">Unos planova</span></h3>
+                            <div id="monthly-below-entry"></div>
+                        </div>
+                        <div class="card monthly-below-card">
+                            <h3 class="hub-section-title" style="margin-top:0;"><i data-lucide="alert-triangle"></i> <span data-i18n="monthly_below_problems">Problemi</span></h3>
+                            <div id="monthly-below-problems"></div>
+                        </div>
+                        <div class="card monthly-below-card">
+                            <h3 class="hub-section-title" style="margin-top:0;"><i data-lucide="wrench"></i> <span data-i18n="monthly_below_solutions">Rešenja</span></h3>
+                            <div id="monthly-below-solutions"></div>
+                        </div>
                     </div>
                 </section>
 
                 <!-- DNEVNI PLAN — pun ekran -->
-                <section id="dispatcher-daily-plan-full" class="content-section hidden">
-                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+                <section id="dispatcher-daily-plan-full" class="content-section hidden daily-plan-layout-b2">
+                    <div class="daily-plan-full-toolbar">
                         <button type="button" class="btn-secondary" data-action="backFromPlanFullPage" style="height:40px;padding:0 14px;">
                             <i data-lucide="arrow-left"></i> <span data-i18n="btn_back">Nazad</span>
                         </button>
@@ -1595,12 +1597,21 @@
                             </h2>
                             <p id="daily-full-subtitle" class="subtitle" style="margin:6px 0 0;font-size:0.85rem;" data-i18n="daily_full_subtitle">Pozicija 1 = x2 Bereitschaft (pon–pet)</p>
                         </div>
+                        <button type="button" id="daily-plan-issues-pill" class="daily-plan-issues-pill hidden" data-action="openOpsAttentionPanel" data-action-args='[]'>
+                            <i data-lucide="alert-triangle"></i>
+                            <span data-daily-issues-label>0</span>
+                        </button>
                         <input type="date" id="daily-plan-date-picker" style="padding:10px 14px;border-radius:var(--radius-sm);font-size:0.9rem;">
                     </div>
 
-                    <div class="card full-width-card">
-                        <div id="daily-plan-full-meta" style="font-size:0.9rem;margin-bottom:16px;color:var(--text-muted);"></div>
-                        <div id="daily-plan-full-slots" style="min-height:50vh;"></div>
+                    <div class="ops-health daily-plan-health-slim" id="daily-plan-health" role="status" aria-live="polite"></div>
+
+                    <div class="daily-plan-work-grid">
+                        <div class="card full-width-card daily-plan-main">
+                            <div id="daily-plan-full-meta" style="font-size:0.9rem;margin-bottom:16px;color:var(--text-muted);"></div>
+                            <div id="daily-plan-full-slots" style="min-height:40vh;"></div>
+                        </div>
+                        <!-- B2: situation rail removed — issues via #daily-plan-issues-pill + Needs attention -->
                     </div>
                 </section>
 
@@ -2197,7 +2208,7 @@
             </div>
 
             <div class="form-group monthly-day-edit-field">
-                <label data-i18n="med_label_code">Šifra smene / plan (V66)</label>
+                <label data-i18n="med_label_code">Šifra smene</label>
                 <select id="med-shift-code-select" class="med-control" data-change-action="onMedCatalogSelectChange">
                     <option value="" data-i18n="med_code_none">— Bez šifre / slobodno —</option>
                 </select>
@@ -2224,6 +2235,82 @@
                     <i data-lucide="save"></i> <span data-i18n="btn_save">Sačuvaj</span>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- ===== DISPATCHER HELP / SELF-RECOVERY ===== -->
+    <div id="dispatcher-help-modal" class="bc-overlay-modal dispatcher-help-modal hidden" role="dialog" aria-modal="true" aria-labelledby="dispatcher-help-title" aria-hidden="true" style="display:none;" data-action="closeDispatcherHelp" data-action-self="true">
+        <div class="dispatcher-help-panel" role="document" data-action-stop-propagation="true">
+            <header class="dispatcher-help-header">
+                <div>
+                    <span class="dispatcher-help-kicker" data-i18n="dispo_help_kicker">SELF-HELP FIRST</span>
+                    <h2 id="dispatcher-help-title" data-i18n="dispo_help_title">Help &amp; recovery</h2>
+                    <p data-i18n="dispo_help_intro">Try these steps in order before contacting support. Do not spam refresh.</p>
+                </div>
+                <button type="button" class="btn-icon-nav" data-action="closeDispatcherHelp" aria-label="Close" data-i18n-aria-label="dispo_help_close">
+                    <i data-lucide="x" aria-hidden="true"></i>
+                </button>
+            </header>
+
+            <ol class="dispatcher-help-steps">
+                <li>
+                    <div class="dispatcher-help-step-body">
+                        <strong data-i18n="dispo_help_step1_title">1. Refresh data</strong>
+                        <p data-i18n="dispo_help_step1_body">Reload the app once to re-sync plans and sessions. Prefer this button over random F5 spam.</p>
+                        <button type="button" class="btn-secondary" data-action="dispatcherHelpSoftReload">
+                            <i data-lucide="refresh-cw" aria-hidden="true"></i>
+                            <span data-i18n="dispo_help_step1_btn">Refresh data now</span>
+                        </button>
+                    </div>
+                </li>
+                <li>
+                    <div class="dispatcher-help-step-body">
+                        <strong data-i18n="dispo_help_step2_title">2. Sign out and sign in</strong>
+                        <p data-i18n="dispo_help_step2_body">If the session looks stuck, sign out and sign back in with your dispatcher email.</p>
+                        <button type="button" class="btn-secondary" data-action="dispatcherHelpLogout">
+                            <i data-lucide="log-out" aria-hidden="true"></i>
+                            <span data-i18n="dispo_help_step2_btn">Sign out</span>
+                        </button>
+                    </div>
+                </li>
+                <li>
+                    <div class="dispatcher-help-step-body">
+                        <strong data-i18n="dispo_help_step3_title">3. Check network</strong>
+                        <p data-i18n="dispo_help_step3_body">Look at the small cloud status (bottom-left). If it shows offline or error, wait for connection, then do step 1 again.</p>
+                        <p class="dispatcher-help-status-line"><span data-i18n="dispo_help_status_label">Current status:</span> <strong id="dispatcher-help-firebase-status">—</strong></p>
+                    </div>
+                </li>
+                <li>
+                    <div class="dispatcher-help-step-body">
+                        <strong data-i18n="dispo_help_step4_title">4. Drivers signed out in bulk</strong>
+                        <p data-i18n="dispo_help_step4_body">Drivers sign back in with their personal code. If an account is inactive, Company Admin reactivates it. Do not wipe company data.</p>
+                    </div>
+                </li>
+            </ol>
+
+            <section class="dispatcher-help-escalate" aria-labelledby="dispatcher-help-escalate-title">
+                <h3 id="dispatcher-help-escalate-title" data-i18n="dispo_help_escalate_title">Still broken? Contact support</h3>
+                <p data-i18n="dispo_help_escalate_hint">Only after steps 1–4. Opens email to the company contact with safe diagnostic context (no passwords or PINs).</p>
+                <label class="dispatcher-help-note-label" for="dispatcher-help-note">
+                    <span data-i18n="dispo_help_note_label">What happened? (optional)</span>
+                    <textarea id="dispatcher-help-note" rows="3" maxlength="500" data-i18n-placeholder="dispo_help_note_placeholder" placeholder="e.g. About 10 drivers were signed out at once after a freeze." data-input-action="fillHelpModal"></textarea>
+                </label>
+                <p class="dispatcher-help-contact-line">
+                    <span data-i18n="dispo_help_contact_label">Contact:</span>
+                    <strong id="dispatcher-help-contact-email">—</strong>
+                </p>
+                <p id="dispatcher-help-contact-missing" class="dispatcher-help-contact-missing hidden" data-i18n="dispo_help_contact_missing">No business contact email is set. Ask Company Admin to add it under Company Settings.</p>
+                <div class="dispatcher-help-escalate-actions">
+                    <button type="button" class="btn-secondary" id="dispatcher-help-copy-email" data-action="dispatcherHelpCopyEmail" disabled>
+                        <i data-lucide="copy" aria-hidden="true"></i>
+                        <span data-i18n="dispo_help_copy">Copy email</span>
+                    </button>
+                    <a class="btn-primary dispatcher-help-mailto" id="dispatcher-help-mailto" href="#" data-action="dispatcherHelpOpenMailto">
+                        <i data-lucide="mail" aria-hidden="true"></i>
+                        <span data-i18n="dispo_help_mailto">Open email</span>
+                    </a>
+                </div>
+            </section>
         </div>
     </div>
 

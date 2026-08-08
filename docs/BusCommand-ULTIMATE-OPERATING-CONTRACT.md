@@ -93,7 +93,7 @@ Uloge:
 
 Hard rules:
 
-1. Rute, katalog i mesečni plan uvozi samo CA. Dispo ne kreira rute.
+1. Rute i katalog smena (plan vožnje / V66) uvozi samo CA. Mesečne dodele vozača uvozi i uređuje Dispo. Dispo ne kreira rute. (D21, 2026-08-07; zamenjuje stariju formulaciju „mesečni plan uvozi samo CA“.)
 2. Dispo nikada ne sme dobiti niti videti EID, PIN, aktivacioni kod, hash, login broj, credential, recovery ili ekvivalentni autentikacioni podatak — ni kroz UI, API response, log, export, error ili debug payload.
 3. Dispo čita i menja samo podatke iz dodeljenih grupa i dozvoljenog tenant scope-a.
 4. Tenant A ne sme ni posredno da sazna da podatak tenanta B postoji. Važi za API, query, Rules, count, ID, error, autocomplete, audit i realtime događaje.

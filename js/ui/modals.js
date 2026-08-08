@@ -3,7 +3,7 @@ import { getCleanLoginUrl } from "../auth/login-ui.js";
 import { clearUserSession } from "../auth/login-session.js";
 import { clearAllSensitiveAuthFields } from "../auth/password-fields.js";
 import { resolveSOS } from "../maps/sos-siren.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { canRunCompanyAdminAction, canRunFactoryReset } from "../core/ui-permissions.js";
 import { showToast } from "../core/utils.js";
 import { t } from "./i18n.js";
@@ -15,7 +15,7 @@ function signOutAllSessions() {
     window.currentUser = null;
     clearUserSession();
     clearAllSensitiveAuthFields();
-    if (!IS_DEMO_MODE && typeof Auth !== "undefined" && Auth.logout) {
+    if (!USE_LOCAL_STATE && typeof Auth !== "undefined" && Auth.logout) {
         try { Auth.logout(); } catch { /* ignore */ }
     }
     if (typeof firebase !== "undefined" && firebase.auth) {
@@ -24,7 +24,7 @@ function signOutAllSessions() {
 }
 
 function confirmFactoryReset() {
-    if (!canRunFactoryReset(window.currentUser?.role, IS_DEMO_MODE)) {
+    if (!canRunFactoryReset(window.currentUser?.role, USE_LOCAL_STATE)) {
         showToast(t("error_access_denied"), "error");
         return false;
     }
@@ -38,7 +38,7 @@ function confirmFactoryReset() {
 }
 
 function showModal(id) {
-    if (id === "factory-reset-modal" && !canRunFactoryReset(window.currentUser?.role, IS_DEMO_MODE)) {
+    if (id === "factory-reset-modal" && !canRunFactoryReset(window.currentUser?.role, USE_LOCAL_STATE)) {
         showToast(t("error_access_denied"), "error");
         return false;
     }

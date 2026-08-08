@@ -1,14 +1,21 @@
 // BusCommand ESM v9.5
 import { getBusesForLineGroup } from "./group-membership.js";
 import { busHasGroup, withAttachedGroup, buildNewBusGroups } from "./bus-group-membership.js";
+import {
+    BUS_OPS_STATUSES,
+    busRevisionOf,
+    normalizeBusGarage,
+    normalizeBusOpsStatus
+} from "./bus-ops.js";
 import { saveState } from "../core/state.js";
-import { showToast } from "../core/utils.js";
+import { escapeHtml, showToast } from "../core/utils.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import ApiClient from "../core/api-client.js";
 import { isOperationalReadOnly } from "../core/access.js";
+import { dispoChangeReasonOptions, recordDemoChangeReason } from "../dispatcher/change-reason.js";
 
 function findCompanyBusByNumber(number) {
     const key = String(number || "").trim().toLowerCase();
@@ -22,6 +29,23 @@ function upsertLocalBusFromApi(bus) {
     else window.state.buses.push(bus);
 }
 
+function toastBusWriteConflict(result) {
+    if (result?.bus) upsertLocalBusFromApi(result.bus);
+    showToast(t(result?.code === "GARAGE_BUSY" ? "bus_garage_busy" : "bus_conflict_refresh"), "error");
+}
+
+function opsStatusLabel(status) {
+    const key = `bus_ops_${normalizeBusOpsStatus(status)}`;
+    return t(key) || normalizeBusOpsStatus(status);
+}
+
+function opsStatusOptions(selected) {
+    const current = normalizeBusOpsStatus(selected);
+    return BUS_OPS_STATUSES.map((status) =>
+        `<option value="${status}" ${status === current ? "selected" : ""}>${escapeHtml(opsStatusLabel(status))}</option>`
+    ).join("");
+}
+
 function renderBusesList() {
     const list = document.getElementById("settings-buses-list");
     if (!list) return;
@@ -30,20 +54,104 @@ function renderBusesList() {
     const activeGrp = hubId || (window.currentUser && window.currentUser.activeGroupId);
     const myBuses = activeGrp ? getBusesForLineGroup(activeGrp) : (window.state.buses || []);
     const readOnly = isOperationalReadOnly();
-    myBuses.forEach(b => {
+    myBuses.forEach((b) => {
         const li = document.createElement("li");
+        li.className = "hub-bus-item";
+        li.dataset.busId = String(b.id);
         const active = b.active !== false;
+        const garage = normalizeBusGarage(b);
+        const ops = normalizeBusOpsStatus(b);
+        const meta = [
+            opsStatusLabel(ops),
+            garage || (t("bus_garage_unset") || "bez garaže")
+        ].join(" · ");
         const deleteBtn = readOnly
             ? ""
-            : `<button ${actionAttr("deleteBus", [b.id])} style="background:rgba(239,68,68,0.08);color:${active ? "#ef4444" : "#16a34a"};border:1px solid currentColor;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;">
-                ${active ? (t("btn_deactivate") || "Deactivate") : (t("btn_activate") || "Activate")}
+            : `<button type="button" class="hub-bus-toggle ${active ? "is-active" : "is-inactive"}" ${actionAttr("deleteBus", [b.id])} title="${escapeHtml(active ? (t("dispo_bus_deactivate_hint") || "") : (t("btn_activate") || ""))}">
+                ${active ? (t("dispo_bus_deactivate") || t("btn_deactivate")) : t("btn_activate")}
             </button>`;
+        const detachBtn = readOnly || !activeGrp
+            ? ""
+            : `<button type="button" class="btn-secondary hub-bus-detach-btn" ${actionAttr("detachBusFromLine", [b.id, activeGrp])}>
+                ${escapeHtml(t("dispo_bus_remove_from_line") || "Remove from this line")}
+            </button>`;
+        const editBtn = readOnly
+            ? ""
+            : `<button type="button" class="btn-secondary hub-bus-edit-btn" ${actionAttr("toggleBusEdit", [b.id])}>${escapeHtml(t("btn_edit"))}</button>`;
         li.innerHTML = `
-            <span>${t("vehicle")} ${b.number} <small style="color:var(--text-muted);">${active ? "" : `(${t("driver_status_inactive")})`}</small></span>
-            ${deleteBtn}
+            <div class="hub-bus-row">
+                <div class="hub-bus-identity">
+                    <strong>${escapeHtml(t("vehicle"))} ${escapeHtml(b.number)}</strong>
+                    <small>${escapeHtml(meta)}${active ? "" : ` · ${escapeHtml(t("driver_status_inactive"))}`}</small>
+                </div>
+                <div class="hub-bus-actions">${editBtn}${detachBtn}${deleteBtn}</div>
+            </div>
+            <form class="hub-bus-edit-form hidden" data-bus-edit="${escapeHtml(b.id)}" data-submit-action="saveBusOpsProfile">
+                <label>
+                    <span>${escapeHtml(t("bus_garage"))}</span>
+                    <input type="text" name="garage" maxlength="40" value="${escapeHtml(garage)}" data-i18n-placeholder="bus_garage_placeholder">
+                </label>
+                <label>
+                    <span>${escapeHtml(t("bus_ops_status"))}</span>
+                    <select name="opsStatus">${opsStatusOptions(ops)}</select>
+                </label>
+                <div class="hub-bus-edit-actions">
+                    <button type="button" class="btn-secondary" ${actionAttr("toggleBusEdit", [b.id])}>${escapeHtml(t("btn_cancel"))}</button>
+                    <button type="submit" class="btn-primary">${escapeHtml(t("btn_save_changes"))}</button>
+                </div>
+            </form>
         `;
         list.appendChild(li);
     });
+}
+
+function toggleBusEdit(busId) {
+    if (isOperationalReadOnly()) {
+        showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+        return;
+    }
+    const form = document.querySelector(`[data-bus-edit="${CSS.escape(String(busId))}"]`);
+    if (!form) return;
+    form.classList.toggle("hidden");
+    if (!form.classList.contains("hidden")) {
+        form.querySelector("input[name='garage']")?.focus();
+    }
+}
+
+async function saveBusOpsProfile(event) {
+    if (event?.preventDefault) event.preventDefault();
+    if (isOperationalReadOnly()) {
+        showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+        return;
+    }
+    const form = event?.target?.closest?.("[data-bus-edit]") || event?.target;
+    const busId = String(form?.dataset?.busEdit || "").trim();
+    const bus = (window.state.buses || []).find((item) => item.id === busId);
+    if (!bus || !form) return;
+    const garage = normalizeBusGarage(form.querySelector("input[name='garage']")?.value || "");
+    const opsStatus = normalizeBusOpsStatus(form.querySelector("select[name='opsStatus']")?.value || "ready");
+    const expectedRevision = busRevisionOf(bus);
+    if (!USE_LOCAL_STATE) {
+        const result = await ApiClient.updateStaffBus(busId, { garage, opsStatus, expectedRevision });
+        if (!result?.success) {
+            if (result?.status === 409 || result?.code === "REVISION_CONFLICT" || result?.code === "GARAGE_BUSY") {
+                toastBusWriteConflict(result);
+            } else {
+                showToast(result?.error || t("bus_edit_failed"), "error");
+                return;
+            }
+            renderBusesList();
+            if (typeof lucide !== "undefined") lucide.createIcons();
+            return;
+        }
+        upsertLocalBusFromApi(result.bus || { id: busId, garage, opsStatus, revision: expectedRevision + 1 });
+    } else {
+        Object.assign(bus, { garage, opsStatus, revision: expectedRevision + 1 });
+        saveState();
+    }
+    showToast(t("bus_edit_saved"), "success");
+    renderBusesList();
+    if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
 async function addBus(event) {
@@ -53,7 +161,9 @@ async function addBus(event) {
         return;
     }
     const input = document.getElementById("new-bus-num");
+    const garageInput = document.getElementById("new-bus-garage");
     const number = input.value.trim();
+    const garage = normalizeBusGarage(garageInput?.value || "");
     if (!number) return;
 
     const hubId = window.state.activeGroupHubId;
@@ -66,8 +176,8 @@ async function addBus(event) {
     showConfirm(
         (t("confirm_add_bus") || "Add bus") + ': "' + number + '"?',
         async function() {
-            if (!IS_DEMO_MODE) {
-                const result = await ApiClient.createStaffBus(number, activeGrp);
+            if (!USE_LOCAL_STATE) {
+                const result = await ApiClient.createStaffBus(number, activeGrp, { garage, opsStatus: "ready" });
                 if (!result?.success) {
                     const detail = String(result?.error || "").trim();
                     showToast(
@@ -79,6 +189,7 @@ async function addBus(event) {
                 if (!Array.isArray(window.state.buses)) window.state.buses = [];
                 upsertLocalBusFromApi(result.bus);
                 input.value = "";
+                if (garageInput) garageInput.value = "";
                 renderBusesList();
                 if (typeof lucide !== "undefined") lucide.createIcons();
                 const msg = result.attached
@@ -99,8 +210,10 @@ async function addBus(event) {
                     return;
                 }
                 Object.assign(existing, withAttachedGroup(existing, activeGrp));
+                if (garage && !normalizeBusGarage(existing)) existing.garage = garage;
                 saveState();
                 input.value = "";
+                if (garageInput) garageInput.value = "";
                 renderBusesList();
                 lucide.createIcons();
                 showToast(t("bus_attached_to_group") || "Bus linked to this group", "success");
@@ -112,10 +225,14 @@ async function addBus(event) {
                 id: `bus-${Date.now()}`,
                 number,
                 active: true,
+                garage,
+                opsStatus: "ready",
+                revision: 0,
                 ...groups
             });
             saveState();
             input.value = "";
+            if (garageInput) garageInput.value = "";
             renderBusesList();
             lucide.createIcons();
             showToast(number + " — " + (t("bus_added") || "vozilo dodano"), "success");
@@ -132,21 +249,42 @@ function deleteBus(id) {
     const bus = window.state.buses.find((item) => item.id === id);
     if (!bus) return;
     const nextActive = bus.active === false;
-    showConfirm(nextActive ? t("confirm_activate_bus") : t("confirm_deactivate_bus"), async function() {
-        if (!IS_DEMO_MODE) {
-            const result = await ApiClient.setStaffBusActive(id, nextActive);
+    showConfirm(
+        nextActive
+            ? (t("confirm_activate_bus") || "Activate this bus?")
+            : (t("dispo_confirm_bus_deactivate") || t("confirm_deactivate_bus") || "Deactivate this bus? It will stay in the company but will not be assignable."),
+        async function(payload) {
+        const reason = payload?.reason || "";
+        const note = payload?.note || "";
+        const expectedRevision = busRevisionOf(bus);
+        if (!USE_LOCAL_STATE) {
+            const result = await ApiClient.setStaffBusActive(id, nextActive, expectedRevision, nextActive ? {} : { reason, note });
             if (!result?.success) {
-                showToast(t("bus_status_failed"), "error");
+                if (result?.status === 409 || result?.code === "REVISION_CONFLICT") toastBusWriteConflict(result);
+                else showToast(result?.error || t("bus_status_failed"), "error");
+                renderBusesList();
+                lucide.createIcons();
                 return;
             }
-            bus.active = result.active;
+            upsertLocalBusFromApi(result.bus || { id, active: result.active, revision: expectedRevision + 1 });
         } else {
-            bus.active = nextActive;
+            Object.assign(bus, { active: nextActive, revision: expectedRevision + 1 });
+            if (!nextActive) {
+                recordDemoChangeReason({
+                    type: "bus_deactivated",
+                    busId: id,
+                    reason,
+                    note
+                });
+            }
             saveState();
         }
         renderBusesList();
         lucide.createIcons();
-    }, { danger: !nextActive });
+    }, {
+        danger: !nextActive,
+        reasons: nextActive ? undefined : dispoChangeReasonOptions()
+    });
 }
 
 function renderRoutesList() {
@@ -158,7 +296,7 @@ function renderRoutesList() {
     const myRoutes = window.state.routes.filter(r => !r.groupId || r.groupId === activeGrp);
     myRoutes.forEach(r => {
         const li = document.createElement("li");
-        const deleteBtn = IS_DEMO_MODE
+        const deleteBtn = USE_LOCAL_STATE
             ? `<button ${actionAttr("deleteRoute", [r.id])} style="align-self:center;background:rgba(239,68,68,0.08);color:#ef4444;border:1px solid rgba(239,68,68,0.2);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;">
                 ${t("btn_delete") || "Obriši"}
             </button>`
@@ -179,7 +317,7 @@ function renderRoutesList() {
 
 function addRoute(event) {
     event.preventDefault();
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         showToast(t("fleet_demo_only") || "Upravljanje linijama u produkciji još nije dostupno preko ovog ekrana.", "info");
         return;
     }
@@ -216,7 +354,7 @@ function addRoute(event) {
 }
 
 function deleteRoute(id) {
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         showToast(t("fleet_demo_only") || "Upravljanje linijama u produkciji još nije dostupno preko ovog ekrana.", "info");
         return;
     }
@@ -235,7 +373,10 @@ export {
     renderBusesList,
     addBus,
     deleteBus,
+    toggleBusEdit,
+    saveBusOpsProfile,
     renderRoutesList,
     addRoute,
-    deleteRoute
+    deleteRoute,
+    upsertLocalBusFromApi
 };

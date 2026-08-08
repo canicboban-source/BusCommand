@@ -1,13 +1,14 @@
 // BusCommand — Company Admin: tenant-scoped groups / lines
 import ApiClient from "../core/api-client.js";
 import { actionAttr } from "../core/action-delegate.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { runSingleSubmission } from "../core/submit-lock.js";
 import { canRunCompanyAdminAction } from "../core/ui-permissions.js";
 import { escapeHtml, showToast } from "../core/utils.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
+import { rowActionsMenuHtml } from "../ui/row-actions-menu.js";
 import { renderCompanyAdminDashboard } from "./company-admin.js";
 import {
     DEFAULT_GROUP_COLOR,
@@ -26,7 +27,7 @@ let groupSearchTimer = null;
 const deletingGroups = new Set();
 
 function getScope() {
-    return getCompanyGroupsScope(window.state, window.currentUser, IS_DEMO_MODE);
+    return getCompanyGroupsScope(window.state, window.currentUser, USE_LOCAL_STATE);
 }
 
 function groupFieldId(field) {
@@ -148,7 +149,17 @@ function groupRowHtml(group, scope) {
         <div class="company-group-state">${status}</div>
         <div class="company-group-actions">
             <button type="button" class="btn-secondary company-group-edit-btn${isEditingRow ? " is-active" : ""}" ${actionAttr("startEditCompanyGroup", [String(group.id)])} ${isEditingRow ? "aria-current=\"true\"" : ""}><i data-lucide="pencil"></i><span>${escapeHtml(t("btn_edit"))}</span></button>
-            <button type="button" class="btn-danger-ghost" ${actionAttr("deleteCompanyGroup", [String(group.id)])} ${dependencies.canDelete ? "" : "disabled"} title="${escapeHtml(deleteTitle)}"><i data-lucide="trash-2"></i><span>${escapeHtml(t("btn_delete"))}</span></button>
+            ${rowActionsMenuHtml(`ca-group-${group.id}`, [
+                {
+                    action: "deleteCompanyGroup",
+                    args: [String(group.id)],
+                    label: t("btn_delete"),
+                    icon: "trash-2",
+                    danger: true,
+                    disabled: !dependencies.canDelete,
+                    title: deleteTitle
+                }
+            ])}
         </div>
     </article>`;
 }
@@ -236,7 +247,7 @@ async function persistCompanyGroupDraft(draft, { editingId = null } = {}) {
     if (duplicate) return { success: false, error: t("ca_group_error_id_exists"), errors: { id: "id_exists" } };
 
     let savedGroup = { ...validated.value, companyId: scope.companyId || "demo" };
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         const payload = {
             name: validated.value.name,
             description: validated.value.description,
@@ -252,7 +263,7 @@ async function persistCompanyGroupDraft(draft, { editingId = null } = {}) {
     if (!window.state.groups) window.state.groups = [];
     const index = window.state.groups.findIndex(group =>
         String(group.id) === String(savedGroup.id)
-        && (IS_DEMO_MODE || group.companyId === scope.companyId)
+        && (USE_LOCAL_STATE || group.companyId === scope.companyId)
     );
     if (index >= 0) window.state.groups[index] = { ...window.state.groups[index], ...savedGroup };
     else window.state.groups.push(savedGroup);
@@ -312,7 +323,7 @@ function deleteCompanyGroup(id) {
     showConfirm(t("ca_group_confirm_delete", { name: group.name, id: group.id }), async () => {
         deletingGroups.add(String(id));
         try {
-            if (!IS_DEMO_MODE) {
+            if (!USE_LOCAL_STATE) {
                 const result = await ApiClient.deleteCompanyGroup(scope.companyId, String(id));
                 if (!result.success) {
                     const references = result.details?.references || [];
@@ -324,7 +335,7 @@ function deleteCompanyGroup(id) {
                 }
             }
             window.state.groups = (window.state.groups || []).filter(item =>
-                !(String(item.id) === String(id) && (IS_DEMO_MODE || item.companyId === scope.companyId))
+                !(String(item.id) === String(id) && (USE_LOCAL_STATE || item.companyId === scope.companyId))
             );
             if (window.state.activeGroupFilter === id) window.state.activeGroupFilter = null;
             if (String(editingGroupId) === String(id)) resetCompanyGroupForm();
@@ -335,7 +346,7 @@ function deleteCompanyGroup(id) {
         } finally {
             deletingGroups.delete(String(id));
         }
-    }, { danger: true, title: t("ca_group_delete_title"), confirmText: t("btn_delete") });
+    }, { danger: true, title: t("ca_group_delete_title"), confirmText: t("btn_yes") || "Da" });
     return true;
 }
 

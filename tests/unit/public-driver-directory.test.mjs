@@ -23,7 +23,7 @@ test("no unauthenticated endpoint answers questions about who works here", async
   assert.doesNotMatch(authClient, /\/api\/public\/drivers\/identify/);
   assert.match(authClient, /body: JSON\.stringify\(\{ companyId, eid, loginCode \}\)/);
 
-  assert.match(selects, /IS_DEMO_MODE/);
+  assert.match(selects, /USE_LOCAL_STATE/);
   assert.match(selects, /configureProductionDriverLoginFields/);
   assert.doesNotMatch(selects, /\/api\/public\/companies\/\$\{encodeURIComponent\(COMPANY_ID\)\}\/drivers/);
 

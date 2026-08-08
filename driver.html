@@ -55,10 +55,7 @@
                     <span class="bc-brand-text">BusCommand</span>
                 </div>
                 <p data-i18n="login_subtitle">Fleet Management Platform</p>
-                <div class="trial-badge-login hidden" id="login-trial-badge">
-                    <i data-lucide="clock" style="width:11px;height:11px;"></i>
-                    <span data-i18n="trial_badge_login">30 DAYS TRIAL</span>
-                </div>
+                <div class="trial-badge-login hidden" id="login-trial-badge" hidden aria-hidden="true"></div>
             </div>
 
             <!-- ── Driver / Dispatcher tabovi — direktno bez Company ID ── -->
@@ -72,9 +69,12 @@
                     </button>
                     <button id="tab-dispatcher-btn" class="login-tab hidden" hidden class="login-tab" data-action="switchLoginTab" data-action-args='["dispatcher"]'>
                         <i data-lucide="shield"></i>
-                        <span data-i18n="dispatcher">Dispatcher</span>
+                        <span data-i18n="staff_login_tab">Staff</span>
                     </button>
                 </div>
+                <p id="staff-login-role-hint" class="subtitle" style="margin:8px 0 14px;font-size:0.8rem;line-height:1.35;color:var(--text-muted);" data-i18n="staff_login_role_hint">
+                    Staff: Dispo, Company Admin or Super Admin (own email). Drivers: Driver tab.
+                </p>
 
                 <!-- Forma za vozača -->
                 <div id="driver-login-form" class="login-form-content">
@@ -203,9 +203,8 @@
                         <span class="bc-brand-text" id="app-branding-title">BusCommand</span>
                     </div>
                 </div>
-                <div class="trial-indicator hidden" id="app-trial-badge">
-                    <i data-lucide="clock"></i> <span data-i18n="trial_indicator_text">Probni period: 29 dana preostalo</span>
-                </div>
+                <div class="trial-indicator hidden" id="app-trial-badge" hidden aria-hidden="true"></div>
+                <div id="header-connection-status" class="header-connection-status" data-state="online" role="status" aria-live="polite">Online</div>
             </div>
             
             <div class="header-right">
@@ -241,6 +240,8 @@
                 <button id="theme-toggle-btn" class="btn-logout" type="button" data-action="toggleTheme" title="Toggle dark/light mode" data-i18n-title="theme_toggle_aria" aria-label="Toggle dark/light mode" data-i18n-aria-label="theme_toggle_aria" style="margin-right:4px;">
                     <i data-lucide="moon" id="theme-icon" aria-hidden="true"></i>
                 </button>
+
+                
 
                 <button class="btn-logout" type="button" data-action="logout" title="Logout" data-i18n-title="logout_aria" aria-label="Logout" data-i18n-aria-label="logout_aria">
                     <i data-lucide="log-out" aria-hidden="true"></i>
@@ -686,6 +687,7 @@
 
 
                 <!-- ══ DNEVNI RASPORED ══════════════════════════════════════════ -->
+                <!-- Legacy schedule history (not in dispatcher nav). Kept for schedule-date-picker fallback / import history. -->
                 
 
                 <!-- KONTROLNA TABLA — Operativni centar -->
@@ -701,6 +703,9 @@
                 
 
                 <!-- GROUP HUB — upravljanje podacima po grupi -->
+                
+
+                <!-- VOZILA — uvoz, izmene, grupe (razdvojeno iz Group Hub) -->
                 
 
                 <!-- MESEČNI PLAN — pun ekran -->
@@ -1032,7 +1037,7 @@
             </div>
 
             <div class="form-group monthly-day-edit-field">
-                <label data-i18n="med_label_code">Šifra smene / plan (V66)</label>
+                <label data-i18n="med_label_code">Šifra smene</label>
                 <select id="med-shift-code-select" class="med-control" data-change-action="onMedCatalogSelectChange">
                     <option value="" data-i18n="med_code_none">— Bez šifre / slobodno —</option>
                 </select>
@@ -1061,6 +1066,9 @@
             </div>
         </div>
     </div>
+
+    <!-- ===== DISPATCHER HELP / SELF-RECOVERY ===== -->
+    
 
     <!-- ===== FACTORY RESET CUSTOM MODAL ===== -->
     

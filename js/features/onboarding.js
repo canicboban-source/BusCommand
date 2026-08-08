@@ -3,7 +3,7 @@ import { saveState } from "../core/state.js";
 import { showToast } from "../core/utils.js";
 import { applyBrandingToUI, t, translateUI } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 
 let _wizardStep = 1;
 let _wizardDriverRows = 0;
@@ -182,7 +182,7 @@ function wizardAddDriverRow() {
 }
 
 function wizardSaveDrivers() {
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         showToast(t("ca_drivers_admin_only") || "Vozačke naloge uvozi Company Admin (CSV).", "info");
         return;
     }

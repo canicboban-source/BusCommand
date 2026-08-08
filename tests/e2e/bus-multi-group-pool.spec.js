@@ -11,18 +11,18 @@ test.describe("Bus multi-group pool", () => {
     const state = {
       ...minimalDemoState(),
       groups: [
-        { id: "310", name: "Line 310", color: "#3D7EF5", active: true, companyId: "demo" },
-        { id: "320", name: "Line 320", color: "#16a34a", active: true, companyId: "demo" }
+        { id: "310", name: "Line 310", color: "#3D7EF5", active: true, companyId: "qa-local" },
+        { id: "320", name: "Line 320", color: "#16a34a", active: true, companyId: "qa-local" }
       ],
       dispatchers: [
         {
           id: "dispo-1",
           name: "Demo Dispatcher",
-          email: "demo@buscommand.com",
-          password: "demo123",
+          email: "dispo@qa.local",
+          password: "Qa-test-ok-9",
           passwordChanged: true,
           groups: ["310", "320"],
-          companyId: "demo"
+          companyId: "qa-local"
         }
       ],
       buses: [
@@ -37,11 +37,11 @@ test.describe("Bus multi-group pool", () => {
       ]
     };
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
-    await page.evaluate(() => window.openGroupHub("320"));
-    await expect(page.locator("#hub-section-buses")).toBeVisible();
+    await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("320"));
+    await expect(page.locator("#dispatcher-vehicles")).toBeVisible();
     await expect(page.locator("#settings-buses-list")).not.toContainText("91504");
 
     await page.locator("#bus-import-paste").fill("91504\n");
@@ -72,18 +72,18 @@ test.describe("Bus multi-group pool", () => {
     const state = {
       ...minimalDemoState(),
       groups: [
-        { id: "310", name: "Line 310", color: "#3D7EF5", active: true, companyId: "demo" },
-        { id: "320", name: "Line 320", color: "#16a34a", active: true, companyId: "demo" }
+        { id: "310", name: "Line 310", color: "#3D7EF5", active: true, companyId: "qa-local" },
+        { id: "320", name: "Line 320", color: "#16a34a", active: true, companyId: "qa-local" }
       ],
       dispatchers: [
         {
           id: "dispo-1",
           name: "Demo Dispatcher",
-          email: "demo@buscommand.com",
-          password: "demo123",
+          email: "dispo@qa.local",
+          password: "Qa-test-ok-9",
           passwordChanged: true,
           groups: ["310", "320"],
-          companyId: "demo"
+          companyId: "qa-local"
         }
       ],
       buses: [
@@ -97,9 +97,9 @@ test.describe("Bus multi-group pool", () => {
       ]
     };
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
-    await page.evaluate(() => window.openGroupHub("320"));
+    await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("320"));
 
     await page.locator("#bus-import-paste").fill("  \n");
     await page.locator('[data-action="handleBusImportPaste"]').click();

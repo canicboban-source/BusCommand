@@ -1,0 +1,52 @@
+[
+  {
+    "at": "2026-08-08T00:13:36.511Z",
+    "step": "auth",
+    "note": "SA login"
+  },
+  {
+    "at": "2026-08-08T00:13:39.419Z",
+    "step": "auth",
+    "note": "Language select"
+  },
+  {
+    "at": "2026-08-08T00:14:39.845Z",
+    "step": "auth",
+    "note": "Logout"
+  },
+  {
+    "at": "2026-08-08T00:14:40.608Z",
+    "step": "auth",
+    "note": "CA login"
+  },
+  {
+    "at": "2026-08-08T00:14:42.977Z",
+    "step": "auth",
+    "note": "Dispo login"
+  },
+  {
+    "at": "2026-08-08T00:14:45.224Z",
+    "step": "auth",
+    "note": "Driver login"
+  },
+  {
+    "at": "2026-08-08T00:14:48.859Z",
+    "step": "sa",
+    "note": "SA session + controls"
+  },
+  {
+    "at": "2026-08-08T00:14:57.459Z",
+    "step": "ca",
+    "note": "CA sections + fields + actions"
+  },
+  {
+    "at": "2026-08-08T00:15:18.450Z",
+    "step": "dispo",
+    "note": "Dispo sections + actions"
+  },
+  {
+    "at": "2026-08-08T00:15:28.884Z",
+    "step": "driver",
+    "note": "Driver portal"
+  }
+]

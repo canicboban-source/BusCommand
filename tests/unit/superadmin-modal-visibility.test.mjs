@@ -10,7 +10,16 @@ test("superadmin auth always uses real staff credentials", () => {
   const src = readFileSync(join(root, "js/auth/superadmin.js"), "utf8");
   assert.match(src, /setSaFieldVisibility\(demoFields,\s*false\)/);
   assert.match(src, /setSaFieldVisibility\(prodFields,\s*true\)/);
+  assert.match(src, /tryLocalQaSuperAdminLogin/);
   assert.doesNotMatch(src, /DEMO_SA_PIN|admin123/);
+  assert.doesNotMatch(src, /tryDemoSuperAdminLogin/);
+});
+
+test("product state never auto-seeds platform Super Admin credentials", () => {
+  const src = readFileSync(join(root, "js/core/state.js"), "utf8");
+  assert.doesNotMatch(src, /ensureDemoPlatformAdmin/);
+  assert.doesNotMatch(src, /sa@demo\.local/);
+  assert.doesNotMatch(src, /sa-demo-ok/);
 });
 
 test("superadmin modal HTML hides both field groups by default", () => {
@@ -38,4 +47,45 @@ test("staff surface includes sa-company-detail-modal markup", () => {
   const html = readFileSync(join(root, "staff.html"), "utf8");
   assert.match(html, /id="sa-company-detail-modal"/);
   assert.match(html, /data-action="superadminCloseCompanyDetail"/);
+});
+
+test("demo Super Admin dashboard aligns with company table headers", () => {
+  const src = readFileSync(join(root, "js/admin/superadmin.js"), "utf8");
+  const start = src.indexOf("function _renderSuperAdminDashboardDemo");
+  const end = src.indexOf("async function superadminToggleStatus", start);
+  assert.ok(start > -1 && end > start, "demo dashboard renderer missing");
+  const fn = src.slice(start, end);
+  assert.match(fn, /superadmin-total-dispatchers/);
+  assert.doesNotMatch(fn, /superadmin-total-groups/);
+  assert.match(fn, /_saCompanyCardHtml/);
+  assert.match(fn, /_demoCompanyStatus/);
+  assert.match(fn, /_demoCompanyPlan/);
+  const cardStart = src.indexOf("function _saCompanyCardHtml");
+  const cardEnd = src.indexOf("function superadminFocusCompanies", cardStart);
+  assert.ok(cardStart > -1 && cardEnd > cardStart, "company card helper missing");
+  const cardFn = src.slice(cardStart, cardEnd);
+  assert.match(cardFn, /sa-company-id-cell/);
+  assert.match(cardFn, /superadminOpenCompanyDetail/);
+  assert.match(cardFn, /superadminToggleStatus/);
+  assert.match(cardFn, /superadminStartSupport/);
+  assert.match(cardFn, /escapeHtml\(/);
+});
+
+test("demo company detail hydrates from dispatcher state", () => {
+  const src = readFileSync(join(root, "js/admin/superadmin.js"), "utf8");
+  const openStart = src.indexOf("async function superadminOpenCompanyDetail");
+  const openEnd = src.indexOf("function superadminCloseCompanyDetail", openStart);
+  const openFn = src.slice(openStart, openEnd);
+  assert.match(openFn, /_findDemoCompanyDispatcher/);
+  assert.match(openFn, /window\.state\.companyAdmins/);
+  assert.match(openFn, /_demoCompanyStatus/);
+  assert.match(src, /function _findDemoCompanyDispatcher[\s\S]*?window\.state\.dispatchers/);
+});
+
+test("demo Super Admin delete and support have local branches", () => {
+  const src = readFileSync(join(root, "js/admin/superadmin.js"), "utf8");
+  assert.match(src, /function _findDemoCompanyDispatcher/);
+  assert.match(src, /async function superadminConfirmDeleteCompany[\s\S]*USE_LOCAL_STATE/);
+  assert.match(src, /async function superadminConfirmSupportStart[\s\S]*USE_LOCAL_STATE/);
+  assert.match(src, /async function superadminEndSupport[\s\S]*USE_LOCAL_STATE/);
 });

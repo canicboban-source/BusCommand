@@ -3,7 +3,7 @@ import { showToast } from "./utils.js";
 import { t } from "../ui/i18n.js";
 import { canRunCompanyAdminAction } from "./ui-permissions.js";
 import { safeDriverExportRows } from "./export-policy.js";
-import { IS_DEMO_MODE } from "./runtime-config.js";
+import { USE_LOCAL_STATE } from "./runtime-config.js";
 import ApiClient from "./api-client.js";
 
 const activeExports = new Set();
@@ -11,7 +11,7 @@ const activeExports = new Set();
 function companyScoped(records) {
     const companyId = window.currentUser?.companyId;
     if (!companyId) return [];
-    return (records || []).filter(record => record.companyId === companyId || (IS_DEMO_MODE && !record.companyId));
+    return (records || []).filter(record => record.companyId === companyId || (USE_LOCAL_STATE && !record.companyId));
 }
 
 function assertExportAllowed() {
@@ -38,7 +38,7 @@ async function runCompanyExport(dataset, demoExport) {
     if (activeExports.has(dataset)) return false;
     activeExports.add(dataset);
     try {
-        if (IS_DEMO_MODE) return demoExport();
+        if (USE_LOCAL_STATE) return demoExport();
         const result = await ApiClient.downloadCompanyExport(window.currentUser.companyId, dataset);
         if (!result.success) {
             showToast(result.error || t("export_failed"), "error");

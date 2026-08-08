@@ -1,6 +1,6 @@
 import ApiClient from "../core/api-client.js";
 import { loadStateFromFirestore } from "../core/firebase-service.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { escapeHtml, showToast } from "../core/utils.js";
@@ -408,7 +408,7 @@ async function confirmCompanyDriversImport() {
     importPending = true;
     renderImportPreview();
     try {
-        if (IS_DEMO_MODE) {
+        if (USE_LOCAL_STATE) {
             grouped.forEach((drivers, groupId) => applyDemoImport(drivers, groupId));
         } else {
             for (const [groupId, drivers] of grouped.entries()) {
@@ -463,12 +463,12 @@ function toggleCompanyDriverStatus(driverId) {
         statusPending.add(driverId);
         renderDirectory();
         try {
-            if (!IS_DEMO_MODE) {
+            if (!USE_LOCAL_STATE) {
                 const result = await ApiClient.setDriverActive(driverId, nextActive);
                 if (!result.success) throw new Error(result.error || t("driver_status_failed"));
             }
             driver.active = nextActive;
-            if (IS_DEMO_MODE) saveState();
+            if (USE_LOCAL_STATE) saveState();
             renderSummary();
             renderDirectory();
             showToast(t(nextActive ? "driver_activated" : "driver_deactivated"), "success");
@@ -590,7 +590,7 @@ async function saveCompanyDriverEdit() {
     const saveBtn = document.getElementById("ca-driver-edit-save");
     if (saveBtn) saveBtn.disabled = true;
     try {
-        if (IS_DEMO_MODE) {
+        if (USE_LOCAL_STATE) {
             Object.assign(driver, {
                 ...payload,
                 name: `${firstName} ${lastName}`.trim(),
@@ -633,7 +633,7 @@ async function saveCompanyDriverEdit() {
 }
 
 async function enrichCompanyDriversFromApi() {
-    if (IS_DEMO_MODE || window.currentUser?.role !== "company-admin") return;
+    if (USE_LOCAL_STATE || window.currentUser?.role !== "company-admin") return;
     const result = await ApiClient.listCompanyDrivers(window.currentUser?.companyId);
     if (!result?.success || !Array.isArray(result.drivers)) return;
     const byId = new Map(result.drivers.map((driver) => [driver.id, driver]));
@@ -667,7 +667,7 @@ async function enrichCompanyDriversFromApi() {
 
 async function renderCompanyAdminDrivers() {
     if (window.currentUser?.role !== "company-admin") return;
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         try { await enrichCompanyDriversFromApi(); } catch { /* keep local state */ }
     }
     populateGroupControls();

@@ -5,18 +5,17 @@ import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriver
 import { cancelCompanyGroupEdit, deleteCompanyGroup, focusCompanyGroupForm, saveCompanyGroup, startEditCompanyGroup } from "./admin/company-admin-groups.js";
 import { caWizardBack, caWizardNext, caWizardSelectColor, caWizardSelectColorFromHex, caWizardSelectColorFromPicker, caWizardHandleLogo, caWizardSkip } from "./admin/company-admin-onboarding.js";
 import { clearCompanyServicePlanPreview, closeCompanyServicePlanDuty, closeCompanyServicePlanHistory, handleCompanyServicePlanFile, handleCompanyServicePlanGroupChange, openCompanyServicePlanDuty, openCompanyServicePlanHistory, publishCompanyServicePlan, activateCompanyServicePlanVersion } from "./admin/company-admin-service-plan.js";
-import { clearCompanyGroupMonthlyImport, commitCompanyGroupMonthlyImport, handleCompanyGroupMonthlyFile, invalidateCompanyGroupMonthlyPreview, previewCompanyGroupMonthlyImport } from "./admin/company-admin-monthly-import.js";
 import { handleCompanySettingsCountry, handleCompanySettingsInput, resetCompanySettingsForm, saveCompanyProfileSettings } from "./admin/company-admin-settings.js";
 import { addCompanyDispatcher, focusCompanyDispatcherForm, removeCompanyDispatcher, resetCompanyDispatcherPassword, revokeCompanyDispatcherSessions, saveCompanyDispatcherGroups, toggleCaDispGroupsEdit, toggleCompanyDispatcherStatus } from "./admin/company-admin-team.js";
 import { endCompanySupportSession, openCompanyOpsOverview } from "./admin/company-admin.js";
 import { createDispatcherGroup, enterDispatcherActiveGroup, exitImpersonation, saveNewDispatcherPassword, switchToGroupSetup } from "./admin/dispatcher-setup.js";
-import { superadminCreateCompany, superadminCreateCompanyAdmin, superadminDeleteCompany, superadminCancelDeleteCompanyModal, superadminConfirmDeleteCompany, superadminDeleteCompanyAdmin, superadminFocusCompanies, superadminCopyCompanyId, superadminCopyText, superadminImpersonate, superadminOpenCompany, superadminOpenCompanyDetail, superadminCloseCompanyDetail, superadminSetCompanyAdminStatus, superadminResetCompanyAdminPassword, superadminResetPin, superadminToggleStatus, superadminStartSupport, superadminCancelSupportModal, superadminConfirmSupportStart, superadminEndSupport, superadminSaveCompanySettings } from "./admin/superadmin.js";
+import { superadminCreateCompany, superadminCreateCompanyAdmin, superadminDeleteCompany, superadminCancelDeleteCompanyModal, superadminConfirmDeleteCompany, superadminDeleteCompanyAdmin, superadminFocusCompanies, superadminCopyCompanyId, superadminCopyText, superadminImpersonate, superadminOpenCompany, superadminOpenCompanyDetail, superadminCloseCompanyDetail, superadminSetCompanyAdminStatus, superadminResetCompanyAdminPassword, superadminResetPin, superadminToggleStatus, superadminStartSupport, superadminCancelSupportModal, superadminConfirmSupportStart, superadminEndSupport, superadminSaveCompanySettings, superadminSaveDemoCompanyProfile } from "./admin/superadmin.js";
 import { forgotDispatcherPassword, loginAsDispatcher, logout } from "./auth/login-dispatcher.js";
 import { closeSuperAdminModal, confirmSuperAdminPin, handleLogoClick } from "./auth/superadmin.js";
 import { clickElementById, installActionDelegates, removeElementById } from "./core/action-delegate.js";
 import { exportDriversCSV, exportLostItemsCSV, exportReportsCSV } from "./core/export-csv.js";
 import { getScheduleByKey } from "./core/utils.js";
-import { addBus, deleteBus, deleteRoute } from "./data/buses-routes.js";
+import { addBus, deleteBus, deleteRoute, toggleBusEdit, saveBusOpsProfile } from "./data/buses-routes.js";
 import {
     clearBusImportPreview,
     confirmBusImport,
@@ -39,19 +38,22 @@ import {
     transitionOperationalIncident,
     openOpsAttentionPanel,
     closeOpsAttentionPanel,
+    focusOpsAttentionItem,
     applyOpsAttentionFix
 } from "./dispatcher/dashboard.js";
 import { removeDispatcher } from "./dispatcher/dispatchers.js";
-import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlansFull, scrollHubSection } from "./dispatcher/group-hub.js";
+import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlansFull, openVehiclesFromPlan, scrollHubSection } from "./dispatcher/group-hub.js";
 import { returnLostItem, setLostItemStatus, openLostItemPhoto } from "./dispatcher/lost-items.js";
-import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, openMonthlyDayEditForDriver, previewMonthlyMassAbsence, saveMonthlyDayEdit, selectMonthlyPlanGroup, undoMonthlyDayEdit } from "./dispatcher/monthly-plans.js";
+import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, deleteMonthlyPlan, focusMonthlyDriverPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, openMonthlyDayEditForDriver, previewMonthlyMassAbsence, saveMonthlyDayEdit, selectMonthlyPlanGroup, undoMonthlyDayEdit } from "./dispatcher/monthly-plans.js";
+import { goToOpsPlanProblems } from "./dispatcher/plan-health-banner.js";
+import { openVehiclesForGroup } from "./dispatcher/vehicles-panel.js";
 import { setMessagesPageTab, submitDispatcherMessage } from "./dispatcher/msg-compose.js";
 import { clearPendingPlanImports, confirmBulkPlanImport, handleBulkPlanDrop, handleBulkPlanFileInput, removePendingImport, updatePendingImportDriver, updatePendingImportMonth } from "./dispatcher/plan-import.js";
 import { resolveReport, openReportResolution, closeReportResolution } from "./dispatcher/reports.js";
 import { archiveAllDispatcherMessages, archiveDispatcherMessage } from "./dispatcher/sent-messages.js";
 import { shiftWeekNav } from "./dispatcher/shift-utils.js";
 import { assignShift, openShiftCell, persistShift, removeShift } from "./dispatcher/shifts.js";
-import { dailyPlanAssignDriver } from "./dispatcher/daily-plan.js";
+import { dailyPlanAssignDriver, clearDailyShift } from "./dispatcher/daily-plan.js";
 import {
     acquirePlanEditLock,
     releasePlanEditLock,
@@ -71,11 +73,54 @@ import { viewUploadedSchedule } from "./maps/schedule-viewer.js";
 import { closeConfirmModal, confirmModalYes } from "./ui/confirm-modal.js";
 import { changeLanguage, t } from "./ui/i18n.js";
 import { closeModal, closeSosConfirmModal, confirmClearSOS, confirmFactoryReset, confirmResolveSOS, showModal } from "./ui/modals.js";
+import { toggleRowActionsMenu } from "./ui/row-actions-menu.js";
 import { toggleTheme } from "./ui/theme.js";
 import { canInvokeActionDuringDriverActivation } from "./auth/driver-access-gate.js";
 
+/** Lazy Dispo Help chunk — keeps D17 staff budget under soft ceiling. */
+function loadDispatcherHelp() {
+    return import("./dispatcher/help-support.js");
+}
+
+async function openDispatcherHelp(...args) {
+    const mod = await loadDispatcherHelp();
+    return mod.openDispatcherHelp(...args);
+}
+
+function closeDispatcherHelp() {
+    closeModal("dispatcher-help-modal");
+    return true;
+}
+
+async function dispatcherHelpSoftReload(...args) {
+    const mod = await loadDispatcherHelp();
+    return mod.dispatcherHelpSoftReload(...args);
+}
+
+async function dispatcherHelpLogout(...args) {
+    const mod = await loadDispatcherHelp();
+    return mod.dispatcherHelpLogout(...args);
+}
+
+async function dispatcherHelpCopyEmail(...args) {
+    const mod = await loadDispatcherHelp();
+    return mod.dispatcherHelpCopyEmail(...args);
+}
+
+async function dispatcherHelpOpenMailto(...args) {
+    const mod = await loadDispatcherHelp();
+    return mod.dispatcherHelpOpenMailto(...args);
+}
+
+async function fillHelpModal(...args) {
+    const mod = await loadDispatcherHelp();
+    return mod.fillHelpModal(...args);
+}
+
 const HANDLERS = {
     addBus,
+    toggleBusEdit,
+    saveBusOpsProfile,
     clearBusImportPreview,
     confirmBusImport,
     handleBusImportDrop,
@@ -102,7 +147,6 @@ const HANDLERS = {
     clearCompanyBrandingLogo,
     handleCompanyBrandingLogoFile,
     clearCompanyDriversImport,
-    clearCompanyGroupMonthlyImport,
     clearCompanyServicePlanPreview,
     clearPackageImport,
     clearPendingPlanImports,
@@ -113,6 +157,7 @@ const HANDLERS = {
     closeCompanyServicePlanDuty,
     closeCompanyServicePlanHistory,
     closeConfirmModal,
+    closeDispatcherHelp,
     closeGroupHub,
     closeModal,
     closeMonthlyDayEditModal,
@@ -131,12 +176,26 @@ const HANDLERS = {
     confirmSuperAdminPin,
     createDispatcherGroup,
     createEmptyMonthlyPlan,
+    deleteMonthlyPlan,
+    clearDailyShift,
+    async detachDriverFromLine(...args) {
+        const mod = await import("./dispatcher/line-roster.js");
+        return mod.detachDriverFromLine(...args);
+    },
+    async detachBusFromLine(...args) {
+        const mod = await import("./dispatcher/line-roster.js");
+        return mod.detachBusFromLine(...args);
+    },
     deleteBus,
     deleteCompanyGroup,
     deleteGroup,
     deleteRoute,
     deleteScheduleEntry,
     editDriver,
+    dispatcherHelpCopyEmail,
+    dispatcherHelpLogout,
+    dispatcherHelpOpenMailto,
+    dispatcherHelpSoftReload,
     endCompanySupportSession,
     openCompanyOpsOverview,
     enterDispatcherActiveGroup,
@@ -144,6 +203,7 @@ const HANDLERS = {
     exportDriversCSV,
     exportLostItemsCSV,
     exportReportsCSV,
+    fillHelpModal,
     focusCompanyDispatcherForm,
     focusCompanyGroupForm,
     forgotDispatcherPassword,
@@ -153,7 +213,6 @@ const HANDLERS = {
     handleBulkPlanFileInput,
     handleCompanyAuditFilters,
     handleCompanyDriversFile,
-    handleCompanyGroupMonthlyFile,
     handleCompanyDriversFilter,
     handleCompanyDriversSearch,
     handleCompanyServicePlanFile,
@@ -168,6 +227,7 @@ const HANDLERS = {
     handleVacation,
     insertScheduleTable,
     loadMonthlyPlanForDriver,
+    focusMonthlyDriverPlan,
     loadMoreCompanyAudit,
     loginAsDispatcher,
     logout,
@@ -179,7 +239,11 @@ const HANDLERS = {
     openCompanyServicePlanHistory,
     openDailyPlanForGroup,
     openDailyPlanFull,
+    openDispatcherHelp,
     openGroupHub,
+    openVehiclesForGroup,
+    openVehiclesFromPlan,
+    openOpsPlanHealthProblems: goToOpsPlanProblems,
     openMonthlyDayEdit,
     openMonthlyDayEditForDriver,
     previewMonthlyMassAbsence,
@@ -189,6 +253,7 @@ const HANDLERS = {
     openCoverageResolver,
     openOpsAttentionPanel,
     closeOpsAttentionPanel,
+    focusOpsAttentionItem,
     applyOpsAttentionFix,
     openReportResolution,
     openMonthlyPlanForGroup,
@@ -204,9 +269,6 @@ const HANDLERS = {
     opsAssignDriver,
     publishCompanyServicePlan,
     activateCompanyServicePlanVersion,
-    previewCompanyGroupMonthlyImport,
-    commitCompanyGroupMonthlyImport,
-    invalidateCompanyGroupMonthlyPreview,
     refreshCompanyAudit,
     removeDispatcher,
     removeElementById,
@@ -259,12 +321,14 @@ const HANDLERS = {
     superadminConfirmSupportStart,
     superadminEndSupport,
     superadminSaveCompanySettings,
+    superadminSaveDemoCompanyProfile,
     switchScheduleTab,
     switchSection,
     switchToGroupSetup,
     t,
     toggleCaDispGroupsEdit,
     toggleCompanyDispatcherStatus,
+    toggleRowActionsMenu,
     removeCompanyDispatcher,
     toggleCompanyDriverStatus,
     toggleDriverActive,

@@ -7,12 +7,8 @@ const root = path.resolve(__dirname, "..", "..");
 const ignoredDirectories = new Set([
   ".git", "node_modules", "dist", "build", ".cache", "test-results", "playwright-report", ".firebase"
 ]);
-// Local bootstrap keys are gitignored but may exist on a developer machine.
-// Scan must not treat a working-tree-only admin key as a commit failure.
-const ignoredFileNames = new Set([
-  "firebase-admin-key.json",
-  "firebase-admin-key.json.json"
-]);
+// Do not ignore firebase-admin-key.json — presence is a hard failure (see test below).
+const ignoredFileNames = new Set();
 const scannedExtensions = new Set([
   ".css", ".html", ".js", ".json", ".mjs", ".md", ".rules", ".txt", ".yaml", ".yml"
 ]);
@@ -53,6 +49,11 @@ test("no service account private key material is committed", () => {
     .filter(({ content }) => content.includes(pemHeader) || content.includes(`"${privateKeyField}"`))
     .map(({ relative }) => relative);
   assert.deepEqual(findings, []);
+});
+
+test("admin service-account key file must not exist in the working tree", () => {
+  assert.equal(fs.existsSync(path.join(root, "firebase-admin-key.json")), false);
+  assert.equal(fs.existsSync(path.join(root, "dist", "firebase-admin-key.json")), false);
 });
 
 test("gitignore keeps admin keys and env files out of version control", () => {

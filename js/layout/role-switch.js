@@ -2,12 +2,12 @@
 import { saveState } from "../core/state.js";
 import { persistUserSession } from "../auth/login-session.js";
 import { showAppLayout } from "./shell.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { showToast } from "../core/utils.js";
 import { t } from "../ui/i18n.js";
 
 function toggleRoleDirectly() {
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         showToast(t("error_invalid_credentials") || "Role switch is disabled.", "error");
         return;
     }

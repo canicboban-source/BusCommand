@@ -37,6 +37,10 @@ function normalizeShiftCode(raw, lineId) {
     if (/KRANK|BOLOVANJE|SICK/.test(upper)) {
         return { type: "sick", name: "Krank", routeCode: null, lines: "" };
     }
+    // Bare "Dienst" (no route code) — operational day without assigned line code.
+    if (/^DIENST$/.test(upper) || /^DIENST\s*$/.test(upper)) {
+        return { type: "morning", name: "Dienst", routeCode: null, lines: "" };
+    }
 
     const brCode = line ? getBereitschaftCode(line) : "";
     const brPattern = brCode
@@ -62,11 +66,14 @@ function normalizeShiftCode(raw, lineId) {
         if (full) {
             code = full[1].toUpperCase();
         } else {
-            const shortF = text.match(/\b(F\d{2})\b/i);
-            if (shortF) code = `${line}.${shortF[1].toUpperCase()}`;
+            const shortFX = text.match(/\b([FSX]\d{2})\b/i);
+            if (shortFX) code = `${line}.${shortFX[1].toUpperCase()}`;
             const shortNum = text.match(/^(\d{3})\//);
             if (!code && shortNum) code = `${line}.${shortNum[1]}`;
         }
+    } else {
+        const anyFull = text.match(/\b(\d{3}\.(?:[FSX]\d{2}|\d{3}))\b/i);
+        if (anyFull) code = anyFull[1].toUpperCase();
     }
 
     if (!code) return null;

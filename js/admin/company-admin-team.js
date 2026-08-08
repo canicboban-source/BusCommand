@@ -1,13 +1,14 @@
 // BusCommand — Company Admin: tenant-scoped dispatcher lifecycle
 import ApiClient from "../core/api-client.js";
 import { actionAttr } from "../core/action-delegate.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { runSingleSubmission } from "../core/submit-lock.js";
 import { canRunCompanyAdminAction } from "../core/ui-permissions.js";
 import { escapeHtml, showToast } from "../core/utils.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
+import { rowActionsMenuHtml } from "../ui/row-actions-menu.js";
 import { renderCompanyAdminDashboard } from "./company-admin.js";
 import {
     dispatcherReadiness,
@@ -24,7 +25,7 @@ const pendingDispatcherActions = new Set();
 const openGroupEditors = new Set();
 
 function getScope() {
-    return getCompanyTeamScope(window.state, window.currentUser, IS_DEMO_MODE);
+    return getCompanyTeamScope(window.state, window.currentUser, USE_LOCAL_STATE);
 }
 
 function getCompanyId() {
@@ -155,8 +156,26 @@ function dispatcherCardHtml(dispatcher, groups) {
             <button type="button" class="btn-secondary company-team-edit-groups${editingGroups ? " is-active" : ""}" ${actionAttr("toggleCaDispGroupsEdit", [String(dispatcher.id)])} ${busy ? "disabled" : ""} aria-expanded="${editingGroups ? "true" : "false"}"><i data-lucide="pencil-line"></i><span>${escapeHtml(t("ca_edit_groups"))}</span></button>
             <button type="button" class="btn-secondary" ${actionAttr("resetCompanyDispatcherPassword", [String(dispatcher.id)])} ${busy || !active ? "disabled" : ""}><i data-lucide="mail-key"></i><span>${escapeHtml(t("ca_send_reset_link"))}</span></button>
             <button type="button" class="btn-secondary" ${actionAttr("revokeCompanyDispatcherSessions", [String(dispatcher.id)])} ${busy || !active ? "disabled" : ""}><i data-lucide="log-out"></i><span>${escapeHtml(t("ca_revoke_sessions"))}</span></button>
-            <button type="button" class="${active ? "btn-danger-ghost" : "btn-secondary"}" ${actionAttr("toggleCompanyDispatcherStatus", [String(dispatcher.id)])} ${busy ? "disabled" : ""}><i data-lucide="${toggleIcon}"></i><span>${escapeHtml(toggleLabel)}</span></button>
-            ${active ? "" : `<button type="button" class="btn-danger-ghost" ${actionAttr("removeCompanyDispatcher", [String(dispatcher.id)])} ${busy ? "disabled" : ""}><i data-lucide="trash-2"></i><span>${escapeHtml(t("ca_disp_delete"))}</span></button>`}
+            ${rowActionsMenuHtml(`ca-disp-${dispatcher.id}`, [
+                {
+                    action: "toggleCompanyDispatcherStatus",
+                    args: [String(dispatcher.id)],
+                    label: toggleLabel,
+                    icon: toggleIcon,
+                    danger: active,
+                    disabled: busy
+                },
+                ...(active
+                    ? []
+                    : [{
+                        action: "removeCompanyDispatcher",
+                        args: [String(dispatcher.id)],
+                        label: t("ca_disp_delete"),
+                        icon: "trash-2",
+                        danger: true,
+                        disabled: busy
+                    }])
+            ])}
         </div>
         <div id="ca-disp-groups-edit-${escapeHtml(String(dispatcher.id))}" class="company-team-editor${editingGroups ? "" : " hidden"}">
             <div><strong>${escapeHtml(t("ca_assign_groups"))}</strong><p>${escapeHtml(t("ca_assign_groups_hint"))}</p></div>
@@ -228,14 +247,14 @@ async function saveCompanyDispatcherGroups(dispId) {
     pendingDispatcherActions.add(String(dispId));
     renderCompanyAdminTeam();
     try {
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             const result = await ApiClient.updateCompanyDispatcherGroups(getCompanyId(), dispId, nextGroups);
             if (!result.success) throw new Error(result.error || t("ca_groups_save_failed"));
         }
         dispatcher.groups = nextGroups;
         dispatcher.activeGroupId = nextGroups.includes(dispatcher.activeGroupId) ? dispatcher.activeGroupId : nextGroups[0];
         openGroupEditors.delete(String(dispId));
-        if (IS_DEMO_MODE) saveState();
+        if (USE_LOCAL_STATE) saveState();
         showToast(t("ca_groups_saved_relogin"), "success", 6500);
         return true;
     } catch (cause) {
@@ -279,7 +298,7 @@ async function persistCompanyDispatcherDraft(input) {
         companyId: scope.companyId,
         active: true
     };
-    if (IS_DEMO_MODE) {
+    if (USE_LOCAL_STATE) {
         dispatcher.password = validation.value.password;
         dispatcher.passwordChanged = true;
     } else {
@@ -293,7 +312,7 @@ async function persistCompanyDispatcherDraft(input) {
     );
     if (existingIndex >= 0) window.state.dispatchers[existingIndex] = { ...window.state.dispatchers[existingIndex], ...dispatcher };
     else window.state.dispatchers.push(dispatcher);
-    if (IS_DEMO_MODE) saveState();
+    if (USE_LOCAL_STATE) saveState();
     return { success: true, dispatcher };
 }
 
@@ -346,7 +365,7 @@ function resetCompanyDispatcherPassword(dispId) {
             pendingDispatcherActions.add(String(dispId));
             renderCompanyAdminTeam();
             try {
-                if (IS_DEMO_MODE) {
+                if (USE_LOCAL_STATE) {
                     const temporaryPassword = generateDemoResetPassword();
                     dispatcher.password = temporaryPassword;
                     dispatcher.passwordChanged = true;
@@ -378,12 +397,12 @@ function toggleCompanyDispatcherStatus(dispId) {
             pendingDispatcherActions.add(String(dispId));
             renderCompanyAdminTeam();
             try {
-                if (!IS_DEMO_MODE) {
+                if (!USE_LOCAL_STATE) {
                     const result = await ApiClient.setCompanyDispatcherStatus(getCompanyId(), dispId, nextActive);
                     if (!result.success) throw new Error(result.error || t("ca_disp_status_failed"));
                 }
                 dispatcher.active = nextActive;
-                if (IS_DEMO_MODE) saveState();
+                if (USE_LOCAL_STATE) saveState();
                 showToast(t(nextActive ? "ca_disp_activated" : "ca_disp_deactivated"), "success", 6000);
             } catch (cause) {
                 showToast(cause.message || t("ca_disp_status_failed"), "error");
@@ -406,7 +425,7 @@ function removeCompanyDispatcher(dispId) {
             pendingDispatcherActions.add(String(dispId));
             renderCompanyAdminTeam();
             try {
-                if (!IS_DEMO_MODE) {
+                if (!USE_LOCAL_STATE) {
                     const result = await ApiClient.deleteCompanyDispatcher(getCompanyId(), dispId, dispatcher.email);
                     if (!result.success) {
                         const errorKey = {
@@ -419,7 +438,7 @@ function removeCompanyDispatcher(dispId) {
                     }
                 }
                 window.state.dispatchers = (window.state.dispatchers || []).filter(item => String(item.id) !== String(dispId));
-                if (IS_DEMO_MODE) saveState();
+                if (USE_LOCAL_STATE) saveState();
                 showToast(t("ca_disp_deleted"), "success", 6500);
             } catch (cause) {
                 showToast(cause.message || t("ca_disp_delete_failed"), "error");
@@ -429,7 +448,7 @@ function removeCompanyDispatcher(dispId) {
                 renderCompanyAdminDashboard();
             }
         },
-        { danger: true, confirmText: t("ca_disp_delete") }
+        { danger: true, confirmText: t("btn_yes") || "Da" }
     );
 }
 
@@ -442,7 +461,7 @@ function revokeCompanyDispatcherSessions(dispId) {
             pendingDispatcherActions.add(String(dispId));
             renderCompanyAdminTeam();
             try {
-                if (!IS_DEMO_MODE) {
+                if (!USE_LOCAL_STATE) {
                     const result = await ApiClient.revokeCompanyDispatcherSessions(getCompanyId(), dispId);
                     if (!result.success) throw new Error(result.error || t("ca_revoke_failed"));
                 }

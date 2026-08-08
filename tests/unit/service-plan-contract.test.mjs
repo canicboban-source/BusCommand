@@ -130,8 +130,8 @@ test("file gate accepts BusCommand xlsx, csv and pdf up to 5 MB", () => {
   assert.equal(validateServicePlanFile({ name: "plan.xlsx", size: 6 * 1024 * 1024 }), "ca_plan_err_file_too_large");
 });
 
-test("CSV twin template parses into the same validated contract", () => {
-  const csv = fs.readFileSync(path.join(root, "public/templates/BusCommand_Dienstplan_Import_v1.csv"), "utf8");
+test("ephemeral QA CSV fixture parses into the validated contract (not a product template)", () => {
+  const csv = fs.readFileSync(path.join(root, "tests/fixtures/qa-dienstplan-minimal.csv"), "utf8");
   const result = parseCsvText(csv);
   assert.equal(result.valid, true, JSON.stringify(result.errors));
   assert.equal(result.plan.planCode, "310");

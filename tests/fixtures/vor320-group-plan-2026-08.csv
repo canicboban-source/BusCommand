@@ -1,0 +1,121 @@
+datum;dan;linija;dienst;rezim;bus;firma_id;ime_prezime;deo_dana
+02.08.2026;Sonntag;320;320.701;Sonn/Feiertage in NOe;91103;100615;Canic Boban;nedelja
+02.08.2026;Sonntag;320;SLOBODNO;;;100601;Marko Petrović;
+02.08.2026;Sonntag;320;SLOBODNO;;;100602;Nikola Jovanović;
+02.08.2026;Sonntag;320;SLOBODNO;;;100603;Stefan Ilić;
+02.08.2026;Sonntag;320;SLOBODNO;;;100604;Aleksandar Nikolić;
+03.08.2026;Montag;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+03.08.2026;Montag;320;320.F06;Ferien in NOe;91504;100615;Canic Boban;pre podne
+03.08.2026;Montag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+03.08.2026;Montag;320;320.F08;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+03.08.2026;Montag;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+04.08.2026;Dienstag;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+04.08.2026;Dienstag;320;320.F06;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+04.08.2026;Dienstag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+04.08.2026;Dienstag;320;320.F08;Ferien in NOe;91504;100615;Canic Boban;pre podne
+04.08.2026;Dienstag;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+05.08.2026;Mittwoch;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+05.08.2026;Mittwoch;320;320.F06;Ferien in NOe;91504;100615;Canic Boban;pre podne
+05.08.2026;Mittwoch;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+05.08.2026;Mittwoch;320;320.F08;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+05.08.2026;Mittwoch;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+06.08.2026;Donnerstag;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+06.08.2026;Donnerstag;320;320.F06;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+06.08.2026;Donnerstag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+06.08.2026;Donnerstag;320;320.F08;Ferien in NOe;91504;100615;Canic Boban;pre podne
+06.08.2026;Donnerstag;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+07.08.2026;Freitag;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+07.08.2026;Freitag;320;320.F06;Ferien in NOe;91504;100615;Canic Boban;pre podne
+07.08.2026;Freitag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+07.08.2026;Freitag;320;320.F08;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+07.08.2026;Freitag;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+10.08.2026;Montag;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+10.08.2026;Montag;320;320.F06;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+10.08.2026;Montag;320;320.F07;Ferien in NOe;91504;100615;Canic Boban;pre podne
+10.08.2026;Montag;320;320.F08;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+10.08.2026;Montag;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+11.08.2026;Dienstag;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+11.08.2026;Dienstag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+11.08.2026;Dienstag;320;320.F08;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+11.08.2026;Dienstag;320;320.F09;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+11.08.2026;Dienstag;320;Urlaub;;;100615;Canic Boban;pre podne
+12.08.2026;Mittwoch;320;320.F05;Ferien in NOe;91504;100615;Canic Boban;pre podne
+12.08.2026;Mittwoch;320;320.F06;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+12.08.2026;Mittwoch;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+12.08.2026;Mittwoch;320;320.F08;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+12.08.2026;Mittwoch;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+13.08.2026;Donnerstag;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+13.08.2026;Donnerstag;320;320.F06;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+13.08.2026;Donnerstag;320;320.F07;Ferien in NOe;91504;100615;Canic Boban;pre podne
+13.08.2026;Donnerstag;320;320.F08;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+13.08.2026;Donnerstag;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+14.08.2026;Freitag;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+14.08.2026;Freitag;320;320.F06;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+14.08.2026;Freitag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+14.08.2026;Freitag;320;320.F08;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+14.08.2026;Freitag;320;320.F09;Ferien in NOe;91504;100615;Canic Boban;pre podne
+15.08.2026;Samstag;320;320.701;Sonn/Feiertage in NOe;;100615;Canic Boban;nedelja
+15.08.2026;Samstag;320;SLOBODNO;;;100601;Marko Petrović;
+15.08.2026;Samstag;320;SLOBODNO;;;100602;Nikola Jovanović;
+15.08.2026;Samstag;320;SLOBODNO;;;100603;Stefan Ilić;
+15.08.2026;Samstag;320;SLOBODNO;;;100604;Aleksandar Nikolić;
+17.08.2026;Montag;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+17.08.2026;Montag;320;320.F06;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+17.08.2026;Montag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+17.08.2026;Montag;320;320.F08;Ferien in NOe;91504;100615;Canic Boban;pre podne
+17.08.2026;Montag;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+18.08.2026;Dienstag;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+18.08.2026;Dienstag;320;320.F06;Ferien in NOe;91504;100615;Canic Boban;pre podne
+18.08.2026;Dienstag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+18.08.2026;Dienstag;320;320.F08;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+18.08.2026;Dienstag;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+19.08.2026;Mittwoch;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+19.08.2026;Mittwoch;320;320.F06;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+19.08.2026;Mittwoch;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+19.08.2026;Mittwoch;320;320.F08;Ferien in NOe;91504;100615;Canic Boban;pre podne
+19.08.2026;Mittwoch;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+20.08.2026;Donnerstag;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+20.08.2026;Donnerstag;320;320.F06;Ferien in NOe;91504;100615;Canic Boban;pre podne
+20.08.2026;Donnerstag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+20.08.2026;Donnerstag;320;320.F08;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+20.08.2026;Donnerstag;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+21.08.2026;Freitag;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+21.08.2026;Freitag;320;320.F06;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+21.08.2026;Freitag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+21.08.2026;Freitag;320;320.F08;Ferien in NOe;91504;100615;Canic Boban;pre podne
+21.08.2026;Freitag;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+24.08.2026;Montag;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+24.08.2026;Montag;320;320.F06;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+24.08.2026;Montag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+24.08.2026;Montag;320;320.F08;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+24.08.2026;Montag;320;320.F09;Ferien in NOe;91504;100615;Canic Boban;pre podne
+25.08.2026;Dienstag;320;320.F05;Ferien in NOe;91504;100615;Canic Boban;pre podne
+25.08.2026;Dienstag;320;320.F06;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+25.08.2026;Dienstag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+25.08.2026;Dienstag;320;320.F08;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+25.08.2026;Dienstag;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+26.08.2026;Mittwoch;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+26.08.2026;Mittwoch;320;320.F06;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+26.08.2026;Mittwoch;320;320.F07;Ferien in NOe;91504;100615;Canic Boban;pre podne
+26.08.2026;Mittwoch;320;320.F08;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+26.08.2026;Mittwoch;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+27.08.2026;Donnerstag;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+27.08.2026;Donnerstag;320;320.F06;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+27.08.2026;Donnerstag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+27.08.2026;Donnerstag;320;320.F08;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+27.08.2026;Donnerstag;320;320.F09;Ferien in NOe;91504;100615;Canic Boban;pre podne
+28.08.2026;Freitag;320;320.F05;Ferien in NOe;91504;100615;Canic Boban;pre podne
+28.08.2026;Freitag;320;320.F06;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+28.08.2026;Freitag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+28.08.2026;Freitag;320;320.F08;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+28.08.2026;Freitag;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+30.08.2026;Sonntag;320;320.F05;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+30.08.2026;Sonntag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+30.08.2026;Sonntag;320;320.F08;Ferien in NOe;91101;100603;Stefan Ilić;pre podne
+30.08.2026;Sonntag;320;320.F09;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+30.08.2026;Sonntag;320;Dienst;;;100615;Canic Boban;nedelja
+31.08.2026;Montag;320;320.F05;Ferien in NOe;91504;100615;Canic Boban;pre podne
+31.08.2026;Montag;320;320.F06;Ferien in NOe;91503;100601;Marko Petrović;pre podne
+31.08.2026;Montag;320;320.F07;Ferien in NOe;91505;100602;Nikola Jovanović;pre podne
+31.08.2026;Montag;320;320.F08;Ferien in NOe;91104;100604;Aleksandar Nikolić;pre podne
+31.08.2026;Montag;320;320.F09;Ferien in NOe;91101;100603;Stefan Ilić;pre podne

@@ -1,0 +1,52 @@
+{
+  "currentUserGroups": [
+    "101",
+    "310",
+    "320"
+  ],
+  "dispGroups": [
+    "101",
+    "310",
+    "320"
+  ],
+  "drivers": [
+    {
+      "name": "Canic Boban",
+      "bus": "91504",
+      "eid": "100615"
+    },
+    {
+      "name": "Marko Petrović",
+      "bus": "91503",
+      "eid": "100601"
+    },
+    {
+      "name": "Nikola Jovanović",
+      "bus": "91505",
+      "eid": "100602"
+    },
+    {
+      "name": "Stefan Ilić",
+      "bus": "91101",
+      "eid": "100603"
+    },
+    {
+      "name": "Aleksandar Nikolić",
+      "bus": "91104",
+      "eid": "100604"
+    }
+  ],
+  "busNumbers": [
+    "91503",
+    "91504",
+    "91505",
+    "91101",
+    "91103",
+    "91104"
+  ],
+  "groups": [
+    "101",
+    "310",
+    "320"
+  ]
+}

@@ -69,17 +69,161 @@ function cockpitState() {
 }
 
 test.describe("Dispatcher cockpit resolution flows", () => {
+  test("live view keeps action and daily-plan columns usable at desktop widths", async ({ page }) => {
+    const date = todayIso();
+    const state = cockpitState();
+    state.drivers = [
+      ...state.drivers,
+      {
+        id: "drv-nobus",
+        name: "No Bus Driver",
+        groupId: "101",
+        lineId: "101",
+        active: true,
+        bus: "",
+        email: "nobus@example.test",
+        phone: "+4310000003"
+      }
+    ];
+    state.buses = [
+      { id: "bus-1", number: "BUS-1", groupId: "101", lineId: "101", groupIds: ["101"], active: true, garage: "Depot A", opsStatus: "ready", revision: 0 },
+      { id: "bus-2", number: "BUS-2", groupId: "101", lineId: "101", groupIds: ["101"], active: true, garage: "Depot A", opsStatus: "ready", revision: 0 }
+    ];
+    state.shifts = [
+      ...state.shifts,
+      {
+        id: `shf-nobus-${date}`,
+        driverId: "drv-nobus",
+        driverName: "No Bus Driver",
+        date,
+        type: "morning",
+        name: "101.S02",
+        routeCode: "101.S02",
+        bus: "",
+        start: "05:30",
+        end: "13:30",
+        revision: 1
+      }
+    ];
+    state.reports = [
+      {
+        id: "report-delay-layout",
+        type: "delay:10",
+        status: "active",
+        severity: "sev_medium",
+        date,
+        time: "10:15",
+        driverId: "drv-original",
+        driver: "Original Driver",
+        groupId: "101",
+        bus: "BUS-1",
+        reason: "Traffic"
+      },
+      {
+        id: "report-coverage-layout",
+        type: "coverage:disruption",
+        status: "active",
+        severity: "sev_high",
+        date,
+        time: "11:00",
+        driverId: "drv-standby",
+        driver: "Standby Driver",
+        groupId: "101",
+        bus: "",
+        reason: "ops_coverage_unavailable",
+        description: "Driver reported unavailable",
+        affectedEntity: "driver"
+      },
+      {
+        id: "report-breakdown-layout",
+        type: "breakdown:bd_engine",
+        status: "active",
+        severity: "sev_high",
+        date,
+        time: "11:30",
+        driverId: "drv-original",
+        driver: "Original Driver",
+        groupId: "101",
+        bus: "BUS-1",
+        reason: "Engine",
+        affectedEntity: "vehicle"
+      }
+    ];
+    await seedDemoState(page, state);
+
+    async function assertCockpitColumns() {
+      await expect(page.locator("#dispatcher-dashboard")).toBeVisible();
+      await expect(page.locator("#dispatcher-live-alerts")).toBeVisible();
+      await expect(page.locator(".ops-col-plan")).toBeVisible();
+      await expect(page.locator("#ops-daily-plan-rows")).toBeVisible();
+      const widths = await page.evaluate(() => {
+        const action = document.querySelector(".ops-col-action");
+        const plan = document.querySelector(".ops-col-plan");
+        return {
+          action: action ? Math.round(action.getBoundingClientRect().width) : 0,
+          plan: plan ? Math.round(plan.getBoundingClientRect().width) : 0
+        };
+      });
+      expect(widths.action).toBeGreaterThanOrEqual(200);
+      expect(widths.plan).toBeGreaterThanOrEqual(280);
+    }
+
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto("/staff.html");
+    await loginDispatcher(page);
+    await assertCockpitColumns();
+    await expect(page.locator("#dispatcher-live-alerts .urgent-action").first()).toBeVisible();
+    // Live alerts = Needs attention SoT (reports + plan ops gaps); count can exceed field reports alone.
+    expect(await page.locator("#dispatcher-live-alerts .urgent-action").count()).toBeGreaterThanOrEqual(3);
+
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await assertCockpitColumns();
+
+    // Cursor Live View / side preview widths — stack, do not crush the plan column.
+    await page.setViewportSize({ width: 900, height: 900 });
+    await expect(page.locator(".ops-col-action")).toBeVisible();
+    await expect(page.locator(".ops-col-plan")).toBeVisible();
+    await expect(page.locator("#ops-daily-plan-rows")).toBeVisible();
+    const stacked = await page.evaluate(() => {
+      const action = document.querySelector(".ops-col-action").getBoundingClientRect();
+      const plan = document.querySelector(".ops-col-plan").getBoundingClientRect();
+      return {
+        actionWidth: Math.round(action.width),
+        planWidth: Math.round(plan.width),
+        planBelow: plan.top >= action.bottom - 2
+      };
+    });
+    expect(stacked.actionWidth).toBeGreaterThanOrEqual(280);
+    expect(stacked.planWidth).toBeGreaterThanOrEqual(280);
+    expect(stacked.planBelow).toBe(true);
+
+    await page.locator("#dispatcher-live-alerts .urgent-action").first().click();
+    await expect(page.locator("#ops-attention-panel")).toBeVisible();
+
+    // Attention B2 shows one focused card — pick Delay from the left index.
+    const delayNav = page.locator(".ops-attention-nav-item").filter({ hasText: /delay|kašnjen|verspät|Traffic/i }).first();
+    if (await delayNav.count()) await delayNav.click();
+    const delayCard = page.locator(".ops-attention-card").filter({ hasText: /delay|kašnjen|verspät|Traffic/i }).first();
+    await expect(delayCard).toBeVisible();
+    await delayCard.locator('[data-attn-field="resolutionType"]').selectOption("restored");
+    await delayCard.locator('[data-attn-field="note"]').fill("Live View layout check — traffic cleared.");
+    await delayCard.locator("button.ops-attention-apply").click();
+    await expect.poll(async () => page.evaluate(() =>
+      window.state.reports.find((item) => item.id === "report-delay-layout")?.status
+    )).toBe("resolved");
+  });
+
   test("group overview actions focus the real driver and bus sections", async ({ page }) => {
     await seedDemoState(page, cockpitState());
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openGroupHub("101"));
-    await page.getByRole("button", { name: "View drivers" }).click();
+    await page.getByRole("button", { name: /View drivers|Uredi vozače|Fahrer/i }).click();
     await expect(page.locator("#hub-section-drivers")).toBeFocused();
 
-    await page.locator('.hub-overview-actions [data-action="scrollHubSection"]').nth(1).click();
-    await expect(page.locator("#hub-section-buses")).toBeFocused();
+    await page.locator('.hub-overview-actions [data-action="openVehiclesFromPlan"]').click();
+    await expect(page.locator("#dispatcher-vehicles")).toBeVisible();
   });
 
   test("generic report requires a verified resolution record", async ({ page }) => {
@@ -98,7 +242,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
       reason: "Traffic"
     }];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     const resolve = page.locator("#dispatcher-live-alerts .urgent-action").first();
@@ -126,8 +270,8 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     const date = todayIso();
     const state = cockpitState();
     state.groups = [
-      { id: "101", name: "Line 101", color: "#3D7EF5", active: true, companyId: "demo" },
-      { id: "202", name: "Line 202", color: "#22C55E", active: true, companyId: "demo" }
+      { id: "101", name: "Line 101", color: "#3D7EF5", active: true, companyId: "qa-local" },
+      { id: "202", name: "Line 202", color: "#22C55E", active: true, companyId: "qa-local" }
     ];
     state.drivers = [
       {
@@ -197,7 +341,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
       description: "Driver reported unavailable"
     }];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openOpsAttentionPanel("coverage:report-coverage-knows"));
@@ -263,7 +407,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
       revision: 1
     }];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openOpsAttentionPanel());
@@ -279,12 +423,75 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await expect(page.locator(".ops-attention-card").filter({ hasText: /Wrong Code Driver/i })).toHaveCount(0);
   });
 
+  test("dispatcher can edit bus garage and ops status; breakdown leaves the free pool", async ({ page }) => {
+    const date = todayIso();
+    const state = cockpitState();
+    state.buses = [
+      {
+        id: "bus-edit",
+        number: "BUS-EDIT",
+        groupId: "101",
+        lineId: "101",
+        groupIds: ["101"],
+        active: true,
+        garage: "Depot A",
+        opsStatus: "ready",
+        revision: 0
+      }
+    ];
+    state.drivers = [{
+      id: "drv-nobus-2",
+      name: "Needs Bus Driver",
+      groupId: "101",
+      lineId: "101",
+      active: true,
+      bus: "",
+      email: "needsbus@example.test",
+      phone: "+4310000007"
+    }];
+    state.shifts = [{
+      id: `shf-needsbus-${date}`,
+      driverId: "drv-nobus-2",
+      driverName: "Needs Bus Driver",
+      date,
+      type: "morning",
+      name: "101.S01",
+      routeCode: "101.S01",
+      bus: "",
+      start: "05:15",
+      end: "13:15",
+      revision: 1
+    }];
+    await seedDemoState(page, state);
+    await page.goto("/staff.html");
+    await loginDispatcher(page);
+
+    await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("101"));
+    await expect(page.locator("#dispatcher-vehicles")).toBeVisible();
+    await page.locator('.hub-bus-item[data-bus-id="bus-edit"] button.hub-bus-edit-btn').click();
+    const form = page.locator('[data-bus-edit="bus-edit"]');
+    await expect(form).toBeVisible();
+    await form.locator('input[name="garage"]').fill("Depot B");
+    await form.locator('select[name="opsStatus"]').selectOption("breakdown");
+    await form.locator('button[type="submit"]').click();
+
+    await expect.poll(async () => page.evaluate(() => {
+      const bus = window.state.buses.find(item => item.id === "bus-edit");
+      return `${bus?.garage}|${bus?.opsStatus}|${bus?.revision}`;
+    })).toBe("Depot B|breakdown|1");
+
+    await page.evaluate(() => window.openOpsAttentionPanel());
+    const card = page.locator(".ops-attention-card").filter({ hasText: /Needs Bus Driver|nema autobusa|missing bus|kein bus/i }).first();
+    await expect(card).toBeVisible();
+    await expect(card.locator('[data-attn-field="bus"] option[value="BUS-EDIT"]')).toHaveCount(0);
+  });
+
   test("missing bus pools order same group then company then other groups and assign applies", async ({ page }) => {
     const date = todayIso();
     const state = cockpitState();
     state.groups = [
-      { id: "101", name: "Line 101", color: "#3D7EF5", active: true, companyId: "demo" },
-      { id: "202", name: "Line 202", color: "#22C55E", active: true, companyId: "demo" }
+      { id: "101", name: "Line 101", color: "#3D7EF5", active: true, companyId: "qa-local" },
+      { id: "202", name: "Line 202", color: "#22C55E", active: true, companyId: "qa-local" }
     ];
     state.drivers = [
       {
@@ -317,7 +524,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
       revision: 1
     }];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openOpsAttentionPanel());
@@ -345,7 +552,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
   test("daily replacement records the incident first and applies one guided resolution", async ({ page }) => {
     const state = cockpitState();
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate((date) =>
@@ -361,16 +568,29 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     expect(before.original.type).toBe("morning");
     expect(before.standby.type).toBe("bereitschaft");
 
-    await page.locator("#ops-incident-reason").fill("Driver reported unavailable");
+    await page.locator("#ops-incident-reason-code").selectOption("no_show");
     await page.locator("#ops-incident-modal button[type='submit']").click();
 
     await expect(page.locator("#ops-attention-panel")).toBeVisible();
-    const coverageCard = page.locator(".ops-attention-card").filter({ hasText: /unavailable|nedostupan|nicht verfügbar/i }).first();
+    // Single-card sheet: focus coverage item then apply guided replacement.
+    await page.evaluate(() => {
+      const coverage = (window.state.reports || []).find((r) =>
+        r.type === "coverage:disruption" && (r.status === "open" || r.status === "active")
+      );
+      const id = coverage ? `coverage:${coverage.id}` : "";
+      if (id && typeof window.openOpsAttentionPanel === "function") window.openOpsAttentionPanel(id);
+    });
+    const coverageCard = page.locator(".ops-attention-card").filter({ hasText: /unavailable|nedostupan|nicht verfügbar|No show|no_show|Nije se pojavio/i }).first();
     await expect(coverageCard).toBeVisible();
     await expect(coverageCard.locator('[data-attn-field="driver"]')).toHaveValue("drv-standby");
     await expect(coverageCard.locator('[data-attn-field="bus"]')).toHaveValue("BUS-1");
     await coverageCard.locator("button.ops-attention-apply").click();
-    await expect(page.locator("#ops-attention-panel")).toBeHidden();
+
+    await expect.poll(async () => page.evaluate(() =>
+      window.state.reports.find(item => item.type === "coverage:disruption")?.status
+    )).toBe("resolved");
+    // Panel may remain open if other attention items remain in the shared queue.
+    await expect(page.locator(".ops-attention-card").filter({ hasText: /unavailable|nedostupan|nicht verfügbar/i })).toHaveCount(0);
 
     const after = await page.evaluate(() => ({
       report: window.state.reports.find(item => item.type === "coverage:disruption"),
@@ -389,7 +609,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
   test("desktop native select options remain readable on a light Windows-style popup", async ({ page }) => {
     await page.emulateMedia({ colorScheme: "light" });
     await seedDemoState(page, cockpitState());
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     const colors = await page.locator(".ops-edit-select").first().evaluate((select) => {

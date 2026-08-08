@@ -3,7 +3,7 @@
  * Queues non-critical reports/lost-items with idempotency keys.
  * SOS, confirmations and vacations are never queued as "complete".
  */
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 
 const STORAGE_KEY = "buscommand_driver_offline_queue_v1";
 const MAX_ITEMS = 40;
@@ -81,7 +81,7 @@ function isProbablyOfflineError(result) {
 }
 
 async function flushOfflineQueue(api = null) {
-  if (IS_DEMO_MODE) return { flushed: 0, remaining: 0 };
+  if (USE_LOCAL_STATE) return { flushed: 0, remaining: 0 };
   const client = api || (typeof window !== "undefined" ? window.ApiClient : null);
   if (!client) return { flushed: 0, remaining: readQueue().length };
   if (typeof navigator !== "undefined" && navigator.onLine === false) {

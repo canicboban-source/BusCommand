@@ -75,9 +75,14 @@ function restoreUserSession() {
 }
 
 function clearUserSession() {
+    const hadUser = Boolean(sessionStorage.getItem(USER_KEY));
     sessionStorage.removeItem(USER_KEY);
     sessionStorage.removeItem(TAB_SESSION_KEY);
-    sessionStorage.removeItem("buscommand_pretrip_done");
+    // Only clear pretrip when ending a real session. Cold-boot invalid-session
+    // cleanup must not wipe QA harness / intentional pretrip seeds.
+    if (hadUser) {
+        sessionStorage.removeItem("buscommand_pretrip_done");
+    }
     localStorage.removeItem(ACTIVE_SESSION_KEY);
 }
 

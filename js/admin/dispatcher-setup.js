@@ -8,21 +8,28 @@ import { clearAllPasswordFields, clearAuthSetupFields } from "../auth/password-f
 import { openGroupHub } from "../dispatcher/group-hub.js";
 import { showAppLayout } from "../layout/shell.js";
 import { t } from "../ui/i18n.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 
 function exitImpersonation() {
-    // Remove read-only banner
-    const banner = document.getElementById("readonly-banner");
-    if (banner) banner.remove();
-    
+    // Remove read-only banner + any leftover SA overlays from inspect entry.
+    document.getElementById("readonly-banner")?.remove();
+    document.getElementById("ops-readonly-banner")?.classList.add("hidden");
+    ["sa-company-detail-modal", "sa-support-modal", "sa-delete-company-modal", "global-confirm-modal"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.add("hidden");
+        if (el.style) el.style.display = "none";
+    });
+
     window.currentUser = {
         role: "superadmin",
-        name: t("role_superadmin"),
-        id: "superadmin"
+        name: "Super Admin",
+        id: "superadmin",
+        email: window.currentUser?.email || "sa@qa.local"
     };
     persistUserSession(window.currentUser);
     showAppLayout();
-    showToast(t("sa_returned_to_mode"));
+    showToast(t("sa_returned_to_mode") || "Returned to Super Admin.");
 }
 
 function saveNewDispatcherPassword() {
@@ -94,7 +101,7 @@ function populateGroupSetupSelect(dispId) {
 }
 
 function createDispatcherGroup() {
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         showToast(t("error_access_denied"), "error");
         return false;
     }

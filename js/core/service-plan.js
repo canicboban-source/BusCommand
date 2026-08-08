@@ -1,5 +1,5 @@
 import ApiClient from "./api-client.js";
-import { IS_DEMO_MODE } from "./runtime-config.js";
+import { USE_LOCAL_STATE } from "./runtime-config.js";
 import { inferOperationalShiftType, persistCatalogForLine } from "./line-shift-catalog.js";
 
 function servicePlanToCatalog(plan, groupId = plan?.groupId) {
@@ -54,7 +54,7 @@ function findDemoPlan(groupId) {
 async function loadActiveServicePlanForLine(groupId) {
     const targetGroupId = String(groupId || "").trim();
     if (!targetGroupId) return null;
-    if (IS_DEMO_MODE) {
+    if (USE_LOCAL_STATE) {
         const plan = findDemoPlan(targetGroupId);
         if (plan) applyServicePlanToCatalog(plan, targetGroupId);
         return plan;

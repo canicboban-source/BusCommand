@@ -5,7 +5,7 @@ import { msgText } from "../core/message-text.js";
 import { markMessageAsRead, renderDriverMessages } from "./messages-inbox.js";
 import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 
 const archivePending = new Set();
 
@@ -137,7 +137,7 @@ async function archiveMessage(id) {
     if (!msg || !messageTargetsCurrentDriver(msg)) return;
     archivePending.add(id);
     try {
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             const result = await ApiClient.archiveDriverMessage(id);
             if (!result.success) {
                 showToast(result.error || t("driver_message_archive_failed"), "error");

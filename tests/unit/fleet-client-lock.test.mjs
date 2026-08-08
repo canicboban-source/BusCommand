@@ -21,20 +21,20 @@ test("fleet writes stay server-owned; buses use narrow APIs and routes remain lo
   assert.match(busesBlock, /allow write: if false/);
   assert.match(routesBlock, /allow write: if false/);
 
-  assert.match(fleet, /IS_DEMO_MODE/);
+  assert.match(fleet, /USE_LOCAL_STATE/);
   assert.match(fleet, /ApiClient\.createStaffBus/);
   assert.match(fleet, /ApiClient\.setStaffBusActive/);
-  assert.match(fleet, /function addRoute\(event\) \{[\s\S]*?if \(!IS_DEMO_MODE\)/);
-  assert.match(fleet, /function deleteRoute\(id\) \{[\s\S]*?if \(!IS_DEMO_MODE\)/);
+  assert.match(fleet, /function addRoute\(event\) \{[\s\S]*?if \(!USE_LOCAL_STATE\)/);
+  assert.match(fleet, /function deleteRoute\(id\) \{[\s\S]*?if \(!USE_LOCAL_STATE\)/);
 
   assert.match(
     map,
-    /function startGpsSimulation\(\) \{\s*if \(!IS_DEMO_MODE \|\| mapState\.gpsSimulationInterval\) return;/,
+    /function startGpsSimulation\(\) \{\s*if \(!USE_LOCAL_STATE \|\| mapState\.gpsSimulationInterval\) return;/,
     "GPS simulation must stop immediately outside explicit demo mode"
   );
   assert.match(
     map,
-    /const coords = IS_DEMO_MODE \? demoPosition\?\.coords : liveCoordinates\(driver\);/,
+    /const coords = USE_LOCAL_STATE \? demoPosition\?\.coords : liveCoordinates\(driver\);/,
     "production map markers must use authenticated live coordinates, never route simulation"
   );
   assert.match(

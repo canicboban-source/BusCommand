@@ -1,5 +1,5 @@
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { canRunCompanyAdminAction } from "../core/ui-permissions.js";
 import { showToast } from "../core/utils.js";
@@ -223,7 +223,7 @@ async function saveCompanyBrandingDraft(draft) {
     if (!validated.valid) return { success: false, error: t("ca_branding_fix_errors"), errors: validated.errors };
 
     let branding = validated.value;
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         const companyId = window.currentUser?.companyId;
         if (!companyId) return { success: false, error: t("ca_branding_company_missing"), errors: {} };
         const result = await ApiClient.updateCompanyBranding(companyId, branding);

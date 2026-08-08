@@ -5,7 +5,7 @@ const { seedDemoState, loginDispatcher } = require("./helpers.js");
 test.describe("Line 310 / Group Hub", () => {
   test("dispatcher opens Group Hub for line 310", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openGroupHub("101"));
@@ -17,7 +17,7 @@ test.describe("Line 310 / Group Hub", () => {
 
   test("Group Hub navigates to daily plan and back", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openGroupHub("101"));
@@ -33,12 +33,12 @@ test.describe("Line 310 / Group Hub", () => {
   test("Group Hub shows import step for empty line", async ({ page }) => {
     const emptyLineState = {
       ...(require("./helpers.js").minimalDemoState()),
-      groups: [{ id: "310", name: "310", color: "#2DD4BF", active: true, companyId: "demo" }],
+      groups: [{ id: "310", name: "310", color: "#2DD4BF", active: true, companyId: "qa-local" }],
       drivers: [],
       buses: []
     };
     await seedDemoState(page, emptyLineState);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openGroupHub("310"));

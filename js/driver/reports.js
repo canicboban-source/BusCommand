@@ -6,7 +6,7 @@ import { formatDate } from "../maps/helpers.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import {
     enqueueOfflineWrite,
     isProbablyOfflineError,
@@ -31,7 +31,7 @@ async function persistReport(formId, payload, localReport) {
     if (pendingForms.has(formId)) return false;
     pendingForms.add(formId);
     try {
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             const idempotencyKey = payload.idempotencyKey || newIdempotencyKey();
             const body = {
                 ...payload,
@@ -81,7 +81,7 @@ async function persistReport(formId, payload, localReport) {
         }
         if (!Array.isArray(window.state.reports)) window.state.reports = [];
         window.state.reports.unshift(localReport);
-        if (IS_DEMO_MODE) saveState();
+        if (USE_LOCAL_STATE) saveState();
         return true;
     } finally {
         pendingForms.delete(formId);
@@ -204,7 +204,7 @@ async function submitLostItem(event) {
     };
     pendingForms.add("lost-item-form");
     try {
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             const idempotencyKey = newIdempotencyKey();
             const body = {
                 type, location, description, bus: identity.bus,
@@ -267,7 +267,7 @@ async function submitLostItem(event) {
         }
         if (!Array.isArray(window.state.lostItems)) window.state.lostItems = [];
         window.state.lostItems.unshift(item);
-        if (IS_DEMO_MODE) saveState();
+        if (USE_LOCAL_STATE) saveState();
         document.getElementById("lost-item-form")?.reset();
         showToast(t("js_alert_lost_sent"), "success");
         switchSection("driver-dashboard");
@@ -306,7 +306,7 @@ function submitVacationRequest(event) {
         if (pendingForms.has("vacation-form")) return;
         pendingForms.add("vacation-form");
         try {
-            if (!IS_DEMO_MODE) {
+            if (!USE_LOCAL_STATE) {
                 if (typeof navigator !== "undefined" && navigator.onLine === false) {
                     showToast(t("driver_critical_needs_network"), "error");
                     return;
@@ -330,7 +330,7 @@ function submitVacationRequest(event) {
             }
             if (!Array.isArray(window.state.vacations)) window.state.vacations = [];
             window.state.vacations.unshift(request);
-            if (IS_DEMO_MODE) saveState();
+            if (USE_LOCAL_STATE) saveState();
             document.getElementById("vacation-form")?.reset();
             showToast(t("js_alert_vacation_sent"), "success");
             renderDriverVacationHistory();

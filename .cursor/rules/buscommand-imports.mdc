@@ -1,0 +1,31 @@
+---
+description: CA catalog vs Dispo monthly import contracts and parsers
+globs: js/imports/**/*,js/dispatcher/plan-import.js,js/maps/schedule-import-utils.js,js/core/office-parsers.js,server/**/*import*,server/service-plans.js,server/validation.js
+alwaysApply: false
+---
+
+# Import contracts
+
+## CA — service plan / V66 catalog
+
+Flow: `upload → validate → preview → confirm → atomic logical commit`
+
+- Only CA starts and confirms catalog import.
+- Preview must not mutate canonical state.
+- Confirm re-checks authz, tenant, integrity, revision.
+- One bad row ⇒ **no** business data from that import is success.
+- UI success only after server confirms complete result; retry must not duplicate.
+- Prefer existing staged→activate catalog mechanism (`D7`); do not invent a second SoT.
+
+## Dispo — monthly driver plans
+
+- Parse real Austrian / BusCommand formats: structured Excel (`parseDienstplanSheet` / Detaljno), long-form CSV, loose text, OCR images when already wired.
+- Scope drivers to hub/assigned groups; match by **name → driverId**, never EID in Dispo UI.
+- Prefer existing `js/imports/monthly-plan-excel.js` + `js/dispatcher/plan-import.js` paths over new parallel parsers.
+- Safe Downloads/fixtures only — never ingest medical/legal PDFs or Firebase admin JSON.
+
+## Shared
+
+- Exact field/row errors without leaking other tenants.
+- Audit outcomes per existing audit contract.
+- No new collections/fields/dependencies without owner approval.

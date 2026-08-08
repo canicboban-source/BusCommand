@@ -1,19 +1,20 @@
 // BusCommand — jedan panel „Zahteva pažnju“: problem + rešenje na istom mestu
 import { getVisibleDrivers, showToast, escapeHtml, todayDateStr } from "../core/utils.js";
-import { getShiftForDriverDate, setShiftForDriverDate } from "../core/shift-plan.js";
+import { getShiftForDriverDate, setShiftForDriverDate, getDriverDutySummary, getDailyPlanForDate } from "../core/shift-plan.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { t } from "../ui/i18n.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import {
     isActiveReport,
     reportKind,
     scopedDispatcherReports,
     sortReportsForOperations
 } from "./report-model.js";
-import { persistShift } from "./shifts.js";
+import { persistShift, openShiftCell } from "./shifts.js";
 import { ApiClient } from "../core/api-client.js";
 import { saveState } from "../core/state.js";
 import { busHasGroup } from "../data/bus-group-membership.js";
+import { busIsAssignable, normalizeBusGarage } from "../data/bus-ops.js";
 import { listAssignableCatalogCodes, ensureShiftCatalogForEdit } from "../core/line-shift-catalog.js";
 import { getGroupById } from "../data/groups.js";
 import { driverKnowsGroup, normalizeKnownGroupIds } from "../data/driver-known-groups.js";
@@ -62,7 +63,7 @@ function visibleOperationalReports() {
         dispatchers: window.state.dispatchers,
         currentUser: window.currentUser,
         activeGroupId: window.state.activeGroupFilter || "",
-        demo: IS_DEMO_MODE
+        demo: USE_LOCAL_STATE
     })).filter(isActiveReport);
 }
 
@@ -135,23 +136,30 @@ function freeBusPools(groupId, dateStr, excludeDriverId, keepBus = "") {
     const company = [];
     const otherGroups = [];
     for (const bus of (window.state.buses || [])) {
-        if (bus.active === false) continue;
+        if (!busIsAssignable(bus) && String(bus.number || "") !== String(keepBus || "")) continue;
         const number = String(bus.number || "");
         if (!number) continue;
         if (used.has(number) && number !== String(keepBus || "")) continue;
         const groups = (bus.groupIds || [bus.groupId || bus.lineId].filter(Boolean)).map(String);
         const inTarget = target && busHasGroup(bus, target);
         const unassigned = groups.length === 0;
-        const label = (!inTarget && groups[0]) ? `Bus ${number} · ${groupLabel(groups[0])}` : `Bus ${number}`;
-        const row = { number, label, bus };
+        const garage = normalizeBusGarage(bus);
+        const parts = [`Bus ${number}`];
+        if (!inTarget && groups[0]) parts.push(groupLabel(groups[0]));
+        if (garage) parts.push(garage);
+        const row = { number, label: parts.join(" · "), garage, bus };
         if (inTarget) same.push(row);
         else if (unassigned) company.push(row);
         else otherGroups.push(row);
     }
-    const sortNum = (a, b) => String(a.number).localeCompare(String(b.number), undefined, { numeric: true });
-    same.sort(sortNum);
-    company.sort(sortNum);
-    otherGroups.sort(sortNum);
+    const sortPool = (a, b) => {
+        const g = String(a.garage || "").localeCompare(String(b.garage || ""), undefined, { sensitivity: "base" });
+        if (g) return g;
+        return String(a.number).localeCompare(String(b.number), undefined, { numeric: true });
+    };
+    same.sort(sortPool);
+    company.sort(sortPool);
+    otherGroups.sort(sortPool);
     return { same, company, otherGroups, all: [...same, ...company, ...otherGroups] };
 }
 
@@ -334,8 +342,91 @@ function collectOpsAttentionItems() {
     return items.sort((a, b) => (rank[a.severity] ?? 9) - (rank[b.severity] ?? 9));
 }
 
+/** Soft plan gaps (uncovered drivers / empty slots) as Needs-attention cards with solutions. */
+function collectPlanGapAttentionItems(groupId = null, dateStr = null) {
+    const today = dateStr || todayDateStr();
+    const scope = groupId || window.state?.activeGroupHubId || window.state?.activeGroupFilter || "";
+    const items = [];
+
+    getVisibleDrivers().forEach((driver) => {
+        if (driver.active === false) return;
+        const gid = driver.groupId || driver.lineId || "";
+        if (scope && gid && String(gid) !== String(scope)) return;
+        const duty = getDriverDutySummary(driver.name, today);
+        const type = duty?.shift?.type;
+        if (duty?.shift && type !== "off" && type !== "clear") return;
+        const id = driverUid(driver) || driver.name;
+        items.push({
+            id: `gap:driver:${id}`,
+            kind: "plan_gap_driver",
+            severity: "warning",
+            driverId: id,
+            driverName: driver.name,
+            groupId: gid || scope,
+            date: today,
+            title: t("ops_plan_gap_driver") || "Nepokriven vozač",
+            summary: t("ops_attn_gap_driver_summary", { driver: driver.name })
+                || `${driver.name} nema smenu za danas — dodelite smenu ili otvorite dnevni plan.`
+        });
+    });
+
+    const prevHub = window.state?.activeGroupHubId;
+    const prevFilter = window.state?.activeGroupFilter;
+    let slots = [];
+    try {
+        if (scope && window.state) {
+            window.state.activeGroupHubId = scope;
+            window.state.activeGroupFilter = scope;
+        }
+        slots = (getDailyPlanForDate(today).slots || []).filter((slot) =>
+            slot && !String(slot.driverName || "").trim()
+        );
+    } finally {
+        if (window.state) {
+            window.state.activeGroupHubId = prevHub;
+            window.state.activeGroupFilter = prevFilter;
+        }
+    }
+
+    slots.slice(0, 12).forEach((slot, index) => {
+        const code = String(slot.code || slot.name || `slot-${index}`);
+        items.push({
+            id: `gap:slot:${code}`,
+            kind: "plan_gap_slot",
+            severity: "warning",
+            groupId: scope,
+            date: today,
+            dutyCode: code,
+            title: t("ops_plan_gap_slot") || "Prazan slot u planu",
+            summary: t("ops_attn_gap_slot_summary", { code })
+                || `Slot ${code} nema vozača — otvorite dnevni plan i dodelite pokriće.`
+        });
+    });
+
+    return items;
+}
+
+/** Real attention + plan-gap cards (one list for the solutions panel). */
+function collectAllAttentionItems(groupId = null, dateStr = null) {
+    const real = collectOpsAttentionItems();
+    const gaps = collectPlanGapAttentionItems(groupId, dateStr);
+    const seen = new Set(real.map((row) => row.id));
+    const merged = real.slice();
+    for (const gap of gaps) {
+        if (seen.has(gap.id)) continue;
+        seen.add(gap.id);
+        merged.push(gap);
+    }
+    return merged;
+}
+
 function ensureOpsAttentionPanel() {
     let layer = document.getElementById("ops-attention-panel");
+    const needsRebuild = layer && !layer.querySelector("#ops-attention-nav");
+    if (layer && needsRebuild) {
+        layer.remove();
+        layer = null;
+    }
     if (layer) return layer;
     layer = document.createElement("div");
     layer.id = "ops-attention-panel";
@@ -356,12 +447,27 @@ function ensureOpsAttentionPanel() {
                     <i data-lucide="x"></i>
                 </button>
             </header>
-            <div id="ops-attention-list" class="ops-attention-list"></div>
+            <div class="ops-attention-body">
+                <nav id="ops-attention-nav" class="ops-attention-nav" aria-label="${escapeHtml(t("ops_attn_title") || "Needs attention")}"></nav>
+                <div id="ops-attention-detail" class="ops-attention-detail">
+                    <div id="ops-attention-list" class="ops-attention-list"></div>
+                </div>
+            </div>
         </aside>`;
     document.body.appendChild(layer);
     layer.addEventListener("click", (event) => {
         if (event.target === layer) closeOpsAttentionPanel();
     });
+    if (!layer.dataset.escBound) {
+        layer.dataset.escBound = "1";
+        document.addEventListener("keydown", (event) => {
+            if (event.key !== "Escape") return;
+            const open = document.getElementById("ops-attention-panel");
+            if (!open || open.classList.contains("hidden")) return;
+            event.preventDefault();
+            closeOpsAttentionPanel();
+        });
+    }
     return layer;
 }
 
@@ -472,10 +578,27 @@ function renderAttentionCard(item) {
             <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id])}>
                 <i data-lucide="check"></i> ${escapeHtml(t("ops_attn_apply") || "Zatvori prijavu")}
             </button>`;
+    } else if (item.kind === "plan_gap_driver") {
+        solution = `
+            <p class="ops-attention-soft">${escapeHtml(t("ops_attn_gap_driver_hint") || "Rešenje: dodelite smenu ovom vozaču ili otvorite dnevni plan grupe.")}</p>
+            <div class="ops-attention-actions">
+                <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id, "assign"])}>
+                    <i data-lucide="user-plus"></i> ${escapeHtml(t("ops_attn_gap_assign") || "Dodeli smenu")}
+                </button>
+                <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id, "daily"])}>
+                    <i data-lucide="calendar-days"></i> ${escapeHtml(t("ops_attn_gap_open_daily") || "Otvori dnevni plan")}
+                </button>
+            </div>`;
+    } else if (item.kind === "plan_gap_slot") {
+        solution = `
+            <p class="ops-attention-soft">${escapeHtml(t("ops_attn_gap_slot_hint") || "Rešenje: otvorite dnevni plan i dodelite vozača na ovaj slot.")}</p>
+            <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id, "daily"])}>
+                <i data-lucide="calendar-days"></i> ${escapeHtml(t("ops_attn_gap_open_daily") || "Otvori dnevni plan")}
+            </button>`;
     } else {
         solution = `
             <p class="ops-attention-soft">${escapeHtml(t("ops_attn_confirm_hint") || "Potvrda još nije stigla — proverite poruke ili sačekajte odgovor vozača.")}</p>
-            <button type="button" class="btn-secondary ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id])}>
+            <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id])}>
                 <i data-lucide="message-circle"></i> ${escapeHtml(t("ops_attn_open_messages") || "Otvori poruke")}
             </button>`;
     }
@@ -484,7 +607,9 @@ function renderAttentionCard(item) {
         <article class="ops-attention-card ${severity}" data-attn-id="${escapeHtml(item.id)}" id="ops-attn-card-${sid}">
             <div class="ops-attention-card-top">
                 <span class="ops-attention-badge">${escapeHtml(item.title)}</span>
-                <span class="ops-attention-sev">${escapeHtml(item.severity === "critical" ? (t("sev_critical") || "Kritično") : (t("sev_warning") || "Upozorenje"))}</span>
+                <span class="ops-attention-sev">${escapeHtml(item.severity === "critical"
+                    ? (t("ops_attn_sev_critical") || "Critical")
+                    : (t("ops_attn_sev_warning") || "Warning"))}</span>
             </div>
             <p class="ops-attention-meta">${escapeHtml(meta)}</p>
             <p class="ops-attention-summary">${escapeHtml(item.summary || "")}</p>
@@ -499,34 +624,72 @@ function renderAttentionCard(item) {
 function paintOpsAttentionPanel(items) {
     const layer = ensureOpsAttentionPanel();
     const list = layer.querySelector("#ops-attention-list");
+    const nav = layer.querySelector("#ops-attention-nav");
     const subtitle = layer.querySelector("#ops-attention-subtitle");
-    if (subtitle) {
-        subtitle.textContent = items.length
-            ? (t("ops_attn_subtitle", { count: items.length }) || `${items.length} stavki — rešite ih ovde, bez skakanja po panelima.`)
-            : (t("ops_attn_empty") || "Trenutno nema stavki koje zahtevaju pažnju.");
-    }
-    if (!list) return;
-    list.innerHTML = items.length
-        ? items.map(renderAttentionCard).join("")
-        : `<div class="ops-attention-empty">${escapeHtml(t("ops_attn_empty") || "Sve je u redu.")}</div>`;
-
-    if (_focusItemId) {
-        const card = list.querySelector(`[data-attn-id="${_focusItemId.replace(/"/g, "")}"]`);
-        if (card) {
-            card.classList.add("is-focused");
-            card.scrollIntoView({ block: "nearest", behavior: "smooth" });
-            const firstControl = card.querySelector("select, textarea, button.ops-attention-apply");
-            setTimeout(() => firstControl?.focus(), 0);
+    if (!items.length) {
+        if (subtitle) subtitle.textContent = "";
+        if (nav) nav.innerHTML = "";
+        if (list) {
+            list.innerHTML = `<div class="ops-attention-empty">${escapeHtml(t("ops_attn_empty") || "Trenutno nema stavki koje zahtevaju pažnju.")}</div>`;
         }
+        if (typeof lucide !== "undefined") lucide.createIcons();
+        return;
+    }
+
+    if (!_focusItemId || !items.some((row) => row.id === _focusItemId)) {
+        _focusItemId = items[0].id;
+    }
+    const focusIndex = Math.max(0, items.findIndex((row) => row.id === _focusItemId));
+    const active = items[focusIndex] || items[0];
+
+    if (subtitle) {
+        subtitle.textContent = t("ops_attn_progress", {
+            current: focusIndex + 1,
+            total: items.length
+        }) || `${focusIndex + 1} of ${items.length}`;
+    }
+
+    if (nav) {
+        nav.innerHTML = items.map((item, index) => {
+            const sev = item.severity === "critical" ? "is-critical" : "is-warning";
+            const activeClass = item.id === active.id ? "is-active" : "";
+            return `
+                <button type="button" class="ops-attention-nav-item ${sev} ${activeClass}"
+                    ${actionAttr("focusOpsAttentionItem", [item.id])}>
+                    <strong>${escapeHtml(item.title || item.kind || `#${index + 1}`)}</strong>
+                    <span>${escapeHtml(item.driverName || item.dutyCode || item.summary || "")}</span>
+                </button>`;
+        }).join("");
+    }
+
+    if (!list) return;
+    list.innerHTML = renderAttentionCard(active);
+    const card = list.querySelector(`[data-attn-id="${String(active.id).replace(/"/g, "")}"]`);
+    if (card) {
+        card.classList.add("is-focused");
+        const firstControl = card.querySelector("select, textarea, button.ops-attention-apply");
+        setTimeout(() => firstControl?.focus(), 0);
     }
     if (typeof lucide !== "undefined") lucide.createIcons();
+}
+
+function focusOpsAttentionItem(itemId = "") {
+    if (itemId && typeof itemId === "object") itemId = "";
+    const id = String(itemId || "");
+    if (!id) return;
+    _focusItemId = id;
+    paintOpsAttentionPanel(collectAllAttentionItems());
 }
 
 function openOpsAttentionPanel(focusItemId = "") {
     // data-action with [] passes the click event as the first arg.
     if (focusItemId && typeof focusItemId === "object") focusItemId = "";
     _focusItemId = String(focusItemId || "");
-    const items = collectOpsAttentionItems();
+    const items = collectAllAttentionItems();
+    if (!items.length && !_focusItemId) {
+        showToast(t("ops_attn_empty") || "Nema otvorenih stavki.", "info");
+        return false;
+    }
     const layer = ensureOpsAttentionPanel();
     paintOpsAttentionPanel(items);
     layer.classList.remove("hidden");
@@ -537,7 +700,8 @@ function openOpsAttentionPanel(focusItemId = "") {
 }
 
 function closeOpsAttentionPanel() {
-    if (_pendingApply) return;
+    // Always allow dismiss — pending apply should not trap the dispatcher.
+    _pendingApply = false;
     const layer = document.getElementById("ops-attention-panel");
     if (!layer) return;
     layer.classList.add("hidden");
@@ -550,12 +714,16 @@ function closeOpsAttentionPanel() {
 function refreshOpsAttentionPanelIfOpen() {
     const layer = document.getElementById("ops-attention-panel");
     if (!layer || layer.classList.contains("hidden")) return;
-    const items = collectOpsAttentionItems();
-    paintOpsAttentionPanel(items);
+    // Include soft plan-gap cards — closing on "real-only" empty made gap panels
+    // flash open then vanish when Ops/dashboard refreshed (~1s later).
+    const items = collectAllAttentionItems();
     if (!items.length) {
-        showToast(t("ops_attn_all_clear") || "Sve stavke su rešene.", "success");
+        paintOpsAttentionPanel([]);
         closeOpsAttentionPanel();
+        showToast(t("ops_attn_all_clear") || "Sve stavke su rešene.", "success");
+        return;
     }
+    paintOpsAttentionPanel(items);
 }
 
 function cardField(card, field) {
@@ -578,7 +746,7 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
     const replacementShift = getShiftForDriverDate(replacement.name, report.date);
     if (statusEl) statusEl.textContent = t("report_resolving") || "Rešavanje…";
     let result;
-    if (IS_DEMO_MODE) {
+    if (USE_LOCAL_STATE) {
         result = {
             success: true,
             report: {
@@ -593,10 +761,10 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
             },
             shift: {
                 type: report.shiftType || originalShift?.type || "morning",
-                name: report.shiftName || originalShift?.name || "",
-                routeCode: originalShift?.routeCode || report.shiftName || "",
-                start: originalShift?.start || null,
-                end: originalShift?.end || null,
+                name: report.shiftName || originalShift?.name || report.routeCode || "",
+                routeCode: report.routeCode || originalShift?.routeCode || report.shiftName || "",
+                start: report.start || originalShift?.start || null,
+                end: report.end || originalShift?.end || null,
                 bus: replacementBus,
                 revision: Number(replacementShift?.revision || 0) + 1
             }
@@ -619,11 +787,11 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
     const assigned = result.shift || {};
     setShiftForDriverDate(replacement.name, report.date, {
         type: assigned.type || report.shiftType || originalShift?.type || "morning",
-        name: assigned.name || report.shiftName || originalShift?.name || "",
+        name: assigned.name || report.shiftName || originalShift?.name || report.routeCode || "",
         bus: assigned.bus || replacementBus,
-        routeCode: assigned.routeCode || originalShift?.routeCode || "",
-        start: assigned.start || originalShift?.start || null,
-        end: assigned.end || originalShift?.end || null,
+        routeCode: assigned.routeCode || report.routeCode || originalShift?.routeCode || "",
+        start: assigned.start || report.start || originalShift?.start || null,
+        end: assigned.end || report.end || originalShift?.end || null,
         revision: Number.isInteger(assigned.revision) ? assigned.revision : Number(replacementShift?.revision || 0) + 1
     });
     Object.assign(report, result.report || {}, {
@@ -631,18 +799,36 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
         resolvedAt: result.report?.resolvedAt || new Date().toISOString(),
         resolvedBy: result.report?.resolvedBy || window.currentUser?.uid || window.currentUser?.id
     });
-    if (IS_DEMO_MODE) saveState();
+    if (USE_LOCAL_STATE) saveState();
     showToast(t("ops_resolver_success", { driver: replacement.name, bus: replacementBus }), "success");
     notifyOpsChanged({ date: report.date });
     return true;
 }
 
-async function applyOpsAttentionFix(itemId) {
-    const items = collectOpsAttentionItems();
+async function applyOpsAttentionFix(itemId, fixAction = "") {
+    const items = collectAllAttentionItems();
     const item = items.find(row => row.id === itemId);
     const card = document.querySelector(`[data-attn-id="${String(itemId).replace(/"/g, "")}"]`);
     const statusEl = card?.querySelector("[data-attn-status]");
     if (!item || !card) return;
+
+    if (item.kind === "plan_gap_driver" || item.kind === "plan_gap_slot") {
+        const action = String(fixAction || "daily");
+        closeOpsAttentionPanel();
+        if (action === "assign" && item.driverName) {
+            openShiftCell(item.driverName, item.date || todayDateStr());
+            return;
+        }
+        const groupId = item.groupId || window.state?.activeGroupHubId || window.state?.activeGroupFilter;
+        if (groupId) {
+            const { openDailyPlanForGroup } = await import("./group-hub.js");
+            await openDailyPlanForGroup(groupId);
+        } else {
+            switchSection("dispatcher-daily-plan-pick");
+        }
+        return;
+    }
+
     if (_pendingApply) return;
     _pendingApply = true;
     const applyBtn = card.querySelector(".ops-attention-apply");
@@ -759,13 +945,17 @@ async function applyOpsAttentionFix(itemId) {
 function wireOpsPlanHealthAttention() {
     const health = document.getElementById("ops-plan-health");
     if (!health || health.dataset.attnBound === "true") return;
+    // Shared plan-health banner owns click → stacked problems when present.
+    if (health.querySelector("[data-plan-health-problems]") || health.dataset.planHealthBound === "1") {
+        return;
+    }
     health.dataset.attnBound = "true";
     health.addEventListener("click", () => {
-        if (!health.classList.contains("is-attention")) return;
+        if (!health.classList.contains("is-attention") && !health.classList.contains("is-plan-gap")) return;
         openOpsAttentionPanel();
     });
     health.addEventListener("keydown", (event) => {
-        if (!health.classList.contains("is-attention")) return;
+        if (!health.classList.contains("is-attention") && !health.classList.contains("is-plan-gap")) return;
         if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             openOpsAttentionPanel();
@@ -791,8 +981,11 @@ function syncOpsPlanHealthAttentionState(needsAttention, count) {
 
 export {
     collectOpsAttentionItems,
+    collectPlanGapAttentionItems,
+    collectAllAttentionItems,
     openOpsAttentionPanel,
     closeOpsAttentionPanel,
+    focusOpsAttentionItem,
     refreshOpsAttentionPanelIfOpen,
     applyOpsAttentionFix,
     applyCoverageResolution,

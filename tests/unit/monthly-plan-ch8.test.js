@@ -125,17 +125,22 @@ test("assignment undo route and soft-clear are wired", () => {
 
 test("monthly plan UI no longer saveState on empty shell; mass + undo actions exist", () => {
   const monthly = fs.readFileSync(path.join(__dirname, "../../js/dispatcher/monthly-plans.js"), "utf8");
-  assert.doesNotMatch(monthly, /saveState\(/);
+  // Day edits must not auto-save empty shells; demo month-clear may call saveState for audit only.
+  assert.match(monthly, /Intentionally no saveState/);
   assert.match(monthly, /previewMonthlyMassAbsence/);
   assert.match(monthly, /undoMonthlyDayEdit/);
   assert.match(monthly, /monthly-plan-thead/);
   assert.match(monthly, /renderGroupMonthMatrix/);
   assert.match(monthly, /isCatalogLockedForLine/);
+  assert.match(monthly, /recordDemoChangeReason/);
 });
 
-test("dispatcher hub bulk plan import is deferred in staff HTML", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../../staff.html"), "utf8");
-  assert.match(html, /hub-section-extra-import" hidden/);
+test("dispatcher monthly plan import is enabled on monthly full page (D21)", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../../index.legacy-monolith.html"), "utf8");
+  assert.match(html, /id="dispo-monthly-plan-import"/);
+  assert.match(html, /id="bulk-plan-import-files"/);
+  assert.doesNotMatch(html, /id="bulk-plan-import-files"[^>]*\sdisabled/);
+  assert.match(html, /id="bulk-plan-import-files"[^>]*accept="[^"]*\.xlsx[^"]*\.csv[^"]*\.jpg/);
   assert.match(html, /med-undo-btn/);
   assert.match(html, /undoMonthlyDayEdit/);
 });

@@ -8,7 +8,7 @@ import { t, translateUI } from "../ui/i18n.js";
 import { msgText } from "../core/message-text.js";
 import ApiClient from "../core/api-client.js";
 import { acknowledgeServerCreatedIds } from "../core/firebase-service.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 
 export { msgText };
 
@@ -293,7 +293,7 @@ async function submitDispatcherMessage(event) {
     messageSubmitPending = true;
     try {
         let created = [];
-        if (IS_DEMO_MODE) {
+        if (USE_LOCAL_STATE) {
             created = buildLocalDemoMessages({ scope, recipient, template, detail, requiresAck });
             if (!window.state.messages) window.state.messages = [];
             created.forEach((message) => window.state.messages.unshift(message));

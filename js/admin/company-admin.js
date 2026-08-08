@@ -1,7 +1,7 @@
 // BusCommand ESM v9.5 — Company Admin: pregled firme, licence, grupe
 import { escapeHtml, showToast } from "../core/utils.js";
 import { checkCompanyLicense } from "../core/license.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { companyNeedsBrandingSetup, renderCompanyAdminBranding } from "./company-admin-branding.js";
@@ -19,7 +19,7 @@ import { canViewOperationalRoster } from "../core/ui-permissions.js";
 let _supportSessionCache = null;
 
 async function refreshSupportSessionBadge() {
-    if (IS_DEMO_MODE) {
+    if (USE_LOCAL_STATE) {
         _supportSessionCache = null;
         return;
     }
@@ -247,11 +247,11 @@ async function renderCompanyAdminDashboard() {
 
     await refreshSupportSessionBadge();
 
-    const scope = getCompanyScope(window.state, window.currentUser, IS_DEMO_MODE);
+    const scope = getCompanyScope(window.state, window.currentUser, USE_LOCAL_STATE);
     const license = getCompanyLicenseInfo(scope.companyId, {
         licenseInfo: window._licenseInfo,
         state: window.state,
-        isDemoMode: IS_DEMO_MODE
+        isDemoMode: USE_LOCAL_STATE
     });
 
     const activePlanCount = new Set(
@@ -275,7 +275,7 @@ async function renderCompanyAdminDashboard() {
             renderLicenseCard(scope, getCompanyLicenseInfo(scope.companyId, {
                 licenseInfo: window._licenseInfo,
                 state: window.state,
-                isDemoMode: IS_DEMO_MODE
+                isDemoMode: USE_LOCAL_STATE
             }), { failed: !result });
             if (typeof lucide !== "undefined") lucide.createIcons();
         });

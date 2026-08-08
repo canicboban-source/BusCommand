@@ -42,7 +42,7 @@ test("team and onboarding share the same validated provisioning path without pro
   assert.match(team, /ApiClient\.createCompanyDispatcher/);
   assert.match(team, /ApiClient\.deleteCompanyDispatcher/);
   assert.match(team, /dispatcher\.active !== false/);
-  assert.match(team, /if \(IS_DEMO_MODE\) \{[\s\S]*?dispatcher\.password/);
+  assert.match(team, /if \(USE_LOCAL_STATE\) \{[\s\S]*?dispatcher\.password/);
   assert.doesNotMatch(team, /TEMP_RESET_PASSWORD|ChangeMe123/);
   assert.match(onboarding, /persistCompanyDispatcherDraft/);
   assert.doesNotMatch(onboarding, /window\.state\.dispatchers\.push/);

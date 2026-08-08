@@ -2,7 +2,7 @@
 
 import { getBaseState, getStateStorageKey, clearAllTenantStateCaches, applyUiLanguagePreference } from "./state.js";
 import { showToast } from "./utils.js";
-import { IS_DEMO_MODE } from "./runtime-config.js";
+import { USE_LOCAL_STATE } from "./runtime-config.js";
 import { t } from "../ui/i18n.js";
 import {
     EXPECTED_FIREBASE_PROJECT_ID,
@@ -24,7 +24,7 @@ import { checkSOSStatus } from "../maps/sos-siren.js";
 let db = null;
 
 function initializeFirebaseClient() {
-    if (IS_DEMO_MODE) return null;
+    if (USE_LOCAL_STATE) return null;
 
     const firebaseConfig = readFirebaseWebConfig();
     const validation = validateFirebaseWebConfig(firebaseConfig);
@@ -280,7 +280,7 @@ function _baselineFor(itemKey) {
 }
 
 async function logClientAuditEvent(companyId, action, details = {}) {
-    if (!companyId || IS_DEMO_MODE || action !== "state_sync") return;
+    if (!companyId || USE_LOCAL_STATE || action !== "state_sync") return;
     try {
         const result = await ApiClient.reportStateSync(details);
         if (!result.success) throw new Error(result.error || "Audit endpoint failed");
@@ -703,7 +703,7 @@ function showFirebaseStatus(status) {
 }
 
 async function initFirebase(companyId) {
-    if (IS_DEMO_MODE) return window.state;
+    if (USE_LOCAL_STATE) return window.state;
     if (!companyId || companyId === EXPECTED_FIREBASE_PROJECT_ID) {
         throw new Error("Confirmed tenant companyId is required before Firestore initialization.");
     }

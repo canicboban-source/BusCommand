@@ -18,7 +18,8 @@ desktop.ini
 .vscode/
 .idea/
 .claude/
-.cursor/
+# Ignore Cursor local state; keep committed project rules
+.cursor/*
 !.cursor/rules/
 !.cursor/rules/**
 *.swp

@@ -3,15 +3,17 @@ import { isReadOnly } from "./access.js";
 import { isFirebaseReady, saveStateToFirestore } from "./firebase-service.js";
 import { scheduleRefreshObservedSections } from "./state-observer.js";
 
-import { FRESH_STATE, DEMO_STATE } from "./constants.js";
+import { FRESH_STATE } from "./constants.js";
 import { migrateLegacyShiftCatalog } from "./line-shift-catalog.js";
-import { IS_DEMO_MODE } from "./runtime-config.js";
+import { USE_LOCAL_STATE } from "./runtime-config.js";
 
 const TENANT_STATE_PREFIX = "buscommand_state_";
 const PILOT_UI_LANGS = new Set(["de", "en", "sr", "hr"]);
 
 function getBaseState() {
-    return IS_DEMO_MODE ? DEMO_STATE : FRESH_STATE;
+    // Product and QA local-state both start from the same empty shell.
+    // Ephemeral QA entities are injected only by tests/e2e factories.
+    return FRESH_STATE;
 }
 
 /**
@@ -63,13 +65,13 @@ function applyUiLanguagePreference(preferred) {
 }
 
 function getStateStorageKey(companyId) {
-    const cid = companyId || (IS_DEMO_MODE ? "demo" : null);
+    const cid = companyId || (USE_LOCAL_STATE ? "qa-local" : null);
     if (!cid) return null;
-    return IS_DEMO_MODE ? "buscommand_demo_state_v3" : (TENANT_STATE_PREFIX + cid);
+    return TENANT_STATE_PREFIX + cid;
 }
 
 function resolveAuthenticatedCompanyId() {
-    return window.currentUser?.companyId || (IS_DEMO_MODE ? "demo" : null);
+    return window.currentUser?.companyId || (USE_LOCAL_STATE ? "qa-local" : null);
 }
 
 /** Remove one tenant's offline cache (logout / SA delete). */
@@ -110,14 +112,14 @@ function loadStateFromStorage(companyId) {
         applyUiLanguagePreference();
         return;
     }
-    const saved = IS_DEMO_MODE
+    const saved = USE_LOCAL_STATE
         ? (sessionStorage.getItem(key) || localStorage.getItem(key))
         : localStorage.getItem(key);
 
     if (saved) {
         try {
             window.state = { ...base, ...JSON.parse(saved) };
-            if (IS_DEMO_MODE) window.state.drivers = window.state.drivers || [];
+            if (USE_LOCAL_STATE) window.state.drivers = window.state.drivers || [];
             if (window.state.branding && window.state.branding.logo === undefined) window.state.branding.logo = null;
             if (!window.state.shiftCatalogs) window.state.shiftCatalogs = {};
             migrateLegacyShiftCatalog();
@@ -141,7 +143,7 @@ function saveState() {
     if (!key) return;
     const payload = JSON.stringify(window.state);
 
-    if (IS_DEMO_MODE) {
+    if (USE_LOCAL_STATE) {
         sessionStorage.setItem(key, payload);
         localStorage.setItem(key, payload);
     } else {

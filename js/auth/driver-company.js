@@ -1,5 +1,5 @@
 // BusCommand — resolve tenant for driver login (bootstrap only; never post-auth authority)
-import { COMPANY_ID, IS_DEMO_MODE } from "../core/runtime-config.js";
+import { COMPANY_ID, USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { STORAGE } from "../core/storage-keys.js";
 
 const COMPANY_ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -35,7 +35,11 @@ function rememberDriverCompany(companyId) {
  * Must not be used for authenticated API/state (claims / currentUser.companyId win after login).
  */
 function resolveDriverLoginCompanyId(explicitValue) {
-    if (IS_DEMO_MODE) return "demo";
+    if (USE_LOCAL_STATE) {
+        return normalizeCompanyId(explicitValue)
+            || normalizeCompanyId(COMPANY_ID)
+            || "qa-local";
+    }
     return normalizeCompanyId(explicitValue)
         || normalizeCompanyId(COMPANY_ID)
         || readRememberedDriverCompany();

@@ -6,6 +6,7 @@ function normalizeUiRole(role) {
 const CA_OPERATIONAL_VIEW_SECTIONS = new Set([
     "dispatcher-dashboard",
     "dispatcher-group-hub",
+    "dispatcher-vehicles",
     "dispatcher-daily-plan-full",
     "dispatcher-daily-plan-pick",
     "dispatcher-monthly-plans-full",

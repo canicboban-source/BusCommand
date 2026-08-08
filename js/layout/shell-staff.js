@@ -14,6 +14,7 @@ import { actionAttr } from "../core/action-delegate.js";
 import { canUseDriverOperationalUi } from "../auth/driver-access-gate.js";
 import { escapeHtml } from "../core/utils.js";
 import { updateTrialBadge } from "../core/license.js";
+import { startHeaderConnectionStatus } from "../ui/connection-status.js";
 
 export function showAppLayout() {
     if (!canUseDriverOperationalUi()) return false;
@@ -30,8 +31,14 @@ export function showAppLayout() {
     // Keep SA/CA/dispatcher UI in sync with language select (buscommand_lang),
     // even when tenant state merges would otherwise reset language to FRESH_STATE "en".
     applyUiLanguagePreference();
-    // Hide company trial countdown for Super Admin (platform owner).
+    // Phase 3: keep Trial/Demo chips suppressed; show tenant title + connection.
     updateTrialBadge();
+    startHeaderConnectionStatus();
+    const brandTitle = document.getElementById("app-branding-title");
+    if (brandTitle) {
+        const tenantName = String(window.state?.branding?.name || "").trim();
+        if (tenantName && role !== "superadmin") brandTitle.textContent = tenantName;
+    }
 
     clearAllSensitiveAuthFields();
 
@@ -118,5 +125,8 @@ export function showAppLayout() {
     }
 
     checkSOSStatus();
+    import("../dispatcher/help-support.js")
+        .then((mod) => mod.syncDispatcherHelpButton())
+        .catch(() => {});
     return true;
 }

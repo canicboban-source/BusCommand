@@ -24,7 +24,7 @@ test("staff SOS resolve and lost-item status are server-owned", async () => {
   assert.match(api, /resolveStaffSos/);
   assert.match(api, /setLostItemStatus/);
   assert.match(sos, /ApiClient\.resolveStaffSos/);
-  assert.match(sos, /if \(IS_DEMO_MODE\) saveState\(\)/);
+  assert.match(sos, /if \(USE_LOCAL_STATE\) saveState\(\)/);
   assert.match(lost, /ApiClient\.setLostItemStatus/);
   assert.match(lost, /setLostItemStatus/);
   assert.match(lost, /stays_on_bus/);

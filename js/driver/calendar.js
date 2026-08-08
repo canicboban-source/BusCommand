@@ -2,7 +2,7 @@
 import { getScheduleByKey, showToast } from "../core/utils.js";
 import { getShiftForDriverDate, getTomorrowDutySummary } from "../core/shift-plan.js";
 import { saveState } from "../core/state.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { t } from "../ui/i18n.js";
 import { driverWorkPolicy, confirmUpcomingShifts } from "./work-session.js";
 
@@ -114,7 +114,7 @@ function renderTomorrowShiftForDriver() {
     const driver = currentDriver();
     if (!container || !driver) return;
     container.replaceChildren();
-    const targets = !IS_DEMO_MODE ? (driverWorkPolicy()?.confirmationTargets || []) : [];
+    const targets = !USE_LOCAL_STATE ? (driverWorkPolicy()?.confirmationTargets || []) : [];
     if (targets.length) {
         const heading = document.createElement("strong");
         heading.textContent = t("upcoming_shifts_confirmation_title");
@@ -175,7 +175,7 @@ function renderTomorrowShiftForDriver() {
 
 async function confirmTomorrowShift(driverName) {
     if (!window.currentUser || window.currentUser.role !== "driver" || driverName !== window.currentUser.name) return;
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         await confirmUpcomingShifts();
         renderTomorrowShiftForDriver();
         return;

@@ -5,7 +5,8 @@ import {
   busHasGroup,
   buildNewBusGroups,
   normalizeGroupIds,
-  withAttachedGroup
+  withAttachedGroup,
+  withDetachedGroup
 } from "../../js/data/bus-group-membership.js";
 
 const require = createRequire(import.meta.url);
@@ -34,6 +35,17 @@ test("buildNewBusGroups seeds single membership", () => {
     groupId: "101",
     lineId: "101"
   });
+});
+
+test("withDetachedGroup removes membership without deleting bus", () => {
+  const next = withDetachedGroup(
+    { id: "b1", number: "91103", groupIds: ["101", "320"], groupId: "101", lineId: "101", active: true },
+    "101"
+  );
+  assert.deepEqual(next.groupIds, ["320"]);
+  assert.equal(next.groupId, "320");
+  assert.equal(busHasGroup(next, "101"), false);
+  assert.equal(next.active, true);
 });
 
 test("server CJS helpers stay aligned with ESM", () => {

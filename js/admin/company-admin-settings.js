@@ -1,6 +1,6 @@
 // BusCommand — Company Admin: headquarters, privacy and audited exports
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { runSingleSubmission } from "../core/submit-lock.js";
 import { canRunCompanyAdminAction } from "../core/ui-permissions.js";
@@ -11,6 +11,7 @@ import {
     timezoneForCountry,
     validateCompanySettingsDraft
 } from "./company-admin-settings-model.js";
+import { getCompanyLicenseInfo } from "./company-admin-overview-model.js";
 
 let savedSettings = null;
 let settingsCompanyId = null;
@@ -23,13 +24,13 @@ function currentCompanyId() {
 
 function stateProfileDraft() {
     const profile = window.state.profile || {};
-    const demoCountry = IS_DEMO_MODE ? "AT" : "";
+    const demoCountry = USE_LOCAL_STATE ? "AT" : "";
     const country = profile.country || demoCountry;
     return {
         country,
         timezone: profile.timezone || timezoneForCountry(country),
-        defaultLanguage: profile.defaultLanguage || (IS_DEMO_MODE ? window.state.language || "de" : ""),
-        contactEmail: profile.contactEmail || (IS_DEMO_MODE ? window.currentUser?.email || "" : "")
+        defaultLanguage: profile.defaultLanguage || (USE_LOCAL_STATE ? window.state.language || "de" : ""),
+        contactEmail: profile.contactEmail || (USE_LOCAL_STATE ? window.currentUser?.email || "" : "")
     };
 }
 
@@ -89,17 +90,25 @@ function writeDraftToForm(draft) {
 
 function renderLicenseFacts() {
     const settings = window.state.settings || {};
+    const companyId = currentCompanyId();
+    const license = getCompanyLicenseInfo(companyId, {
+        licenseInfo: window._licenseInfo,
+        state: window.state,
+        isDemoMode: USE_LOCAL_STATE
+    });
     const formatLimit = value => {
         const number = Number(value);
         return value !== null && value !== undefined && value !== "" && Number.isInteger(number) && number > 0
             ? String(number)
             : "—";
     };
+    const plan = settings.plan || (license.available ? license.plan : "") || "";
+    const status = settings.status || (license.available ? license.status : "") || "";
     const fields = {
-        "ca-settings-plan": settings.plan || t("ca_value_unavailable"),
-        "ca-settings-license-status": settings.status || t("ca_value_unavailable"),
-        "ca-settings-max-drivers": formatLimit(settings.maxDrivers),
-        "ca-settings-max-dispatchers": formatLimit(settings.maxDispatchers)
+        "ca-settings-plan": plan || t("ca_value_unavailable"),
+        "ca-settings-license-status": status || t("ca_value_unavailable"),
+        "ca-settings-max-drivers": formatLimit(settings.maxDrivers ?? license.maxDrivers),
+        "ca-settings-max-dispatchers": formatLimit(settings.maxDispatchers ?? license.maxDispatchers)
     };
     for (const [id, value] of Object.entries(fields)) {
         const element = document.getElementById(id);
@@ -150,12 +159,12 @@ async function saveCompanyProfileSettings() {
     const submission = await runSingleSubmission(button, t("ca_settings_saving"), async () => {
         renderSettingsSaveState("saving");
         try {
-            if (!IS_DEMO_MODE) {
+            if (!USE_LOCAL_STATE) {
                 const result = await ApiClient.updateCompanyProfileSettings(currentCompanyId(), validation.value);
                 if (!result.success) throw new Error(result.error || t("ca_settings_save_failed"));
             }
             window.state.profile = { ...(window.state.profile || {}), ...validation.value };
-            if (IS_DEMO_MODE) saveState();
+            if (USE_LOCAL_STATE) saveState();
             savedSettings = { ...validation.value };
             settingsDirty = false;
             renderSettingsSaveState("saved");
@@ -194,7 +203,7 @@ function renderCompanyAdminSettings() {
     renderSettingsSaveState();
 
     const demoTools = document.getElementById("ca-settings-demo-tools");
-    if (demoTools) demoTools.hidden = !IS_DEMO_MODE;
+    if (demoTools) demoTools.hidden = !USE_LOCAL_STATE;
     bindBeforeUnload();
     if (typeof lucide !== "undefined") lucide.createIcons();
 }

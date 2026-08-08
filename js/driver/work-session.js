@@ -5,7 +5,7 @@ import { stopDriverGpsTracking, configureDriverGpsGate } from "../maps/gps-track
 import { clearUserSession } from "../auth/login-session.js";
 import { showLoginScreen } from "../auth/login-ui.js";
 import { showToast } from "../core/utils.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { t } from "../ui/i18n.js";
 import { saveDriverOfflineSnapshot, clearDriverSensitiveCaches } from "./offline-snapshot.js";
 
@@ -19,7 +19,7 @@ function driverWorkPolicy() {
 }
 
 function isDriverWorkSessionActive() {
-    return IS_DEMO_MODE || (policy?.status === "active" && Date.now() < Date.parse(policy.notificationsUntil));
+    return USE_LOCAL_STATE || (policy?.status === "active" && Date.now() < Date.parse(policy.notificationsUntil));
 }
 
 function clearWorkTimers() {
@@ -80,7 +80,7 @@ function enterDriverRestMode() {
 }
 
 function enforceCurrentTime() {
-    if (!policy || IS_DEMO_MODE) return;
+    if (!policy || USE_LOCAL_STATE) return;
     const current = Date.now();
     if (current >= Date.parse(policy.sessionEndsAt)) {
         terminateDriverSession();
@@ -90,7 +90,7 @@ function enforceCurrentTime() {
 }
 
 function startDriverWorkSessionGuard() {
-    if (IS_DEMO_MODE || !policy) return;
+    if (USE_LOCAL_STATE || !policy) return;
     clearWorkTimers();
     const untilRest = Math.max(0, Date.parse(policy.notificationsUntil) - Date.now());
     const untilLogout = Math.max(0, Date.parse(policy.sessionEndsAt) - Date.now());
@@ -106,7 +106,7 @@ function startDriverWorkSessionGuard() {
 }
 
 async function prepareDriverWorkSession() {
-    if (IS_DEMO_MODE) return true;
+    if (USE_LOCAL_STATE) return true;
     const result = await ApiClient.getDriverWorkSession();
     if (!result.success || result.policy?.status !== "active") {
         policy = result.policy || null;
@@ -130,7 +130,7 @@ async function prepareDriverWorkSession() {
 }
 
 function driverLiveGpsEnabled() {
-    return IS_DEMO_MODE ? false : policy?.features?.liveGps === true;
+    return USE_LOCAL_STATE ? false : policy?.features?.liveGps === true;
 }
 
 async function confirmUpcomingShifts(dates = null) {

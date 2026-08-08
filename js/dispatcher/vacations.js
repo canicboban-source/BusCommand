@@ -5,7 +5,7 @@ import { formatDate } from "../maps/helpers.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { isOperationalReadOnly } from "../core/access.js";
 
 const pendingVacationActions = new Set();
@@ -78,14 +78,22 @@ function renderDispatcherVacations() {
         const row = tbody.insertRow();
         const driverCell = row.insertCell();
         const driver = document.createElement("strong");
-        driver.textContent = vacation.driver || "—";
+        const driverName = vacation.driver || vacation.driverName || "—";
+        driver.textContent = driverName;
         driverCell.appendChild(driver);
-        row.insertCell().textContent = t(vacation.type);
-        row.insertCell().textContent = `${formatDate(vacation.start)} - ${formatDate(vacation.end)}`;
+        const leaveType = vacation.type || "lt_vacation";
+        row.insertCell().textContent = t(leaveType) || leaveType;
+        const start = vacation.start || vacation.from || "";
+        const end = vacation.end || vacation.to || start;
+        row.insertCell().textContent = `${formatDate(start)} - ${formatDate(end)}`;
 
         const daysCell = row.insertCell();
         const days = document.createElement("strong");
-        days.textContent = `${vacation.days} ${t("table_days").toLowerCase()}`;
+        let dayCount = Number(vacation.days);
+        if (!Number.isFinite(dayCount) || dayCount <= 0) {
+            dayCount = start && end ? 1 : 0;
+        }
+        days.textContent = `${dayCount} ${t("table_days").toLowerCase()}`;
         daysCell.appendChild(days);
 
         const reasonCell = row.insertCell();
@@ -129,7 +137,7 @@ function handleVacation(id, status) {
             pendingVacationActions.add(id);
             renderDispatcherVacations();
             try {
-                if (!IS_DEMO_MODE) {
+                if (!USE_LOCAL_STATE) {
                     const result = await ApiClient.setVacationStatus(id, status);
                     if (!result.success) {
                         showToast(result.error || t("driver_vacation_review_failed"), "error");
@@ -137,7 +145,7 @@ function handleVacation(id, status) {
                     }
                 }
                 vacation.status = status;
-                if (IS_DEMO_MODE) saveState();
+                if (USE_LOCAL_STATE) saveState();
                 showToast(t("js_vacation_marked") + status.toUpperCase(), "success");
             } finally {
                 pendingVacationActions.delete(id);

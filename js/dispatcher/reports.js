@@ -1,7 +1,7 @@
 // BusCommand — dispatcher report lifecycle: active queue -> immutable resolved history
 import { actionAttr } from "../core/action-delegate.js";
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { escapeHtml, formatDateTime, showToast } from "../core/utils.js";
 import { t } from "../ui/i18n.js";
@@ -23,7 +23,7 @@ function visibleReports() {
         dispatchers: window.state.dispatchers,
         currentUser: window.currentUser,
         activeGroupId: window.state.activeGroupFilter || "",
-        demo: IS_DEMO_MODE
+        demo: USE_LOCAL_STATE
     }));
 }
 
@@ -175,7 +175,8 @@ function renderDispatcherReports() {
         const cell = row.insertCell();
         cell.colSpan = 6;
         cell.className = "dispatcher-reports-empty";
-        cell.textContent = window.state.activeGroupFilter ? t("no_drivers_in_group") : t("js_no_alerts");
+        // Empty reports ≠ empty roster — keep field-report copy (plan gaps live in Needs attention).
+        cell.textContent = t("js_no_alerts");
         return;
     }
 
@@ -211,7 +212,7 @@ async function resolveReport(id, resolution = null) {
     renderDispatcherReports();
     try {
         let result = { success: true, report: { status: "resolved", resolution } };
-        if (!IS_DEMO_MODE) result = await ApiClient.resolveStaffReport(id, resolution);
+        if (!USE_LOCAL_STATE) result = await ApiClient.resolveStaffReport(id, resolution);
         if (!result.success) {
             showToast(result.error || t("report_resolve_failed"), "error");
             return false;
@@ -221,7 +222,7 @@ async function resolveReport(id, resolution = null) {
             resolvedAt: result.report?.resolvedAt || new Date().toISOString(),
             resolvedBy: result.report?.resolvedBy || window.currentUser.id || window.currentUser.uid
         });
-        if (IS_DEMO_MODE) saveState();
+        if (USE_LOCAL_STATE) saveState();
         showToast(t("report_resolved_toast"), "success", 3000);
         return true;
     } catch (error) {

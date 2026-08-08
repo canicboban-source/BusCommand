@@ -10,7 +10,7 @@ function normalizeRole(role) {
 }
 
 function renderSuperAdminDashboard() {
-    if (!IS_DEMO_MODE && currentUser && currentUser.role === "superadmin") {
+    if (!USE_LOCAL_STATE && currentUser && currentUser.role === "superadmin") {
         renderSuperAdminDashboardProduction();
         return;
     }
@@ -294,7 +294,7 @@ function superadminCreateCompany() {
 
     if (!name) { showToast("Unesite naziv firme.", "error"); return; }
 
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         ApiClient.createCompany({ companyId, name, contactEmail: "admin@" + companyId + ".com" })
             .then(res => {
                 if (res.success) {
@@ -335,7 +335,7 @@ function superadminCreateCompanyAdmin() {
         showToast('Lozinka mora imati najmanje 6 znakova', 'error'); return;
     }
 
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         ApiClient.createUser({ email, password, name, role: "company_admin", companyId })
             .then(res => {
                 if (res.success) {

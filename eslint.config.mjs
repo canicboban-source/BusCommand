@@ -18,7 +18,7 @@ function onclickHandlerGlobals() {
 
 const browserAppGlobals = {
   ...onclickHandlerGlobals(),
-  IS_DEMO_MODE: "readonly",
+  USE_LOCAL_STATE: "readonly",
   COMPANY_ID: "readonly",
   BusCommandConfig: "readonly",
   Auth: "readonly",
@@ -104,6 +104,18 @@ export default [
     files: ["api-server.js", "server/**/*.js"],
     languageOptions: {
       sourceType: "commonjs"
+    }
+  },
+  {
+    files: ["tests/**/*.mjs"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        ...globals.node,
+        window: "writable",
+        document: "writable"
+      }
     }
   },
   {
