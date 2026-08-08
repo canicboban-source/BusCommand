@@ -7,7 +7,8 @@ const { z } = require("zod");
 const {
   LICENSE_TYPES,
   normalizeLicenseType,
-  maxDriversForType
+  maxDriversForType,
+  maxDispatchersForType
 } = require("./license-packages");
 
 const EDITABLE_FEATURE_KEYS = Object.freeze([
@@ -76,6 +77,10 @@ function buildTenantSettingsPatch(body, { now = new Date() } = {}) {
       const pkgMax = maxDriversForType(licenseType);
       patch.maxDrivers = pkgMax == null ? 5000 : pkgMax;
       audit.maxDrivers = patch.maxDrivers;
+    }
+    if (typeof data.maxDispatchers !== "number") {
+      patch.maxDispatchers = maxDispatchersForType(licenseType);
+      audit.maxDispatchers = patch.maxDispatchers;
     }
   }
   if (data.licenseStatus) {

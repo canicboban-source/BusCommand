@@ -119,23 +119,33 @@ function updateTrialBadge() {
 
     const label = packageLabel(info);
     const days = info.daysRemaining;
-    const isTrial = info.licenseStatus === "trial" || (info.plan === "trial" && days != null);
+    const isTrial = info.licenseStatus === "trial"
+        || (String(info.plan || "").toLowerCase() === "trial" && days != null);
     const isExpired = info.licenseStatus === "expired";
-    let text = `${label} PAKET`;
-    if (isTrial && days != null) {
-        text = `${label} PAKET · Još ${days} dan`;
+    const isSuspended = info.licenseStatus === "suspended" || info.status === "suspended";
+
+    // Single authoritative badge: TRIAL = yellow + days; ACTIVE = green + package name.
+    let text = label;
+    let toneTrial = false;
+    if (isSuspended) {
+        text = t("license_status_suspended") || "Suspendovan";
+        toneTrial = true;
     } else if (isExpired) {
-        text = `${label} PAKET · Istekla`;
-    } else if (days != null) {
-        text = `${label} PAKET · Još ${days} dan`;
+        text = t("sa_status_expired") || "Istekla licenca";
+        toneTrial = true;
+    } else if (isTrial) {
+        const dayCount = days != null ? days : "—";
+        text = (t("license_badge_trial_days") || "Probni: {days} dana").replace("{days}", String(dayCount));
+        toneTrial = true;
     } else {
-        text = `${label} PAKET · Aktivan`;
+        text = label;
+        toneTrial = false;
     }
 
     badge.textContent = text;
     badge.classList.add("license-package-badge");
-    badge.classList.toggle("is-trial", isTrial || isExpired);
-    badge.classList.toggle("is-active", !isTrial && !isExpired);
+    badge.classList.toggle("is-trial", toneTrial);
+    badge.classList.toggle("is-active", !toneTrial);
     setBadgeVisible(badge, true);
 }
 

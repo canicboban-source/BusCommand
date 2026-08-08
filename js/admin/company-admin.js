@@ -42,17 +42,37 @@ async function endCompanySupportSession() {
     renderCompanyAdminDashboard();
 }
 
-function licensePlanLabel(plan) {
-    if (plan === "unknown") return t("ca_license_unknown");
-    const key = plan === "trial" ? "license_plan_trial" : plan === "active" ? "license_plan_active" : "license_plan_paid";
-    return t(key);
+function licensePackageLabel(license) {
+    if (license?.packageLabel) return String(license.packageLabel).toUpperCase();
+    const type = String(license?.plan || "").toLowerCase();
+    if (type === "starter") return "STARTER";
+    if (type === "fleet_master") return "FLEET MASTER";
+    if (type === "enterprise") return "ENTERPRISE";
+    if (type === "pro" || type === "active" || type === "paid") return "PRO";
+    if (type === "unknown" || !type) return t("ca_license_unknown");
+    return String(license.plan || "").toUpperCase();
 }
 
-function licenseStatusLabel(status) {
-    if (status === "unknown") return t("ca_license_unknown");
-    if (status === "suspended") return t("license_status_suspended");
-    if (status === "trial") return t("license_status_trial");
-    return t("license_status_active");
+/** Unique status: trial+days (warning) OR package name (success). */
+function licenseUniqueBadge(license) {
+    const status = license.licenseStatus || license.status;
+    if (status === "suspended") {
+        return { text: t("license_status_suspended"), tone: "is-danger" };
+    }
+    if (status === "expired") {
+        return { text: t("sa_status_expired") || "Istekla licenca", tone: "is-danger" };
+    }
+    if (status === "trial") {
+        const days = license.daysRemaining != null ? license.daysRemaining : "—";
+        return {
+            text: (t("license_badge_trial_days") || "Probni: {days} dana").replace("{days}", String(days)),
+            tone: "is-warning"
+        };
+    }
+    if (status === "unknown") {
+        return { text: t("ca_license_unknown"), tone: "is-neutral" };
+    }
+    return { text: licensePackageLabel(license), tone: "is-success" };
 }
 
 function safeColor(value) {
@@ -66,15 +86,7 @@ function renderLicenseCard(scope, license, { loading = false, failed = false } =
     const branding = window.state.branding || {};
     const companyName = branding.name?.trim() || t("ca_firm_unnamed");
     const admin = window.currentUser;
-    const daysText = license.daysRemaining != null
-        ? t("ca_firm_days_left", { days: license.daysRemaining })
-        : t("ca_license_unknown");
-
-    const statusTone = license.status === "suspended"
-        ? "is-danger"
-        : license.status === "unknown"
-            ? "is-neutral"
-            : license.plan === "trial" ? "is-warning" : "is-success";
+    const unique = licenseUniqueBadge(license);
     const stateMessage = loading
         ? `<div class="company-overview-license-state"><span class="spinner"></span>${escapeHtml(t("ca_license_loading"))}</div>`
         : failed
@@ -104,16 +116,8 @@ function renderLicenseCard(scope, license, { loading = false, failed = false } =
             </div>
             <div class="company-overview-license-metrics">
                 <div>
-                    <span>${escapeHtml(t("ca_firm_plan"))}</span>
-                    <strong>${escapeHtml(licensePlanLabel(license.plan))}</strong>
-                </div>
-                <div>
                     <span>${escapeHtml(t("ca_firm_status"))}</span>
-                    <strong class="${statusTone}">${escapeHtml(licenseStatusLabel(license.status))}</strong>
-                </div>
-                <div>
-                    <span>${escapeHtml(t("ca_firm_remaining"))}</span>
-                    <strong>${escapeHtml(daysText)}</strong>
+                    <strong class="${unique.tone}">${escapeHtml(unique.text)}</strong>
                 </div>
             </div>
         </div>

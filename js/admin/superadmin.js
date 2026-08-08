@@ -6,9 +6,30 @@ import { escapeHtml, showToast } from "../core/utils.js";
 import { showAppLayout } from "../layout/shell.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
-import { actionAttr } from "../core/action-delegate.js";
+import { actionAttr, changeAttr } from "../core/action-delegate.js";
 import { runSingleSubmission } from "../core/submit-lock.js";
 import { rowActionsMenuHtml } from "../ui/row-actions-menu.js";
+
+const LICENSE_PACKAGE_LIMITS = Object.freeze({
+    starter: { maxDrivers: 15, maxDispatchers: 2, label: "STARTER" },
+    pro: { maxDrivers: 50, maxDispatchers: 5, label: "PRO" },
+    fleet_master: { maxDrivers: 200, maxDispatchers: 15, label: "FLEET MASTER" },
+    enterprise: { maxDrivers: 5000, maxDispatchers: 50, label: "ENTERPRISE" }
+});
+
+function packageLimitsForType(licenseType) {
+    const key = String(licenseType || "pro").toLowerCase().replace(/[\s-]+/g, "_");
+    if (key === "trial" || key === "standard") return LICENSE_PACKAGE_LIMITS.pro;
+    return LICENSE_PACKAGE_LIMITS[key] || LICENSE_PACKAGE_LIMITS.pro;
+}
+
+function superadminOnPlanChange(planValue) {
+    const limits = packageLimitsForType(planValue);
+    const driversEl = document.getElementById("sa-edit-max-drivers");
+    const dispEl = document.getElementById("sa-edit-max-dispatchers");
+    if (driversEl) driversEl.value = String(limits.maxDrivers);
+    if (dispEl) dispEl.value = String(limits.maxDispatchers);
+}
 
 /** t() returns the key when missing — never treat that as a real string. */
 function tf(key, fallback) {
@@ -127,6 +148,7 @@ async function renderSuperAdminDashboardProduction() {
                 status: c.status,
                 licenseStatus: c.licenseStatus,
                 packageLabel: c.packageLabel || c.plan,
+                daysRemaining: c.daysRemaining,
                 country: c.country,
                 adminName: c.adminName || admin?.name || "",
                 adminEmail: c.adminEmail || admin?.email || c.email || "",
@@ -139,7 +161,9 @@ async function renderSuperAdminDashboardProduction() {
     lucide.createIcons();
 }
 
-function _licenseStatusLabel(licenseStatus, status) {
+/** Single badge: TRIAL+days (yellow) OR ACTIVE+package (green). Never mix contradictory chips. */
+function _licenseStatusLabel(licenseStatus, status, { packageLabel, daysRemaining } = {}) {
+    const pkg = String(packageLabel || "PRO").toUpperCase();
     if (status === "suspended" || licenseStatus === "suspended") {
         return { text: t("license_status_suspended") || "Suspendovan", cls: "badge-critical" };
     }
@@ -147,9 +171,11 @@ function _licenseStatusLabel(licenseStatus, status) {
         return { text: t("sa_status_expired") || "Istekla licenca", cls: "badge-critical" };
     }
     if (licenseStatus === "trial") {
-        return { text: t("license_status_trial") || "Probni", cls: "badge-pending" };
+        const days = daysRemaining != null ? daysRemaining : "—";
+        const text = (t("license_badge_trial_days") || "Probni: {days} dana").replace("{days}", String(days));
+        return { text, cls: "badge-pending" };
     }
-    return { text: t("sa_status_active") || "Aktivan", cls: "badge-success" };
+    return { text: pkg, cls: "badge-success" };
 }
 
 function _saCompanyRowHtml({
@@ -159,6 +185,7 @@ function _saCompanyRowHtml({
     status,
     licenseStatus,
     packageLabel,
+    daysRemaining,
     country,
     adminName,
     adminEmail,
@@ -168,7 +195,7 @@ function _saCompanyRowHtml({
     dispId
 }) {
     const openId = detailId || companyKey;
-    const license = _licenseStatusLabel(licenseStatus, status);
+    const license = _licenseStatusLabel(licenseStatus, status, { packageLabel, daysRemaining });
     const menuItems = [];
     if (supportSessionActive) {
         menuItems.push({ action: "superadminEndSupport", args: [companyKey], label: t("sa_support_end") || "End support", icon: "headset" });
@@ -195,7 +222,7 @@ function _saCompanyRowHtml({
         ? `<strong>${escapeHtml(adminName || "—")}</strong><small>${escapeHtml(adminEmail || "")}</small>`
         : `<span class="sa-admin-missing">${escapeHtml(t("sa_no_company_admins") || "—")}</span>`;
     return `<tr class="sa-company-row" data-company-id="${escapeHtml(companyKey)}">
-        <td class="sa-col-name"><strong>${escapeHtml(name || companyKey)}</strong><small class="sa-pkg-chip">${escapeHtml(packageLabel || "—")}</small></td>
+        <td class="sa-col-name"><strong>${escapeHtml(name || companyKey)}</strong></td>
         <td class="sa-col-tenant"><code>${escapeHtml(companyKey)}</code>
             <button type="button" class="btn-secondary sa-company-id-copy" ${actionAttr("superadminCopyCompanyId", [companyKey])} aria-label="${escapeHtml(t("sa_copy_company_id") || "Copy")}">
                 <i data-lucide="copy"></i>
@@ -345,8 +372,11 @@ function _renderSuperAdminDashboardDemo() {
             companyKey,
             detailId: c.id,
             status,
-            licenseStatus: status === "suspended" ? "suspended" : (status === "pending" ? "trial" : "active"),
-            packageLabel: String(_demoCompanyPlan(c) || "PRO").toUpperCase(),
+            licenseStatus: status === "suspended" ? "suspended" : (status === "pending" || String(_demoCompanyPlan(c)).toLowerCase() === "trial" ? "trial" : "active"),
+            packageLabel: String(_demoCompanyPlan(c) || "PRO").toUpperCase() === "TRIAL"
+                ? "PRO"
+                : String(_demoCompanyPlan(c) || "PRO").toUpperCase(),
+            daysRemaining: c.trialDaysLeft ?? 30,
             country: c.country,
             adminName: admin?.name || "",
             adminEmail: admin?.email || c.email || "",
@@ -483,13 +513,24 @@ function fillCompanyDetailModal(company) {
     if (title) title.textContent = company.name || company.id;
     if (nameEl) nameEl.textContent = company.name || "—";
     if (idEl) idEl.textContent = company.id || "—";
+    const licenseBadge = _licenseStatusLabel(
+        company.licenseStatus || (String(company.plan || "").toLowerCase() === "trial" ? "trial" : "active"),
+        company.status,
+        {
+            packageLabel: company.packageLabel || packageLimitsForType(company.licenseType || company.plan).label,
+            daysRemaining: company.daysRemaining
+        }
+    );
     if (statusEl) {
-        statusEl.textContent = company.status || "—";
-        statusEl.className = "badge " + (company.status === "active" ? "badge-success" : "badge-critical");
+        statusEl.textContent = licenseBadge.text;
+        statusEl.className = `badge ${licenseBadge.cls}`;
     }
     if (planEl) {
-        planEl.textContent = company.plan || "—";
-        planEl.className = "badge " + (company.plan === "trial" ? "badge-pending" : "badge-success");
+        // Package name only as plain text — never a second conflicting status chip.
+        const pkg = company.packageLabel
+            || packageLimitsForType(company.licenseType || company.plan).label;
+        planEl.textContent = String(pkg).toUpperCase();
+        planEl.className = "sa-detail-plan-text";
     }
     if (countryEl) countryEl.textContent = company.country || "—";
     if (emailEl) emailEl.textContent = company.contactEmail || "—";
@@ -597,46 +638,53 @@ function renderCompanyDetailSettingsForm(company) {
     if (!host) return;
     const features = company.features || {};
     const trialValue = company.trialEndsAt ? String(company.trialEndsAt).slice(0, 10) : "";
+    const current = String(company.licenseType || company.plan || "pro").toLowerCase();
+    const resolved = current === "trial" || current === "standard" ? "pro" : current;
+    const defaults = packageLimitsForType(resolved);
+    const maxDrivers = Number.isFinite(Number(company.maxDrivers))
+        ? Number(company.maxDrivers)
+        : defaults.maxDrivers;
+    const maxDispatchers = Number.isFinite(Number(company.maxDispatchers))
+        ? Number(company.maxDispatchers)
+        : defaults.maxDispatchers;
     host.innerHTML = `
         <h4 class="sa-detail-subtitle">${escapeHtml(t("sa_detail_settings_title") || "Plan, limits and flags")}</h4>
         <div class="sa-detail-settings-grid">
             <label>${escapeHtml(t("sa_col_plan") || "Plan")}
-                <select id="sa-edit-plan">
-                    ${(() => {
-                        const current = String(company.licenseType || company.plan || "pro").toLowerCase();
-                        const resolved = current === "trial" || current === "standard" ? "pro" : current;
-                        return ["starter", "pro", "fleet_master", "enterprise"].map((value) => {
-                            const labels = {
-                                starter: "STARTER (15)",
-                                pro: "PRO (50)",
-                                fleet_master: "FLEET MASTER (200)",
-                                enterprise: "ENTERPRISE (∞)"
-                            };
-                            return `<option value="${value}"${resolved === value ? " selected" : ""}>${labels[value]}</option>`;
-                        }).join("");
-                    })()}
+                <select id="sa-edit-plan" ${changeAttr("superadminOnPlanChange")}>
+                    ${["starter", "pro", "fleet_master", "enterprise"].map((value) => {
+                        const labels = {
+                            starter: "STARTER (15/2)",
+                            pro: "PRO (50/5)",
+                            fleet_master: "FLEET MASTER (200/15)",
+                            enterprise: "ENTERPRISE (∞)"
+                        };
+                        return `<option value="${value}"${resolved === value ? " selected" : ""}>${labels[value]}</option>`;
+                    }).join("")}
                 </select>
             </label>
             <label>${escapeHtml(t("sa_detail_max_drivers") || "Max drivers")}
-                <input id="sa-edit-max-drivers" type="number" min="1" max="5000" value="${Number(company.maxDrivers) || 50}">
+                <input id="sa-edit-max-drivers" type="number" min="1" max="5000" value="${maxDrivers}">
             </label>
             <label>${escapeHtml(t("sa_detail_max_dispatchers") || "Max dispatchers")}
-                <input id="sa-edit-max-dispatchers" type="number" min="1" max="500" value="${Number(company.maxDispatchers) || 5}">
+                <input id="sa-edit-max-dispatchers" type="number" min="1" max="500" value="${maxDispatchers}">
             </label>
             <label>${escapeHtml(t("sa_detail_trial") || "Trial ends")}
                 <input id="sa-edit-trial-ends" type="date" value="${escapeHtml(trialValue)}">
             </label>
         </div>
         <div class="sa-detail-flags">
-            <label><input type="checkbox" id="sa-flag-supportSession" ${features.supportSession ? "checked" : ""}> supportSession</label>
-            <label><input type="checkbox" id="sa-flag-shiftConfirmationScheduler" ${features.shiftConfirmationScheduler ? "checked" : ""}> shiftConfirmationScheduler</label>
-            <label><input type="checkbox" id="sa-flag-liveGps" ${features.liveGps ? "checked" : ""}> liveGps</label>
-            <label><input type="checkbox" id="sa-flag-liveMap" ${features.liveMap !== false ? "checked" : ""}> liveMap</label>
+            <label class="sa-flag-item"><input type="checkbox" id="sa-flag-supportSession" ${features.supportSession ? "checked" : ""}> supportSession</label>
+            <label class="sa-flag-item"><input type="checkbox" id="sa-flag-shiftConfirmationScheduler" ${features.shiftConfirmationScheduler ? "checked" : ""}> shiftConfirmationScheduler</label>
+            <label class="sa-flag-item"><input type="checkbox" id="sa-flag-liveGps" ${features.liveGps ? "checked" : ""}> liveGps</label>
+            <label class="sa-flag-item"><input type="checkbox" id="sa-flag-liveMap" ${features.liveMap !== false ? "checked" : ""}> liveMap</label>
         </div>
         <p class="sa-detail-settings-hint">${escapeHtml(t("sa_detail_settings_hint") || "liveGps stays off until O2 retention is decided. Changing flags is audited.")}</p>
-        <button type="button" class="btn-primary" data-action="superadminSaveCompanySettings" data-action-args='${JSON.stringify([company.id])}'>
-            ${escapeHtml(t("sa_detail_save_settings") || "Save settings")}
-        </button>
+        <div class="sa-detail-settings-actions">
+            <button type="button" class="btn-primary" data-action="superadminSaveCompanySettings" data-action-args='${JSON.stringify([company.id])}'>
+                ${escapeHtml(t("sa_detail_save_settings") || "Save settings")}
+            </button>
+        </div>
     `;
 }
 
@@ -646,8 +694,10 @@ async function superadminSaveCompanySettings(companyId) {
         showToast(t("sa_detail_settings_demo") || "Settings patch is production-only.", "info");
         return;
     }
+    const planValue = document.getElementById("sa-edit-plan")?.value || undefined;
     const payload = {
-        plan: document.getElementById("sa-edit-plan")?.value || undefined,
+        plan: planValue,
+        licenseType: planValue,
         maxDrivers: Number(document.getElementById("sa-edit-max-drivers")?.value),
         maxDispatchers: Number(document.getElementById("sa-edit-max-dispatchers")?.value),
         trialEndsAt: document.getElementById("sa-edit-trial-ends")?.value
@@ -730,16 +780,22 @@ async function superadminOpenCompanyDetail(companyId) {
                 email: ca.email || "",
                 active: ca.active !== false
             }));
+        const demoPlan = disp ? _demoCompanyPlan(disp) : "trial";
+        const demoLicenseType = String(demoPlan).toLowerCase() === "trial" ? "pro" : String(demoPlan).toLowerCase();
         fillCompanyDetailModal({
             id: companyKey,
             name: disp?.name || companyKey,
             status: disp ? _demoCompanyStatus(disp) : "active",
-            plan: disp ? _demoCompanyPlan(disp) : "trial",
+            plan: demoLicenseType,
+            licenseType: demoLicenseType,
+            licenseStatus: String(demoPlan).toLowerCase() === "trial" ? "trial" : "active",
+            packageLabel: packageLimitsForType(demoLicenseType).label,
+            daysRemaining: disp?.trialDaysLeft ?? 30,
             country: disp?.country || "—",
             contactEmail: disp?.email || null,
             trialEndsAt: disp?.trialEndsAt || null,
-            maxDrivers: disp?.maxDrivers || 50,
-            maxDispatchers: disp?.maxDispatchers || 5,
+            maxDrivers: disp?.maxDrivers || packageLimitsForType(demoLicenseType).maxDrivers,
+            maxDispatchers: disp?.maxDispatchers || packageLimitsForType(demoLicenseType).maxDispatchers,
             features: disp?.features || {},
             supportSessionEnabled: disp?.features?.supportSession !== false,
             supportSessionActive: !!disp?.supportSessionActive,
@@ -1367,5 +1423,6 @@ export {
     superadminConfirmSupportStart,
     superadminEndSupport,
     superadminSaveCompanySettings,
+    superadminOnPlanChange,
     superadminSaveDemoCompanyProfile
 };

@@ -29,9 +29,14 @@ function getCompanyScope(state, currentUser, isDemoMode = false) {
 
 function getCompanyLicenseInfo(companyId, { licenseInfo, state, isDemoMode = false } = {}) {
     if (licenseInfo && licenseInfo.companyId === companyId) {
+        const licenseStatus = licenseInfo.licenseStatus
+            || (String(licenseInfo.plan || "").toLowerCase() === "trial" ? "trial" : licenseInfo.status)
+            || "unknown";
         return {
-            plan: licenseInfo.plan || "unknown",
+            plan: licenseInfo.licenseType || licenseInfo.plan || "unknown",
             status: licenseInfo.status || "unknown",
+            licenseStatus,
+            packageLabel: licenseInfo.packageLabel || null,
             daysRemaining: licenseInfo.daysRemaining ?? null,
             available: true
         };
@@ -42,15 +47,26 @@ function getCompanyLicenseInfo(companyId, { licenseInfo, state, isDemoMode = fal
             item => item.companyId === companyId && item.id !== "superadmin" && !item.isSuperAdmin
         );
         const planRaw = dispatcher?.paymentStatus || "Trial";
+        const plan = String(planRaw).toLowerCase();
+        const isTrial = plan === "trial";
         return {
-            plan: String(planRaw).toLowerCase(),
+            plan: isTrial ? "pro" : plan,
             status: "active",
+            licenseStatus: isTrial ? "trial" : "active",
+            packageLabel: isTrial ? "PRO" : String(planRaw).toUpperCase(),
             daysRemaining: dispatcher?.trialDaysLeft ?? 30,
             available: true
         };
     }
 
-    return { plan: "unknown", status: "unknown", daysRemaining: null, available: false };
+    return {
+        plan: "unknown",
+        status: "unknown",
+        licenseStatus: "unknown",
+        packageLabel: null,
+        daysRemaining: null,
+        available: false
+    };
 }
 
 function recordBelongsToGroup(record, group, groups) {
