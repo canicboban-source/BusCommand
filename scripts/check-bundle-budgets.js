@@ -22,8 +22,8 @@ const BUDGETS = {
   staffAppJsBytesExclTranslations: 560 * 1024,
   /** Soft-pilot ceiling for shared init/firebase chunk on driver (no dispatcher UI). */
   maxSingleDriverChunkBytes: 150 * 1024,
-  /** Shared EN/DE/SR dictionary chunk. */
-  translationsChunkBytes: 360 * 1024,
+  /** Shared EN/DE/SR dictionary chunk (Phase 3 header/nav a11y strings). */
+  translationsChunkBytes: 362 * 1024,
 };
 
 function readHtml(name) {

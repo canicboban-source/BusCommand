@@ -1570,6 +1570,113 @@ html[data-app-surface="staff"] .company-group-actions .btn-danger-ghost {
     padding: 6px 10px;
 }
 
+/* Safe row overflow menu (⋯) — destructive actions stay behind confirm */
+html[data-app-surface="staff"] .row-actions {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+html[data-app-surface="staff"] .row-actions-trigger {
+    min-width: 36px;
+    min-height: 34px;
+    padding: 6px 8px;
+}
+
+html[data-app-surface="staff"] .row-actions-trigger svg {
+    width: 16px;
+    height: 16px;
+}
+
+html[data-app-surface="staff"] .row-actions-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 40;
+    min-width: 180px;
+    padding: 6px;
+    border-radius: 10px;
+    border: 1px solid var(--panel-border);
+    background: var(--panel-bg-solid);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+html[data-app-surface="staff"] .row-actions-menu.hidden {
+    display: none;
+}
+
+html[data-app-surface="staff"] .row-actions-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 36px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-main);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+}
+
+html[data-app-surface="staff"] .row-actions-item:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+html[data-app-surface="staff"] .row-actions-item.is-danger {
+    color: #fecaca;
+}
+
+html[data-app-surface="staff"] .row-actions-item.is-danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.14);
+}
+
+html[data-app-surface="staff"] .row-actions-item:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+html[data-app-surface="staff"] .row-actions-item svg {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 15px;
+}
+
+html[data-app-surface="staff"] .header-connection-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 28px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(74, 222, 128, 0.35);
+    background: rgba(74, 222, 128, 0.12);
+    color: #bbf7d0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+html[data-app-surface="staff"] .header-connection-status[data-state="offline"] {
+    border-color: rgba(248, 113, 113, 0.4);
+    background: rgba(248, 113, 113, 0.12);
+    color: #fecaca;
+}
+
+html[data-app-surface="staff"] .trial-indicator,
+html[data-app-surface="staff"] #app-trial-badge,
+html[data-app-surface="staff"] #login-trial-badge {
+    display: none !important;
+}
+
 html[data-app-surface="staff"] .company-groups-empty {
     gap: 10px;
     padding: 28px 20px;
@@ -2978,13 +3085,19 @@ html[data-app-surface="staff"] .ops-attention-detail {
     }
 }
 
+html[data-app-surface="staff"] .ops-attention-sheet {
+    border-color: rgba(var(--urgent-action-rgb), 0.42);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(var(--urgent-action-rgb), 0.18);
+}
+
 html[data-app-surface="staff"] .ops-attention-header {
     display: flex;
     justify-content: space-between;
     gap: 12px;
     align-items: flex-start;
     padding: 20px 20px 14px;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    border-bottom: 1px solid rgba(var(--urgent-action-rgb), 0.28);
+    background: linear-gradient(180deg, rgba(var(--urgent-action-rgb), 0.12), transparent);
 }
 
 html[data-app-surface="staff"] .ops-attention-kicker {
@@ -3955,6 +4068,61 @@ html[data-app-surface="staff"] .vehicles-panel-card {
   html[data-app-surface="staff"] .monthly-plan-below,
   html[data-app-surface="staff"] .shift-form-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Phase 3 responsive: prevent horizontal overflow on staff surface */
+html[data-app-surface="staff"],
+html[data-app-surface="staff"] body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+html[data-app-surface="staff"] .app-layout,
+html[data-app-surface="staff"] .main-content,
+html[data-app-surface="staff"] main,
+html[data-app-surface="staff"] .content-section {
+  min-width: 0;
+  max-width: 100%;
+}
+
+html[data-app-surface="staff"] .app-header {
+  gap: 10px;
+}
+
+html[data-app-surface="staff"] .header-left {
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+html[data-app-surface="staff"] .bc-brand-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: min(42vw, 280px);
+}
+
+html[data-app-surface="staff"] table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+  html[data-app-surface="staff"] .company-group-row,
+  html[data-app-surface="staff"] .company-team-card {
+    grid-template-columns: 1fr;
+  }
+
+  html[data-app-surface="staff"] .company-group-actions,
+  html[data-app-surface="staff"] .company-team-actions {
+    justify-content: flex-start;
+  }
+
+  html[data-app-surface="staff"] .header-connection-status {
+    font-size: 0.68rem;
+    padding: 3px 8px;
   }
 }
 

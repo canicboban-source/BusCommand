@@ -75,33 +75,10 @@ function setBadgeVisible(el, visible) {
 }
 
 function updateTrialBadge() {
-    const info = window._licenseInfo;
-    const role = window.currentUser?.role;
-    const allowRole = isTrialBadgeRoleAllowed(role);
-    const onTrial = hasActiveTrialLicense(info);
-    const days = info?.daysRemaining;
-
-    // Login-screen badge: demo / pre-auth only when trial info exists and role is not SA.
-    const loginBadge = document.getElementById("login-trial-badge");
-    if (loginBadge) {
-        const showLogin = allowRole && onTrial;
-        if (showLogin) {
-            const span = loginBadge.querySelector("span");
-            if (span) span.textContent = formatTrialLabel(days, true);
-        }
-        setBadgeVisible(loginBadge, showLogin);
-    }
-
-    // In-app header badge: only for tenant roles on an active trial plan.
-    const appBadge = document.getElementById("app-trial-badge");
-    if (appBadge) {
-        const showApp = Boolean(role) && allowRole && onTrial;
-        if (showApp) {
-            const span = appBadge.querySelector("span") || appBadge;
-            span.textContent = formatTrialLabel(days, false);
-        }
-        setBadgeVisible(appBadge, showApp);
-    }
+    // Phase 3: never surface Trial/Demo countdown chips in product UI.
+    // License suspension still uses showLicenseBlockedBanner; plan data stays on server.
+    setBadgeVisible(document.getElementById("login-trial-badge"), false);
+    setBadgeVisible(document.getElementById("app-trial-badge"), false);
 }
 
 export {

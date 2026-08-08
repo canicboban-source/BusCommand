@@ -1,0 +1,169 @@
+{
+  "total": 18,
+  "pass": 18,
+  "fail": 0,
+  "rows": [
+    {
+      "role": "dispo",
+      "width": 360,
+      "overflowPx": 0,
+      "trialVisible": false,
+      "connectionVisible": true,
+      "shot": "reports/phase3-responsive-shots/dispo-360.png",
+      "pass": true
+    },
+    {
+      "role": "dispo",
+      "width": 390,
+      "overflowPx": 0,
+      "trialVisible": false,
+      "connectionVisible": true,
+      "shot": "reports/phase3-responsive-shots/dispo-390.png",
+      "pass": true
+    },
+    {
+      "role": "dispo",
+      "width": 412,
+      "overflowPx": 0,
+      "trialVisible": false,
+      "connectionVisible": true,
+      "shot": "reports/phase3-responsive-shots/dispo-412.png",
+      "pass": true
+    },
+    {
+      "role": "dispo",
+      "width": 768,
+      "overflowPx": 0,
+      "trialVisible": false,
+      "connectionVisible": true,
+      "shot": "reports/phase3-responsive-shots/dispo-768.png",
+      "pass": true
+    },
+    {
+      "role": "dispo",
+      "width": 1024,
+      "overflowPx": 0,
+      "trialVisible": false,
+      "connectionVisible": true,
+      "shot": "reports/phase3-responsive-shots/dispo-1024.png",
+      "pass": true
+    },
+    {
+      "role": "dispo",
+      "width": 1280,
+      "overflowPx": 0,
+      "trialVisible": false,
+      "connectionVisible": true,
+      "shot": "reports/phase3-responsive-shots/dispo-1280.png",
+      "pass": true
+    },
+    {
+      "role": "dispo",
+      "width": 1366,
+      "overflowPx": 0,
+      "trialVisible": false,
+      "connectionVisible": true,
+      "shot": "reports/phase3-responsive-shots/dispo-1366.png",
+      "pass": true
+    },
+    {
+      "role": "dispo",
+      "width": 1440,
+      "overflowPx": 0,
+      "trialVisible": false,
+      "connectionVisible": true,
+      "shot": "reports/phase3-responsive-shots/dispo-1440.png",
+      "pass": true
+    },
+    {
+      "role": "dispo",
+      "width": 1920,
+      "overflowPx": 0,
+      "trialVisible": false,
+      "connectionVisible": true,
+      "shot": "reports/phase3-responsive-shots/dispo-1920.png",
+      "pass": true
+    },
+    {
+      "role": "driver",
+      "width": 360,
+      "overflowPx": 0,
+      "sosCenterDelta": 0,
+      "trialVisible": false,
+      "shot": "reports/phase3-responsive-shots/driver-360.png",
+      "pass": true
+    },
+    {
+      "role": "driver",
+      "width": 390,
+      "overflowPx": 0,
+      "sosCenterDelta": 0,
+      "trialVisible": false,
+      "shot": "reports/phase3-responsive-shots/driver-390.png",
+      "pass": true
+    },
+    {
+      "role": "driver",
+      "width": 412,
+      "overflowPx": 0,
+      "sosCenterDelta": 0,
+      "trialVisible": false,
+      "shot": "reports/phase3-responsive-shots/driver-412.png",
+      "pass": true
+    },
+    {
+      "role": "driver",
+      "width": 768,
+      "overflowPx": 0,
+      "sosCenterDelta": 0,
+      "trialVisible": false,
+      "shot": "reports/phase3-responsive-shots/driver-768.png",
+      "pass": true
+    },
+    {
+      "role": "driver",
+      "width": 1024,
+      "overflowPx": 0,
+      "sosCenterDelta": null,
+      "trialVisible": false,
+      "shot": "reports/phase3-responsive-shots/driver-1024.png",
+      "pass": true
+    },
+    {
+      "role": "driver",
+      "width": 1280,
+      "overflowPx": 0,
+      "sosCenterDelta": null,
+      "trialVisible": false,
+      "shot": "reports/phase3-responsive-shots/driver-1280.png",
+      "pass": true
+    },
+    {
+      "role": "driver",
+      "width": 1366,
+      "overflowPx": 0,
+      "sosCenterDelta": null,
+      "trialVisible": false,
+      "shot": "reports/phase3-responsive-shots/driver-1366.png",
+      "pass": true
+    },
+    {
+      "role": "driver",
+      "width": 1440,
+      "overflowPx": 0,
+      "sosCenterDelta": null,
+      "trialVisible": false,
+      "shot": "reports/phase3-responsive-shots/driver-1440.png",
+      "pass": true
+    },
+    {
+      "role": "driver",
+      "width": 1920,
+      "overflowPx": 0,
+      "sosCenterDelta": null,
+      "trialVisible": false,
+      "shot": "reports/phase3-responsive-shots/driver-1920.png",
+      "pass": true
+    }
+  ]
+}

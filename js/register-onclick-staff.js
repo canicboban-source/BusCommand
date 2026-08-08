@@ -73,6 +73,7 @@ import { viewUploadedSchedule } from "./maps/schedule-viewer.js";
 import { closeConfirmModal, confirmModalYes } from "./ui/confirm-modal.js";
 import { changeLanguage, t } from "./ui/i18n.js";
 import { closeModal, closeSosConfirmModal, confirmClearSOS, confirmFactoryReset, confirmResolveSOS, showModal } from "./ui/modals.js";
+import { toggleRowActionsMenu } from "./ui/row-actions-menu.js";
 import { toggleTheme } from "./ui/theme.js";
 import { canInvokeActionDuringDriverActivation } from "./auth/driver-access-gate.js";
 
@@ -327,6 +328,7 @@ const HANDLERS = {
     t,
     toggleCaDispGroupsEdit,
     toggleCompanyDispatcherStatus,
+    toggleRowActionsMenu,
     removeCompanyDispatcher,
     toggleCompanyDriverStatus,
     toggleDriverActive,

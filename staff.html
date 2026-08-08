@@ -54,10 +54,7 @@
                     <span class="bc-brand-text">BusCommand</span>
                 </div>
                 <p data-i18n="login_subtitle">Fleet Management Platform</p>
-                <div class="trial-badge-login hidden" id="login-trial-badge">
-                    <i data-lucide="clock" style="width:11px;height:11px;"></i>
-                    <span data-i18n="trial_badge_login">30 DAYS TRIAL</span>
-                </div>
+                <div class="trial-badge-login hidden" id="login-trial-badge" hidden aria-hidden="true"></div>
             </div>
 
             <!-- ── Driver / Dispatcher tabovi — direktno bez Company ID ── -->
@@ -266,9 +263,8 @@
                         <span class="bc-brand-text" id="app-branding-title">BusCommand</span>
                     </div>
                 </div>
-                <div class="trial-indicator hidden" id="app-trial-badge">
-                    <i data-lucide="clock"></i> <span data-i18n="trial_indicator_text">Probni period: 29 dana preostalo</span>
-                </div>
+                <div class="trial-indicator hidden" id="app-trial-badge" hidden aria-hidden="true"></div>
+                <div id="header-connection-status" class="header-connection-status" data-state="online" role="status" aria-live="polite">Online</div>
             </div>
             
             <div class="header-right">

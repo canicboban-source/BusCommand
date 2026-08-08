@@ -36,7 +36,7 @@ test.describe("UI smoke", () => {
     await page.goto("/staff.html?mode=production");
     await expect(page.locator("#login-logo")).toContainText("BusCommand");
     await expect(page.locator("#login-logo")).not.toContainText("FleetPulse");
-    await expect(page.locator("#fp-mode-badge")).toHaveText("PREVIEW");
+    await expect(page.locator("#fp-mode-badge")).toBeHidden();
     await expect(page.locator("#login-trial-badge")).toBeHidden();
     await expect(page.locator("label[for='login-driver-pin']")).toHaveText("Login code");
     await expect(page.locator("[data-action='resetApp']")).toHaveCount(0);
@@ -231,7 +231,9 @@ test.describe("UI smoke", () => {
     await expect(page.locator("#ca-groups-stat-total")).toHaveText("1");
     await expect(page.locator("#ca-groups-stat-ready")).toHaveText("1");
     const usedGroup = page.locator(".company-group-row").filter({ hasText: "Line 101" });
-    await expect(usedGroup.locator(".btn-danger-ghost")).toBeDisabled();
+    await usedGroup.locator(".row-actions-trigger").click();
+    await expect(usedGroup.locator(".row-actions-item.is-danger")).toBeDisabled();
+    await page.keyboard.press("Escape");
 
     await page.locator("#ca-new-group-line-id").fill("north");
     await page.locator("#ca-new-group-name").fill("N");
@@ -262,7 +264,8 @@ test.describe("UI smoke", () => {
     await expect.poll(() => page.evaluate(() => window.state.groups.find(group => group.id === "310")?.name)).toBe("North operations");
 
     const editedGroup = page.locator(".company-group-row").filter({ hasText: "North operations" });
-    await editedGroup.getByRole("button", { name: "Delete" }).click();
+    await editedGroup.locator(".row-actions-trigger").click();
+    await editedGroup.locator('.row-actions-item[data-action="deleteCompanyGroup"]').click();
     await expect(page.locator("#global-confirm-modal")).toBeVisible();
     await page.locator("#global-confirm-yes").click();
     await expect.poll(() => page.evaluate(() => window.state.groups.some(group => group.id === "310"))).toBe(false);
@@ -465,7 +468,8 @@ test.describe("UI smoke", () => {
     await expect(page.locator(".company-team-card")).toHaveCount(1);
     await page.locator("#ca-team-search").fill("");
     const updatedAna = page.locator(".company-team-card").filter({ hasText: "ana@example.test" });
-    await updatedAna.getByRole("button", { name: /Deactivate/i }).click();
+    await updatedAna.locator(".row-actions-trigger").click();
+    await updatedAna.locator('.row-actions-item[data-action="toggleCompanyDispatcherStatus"]').click();
     await page.locator("#global-confirm-yes").click();
     await expect(page.locator(".company-team-card").filter({ hasText: "ana@example.test" })).toContainText("Deactivated");
     await page.locator("#ca-team-status-filter").selectOption("inactive");
@@ -477,7 +481,8 @@ test.describe("UI smoke", () => {
     expect(overflow).toBe(false);
 
     const inactiveAna = page.locator(".company-team-card").filter({ hasText: "ana@example.test" });
-    await inactiveAna.getByRole("button", { name: /Delete permanently/i }).click();
+    await inactiveAna.locator(".row-actions-trigger").click();
+    await inactiveAna.locator('.row-actions-item[data-action="removeCompanyDispatcher"]').click();
     await expect(page.locator("#global-confirm-message")).toContainText("Historical plans and audit records remain");
     await page.locator("#global-confirm-yes").click();
     await expect(page.locator(".company-team-card").filter({ hasText: "ana@example.test" })).toHaveCount(0);
@@ -764,7 +769,7 @@ test.describe("UI smoke", () => {
         backdrop: box("#driver-activation-modal"),
         card: box("#driver-activation-modal .modal-content"),
         title: box("#driver-activation-title"),
-        badge: box("#fp-mode-badge"),
+        badgeHidden: document.querySelector("#fp-mode-badge")?.hidden !== false,
         backdropPosition: getComputedStyle(document.querySelector("#driver-activation-modal")).position
       };
     });
@@ -779,7 +784,7 @@ test.describe("UI smoke", () => {
     expect(layout.card.x + layout.card.width).toBeLessThanOrEqual(layout.viewport.width);
     expect(layout.card.y).toBeGreaterThanOrEqual(0);
     expect(layout.card.y + layout.card.height).toBeLessThanOrEqual(layout.viewport.height);
-    expect(layout.badge.y + layout.badge.height).toBeLessThanOrEqual(layout.title.y);
+    expect(layout.badgeHidden).toBe(true);
     await expect(page.locator("#driver-activation-code")).toBeVisible();
     await expect(page.locator("#driver-activation-cancel")).toBeVisible();
     await expect(page.locator("#driver-activation-submit")).toBeVisible();

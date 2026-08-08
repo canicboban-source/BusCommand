@@ -1,5 +1,5 @@
 /**
- * Live-review #10: trial banner must not show for Super Admin (platform owner).
+ * Phase 3: Trial/Demo countdown chips must never appear in product UI.
  */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -12,8 +12,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
 function loadLicenseHelpers() {
     const badges = {
-        login: { className: "trial-badge-login hidden", classList: null, span: { textContent: "" }, attrs: {} },
-        app: { className: "trial-indicator hidden", classList: null, span: { textContent: "" }, attrs: {} }
+        login: { className: "trial-badge-login", classList: null, span: { textContent: "" }, attrs: {} },
+        app: { className: "trial-indicator", classList: null, span: { textContent: "" }, attrs: {} }
     };
     for (const key of ["login", "app"]) {
         const el = badges[key];
@@ -52,11 +52,8 @@ function loadLicenseHelpers() {
         document,
         window,
         module: { exports: {} },
-        exports: {},
-        USE_LOCAL_STATE: false,
-        ApiClient: { getLicense: async () => ({ success: false }) }
+        exports: {}
     };
-    // Provide bare identifiers used after import strip
     const wrapped = `
       const USE_LOCAL_STATE = false;
       const ApiClient = { getLicense: async () => ({ success: false }) };
@@ -70,52 +67,33 @@ test("isTrialBadgeRoleAllowed rejects superadmin", () => {
     const { api } = loadLicenseHelpers();
     assert.equal(api.isTrialBadgeRoleAllowed("superadmin"), false);
     assert.equal(api.isTrialBadgeRoleAllowed("company-admin"), true);
-    assert.equal(api.isTrialBadgeRoleAllowed("dispatcher"), true);
-    assert.equal(api.isTrialBadgeRoleAllowed("driver"), true);
 });
 
-test("updateTrialBadge hides app and login badges for Super Admin even on trial", () => {
-    const { api, window, badges } = loadLicenseHelpers();
-    window.currentUser = { role: "superadmin" };
-    window._licenseInfo = { plan: "trial", daysRemaining: 29, status: "active" };
-    badges.app.classList.remove("hidden");
-    badges.login.classList.remove("hidden");
-
-    api.updateTrialBadge();
-
-    assert.ok(badges.app.classList.contains("hidden"), "app trial badge must be hidden for SA");
-    assert.ok(badges.login.classList.contains("hidden"), "login trial badge must be hidden for SA");
-    assert.equal(badges.app.attrs["aria-hidden"], "true");
-});
-
-test("updateTrialBadge shows app badge for company-admin on trial", () => {
+test("updateTrialBadge always hides app and login trial chips (Phase 3)", () => {
     const { api, window, badges } = loadLicenseHelpers();
     window.currentUser = { role: "company-admin", companyId: "acme" };
     window._licenseInfo = { plan: "trial", daysRemaining: 12, status: "active" };
 
     api.updateTrialBadge();
 
-    assert.equal(badges.app.classList.contains("hidden"), false);
-    assert.match(badges.app.span.textContent, /12/);
+    assert.ok(badges.app.classList.contains("hidden"), "app trial badge must stay hidden");
+    assert.ok(badges.login.classList.contains("hidden"), "login trial badge must stay hidden");
+    assert.equal(badges.app.attrs["aria-hidden"], "true");
 });
 
-test("updateTrialBadge hides app badge when plan is not trial", () => {
+test("updateTrialBadge hides chips for Super Admin", () => {
     const { api, window, badges } = loadLicenseHelpers();
-    window.currentUser = { role: "company-admin" };
-    window._licenseInfo = { plan: "paid", daysRemaining: 0, status: "active" };
-    badges.app.classList.remove("hidden");
-
+    window.currentUser = { role: "superadmin" };
+    window._licenseInfo = { plan: "trial", daysRemaining: 29, status: "active" };
     api.updateTrialBadge();
-
     assert.ok(badges.app.classList.contains("hidden"));
+    assert.ok(badges.login.classList.contains("hidden"));
 });
 
-test("staff shell and HTML hide SA trial by default", () => {
-    const shell = readFileSync(join(root, "js/layout/shell-staff.js"), "utf8");
+test("staff HTML keeps trial badge nodes suppressed and shows connection status", () => {
     const staff = readFileSync(join(root, "staff.html"), "utf8");
     const license = readFileSync(join(root, "js/core/license.js"), "utf8");
-    assert.match(shell, /updateTrialBadge/);
-    assert.match(license, /superadmin/);
     assert.match(staff, /id="app-trial-badge"/);
-    assert.match(staff, /class="trial-indicator hidden"/);
+    assert.match(staff, /id="header-connection-status"/);
+    assert.match(license, /never surface Trial\/Demo|Phase 3/i);
 });

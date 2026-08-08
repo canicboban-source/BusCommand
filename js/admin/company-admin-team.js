@@ -8,6 +8,7 @@ import { canRunCompanyAdminAction } from "../core/ui-permissions.js";
 import { escapeHtml, showToast } from "../core/utils.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
+import { rowActionsMenuHtml } from "../ui/row-actions-menu.js";
 import { renderCompanyAdminDashboard } from "./company-admin.js";
 import {
     dispatcherReadiness,
@@ -155,8 +156,26 @@ function dispatcherCardHtml(dispatcher, groups) {
             <button type="button" class="btn-secondary company-team-edit-groups${editingGroups ? " is-active" : ""}" ${actionAttr("toggleCaDispGroupsEdit", [String(dispatcher.id)])} ${busy ? "disabled" : ""} aria-expanded="${editingGroups ? "true" : "false"}"><i data-lucide="pencil-line"></i><span>${escapeHtml(t("ca_edit_groups"))}</span></button>
             <button type="button" class="btn-secondary" ${actionAttr("resetCompanyDispatcherPassword", [String(dispatcher.id)])} ${busy || !active ? "disabled" : ""}><i data-lucide="mail-key"></i><span>${escapeHtml(t("ca_send_reset_link"))}</span></button>
             <button type="button" class="btn-secondary" ${actionAttr("revokeCompanyDispatcherSessions", [String(dispatcher.id)])} ${busy || !active ? "disabled" : ""}><i data-lucide="log-out"></i><span>${escapeHtml(t("ca_revoke_sessions"))}</span></button>
-            <button type="button" class="${active ? "btn-danger-ghost" : "btn-secondary"}" ${actionAttr("toggleCompanyDispatcherStatus", [String(dispatcher.id)])} ${busy ? "disabled" : ""}><i data-lucide="${toggleIcon}"></i><span>${escapeHtml(toggleLabel)}</span></button>
-            ${active ? "" : `<button type="button" class="btn-danger-ghost" ${actionAttr("removeCompanyDispatcher", [String(dispatcher.id)])} ${busy ? "disabled" : ""}><i data-lucide="trash-2"></i><span>${escapeHtml(t("ca_disp_delete"))}</span></button>`}
+            ${rowActionsMenuHtml(`ca-disp-${dispatcher.id}`, [
+                {
+                    action: "toggleCompanyDispatcherStatus",
+                    args: [String(dispatcher.id)],
+                    label: toggleLabel,
+                    icon: toggleIcon,
+                    danger: active,
+                    disabled: busy
+                },
+                ...(active
+                    ? []
+                    : [{
+                        action: "removeCompanyDispatcher",
+                        args: [String(dispatcher.id)],
+                        label: t("ca_disp_delete"),
+                        icon: "trash-2",
+                        danger: true,
+                        disabled: busy
+                    }])
+            ])}
         </div>
         <div id="ca-disp-groups-edit-${escapeHtml(String(dispatcher.id))}" class="company-team-editor${editingGroups ? "" : " hidden"}">
             <div><strong>${escapeHtml(t("ca_assign_groups"))}</strong><p>${escapeHtml(t("ca_assign_groups_hint"))}</p></div>
@@ -429,7 +448,7 @@ function removeCompanyDispatcher(dispId) {
                 renderCompanyAdminDashboard();
             }
         },
-        { danger: true, confirmText: t("ca_disp_delete") }
+        { danger: true, confirmText: t("btn_yes") || "Da" }
     );
 }
 

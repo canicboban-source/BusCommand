@@ -585,7 +585,7 @@ function renderAttentionCard(item) {
                 <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id, "assign"])}>
                     <i data-lucide="user-plus"></i> ${escapeHtml(t("ops_attn_gap_assign") || "Dodeli smenu")}
                 </button>
-                <button type="button" class="btn-secondary ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id, "daily"])}>
+                <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id, "daily"])}>
                     <i data-lucide="calendar-days"></i> ${escapeHtml(t("ops_attn_gap_open_daily") || "Otvori dnevni plan")}
                 </button>
             </div>`;
@@ -598,7 +598,7 @@ function renderAttentionCard(item) {
     } else {
         solution = `
             <p class="ops-attention-soft">${escapeHtml(t("ops_attn_confirm_hint") || "Potvrda još nije stigla — proverite poruke ili sačekajte odgovor vozača.")}</p>
-            <button type="button" class="btn-secondary ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id])}>
+            <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id])}>
                 <i data-lucide="message-circle"></i> ${escapeHtml(t("ops_attn_open_messages") || "Otvori poruke")}
             </button>`;
     }
