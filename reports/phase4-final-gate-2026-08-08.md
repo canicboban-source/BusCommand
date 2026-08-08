@@ -74,16 +74,17 @@ Napomena okruženja: lokalni Node `v26.4.0` (engines traže `22.x`) — samo EBA
 
 | Korak | Status |
 | --- | --- |
-| Grana | `work/ca-group-monthly-import` |
-| Commit za gate | `069ce67` |
-| Merge u `main` | vidi git sekciju ispod (ažurira se posle merge komandi) |
-| Push `origin/main` | vidi git sekciju ispod |
+| Grana | `work/ca-group-monthly-import` @ `ddad448` |
+| Commit za Gate ×2 (product tree) | `069ce67` |
+| Izveštaj + gate logovi | `ddad448` |
+| Merge commit na `main` | **`058a832`** — *Merge branch 'work/ca-group-monthly-import' into main* |
+| Push `origin/main` | **OK** (`origin/main` = `058a832`) |
+| Push work grane | **OK** (`origin/work/ca-group-monthly-import` = `ddad448`) |
 
-### Pre merge stanje
+### Pre / posle merge
 
-- `origin/main` bio na `2d2f67b` (prethodni PR #29 merge).
-- Work grana **21 commit** ispred `origin/main` (uključujući Phase 1/2 `006c025` + Phase 3 `069ce67`), **0** iza.
-- Lokalni `main` bio zastareo (`c0e915c`); merge ide preko ažuriranog `origin/main`.
+- Pre: `origin/main` = `2d2f67b` (PR #29); work ispred, 0 iza.
+- Posle: `main` / `origin/main` = `058a832` uključuje Phase 1–4.
 
 ---
 
