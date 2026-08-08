@@ -13,7 +13,7 @@ import { t, applyBrandingToUI } from "../ui/i18n.js";
 import { EXPECTED_FIREBASE_PROJECT_ID } from "../core/firebase-web-config.js";
 import { confirmedTenantId } from "../core/production-auth-gate.js";
 import { isDriverSurface, isStaffRole } from "../core/app-surface.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { isHardStaffAuthError, staffAuthErrorKey } from "./staff-login-errors.js";
 import { clearDriverSensitiveCaches } from "../driver/offline-snapshot.js";
 
@@ -61,15 +61,16 @@ async function loginAsDispatcher() {
         return;
     }
 
-    // Lokalni korisnici — samo u demo modu
-    const allLocalUsers = IS_DEMO_MODE
+    // Local-state users only when isolated QA harness is active (never packaged demo seed).
+    const allLocalUsers = USE_LOCAL_STATE
         ? [...(window.state.companyAdmins || []), ...(window.state.dispatchers || [])]
         : [];
     const localUser = allLocalUsers.find(d => d.email === email);
     const emailIsReal = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-    // Firebase auth — produkcija ili nepoznati korisnik u demo modu
-    if ((!IS_DEMO_MODE || (emailIsReal && !localUser)) && typeof firebase !== "undefined" && firebase.auth) {
+    if (USE_LOCAL_STATE && localUser) {
+        // fall through to local password check below
+    } else if ((!USE_LOCAL_STATE || (emailIsReal && !localUser)) && typeof firebase !== "undefined" && firebase.auth) {
         try {
             const btn = document.getElementById("dispatcher-login-btn");
             if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; }
@@ -148,17 +149,17 @@ async function loginAsDispatcher() {
             const code = err?.code || "";
             // Always surface hard/credential failures (never silent). Same message for
             // user-not-found and wrong-password to prevent user-enumeration.
-            if (isHardStaffAuthError(code) || !IS_DEMO_MODE) {
+            if (isHardStaffAuthError(code) || !USE_LOCAL_STATE) {
                 showDispatcherError(t(staffAuthErrorKey(code)));
                 passInput.value = "";
                 return;
             }
-            // Demo only: non-auth failures (e.g. network) may try local users below.
+            // QA local-state only: non-auth failures may try seeded local users below.
         }
     }
 
-    // FALLBACK: lokalni login (samo demo mod)
-    if (!IS_DEMO_MODE) {
+    // FALLBACK: local login only when isolated QA harness seeded accounts exist
+    if (!USE_LOCAL_STATE) {
         showDispatcherError(t("error_invalid_credentials"));
         passInput.value = "";
         return;
@@ -272,7 +273,7 @@ function logout() {
             saveState();
         }
     }
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         Auth.logout();
     }
     stopFirestoreSync();

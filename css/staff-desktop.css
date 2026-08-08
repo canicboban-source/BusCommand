@@ -1329,13 +1329,25 @@ html[data-app-surface="staff"] .modal-overlay .modal-content > p {
     line-height: 1.45;
 }
 
-/* ── SA companies panel ── */
-html[data-app-surface="staff"] #sa-companies-panel {
+/* ── SA companies panel (stacked cards — no horizontal scroll) ── */
+html[data-app-surface="staff"] #sa-companies-panel,
+html[data-app-surface="staff"] .sa-companies-panel {
     margin-top: 4px;
+    background: var(--staff-panel);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-md);
+    padding: 16px 18px;
+    overflow-x: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
 }
 
-html[data-app-surface="staff"] #sa-companies-panel > div:first-child {
-    margin-bottom: 14px !important;
+html[data-app-surface="staff"] .sa-companies-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
     padding-bottom: 12px;
     border-bottom: 1px solid rgba(148, 163, 184, 0.1);
 }
@@ -1344,6 +1356,156 @@ html[data-app-surface="staff"] #sa-companies-panel h3 {
     font-size: 1.05rem;
     font-weight: 750;
     letter-spacing: -0.01em;
+    color: var(--text-main);
+}
+
+html[data-app-surface="staff"] .sa-companies-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+html[data-app-surface="staff"] .sa-companies-empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 18px 8px;
+}
+
+html[data-app-surface="staff"] .sa-company-card {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 14px 14px 12px;
+    background: rgba(255, 255, 255, 0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+html[data-app-surface="staff"] .sa-company-card-top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+html[data-app-surface="staff"] .sa-company-card-title {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    flex: 1 1 180px;
+}
+
+html[data-app-surface="staff"] .sa-company-card-name {
+    font-size: 1rem;
+    word-break: break-word;
+}
+
+html[data-app-surface="staff"] .sa-company-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+html[data-app-surface="staff"] .sa-company-card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    min-width: 0;
+}
+
+html[data-app-surface="staff"] .sa-company-meta-label {
+    color: var(--text-muted);
+    margin-right: 6px;
+    opacity: 0.85;
+}
+
+html[data-app-surface="staff"] .sa-company-card-meta code {
+    font-size: 0.78rem;
+    word-break: break-all;
+}
+
+html[data-app-surface="staff"] .sa-company-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+html[data-app-surface="staff"] .sa-company-card-actions .btn-primary,
+html[data-app-surface="staff"] .sa-company-card-actions .btn-secondary {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    height: auto;
+    min-height: 34px;
+}
+
+html[data-app-surface="staff"] .sa-company-btn-suspend {
+    background: #ff4d4d !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+html[data-app-surface="staff"] .sa-company-btn-activate {
+    background: #10b981 !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+html[data-app-surface="staff"] .sa-company-btn-delete {
+    background: #7f1d1d !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+html[data-app-surface="staff"] .sa-detail-settings-grid,
+html[data-app-surface="staff"] .sa-detail-flags,
+html[data-app-surface="staff"] .sa-detail-counts {
+    grid-template-columns: 1fr !important;
+}
+
+html[data-app-surface="staff"] .sa-detail-modal {
+    max-width: min(520px, 96vw);
+    width: min(520px, 96vw);
+    overflow-x: hidden;
+}
+
+html[data-app-surface="staff"] .sa-detail-admin-actions {
+    flex-wrap: wrap;
+}
+
+html[data-app-surface="staff"] .sa-detail-profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+    min-width: 0;
+}
+
+html[data-app-surface="staff"] .sa-detail-profile-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+html[data-app-surface="staff"] .sa-detail-profile-form input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.25);
     color: var(--text-main);
 }
 
@@ -2481,8 +2643,9 @@ html[data-app-surface="staff"] .sa-company-id-copy {
 }
 
 html[data-app-surface="staff"] .sa-detail-modal {
-    max-width: 720px;
-    width: min(720px, 94vw);
+    max-width: min(520px, 96vw);
+    width: min(520px, 96vw);
+    overflow-x: hidden;
 }
 html[data-app-surface="staff"] .sa-detail-header,
 html[data-app-surface="staff"] .sa-detail-footer {
@@ -2490,6 +2653,7 @@ html[data-app-surface="staff"] .sa-detail-footer {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    flex-wrap: wrap;
 }
 html[data-app-surface="staff"] .sa-detail-footer {
     justify-content: flex-end;
@@ -2497,8 +2661,8 @@ html[data-app-surface="staff"] .sa-detail-footer {
 }
 html[data-app-surface="staff"] .sa-detail-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px 16px;
+    grid-template-columns: 1fr;
+    gap: 12px;
     margin: 12px 0 16px;
 }
 html[data-app-surface="staff"] .sa-detail-grid > div {

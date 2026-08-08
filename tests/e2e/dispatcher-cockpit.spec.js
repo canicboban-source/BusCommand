@@ -169,7 +169,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     }
 
     await page.setViewportSize({ width: 1600, height: 900 });
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
     await assertCockpitColumns();
     await expect(page.locator("#dispatcher-live-alerts .urgent-action").first()).toBeVisible();
@@ -215,7 +215,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
 
   test("group overview actions focus the real driver and bus sections", async ({ page }) => {
     await seedDemoState(page, cockpitState());
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openGroupHub("101"));
@@ -242,7 +242,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
       reason: "Traffic"
     }];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     const resolve = page.locator("#dispatcher-live-alerts .urgent-action").first();
@@ -270,8 +270,8 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     const date = todayIso();
     const state = cockpitState();
     state.groups = [
-      { id: "101", name: "Line 101", color: "#3D7EF5", active: true, companyId: "demo" },
-      { id: "202", name: "Line 202", color: "#22C55E", active: true, companyId: "demo" }
+      { id: "101", name: "Line 101", color: "#3D7EF5", active: true, companyId: "qa-local" },
+      { id: "202", name: "Line 202", color: "#22C55E", active: true, companyId: "qa-local" }
     ];
     state.drivers = [
       {
@@ -341,7 +341,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
       description: "Driver reported unavailable"
     }];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openOpsAttentionPanel("coverage:report-coverage-knows"));
@@ -407,7 +407,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
       revision: 1
     }];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openOpsAttentionPanel());
@@ -463,7 +463,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
       revision: 1
     }];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("101"));
@@ -490,8 +490,8 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     const date = todayIso();
     const state = cockpitState();
     state.groups = [
-      { id: "101", name: "Line 101", color: "#3D7EF5", active: true, companyId: "demo" },
-      { id: "202", name: "Line 202", color: "#22C55E", active: true, companyId: "demo" }
+      { id: "101", name: "Line 101", color: "#3D7EF5", active: true, companyId: "qa-local" },
+      { id: "202", name: "Line 202", color: "#22C55E", active: true, companyId: "qa-local" }
     ];
     state.drivers = [
       {
@@ -524,7 +524,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
       revision: 1
     }];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openOpsAttentionPanel());
@@ -552,7 +552,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
   test("daily replacement records the incident first and applies one guided resolution", async ({ page }) => {
     const state = cockpitState();
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate((date) =>
@@ -609,7 +609,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
   test("desktop native select options remain readable on a light Windows-style popup", async ({ page }) => {
     await page.emulateMedia({ colorScheme: "light" });
     await seedDemoState(page, cockpitState());
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     const colors = await page.locator(".ops-edit-select").first().evaluate((select) => {

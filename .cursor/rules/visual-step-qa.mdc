@@ -17,5 +17,5 @@ For every manual or agent UI test / verification pass:
    - whether it worked (pass / fail / blocked)
    - whether it follows product business logic and the real app workflow
 4. Do not summarize only the end state. The owner wants the **path**, not just the verdict.
-5. Prefer demo/`staff.html?mode=demo` for local visual passes unless the task explicitly requires production Firebase.
+5. Prefer an **isolated QA / emulator harness** with ephemeral test-factory data (never `?mode=demo`, never packaged demo tenants). Clean product runtime must start empty.
 6. Never claim a control “works” without a screenshot or equivalent live observation for that step.

@@ -80,10 +80,13 @@ const {
 const { version: APP_VERSION } = require("./package.json");
 
 const PORT = Number(process.env.PORT) || 8766;
-const SERVICE_ACCOUNT_PATH = path.join(__dirname, "firebase-admin-key.json");
+const SERVICE_ACCOUNT_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS
+  ? path.resolve(process.env.GOOGLE_APPLICATION_CREDENTIALS)
+  : path.join(__dirname, "firebase-admin-key.json");
 const SERVICE_ACCOUNT_JSON = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-const FORCE_LOCAL_DEMO = String(process.env.BUSCOMMAND_FORCE_LOCAL_DEMO || "").trim() === "1";
-const HAS_FIREBASE = !FORCE_LOCAL_DEMO && Boolean(SERVICE_ACCOUNT_JSON || fs.existsSync(SERVICE_ACCOUNT_PATH));
+// Isolated QA / Playwright local API — never a product demo seed path.
+const QA_HARNESS = String(process.env.BUSCOMMAND_QA_HARNESS || "").trim() === "1";
+const HAS_FIREBASE = !QA_HARNESS && Boolean(SERVICE_ACCOUNT_JSON || fs.existsSync(SERVICE_ACCOUNT_PATH));
 
 const DEFAULT_CORS_ORIGINS = [
   `http://localhost:${PORT}`,
@@ -1441,7 +1444,7 @@ app.post(
   }
 );
 
-// D21 (2026-08-07): monthly driver assignments belong to Dispo. CA keeps V66/catalog only.
+// D21 (2026-08-07): monthly driver assignments belong to Dispo. CA keeps duty catalog only.
 app.post(
   "/api/company-admin/monthly-plans/import/preview",
   rateLimit(20, 5 * 60 * 1000),
@@ -1450,7 +1453,7 @@ app.post(
     return res.status(403).json({
       success: false,
       code: "MONTHLY_ASSIGNMENTS_DISPATCHER_ONLY",
-      error: "Mesečne dodele vozača uvozi disponent. Company Admin objavljuje samo katalog smena (V66)."
+      error: "Mesečne dodele vozača uvozi disponent. Company Admin objavljuje samo katalog smena."
     });
   }
 );
@@ -1463,7 +1466,7 @@ app.put(
     return res.status(403).json({
       success: false,
       code: "MONTHLY_ASSIGNMENTS_DISPATCHER_ONLY",
-      error: "Mesečne dodele vozača uvozi disponent. Company Admin objavljuje samo katalog smena (V66)."
+      error: "Mesečne dodele vozača uvozi disponent. Company Admin objavljuje samo katalog smena."
     });
   }
 );

@@ -1,6 +1,6 @@
 // BusCommand ESM v9.5
 import Auth from "../core/auth-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { persistUserSession } from "./login-session.js";
 import { clearAuthSetupFields } from "./password-fields.js";
 import { showAppLayout } from "../layout/shell.js";
@@ -13,9 +13,9 @@ function isLocalSuperAdminAccount(user) {
         || user.role === "superadmin";
 }
 
-/** Demo-only: authenticate SA from local seed (same store as staff login form). */
-function tryDemoSuperAdminLogin(email, password, errEl) {
-    if (!IS_DEMO_MODE) return false;
+/** QA local-state only: authenticate SA from harness-seeded users (never packaged demo). */
+function tryLocalQaSuperAdminLogin(email, password, errEl) {
+    if (!USE_LOCAL_STATE) return false;
     const localUsers = [
         ...(window.state?.companyAdmins || []),
         ...(window.state?.dispatchers || [])
@@ -113,8 +113,8 @@ async function confirmSuperAdminPin() {
         return;
     }
 
-    // Local demo seed first — logo modal must match staff-form SA login.
-    if (tryDemoSuperAdminLogin(email, pass, err)) return;
+    // QA local-state seed first — logo modal must match staff-form SA login.
+    if (tryLocalQaSuperAdminLogin(email, pass, err)) return;
 
     try {
         const result = await Auth.loginWithEmail(email, pass);

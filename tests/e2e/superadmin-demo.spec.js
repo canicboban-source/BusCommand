@@ -7,7 +7,7 @@ test.describe("Super Admin demo", () => {
   });
 
   test("dashboard shows aligned company columns and live stats", async ({ page }) => {
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginSuperAdmin(page);
 
     await expect(page.locator("#superadmin-total-companies")).toHaveText("1");
@@ -16,31 +16,31 @@ test.describe("Super Admin demo", () => {
     expect(userCount).toBeGreaterThanOrEqual(1);
     await expect(page.locator("#superadmin-total-dispatchers")).toHaveText("1");
 
-    const row = page.locator("#superadmin-companies-list tr").first();
-    await expect(row.locator("td").nth(0)).toContainText("Demo Dispatcher");
-    await expect(row.locator("td").nth(1)).toContainText("demo");
-    await expect(row.locator("td").nth(2)).toContainText("active");
-    await expect(row.locator("td").nth(3)).toContainText("trial");
-    await expect(row.locator("td").nth(4)).toContainText("DE");
-    await expect(row.locator("td").nth(5)).toContainText("demo@buscommand.com");
-    await expect(row.locator('[data-action="superadminToggleStatus"]')).toBeVisible();
-    await expect(row.locator('[data-action="superadminStartSupport"]')).toBeVisible();
+    const card = page.locator("#superadmin-companies-list .sa-company-card").first();
+    await expect(card.locator(".sa-company-card-name")).toContainText("QA Dispatcher");
+    await expect(card.locator(".sa-company-id-code")).toContainText("qa-local");
+    await expect(card.locator(".sa-company-card-status")).toContainText("active");
+    await expect(card).toContainText("trial");
+    await expect(card).toContainText("DE");
+    await expect(card).toContainText("dispo@qa.local");
+    await expect(card.locator('[data-action="superadminToggleStatus"]')).toBeVisible();
+    await expect(card.locator('[data-action="superadminStartSupport"]')).toBeVisible();
   });
 
   test("company detail hydrates from demo dispatcher state", async ({ page }) => {
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginSuperAdmin(page);
 
     await page.locator('#superadmin-companies-list [data-action="superadminOpenCompanyDetail"]').first().click();
     await expect(page.locator("#sa-company-detail-modal")).toBeVisible();
-    await expect(page.locator("#sa-detail-name")).toHaveText("Demo Dispatcher");
-    await expect(page.locator("#sa-detail-company-id")).toHaveText("demo");
-    await expect(page.locator("#sa-detail-email")).toHaveText("demo@buscommand.com");
-    await expect(page.locator("#sa-detail-admins")).toContainText("Demo Admin");
+    await expect(page.locator("#sa-detail-name")).toHaveText("QA Dispatcher");
+    await expect(page.locator("#sa-detail-company-id")).toHaveText("qa-local");
+    await expect(page.locator("#sa-detail-email")).toHaveText("dispo@qa.local");
+    await expect(page.locator("#sa-detail-admins")).toContainText("QA Company Admin");
   });
 
   test("register company updates dashboard stats", async ({ page }) => {
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginSuperAdmin(page);
 
     await page.locator("#sa-new-name").fill("Alpine Transit");
@@ -53,7 +53,7 @@ test.describe("Super Admin demo", () => {
   });
 
   test("5x logo modal accepts demo SA email+password", async ({ page }) => {
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await page.locator("#tab-dispatcher-btn").click().catch(() => {});
 
     await page.evaluate(() => {
@@ -67,8 +67,8 @@ test.describe("Super Admin demo", () => {
     await expect(page.locator("#superadmin-prod-fields")).toBeVisible();
     await expect(page.locator("#superadmin-demo-fields")).toBeHidden();
 
-    await page.locator("#superadmin-email-input").fill("sa@demo.local");
-    await page.locator("#superadmin-pass-input").fill("sa-demo-ok");
+    await page.locator("#superadmin-email-input").fill("sa@qa.local");
+    await page.locator("#superadmin-pass-input").fill("Qa-test-ok-9");
     await page.locator('[data-action="confirmSuperAdminPin"]').click();
 
     await expect(page.locator("#app-container")).not.toHaveClass(/hidden/);
@@ -76,22 +76,22 @@ test.describe("Super Admin demo", () => {
   });
 
   test("suspend then activate company locally", async ({ page }) => {
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginSuperAdmin(page);
 
     await page.locator('#superadmin-companies-list [data-action="superadminToggleStatus"]').first().click();
     await expect(page.locator("#global-confirm-modal")).toBeVisible();
     await page.locator("#global-confirm-yes").click();
-    await expect(page.locator("#superadmin-companies-list tr").first().locator("td").nth(2)).toContainText("suspended");
+    await expect(page.locator("#superadmin-companies-list .sa-company-card").first().locator(".sa-company-card-status")).toContainText("suspended");
 
     await page.locator('#superadmin-companies-list [data-action="superadminToggleStatus"]').first().click();
     await expect(page.locator("#global-confirm-modal")).toBeVisible();
     await page.locator("#global-confirm-yes").click();
-    await expect(page.locator("#superadmin-companies-list tr").first().locator("td").nth(2)).toContainText("active");
+    await expect(page.locator("#superadmin-companies-list .sa-company-card").first().locator(".sa-company-card-status")).toContainText("active");
   });
 
   test("typed company-id delete removes demo company", async ({ page }) => {
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginSuperAdmin(page);
 
     await page.locator("#sa-new-name").fill("Temp Co");

@@ -3,7 +3,7 @@
  * Measures resolution path (report → options → apply) and soft capacity per group.
  */
 const { test, expect } = require("@playwright/test");
-const { minimalDemoState, loginDispatcher } = require("./helpers.js");
+const { minimalDemoState, loginDispatcher, installQaHarness } = require("./helpers.js");
 
 function todayIso() {
   const now = new Date();
@@ -179,18 +179,15 @@ async function openAttention(page) {
 
 async function seedFleetAndLogin(page, driverCount, busCount) {
   const state = buildFleetState(driverCount, busCount);
-  await page.addInitScript((demoState) => {
-    localStorage.removeItem("buscommand_demo_state_v2");
-    sessionStorage.removeItem("buscommand_demo_state_v2");
-    localStorage.setItem("buscommand_demo_state_v3", JSON.stringify(demoState));
-    sessionStorage.setItem("buscommand_demo_state_v3", JSON.stringify(demoState));
-    localStorage.setItem("buscommand_lang", "en");
-    sessionStorage.setItem("buscommand_pretrip_done", "true");
-    sessionStorage.removeItem("buscommand_session");
-    localStorage.removeItem("buscommand_session");
-  }, state);
-  await page.goto("/staff.html?mode=demo");
-  await loginDispatcher(page);
+  const companyId = state.companyAdmins?.[0]?.companyId || state.dispatchers?.find((d) => !d.isSuperAdmin)?.companyId || "qa-local";
+  await installQaHarness(page, {
+    companyId,
+    state: { ...state, e2eFixture: true, companyId },
+    dispoEmail: "dispo@qa.local",
+    password: "Qa-test-ok-9"
+  });
+  await page.goto("/staff.html");
+  await loginDispatcher(page, "dispo@qa.local", "Qa-test-ok-9");
 }
 
 async function ensureAttentionOpen(page) {

@@ -3,7 +3,7 @@ import { clearAllPasswordFields } from "../auth/password-fields.js";
 import { isSessionValid } from "../auth/login-session.js";
 import { showLoginScreen } from "../auth/login-ui.js";
 import { translateUI, t } from "../ui/i18n.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { canOpenSection } from "../core/ui-permissions.js";
 import { showToast } from "../core/utils.js";
 import { canUseDriverOperationalUi } from "../auth/driver-access-gate.js";
@@ -18,7 +18,7 @@ function switchSection(sectionId) {
         return false;
     }
 
-    if (!window.currentUser || !canOpenSection(window.currentUser.role, sectionId, IS_DEMO_MODE)) {
+    if (!window.currentUser || !canOpenSection(window.currentUser.role, sectionId, USE_LOCAL_STATE)) {
         showToast(t("error_access_denied"), "error");
         return false;
     }

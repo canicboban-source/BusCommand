@@ -6,7 +6,7 @@ test.describe("Dispatcher help / self-recovery", () => {
     const state = minimalDemoState();
     state.profile = { contactEmail: "owner@demo.local", country: "AT", timezone: "Europe/Vienna" };
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo", { waitUntil: "networkidle" });
+    await page.goto("/staff.html", { waitUntil: "networkidle" });
     await loginDispatcher(page);
 
     const helpBtn = page.locator("#dispatcher-help-btn");
@@ -43,8 +43,8 @@ test.describe("Dispatcher help / self-recovery", () => {
 
   test("company admin does not see dispatcher Help button", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/staff.html?mode=demo", { waitUntil: "networkidle" });
-    await loginDispatcher(page, "admin@demo.com", "demo123");
+    await page.goto("/staff.html", { waitUntil: "networkidle" });
+    await loginDispatcher(page, "ca@qa.local", "Qa-test-ok-9");
     await expect(page.locator("#company-admin-nav")).toBeVisible();
     await expect(page.locator("#dispatcher-help-btn")).toBeHidden();
   });

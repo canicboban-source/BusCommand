@@ -14,7 +14,7 @@ test.describe("Dispatcher bus import smoke", () => {
       ]
     };
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => {
@@ -43,7 +43,7 @@ test.describe("Dispatcher bus import smoke", () => {
 
   test("fail: empty paste shows error and does not invent buses", async ({ page }) => {
     await seedDemoState(page, minimalDemoState());
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("101"));

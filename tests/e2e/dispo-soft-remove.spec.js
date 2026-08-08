@@ -14,7 +14,7 @@ function softRemoveState() {
         groupId: "101",
         lineId: "101",
         active: true,
-        companyId: "demo"
+        companyId: "qa-local"
       },
       {
         id: "drv-keep",
@@ -24,7 +24,7 @@ function softRemoveState() {
         groupId: "101",
         lineId: "101",
         active: true,
-        companyId: "demo"
+        companyId: "qa-local"
       }
     ],
     buses: [
@@ -92,7 +92,7 @@ async function confirmModal(page, reason = "plan_correction") {
 test.describe("Dispo soft-remove (list, not company)", () => {
   test("deactivate bus and detach bus from line 101", async ({ page }) => {
     await seedDemoState(page, softRemoveState());
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("101"));
@@ -124,7 +124,7 @@ test.describe("Dispo soft-remove (list, not company)", () => {
 
   test("detach driver from line 101 keeps company roster entry", async ({ page }) => {
     await seedDemoState(page, softRemoveState());
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => window.openGroupHub("101"));
@@ -153,7 +153,7 @@ test.describe("Dispo soft-remove (list, not company)", () => {
 
   test("delete monthly plan for one driver-month", async ({ page }) => {
     await seedDemoState(page, softRemoveState());
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => {
@@ -213,7 +213,7 @@ test.describe("Dispo soft-remove (list, not company)", () => {
       }
     ];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     const invoked = await page.evaluate((d) => {

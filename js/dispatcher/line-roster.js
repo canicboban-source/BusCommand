@@ -2,7 +2,7 @@
 import { saveState } from "../core/state.js";
 import { showToast } from "../core/utils.js";
 import { isOperationalReadOnly } from "../core/access.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import ApiClient from "../core/api-client.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
@@ -76,7 +76,7 @@ async function detachDriverFromLine(driverId, groupId) {
     showConfirm(confirmMsg, async (payload) => {
         const reason = payload?.reason || "";
         const note = payload?.note || "";
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             const result = await ApiClient.detachStaffDriverFromLine(id, gid, { reason, note });
             if (!result?.success) {
                 showToast(result?.error || t("dispo_detach_driver_failed") || "Could not remove driver from line.", "error");
@@ -140,7 +140,7 @@ async function detachBusFromLine(busId, groupId) {
         const reason = payload?.reason || "";
         const note = payload?.note || "";
         const expectedRevision = busRevisionOf(bus);
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             const result = await ApiClient.detachStaffBusFromLine(id, gid, expectedRevision, { reason, note });
             if (!result?.success) {
                 showToast(result?.error || t("dispo_detach_bus_failed") || "Could not remove bus from line.", "error");

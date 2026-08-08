@@ -5,7 +5,7 @@ import { formatDate } from "../maps/helpers.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { isOperationalReadOnly } from "../core/access.js";
 
 const pendingVacationActions = new Set();
@@ -137,7 +137,7 @@ function handleVacation(id, status) {
             pendingVacationActions.add(id);
             renderDispatcherVacations();
             try {
-                if (!IS_DEMO_MODE) {
+                if (!USE_LOCAL_STATE) {
                     const result = await ApiClient.setVacationStatus(id, status);
                     if (!result.success) {
                         showToast(result.error || t("driver_vacation_review_failed"), "error");
@@ -145,7 +145,7 @@ function handleVacation(id, status) {
                     }
                 }
                 vacation.status = status;
-                if (IS_DEMO_MODE) saveState();
+                if (USE_LOCAL_STATE) saveState();
                 showToast(t("js_vacation_marked") + status.toUpperCase(), "success");
             } finally {
                 pendingVacationActions.delete(id);

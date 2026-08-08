@@ -7,7 +7,7 @@ test("api-server allows localhost CORS ports outside production for Vite crossor
   const src = fs.readFileSync(path.join(__dirname, "../../api-server.js"), "utf8");
   assert.match(src, /function isLocalDevCorsOrigin/);
   assert.match(src, /function isBusCommandCorsOrigin/);
-  assert.match(src, /BUSCOMMAND_FORCE_LOCAL_DEMO/);
+  assert.match(src, /BUSCOMMAND_QA_HARNESS/);
   assert.match(src, /http:\/\/localhost:\$\{PORT\}/);
   assert.match(src, /isLocalDevCorsOrigin\(origin\)/);
   assert.match(src, /isBusCommandCorsOrigin\(origin\)/);

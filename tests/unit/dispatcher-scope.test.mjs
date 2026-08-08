@@ -42,5 +42,5 @@ test("dispatcher create-group control remains unavailable", () => {
   const setupBlock = html.match(/<div id="group-setup-create-block"[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/)?.[0] || "";
   assert.match(setupBlock, /display:none/);
   const source = fs.readFileSync(new URL("../../js/admin/dispatcher-setup.js", import.meta.url), "utf8");
-  assert.match(source, /function createDispatcherGroup\(\)[\s\S]*?if \(!IS_DEMO_MODE\)/);
+  assert.match(source, /function createDispatcherGroup\(\)[\s\S]*?if \(!USE_LOCAL_STATE\)/);
 });

@@ -23,7 +23,7 @@ function guidedState() {
         groupId: "101",
         lineId: "101",
         active: true,
-        companyId: "demo"
+        companyId: "qa-local"
       },
       {
         id: "drv-spare",
@@ -33,7 +33,7 @@ function guidedState() {
         groupId: "101",
         lineId: "101",
         active: true,
-        companyId: "demo"
+        companyId: "qa-local"
       }
     ],
     buses: [
@@ -79,7 +79,7 @@ function guidedState() {
 test.describe("Dispo guided incident (reason → plan → attention)", () => {
   test("driver sick: reason dropdown aligns plan and opens Needs attention", async ({ page }) => {
     await seedDemoState(page, guidedState());
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => {
@@ -124,7 +124,7 @@ test.describe("Dispo guided incident (reason → plan → attention)", () => {
 
   test("bus AC: reason dropdown marks bus breakdown and opens Needs attention", async ({ page }) => {
     await seedDemoState(page, guidedState());
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => {

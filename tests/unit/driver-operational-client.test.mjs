@@ -23,13 +23,13 @@ const [quickReports, reportForms, dashboard, messages, messageAlerts, api, vacat
 
 test("production driver actions use narrow server APIs instead of global state sync", () => {
     assert.match(quickReports, /ApiClient\.createDriverReport/);
-    assert.match(quickReports, /if \(IS_DEMO_MODE\) saveState\(\)/);
+    assert.match(quickReports, /if \(USE_LOCAL_STATE\) saveState\(\)/);
     assert.match(reportForms, /ApiClient\.createDriverReport/);
     assert.match(reportForms, /ApiClient\.createDriverLostItem/);
     assert.match(dashboard, /ApiClient\.createDriverSos/);
-    assert.match(dashboard, /if \(IS_DEMO_MODE\) saveState\(\)/);
+    assert.match(dashboard, /if \(USE_LOCAL_STATE\) saveState\(\)/);
     assert.match(messages, /ApiClient\.markDriverMessageRead/);
-    assert.match(messages, /if \(IS_DEMO_MODE\) saveState\(\)/);
+    assert.match(messages, /if \(USE_LOCAL_STATE\) saveState\(\)/);
     assert.match(api, /\/api\/driver\/reports/);
     assert.match(api, /\/api\/driver\/sos/);
     assert.match(api, /\/api\/driver\/vacations/);
@@ -42,10 +42,11 @@ test("vacation clients use narrow APIs, stable states and safe DOM rendering", (
     assert.match(reportForms, /ApiClient\.createDriverVacation/);
     assert.match(reportForms, /pendingForms\.has\("vacation-form"\)/);
     assert.match(reportForms, /days < 1 \|\| days > 366/);
-    assert.match(reportForms, /if \(IS_DEMO_MODE\) saveState\(\)/);
+    assert.match(reportForms, /if \(USE_LOCAL_STATE\) saveState\(\)/);
     assert.match(vacations, /ApiClient\.setVacationStatus/);
     assert.match(vacations, /pendingVacationActions/);
-    assert.match(vacations, /driver\.textContent = vacation\.driver/);
+    assert.match(vacations, /driver\.textContent = driverName/);
+    assert.match(vacations, /vacation\.driver \|\| vacation\.driverName/);
     assert.doesNotMatch(vacations, /innerHTML/);
 });
 
@@ -54,7 +55,7 @@ test("dispatcher shift assignments use the narrow staff API outside demo mode", 
     assert.match(shifts, /ApiClient\.assignStaffShift/);
     assert.match(shifts, /expectedRevision/);
     assert.match(shifts, /REVISION_CONFLICT/);
-    assert.match(shifts, /if \(!IS_DEMO_MODE\) \{[\s\S]*?return true;\s*\}\s*if \(bus != null\)[\s\S]*?saveState\(\);/);
+    assert.match(shifts, /if \(!USE_LOCAL_STATE\) \{[\s\S]*?return true;\s*\}\s*if \(bus != null\)[\s\S]*?saveState\(\);/);
 });
 
 test("driver privacy mode stops GPS, realtime notifications and the session after work", () => {

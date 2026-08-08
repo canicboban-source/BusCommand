@@ -12,7 +12,7 @@ import { escapeHtml, showToast } from "../core/utils.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import ApiClient from "../core/api-client.js";
 import { isOperationalReadOnly } from "../core/access.js";
 import { dispoChangeReasonOptions, recordDemoChangeReason } from "../dispatcher/change-reason.js";
@@ -131,7 +131,7 @@ async function saveBusOpsProfile(event) {
     const garage = normalizeBusGarage(form.querySelector("input[name='garage']")?.value || "");
     const opsStatus = normalizeBusOpsStatus(form.querySelector("select[name='opsStatus']")?.value || "ready");
     const expectedRevision = busRevisionOf(bus);
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         const result = await ApiClient.updateStaffBus(busId, { garage, opsStatus, expectedRevision });
         if (!result?.success) {
             if (result?.status === 409 || result?.code === "REVISION_CONFLICT" || result?.code === "GARAGE_BUSY") {
@@ -176,7 +176,7 @@ async function addBus(event) {
     showConfirm(
         (t("confirm_add_bus") || "Add bus") + ': "' + number + '"?',
         async function() {
-            if (!IS_DEMO_MODE) {
+            if (!USE_LOCAL_STATE) {
                 const result = await ApiClient.createStaffBus(number, activeGrp, { garage, opsStatus: "ready" });
                 if (!result?.success) {
                     const detail = String(result?.error || "").trim();
@@ -257,7 +257,7 @@ function deleteBus(id) {
         const reason = payload?.reason || "";
         const note = payload?.note || "";
         const expectedRevision = busRevisionOf(bus);
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             const result = await ApiClient.setStaffBusActive(id, nextActive, expectedRevision, nextActive ? {} : { reason, note });
             if (!result?.success) {
                 if (result?.status === 409 || result?.code === "REVISION_CONFLICT") toastBusWriteConflict(result);
@@ -296,7 +296,7 @@ function renderRoutesList() {
     const myRoutes = window.state.routes.filter(r => !r.groupId || r.groupId === activeGrp);
     myRoutes.forEach(r => {
         const li = document.createElement("li");
-        const deleteBtn = IS_DEMO_MODE
+        const deleteBtn = USE_LOCAL_STATE
             ? `<button ${actionAttr("deleteRoute", [r.id])} style="align-self:center;background:rgba(239,68,68,0.08);color:#ef4444;border:1px solid rgba(239,68,68,0.2);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;">
                 ${t("btn_delete") || "Obriši"}
             </button>`
@@ -317,7 +317,7 @@ function renderRoutesList() {
 
 function addRoute(event) {
     event.preventDefault();
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         showToast(t("fleet_demo_only") || "Upravljanje linijama u produkciji još nije dostupno preko ovog ekrana.", "info");
         return;
     }
@@ -354,7 +354,7 @@ function addRoute(event) {
 }
 
 function deleteRoute(id) {
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         showToast(t("fleet_demo_only") || "Upravljanje linijama u produkciji još nije dostupno preko ovog ekrana.", "info");
         return;
     }

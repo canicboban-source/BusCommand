@@ -6,7 +6,7 @@ import { t } from "../ui/i18n.js";
 import { renderDashboardGroupsGrid } from "./group-hub.js";
 import { msgText } from "../core/message-text.js";
 import { isDispArchived } from "./message-archive.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import {
     isActiveReport,
     reportKind,
@@ -99,7 +99,7 @@ function pendingConfirmationRows() {
     return confirmationAttentionRows();
 }
 
-function confirmationAttentionTitle(row) {
+function _confirmationAttentionTitle(row) {
     if (row.kind === "delivery_failed") {
         return t("status_confirmation_delivery_failed") || "Slanje potvrde nije uspelo";
     }
@@ -125,7 +125,7 @@ function shiftConfirmStatus(drv, dateStr) {
     return "pending";
 }
 
-function problemStatusLabel(status) {
+function _problemStatusLabel(status) {
     const key = String(status || "open").toLowerCase();
     const map = {
         open: "problem_status_open",
@@ -140,7 +140,7 @@ function problemStatusLabel(status) {
 }
 
 async function refreshStaffShiftConfirmations(force = false) {
-    if (IS_DEMO_MODE) return false;
+    if (USE_LOCAL_STATE) return false;
     if (!window.currentUser || !["dispatcher", "company_admin"].includes(window.currentUser.role)) return false;
     const now = Date.now();
     if (!force && (now - _confirmFetchAt < 20_000 || _confirmFetchInFlight)) return false;
@@ -229,11 +229,11 @@ function visibleOperationalReports() {
         dispatchers: window.state.dispatchers,
         currentUser: window.currentUser,
         activeGroupId: window.state.activeGroupFilter || "",
-        demo: IS_DEMO_MODE
+        demo: USE_LOCAL_STATE
     })).filter(isActiveReport);
 }
 
-function dashboardReportWhen(report) {
+function _dashboardReportWhen(report) {
     if (report.date && report.time) return formatDateTime(report.date, report.time);
     if (report.date) {
         const dateOnly = new Date(`${report.date}T00:00:00`);
@@ -252,7 +252,7 @@ function dashboardReportWhen(report) {
         : "—";
 }
 
-function dashboardReportType(report) {
+function _dashboardReportType(report) {
     const kind = reportKind(report);
     if (kind.kind === "coverage") return t("report_coverage_title") || "Nepokrivena smena";
     if (kind.kind === "breakdown") return `${t("report_breakdown_title")}: ${t(kind.detail) || kind.detail}`;
@@ -819,7 +819,7 @@ async function transitionOperationalIncident(reportId, toStatus) {
     const expectedRevision = Number.isInteger(report.revision) ? report.revision : 0;
     try {
         let result = { success: true, report: { status: toStatus, revision: expectedRevision + 1 } };
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             result = await ApiClient.transitionStaffOperationalIncident(reportId, {
                 toStatus,
                 expectedRevision,
@@ -831,7 +831,7 @@ async function transitionOperationalIncident(reportId, toStatus) {
             return;
         }
         Object.assign(report, result.report || {}, { status: toStatus });
-        if (IS_DEMO_MODE) {
+        if (USE_LOCAL_STATE) {
             report.revision = expectedRevision + 1;
             report.assigneeId = window.currentUser?.uid || window.currentUser?.id;
             saveState();
@@ -891,7 +891,7 @@ async function renderOpsActivityFeed() {
     const el = document.getElementById("ops-recent-activity");
     if (!el) return;
     let events = Array.isArray(window.state.opsActivity) ? window.state.opsActivity : [];
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         try {
             const result = await ApiClient.getStaffOpsActivity(12);
             if (result?.success && Array.isArray(result.events)) {
@@ -1074,7 +1074,7 @@ async function submitOperationalIncident(event) {
         }
     };
     try {
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             result = await ApiClient.createStaffOperationalIncident({
                 affectedEntity,
                 driverId: driver ? driverUid(driver) : undefined,
@@ -1109,7 +1109,7 @@ async function submitOperationalIncident(event) {
             reportId: result.report?.id || null,
             date: today
         });
-        if (IS_DEMO_MODE) saveState();
+        if (USE_LOCAL_STATE) saveState();
 
         const preferredReplacementDriverId = String(modal.dataset.preferredReplacementDriverId || "");
         closeOperationalIncident();

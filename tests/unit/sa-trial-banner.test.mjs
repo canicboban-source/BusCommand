@@ -53,12 +53,12 @@ function loadLicenseHelpers() {
         window,
         module: { exports: {} },
         exports: {},
-        IS_DEMO_MODE: false,
+        USE_LOCAL_STATE: false,
         ApiClient: { getLicense: async () => ({ success: false }) }
     };
     // Provide bare identifiers used after import strip
     const wrapped = `
-      const IS_DEMO_MODE = false;
+      const USE_LOCAL_STATE = false;
       const ApiClient = { getLicense: async () => ({ success: false }) };
       ${source}
     `;

@@ -1,6 +1,6 @@
 import ApiClient from "../core/api-client.js";
 import { applyServicePlanToCatalog, findDemoPlan } from "../core/service-plan.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { escapeHtml, showToast } from "../core/utils.js";
@@ -400,7 +400,7 @@ async function loadServicePlanHistory() {
     selectedHistoryId = null;
     renderServicePlanHistory();
     try {
-        if (IS_DEMO_MODE) {
+        if (USE_LOCAL_STATE) {
             const plans = (window.state.servicePlans || [])
                 .filter(plan => String(plan.groupId) === groupId)
                 .map(plan => ({
@@ -428,7 +428,7 @@ async function openCompanyServicePlanHistory(planId) {
     const groupId = selectedGroupId();
     if (!groupId) return;
     selectedHistoryId = planId;
-    if (!historyDetails.has(planId) && !IS_DEMO_MODE) {
+    if (!historyDetails.has(planId) && !USE_LOCAL_STATE) {
         renderServicePlanHistory();
         const result = await ApiClient.getServicePlanVersion(window.currentUser.companyId, groupId, planId);
         if (!result.success) {
@@ -459,7 +459,7 @@ async function loadCurrentServicePlans() {
         const groups = companyGroups();
         const results = await Promise.all(groups.map(async group => {
             const code = String(group.id);
-            if (IS_DEMO_MODE) return [code, findDemoPlan(code)];
+            if (USE_LOCAL_STATE) return [code, findDemoPlan(code)];
             const result = await ApiClient.getActiveServicePlan(companyId, code);
             return [code, result.success ? result.plan : null];
         }));
@@ -569,7 +569,7 @@ async function publishCompanyServicePlan() {
         byteSize: pendingImport.byteSize ?? null
     };
     try {
-        if (IS_DEMO_MODE) {
+        if (USE_LOCAL_STATE) {
             if (!Array.isArray(window.state.servicePlans)) window.state.servicePlans = [];
             const planId = `${groupId}-${plan.planCode}-${plan.planVersion}-${plan.validFrom}`;
             if (window.state.servicePlans.some(existing => existing.id === planId)) {
@@ -641,7 +641,7 @@ async function activateCompanyServicePlanVersion(planId) {
         return;
     }
     try {
-        if (IS_DEMO_MODE) {
+        if (USE_LOCAL_STATE) {
             if (!Array.isArray(window.state.servicePlans)) return;
             const target = window.state.servicePlans.find(plan => plan.id === planId && plan.groupId === groupId);
             if (!target) {

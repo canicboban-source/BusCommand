@@ -4,7 +4,7 @@ import { escapeHtml, formatDateTime, getVisibleDrivers, showToast } from "../cor
 import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { isOperationalReadOnly } from "../core/access.js";
 
 const pendingLostItemStatus = new Set();
@@ -160,7 +160,7 @@ function renderDispatcherLostItems() {
 
 async function setLostItemStatus(id, nextStatus) {
     if (!id || !nextStatus || pendingLostItemStatus.has(id)) return false;
-    if (isOperationalReadOnly() || (window.currentUser?.role && window.currentUser.role !== "dispatcher" && !IS_DEMO_MODE)) {
+    if (isOperationalReadOnly() || (window.currentUser?.role && window.currentUser.role !== "dispatcher" && !USE_LOCAL_STATE)) {
         showToast(t("lost_return_denied") || "Samo disponent može menjati status.", "error");
         return false;
     }
@@ -170,7 +170,7 @@ async function setLostItemStatus(id, nextStatus) {
     pendingLostItemStatus.add(id);
     renderDispatcherLostItems();
     try {
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             const result = await ApiClient.setLostItemStatus(id, nextStatus);
             if (!result.success) {
                 showToast(result.error || t("lost_return_failed") || "Status predmeta nije ažuriran.", "error");

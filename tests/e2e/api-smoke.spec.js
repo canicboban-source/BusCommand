@@ -66,7 +66,7 @@ test.describe("API smoke", () => {
 
   test("the retired legacy PIN login is gone", async ({ request }) => {
     const res = await request.post(`${BASE}/api/legacy/auth/driver-login`, {
-      data: { companyId: "demo", driverId: "drv-1", pin: "1234" }
+      data: { companyId: "qa-local", driverId: "drv-1", pin: "1234" }
     });
     expect(res.status()).toBe(404);
   });

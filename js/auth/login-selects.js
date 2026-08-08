@@ -1,5 +1,5 @@
 // BusCommand — login dropdowns (bez circular importa sa i18n)
-import { IS_DEMO_MODE, COMPANY_ID } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE, COMPANY_ID } from "../core/runtime-config.js";
 import {
     normalizeCompanyId,
     readRememberedDriverCompany
@@ -47,13 +47,13 @@ function configureProductionDriverLoginFields() {
     }
 }
 
-function configureDemoDriverLoginFields() {
+function configureLocalQaDriverLoginFields() {
     const companyInput = document.getElementById("login-driver-company");
     const companyGroup = companyInput?.closest(".form-group");
     if (companyGroup) companyGroup.classList.add("hidden");
     if (companyInput) {
         companyInput.required = false;
-        companyInput.value = "demo";
+        companyInput.value = (typeof COMPANY_ID === "string" && COMPANY_ID) ? COMPANY_ID : "qa-local";
     }
 }
 
@@ -62,12 +62,12 @@ async function initializeLoginSelects() {
     if (!driverSelect) return;
 
     // Production: no unauthenticated roster dump — identify by company + EID.
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         configureProductionDriverLoginFields();
         return;
     }
 
-    configureDemoDriverLoginFields();
+    configureLocalQaDriverLoginFields();
 
     const selectedName = driverSelect.value;
     driverSelect.innerHTML = "";

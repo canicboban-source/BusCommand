@@ -7,7 +7,7 @@ import { renderDriverMessages } from "./messages-inbox.js";
 import { checkSOSStatus, resolveSOS } from "../maps/sos-siren.js";
 import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { driverWorkPolicy } from "./work-session.js";
 import { attachFocusTrap, detachFocusTrap } from "../ui/focus-trap.js";
 
@@ -143,7 +143,7 @@ function updateDriverPlanConfirmStatus(todayShift) {
 
     const targets = driverWorkPolicy()?.confirmationTargets || [];
     const pending = targets.filter((row) => !row.confirmed);
-    if (!IS_DEMO_MODE && pending.length > 0) {
+    if (!USE_LOCAL_STATE && pending.length > 0) {
         el.className = "driver-pwa-confirm warn";
         if (label) {
             label.textContent = pending.length === 1
@@ -345,7 +345,7 @@ async function confirmSOSTrigger() {
     }
     sosSubmissionPending = true;
     try {
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             const result = await ApiClient.createDriverSos(window.currentUser.bus || "");
             if (!result.success) {
                 showToast(result.error || t("driver_sos_failed"), "error");
@@ -356,7 +356,7 @@ async function confirmSOSTrigger() {
         window.state.sosActive = true;
         window.state.sosDriver = window.currentUser.name;
         window.state.sosBus = window.currentUser.bus;
-        if (IS_DEMO_MODE) saveState();
+        if (USE_LOCAL_STATE) saveState();
         checkSOSStatus();
         showToast(t("js_alert_sos_sent") || "SOS alarm sent!", "error");
     } finally {

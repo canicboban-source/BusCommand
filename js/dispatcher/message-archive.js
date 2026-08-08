@@ -2,7 +2,7 @@
 import { saveState } from "../core/state.js";
 import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { showToast } from "../core/utils.js";
 
 export const ACTIVE_MSG_LIMIT = 40;
@@ -46,7 +46,7 @@ export async function archiveMessageForDispatcher(id) {
     if (!msg) return false;
     if (isDispArchived(msg)) return true;
 
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         const result = await ApiClient.archiveStaffMessage(id);
         if (!result?.success) {
             showToast(result?.error || t("msg_archive_failed") || "Arhiviranje nije uspelo.", "error");
@@ -54,7 +54,7 @@ export async function archiveMessageForDispatcher(id) {
         }
     }
     markLocalArchive(msg);
-    if (IS_DEMO_MODE) saveState();
+    if (USE_LOCAL_STATE) saveState();
     return true;
 }
 

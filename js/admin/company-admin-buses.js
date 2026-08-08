@@ -2,7 +2,7 @@
 import { escapeHtml, showToast } from "../core/utils.js";
 import { t } from "../ui/i18n.js";
 import { getCompanyScope } from "./company-admin.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 
 function groupName(groups, groupId) {
     const match = (groups || []).find((group) => group.id === groupId);
@@ -19,7 +19,7 @@ function busGroupLabels(bus, groups) {
 
 function renderCompanyAdminBuses() {
     if (!window.currentUser || window.currentUser.role !== "company-admin") return;
-    const scope = getCompanyScope(window.state, window.currentUser, IS_DEMO_MODE);
+    const scope = getCompanyScope(window.state, window.currentUser, USE_LOCAL_STATE);
     const note = document.getElementById("ca-buses-readonly-note");
     if (note) {
         note.textContent = t("ca_buses_readonly_note")

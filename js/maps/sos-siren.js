@@ -3,7 +3,7 @@ import { saveState } from "../core/state.js";
 import { showToast } from "../core/utils.js";
 import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 
 // --- WEB AUDIO API SOS SIRENA ---
 let audioCtx = null;
@@ -158,11 +158,11 @@ function clearLocalSosState() {
 
 async function resolveSOS() {
     if (sosResolvePending) return false;
-    if (window.currentUser?.role && window.currentUser.role !== "dispatcher" && !IS_DEMO_MODE) {
+    if (window.currentUser?.role && window.currentUser.role !== "dispatcher" && !USE_LOCAL_STATE) {
         showToast(t("sos_resolve_denied") || "Samo disponent može rešiti SOS.", "error");
         return false;
     }
-    if (!window.state.sosActive && !IS_DEMO_MODE) {
+    if (!window.state.sosActive && !USE_LOCAL_STATE) {
         showToast(t("sos_not_active") || "Nema aktivnog SOS alarma.", "info");
         return false;
     }
@@ -170,7 +170,7 @@ async function resolveSOS() {
     sosResolvePending = true;
     checkSOSStatus();
     try {
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             const result = await ApiClient.resolveStaffSos();
             if (!result.success) {
                 showToast(result.error || t("sos_resolve_failed") || "SOS nije mogao biti rešen.", "error");
@@ -178,7 +178,7 @@ async function resolveSOS() {
             }
         }
         clearLocalSosState();
-        if (IS_DEMO_MODE) saveState();
+        if (USE_LOCAL_STATE) saveState();
         checkSOSStatus();
         showToast(t("js_alert_sos_resolved"), "success");
         return true;

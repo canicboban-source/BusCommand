@@ -2,7 +2,7 @@ const { test, expect } = require("@playwright/test");
 
 /**
  * D21: Company Admin no longer imports monthly driver assignments.
- * CA keeps V66/catalog; Dispo owns monthly plans (no EID).
+ * CA keeps duty catalog; Dispo owns monthly plans (no EID).
  */
 test.describe("Company Admin monthly assignment import removed (D21)", () => {
   async function openCompanyPlanPage(page) {

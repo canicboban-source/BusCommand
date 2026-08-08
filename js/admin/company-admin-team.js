@@ -1,7 +1,7 @@
 // BusCommand — Company Admin: tenant-scoped dispatcher lifecycle
 import ApiClient from "../core/api-client.js";
 import { actionAttr } from "../core/action-delegate.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { runSingleSubmission } from "../core/submit-lock.js";
 import { canRunCompanyAdminAction } from "../core/ui-permissions.js";
@@ -24,7 +24,7 @@ const pendingDispatcherActions = new Set();
 const openGroupEditors = new Set();
 
 function getScope() {
-    return getCompanyTeamScope(window.state, window.currentUser, IS_DEMO_MODE);
+    return getCompanyTeamScope(window.state, window.currentUser, USE_LOCAL_STATE);
 }
 
 function getCompanyId() {
@@ -228,14 +228,14 @@ async function saveCompanyDispatcherGroups(dispId) {
     pendingDispatcherActions.add(String(dispId));
     renderCompanyAdminTeam();
     try {
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             const result = await ApiClient.updateCompanyDispatcherGroups(getCompanyId(), dispId, nextGroups);
             if (!result.success) throw new Error(result.error || t("ca_groups_save_failed"));
         }
         dispatcher.groups = nextGroups;
         dispatcher.activeGroupId = nextGroups.includes(dispatcher.activeGroupId) ? dispatcher.activeGroupId : nextGroups[0];
         openGroupEditors.delete(String(dispId));
-        if (IS_DEMO_MODE) saveState();
+        if (USE_LOCAL_STATE) saveState();
         showToast(t("ca_groups_saved_relogin"), "success", 6500);
         return true;
     } catch (cause) {
@@ -279,7 +279,7 @@ async function persistCompanyDispatcherDraft(input) {
         companyId: scope.companyId,
         active: true
     };
-    if (IS_DEMO_MODE) {
+    if (USE_LOCAL_STATE) {
         dispatcher.password = validation.value.password;
         dispatcher.passwordChanged = true;
     } else {
@@ -293,7 +293,7 @@ async function persistCompanyDispatcherDraft(input) {
     );
     if (existingIndex >= 0) window.state.dispatchers[existingIndex] = { ...window.state.dispatchers[existingIndex], ...dispatcher };
     else window.state.dispatchers.push(dispatcher);
-    if (IS_DEMO_MODE) saveState();
+    if (USE_LOCAL_STATE) saveState();
     return { success: true, dispatcher };
 }
 
@@ -346,7 +346,7 @@ function resetCompanyDispatcherPassword(dispId) {
             pendingDispatcherActions.add(String(dispId));
             renderCompanyAdminTeam();
             try {
-                if (IS_DEMO_MODE) {
+                if (USE_LOCAL_STATE) {
                     const temporaryPassword = generateDemoResetPassword();
                     dispatcher.password = temporaryPassword;
                     dispatcher.passwordChanged = true;
@@ -378,12 +378,12 @@ function toggleCompanyDispatcherStatus(dispId) {
             pendingDispatcherActions.add(String(dispId));
             renderCompanyAdminTeam();
             try {
-                if (!IS_DEMO_MODE) {
+                if (!USE_LOCAL_STATE) {
                     const result = await ApiClient.setCompanyDispatcherStatus(getCompanyId(), dispId, nextActive);
                     if (!result.success) throw new Error(result.error || t("ca_disp_status_failed"));
                 }
                 dispatcher.active = nextActive;
-                if (IS_DEMO_MODE) saveState();
+                if (USE_LOCAL_STATE) saveState();
                 showToast(t(nextActive ? "ca_disp_activated" : "ca_disp_deactivated"), "success", 6000);
             } catch (cause) {
                 showToast(cause.message || t("ca_disp_status_failed"), "error");
@@ -406,7 +406,7 @@ function removeCompanyDispatcher(dispId) {
             pendingDispatcherActions.add(String(dispId));
             renderCompanyAdminTeam();
             try {
-                if (!IS_DEMO_MODE) {
+                if (!USE_LOCAL_STATE) {
                     const result = await ApiClient.deleteCompanyDispatcher(getCompanyId(), dispId, dispatcher.email);
                     if (!result.success) {
                         const errorKey = {
@@ -419,7 +419,7 @@ function removeCompanyDispatcher(dispId) {
                     }
                 }
                 window.state.dispatchers = (window.state.dispatchers || []).filter(item => String(item.id) !== String(dispId));
-                if (IS_DEMO_MODE) saveState();
+                if (USE_LOCAL_STATE) saveState();
                 showToast(t("ca_disp_deleted"), "success", 6500);
             } catch (cause) {
                 showToast(cause.message || t("ca_disp_delete_failed"), "error");
@@ -442,7 +442,7 @@ function revokeCompanyDispatcherSessions(dispId) {
             pendingDispatcherActions.add(String(dispId));
             renderCompanyAdminTeam();
             try {
-                if (!IS_DEMO_MODE) {
+                if (!USE_LOCAL_STATE) {
                     const result = await ApiClient.revokeCompanyDispatcherSessions(getCompanyId(), dispId);
                     if (!result.success) throw new Error(result.error || t("ca_revoke_failed"));
                 }

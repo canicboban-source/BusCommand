@@ -3,7 +3,7 @@ import { showToast } from "../core/utils.js";
 import { t } from "../ui/i18n.js";
 import { showModal, closeModal } from "../ui/modals.js";
 import { logout } from "../auth/login-dispatcher.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 
 const HELP_MODAL_ID = "dispatcher-help-modal";
 
@@ -29,7 +29,7 @@ function readContactEmail() {
 
 function firebaseStatusLabel() {
     // Local/demo has no real Firebase cloud — do not pretend "Unknown" means broken.
-    if (IS_DEMO_MODE) {
+    if (USE_LOCAL_STATE) {
         return t("dispo_help_status_local_demo") || "Local demo";
     }
     const dot = document.getElementById("firebase-status-dot");

@@ -10,7 +10,7 @@ import { saveState } from "../core/state.js";
 import { showToast } from "../core/utils.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import ApiClient from "../core/api-client.js";
 import { isOperationalReadOnly } from "../core/access.js";
 
@@ -204,7 +204,7 @@ async function confirmBusImport() {
 
       for (const number of classification.toCreate) {
         try {
-          if (!IS_DEMO_MODE) {
+          if (!USE_LOCAL_STATE) {
             const result = await ApiClient.createStaffBus(number, groupId);
             if (!result?.success) {
               failed += 1;
@@ -228,7 +228,7 @@ async function confirmBusImport() {
 
       for (const item of classification.toAttach || []) {
         try {
-          if (!IS_DEMO_MODE) {
+          if (!USE_LOCAL_STATE) {
             const result = await ApiClient.createStaffBus(item.number, groupId);
             if (!result?.success) {
               failed += 1;
@@ -251,7 +251,7 @@ async function confirmBusImport() {
 
       for (const item of classification.toReactivate) {
         try {
-          if (!IS_DEMO_MODE) {
+          if (!USE_LOCAL_STATE) {
             const local = window.state.buses.find((b) => b.id === item.id);
             const expectedRevision = Number.isInteger(Number(local?.revision)) && Number(local.revision) >= 0
               ? Number(local.revision)
@@ -277,7 +277,7 @@ async function confirmBusImport() {
         }
       }
 
-      if (IS_DEMO_MODE) saveState();
+      if (USE_LOCAL_STATE) saveState();
       renderBusesList();
       if (typeof lucide !== "undefined") lucide.createIcons();
       clearBusImportPreview();

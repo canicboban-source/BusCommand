@@ -12,8 +12,8 @@ test.describe("CA operational read-only (chapter 2)", () => {
       ...minimalDemoState(),
       buses: [{ id: "bus-1", number: "100", groupId: "101", active: true }]
     });
-    await page.goto("/staff.html?mode=demo");
-    await loginDispatcher(page, "admin@demo.com", "demo123");
+    await page.goto("/staff.html");
+    await loginDispatcher(page, "ca@qa.local", "Qa-test-ok-9");
 
     await page.locator('[data-action="openCompanyOpsOverview"]').click();
     await expect(page.locator("#dispatcher-group-hub")).not.toHaveClass(/hidden/);

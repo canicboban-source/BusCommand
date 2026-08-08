@@ -2,19 +2,19 @@
  * Plan edit lock banner + heartbeat (daily plan full page).
  */
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { canBreakPlanEditLock, canWriteOperationalRoster } from "../core/ui-permissions.js";
 import { showToast, todayDateStr } from "../core/utils.js";
 import { t } from "../ui/i18n.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { buildLockId } from "./plan-edit-lock-client.js";
 import {
-  getDemoDayLock,
-  ensureDemoDayLock,
-  heartbeatDemoDayLock,
-  releaseDemoDayLock,
-  breakDemoDayLock
-} from "./plan-edit-lock-demo.js";
+  getLocalDayLock,
+  ensureLocalDayLock,
+  heartbeatLocalDayLock,
+  releaseLocalDayLock,
+  breakLocalDayLock
+} from "./plan-edit-lock-local.js";
 
 const HEARTBEAT_MS = 60_000;
 let heartbeatTimer = null;
@@ -60,8 +60,8 @@ function startPlanLockHeartbeat(groupId, dateStr) {
 async function tickHeartbeat(groupId, dateStr) {
   const lockId = buildLockId("day", groupId, dateStr);
   if (!lockId) return;
-  if (IS_DEMO_MODE) {
-    const result = heartbeatDemoDayLock(groupId, dateStr);
+  if (USE_LOCAL_STATE) {
+    const result = heartbeatLocalDayLock(groupId, dateStr);
     if (result.ok) lastKnownLock = result.lock;
     else if (result.code === "LOCK_MISSING" || result.code === "LOCK_HELD") {
       stopPlanLockHeartbeat();
@@ -172,8 +172,8 @@ async function refreshPlanLockBanner() {
     return;
   }
 
-  if (IS_DEMO_MODE) {
-    const snap = getDemoDayLock(groupId, dateStr);
+  if (USE_LOCAL_STATE) {
+    const snap = getLocalDayLock(groupId, dateStr);
     lastKnownLock = snap.lock || null;
     paintBanner(lastKnownLock, groupId, dateStr);
     return;
@@ -190,8 +190,8 @@ async function acquirePlanEditLock() {
   const groupId = activeGroupId();
   const dateStr = todayDateStr();
   if (!groupId || !canWriteOperationalRoster(currentRole())) return;
-  if (IS_DEMO_MODE) {
-    const result = ensureDemoDayLock(groupId, dateStr);
+  if (USE_LOCAL_STATE) {
+    const result = ensureLocalDayLock(groupId, dateStr);
     if (!result.ok) {
       const who = result.lock?.holderName || result.lock?.holderUid || "";
       showToast(
@@ -225,8 +225,8 @@ async function releasePlanEditLock() {
   const groupId = activeGroupId();
   const dateStr = todayDateStr();
   if (!groupId) return;
-  if (IS_DEMO_MODE) {
-    const result = releaseDemoDayLock(groupId, dateStr);
+  if (USE_LOCAL_STATE) {
+    const result = releaseLocalDayLock(groupId, dateStr);
     if (result.ok) showToast(t("plan_lock_released") || "Edit lock released.", "success");
     else showToast(t("plan_lock_release_failed") || "Could not release lock.", "error");
     stopPlanLockHeartbeat();
@@ -277,8 +277,8 @@ async function confirmBreakPlanEditLock() {
   showConfirm(
     t("plan_lock_break_confirm") || "Force-release this plan lock? This is audited.",
     async () => {
-      if (IS_DEMO_MODE) {
-        const result = breakDemoDayLock(groupId, dateStr, reason);
+      if (USE_LOCAL_STATE) {
+        const result = breakLocalDayLock(groupId, dateStr, reason);
         if (result.ok) showToast(t("plan_lock_broken") || "Lock broken.", "success");
         else showToast(t("plan_lock_break_failed") || "Break failed.", "error");
         await refreshPlanLockBanner();

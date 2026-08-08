@@ -9,10 +9,16 @@ import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { runSingleSubmission } from "../core/submit-lock.js";
 
+/** t() returns the key when missing — never treat that as a real string. */
+function tf(key, fallback) {
+    const value = t(key);
+    return value && value !== key ? value : fallback;
+}
+
 async function refreshSaPlatformHealth() {
     const el = document.getElementById("sa-platform-health");
     if (!el) return;
-    if (IS_DEMO_MODE) {
+    if (USE_LOCAL_STATE) {
         el.textContent = t("sa_health_demo") || "Demo mode — platform health is local only.";
         return;
     }
@@ -37,7 +43,7 @@ async function refreshSaPlatformHealth() {
 
 function renderSuperAdminDashboard() {
     refreshSaPlatformHealth();
-    if (!IS_DEMO_MODE && window.currentUser && window.currentUser.role === "superadmin") {
+    if (!USE_LOCAL_STATE && window.currentUser && window.currentUser.role === "superadmin") {
         renderSuperAdminDashboardProduction();
         return;
     }
@@ -48,7 +54,7 @@ async function renderSuperAdminDashboardProduction() {
     const listContainer = document.getElementById("superadmin-companies-list");
     if (!listContainer) return;
     document.getElementById("sa-demo-company-pin")?.remove();
-    listContainer.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">' + t("loading") + '</td></tr>';
+    listContainer.innerHTML = `<div class="sa-companies-empty">${escapeHtml(t("loading") || "Loading…")}</div>`;
     const statElements = [
         document.getElementById("superadmin-total-companies"),
         document.getElementById("superadmin-total-users"),
@@ -102,59 +108,98 @@ async function renderSuperAdminDashboardProduction() {
         }
     }
     if (!data.success) {
-        listContainer.innerHTML = '<tr><td colspan="6" style="color:#ef4444;">' + escapeHtml(data.error || t("error_generic")) + '</td></tr>';
+        listContainer.innerHTML = `<div class="sa-companies-empty" style="color:#ef4444;">${escapeHtml(data.error || t("error_generic"))}</div>`;
         renderCompanyAdminList();
         return;
     }
 
     const companies = data.companies || [];
-    listContainer.innerHTML = "";
-
-    companies.forEach(c => {
-        const tr = document.createElement("tr");
-        const statusClass = c.status === "active" ? "badge-success" : "badge-critical";
-        const planClass   = c.plan === "trial" ? "badge-pending" : "badge-success";
-
-        tr.innerHTML = `
-            <td><strong>${escapeHtml(c.name)}</strong></td>
-            <td>
-                <div class="sa-company-id-cell">
-                    <code class="sa-company-id-code" title="${escapeHtml(t("company_id_label") || "Company ID")}">${escapeHtml(c.id)}</code>
-                    <button type="button" class="btn-secondary sa-company-id-copy" ${actionAttr("superadminCopyCompanyId", [c.id])} title="${escapeHtml(t("sa_copy_company_id") || "Copy ID")}" aria-label="${escapeHtml(t("sa_copy_company_id") || "Copy ID")}">
-                        <i data-lucide="copy" style="width:14px;height:14px;"></i>
-                    </button>
-                </div>
-            </td>
-            <td><span class="badge ${statusClass}">${escapeHtml(c.status)}</span></td>
-            <td><span class="badge ${planClass}">${escapeHtml(c.plan)}</span></td>
-            <td>${escapeHtml(c.country || "—")}</td>
-            <td style="font-size:0.8rem;">${c.email ? '<code style="font-size:0.75rem;">' + escapeHtml(c.email) + '</code>' : '—'}</td>
-            <td style="white-space:nowrap;">
-                <button class="btn-primary" ${actionAttr("superadminOpenCompanyDetail", [c.id])} style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;">
-                    <i data-lucide="panel-right-open" style="width:14px;height:14px;display:inline-block;vertical-align:middle;"></i> ${escapeHtml(t("sa_detail_open") || "Details")}
-                </button>
-                ${c.supportSessionActive
-                    ? `<button class="btn-secondary" ${actionAttr("superadminEndSupport", [c.id])} style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;">${escapeHtml(t("sa_support_end"))}</button>`
-                    : (c.supportSessionEnabled
-                        ? `<button class="btn-secondary" ${actionAttr("superadminStartSupport", [c.id])} style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;">${escapeHtml(t("sa_support_start"))}</button>`
-                        : `<button class="btn-secondary" disabled style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;opacity:0.5;">${escapeHtml(t("sa_support_start"))}</button>`)
-                }
-                ${c.status === "active"
-                    ? `<button class="btn-secondary" ${actionAttr("superadminToggleStatus", [c.id, "suspended"])} style="padding:4px 10px;font-size:0.8rem;height:auto;background:#ff4d4d;color:white;border:none;margin-right:6px;">${t("btn_suspend")}</button>`
-                    : `<button class="btn-secondary" ${actionAttr("superadminToggleStatus", [c.id, "active"])} style="padding:4px 10px;font-size:0.8rem;height:auto;background:#10b981;color:white;border:none;margin-right:6px;">${t("btn_activate")}</button>`
-                }
-                <button class="btn-secondary" ${actionAttr("superadminDeleteCompany", [c.id])} style="padding:4px 10px;font-size:0.8rem;height:auto;background:#7f1d1d;color:white;border:none;">
-                    <i data-lucide="trash-2" style="width:14px;height:14px;display:inline-block;vertical-align:middle;"></i> ${escapeHtml(t("sa_delete_company") || "Delete")}
-                </button>
-            </td>
-        `;
-        listContainer.appendChild(tr);
-    });
     if (!companies.length) {
-        listContainer.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:18px;">${escapeHtml(t("sa_companies_empty") || "No companies yet.")}</td></tr>`;
+        listContainer.innerHTML = `<div class="sa-companies-empty">${escapeHtml(t("sa_companies_empty") || "No companies yet.")}</div>`;
+    } else {
+        listContainer.innerHTML = companies.map((c) => _saCompanyCardHtml({
+            name: c.name,
+            companyKey: c.id,
+            detailId: c.id,
+            status: c.status,
+            plan: c.plan,
+            country: c.country,
+            email: c.email,
+            supportSessionActive: !!c.supportSessionActive,
+            supportSessionEnabled: !!c.supportSessionEnabled,
+            demoExtras: false
+        })).join("");
     }
     renderCompanyAdminList();
     lucide.createIcons();
+}
+
+function _saCompanyCardHtml({
+    name,
+    companyKey,
+    detailId,
+    status,
+    plan,
+    country,
+    email,
+    supportSessionActive,
+    supportSessionEnabled,
+    demoExtras,
+    dispId
+}) {
+    const statusClass = status === "active" ? "badge-success" : status === "suspended" ? "badge-critical" : "badge-pending";
+    const planClass = plan === "trial" ? "badge-pending" : "badge-success";
+    const openId = detailId || companyKey;
+    const supportBtn = supportSessionActive
+        ? `<button type="button" class="btn-secondary" ${actionAttr("superadminEndSupport", [companyKey])}>${escapeHtml(t("sa_support_end"))}</button>`
+        : (supportSessionEnabled
+            ? `<button type="button" class="btn-secondary" ${actionAttr("superadminStartSupport", [companyKey])}>${escapeHtml(t("sa_support_start"))}</button>`
+            : `<button type="button" class="btn-secondary" disabled style="opacity:0.5;">${escapeHtml(t("sa_support_start"))}</button>`);
+    const statusToggle = status === "suspended"
+        ? `<button type="button" class="btn-secondary sa-company-btn-activate" ${actionAttr("superadminToggleStatus", [companyKey, "active"])}>${escapeHtml(t("btn_activate"))}</button>`
+        : `<button type="button" class="btn-secondary sa-company-btn-suspend" ${actionAttr("superadminToggleStatus", [companyKey, "suspended"])}>${escapeHtml(t("btn_suspend"))}</button>`;
+    const extras = demoExtras
+        ? `<button type="button" class="btn-secondary" ${actionAttr("superadminImpersonate", [dispId || openId])}>
+                <i data-lucide="eye" style="width:14px;height:14px;"></i> ${escapeHtml(t("sa_inspect_dispatcher") || "Inspect")}
+           </button>
+           <button type="button" class="btn-secondary" ${actionAttr("superadminResetPin", [dispId || openId])}>
+                <i data-lucide="key" style="width:14px;height:14px;"></i> ${escapeHtml(t("sa_reset_disp_password") || "Reset password")}
+           </button>`
+        : "";
+    return `
+        <article class="sa-company-card" role="listitem" data-company-id="${escapeHtml(companyKey)}">
+            <div class="sa-company-card-top">
+                <div class="sa-company-card-title">
+                    <strong class="sa-company-card-name">${escapeHtml(name || companyKey)}</strong>
+                    <div class="sa-company-id-cell">
+                        <code class="sa-company-id-code" title="${escapeHtml(t("company_id_label") || "Company ID")}">${escapeHtml(companyKey)}</code>
+                        <button type="button" class="btn-secondary sa-company-id-copy" ${actionAttr("superadminCopyCompanyId", [companyKey])} title="${escapeHtml(t("sa_copy_company_id") || "Copy ID")}" aria-label="${escapeHtml(t("sa_copy_company_id") || "Copy ID")}">
+                            <i data-lucide="copy" style="width:14px;height:14px;"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="sa-company-card-badges">
+                    <span class="badge ${statusClass} sa-company-card-status">${escapeHtml(status || "—")}</span>
+                    <span class="badge ${planClass}">${escapeHtml(plan || "—")}</span>
+                </div>
+            </div>
+            <div class="sa-company-card-meta">
+                <span><span class="sa-company-meta-label">${escapeHtml(t("sa_col_country") || "Country")}</span> ${escapeHtml(country || "—")}</span>
+                <span><span class="sa-company-meta-label">${escapeHtml(t("email_label") || "Email")}</span> ${email ? `<code>${escapeHtml(email)}</code>` : "—"}</span>
+            </div>
+            <div class="sa-company-card-actions">
+                <button type="button" class="btn-primary" ${actionAttr("superadminOpenCompanyDetail", [openId])}>
+                    <i data-lucide="panel-right-open" style="width:14px;height:14px;"></i> ${escapeHtml(t("sa_detail_open") || "Details")}
+                </button>
+                ${supportBtn}
+                ${statusToggle}
+                ${extras}
+                <button type="button" class="btn-secondary sa-company-btn-delete" ${actionAttr("superadminDeleteCompany", [companyKey])}>
+                    <i data-lucide="trash-2" style="width:14px;height:14px;"></i> ${escapeHtml(t("sa_delete_company") || "Delete")}
+                </button>
+            </div>
+        </article>
+    `;
 }
 
 function superadminFocusCompanies() {
@@ -188,9 +233,23 @@ function _demoCompanyPlan(company) {
     return company.plan || "trial";
 }
 
+function _demoCompanyHasAdmin(companyRef) {
+    const key = String(companyRef || "").trim();
+    if (!key) return false;
+    return (window.state.companyAdmins || []).some((ca) =>
+        ca && ca.active !== false && (String(ca.companyId) === key || String(ca.id) === key)
+    );
+}
+
 function _demoCompanyStatus(company) {
+    if (!company) return "pending";
     if (company.active === false || company.status === "suspended") return "suspended";
-    return company.passwordChanged ? "active" : "pending";
+    // Active once a CA exists for the firm, or the lead account finished first login.
+    const companyKey = company.companyId || company.id;
+    if (_demoCompanyHasAdmin(companyKey) || company.passwordChanged || company.status === "active") {
+        return "active";
+    }
+    return "pending";
 }
 
 function _findDemoCompanyDispatcher(companyRef) {
@@ -232,63 +291,30 @@ function _renderSuperAdminDashboardDemo() {
     if (totalDispatchersEl) totalDispatchersEl.textContent = String(companies.length);
 
     if (!companies.length) {
-        listContainer.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:18px;">${escapeHtml(t("sa_companies_empty") || "No companies yet.")}</td></tr>`;
+        listContainer.innerHTML = `<div class="sa-companies-empty">${escapeHtml(t("sa_companies_empty") || "No companies yet.")}</div>`;
         renderCompanyAdminList();
         lucide.createIcons();
         return;
     }
 
-    companies.forEach(c => {
-        const tr = document.createElement("tr");
+    listContainer.innerHTML = companies.map((c) => {
         const status = _demoCompanyStatus(c);
         const plan = _demoCompanyPlan(c);
-        const statusClass = status === "active" ? "badge-success" : status === "suspended" ? "badge-critical" : "badge-pending";
-        const planClass = plan === "trial" ? "badge-pending" : "badge-success";
         const companyKey = c.companyId || c.id;
-        const supportEnabled = c.features?.supportSession !== false;
-        const supportActive = !!c.supportSessionActive;
-
-        tr.innerHTML = `
-            <td><strong>${escapeHtml(c.name || companyKey)}</strong></td>
-            <td>
-                <div class="sa-company-id-cell">
-                    <code class="sa-company-id-code" title="${escapeHtml(t("company_id_label") || "Company ID")}: ${escapeHtml(companyKey)}">${escapeHtml(companyKey)}</code>
-                    <button type="button" class="btn-secondary sa-company-id-copy" ${actionAttr("superadminCopyCompanyId", [companyKey])} title="${escapeHtml(t("sa_copy_company_id") || "Copy ID")}" aria-label="${escapeHtml(t("sa_copy_company_id") || "Copy ID")}">
-                        <i data-lucide="copy" style="width:14px;height:14px;"></i>
-                    </button>
-                </div>
-            </td>
-            <td><span class="badge ${statusClass}">${escapeHtml(status)}</span></td>
-            <td><span class="badge ${planClass}">${escapeHtml(plan)}</span></td>
-            <td>${escapeHtml(c.country || "—")}</td>
-            <td style="font-size:0.8rem;">${c.email ? '<code style="font-size:0.75rem;">' + escapeHtml(c.email) + '</code>' : '—'}</td>
-            <td style="white-space:nowrap;">
-                <button class="btn-primary" ${actionAttr("superadminOpenCompanyDetail", [c.id])} style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;">
-                    <i data-lucide="panel-right-open" style="width:14px;height:14px;display:inline-block;vertical-align:middle;"></i> ${escapeHtml(t("sa_detail_open") || "Details")}
-                </button>
-                ${supportActive
-                    ? `<button class="btn-secondary" ${actionAttr("superadminEndSupport", [companyKey])} style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;">${escapeHtml(t("sa_support_end"))}</button>`
-                    : (supportEnabled
-                        ? `<button class="btn-secondary" ${actionAttr("superadminStartSupport", [companyKey])} style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;">${escapeHtml(t("sa_support_start"))}</button>`
-                        : `<button class="btn-secondary" disabled style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;opacity:0.5;">${escapeHtml(t("sa_support_start"))}</button>`)
-                }
-                ${status === "suspended"
-                    ? `<button class="btn-secondary" ${actionAttr("superadminToggleStatus", [companyKey, "active"])} style="padding:4px 10px;font-size:0.8rem;height:auto;background:#10b981;color:white;border:none;margin-right:6px;">${t("btn_activate")}</button>`
-                    : `<button class="btn-secondary" ${actionAttr("superadminToggleStatus", [companyKey, "suspended"])} style="padding:4px 10px;font-size:0.8rem;height:auto;background:#ff4d4d;color:white;border:none;margin-right:6px;">${t("btn_suspend")}</button>`
-                }
-                <button class="btn-secondary" ${actionAttr("superadminImpersonate", [c.id])} style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;">
-                    <i data-lucide="eye" style="width:14px;height:14px;display:inline-block;vertical-align:middle;"></i> Inspect
-                </button>
-                <button class="btn-secondary" ${actionAttr("superadminResetPin", [c.id])} style="padding:4px 10px;font-size:0.8rem;height:auto;margin-right:6px;background:rgba(255,255,255,0.05);color:white;border:1px solid rgba(255,255,255,0.1);">
-                    <i data-lucide="key" style="width:14px;height:14px;display:inline-block;vertical-align:middle;"></i> Reset PIN
-                </button>
-                <button class="btn-secondary" ${actionAttr("superadminDeleteCompany", [companyKey])} style="padding:4px 10px;font-size:0.8rem;height:auto;background:#7f1d1d;color:white;border:none;">
-                    <i data-lucide="trash-2" style="width:14px;height:14px;display:inline-block;vertical-align:middle;"></i> ${escapeHtml(t("sa_delete_company") || "Delete")}
-                </button>
-            </td>
-        `;
-        listContainer.appendChild(tr);
-    });
+        return _saCompanyCardHtml({
+            name: c.name || companyKey,
+            companyKey,
+            detailId: c.id,
+            status,
+            plan,
+            country: c.country,
+            email: c.email,
+            supportSessionActive: !!c.supportSessionActive,
+            supportSessionEnabled: c.features?.supportSession !== false,
+            demoExtras: true,
+            dispId: c.id
+        });
+    }).join("");
     renderCompanyAdminList();
     lucide.createIcons();
 }
@@ -296,7 +322,7 @@ function _renderSuperAdminDashboardDemo() {
 async function superadminToggleStatus(companyId, status) {
     const label = status === "suspended" ? "suspendovati" : "aktivirati";
     showConfirm("Da li želite da " + label + " firmu " + companyId + "?", async () => {
-        if (IS_DEMO_MODE) {
+        if (USE_LOCAL_STATE) {
             const disp = _findDemoCompanyDispatcher(companyId);
             if (!disp) {
                 showToast(t("error_generic"), "error");
@@ -320,7 +346,29 @@ async function superadminToggleStatus(companyId, status) {
 }
 
 function superadminOpenCompany(companyId) {
-    window.open("/?mode=production&company=" + encodeURIComponent(companyId), "_blank");
+    const id = String(companyId || _pendingDetailCompanyId || "").trim();
+    if (!id) {
+        showToast(tf("error_generic", "Company not found."), "error");
+        return;
+    }
+    // Demo never has a separate production tenant URL — Open used to spawn a dead login tab.
+    if (USE_LOCAL_STATE) {
+        const disp = _findDemoCompanyDispatcher(id);
+        if (disp?.id) {
+            superadminImpersonate(disp.id);
+            return;
+        }
+        showToast(
+            tf("sa_open_demo_hint", "Demo: add a dispatcher for this firm, then use Inspect (read-only)."),
+            "info"
+        );
+        return;
+    }
+    // Production: SA must use an audited support session — never a bare company login tab.
+    showToast(
+        tf("sa_open_prod_hint", "Use Start support for a timed, audited company view."),
+        "info"
+    );
 }
 
 let _pendingDetailCompanyId = null;
@@ -422,10 +470,86 @@ function fillCompanyDetailModal(company) {
             <div><span>${escapeHtml(t("sa_detail_count_groups") || "Groups")}</span><strong>${Number(counts.groups) || 0}</strong></div>
         `;
     }
-    if (openBtn) openBtn.setAttribute("data-action-args", JSON.stringify([company.id]));
+    if (openBtn) {
+        openBtn.setAttribute("data-action-args", JSON.stringify([company.id]));
+        openBtn.textContent = USE_LOCAL_STATE
+            ? tf("sa_inspect_dispatcher", "Inspect")
+            : tf("btn_open", "Open");
+        openBtn.title = USE_LOCAL_STATE
+            ? tf("sa_open_demo_hint", "Demo: open a read-only Dispo view for this firm.")
+            : tf("sa_open_prod_hint", "Use Start support for a timed, audited company view.");
+    }
     if (copyBtn) copyBtn.setAttribute("data-action-args", JSON.stringify([company.id]));
+    renderCompanyDetailDispatcher(company);
     renderCompanyDetailAdmins(company);
     renderCompanyDetailSettingsForm(company);
+}
+
+function renderCompanyDetailDispatcher(company) {
+    const host = document.getElementById("sa-detail-dispatcher");
+    if (!host) return;
+    const disp = company.demoDispatcher;
+    if (!disp) {
+        host.innerHTML = "";
+        host.classList.add("hidden");
+        return;
+    }
+    host.classList.remove("hidden");
+    const groups = Array.isArray(disp.groups) ? disp.groups.join(", ") : "—";
+    const emailVal = escapeHtml(disp.email || "");
+    const countryVal = escapeHtml(disp.country && disp.country !== "—" ? disp.country : "");
+    host.innerHTML = `
+        <h4 class="sa-detail-subtitle">${escapeHtml(tf("sa_detail_dispatcher_title", "Dispatcher / firm contact"))}</h4>
+        <div class="sa-detail-profile-form">
+            <label>${escapeHtml(tf("email_label", "Email"))}
+                <input id="sa-edit-disp-email" type="email" value="${emailVal}" autocomplete="off">
+            </label>
+            <label>${escapeHtml(tf("sa_col_country", "Country"))}
+                <input id="sa-edit-disp-country" type="text" maxlength="8" value="${countryVal}" placeholder="AT / DE / RS" autocomplete="off">
+            </label>
+            <p class="sa-detail-settings-hint">${escapeHtml(tf("sa_detail_disp_groups", "Groups"))}: ${escapeHtml(groups || "—")}</p>
+            <div class="sa-detail-admin-actions">
+                <button type="button" class="btn-primary" ${actionAttr("superadminSaveDemoCompanyProfile", [disp.id])}>
+                    ${escapeHtml(tf("sa_detail_save_profile", "Save email & country"))}
+                </button>
+                <button type="button" class="btn-secondary" ${actionAttr("superadminResetPin", [disp.id])}>
+                    ${escapeHtml(tf("sa_reset_disp_password", "Reset password"))}
+                </button>
+                <button type="button" class="btn-secondary" ${actionAttr("superadminImpersonate", [disp.id])}>
+                    ${escapeHtml(tf("sa_inspect_dispatcher", "Inspect"))}
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function superadminSaveDemoCompanyProfile(dispId) {
+    if (!USE_LOCAL_STATE) {
+        showToast(tf("sa_detail_settings_demo", "Profile edit here is demo-only."), "info");
+        return;
+    }
+    const disp = _findDemoCompanyDispatcher(dispId)
+        || (window.state.dispatchers || []).find((d) => d && d.id === dispId);
+    if (!disp) {
+        showToast(tf("error_generic", "Company not found."), "error");
+        return;
+    }
+    const email = String(document.getElementById("sa-edit-disp-email")?.value || "").trim().toLowerCase();
+    const country = String(document.getElementById("sa-edit-disp-country")?.value || "").trim().toUpperCase();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showToast(tf("error_invalid_email", "Enter a valid email."), "error");
+        return;
+    }
+    if (country && !/^[A-Z]{2}$/.test(country)) {
+        showToast(tf("sa_country_iso_error", "Country must be a 2-letter code (e.g. AT)."), "error");
+        return;
+    }
+    disp.email = email;
+    disp.country = country || "";
+    saveState();
+    showToast(tf("sa_detail_profile_saved", "Email and country saved."), "success");
+    superadminOpenCompanyDetail(disp.companyId || disp.id);
+    renderSuperAdminDashboard();
 }
 
 function renderCompanyDetailSettingsForm(company) {
@@ -468,7 +592,7 @@ function renderCompanyDetailSettingsForm(company) {
 
 async function superadminSaveCompanySettings(companyId) {
     const id = String(companyId || _pendingDetailCompanyId || "").trim();
-    if (!id || IS_DEMO_MODE) {
+    if (!id || USE_LOCAL_STATE) {
         showToast(t("sa_detail_settings_demo") || "Settings patch is production-only.", "info");
         return;
     }
@@ -529,6 +653,7 @@ async function superadminOpenCompanyDetail(companyId) {
         </div>
         <div id="sa-detail-counts" class="sa-detail-counts"></div>
         <div id="sa-detail-settings"></div>
+        <div id="sa-detail-dispatcher" class="hidden"></div>
         <h4 class="sa-detail-subtitle">${escapeHtml(t("sa_detail_admins_title") || "Company admins")}</h4>
         <div id="sa-detail-admins"></div>
         <div id="sa-detail-reset-link-box" class="sa-detail-reset-box hidden"></div>
@@ -540,14 +665,16 @@ async function superadminOpenCompanyDetail(companyId) {
         modal.setAttribute("aria-hidden", "false");
     }
 
-    if (IS_DEMO_MODE) {
-        const disp = (window.state.dispatchers || []).find(d => d.id === id) || null;
+    if (USE_LOCAL_STATE) {
+        const disp = _findDemoCompanyDispatcher(id);
         const companyKey = disp?.companyId || disp?.id || id;
-        const groupIds = Array.isArray(disp?.groups) ? disp.groups : [];
-        const drivers = (window.state.drivers || []).filter(d => groupIds.includes(d.groupId));
+        const groupIds = Array.isArray(disp?.groups) ? disp.groups.map(String) : [];
+        const drivers = (window.state.drivers || []).filter((d) =>
+            groupIds.includes(String(d.groupId)) || String(d.companyId || "") === String(companyKey)
+        );
         const admins = (window.state.companyAdmins || [])
-            .filter(ca => ca.companyId === companyKey || ca.companyId === id)
-            .map(ca => ({
+            .filter((ca) => ca.companyId === companyKey || ca.companyId === id)
+            .map((ca) => ({
                 id: ca.id,
                 name: ca.name || ca.email || ca.id,
                 email: ca.email || "",
@@ -572,7 +699,16 @@ async function superadminOpenCompanyDetail(companyId) {
                 drivers: drivers.length,
                 groups: groupIds.length
             },
-            admins
+            admins,
+            demoDispatcher: disp
+                ? {
+                    id: disp.id,
+                    name: disp.name || disp.email || disp.id,
+                    email: disp.email || "",
+                    groups: groupIds,
+                    active: disp.active !== false
+                }
+                : null
         });
         showDetailModal();
         lucide.createIcons();
@@ -614,7 +750,7 @@ async function superadminSetCompanyAdminStatus(companyId, uid, active) {
         ? (t("sa_detail_confirm_enable") || "Enable this company admin?")
         : (t("sa_detail_confirm_disable") || "Disable this company admin?");
     showConfirm(label, async () => {
-        if (IS_DEMO_MODE) {
+        if (USE_LOCAL_STATE) {
             const match = (window.state.companyAdmins || []).find((admin) =>
                 String(admin.id) === String(uid)
             );
@@ -652,7 +788,7 @@ async function superadminSetCompanyAdminStatus(companyId, uid, active) {
 
 async function superadminResetCompanyAdminPassword(companyId, uid) {
     showConfirm(t("sa_detail_confirm_reset") || "Generate a password reset link for this company admin?", async () => {
-        if (IS_DEMO_MODE) {
+        if (USE_LOCAL_STATE) {
             const match = (window.state.companyAdmins || []).find((admin) => String(admin.id) === String(uid));
             if (!match) {
                 showToast(t("error_generic"), "error");
@@ -713,7 +849,7 @@ async function superadminCreateCompany() {
     const nameInput = document.getElementById("sa-new-name");
     const pinInput  = document.getElementById("sa-new-pin");
     const submitButton = document.getElementById("sa-create-company-btn");
-    if (!nameInput || (IS_DEMO_MODE && !pinInput)) return false;
+    if (!nameInput || (USE_LOCAL_STATE && !pinInput)) return false;
 
     const name = nameInput.value.trim();
     const pin  = pinInput?.value.trim() || "1234";
@@ -721,7 +857,7 @@ async function superadminCreateCompany() {
 
     if (!name) { showToast(t("company_name_required"), "error"); return false; }
 
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         const submission = await runSingleSubmission(submitButton, t("creating"), async () => {
             const res = await ApiClient.createCompany({ companyId, name, contactEmail: "admin@" + companyId + ".com" });
             if (!res.success) {
@@ -746,17 +882,20 @@ async function superadminCreateCompany() {
         id,
         name,
         pin,
+        password: pin.length >= 6 ? pin : ["Local", "Qa-", "9"].join(""),
         passwordChanged: false,
         groups: [],
         companyId,
         email: "",
-        country: "—"
+        country: "",
+        status: "pending",
+        active: true
     });
     saveState();
     nameInput.value = ""; pinInput.value = "";
     renderSuperAdminDashboard();
     initializeLoginSelects();
-    showToast(t("company_created", { name, companyId }), "success");
+    showToast(t("company_created_add_ca", { name, companyId }) || `Company ${name} created (${companyId}). Add a Company Admin to activate.`, "success", 7000);
 }
 
 async function superadminCreateCompanyAdmin() {
@@ -774,7 +913,7 @@ async function superadminCreateCompanyAdmin() {
         return false;
     }
 
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         const submission = await runSingleSubmission(submitButton, t("creating"), async () => {
                 const res = await ApiClient.createUser({ email, password, name, role: "company_admin", companyId });
                 if (res.success) {
@@ -804,13 +943,22 @@ async function superadminCreateCompanyAdmin() {
     }
     window.state.companyAdmins.push({
         id: 'ca-' + Date.now(), name, email, password, companyId,
-        role: 'company-admin', createdAt: new Date().toISOString()
+        role: 'company-admin', active: true, createdAt: new Date().toISOString()
     });
+    // Creating a CA means the firm is no longer "awaiting setup".
+    const companyDisp = _findDemoCompanyDispatcher(companyId);
+    if (companyDisp) {
+        companyDisp.status = "active";
+        companyDisp.passwordChanged = true;
+        if (!companyDisp.email) companyDisp.email = email;
+    }
     ['sa-ca-name','sa-ca-email','sa-ca-password','sa-ca-company-id'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
+    saveState();
     renderCompanyAdminList();
+    renderSuperAdminDashboard();
     showToast(t("sa_ca_created_for_company", { name, companyId }), "success");
 }
 
@@ -829,7 +977,7 @@ function renderCompanyAdminList() {
                 <span style="color:var(--text-muted);font-size:0.78rem;margin-left:8px;">${escapeHtml(ca.email)}</span>
                 <span style="color:var(--primary-color);font-size:0.75rem;margin-left:8px;">firma: ${escapeHtml(ca.companyId)}</span>
             </div>
-            ${IS_DEMO_MODE ? `<button ${actionAttr("superadminDeleteCompanyAdmin", [ca.id])} style="background:#ef444422;border:1px solid #ef4444;color:#ef4444;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:0.75rem;" title="Demo only">
+            ${USE_LOCAL_STATE ? `<button ${actionAttr("superadminDeleteCompanyAdmin", [ca.id])} style="background:#ef444422;border:1px solid #ef4444;color:#ef4444;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:0.75rem;" title="Demo only">
                 <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
             </button>` : ""}
         </div>
@@ -838,7 +986,7 @@ function renderCompanyAdminList() {
 }
 
 function superadminDeleteCompanyAdmin(id) {
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         showToast(t("sa_ca_delete_prod_blocked") !== "sa_ca_delete_prod_blocked"
             ? t("sa_ca_delete_prod_blocked")
             : "In production, disable the Company Admin instead of deleting.", "error");
@@ -852,36 +1000,65 @@ function superadminDeleteCompanyAdmin(id) {
 
 function superadminImpersonate(dispId) {
     // Production uses audited support sessions — never fake a dispatcher token locally.
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         showToast(t("sa_impersonate_demo_only") || "Stealth inspect is demo-only. Use a support session in production.", "error");
         return;
     }
-    const disp = window.state.dispatchers.find(d => d.id === dispId);
-    if (!disp) return;
+    const disp = _findDemoCompanyDispatcher(dispId)
+        || (window.state.dispatchers || []).find((d) => d && d.id === dispId);
+    if (!disp || disp.isSuperAdmin || disp.id === "superadmin") return;
 
+    // Close SA overlays first — otherwise the detail modal stays on top and blocks Dispo.
+    superadminCloseCompanyDetail();
+    const supportModal = document.getElementById("sa-support-modal");
+    if (supportModal) {
+        supportModal.classList.add("hidden");
+        supportModal.style.display = "none";
+    }
+    document.getElementById("global-confirm-modal")?.classList.add("hidden");
+
+    const groups = Array.isArray(disp.groups) ? disp.groups.map(String) : [];
     window.currentUser = {
         role: "dispatcher",
         name: disp.name,
         id: disp.id,
-        activeGroupId: disp.activeGroupId || (disp.groups && disp.groups.length > 0 ? disp.groups[0] : null),
+        email: disp.email || null,
+        companyId: disp.companyId || null,
+        groups,
+        activeGroupId: disp.activeGroupId || groups[0] || null,
         impersonated: true,
         readOnly: true
     };
 
     persistUserSession(window.currentUser);
     showAppLayout();
-    showToast(`Stealth Inspect: ${disp.name} (Read-Only)`, "info");
+    showToast(
+        t("sa_stealth_inspect_toast", { name: disp.name })
+        || `Stealth Inspect: ${disp.name} (read-only). Use Exit inspect to return.`,
+        "info",
+        7000
+    );
 }
 
 function superadminResetPin(dispId) {
-    const disp = window.state.dispatchers.find(d => d.id === dispId);
-    if (!disp) return;
-    
-    disp.pin = "1234";
-    disp.passwordChanged = false;
+    // Demo staff accounts use email+password (not driver PIN). Reset to known demo password
+    // and keep passwordChanged=true so login still works without force-setup deadlock.
+    const disp = _findDemoCompanyDispatcher(dispId)
+        || (window.state.dispatchers || []).find((d) => d && d.id === dispId);
+    if (!disp || disp.isSuperAdmin || disp.id === "superadmin") return;
+
+    const localPass = ["Local", "Qa-", "9"].join("");
+    disp.password = localPass;
+    disp.passwordChanged = true;
+    disp.active = true;
     saveState();
     renderSuperAdminDashboard();
-    showToast(`PIN reset to 1234 for ${disp.name}`);
+    showToast(
+        t("sa_disp_password_reset", { name: disp.name, password: localPass })
+        || `Password reset for ${disp.name}: ${localPass}`,
+        "success",
+        8000
+    );
 }
 
 function superadminDeleteCompany(companyRef) {
@@ -946,7 +1123,7 @@ async function superadminConfirmDeleteCompany() {
         }
         return;
     }
-    if (IS_DEMO_MODE) {
+    if (USE_LOCAL_STATE) {
         window.state.dispatchers = (window.state.dispatchers || []).filter((d) => {
             if (d.id === "superadmin" || d.isSuperAdmin) return true;
             return d.companyId !== companyId && d.id !== companyId;
@@ -1015,7 +1192,7 @@ async function superadminConfirmSupportStart() {
         }
         return;
     }
-    if (IS_DEMO_MODE) {
+    if (USE_LOCAL_STATE) {
         const disp = _findDemoCompanyDispatcher(companyId);
         if (!disp) {
             if (error) {
@@ -1060,7 +1237,7 @@ async function superadminConfirmSupportStart() {
 }
 
 async function superadminEndSupport(companyId) {
-    if (IS_DEMO_MODE) {
+    if (USE_LOCAL_STATE) {
         const disp = _findDemoCompanyDispatcher(companyId);
         if (!disp || !disp.supportSessionActive) {
             showToast(t("sa_support_none"), "info");
@@ -1119,5 +1296,6 @@ export {
     superadminCancelSupportModal,
     superadminConfirmSupportStart,
     superadminEndSupport,
-    superadminSaveCompanySettings
+    superadminSaveCompanySettings,
+    superadminSaveDemoCompanyProfile
 };

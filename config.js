@@ -1,46 +1,35 @@
 // ============================================================
-// BusCommand — Runtime konfiguracija (demo vs produkcija)
+// BusCommand — legacy global runtime config (must match ESM runtime-config)
+// Demo URL activation is forbidden. Local state only via QA harness flag.
 // ============================================================
 
 const BusCommandConfig = (() => {
-    const params = new URLSearchParams(window.location.search);
-    const host     = window.location.hostname;
-    const isLocal  = host === "localhost" || host === "127.0.0.1" ||
-                     /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
-
-    const quickDemo = isLocal ? params.get("demo") : null; // lokalni QA prečac; nikada na javnom hostu
-    const modeParam = params.get("mode"); // "demo" | "production"
-
-    const IS_DEMO_MODE = (() => {
-        if (quickDemo === "driver" || quickDemo === "dispatcher") return true;
-        if (isLocal && modeParam === "demo") return true;
-        if (modeParam === "production") return false;
-        if (isLocal) return true;
-        return false;
-    })();
+    const host = window.location.hostname;
+    const isLocal = host === "localhost" || host === "127.0.0.1";
+    const useLocalState = typeof window !== "undefined"
+        && window.__BUSCOMMAND_QA_HARNESS__ === true;
 
     const COMPANY_ID = (() => {
-        const companyParam = params.get("company");
-        if (companyParam) return companyParam.toLowerCase();
-        if (IS_DEMO_MODE) return "local-qa";
-        const sub = host.split(".")[0];
-        return (sub && sub !== "www" && sub !== "localhost") ? sub.toLowerCase() : "";
+        const companyParam = new URLSearchParams(window.location.search).get("company");
+        if (useLocalState) {
+            const qaCompany = window.__BUSCOMMAND_QA_COMPANY_ID__;
+            return (typeof qaCompany === "string" && qaCompany.trim())
+                ? qaCompany.trim().toLowerCase()
+                : "qa-local";
+        }
+        const normalized = companyParam?.trim().toLowerCase() || null;
+        return normalized === "buscommand-preview" ? null : normalized;
     })();
 
     return {
-        IS_DEMO_MODE,
+        USE_LOCAL_STATE: useLocalState,
         COMPANY_ID,
         IS_LOCAL: isLocal,
-        IS_QUICK_DEMO: quickDemo === "driver" || quickDemo === "dispatcher",
-        QUICK_DEMO_ROLE: quickDemo === "driver" || quickDemo === "dispatcher" ? quickDemo : null,
+        IS_QUICK_DEMO: false,
+        QUICK_DEMO_ROLE: null,
         VERSION: "1.0.10"
     };
 })();
 
-const IS_DEMO_MODE = BusCommandConfig.IS_DEMO_MODE;
-const COMPANY_ID   = BusCommandConfig.COMPANY_ID;
-
-// ESM moduli čitaju preko window.*
-window.BusCommandConfig = BusCommandConfig;
-window.IS_DEMO_MODE = IS_DEMO_MODE;
-window.COMPANY_ID = COMPANY_ID;
+const USE_LOCAL_STATE = BusCommandConfig.USE_LOCAL_STATE;
+const COMPANY_ID = BusCommandConfig.COMPANY_ID;

@@ -8,7 +8,7 @@ import { getActiveLineId } from "./groups.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t, tp } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import ApiClient from "../core/api-client.js";
 
 window.editingDriverId = null;
@@ -21,8 +21,8 @@ function renderDriversList() {
     const hubId = window.state.activeGroupHubId;
     let myDrivers = hubId ? getDriversForLineGroup(hubId) : getVisibleDrivers();
     
-    const canDeleteDrivers = IS_DEMO_MODE || window.currentUser?.role === "company-admin";
-    const canDetachFromLine = IS_DEMO_MODE || window.currentUser?.role === "dispatcher";
+    const canDeleteDrivers = USE_LOCAL_STATE || window.currentUser?.role === "company-admin";
+    const canDetachFromLine = USE_LOCAL_STATE || window.currentUser?.role === "dispatcher";
     const detachGroupId = hubId || window.currentUser?.activeGroupId || "";
 
     myDrivers.forEach(d => {
@@ -55,7 +55,7 @@ function renderDriversList() {
                 <span style="font-size: 12px; color: var(--text-muted);">${escapeHtml(d.phone || t("no_phone"))} | ${escapeHtml(d.email || t("no_email"))}</span>
             </div>
             <div style="display:flex; gap:6px;">
-                ${IS_DEMO_MODE ? `<button class="btn-edit-item" ${actionAttr("editDriver", [d.id])} style="background:rgba(59,130,246,0.08);color:#3b82f6;border:1px solid rgba(59,130,246,0.2);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;white-space:nowrap;">
+                ${USE_LOCAL_STATE ? `<button class="btn-edit-item" ${actionAttr("editDriver", [d.id])} style="background:rgba(59,130,246,0.08);color:#3b82f6;border:1px solid rgba(59,130,246,0.2);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;white-space:nowrap;">
                     ${t("btn_edit")}
                 </button>` : ""}
                 ${detachBtn}
@@ -69,7 +69,7 @@ function renderDriversList() {
 }
 
 function editDriver(id) {
-    if (!IS_DEMO_MODE) return;
+    if (!USE_LOCAL_STATE) return;
     const d = window.state.drivers.find(drv => drv.id === id);
     if (!d) return;
 
@@ -103,7 +103,7 @@ function editDriver(id) {
 
 function addDriver(event) {
     event.preventDefault();
-    if (!IS_DEMO_MODE) return;
+    if (!USE_LOCAL_STATE) return;
     const nameInput = document.getElementById("new-driver-name");
     const companyIdInput = document.getElementById("new-driver-company-id");
     const pinInput = document.getElementById("new-driver-pin");
@@ -195,7 +195,7 @@ function toggleDriverActive(id) {
     const driverName = driver.name || [driver.firstName, driver.lastName].filter(Boolean).join(" ") || t("driver");
     const message = t(nextActive ? "driver_confirm_activate" : "driver_confirm_deactivate", { name: driverName });
     showConfirm(message, async function() {
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             const result = await ApiClient.setDriverActive(id, nextActive);
             if (!result.success) {
                 showToast(result.error || t("driver_status_failed"), "error");
@@ -203,7 +203,7 @@ function toggleDriverActive(id) {
             }
         }
         driver.active = nextActive;
-        if (IS_DEMO_MODE) saveState();
+        if (USE_LOCAL_STATE) saveState();
         renderDriversList();
         initializeLoginSelects();
         showToast(t(nextActive ? "driver_activated" : "driver_deactivated"), "success");
@@ -217,7 +217,7 @@ function importDriversExcel(event) {
 }
 
 function importDriversBulk() {
-    if (!IS_DEMO_MODE) return;
+    if (!USE_LOCAL_STATE) return;
     const textarea = document.getElementById("bulk-drivers-input");
     if (!textarea) return;
     const text = textarea.value.trim();

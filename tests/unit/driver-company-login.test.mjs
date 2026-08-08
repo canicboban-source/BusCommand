@@ -26,7 +26,7 @@ function loadDriverCompany({ companyId = null, isDemo = false, remembered = null
         });
     const wrapped = `
       const COMPANY_ID = ${JSON.stringify(companyId)};
-      const IS_DEMO_MODE = ${isDemo ? "true" : "false"};
+      const USE_LOCAL_STATE = ${isDemo ? "true" : "false"};
       const STORAGE = { LAST_DRIVER_COMPANY: "buscommand_last_driver_company" };
       ${source}
     `;

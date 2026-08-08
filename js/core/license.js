@@ -1,10 +1,10 @@
 // BusCommand ESM v9.5
 import ApiClient from "./api-client.js";
-import { IS_DEMO_MODE } from "./runtime-config.js";
+import { USE_LOCAL_STATE } from "./runtime-config.js";
 import { t } from "../ui/i18n.js";
 
 async function checkCompanyLicense(companyId) {
-    if (IS_DEMO_MODE) {
+    if (USE_LOCAL_STATE) {
         window._licenseInfo = { companyId, status: "active", plan: "trial", daysRemaining: 30 };
         updateTrialBadge();
         return window._licenseInfo;
@@ -36,7 +36,7 @@ async function checkCompanyLicense(companyId) {
 }
 
 function isCompanyAccessBlocked() {
-    return !IS_DEMO_MODE && window._licenseInfo && window._licenseInfo.status === "suspended";
+    return !USE_LOCAL_STATE && window._licenseInfo && window._licenseInfo.status === "suspended";
 }
 
 function showLicenseBlockedBanner(_info) {

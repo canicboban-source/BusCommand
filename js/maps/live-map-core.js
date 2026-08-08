@@ -1,6 +1,6 @@
 // BusCommand — dispatcher live map
 import { saveState } from "../core/state.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { renderDispatcherDashboard } from "../dispatcher/dashboard.js";
 import { t } from "../ui/i18n.js";
 import { mapState, ROUTE_GPS_PATHS } from "./map-data.js";
@@ -34,7 +34,7 @@ function driverVisibleOnDispatcherMap(driver) {
 }
 
 function demoRoutePosition(driver, index) {
-    if (!IS_DEMO_MODE) return null;
+    if (!USE_LOCAL_STATE) return null;
     const routes = list(window.state?.routes);
     if (!routes.length) return null;
     const route = routes[index % routes.length];
@@ -72,10 +72,10 @@ function initDispatcherLiveMap() {
 
     // Simulated positions are strictly demo-only. Production accepts only
     // coordinates supplied by an authenticated, active driver session.
-    if (IS_DEMO_MODE && !mapState.gpsSimulationInterval) startGpsSimulation();
+    if (USE_LOCAL_STATE && !mapState.gpsSimulationInterval) startGpsSimulation();
     updateMapMarkers();
 
-    if (!IS_DEMO_MODE && !mapState.mapAccessLogged) {
+    if (!USE_LOCAL_STATE && !mapState.mapAccessLogged) {
         mapState.mapAccessLogged = true;
         import("../core/api-client.js").then(({ default: ApiClient }) => {
             ApiClient.reportStaffMapAccess?.().catch(() => {});
@@ -84,7 +84,7 @@ function initDispatcherLiveMap() {
 }
 
 function startGpsSimulation() {
-    if (!IS_DEMO_MODE || mapState.gpsSimulationInterval) return;
+    if (!USE_LOCAL_STATE || mapState.gpsSimulationInterval) return;
     mapState.gpsSimulationInterval = setInterval(() => {
         const drivers = list(window.state?.drivers);
         const routes = list(window.state?.routes);
@@ -148,7 +148,7 @@ function updateMapMarkers() {
         }
 
         const demoPosition = demoRoutePosition(driver, index);
-        const coords = IS_DEMO_MODE ? demoPosition?.coords : liveCoordinates(driver);
+        const coords = USE_LOCAL_STATE ? demoPosition?.coords : liveCoordinates(driver);
         if (!coords) {
             // No fabricated fallback in production: without a current driver
             // coordinate there must be no marker on the dispatcher map.

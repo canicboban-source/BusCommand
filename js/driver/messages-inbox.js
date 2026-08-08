@@ -7,7 +7,7 @@ import { t } from "../ui/i18n.js";
 import { speakMessage } from "../ui/speak.js";
 import { actionAttr, changeAttr as _changeAttr } from "../core/action-delegate.js";
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 
 function isBroadcastRecipient(r) {
     return r === "__all__" || r === "Svi" || r === "Svi vozači" || r === "All drivers" || r === "all";
@@ -145,7 +145,7 @@ async function markMessageAsRead(id) {
     const msg = (window.state.messages || []).find(m => m.id === id);
     if (!msg || !isMessageForMe(msg)) return;
 
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         const result = msg.requiresAck === true
             ? await ApiClient.ackDriverMessage(id)
             : await ApiClient.markDriverMessageRead(id);
@@ -170,7 +170,7 @@ async function markMessageAsRead(id) {
         msg.ackedBy = uid || name;
     }
 
-    if (IS_DEMO_MODE) saveState();
+    if (USE_LOCAL_STATE) saveState();
     renderDriverMessages();
     lucide.createIcons();
 }

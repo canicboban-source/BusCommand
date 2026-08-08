@@ -4,7 +4,7 @@ const { seedDemoState, loginDispatcher, loginDriver } = require("./helpers.js");
 
 test.describe("UI smoke", () => {
   async function openPendingDriverActivation(page) {
-    await page.goto("/driver.html?mode=demo");
+    await page.goto("/driver.html");
     await page.evaluate(() => {
       window.__testFirebaseSessionActive = true;
       const originalAuth = window.firebase.auth;
@@ -18,14 +18,16 @@ test.describe("UI smoke", () => {
   }
 
   test("login screen loads", async ({ page }) => {
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await expect(page.locator("#login-screen")).toBeVisible();
     await expect(page.locator("#app-branding-title")).toContainText("BusCommand");
   });
 
-  test("demo mode never initializes Firebase", async ({ page }) => {
-    await page.goto("/staff.html?mode=demo");
+  test("QA harness never initializes Firebase", async ({ page }) => {
+    await seedDemoState(page);
+    await page.goto("/staff.html");
     await expect(page.locator("#login-screen")).toBeVisible();
+    await expect.poll(() => page.evaluate(() => window.USE_LOCAL_STATE === true)).toBe(true);
     await expect.poll(() => page.evaluate(() => window.firebase?.apps?.length ?? 0)).toBe(0);
   });
 
@@ -56,11 +58,11 @@ test.describe("UI smoke", () => {
     await expect(page.locator("#sa-demo-company-pin")).toBeHidden();
   });
 
-  test("quick demo dispatcher", async ({ page }) => {
-    // Quick demo is a local QA entry point only. Production/demo state remains
-    // intentionally empty, so the test must provide its own isolated fixture.
+  test("QA harness dispatcher login reaches dispo shell without settings", async ({ page }) => {
+    // URL ?demo= is forbidden; ephemeral QA harness seeds accounts for the test only.
     await seedDemoState(page);
-    await page.goto("/staff.html?demo=dispatcher", { waitUntil: "networkidle" });
+    await page.goto("/staff.html", { waitUntil: "networkidle" });
+    await loginDispatcher(page, "dispo@qa.local", "Qa-test-ok-9");
     await expect(page.locator("#app-container")).toBeVisible({ timeout: 15000 });
     await expect(page.locator("#login-screen")).toBeHidden();
     await expect(page.locator("#dispatcher-nav [data-action-args*='settings']")).toHaveCount(0);
@@ -69,10 +71,10 @@ test.describe("UI smoke", () => {
 
   test("company admin email login", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await page.locator("#tab-dispatcher-btn").click();
-    await page.locator("#login-dispatcher-email").fill("admin@demo.com");
-    await page.locator("#login-dispatcher-password").fill("demo123");
+    await page.locator("#login-dispatcher-email").fill("ca@qa.local");
+    await page.locator("#login-dispatcher-password").fill("Qa-test-ok-9");
     await page.locator("#dispatcher-login-btn").click();
     await expect(page.locator("#app-container")).toBeVisible();
     await expect(page.locator("#company-admin-nav [data-action-args='[\"company-admin-settings\"]']")).toHaveCount(1);
@@ -99,8 +101,8 @@ test.describe("UI smoke", () => {
     state.drivers[0].eid = "must-not-export";
     state.drivers[0].loginCodeHash = "must-not-export";
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo", { waitUntil: "networkidle" });
-    await loginDispatcher(page, "admin@demo.com", "demo123");
+    await page.goto("/staff.html", { waitUntil: "networkidle" });
+    await loginDispatcher(page, "ca@qa.local", "Qa-test-ok-9");
     await page.evaluate(() => window.switchSection("company-admin-settings"));
 
     const settings = page.locator("#company-admin-settings");
@@ -146,13 +148,14 @@ test.describe("UI smoke", () => {
   test("company admin overview is tenant scoped, truthful and responsive", async ({ page }) => {
     const state = require("./helpers.js").minimalDemoState();
     state.buses = [
-      { id: "bus-101", number: "101", groupId: "101", lineId: "101", companyId: "demo" },
+      { id: "bus-101", number: "101", groupId: "101", lineId: "101", companyId: "qa-local" },
       { id: "foreign-bus", number: "999", groupId: "101", lineId: "101", companyId: "other-company" }
     ];
     state.drivers.push({ id: "foreign-driver", name: "Foreign", groupId: "101", companyId: "other-company" });
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo", { waitUntil: "networkidle" });
-    await loginDispatcher(page, "admin@demo.com", "demo123");
+    await page.goto("/staff.html", { waitUntil: "networkidle" });
+    await loginDispatcher(page, "ca@qa.local", "Qa-test-ok-9");
+    await page.evaluate(() => window.switchSection("company-admin-dashboard"));
 
     await expect(page.locator("#company-admin-dashboard")).toBeVisible();
     await expect(page.locator("#ca-stat-drivers")).toHaveText("1");
@@ -177,15 +180,16 @@ test.describe("UI smoke", () => {
 
   test("company admin previews, validates and saves tenant branding safely", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/staff.html?mode=demo", { waitUntil: "networkidle" });
-    await loginDispatcher(page, "admin@demo.com", "demo123");
+    await page.goto("/staff.html", { waitUntil: "networkidle" });
+    await loginDispatcher(page, "ca@qa.local", "Qa-test-ok-9");
     await page.evaluate(() => window.switchSection("company-admin-branding"));
 
     await expect(page.locator("#company-admin-branding")).toBeVisible();
     await expect(page.locator("#ca-branding-save-state")).toHaveAttribute("data-state", "saved");
     await page.locator("#settings-brand-name").fill("Alpine Transit");
     await expect(page.locator("#ca-branding-preview-name")).toHaveText("Alpine Transit");
-    await expect(page.locator("#app-branding-title")).toHaveText("BusCommand");
+    // Shell title stays on last saved branding until a successful save.
+    await expect(page.locator("#app-branding-title")).toHaveText("QA Tenant");
     await expect(page.locator("#ca-branding-save-state")).toHaveAttribute("data-state", "unsaved");
 
     await page.locator("#settings-primary-color-hex").fill("green");
@@ -196,7 +200,7 @@ test.describe("UI smoke", () => {
     await page.locator("#ca-branding-save").click();
     await expect(page.locator("[data-branding-error='primaryColor']")).toContainText("#RRGGBB");
     await expect(page.locator("[data-branding-error='logoUrl']")).toContainText("HTTPS");
-    await expect.poll(() => page.evaluate(() => window.state.branding.name)).toBe("BusCommand Demo");
+    await expect.poll(() => page.evaluate(() => window.state.branding.name || "")).toBe("QA Tenant");
 
     await page.locator("#settings-primary-color-hex").fill("#10b981");
     await page.locator("[data-action='clearCompanyBrandingLogo']").click();
@@ -216,11 +220,11 @@ test.describe("UI smoke", () => {
 
   test("company admin creates, edits, filters and safely deletes only empty groups", async ({ page }) => {
     const state = require("./helpers.js").minimalDemoState();
-    state.buses = [{ id: "bus-101", number: "101", groupId: "101", lineId: "101", companyId: "demo" }];
-    state.servicePlans = [{ id: "plan-101", groupId: "101", status: "active", companyId: "demo" }];
+    state.buses = [{ id: "bus-101", number: "101", groupId: "101", lineId: "101", companyId: "qa-local" }];
+    state.servicePlans = [{ id: "plan-101", groupId: "101", status: "active", companyId: "qa-local" }];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo", { waitUntil: "networkidle" });
-    await loginDispatcher(page, "admin@demo.com", "demo123");
+    await page.goto("/staff.html", { waitUntil: "networkidle" });
+    await loginDispatcher(page, "ca@qa.local", "Qa-test-ok-9");
     await page.evaluate(() => window.switchSection("company-admin-groups"));
 
     await expect(page.locator("#company-admin-groups")).toBeVisible();
@@ -271,8 +275,8 @@ test.describe("UI smoke", () => {
 
   test("company admin activity log stays truthful when no server events exist", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/staff.html?mode=demo");
-    await loginDispatcher(page, "admin@demo.com", "demo123");
+    await page.goto("/staff.html");
+    await loginDispatcher(page, "ca@qa.local", "Qa-test-ok-9");
     expect(await page.evaluate(() => window.switchSection("company-admin-audit"))).toBe(true);
 
     await expect(page.locator("#company-admin-audit")).toBeVisible();
@@ -293,18 +297,18 @@ test.describe("UI smoke", () => {
   test("company admin validates and publishes the versioned XLSX service plan", async ({ page }) => {
     const state = require("./helpers.js").minimalDemoState();
     state.groups = [
-      { id: "north", name: "North depot", color: "#3D7EF5", active: true, companyId: "demo" },
-      { id: "south", name: "South depot", color: "#10B981", active: true, companyId: "demo" }
+      { id: "north", name: "North depot", color: "#3D7EF5", active: true, companyId: "qa-local" },
+      { id: "south", name: "South depot", color: "#10B981", active: true, companyId: "qa-local" }
     ];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo", { waitUntil: "networkidle" });
-    await loginDispatcher(page, "admin@demo.com", "demo123");
+    await page.goto("/staff.html", { waitUntil: "networkidle" });
+    await loginDispatcher(page, "ca@qa.local", "Qa-test-ok-9");
     expect(await page.evaluate(() => window.switchSection("company-admin-service-plan"))).toBe(true);
 
     await expect(page.locator("#company-admin-service-plan")).toBeVisible();
     await page.locator("#ca-service-plan-group").selectOption("north");
     await page.locator("#ca-service-plan-file").setInputFiles(
-      path.resolve(__dirname, "../../public/templates/BusCommand_Dienstplan_Import_v1.xlsx")
+      path.resolve(__dirname, "../../tests/fixtures/qa-dienstplan-sample.xlsx")
     );
     await expect(page.locator("#ca-service-plan-preview")).toContainText("Ready to activate");
     await expect(page.locator("#ca-service-plan-preview")).toContainText("First publication for this group");
@@ -321,7 +325,7 @@ test.describe("UI smoke", () => {
     await expect.poll(() => page.evaluate(() => window.state.servicePlans?.length || 0)).toBe(1);
     await page.locator("#ca-service-plan-group").selectOption("south");
     await page.locator("#ca-service-plan-file").setInputFiles(
-      path.resolve(__dirname, "../../public/templates/BusCommand_Dienstplan_Import_v1.xlsx")
+      path.resolve(__dirname, "../../tests/fixtures/qa-dienstplan-sample.xlsx")
     );
     await page.locator("#ca-publish-service-plan").click();
     await expect.poll(() => page.evaluate(() => window.state.servicePlans?.length || 0)).toBe(2);
@@ -333,8 +337,8 @@ test.describe("UI smoke", () => {
 
   test("company admin imports, filters and controls driver accounts", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/staff.html?mode=demo", { waitUntil: "networkidle" });
-    await loginDispatcher(page, "admin@demo.com", "demo123");
+    await page.goto("/staff.html", { waitUntil: "networkidle" });
+    await loginDispatcher(page, "ca@qa.local", "Qa-test-ok-9");
     expect(await page.evaluate(() => window.switchSection("company-admin-drivers"))).toBe(true);
 
     await expect(page.locator("#company-admin-drivers")).toBeVisible();
@@ -379,7 +383,7 @@ test.describe("UI smoke", () => {
 
   test("company admin reviews immutable service plan history", async ({ page }) => {
     const state = require("./helpers.js").minimalDemoState();
-    state.groups = [{ id: "north", name: "North depot", color: "#3D7EF5", active: true, companyId: "demo" }];
+    state.groups = [{ id: "north", name: "North depot", color: "#3D7EF5", active: true, companyId: "qa-local" }];
     const duty = {
       code: "310.S01", dayType: "SCHOOL_WEEKDAY", workStart: "04:02", firstTripStart: "04:33",
       lastTripEnd: "14:00", workEnd: "14:35", activities: [
@@ -391,8 +395,8 @@ test.describe("UI smoke", () => {
       { id: "north-310-67-2026-03-01", groupId: "north", planCode: "310", planVersion: "67", validFrom: "2026-03-01", timezone: "Europe/Vienna", status: "active", publishedAt: "2026-02-20T09:00:00.000Z", publishedBy: "admin-2", dutyCount: 1, duties: [{ ...duty, workStart: "04:05" }] }
     ];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo", { waitUntil: "networkidle" });
-    await loginDispatcher(page, "admin@demo.com", "demo123");
+    await page.goto("/staff.html", { waitUntil: "networkidle" });
+    await loginDispatcher(page, "ca@qa.local", "Qa-test-ok-9");
     expect(await page.evaluate(() => window.switchSection("company-admin-service-plan"))).toBe(true);
     await expect(page.locator("#company-admin-service-plan")).toBeVisible();
     await page.locator("#ca-service-plan-group").selectOption("north");
@@ -413,8 +417,8 @@ test.describe("UI smoke", () => {
 
   test("rapid dispatcher creation double-click creates one account", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/staff.html?mode=demo");
-    await loginDispatcher(page, "admin@demo.com", "demo123");
+    await page.goto("/staff.html");
+    await loginDispatcher(page, "ca@qa.local", "Qa-test-ok-9");
     expect(await page.evaluate(() => window.switchSection("company-admin-team"))).toBe(true);
     await expect(page.locator("#company-admin-team")).toBeVisible();
     await page.locator("#ca-new-disp-name").fill("Single Dispatcher");
@@ -431,10 +435,10 @@ test.describe("UI smoke", () => {
 
   test("company admin manages dispatcher access, assignments, filters and mobile layout", async ({ page }) => {
     const state = require("./helpers.js").minimalDemoState();
-    state.groups.push({ id: "102", name: "Line 102", color: "#10B981", active: true, companyId: "demo" });
+    state.groups.push({ id: "102", name: "Line 102", color: "#10B981", active: true, companyId: "qa-local" });
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
-    await loginDispatcher(page, "admin@demo.com", "demo123");
+    await page.goto("/staff.html");
+    await loginDispatcher(page, "ca@qa.local", "Qa-test-ok-9");
     expect(await page.evaluate(() => window.switchSection("company-admin-team"))).toBe(true);
     await expect(page.locator("#company-admin-team")).toBeVisible();
 
@@ -482,7 +486,7 @@ test.describe("UI smoke", () => {
 
   test("driver PIN login", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/driver.html?mode=demo");
+    await page.goto("/driver.html");
     await loginDriver(page);
     await expect(page.locator("#driver-dashboard")).toBeVisible();
   });
@@ -494,7 +498,7 @@ test.describe("UI smoke", () => {
     state.routes = [];
     state.reports = [{ id: "incomplete", driver: "E2E Driver", status: "Aktivno" }];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDriver(page);
     await page.evaluate(() => {
       window.state.routes = [];
@@ -509,7 +513,7 @@ test.describe("UI smoke", () => {
 
   test("SOS alarm flow", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDriver(page);
     await page.evaluate(() => {
       const modal = document.getElementById("global-confirm-modal");
@@ -531,7 +535,7 @@ test.describe("UI smoke", () => {
 
   test("dispatcher assigns shift", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
     await page.evaluate(() => {
       window.state.shiftCatalogs = window.state.shiftCatalogs || {};
@@ -577,7 +581,7 @@ test.describe("UI smoke", () => {
 
   test("rapid quick-report double click creates one report", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDriver(page);
     await page.evaluate(() => {
       const modal = document.getElementById("global-confirm-modal");
@@ -595,7 +599,7 @@ test.describe("UI smoke", () => {
 
   test("driver submits validated breakdown and lost-item forms", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDriver(page);
     await page.evaluate(() => {
       const modal = document.getElementById("global-confirm-modal");
@@ -628,7 +632,7 @@ test.describe("UI smoke", () => {
       text: "Return to depot", date: "2026-07-20", time: "12:00", read: true
     }];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDriver(page);
     await page.evaluate(() => {
       const modal = document.getElementById("global-confirm-modal");
@@ -647,7 +651,7 @@ test.describe("UI smoke", () => {
 
   test("driver requests a validated leave period", async ({ page }) => {
     await seedDemoState(page);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDriver(page);
     const start = await page.evaluate(() => {
       const d = new Date();
@@ -690,7 +694,7 @@ test.describe("UI smoke", () => {
       start: `${month}-02`, end: `${month}-02`, days: 1, status: "approved"
     }];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDriver(page);
     await page.evaluate(() => {
       if (!document.getElementById("global-confirm-modal")?.classList.contains("hidden")) closeConfirmModal();
@@ -719,7 +723,7 @@ test.describe("UI smoke", () => {
       start: "2026-08-01", end: "2026-08-03", days: 3, reason: "Family leave", status: "pending"
     }];
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
     await page.evaluate((vacation) => {
       window.state.vacations = [vacation];
@@ -787,7 +791,7 @@ test.describe("UI smoke", () => {
   });
 
   test("Cancel signs out pending Firebase session, clears files and returns login", async ({ page }) => {
-    await page.goto("/driver.html?mode=demo");
+    await page.goto("/driver.html");
     await page.locator("#pre-trip-damage-file").setInputFiles({
       name: "safe-test-image.png", mimeType: "image/png", buffer: Buffer.from("safe-test")
     });

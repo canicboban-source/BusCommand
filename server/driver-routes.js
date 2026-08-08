@@ -1824,7 +1824,7 @@ function registerDriverRoutes(app, deps) {
     if (!dispatcherCanAccessGroup(req.staff.groups, parsed.data.groupId)) {
       return res.status(403).json({ success: false, error: "Grupa nije dodeljena ovom disponentu." });
     }
-    const { busHasGroup, withAttachedGroup, buildNewBusGroups, normalizeGroupIds } = require("./bus-group-membership");
+    const { busHasGroup, withAttachedGroup, buildNewBusGroups } = require("./bus-group-membership");
     try {
       const companyRef = db().collection("companies").doc(req.staff.companyId);
       const duplicate = await companyRef.collection("buses").where("number", "==", parsed.data.number).limit(1).get();
@@ -2498,7 +2498,6 @@ function registerDriverRoutes(app, deps) {
       if (!originalDriverSnap.exists || !replacementDriverSnap.exists) {
         return res.status(404).json({ success: false, error: "Vozač za zamenu nije pronađen." });
       }
-      const originalDriver = originalDriverSnap.data();
       const replacementDriver = replacementDriverSnap.data();
       // Fast ops path: replacement may come from another group / company pool
       // as long as the dispatcher owns the incident group and the driver is active.

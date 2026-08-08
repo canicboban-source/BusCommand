@@ -42,7 +42,7 @@ test("production group management has no legacy manual PIN form and keeps secure
   const packageImport = read("../../js/imports/package-import.js");
   const server = read("../../server/driver-routes.js");
   assert.doesNotMatch(html, /id="(?:add-driver-form|new-driver-pin|bulk-drivers-input)"/);
-  assert.match(drivers, /function addDriver[\s\S]*?if \(!IS_DEMO_MODE\) return/);
+  assert.match(drivers, /function addDriver[\s\S]*?if \(!USE_LOCAL_STATE\) return/);
   assert.match(api, /\/api\/staff\/drivers\/import/);
   assert.match(packageImport, /ApiClient\.importDriversCsv/);
   assert.match(server, /const COST = 12/);

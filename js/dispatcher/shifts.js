@@ -7,10 +7,10 @@ import { renderShiftsWeeklyGrid } from "./shift-grid.js";
 import { getWeekDates } from "./shift-utils.js";
 import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { switchSection } from "../layout/navigation.js";
 import { isOperationalReadOnly } from "../core/access.js";
-import { ensureDemoDayLock } from "./plan-edit-lock-demo.js";
+import { ensureLocalDayLock } from "./plan-edit-lock-local.js";
 import {
     findCrossGroupBusConflicts,
     formatCrossGroupBusWarn,
@@ -123,8 +123,8 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
         return false;
     }
     const groupId = driver.groupId || driver.lineId || window.state?.activeGroupHubId || null;
-    if (IS_DEMO_MODE && groupId) {
-        const lock = ensureDemoDayLock(groupId, date);
+    if (USE_LOCAL_STATE && groupId) {
+        const lock = ensureLocalDayLock(groupId, date);
         if (!lock.ok) {
             const who = lock.lock?.holderName || lock.lock?.holderUid || "";
             showToast(
@@ -145,7 +145,7 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
         const expectedRevision = existing?.source === "shift" && Number.isInteger(existing.revision)
             ? existing.revision
             : 0;
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             const result = await ApiClient.assignStaffShift({
                 driverId: driver.id, date, type, name,
                 bus: busValue, routeCode: parseRouteCodeFromText(name) || "",
@@ -216,7 +216,7 @@ async function undoShift(driver, date) {
             showToast(t("shift_undo_nothing") || "Nema izmene za poništavanje.", "error");
             return false;
         }
-        if (IS_DEMO_MODE) {
+        if (USE_LOCAL_STATE) {
             showToast(t("shift_undo_demo") || "Undo nije dostupan u demo režimu.", "error");
             return false;
         }

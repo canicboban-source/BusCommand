@@ -3,7 +3,7 @@ import { getVisibleDrivers, showToast, escapeHtml, todayDateStr } from "../core/
 import { getShiftForDriverDate, setShiftForDriverDate, getDriverDutySummary, getDailyPlanForDate } from "../core/shift-plan.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { t } from "../ui/i18n.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import {
     isActiveReport,
     reportKind,
@@ -63,7 +63,7 @@ function visibleOperationalReports() {
         dispatchers: window.state.dispatchers,
         currentUser: window.currentUser,
         activeGroupId: window.state.activeGroupFilter || "",
-        demo: IS_DEMO_MODE
+        demo: USE_LOCAL_STATE
     })).filter(isActiveReport);
 }
 
@@ -746,7 +746,7 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
     const replacementShift = getShiftForDriverDate(replacement.name, report.date);
     if (statusEl) statusEl.textContent = t("report_resolving") || "Rešavanje…";
     let result;
-    if (IS_DEMO_MODE) {
+    if (USE_LOCAL_STATE) {
         result = {
             success: true,
             report: {
@@ -799,7 +799,7 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
         resolvedAt: result.report?.resolvedAt || new Date().toISOString(),
         resolvedBy: result.report?.resolvedBy || window.currentUser?.uid || window.currentUser?.id
     });
-    if (IS_DEMO_MODE) saveState();
+    if (USE_LOCAL_STATE) saveState();
     showToast(t("ops_resolver_success", { driver: replacement.name, bus: replacementBus }), "success");
     notifyOpsChanged({ date: report.date });
     return true;

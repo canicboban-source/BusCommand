@@ -1,7 +1,7 @@
 // BusCommand ESM v9.5 — GPS tracking (flag-gated, active shift only)
 import { syncUserSession } from "../auth/login-session.js";
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { showToast } from "../core/utils.js";
 import { t } from "../ui/i18n.js";
 
@@ -21,7 +21,7 @@ function configureDriverGpsGate({ liveGps = false, sessionActive = false } = {})
 }
 
 function isLiveGpsAllowed() {
-    if (IS_DEMO_MODE) return false;
+    if (USE_LOCAL_STATE) return false;
     return _liveGpsEnabled && _sessionActive;
 }
 

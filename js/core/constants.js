@@ -31,5 +31,5 @@ export const FRESH_STATE = {
     bereitschaftDriver: null
 };
 
-// Local mode starts empty as well. Automated fixtures live exclusively under tests/.
-export const DEMO_STATE = FRESH_STATE;
+// Local/QA mode starts empty as well. Automated fixtures live exclusively under tests/.
+export const LOCAL_EMPTY_STATE = FRESH_STATE;

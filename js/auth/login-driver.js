@@ -11,7 +11,7 @@ import { clearAllPasswordFields } from "./password-fields.js";
 import { openDriverActivation } from "./driver-activation.js";
 import { prepareDriverWorkSession } from "../driver/work-session.js";
 import { isStaffSurface } from "../core/app-surface.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { translateApiError } from "./api-error-i18n.js";
 import {
     normalizeCompanyId,
@@ -32,7 +32,7 @@ async function loginAsDriver() {
     const pin = document.getElementById("login-driver-pin").value.trim();
     const companyId = resolveDriverLoginCompanyId(readDriverCompanyField());
 
-    if (IS_DEMO_MODE) {
+    if (USE_LOCAL_STATE) {
         const driverId = document.getElementById("login-driver-select")?.value || "";
         const driver = window.state.drivers.find(d => d.id === driverId || d.name === driverId);
         if (!driver) {
@@ -56,7 +56,7 @@ async function loginAsDriver() {
     await _loginDriverProduction({ eid, pin, companyId });
 }
 
-function _loginDriverDemo(driver, name, pin, companyId = "demo") {
+function _loginDriverDemo(driver, name, pin, companyId = "qa-local") {
     if (isCompanyAccessBlocked()) {
         showToast(t("company_access_blocked"), "error");
         return;
@@ -78,7 +78,7 @@ function _loginDriverDemo(driver, name, pin, companyId = "demo") {
         role: "driver", name, id: driver.id,
         bus: driver.bus || "",
         routeId: route ? route.id : null,
-        currentStopIndex: 0, companyId: companyId || "demo", isDemo: true
+        currentStopIndex: 0,         companyId: companyId || "qa-local", isDemo: false
     };
     persistUserSession(window.currentUser);
     clearAllPasswordFields();

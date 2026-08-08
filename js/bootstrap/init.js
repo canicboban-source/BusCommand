@@ -22,7 +22,8 @@ import { closeDriverActivationForSignedOut, openDriverActivation } from "../auth
 import { setDriverActivationPending } from "../auth/driver-access-gate.js";
 import { prepareDriverWorkSession } from "../driver/work-session.js";
 import { assertSurfaceRole, isDriverSurface, isStaffSurface } from "../core/app-surface.js";
-import { IS_DEMO_MODE, COMPANY_ID } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE, COMPANY_ID } from "../core/runtime-config.js";
+import { purgeLegacyDemoStorage } from "../core/purge-legacy-demo-storage.js";
 
 function setAuthLoading(visible, errorKey = null) {
     let overlay = document.getElementById("production-auth-loading");
@@ -68,6 +69,7 @@ function showFirebaseConfigurationError(error) {
 
 async function bootstrapBusCommand() {
     applyStoredTheme();
+    purgeLegacyDemoStorage();
     showModeBadge();
     initPasswordFieldGuards();
     initLoginSessionGuards(handleSessionInvalidated);
@@ -75,10 +77,10 @@ async function bootstrapBusCommand() {
     const savedLang = resolveUiLanguage();
     document.documentElement.lang = savedLang;
 
-    if (IS_DEMO_MODE) {
+    // USE_LOCAL_STATE is only true when isolated QA harness sets window.__BUSCOMMAND_QA_HARNESS__.
+    // Product runtime never auto-seeds firms, users, plans, or catalogs.
+    if (USE_LOCAL_STATE) {
         loadStateFromStorage(COMPANY_ID);
-        const { ensureDemoOpsBaseline } = await import("../core/demo-ops-baseline.js");
-        ensureDemoOpsBaseline(window.state);
         applyUiLanguagePreference(savedLang);
     } else {
         window.state = { ...getBaseState(), language: savedLang };
@@ -122,10 +124,8 @@ async function bootstrapBusCommand() {
         sessionStorage.removeItem("buscommand_force_login");
         clearUserSession();
         window.currentUser = null;
-        if (IS_DEMO_MODE) {
+        if (USE_LOCAL_STATE) {
             loadStateFromStorage(COMPANY_ID);
-            const { ensureDemoOpsBaseline } = await import("../core/demo-ops-baseline.js");
-            ensureDemoOpsBaseline(window.state);
         } else {
             window.state = { ...getBaseState(), language: savedLang };
         }
@@ -138,54 +138,7 @@ async function bootstrapBusCommand() {
         return;
     }
 
-    const quickRole = BusCommandConfig.QUICK_DEMO_ROLE;
-    if (quickRole === "driver" && isStaffSurface()) {
-        window.location.replace("/driver.html" + window.location.search);
-        return;
-    }
-    if ((quickRole === "dispatcher" || quickRole === "admin") && isDriverSurface()) {
-        window.location.replace("/staff.html" + window.location.search);
-        return;
-    }
-    if (quickRole === "driver") {
-        const demoDriver = window.state.drivers[0];
-        if (!demoDriver) {
-            showLoginScreen(true);
-            lucide.createIcons();
-            return;
-        }
-        const demoRoute = window.state.routes.find(r => r.groupId === demoDriver.groupId) || window.state.routes[0];
-        window.currentUser = {
-            role: "driver", name: demoDriver.name, bus: demoDriver.bus || "104",
-            routeId: demoRoute ? demoRoute.id : null, currentStopIndex: 0,
-            companyId: "demo", isDemo: true
-        };
-        demoDriver.active = true;
-        persistUserSession(window.currentUser);
-        showAppLayout();
-        showToast("Demo — prijavljen kao Vozač", "info", 5000);
-        lucide.createIcons();
-        return;
-    }
-    if (quickRole === "dispatcher") {
-        const demoDisp = window.state.dispatchers.find(d => d.id !== "superadmin") || window.state.dispatchers[0];
-        window.currentUser = {
-            role: "dispatcher",
-            name: demoDisp ? demoDisp.name : "Demo Dispečer",
-            id: demoDisp ? demoDisp.id : "dispo-demo",
-            activeGroupId: (demoDisp && demoDisp.groups && demoDisp.groups[0])
-                || window.state.groups[0]?.id
-                || null,
-            companyId: "demo", isDemo: true
-        };
-        persistUserSession(window.currentUser);
-        showAppLayout();
-        showToast("Demo — prijavljen kao Dispečer", "info", 5000);
-        lucide.createIcons();
-        return;
-    }
-
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         const handleAuthState = createProductionAuthGate({
             firebaseProjectId: EXPECTED_FIREBASE_PROJECT_ID,
             onPending: () => setAuthLoading(true),
@@ -252,9 +205,9 @@ async function bootstrapBusCommand() {
         Auth.onAuthStateChanged(handleAuthState);
     }
 
-    if (window.currentUser && IS_DEMO_MODE) {
+    if (window.currentUser && USE_LOCAL_STATE) {
         showAppLayout();
-    } else if (IS_DEMO_MODE) {
+    } else if (USE_LOCAL_STATE) {
         showLoginScreen(false);
     }
     lucide.createIcons();

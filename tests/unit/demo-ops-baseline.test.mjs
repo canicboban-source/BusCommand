@@ -1,31 +1,34 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
-const baseline = readFileSync(join(root, "js/core/demo-ops-baseline.js"), "utf8");
-const state = readFileSync(join(root, "js/core/state.js"), "utf8");
+const root = join(import.meta.dirname, "../..");
 const init = readFileSync(join(root, "js/bootstrap/init.js"), "utf8");
+const runtime = readFileSync(join(root, "js/core/runtime-mode.js"), "utf8");
+const runtimeConfig = readFileSync(join(root, "js/core/runtime-config.js"), "utf8");
+const state = readFileSync(join(root, "js/core/state.js"), "utf8");
 
-test("ensureDemoOpsBaseline fills contact email and missing-bus ops seed in demo source", () => {
-  assert.match(baseline, /export function ensureDemoOpsBaseline/);
-  assert.match(baseline, /\["owner@", "demo\.local"\]\.join\(""\)/);
-  assert.match(baseline, /drv-demo-nobus/);
-  assert.match(baseline, /\["demo", "@buscommand\.com"\]\.join\(""\)/);
-  assert.doesNotMatch(baseline, /demo@buscommand\.com/);
-  assert.doesNotMatch(baseline, /demo123/);
+test("packaged demo baseline module is removed", () => {
+  assert.equal(existsSync(join(root, "js/core/demo-ops-baseline.js")), false);
 });
 
-test("demo ops baseline is lazy-loaded from init", () => {
-  assert.match(init, /demo-ops-baseline\.js/);
-  assert.match(init, /ensureDemoOpsBaseline/);
-  assert.doesNotMatch(state, /applyDemoOpsBaselineIfNeeded/);
+test("bootstrap never imports demo baseline seed", () => {
+  assert.doesNotMatch(init, /demo-ops-baseline\.js/);
+  assert.doesNotMatch(init, /ensureDemoOpsBaseline/);
+  assert.match(init, /purgeLegacyDemoStorage/);
+  assert.match(init, /USE_LOCAL_STATE/);
 });
 
-test("dispatcher nav includes vacation requests in monolith", () => {
-  const html = readFileSync(join(root, "index.legacy-monolith.html"), "utf8");
-  assert.match(html, /data-action-args='\["dispatcher-vacations"\]'/);
-  assert.match(html, /nav_vacation_requests/);
+test("runtime activates local state only via QA harness, never mode=demo URL", () => {
+  assert.match(runtime, /__BUSCOMMAND_QA_HARNESS__/);
+  assert.match(runtimeConfig, /export const USE_LOCAL_STATE/);
+  assert.doesNotMatch(runtimeConfig, /\bIS_DEMO_MODE\b/);
+  assert.doesNotMatch(runtime, /\bisDemoMode\b/);
+});
+
+test("state layer never auto-seeds platform admin credentials", () => {
+  assert.doesNotMatch(state, /ensureDemoPlatformAdmin/);
+  assert.doesNotMatch(state, /sa@demo\.local/);
+  assert.doesNotMatch(state, /sa-demo-ok/);
 });

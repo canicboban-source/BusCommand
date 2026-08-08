@@ -4,7 +4,7 @@ import { showToast } from "../core/utils.js";
 import { renderDriverDashboard } from "./dashboard.js";
 import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import {
     enqueueOfflineWrite,
     isProbablyOfflineError,
@@ -46,7 +46,7 @@ async function sendQuickReport(type) {
 
     quickReportPending = true;
     try {
-        if (!IS_DEMO_MODE) {
+        if (!USE_LOCAL_STATE) {
             const idempotencyKey = newIdempotencyKey();
             const body = {
                 ...definition,
@@ -104,7 +104,7 @@ async function sendQuickReport(type) {
         if (!Array.isArray(window.state.reports)) window.state.reports = [];
         window.state.reports.unshift(report);
         lastQuickReportAt = Date.now();
-        if (IS_DEMO_MODE) saveState();
+        if (USE_LOCAL_STATE) saveState();
         renderDriverDashboard();
         const message = type === "Panne" ? t("js_alert_breakdown_sent") : t("js_alert_delay_sent");
         showToast(message, type === "Panne" ? "warning" : "success");

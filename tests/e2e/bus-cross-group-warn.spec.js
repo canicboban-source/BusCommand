@@ -9,18 +9,18 @@ test.describe("Cross-group bus conflict warn", () => {
     const state = {
       ...minimalDemoState(),
       groups: [
-        { id: "310", name: "Line 310", color: "#3D7EF5", active: true, companyId: "demo" },
-        { id: "320", name: "Line 320", color: "#16a34a", active: true, companyId: "demo" }
+        { id: "310", name: "Line 310", color: "#3D7EF5", active: true, companyId: "qa-local" },
+        { id: "320", name: "Line 320", color: "#16a34a", active: true, companyId: "qa-local" }
       ],
       dispatchers: [
         {
           id: "dispo-1",
           name: "Demo Dispatcher",
-          email: "demo@buscommand.com",
-          password: "demo123",
+          email: "dispo@qa.local",
+          password: "Qa-test-ok-9",
           passwordChanged: true,
           groups: ["310", "320"],
-          companyId: "demo"
+          companyId: "qa-local"
         }
       ],
       drivers: [
@@ -69,7 +69,7 @@ test.describe("Cross-group bus conflict warn", () => {
       ]
     };
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     const saved = await page.evaluate(async () => {
@@ -91,18 +91,18 @@ test.describe("Cross-group bus conflict warn", () => {
     const state = {
       ...minimalDemoState(),
       groups: [
-        { id: "310", name: "Line 310", color: "#3D7EF5", active: true, companyId: "demo" },
-        { id: "320", name: "Line 320", color: "#16a34a", active: true, companyId: "demo" }
+        { id: "310", name: "Line 310", color: "#3D7EF5", active: true, companyId: "qa-local" },
+        { id: "320", name: "Line 320", color: "#16a34a", active: true, companyId: "qa-local" }
       ],
       dispatchers: [
         {
           id: "dispo-1",
           name: "Demo Dispatcher",
-          email: "demo@buscommand.com",
-          password: "demo123",
+          email: "dispo@qa.local",
+          password: "Qa-test-ok-9",
           passwordChanged: true,
           groups: ["310", "320"],
-          companyId: "demo"
+          companyId: "qa-local"
         }
       ],
       drivers: [
@@ -120,7 +120,7 @@ test.describe("Cross-group bus conflict warn", () => {
       shifts: []
     };
     await seedDemoState(page, state);
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(async () => {

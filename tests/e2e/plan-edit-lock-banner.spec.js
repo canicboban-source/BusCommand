@@ -28,7 +28,7 @@ test.describe("Plan edit lock banner (demo)", () => {
         }
       }
     });
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     await page.evaluate(() => {
@@ -49,7 +49,7 @@ test.describe("Plan edit lock banner (demo)", () => {
 
   test("second demo identity cannot acquire held lock", async ({ page }) => {
     await seedDemoState(page, minimalDemoState());
-    await page.goto("/staff.html?mode=demo");
+    await page.goto("/staff.html");
     await loginDispatcher(page);
 
     const blocked = await page.evaluate(() => {

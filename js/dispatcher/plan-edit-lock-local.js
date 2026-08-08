@@ -1,5 +1,5 @@
 /**
- * Demo / offline first-writer day lock (localStorage).
+ * QA local-state / offline first-writer day lock (localStorage).
  * Production assignment lock is enforced on the server.
  */
 import {
@@ -33,7 +33,7 @@ function currentUid() {
   return window.currentUser?.id || window.currentUser?.uid || null;
 }
 
-function getDemoDayLock(groupId, dateStr) {
+function getLocalDayLock(groupId, dateStr) {
   const lockId = buildLockId("day", groupId, dateStr);
   if (!lockId) return { ok: false, code: "INVALID_LOCK_REQUEST", lock: null };
   const store = loadStore();
@@ -49,7 +49,7 @@ function getDemoDayLock(groupId, dateStr) {
   return { ok: true, lock: existing };
 }
 
-function ensureDemoDayLock(groupId, dateStr) {
+function ensureLocalDayLock(groupId, dateStr) {
   const uid = currentUid();
   if (!uid || !groupId || !dateStr) {
     return { ok: false, code: "INVALID_LOCK_REQUEST" };
@@ -69,7 +69,7 @@ function ensureDemoDayLock(groupId, dateStr) {
   return check;
 }
 
-function heartbeatDemoDayLock(groupId, dateStr) {
+function heartbeatLocalDayLock(groupId, dateStr) {
   const uid = currentUid();
   const lockId = buildLockId("day", groupId, dateStr);
   if (!uid || !lockId) return { ok: false, code: "INVALID_LOCK_REQUEST" };
@@ -79,7 +79,7 @@ function heartbeatDemoDayLock(groupId, dateStr) {
   return result;
 }
 
-function releaseDemoDayLock(groupId, dateStr) {
+function releaseLocalDayLock(groupId, dateStr) {
   const uid = currentUid();
   const lockId = buildLockId("day", groupId, dateStr);
   if (!uid || !lockId) return { ok: false, code: "INVALID_LOCK_REQUEST" };
@@ -89,7 +89,7 @@ function releaseDemoDayLock(groupId, dateStr) {
   return result;
 }
 
-function breakDemoDayLock(groupId, dateStr, reason) {
+function breakLocalDayLock(groupId, dateStr, reason) {
   const lockId = buildLockId("day", groupId, dateStr);
   if (!lockId) return { ok: false, code: "INVALID_LOCK_REQUEST" };
   const store = loadStore();
@@ -99,9 +99,9 @@ function breakDemoDayLock(groupId, dateStr, reason) {
 }
 
 export {
-  getDemoDayLock,
-  ensureDemoDayLock,
-  heartbeatDemoDayLock,
-  releaseDemoDayLock,
-  breakDemoDayLock
+  getLocalDayLock,
+  ensureLocalDayLock,
+  heartbeatLocalDayLock,
+  releaseLocalDayLock,
+  breakLocalDayLock
 };

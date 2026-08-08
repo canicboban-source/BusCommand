@@ -7,7 +7,7 @@ import { renderMonthlyPlansView } from "./monthly-plans.js";
 import { renderDispatcherDataHub } from "./data-hub.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr, changeAttr } from "../core/action-delegate.js";
-import { IS_DEMO_MODE } from "../core/runtime-config.js";
+import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { persistImportedMonthlyPlan } from "../imports/monthly-plan-persist.js";
 import { loadStateFromFirestore } from "../core/firebase-service.js";
 import { getActiveLineId } from "../data/groups.js";
@@ -316,7 +316,7 @@ async function confirmBulkPlanImport() {
         byMonth[item.month][item.driverName] = { parsedShifts: item.parsedShifts };
     });
 
-    if (!IS_DEMO_MODE) {
+    if (!USE_LOCAL_STATE) {
         let serverOk = 0;
         let serverFail = 0;
         for (const [month, byDriver] of Object.entries(byMonth)) {

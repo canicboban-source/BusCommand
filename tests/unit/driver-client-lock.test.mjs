@@ -21,10 +21,10 @@ test("production driver profile writes are server-owned", async () => {
   assert.match(driverRules, /onlyUpdatingAllowedDriverFields\(\)/);
   assert.doesNotMatch(driverRules, /allow create: if isCompanyAdmin/);
 
-  assert.match(onboarding, /IS_DEMO_MODE/);
+  assert.match(onboarding, /USE_LOCAL_STATE/);
   assert.match(onboarding, /ca_drivers_admin_only/);
-  assert.match(onboarding, /if \(!IS_DEMO_MODE\)/);
+  assert.match(onboarding, /if \(!USE_LOCAL_STATE\)/);
 
   assert.match(drivers, /ApiClient\.setDriverActive/);
-  assert.match(drivers, /if \(!IS_DEMO_MODE\) return;/);
+  assert.match(drivers, /if \(!USE_LOCAL_STATE\) return;/);
 });
