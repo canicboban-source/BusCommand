@@ -17,12 +17,11 @@ import { saveState } from "../core/state.js";
 import { loadActiveServicePlanForLine } from "../core/service-plan.js";
 import { renderDispatcherDataHub } from "./data-hub.js";
 import { renderHubDailyPreview } from "./daily-plan.js";
-import { createGroupMonthlyPlans, currentMonthKey, renderHubMonthlyPreview } from "./monthly-plans.js";
+import { renderHubMonthlyPreview } from "./monthly-plans.js";
 import { switchSection } from "../layout/navigation.js";
 import { escapeHtml, showToast } from "../core/utils.js";
 import { isOperationalReadOnly } from "../core/access.js";
 import { syncUserSession } from "../auth/login-session.js";
-import { showModal, closeModal } from "../ui/modals.js";
 
 function getHubGroupId() {
     return window.state.activeGroupHubId || null;
@@ -429,87 +428,28 @@ function openVehiclesFromPlan() {
     switchSection("dispatcher-vehicles");
 }
 
-function openNewPlanModal(kind = "monthly") {
+/**
+ * Product entry for monthly Dienstplan: import a finished schedule (or open
+ * the monthly editor to assign real days). Never creates empty Frei shells.
+ */
+function openMonthlyPlanImport() {
     if (isOperationalReadOnly()) {
         showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
         return;
     }
     if (!getHubGroupId()) {
-        showToast(t("hub_new_plan_need_group") || "Prvo otvorite grupu.", "error");
+        showToast(t("hub_import_monthly_need_group") || "Prvo otvorite grupu.", "error");
         return;
     }
-    const kindEl = document.getElementById("new-plan-kind");
-    const monthEl = document.getElementById("new-plan-month");
-    const monthWrap = document.getElementById("new-plan-month-wrap");
-    if (kindEl) kindEl.value = kind === "daily" ? "daily" : "monthly";
-    if (monthEl && !monthEl.value) monthEl.value = currentMonthKey();
-    if (monthWrap) {
-        monthWrap.classList.toggle("hidden", (kindEl?.value || "monthly") === "daily");
-    }
-    if (kindEl && !kindEl.dataset.bound) {
-        kindEl.dataset.bound = "1";
-        kindEl.addEventListener("change", () => {
-            if (monthWrap) monthWrap.classList.toggle("hidden", kindEl.value === "daily");
-        });
-    }
-    const modal = document.getElementById("new-plan-modal");
-    if (modal) {
-        modal.classList.remove("hidden");
-        modal.removeAttribute("hidden");
-        modal.style.display = "flex";
-        modal.setAttribute("aria-hidden", "false");
-    } else {
-        showModal("new-plan-modal");
-    }
-    if (typeof lucide !== "undefined") lucide.createIcons();
-}
-
-function closeNewPlanModal() {
-    const modal = document.getElementById("new-plan-modal");
-    if (modal) {
-        modal.classList.add("hidden");
-        modal.setAttribute("hidden", "");
-        modal.style.display = "none";
-        modal.setAttribute("aria-hidden", "true");
-    } else {
-        closeModal("new-plan-modal");
-    }
-}
-
-function confirmNewPlan() {
-    if (isOperationalReadOnly()) {
-        showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
-        return;
-    }
-    const groupId = getHubGroupId();
-    if (!groupId) {
-        showToast(t("hub_new_plan_need_group") || "Prvo otvorite grupu.", "error");
-        return;
-    }
-    const kind = document.getElementById("new-plan-kind")?.value || "monthly";
-    const month = document.getElementById("new-plan-month")?.value || currentMonthKey();
-    const result = createGroupMonthlyPlans(month);
-    closeNewPlanModal();
-    if (result.created > 0) {
-        showToast(
-            (t("hub_new_plan_created") || "Kreirano praznih planova: {count} ({month}).")
-                .replace("{count}", String(result.created))
-                .replace("{month}", result.month),
-            "success"
-        );
-    } else {
-        showToast(
-            (t("hub_new_plan_exists") || "Planovi za {month} već postoje — otvaram uređivanje.")
-                .replace("{month}", result.month),
-            "info"
-        );
-    }
-    if (kind === "daily") {
-        openDailyPlanFull();
-    } else {
-        openMonthlyPlansFull();
-    }
-    renderGroupHub();
+    openMonthlyPlansFull();
+    window.setTimeout(() => {
+        const zone = document.getElementById("dispo-monthly-plan-import")
+            || document.getElementById("plan-import-dropzone");
+        zone?.scrollIntoView({ behavior: "smooth", block: "center" });
+        zone?.classList.add("hub-panel-target");
+        window.setTimeout(() => zone?.classList.remove("hub-panel-target"), 1400);
+        document.getElementById("bulk-plan-import-files")?.focus?.();
+    }, 80);
 }
 
 /** @deprecated koristi scrollHubSection */
@@ -526,9 +466,7 @@ export {
     openDailyPlanForGroup,
     openMonthlyPlanForGroup,
     openVehiclesFromPlan,
-    openNewPlanModal,
-    closeNewPlanModal,
-    confirmNewPlan,
+    openMonthlyPlanImport,
     backFromPlanFullPage,
     scrollHubSection,
     setGroupHubTab,

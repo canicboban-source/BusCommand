@@ -42,9 +42,9 @@ import {
     applyOpsAttentionFix
 } from "./dispatcher/dashboard.js";
 import { removeDispatcher } from "./dispatcher/dispatchers.js";
-import { backFromPlanFullPage, closeGroupHub, closeNewPlanModal, confirmNewPlan, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlansFull, openNewPlanModal, openVehiclesFromPlan, scrollHubSection } from "./dispatcher/group-hub.js";
+import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlanImport, openMonthlyPlansFull, openVehiclesFromPlan, scrollHubSection } from "./dispatcher/group-hub.js";
 import { returnLostItem, setLostItemStatus, openLostItemPhoto } from "./dispatcher/lost-items.js";
-import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, deleteMonthlyPlan, focusMonthlyDriverPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, openMonthlyDayEditForDriver, previewMonthlyMassAbsence, saveMonthlyDayEdit, selectMonthlyPlanGroup, undoMonthlyDayEdit } from "./dispatcher/monthly-plans.js";
+import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, deleteMonthlyPlan, exportMonthlyGroupPlanCsv, focusMonthlyDriverPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, openMonthlyDayEditForDriver, previewMonthlyMassAbsence, saveMonthlyDayEdit, selectMonthlyPlanGroup, undoMonthlyDayEdit } from "./dispatcher/monthly-plans.js";
 import { goToOpsPlanProblems } from "./dispatcher/plan-health-banner.js";
 import { openVehiclesForGroup } from "./dispatcher/vehicles-panel.js";
 import { setMessagesPageTab, submitDispatcherMessage } from "./dispatcher/msg-compose.js";
@@ -155,8 +155,6 @@ const HANDLERS = {
     clickElementById,
     closeCompanyDriverAddModal,
     closeCompanyDriverEdit,
-    closeNewPlanModal,
-    confirmNewPlan,
     closeCompanyServicePlanDuty,
     closeCompanyServicePlanHistory,
     closeConfirmModal,
@@ -180,6 +178,7 @@ const HANDLERS = {
     confirmSuperAdminPin,
     createDispatcherGroup,
     createEmptyMonthlyPlan,
+    exportMonthlyGroupPlanCsv,
     deleteMonthlyPlan,
     clearDailyShift,
     async detachDriverFromLine(...args) {
@@ -240,7 +239,7 @@ const HANDLERS = {
     onMedShiftTypeChange,
     openCompanyDriverAddModal,
     openCompanyDriverEdit,
-    openNewPlanModal,
+    openMonthlyPlanImport,
     openCompanyServicePlanDuty,
     openCompanyServicePlanHistory,
     openDailyPlanForGroup,

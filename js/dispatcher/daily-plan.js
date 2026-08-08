@@ -156,10 +156,15 @@ function renderEmptyState(container, message, { showNewPlan = false } = {}) {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "btn-primary plan-empty-cta";
-        btn.setAttribute("data-action", "openNewPlanModal");
-        btn.setAttribute("data-action-args", '["daily"]');
-        btn.innerHTML = `<i data-lucide="plus"></i> <span>${escapeHtml(t("hub_new_plan") || "+ Novi Plan")}</span>`;
+        btn.setAttribute("data-action", "openMonthlyPlanImport");
+        btn.innerHTML = `<i data-lucide="file-up"></i> <span>${escapeHtml(t("hub_import_monthly_plan") || "+ Uvezi / Kreiraj Mesečni Plan")}</span>`;
         empty.appendChild(btn);
+        const hint = document.createElement("p");
+        hint.className = "plan-empty-hint";
+        hint.style.cssText = "margin:8px 0 0;font-size:0.78rem;color:var(--text-muted);";
+        hint.textContent = t("daily_filled_from_monthly")
+            || "Dnevni plan se puni iz uvezenog/uređenog mesečnog Dienstplana.";
+        empty.appendChild(hint);
     }
     container.appendChild(empty);
     if (typeof lucide !== "undefined") lucide.createIcons();
