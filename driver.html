@@ -1104,36 +1104,6 @@
         </div>
     </div>
 
-    <!-- NEW PLAN (Dispo / CA hub) -->
-    <div id="new-plan-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="new-plan-modal-title" style="display:none;" hidden>
-        <div class="modal-content new-plan-modal-card">
-            <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-                <h3 id="new-plan-modal-title" data-i18n="hub_new_plan_title">+ Novi Plan</h3>
-                <button type="button" class="btn-secondary" data-action="closeNewPlanModal" aria-label="Close">
-                    <i data-lucide="x" style="width:16px;height:16px;"></i>
-                </button>
-            </div>
-            <p class="subtitle" style="margin:0 0 14px;" data-i18n="hub_new_plan_hint">Kreirajte prazan plan za aktivnu grupu, zatim dodelite smene.</p>
-            <label class="form-group" for="new-plan-kind">
-                <span data-i18n="hub_new_plan_kind">Tip plana</span>
-                <select id="new-plan-kind">
-                    <option value="daily" data-i18n="hub_daily_plan">Dnevni plan</option>
-                    <option value="monthly" data-i18n="hub_monthly_plan">Mesečni plan</option>
-                </select>
-            </label>
-            <label class="form-group" for="new-plan-month" id="new-plan-month-wrap">
-                <span data-i18n="hub_monthly_plan">Mesečni plan</span>
-                <input type="month" id="new-plan-month">
-            </label>
-            <div class="new-plan-modal-actions" style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
-                <button type="button" class="btn-secondary" data-action="closeNewPlanModal" data-i18n="btn_cancel">Otkaži</button>
-                <button type="button" class="btn-primary" data-action="confirmNewPlan">
-                    <i data-lucide="plus"></i> <span data-i18n="hub_new_plan_create">Kreiraj plan</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- SA COMPANY DETAIL -->
     <div id="sa-company-detail-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sa-detail-title" style="display:none;">
         <div class="modal-content sa-detail-modal">

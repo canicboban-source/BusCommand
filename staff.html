@@ -1573,8 +1573,8 @@
                                     </div>
                                     <div id="hub-daily-preview" class="hub-plan-preview-body"></div>
                                     <div class="hub-plan-preview-actions">
-                                        <button type="button" class="btn-secondary hub-plan-new-btn" data-action="openNewPlanModal" data-action-args='["daily"]'>
-                                            <i data-lucide="plus"></i> <span data-i18n="hub_new_plan">+ Novi Plan</span>
+                                        <button type="button" class="btn-secondary hub-plan-new-btn" data-action="openMonthlyPlanImport">
+                                            <i data-lucide="file-up"></i> <span data-i18n="hub_import_monthly_plan">+ Uvezi / Kreiraj Mesečni Plan</span>
                                         </button>
                                         <button type="button" class="btn-primary hub-plan-open-btn" data-action="openDailyPlanFull">
                                             <i data-lucide="maximize-2"></i> <span data-i18n="hub_open_daily_full">Otvori pun dnevni plan</span>
@@ -1588,8 +1588,8 @@
                                     </div>
                                     <div id="hub-monthly-preview" class="hub-plan-preview-body"></div>
                                     <div class="hub-plan-preview-actions">
-                                        <button type="button" class="btn-secondary hub-plan-new-btn" data-action="openNewPlanModal" data-action-args='["monthly"]'>
-                                            <i data-lucide="plus"></i> <span data-i18n="hub_new_plan">+ Novi Plan</span>
+                                        <button type="button" class="btn-secondary hub-plan-new-btn" data-action="openMonthlyPlanImport">
+                                            <i data-lucide="file-up"></i> <span data-i18n="hub_import_monthly_plan">+ Uvezi / Kreiraj Mesečni Plan</span>
                                         </button>
                                         <button type="button" class="btn-primary hub-plan-open-btn" data-action="openMonthlyPlansFull">
                                             <i data-lucide="maximize-2"></i> <span data-i18n="hub_open_monthly_full">Otvori mesečni plan</span>
@@ -1649,9 +1649,17 @@
                             </h2>
                             <p id="monthly-full-subtitle" class="subtitle" style="margin:6px 0 0;font-size:0.85rem;"></p>
                         </div>
-                        <button type="button" class="btn-secondary" data-action="switchSection" data-action-args='["dispatcher-vacations"]'>
-                            <i data-lucide="calendar-check"></i> <span data-i18n="nav_vacation_requests">Zahtevi za odmor</span>
-                        </button>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                            <button type="button" class="btn-primary" data-action="openMonthlyPlanImport">
+                                <i data-lucide="file-up"></i> <span data-i18n="hub_import_monthly_plan">+ Uvezi / Kreiraj Mesečni Plan</span>
+                            </button>
+                            <button type="button" class="btn-secondary" data-action="exportMonthlyGroupPlanCsv">
+                                <i data-lucide="download"></i> <span data-i18n="monthly_export_csv">Izvezi CSV</span>
+                            </button>
+                            <button type="button" class="btn-secondary" data-action="switchSection" data-action-args='["dispatcher-vacations"]'>
+                                <i data-lucide="calendar-check"></i> <span data-i18n="nav_vacation_requests">Zahtevi za odmor</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="ops-health" id="monthly-plan-health" role="status" aria-live="polite"></div>
@@ -2530,36 +2538,6 @@
                     background:linear-gradient(135deg,var(--danger-color),#b91c1c); border:none;
                     color:#fff; cursor:pointer; box-shadow:0 4px 14px rgba(220,38,38,0.35);" data-i18n="btn_yes">
                     Da
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- NEW PLAN (Dispo / CA hub) -->
-    <div id="new-plan-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="new-plan-modal-title" style="display:none;" hidden>
-        <div class="modal-content new-plan-modal-card">
-            <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-                <h3 id="new-plan-modal-title" data-i18n="hub_new_plan_title">+ Novi Plan</h3>
-                <button type="button" class="btn-secondary" data-action="closeNewPlanModal" aria-label="Close">
-                    <i data-lucide="x" style="width:16px;height:16px;"></i>
-                </button>
-            </div>
-            <p class="subtitle" style="margin:0 0 14px;" data-i18n="hub_new_plan_hint">Kreirajte prazan plan za aktivnu grupu, zatim dodelite smene.</p>
-            <label class="form-group" for="new-plan-kind">
-                <span data-i18n="hub_new_plan_kind">Tip plana</span>
-                <select id="new-plan-kind">
-                    <option value="daily" data-i18n="hub_daily_plan">Dnevni plan</option>
-                    <option value="monthly" data-i18n="hub_monthly_plan">Mesečni plan</option>
-                </select>
-            </label>
-            <label class="form-group" for="new-plan-month" id="new-plan-month-wrap">
-                <span data-i18n="hub_monthly_plan">Mesečni plan</span>
-                <input type="month" id="new-plan-month">
-            </label>
-            <div class="new-plan-modal-actions" style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
-                <button type="button" class="btn-secondary" data-action="closeNewPlanModal" data-i18n="btn_cancel">Otkaži</button>
-                <button type="button" class="btn-primary" data-action="confirmNewPlan">
-                    <i data-lucide="plus"></i> <span data-i18n="hub_new_plan_create">Kreiraj plan</span>
                 </button>
             </div>
         </div>

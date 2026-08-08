@@ -307,10 +307,15 @@ function loadMonthlyPlanForDriver() {
         container.innerHTML = `
             <div class="plan-empty-state plan-empty-state--action" id="monthly-driver-plan-focus">
                 <p class="plan-empty-title">${t("monthly_no_plan_for", { driver: escapeHtml(driverName), month })}</p>
-                <p class="plan-empty-hint">${t("monthly_empty_shell_hint") || t("monthly_import_hint")}</p>
-                <button type="button" class="btn-primary plan-empty-cta" ${actionAttr("createEmptyMonthlyPlan", [scheduleKey, escapeHtml(driverName), month, totalDays])}>
-                    ${t("monthly_create_empty")}
-                </button>
+                <p class="plan-empty-hint">${t("monthly_import_hint") || "Import a finished Dienstplan, or edit individual days. Daily plan fills from monthly assignments."}</p>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+                    <button type="button" class="btn-primary plan-empty-cta" ${actionAttr("openMonthlyPlanImport")}>
+                        <i data-lucide="file-up"></i> ${escapeHtml(t("hub_import_monthly_plan") || "+ Uvezi / Kreiraj Mesečni Plan")}
+                    </button>
+                    ${isOperationalReadOnly() ? "" : `<button type="button" class="btn-secondary plan-empty-cta" ${actionAttr("openMonthlyDayEdit", [scheduleKey, 1])}>
+                        <i data-lucide="pencil"></i> ${escapeHtml(t("monthly_edit_day") || "Edit day")}
+                    </button>`}
+                </div>
             </div>
             ${drivers.length > 1 ? renderGroupMonthMatrix(drivers, year, monthNum, totalDays, month) : ""}`;
         renderMonthlyBelowZone(ctx);
@@ -361,10 +366,13 @@ function renderMonthlyBelowZone(ctx) {
     const { driverName, month, scheduleKey, schedule, totalDays } = ctx;
     if (!schedule) {
         entry.innerHTML = `
-            <p class="subtitle">${t("monthly_empty_shell_hint") || "Create an empty month shell, then edit days."}</p>
-            <button type="button" class="btn-primary" ${actionAttr("createEmptyMonthlyPlan", [scheduleKey, escapeHtml(driverName), month, totalDays])}>
-                ${t("monthly_create_empty")}
-            </button>`;
+            <p class="subtitle">${t("monthly_import_hint") || "Import a finished Dienstplan or edit days. Daily plan fills automatically."}</p>
+            <button type="button" class="btn-primary" ${actionAttr("openMonthlyPlanImport")}>
+                ${escapeHtml(t("hub_import_monthly_plan") || "+ Uvezi / Kreiraj Mesečni Plan")}
+            </button>
+            ${isOperationalReadOnly() ? "" : `<button type="button" class="btn-secondary" style="margin-left:8px;" ${actionAttr("openMonthlyDayEdit", [scheduleKey, 1])}>
+                ${escapeHtml(t("monthly_edit_day") || "Edit day")}
+            </button>`}`;
     } else {
         entry.innerHTML = `
             <p class="subtitle">${t("monthly_below_entry_hint") || "Click a day in the matrix or open day 1 to edit."}</p>
@@ -1139,38 +1147,73 @@ async function applyMonthlyMassAbsence(days, type) {
     }
 }
 
-function createEmptyMonthlyPlan(scheduleKey, driverName, month, totalDays) {
-    const driver = window.state.drivers?.find(d => d.name === driverName);
-    ensureLocalScheduleShell(scheduleKey, driverName, month, Number(totalDays) || 31, driver?.id || null);
-    // Local shell only — not persisted until a day is saved via server assignment (§7).
-    loadMonthlyPlanForDriver();
-    showToast(t("monthly_shell_ready") || "Prazan plan je otvoren. Dan se čuva tek posle potvrde servera.", "info");
+/**
+ * @deprecated Empty Frei shells are not a product action.
+ * Kept as a no-op redirect so any stale data-action cannot create empty plans.
+ */
+function createEmptyMonthlyPlan(scheduleKey, driverName, month) {
+    showToast(
+        t("monthly_no_empty_plan") || "Prazan plan nije podržan. Uvezite Dienstplan ili uredite pojedinačne dane.",
+        "info"
+    );
+    if (driverName && month) {
+        openMonthlyDayEdit(`${String(driverName).trim()}_${month}`, 1);
+        return;
+    }
+    if (scheduleKey) openMonthlyDayEdit(scheduleKey, 1);
 }
 
-/**
- * Create empty monthly plan shells for every driver in the active hub group
- * that does not yet have a plan for the month.
- * @returns {{ created: number, month: string, totalDays: number }}
- */
-function createGroupMonthlyPlans(monthKey) {
-    const month = /^\d{4}-\d{2}$/.test(String(monthKey || ""))
-        ? String(monthKey)
-        : currentMonthKey();
-    const [year, mon] = month.split("-").map(Number);
-    const totalDays = new Date(year, mon, 0).getDate();
+function csvEscape(value) {
+    const text = String(value ?? "");
+    if (/[",\n\r]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+    return text;
+}
+
+/** Export active group month as CSV (driver, date, bus, line/turnus, type). */
+function exportMonthlyGroupPlanCsv() {
     const hubId = window.state.activeGroupHubId || _selectedGroupId || getActiveLineId();
+    const month = document.getElementById("monthly-month-select")?.value || currentMonthKey();
+    if (!/^\d{4}-\d{2}$/.test(month)) {
+        showToast(t("error_generic") || "Invalid month.", "error");
+        return;
+    }
+    const [year, monthNum] = month.split("-").map(Number);
+    const totalDays = new Date(year, monthNum, 0).getDate();
     const drivers = hubId ? getDriversForLineGroup(hubId) : (window.state.drivers || []);
-    let created = 0;
+    if (!drivers.length) {
+        showToast(t("hub_monthly_no_drivers") || "No drivers in this group.", "info");
+        return;
+    }
+    const rows = [["driver", "date", "bus", "line_turnus", "type"]];
+    let workDays = 0;
     for (const driver of drivers) {
         const name = String(driver.name || "").trim();
         if (!name) continue;
-        const existing = resolveScheduleForDriverMonth(name, month, driver.id || null);
-        if (existing?.parsedShifts) continue;
-        const scheduleKey = driver.id ? `${driver.id}_${month}` : `${name}_${month}`;
-        ensureLocalScheduleShell(scheduleKey, name, month, totalDays, driver.id || null);
-        created += 1;
+        for (let day = 1; day <= totalDays; day++) {
+            const dateStr = `${month}-${String(day).padStart(2, "0")}`;
+            const shift = getShiftForDriverDate(name, dateStr);
+            const type = shift?.type || "off";
+            const code = shift?.routeCode || shift?.name || "";
+            const bus = shift?.bus || driver.bus || "";
+            if (type && type !== "off" && type !== "clear") workDays += 1;
+            rows.push([name, dateStr, bus, code, type]);
+        }
     }
-    return { created, month, totalDays };
+    const csv = rows.map((row) => row.map(csvEscape).join(",")).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `dienstplan-${hubId || "group"}-${month}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast(
+        (t("monthly_export_done") || "Izvezen CSV ({days} radnih dana).")
+            .replace("{days}", String(workDays)),
+        "success"
+    );
 }
 
 /**
@@ -1299,8 +1342,8 @@ function renderHubMonthlyPreview() {
             ? `<div style="margin-top:6px;font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;">${escapeHtml(first.name)}:</div>${snippet}`
             : `<div class="plan-empty-state plan-empty-state--action" style="margin-top:8px;">
                 <p class="plan-empty-title" style="margin:0 0 8px;">${t("hub_monthly_no_plan", { month })}</p>
-                ${isOperationalReadOnly() ? "" : `<button type="button" class="btn-primary plan-empty-cta" ${actionAttr("openNewPlanModal", ["monthly"])}>
-                    <i data-lucide="plus"></i> ${escapeHtml(t("hub_new_plan") || "+ Novi Plan")}
+                ${isOperationalReadOnly() ? "" : `<button type="button" class="btn-primary plan-empty-cta" ${actionAttr("openMonthlyPlanImport")}>
+                    <i data-lucide="file-up"></i> ${escapeHtml(t("hub_import_monthly_plan") || "+ Uvezi / Kreiraj Mesečni Plan")}
                 </button>`}
                </div>`}`;
 }
@@ -1350,8 +1393,8 @@ export {
     loadMonthlyPlanForDriver,
     focusMonthlyDriverPlan,
     createEmptyMonthlyPlan,
-    createGroupMonthlyPlans,
     currentMonthKey,
+    exportMonthlyGroupPlanCsv,
     deleteMonthlyPlan,
     updateMonthlyPlanDay,
     openMonthlyDayEdit,
