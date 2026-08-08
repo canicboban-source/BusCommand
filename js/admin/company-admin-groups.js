@@ -8,7 +8,6 @@ import { canRunCompanyAdminAction } from "../core/ui-permissions.js";
 import { escapeHtml, showToast } from "../core/utils.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
-import { rowActionsMenuHtml } from "../ui/row-actions-menu.js";
 import { renderCompanyAdminDashboard } from "./company-admin.js";
 import {
     DEFAULT_GROUP_COLOR,
@@ -149,17 +148,7 @@ function groupRowHtml(group, scope) {
         <div class="company-group-state">${status}</div>
         <div class="company-group-actions">
             <button type="button" class="btn-secondary company-group-edit-btn${isEditingRow ? " is-active" : ""}" ${actionAttr("startEditCompanyGroup", [String(group.id)])} ${isEditingRow ? "aria-current=\"true\"" : ""}><i data-lucide="pencil"></i><span>${escapeHtml(t("btn_edit"))}</span></button>
-            ${rowActionsMenuHtml(`ca-group-${group.id}`, [
-                {
-                    action: "deleteCompanyGroup",
-                    args: [String(group.id)],
-                    label: t("btn_delete"),
-                    icon: "trash-2",
-                    danger: true,
-                    disabled: !dependencies.canDelete,
-                    title: deleteTitle
-                }
-            ])}
+            <button type="button" class="btn-danger-ghost company-group-delete-btn" ${actionAttr("deleteCompanyGroup", [String(group.id)])} ${dependencies.canDelete ? "" : "disabled"} title="${escapeHtml(deleteTitle)}" aria-label="${escapeHtml(t("btn_delete"))}"><i data-lucide="trash-2"></i><span>${escapeHtml(t("btn_delete"))}</span></button>
         </div>
     </article>`;
 }

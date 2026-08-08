@@ -286,18 +286,36 @@ function safeDriver(doc) {
 }
 
 function safeProfilePayload(driver, groupId, companyId, createdAt) {
+  const home = String(groupId || "").trim();
   return {
     firstName: driver.first_name,
     lastName: driver.last_name,
     phone: driver.phone,
     email: driver.email,
-    groupId,
-    lineId: groupId,
+    groupId: home,
+    lineId: home,
+    // Primary home group is always in knownGroupIds so Dispo array-contains queries work.
+    knownGroupIds: home ? [home] : [],
     companyId,
     active: true,
     codeActivated: false,
     createdAt
   };
+}
+
+/** Dispatcher-scoped driver docs: primary groupId OR knownGroupIds membership. */
+async function loadDriverDocsForGroups(companyRef, groupIds) {
+  const ids = [...new Set((groupIds || []).map((id) => String(id || "").trim()).filter(Boolean))].slice(0, 40);
+  if (!ids.length) return [];
+  const snaps = await Promise.all(
+    ids.flatMap((groupId) => [
+      companyRef.collection("drivers").where("groupId", "==", groupId).get(),
+      companyRef.collection("drivers").where("knownGroupIds", "array-contains", groupId).get()
+    ])
+  );
+  const unique = new Map();
+  snaps.flatMap((snap) => snap.docs).forEach((doc) => unique.set(doc.id, doc));
+  return [...unique.values()];
 }
 
 function credentialPayload(driver, { companyCodeHash, activationCodeHash, activationExpiresAt: expiresAt, createdAt }) {
@@ -1168,9 +1186,18 @@ function registerDriverRoutes(app, deps) {
         companyRef.collection("settings").doc("main").get()
       ]);
       if (!groupSnap.exists) return res.status(404).json({ success: false, error: "Izabrana grupa nije pronađena." });
-      const maxDrivers = Number(settingsSnap.data()?.maxDrivers || 10);
-      if (existingProfiles.size + drivers.length > maxDrivers) {
-        return res.status(409).json({ success: false, error: `Licenca dozvoljava najviše ${maxDrivers} vozača.` });
+      const { resolveLicenseSnapshot } = require("./license-packages");
+      const license = resolveLicenseSnapshot(settingsSnap.data() || {});
+      const maxDrivers = license.maxDrivers;
+      if (maxDrivers != null && existingProfiles.size + drivers.length > maxDrivers) {
+        return res.status(409).json({
+          success: false,
+          code: "DRIVER_LIMIT_REACHED",
+          error: `Licenca dozvoljava najviše ${maxDrivers} vozača.`,
+          maxDrivers,
+          licenseType: license.licenseType,
+          packageLabel: license.packageLabel
+        });
       }
       const credentialDocs = [...existingCredentials.docs];
       const eids = new Set(credentialDocs.map((d) => String(d.data().eid || "").toLowerCase()));
@@ -1348,6 +1375,9 @@ function registerDriverRoutes(app, deps) {
       }
       const driver = profileSnap.data() || {};
       const currentGroup = String(driver.groupId || driver.lineId || "").trim();
+      const known = Array.isArray(driver.knownGroupIds)
+        ? [...new Set(driver.knownGroupIds.map((g) => String(g || "").trim()).filter(Boolean))]
+        : (currentGroup ? [currentGroup] : []);
       const groupsSnap = await companyRef.collection("groups").get();
       const detachIds = new Set([targetGroupId]);
       groupsSnap.forEach((doc) => {
@@ -1358,23 +1388,57 @@ function registerDriverRoutes(app, deps) {
       });
       const onLine = detachIds.has(currentGroup)
         || detachIds.has(String(driver.lineId || "").trim())
-        || (Array.isArray(driver.groupIds) && driver.groupIds.some((g) => detachIds.has(String(g))));
+        || (Array.isArray(driver.groupIds) && driver.groupIds.some((g) => detachIds.has(String(g))))
+        || known.some((g) => detachIds.has(g));
       if (!onLine) {
         return res.status(409).json({ success: false, error: "Vozač nije na toj liniji." });
       }
+      const knownAccess = known.some((g) => dispatcherCanAccessGroup(req.staff.groups, g));
       if (currentGroup && !dispatcherCanAccessGroup(req.staff.groups, currentGroup)
-        && !dispatcherCanAccessGroup(req.staff.groups, String(driver.lineId || ""))) {
+        && !dispatcherCanAccessGroup(req.staff.groups, String(driver.lineId || ""))
+        && !knownAccess) {
         // Allow when current membership is a subgroup of an assigned line.
         const currentIsSub = [...detachIds].some((id) => dispatcherCanAccessGroup(req.staff.groups, id));
         if (!currentIsSub) {
           return res.status(403).json({ success: false, error: "Vozač nije u dodeljenoj grupi." });
         }
       }
+      const remaining = known.filter((g) => !detachIds.has(g));
+      if (remaining.length) {
+        const nextHome = remaining.includes(currentGroup) ? currentGroup : remaining[0];
+        await profileRef.update({
+          groupId: nextHome,
+          lineId: nextHome,
+          knownGroupIds: remaining.includes(nextHome) ? remaining : [nextHome, ...remaining],
+          subGroup: admin().firestore.FieldValue.delete(),
+          groupIds: [],
+          lineDetachedAt: admin().firestore.FieldValue.serverTimestamp(),
+          lineDetachedBy: req.staff.uid,
+          lineDetachedFrom: targetGroupId
+        });
+        await logAudit(req.staff.companyId, req.staff.uid, "driver_detached_from_group", {
+          driverId: driverId.data,
+          groupId: targetGroupId,
+          previousGroupId: currentGroup || null,
+          remainingGroupIds: remaining,
+          reason: body.data.reason || null,
+          note: body.data.note || null
+        });
+        return res.json({
+          success: true,
+          driverId: driverId.data,
+          groupId: nextHome,
+          lineId: nextHome,
+          knownGroupIds: remaining,
+          detachedFrom: targetGroupId
+        });
+      }
       await profileRef.update({
         groupId: admin().firestore.FieldValue.delete(),
         lineId: admin().firestore.FieldValue.delete(),
         subGroup: admin().firestore.FieldValue.delete(),
         groupIds: [],
+        knownGroupIds: [],
         lineDetachedAt: admin().firestore.FieldValue.serverTimestamp(),
         lineDetachedBy: req.staff.uid,
         lineDetachedFrom: targetGroupId
@@ -1391,6 +1455,7 @@ function registerDriverRoutes(app, deps) {
         driverId: driverId.data,
         groupId: null,
         lineId: null,
+        knownGroupIds: [],
         detachedFrom: targetGroupId
       });
     } catch (error) {
@@ -1467,12 +1532,7 @@ function registerDriverRoutes(app, deps) {
           ? staffUserSnap.data().groups
           : (req.staff.groups || []);
         const groupIds = [...new Set((assigned || []).filter(Boolean))].slice(0, 40);
-        const snaps = await Promise.all(
-          groupIds.map((groupId) => companyRef.collection("drivers").where("groupId", "==", groupId).get())
-        );
-        const unique = new Map();
-        snaps.flatMap((snap) => snap.docs).forEach((doc) => unique.set(doc.id, doc));
-        driverDocs = [...unique.values()];
+        driverDocs = await loadDriverDocsForGroups(companyRef, groupIds);
       } else {
         const driversSnap = await companyRef.collection("drivers").get();
         driverDocs = driversSnap.docs;
@@ -1485,6 +1545,7 @@ function registerDriverRoutes(app, deps) {
           name: safeDriver(doc).name || doc.id,
           groupId: data.groupId || data.lineId || null,
           lineId: data.lineId || null,
+          knownGroupIds: Array.isArray(data.knownGroupIds) ? data.knownGroupIds : [],
           active: data.active !== false
         };
       });
@@ -2791,14 +2852,10 @@ function registerDriverRoutes(app, deps) {
         const groups = staffSnap.exists && Array.isArray(staffSnap.data().groups)
           ? staffSnap.data().groups
           : (req.staff.groups || []);
-        // Soft-pilot: avoid full drivers collection scan — query by assigned groups.
+        // Soft-pilot: avoid full drivers collection scan — primary + knownGroupIds.
         const groupIds = [...new Set((groups || []).filter(Boolean))].slice(0, 40);
-        const driverSnaps = await Promise.all(
-          groupIds.map((groupId) => companyRef.collection("drivers").where("groupId", "==", groupId).get())
-        );
-        allowedDriverIds = new Set(
-          driverSnaps.flatMap((snap) => snap.docs.map((doc) => doc.id))
-        );
+        const driverDocs = await loadDriverDocsForGroups(companyRef, groupIds);
+        allowedDriverIds = new Set(driverDocs.map((doc) => doc.id));
       }
 
       const inRange = (date) => date >= from && date <= to;

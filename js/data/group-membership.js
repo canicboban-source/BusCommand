@@ -2,24 +2,33 @@
 import { getGroupById } from "./groups.js";
 import { getVisibleDrivers } from "../core/utils.js";
 import { busHasGroup, normalizeGroupIds } from "./bus-group-membership.js";
+import { driverKnowsGroup, normalizeKnownGroupIds } from "./driver-known-groups.js";
 
-/**
- * Da li vozač pripada liniji/grupi (npr. "310" vidi i grp-g1, grp-g2…)
- */
+/** Line/group membership; knownGroupIds → all Dispos of those groups see the driver. */
 function driverBelongsToLine(driver, lineOrGroupId) {
     if (!driver || !lineOrGroupId) return true;
 
-    if (driver.groupId === lineOrGroupId) return true;
-    if (driver.lineId === lineOrGroupId) return true;
+    const target = String(lineOrGroupId);
+    if (String(driver.groupId || "") === target) return true;
+    if (String(driver.lineId || "") === target) return true;
+    if (driverKnowsGroup(driver, target)) return true;
+
+    const known = normalizeKnownGroupIds(driver);
+    for (const gid of known) {
+        const knownGroup = getGroupById(gid);
+        if (!knownGroup) continue;
+        if (String(knownGroup.lineId || "") === target) return true;
+        if (String(knownGroup.id) === target) return true;
+    }
 
     const lineGroup = getGroupById(lineOrGroupId);
-    if (lineGroup && driver.groupId === lineGroup.name) return true;
+    if (lineGroup && String(driver.groupId || "") === String(lineGroup.name || "")) return true;
 
     const driverGroup = getGroupById(driver.groupId);
     if (driverGroup) {
-        if (driverGroup.lineId === lineOrGroupId) return true;
-        if (driverGroup.id === lineOrGroupId) return true;
-        if (lineGroup && driverGroup.name === lineGroup.name) return true;
+        if (String(driverGroup.lineId || "") === target) return true;
+        if (String(driverGroup.id) === target) return true;
+        if (lineGroup && String(driverGroup.name || "") === String(lineGroup.name || "")) return true;
     }
 
     return false;
@@ -58,6 +67,7 @@ function clearDriverLineMembership(driver) {
     driver.lineId = "";
     driver.subGroup = "";
     if (Array.isArray(driver.groupIds)) driver.groupIds = [];
+    if (Array.isArray(driver.knownGroupIds)) driver.knownGroupIds = [];
     return driver;
 }
 

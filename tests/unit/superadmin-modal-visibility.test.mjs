@@ -57,18 +57,19 @@ test("demo Super Admin dashboard aligns with company table headers", () => {
   const fn = src.slice(start, end);
   assert.match(fn, /superadmin-total-dispatchers/);
   assert.doesNotMatch(fn, /superadmin-total-groups/);
-  assert.match(fn, /_saCompanyCardHtml/);
+  assert.match(fn, /_saCompanyRowHtml/);
   assert.match(fn, /_demoCompanyStatus/);
   assert.match(fn, /_demoCompanyPlan/);
-  const cardStart = src.indexOf("function _saCompanyCardHtml");
-  const cardEnd = src.indexOf("function superadminFocusCompanies", cardStart);
-  assert.ok(cardStart > -1 && cardEnd > cardStart, "company card helper missing");
-  const cardFn = src.slice(cardStart, cardEnd);
-  assert.match(cardFn, /sa-company-id-cell/);
-  assert.match(cardFn, /superadminOpenCompanyDetail/);
-  assert.match(cardFn, /superadminToggleStatus/);
-  assert.match(cardFn, /superadminStartSupport/);
-  assert.match(cardFn, /escapeHtml\(/);
+  const rowStart = src.indexOf("function _saCompanyRowHtml");
+  const rowEnd = src.indexOf("function superadminOpenCreateModal", rowStart);
+  assert.ok(rowStart > -1 && rowEnd > rowStart, "company row helper missing");
+  const rowFn = src.slice(rowStart, rowEnd);
+  assert.match(rowFn, /sa-company-row/);
+  assert.match(rowFn, /superadminOpenCompanyDetail/);
+  assert.match(rowFn, /superadminToggleStatus/);
+  assert.match(rowFn, /superadminStartSupport|sa_support_start/);
+  assert.match(rowFn, /rowActionsMenuHtml/);
+  assert.match(rowFn, /escapeHtml\(/);
 });
 
 test("demo company detail hydrates from dispatcher state", () => {

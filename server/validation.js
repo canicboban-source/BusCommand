@@ -25,7 +25,8 @@ const createCompanyBody = z.object({
   companyId: z.string().trim().max(64).optional(),
   name: z.string().trim().min(1).max(200),
   country: z.string().trim().max(64).optional(),
-  contactEmail: z.string().trim().email().max(254).optional()
+  contactEmail: z.string().trim().email().max(254).optional(),
+  licenseType: z.enum(["starter", "pro", "fleet_master", "enterprise"]).optional()
 });
 
 const deleteCompanyBody = z.object({
@@ -78,6 +79,17 @@ const companyDispatcherActionBody = z.object({
 const companyDispatcherDeleteBody = z.object({
   companyId: z.string().trim().min(1).max(64),
   confirmEmail: z.string().trim().toLowerCase().email().max(254)
+}).strict();
+
+const companyDispatcherProfileBody = z.object({
+  companyId: z.string().trim().min(1).max(64),
+  name: z.string().trim().min(2).max(80),
+  email: z.string().trim().toLowerCase().email().max(254),
+  phone: z.string().trim().max(40).optional().default("")
+    .refine(
+      (value) => !value || value.replace(/\D/g, "").length >= 8,
+      "Telefon mora imati najmanje 8 cifara."
+    )
 }).strict();
 
 const companyAdminStatusBody = z.object({
@@ -207,6 +219,7 @@ module.exports = {
   companyDispatcherStatusBody,
   companyDispatcherActionBody,
   companyDispatcherDeleteBody,
+  companyDispatcherProfileBody,
   companyAdminStatusBody,
   companyProfileSettingsBody,
   companyBrandingBody,

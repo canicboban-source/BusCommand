@@ -218,7 +218,182 @@ function fillGroupSelect(select, placeholderKey, previousValue) {
 
 function populateGroupControls() {
     fillGroupSelect(document.getElementById("ca-drivers-import-group"), "ca_plan_group_placeholder");
+    fillGroupSelect(document.getElementById("ca-driver-add-group"), "ca_plan_group_placeholder");
     fillGroupSelect(document.getElementById("ca-drivers-group-filter"), "ca_drivers_all_groups");
+    const primary = String(document.getElementById("ca-driver-add-group")?.value || "");
+    paintKnownGroupChecks([], primary, "ca-driver-add-known-groups");
+    const addGroup = document.getElementById("ca-driver-add-group");
+    if (addGroup && !addGroup.dataset.knownBound) {
+        addGroup.dataset.knownBound = "1";
+        addGroup.addEventListener("change", () => {
+            const selected = readKnownGroupIdsFromDom(document.getElementById("ca-driver-add-known-groups"));
+            paintKnownGroupChecks(selected, addGroup.value, "ca-driver-add-known-groups");
+        });
+    }
+}
+
+function normalizeE164Phone(phone) {
+    const raw = String(phone || "").trim().replace(/[^\d+]/g, "");
+    if (!raw) return "";
+    if (raw.startsWith("+")) return raw;
+    if (raw.startsWith("00")) return `+${raw.slice(2)}`;
+    return `+${raw}`;
+}
+
+function readManualDriverForm() {
+    const groupId = String(document.getElementById("ca-driver-add-group")?.value || "").trim();
+    const knownFromDom = readKnownGroupIdsFromDom(document.getElementById("ca-driver-add-known-groups"));
+    return {
+        eid: String(document.getElementById("ca-driver-add-eid")?.value || "").trim(),
+        first_name: String(document.getElementById("ca-driver-add-first-name")?.value || "").trim(),
+        last_name: String(document.getElementById("ca-driver-add-last-name")?.value || "").trim(),
+        phone: normalizeE164Phone(document.getElementById("ca-driver-add-phone")?.value || ""),
+        email: String(document.getElementById("ca-driver-add-email")?.value || "").trim().toLowerCase(),
+        pin: String(document.getElementById("ca-driver-add-pin")?.value || "").trim(),
+        groupId,
+        knownGroupIds: normalizeKnownGroupIds({ knownGroupIds: knownFromDom, groupId }, groupId)
+    };
+}
+
+function clearManualDriverForm() {
+    for (const id of [
+        "ca-driver-add-eid",
+        "ca-driver-add-first-name",
+        "ca-driver-add-last-name",
+        "ca-driver-add-phone",
+        "ca-driver-add-email",
+        "ca-driver-add-pin"
+    ]) {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+    }
+    const group = document.getElementById("ca-driver-add-group");
+    if (group) group.value = "";
+    paintKnownGroupChecks([], "", "ca-driver-add-known-groups");
+}
+
+function validateManualDriver(draft) {
+    if (!draft.groupId || !companyGroups().some((group) => String(group.id) === draft.groupId)) {
+        return t("ca_drivers_select_group");
+    }
+    for (const field of ["eid", "first_name", "last_name", "phone", "email", "pin"]) {
+        if (!draft[field]) return t("ca_drivers_edit_required");
+    }
+    if (!/^\S+@\S+\.\S+$/.test(draft.email)) return t("ca_drivers_edit_email_invalid");
+    if (!/^\+[1-9]\d{7,14}$/.test(draft.phone)) return t("ca_drivers_add_phone_e164");
+    if (!/^\d{5,12}$/.test(draft.pin)) return t("ca_drivers_add_pin_invalid");
+    return "";
+}
+
+function findDriverByEid(eid) {
+    const needle = String(eid || "").trim().toLowerCase();
+    return (window.state.drivers || []).find((driver) => String(driver.eid || "").trim().toLowerCase() === needle) || null;
+}
+
+function promptDriverLimitUpgrade(extra = {}) {
+    const max = Number(extra.maxDrivers || window._licenseInfo?.maxDrivers || 0);
+    const pkg = String(extra.packageLabel || window._licenseInfo?.packageLabel || "STARTER").toUpperCase();
+    const msg = t("license_upgrade_confirm", { max, pkg })
+        || `${pkg} dozvoljava najviše ${max} vozača. Želite li nadogradnju paketa?`;
+    showConfirm(msg, () => {
+        showToast(t("license_upgrade_contact") || "Kontaktirajte BusCommand podršku za nadogradnju paketa.", "info", 7000);
+    }, {
+        confirmText: t("btn_yes") || "Da",
+        danger: false
+    });
+}
+
+function wouldExceedDriverLimit(incomingCount = 1) {
+    const max = window._licenseInfo?.maxDrivers;
+    if (max == null || max >= 5000) return false;
+    return companyDrivers().length + incomingCount > Number(max);
+}
+
+async function submitCompanyDriverManualAdd(event) {
+    if (event?.preventDefault) event.preventDefault();
+    if (importPending) return false;
+    const draft = readManualDriverForm();
+    const error = validateManualDriver(draft);
+    if (error) {
+        showToast(error, "error");
+        return false;
+    }
+    if (wouldExceedDriverLimit(1)) {
+        promptDriverLimitUpgrade();
+        return false;
+    }
+    const driver = {
+        eid: draft.eid,
+        first_name: draft.first_name,
+        last_name: draft.last_name,
+        phone: draft.phone,
+        email: draft.email,
+        company_code: ""
+    };
+    const submitBtn = document.getElementById("ca-driver-add-submit");
+    importPending = true;
+    if (submitBtn) submitBtn.disabled = true;
+    try {
+        if (USE_LOCAL_STATE) {
+            applyDemoImport([driver], draft.groupId);
+            const created = findDriverByEid(draft.eid);
+            if (created) {
+                Object.assign(created, {
+                    knownGroupIds: draft.knownGroupIds,
+                    pin: draft.pin,
+                    company_code: draft.pin,
+                    hasPersonalCode: true,
+                    codeActivated: true
+                });
+                saveState();
+            }
+        } else {
+            const companyId = window.currentUser?.companyId;
+            const result = await ApiClient.importDriversCsv(
+                companyId,
+                draft.groupId,
+                driversToCanonicalCsv([driver])
+            );
+            if (!result.success) {
+                if (result.code === "DRIVER_LIMIT_REACHED") {
+                    promptDriverLimitUpgrade(result);
+                    return false;
+                }
+                throw new Error(result.error || t("error_generic"));
+            }
+            const refreshed = await loadStateFromFirestore(companyId);
+            window.state.drivers = refreshed?.drivers || [];
+            await enrichCompanyDriversFromApi();
+            const created = findDriverByEid(draft.eid);
+            if (!created?.id) throw new Error(t("ca_drivers_edit_not_found"));
+            const extras = draft.knownGroupIds.filter((id) => id !== draft.groupId);
+            if (extras.length) {
+                const profileResult = await ApiClient.updateCompanyDriver(companyId, created.id, {
+                    firstName: draft.first_name,
+                    lastName: draft.last_name,
+                    phone: draft.phone,
+                    email: draft.email,
+                    groupId: draft.groupId,
+                    knownGroupIds: draft.knownGroupIds
+                });
+                if (!profileResult.success) throw new Error(profileResult.error || t("ca_drivers_edit_failed"));
+            }
+            const pinResult = await ApiClient.setCompanyDriverPersonalCode(companyId, created.id, draft.pin);
+            if (!pinResult.success) throw new Error(pinResult.error || t("ca_drivers_edit_failed"));
+            await enrichCompanyDriversFromApi();
+        }
+        clearManualDriverForm();
+        currentPage = 1;
+        await renderCompanyAdminDrivers();
+        showToast(t("ca_drivers_add_success"), "success", 6000);
+        return true;
+    } catch (err) {
+        showToast(err.message || t("error_generic"), "error", 6000);
+        return false;
+    } finally {
+        importPending = false;
+        if (submitBtn) submitBtn.disabled = false;
+    }
 }
 
 function renderSummary() {
@@ -278,7 +453,9 @@ function filteredDrivers() {
     return companyDrivers().filter((driver) => {
     const matchesSearch = !search || [driverName(driver), driver.email, driver.phone, driver.eid]
             .some((value) => String(value || "").toLowerCase().includes(search));
-        const matchesGroup = !groupId || driverGroupId(driver) === groupId;
+        const matchesGroup = !groupId
+            || driverGroupId(driver) === groupId
+            || normalizeKnownGroupIds(driver).includes(groupId);
         const active = driver.active !== false;
         const matchesStatus = !status || (status === "active" ? active : !active);
         return matchesSearch && matchesGroup && matchesStatus;
@@ -404,6 +581,11 @@ async function confirmCompanyDriversImport() {
             return;
         }
     }
+    const incoming = pendingImport.drivers.length;
+    if (wouldExceedDriverLimit(incoming)) {
+        promptDriverLimitUpgrade();
+        return;
+    }
 
     importPending = true;
     renderImportPreview();
@@ -417,7 +599,13 @@ async function confirmCompanyDriversImport() {
                     groupId,
                     driversToCanonicalCsv(drivers)
                 );
-                if (!result.success) throw new Error(result.error || t("error_generic"));
+                if (!result.success) {
+                    if (result.code === "DRIVER_LIMIT_REACHED") {
+                        promptDriverLimitUpgrade(result);
+                        return;
+                    }
+                    throw new Error(result.error || t("error_generic"));
+                }
             }
             const refreshed = await loadStateFromFirestore(window.currentUser.companyId);
             window.state.drivers = refreshed?.drivers || [];
@@ -523,8 +711,8 @@ function knownLinesLabel(driver) {
     return ids.join(", ");
 }
 
-function paintKnownGroupChecks(selectedIds = [], primaryGroupId = "") {
-    const host = document.getElementById("ca-driver-edit-known-groups");
+function paintKnownGroupChecks(selectedIds = [], primaryGroupId = "", hostId = "ca-driver-edit-known-groups") {
+    const host = document.getElementById(hostId);
     if (!host) return;
     const selected = new Set(
         normalizeKnownGroupIds({ knownGroupIds: selectedIds, groupId: primaryGroupId }, primaryGroupId)
@@ -682,6 +870,7 @@ export {
     handleCompanyDriversFile,
     clearCompanyDriversImport,
     confirmCompanyDriversImport,
+    submitCompanyDriverManualAdd,
     handleCompanyDriversFilter,
     handleCompanyDriversSearch,
     changeCompanyDriversPage,

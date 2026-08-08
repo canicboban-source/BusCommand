@@ -1,5 +1,6 @@
 /**
- * Phase 3: Trial/Demo countdown chips must never appear in product UI.
+ * Phase 2: CA header shows package · days badge (amber trial / green active).
+ * Login trial chip and Super Admin must never show it.
  */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -12,14 +13,16 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
 function loadLicenseHelpers() {
     const badges = {
-        login: { className: "trial-badge-login", classList: null, span: { textContent: "" }, attrs: {} },
-        app: { className: "trial-indicator", classList: null, span: { textContent: "" }, attrs: {} }
+        login: { className: "trial-badge-login", classList: null, span: { textContent: "" }, attrs: {}, textContent: "" },
+        app: { className: "trial-indicator", classList: null, span: { textContent: "" }, attrs: {}, textContent: "" }
     };
     for (const key of ["login", "app"]) {
         const el = badges[key];
         el.classList = {
-            add(name) { if (!el.className.split(/\s+/).includes(name)) el.className += " " + name; },
-            remove(name) { el.className = el.className.split(/\s+/).filter((c) => c && c !== name).join(" "); },
+            add(name) { if (!el.className.split(/\s+/).includes(name)) el.className += ` ${name}`; },
+            remove(...names) {
+                el.className = el.className.split(/\s+/).filter((c) => c && !names.includes(c)).join(" ");
+            },
             toggle(name, force) {
                 if (force) el.classList.add(name);
                 else el.classList.remove(name);
@@ -28,6 +31,7 @@ function loadLicenseHelpers() {
         };
         el.querySelector = (sel) => (sel === "span" ? el.span : null);
         el.setAttribute = (k, v) => { el.attrs[k] = v; };
+        el.removeAttribute = (k) => { delete el.attrs[k]; };
         el.getAttribute = (k) => el.attrs[k];
     }
 
@@ -63,37 +67,49 @@ function loadLicenseHelpers() {
     return { api: context.module.exports, window, badges };
 }
 
-test("isTrialBadgeRoleAllowed rejects superadmin", () => {
+test("isTrialBadgeRoleAllowed only allows company-admin", () => {
     const { api } = loadLicenseHelpers();
     assert.equal(api.isTrialBadgeRoleAllowed("superadmin"), false);
+    assert.equal(api.isTrialBadgeRoleAllowed("dispatcher"), false);
     assert.equal(api.isTrialBadgeRoleAllowed("company-admin"), true);
 });
 
-test("updateTrialBadge always hides app and login trial chips (Phase 3)", () => {
+test("updateTrialBadge shows CA package badge during trial", () => {
     const { api, window, badges } = loadLicenseHelpers();
     window.currentUser = { role: "company-admin", companyId: "acme" };
-    window._licenseInfo = { plan: "trial", daysRemaining: 12, status: "active" };
+    window._licenseInfo = {
+        plan: "pro",
+        licenseType: "pro",
+        licenseStatus: "trial",
+        packageLabel: "PRO",
+        daysRemaining: 31,
+        status: "active"
+    };
 
     api.updateTrialBadge();
 
-    assert.ok(badges.app.classList.contains("hidden"), "app trial badge must stay hidden");
-    assert.ok(badges.login.classList.contains("hidden"), "login trial badge must stay hidden");
-    assert.equal(badges.app.attrs["aria-hidden"], "true");
+    assert.equal(badges.login.classList.contains("hidden"), true);
+    assert.equal(badges.app.classList.contains("hidden"), false);
+    assert.ok(badges.app.classList.contains("is-trial"));
+    assert.match(badges.app.textContent, /PRO PAKET/);
+    assert.match(badges.app.textContent, /31/);
 });
 
 test("updateTrialBadge hides chips for Super Admin", () => {
     const { api, window, badges } = loadLicenseHelpers();
     window.currentUser = { role: "superadmin" };
-    window._licenseInfo = { plan: "trial", daysRemaining: 29, status: "active" };
+    window._licenseInfo = { plan: "pro", licenseStatus: "trial", daysRemaining: 29, status: "active", packageLabel: "PRO" };
     api.updateTrialBadge();
     assert.ok(badges.app.classList.contains("hidden"));
     assert.ok(badges.login.classList.contains("hidden"));
 });
 
-test("staff HTML keeps trial badge nodes suppressed and shows connection status", () => {
-    const staff = readFileSync(join(root, "staff.html"), "utf8");
+test("staff HTML keeps license badge slot and connection status", () => {
+    const staff = readFileSync(join(root, "index.legacy-monolith.html"), "utf8");
     const license = readFileSync(join(root, "js/core/license.js"), "utf8");
+    const css = readFileSync(join(root, "css/staff-desktop.css"), "utf8");
     assert.match(staff, /id="app-trial-badge"/);
     assert.match(staff, /id="header-connection-status"/);
-    assert.match(license, /never surface Trial\/Demo|Phase 3/i);
+    assert.match(license, /license-package-badge/);
+    assert.match(css, /license-package-badge/);
 });

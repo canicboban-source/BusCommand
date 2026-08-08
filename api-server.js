@@ -3,6 +3,8 @@
 // Node.js + Express — statika + API
 // ============================================================
 
+require("./server/load-env").loadEnvFile();
+
 const express = require("express");
 const bcrypt  = require("bcrypt");
 const path    = require("path");
@@ -24,7 +26,8 @@ const {
   provisionUser,
   revokeDispatcherSessions,
   setDispatcherActive,
-  updateDispatcherGroups
+  updateDispatcherGroups,
+  updateDispatcherProfile
 } = require("./server/provisioning");
 const { createRequireSuperAdmin, createSuperAdminOverviewHandler } = require("./server/superadmin-overview");
 const { createStaffAuth, parseCompanyParam } = require("./server/staff-auth");
@@ -68,6 +71,7 @@ const {
   companyDispatcherStatusBody,
   companyDispatcherActionBody,
   companyDispatcherDeleteBody,
+  companyDispatcherProfileBody,
   companyAdminStatusBody,
   companyProfileSettingsBody,
   companyBrandingBody,
@@ -289,25 +293,20 @@ app.get("/api/license/:companyId", rateLimit(60, 60 * 1000), requireCompanyMembe
     }
 
     const s = settingsSnap.data();
-    const now = Date.now();
-    const trialEnd = s.trialEndsAt ? s.trialEndsAt.toMillis() : null;
-    const subEnd   = s.billing?.currentPeriodEnd
-      ? new Date(s.billing.currentPeriodEnd).getTime() : null;
-
-    let daysRemaining = null;
-    if (s.plan === "trial" && trialEnd) {
-      daysRemaining = Math.max(0, Math.ceil((trialEnd - now) / 86400000));
-    } else if (subEnd) {
-      daysRemaining = Math.max(0, Math.ceil((subEnd - now) / 86400000));
-    }
+    const { resolveLicenseSnapshot } = require("./server/license-packages");
+    const snap = resolveLicenseSnapshot(s);
 
     return res.json({
       success: true,
-      plan: s.plan || "trial",
-      status: s.status || "active",
-      daysRemaining,
+      plan: snap.plan,
+      licenseType: snap.licenseType,
+      licenseStatus: snap.licenseStatus,
+      trialValidUntil: snap.trialValidUntil,
+      status: s.status || snap.licenseStatus || "active",
+      daysRemaining: snap.daysRemaining,
+      packageLabel: snap.packageLabel,
       features: s.features || {},
-      maxDrivers: s.maxDrivers || 10,
+      maxDrivers: snap.maxDrivers == null ? 5000 : snap.maxDrivers,
       maxDispatchers: s.maxDispatchers || 2
     });
 
@@ -359,28 +358,38 @@ app.get("/api/admin/companies", requireSuperAdmin, async (req, res) => {
   try {
     const companiesSnap = await db.collection("companies").get();
 
+    const { resolveLicenseSnapshot } = require("./server/license-packages");
     const companies = await Promise.all(companiesSnap.docs.map(async (doc) => {
-      const [profileSnap, settingsSnap, supportSnap] = await Promise.all([
+      const [profileSnap, settingsSnap, supportSnap, adminsSnap] = await Promise.all([
         doc.ref.collection("profile").doc("main").get(),
         doc.ref.collection("settings").doc("main").get(),
-        doc.ref.collection("settings").doc("support").get()
+        doc.ref.collection("settings").doc("support").get(),
+        doc.ref.collection("users").where("role", "==", "company_admin").limit(3).get()
       ]);
       const profile = profileSnap.exists ? profileSnap.data() : doc.data();
       const settings = settingsSnap.exists ? settingsSnap.data() : {};
       const support = supportSnap.exists ? supportSnap.data() : {};
+      const license = resolveLicenseSnapshot(settings);
       const supportActive = support.active === true
         && support.expiresAt
         && (typeof support.expiresAt.toDate === "function"
           ? support.expiresAt.toDate().getTime()
           : new Date(support.expiresAt).getTime()) > Date.now();
+      const primaryAdmin = adminsSnap.docs[0]?.data() || null;
 
       return {
         id: doc.id,
         name: profile.name || doc.id,
         country: profile.country,
         status: settings.status || "unknown",
-        plan: settings.plan || "trial",
+        plan: license.plan,
+        licenseType: license.licenseType,
+        licenseStatus: license.licenseStatus,
+        trialValidUntil: license.trialValidUntil,
+        packageLabel: license.packageLabel,
         email: profile.contactEmail,
+        adminName: primaryAdmin?.name || null,
+        adminEmail: primaryAdmin?.email || profile.contactEmail || null,
         supportSessionEnabled: settings.features?.supportSession === true,
         supportSessionActive: supportActive,
         supportExpiresAt: supportActive && support.expiresAt
@@ -464,14 +473,20 @@ app.post(
     const name = body.name;
 
     try {
-      await createCompanyAtomic({
+      const created = await createCompanyAtomic({
         db, admin, companyId, name,
         country: body.country,
         contactEmail: body.contactEmail,
+        licenseType: body.licenseType || "pro",
         actorId: req.adminUser.uid
       });
 
-      return res.status(201).json({ success: true, companyId, name });
+      return res.status(201).json({
+        success: true,
+        companyId,
+        name,
+        licenseType: created.licenseType
+      });
 
     } catch (err) {
       if (err instanceof ProvisioningError && err.code === "company-exists") {
@@ -896,6 +911,41 @@ app.patch(
       if (err.code === "dispatcher-limit") return res.status(409).json({ success: false, error: err.message });
       req.log?.error({ err, code: err.code }, "Company dispatcher status update failed");
       return res.status(500).json({ success: false, error: "Status dispatchera nije azuriran." });
+    }
+  }
+);
+
+app.patch(
+  "/api/company-admin/dispatchers/:uid/profile",
+  rateLimit(20, 5 * 60 * 1000),
+  requireCompanyAdmin,
+  validateBody(companyDispatcherProfileBody),
+  async (req, res) => {
+    const companyId = requireOwnCompany(req, res);
+    if (!companyId) return;
+    try {
+      const result = await updateDispatcherProfile({
+        db,
+        admin,
+        companyId,
+        uid: req.params.uid,
+        name: req.validatedBody.name,
+        email: req.validatedBody.email,
+        phone: req.validatedBody.phone,
+        actorId: req.staffUser.uid
+      });
+      return res.json({ success: true, ...result });
+    } catch (err) {
+      if (err.code === "invalid-uid") return res.status(400).json({ success: false, error: err.message });
+      if (["email-exists", "email-invalid"].includes(err.code)) {
+        return res.status(409).json({ success: false, code: err.code, error: err.message });
+      }
+      if (err.code === "user-not-found") return res.status(404).json({ success: false, error: err.message });
+      if (err.code === "dispatcher-deleting") {
+        return res.status(409).json({ success: false, code: err.code, error: err.message });
+      }
+      req.log?.error({ err, code: err.code }, "Company dispatcher profile update failed");
+      return res.status(500).json({ success: false, error: "Profil dispatchera nije azuriran." });
     }
   }
 );

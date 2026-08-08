@@ -47,17 +47,19 @@ test("bundle budget gate script exports D17 soft-pilot thresholds", () => {
 
 test("staff confirmation and message compose avoid unbounded driver collection scans for dispatchers", () => {
   const routes = read("server/driver-routes.js");
+  assert.match(routes, /function loadDriverDocsForGroups/);
+  assert.match(routes, /knownGroupIds",\s*"array-contains"/);
   const confirmIdx = routes.indexOf('app.get("/api/staff/shift-confirmations"');
   const confirmSlice = routes.slice(confirmIdx, confirmIdx + 4500);
   assert.match(confirmSlice, /where\("date", ">=", from\)/);
   assert.match(confirmSlice, /where\("targetDate", ">=", from\)/);
-  assert.match(confirmSlice, /where\("groupId", "==", groupId\)/);
+  assert.match(confirmSlice, /loadDriverDocsForGroups\(companyRef,\s*groupIds\)/);
   assert.doesNotMatch(confirmSlice, /collection\("drivers"\)\.get\(\)/);
 
   const msgIdx = routes.indexOf('app.post("/api/staff/messages"');
   const msgSlice = routes.slice(msgIdx, msgIdx + 3500);
   assert.match(msgSlice, /role === "dispatcher"/);
-  assert.match(msgSlice, /where\("groupId", "==", groupId\)/);
+  assert.match(msgSlice, /loadDriverDocsForGroups\(companyRef,\s*groupIds\)/);
 });
 
 test("CA groups and drivers search use debounce", () => {

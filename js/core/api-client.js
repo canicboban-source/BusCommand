@@ -113,6 +113,12 @@ const ApiClient = (() => {
             body: JSON.stringify({ companyId, active })
         });
     }
+    async function updateCompanyDispatcherProfile(companyId, uid, profile) {
+        return apiFetch("/api/company-admin/dispatchers/" + encodeURIComponent(uid) + "/profile", {
+            method: "PATCH",
+            body: JSON.stringify({ companyId, ...profile })
+        });
+    }
     async function revokeCompanyDispatcherSessions(companyId, uid) {
         return apiFetch("/api/company-admin/dispatchers/" + encodeURIComponent(uid) + "/revoke-sessions", {
             method: "POST",
@@ -498,7 +504,8 @@ const ApiClient = (() => {
         getCompanyDetail, patchCompanySettings, getPlatformHealth, setCompanyAdminStatus, resetCompanyAdminPassword,
         setCompanyStatus, deleteCompany, createCompany, createUser, updateUserGroups,
         createCompanyDispatcher, updateCompanyDispatcherGroups,
-        setCompanyDispatcherStatus, revokeCompanyDispatcherSessions, deleteCompanyDispatcher,
+        setCompanyDispatcherStatus, updateCompanyDispatcherProfile,
+        revokeCompanyDispatcherSessions, deleteCompanyDispatcher,
         updateCompanyProfileSettings, downloadCompanyExport,
         previewServicePlan, publishServicePlan, activateServicePlan, previewGroupMonthlyPlanImport, commitGroupMonthlyPlanImport,
         getActiveServicePlan, getServicePlanHistory, getServicePlanVersion, getCompanyAudit, updateCompanyBranding,

@@ -31,6 +31,7 @@ export default defineConfig({
       ...process.env,
       PORT: String(PORT),
       BUSCOMMAND_QA_HARNESS: "1",
+      BUSCOMMAND_FORCE_SMS_STUB: "1",
       FIREBASE_SERVICE_ACCOUNT_JSON: ""
     }
   }

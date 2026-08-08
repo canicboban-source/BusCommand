@@ -24,6 +24,27 @@ function normalizeDispatcherGroups(groups = [], allowedGroups = []) {
         .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
 }
 
+function validateCompanyDispatcherProfile(input = {}) {
+    const name = String(input.name || "").trim();
+    const email = String(input.email || "").trim().toLowerCase();
+    const phone = String(input.phone || "").trim();
+    const errors = {};
+
+    if (name.length < DISPATCHER_NAME_MIN) errors.name = "name_short";
+    else if (name.length > DISPATCHER_NAME_MAX) errors.name = "name_long";
+
+    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "email_invalid";
+
+    if (phone && phone.replace(/\D/g, "").length < 8) errors.phone = "phone_invalid";
+    else if (phone.length > 40) errors.phone = "phone_long";
+
+    return {
+        valid: Object.keys(errors).length === 0,
+        errors,
+        value: { name, email, phone }
+    };
+}
+
 function validateCompanyDispatcherDraft(input = {}, allowedGroups = []) {
     const name = String(input.name || "").trim();
     const email = String(input.email || "").trim().toLowerCase();
@@ -73,7 +94,7 @@ function filterCompanyDispatchers(dispatchers = [], query = "", status = "all") 
         if (status === "active" && !active) return false;
         if (status === "inactive" && active) return false;
         if (!needle) return true;
-        return `${dispatcher.name || ""} ${dispatcher.email || ""}`.toLowerCase().includes(needle);
+        return `${dispatcher.name || ""} ${dispatcher.email || ""} ${dispatcher.phone || ""}`.toLowerCase().includes(needle);
     });
 }
 
@@ -88,5 +109,6 @@ export {
     normalizeDispatcherGroups,
     sortCompanyDispatchers,
     teamItemBelongsToCompany,
-    validateCompanyDispatcherDraft
+    validateCompanyDispatcherDraft,
+    validateCompanyDispatcherProfile
 };

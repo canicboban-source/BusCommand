@@ -885,77 +885,104 @@
                     
                     <p id="superadmin-stats-error" class="hidden" data-i18n="superadmin_stats_error" style="color:var(--danger-color);margin:-12px 0 20px;">Overview statistics are currently unavailable.</p>
 
-                    <!-- Form to add new dispatcher/company -->
-                    <div class="card" style="margin-bottom: 25px; background: var(--panel-bg); border: 1px solid var(--panel-border); padding: 20px; border-radius: var(--radius-md);">
-                        <h3 style="margin-top:0; font-size:1.1rem; margin-bottom:15px; color:var(--text-main); font-weight:600;" data-i18n="add_new_company">Register New Company</h3>
-                        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-                            <div class="form-group" style="flex:1; min-width:200px; margin:0;">
-                                <label for="sa-new-name" data-i18n="company_name_label" style="font-size:0.75rem; margin-bottom:4px;">Company Name</label>
-                                <input type="text" id="sa-new-name" data-i18n-placeholder="company_name_placeholder" placeholder="e.g. City Transit GmbH" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 10px; color: white; width: 100%; outline: none;">
+                    <!-- Companies table + create modal -->
+                    <div id="sa-companies-panel" class="sa-companies-panel" tabindex="-1">
+                        <div class="sa-companies-panel-head">
+                            <div>
+                                <h3 style="margin:0;" data-i18n="sa_companies_panel_title">Firme</h3>
+                                <p class="sa-companies-panel-hint" data-i18n="sa_companies_panel_hint">Jedna firma = jedan red. Detalji, podrška, suspenzija ili brisanje.</p>
                             </div>
-                            <div id="sa-demo-company-pin" class="form-group hidden" style="flex:1; min-width:120px; margin:0;">
-                                <label for="sa-new-pin" data-i18n="disp_pin_label" style="font-size:0.75rem; margin-bottom:4px;">Initial PIN</label>
-                                <input type="password" id="sa-new-pin" placeholder="1234" maxlength="6" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 10px; color: white; width: 100%; outline: none;">
-                            </div>
-                            <button type="button" id="sa-create-company-btn" class="btn-primary" data-action="superadminCreateCompany" style="height:42px; padding: 0 20px;">
-                                <i data-lucide="plus"></i> <span data-i18n="btn_register_company">Register Company</span>
+                            <button type="button" id="sa-open-create-modal" class="btn-primary sa-new-company-btn" data-action="superadminOpenCreateModal">
+                                <i data-lucide="plus"></i>
+                                <span data-i18n="sa_new_company_admin">+ Nova Firma / Admin</span>
                             </button>
+                        </div>
+                        <div class="sa-companies-table-wrap">
+                            <table class="sa-companies-table" aria-label="Companies">
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="company_name_label">Naziv Kompanije</th>
+                                        <th data-i18n="sa_col_tenant">ID / Tenant</th>
+                                        <th data-i18n="sa_col_admin">Company Admin</th>
+                                        <th data-i18n="sa_col_country">Država</th>
+                                        <th data-i18n="sa_col_license_status">Status</th>
+                                        <th data-i18n="sa_col_actions">Akcije</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="superadmin-companies-list" aria-live="polite">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
-                    <!-- Form to create Company Admin (email + password) -->
-                    <div class="card" style="margin-bottom:25px;background:var(--panel-bg);border:1px solid var(--panel-border);padding:20px;border-radius:var(--radius-md);">
-                        <h3 style="margin-top:0;font-size:1.1rem;margin-bottom:6px;color:var(--text-main);font-weight:600;">
-                            <i data-lucide="user-plus" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;color:var(--primary-color);"></i>
-                            <span data-i18n="sa_create_admin_title">Create Company Admin Account</span>
-                        </h3>
-                        <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:14px;" data-i18n="sa_ca_login_hint">Company Admin logs in with email + password. Assign a companyId (= dispatcher/company ID).</p>
-                        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-                            <div class="form-group" style="flex:1;min-width:160px;margin:0;">
-                                <label style="font-size:0.75rem;margin-bottom:4px;display:block;" data-i18n="admin_name_label">Admin Name</label>
-                                <input type="text" id="sa-ca-name" placeholder="e.g. Ana Kovacevic" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-md);padding:10px;color:white;width:100%;outline:none;box-sizing:border-box;">
+                    <div id="sa-create-company-modal" class="modal-overlay sa-create-modal hidden" role="dialog" aria-modal="true" aria-labelledby="sa-create-modal-title" hidden>
+                        <div class="modal-content sa-create-modal-card">
+                            <div class="modal-header">
+                                <h3 id="sa-create-modal-title" data-i18n="sa_new_company_admin">+ Nova Firma / Admin</h3>
+                                <button type="button" class="modal-close" data-action="superadminCloseCreateModal" aria-label="Close">&times;</button>
                             </div>
-                            <div class="form-group" style="flex:1;min-width:160px;margin:0;">
-                                <label style="font-size:0.75rem;margin-bottom:4px;display:block;" data-i18n="email_label">Email</label>
-                                <input type="email" id="sa-ca-email" placeholder="admin@company.com" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-md);padding:10px;color:white;width:100%;outline:none;box-sizing:border-box;">
-                            </div>
-                            <div class="form-group" style="flex:1;min-width:140px;margin:0;">
-                                <label style="font-size:0.75rem;margin-bottom:4px;display:block;" data-i18n="password_label">Password</label>
-                                <input type="password" id="sa-ca-password" data-i18n-placeholder="ca_team_password_placeholder" placeholder="Min. 6 chars, letter + number" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-md);padding:10px;color:white;width:100%;outline:none;box-sizing:border-box;">
-                            </div>
-                            <div class="form-group" style="flex:1;min-width:140px;margin:0;">
-                                <label style="font-size:0.75rem;margin-bottom:4px;display:block;" data-i18n="company_id_label">Company ID</label>
-                                <input type="text" id="sa-ca-company-id" placeholder="e.g. citytransit" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-md);padding:10px;color:white;width:100%;outline:none;box-sizing:border-box;">
-                            </div>
-                            <button type="button" id="sa-create-admin-btn" class="btn-primary" data-action="superadminCreateCompanyAdmin" style="height:42px;padding:0 20px;white-space:nowrap;">
-                                <i data-lucide="user-plus"></i> <span data-i18n="btn_add_admin">Add Admin</span>
-                            </button>
+                            <form id="sa-create-company-form" class="sa-create-form" data-submit-action="superadminSubmitCreateModal" novalidate>
+                                <fieldset class="sa-create-fieldset">
+                                    <legend data-i18n="add_new_company">Firma</legend>
+                                    <label class="form-group" for="sa-new-name">
+                                        <span data-i18n="company_name_label">Naziv</span>
+                                        <input type="text" id="sa-new-name" required maxlength="200" autocomplete="organization">
+                                    </label>
+                                    <label class="form-group" for="sa-new-country">
+                                        <span data-i18n="sa_col_country">Država</span>
+                                        <select id="sa-new-country">
+                                            <option value="AT">AT</option>
+                                            <option value="RS">RS</option>
+                                            <option value="DE">DE</option>
+                                            <option value="CH">CH</option>
+                                        </select>
+                                    </label>
+                                    <label class="form-group" for="sa-new-license">
+                                        <span data-i18n="sa_col_plan">Paket</span>
+                                        <select id="sa-new-license">
+                                            <option value="starter">STARTER (15)</option>
+                                            <option value="pro" selected>PRO (50)</option>
+                                            <option value="fleet_master">FLEET MASTER (200)</option>
+                                            <option value="enterprise">ENTERPRISE (∞)</option>
+                                        </select>
+                                    </label>
+                                    <label class="form-group" for="sa-new-tenant">
+                                        <span data-i18n="sa_col_tenant">ID / Tenant</span>
+                                        <input type="text" id="sa-new-tenant" maxlength="64" placeholder="auto" autocomplete="off">
+                                    </label>
+                                    <div id="sa-demo-company-pin" class="form-group hidden">
+                                        <label for="sa-new-pin" data-i18n="disp_pin_label">Initial PIN</label>
+                                        <input type="password" id="sa-new-pin" maxlength="6" autocomplete="off">
+                                    </div>
+                                </fieldset>
+                                <fieldset class="sa-create-fieldset">
+                                    <legend data-i18n="sa_create_admin_title">Company Admin</legend>
+                                    <label class="form-group" for="sa-ca-name">
+                                        <span data-i18n="admin_name_label">Ime</span>
+                                        <input type="text" id="sa-ca-name" maxlength="200" autocomplete="name">
+                                    </label>
+                                    <label class="form-group" for="sa-ca-email">
+                                        <span data-i18n="email_label">Email</span>
+                                        <input type="email" id="sa-ca-email" maxlength="254" autocomplete="email">
+                                    </label>
+                                    <label class="form-group" for="sa-ca-password">
+                                        <span data-i18n="password_label">Lozinka</span>
+                                        <input type="password" id="sa-ca-password" maxlength="128" autocomplete="new-password">
+                                    </label>
+                                    <input type="hidden" id="sa-ca-company-id" value="">
+                                    <p class="sa-create-hint" data-i18n="sa_ca_login_hint">CA se prijavljuje email + lozinka. Tenant se popuni automatski.</p>
+                                </fieldset>
+                                <div class="sa-create-actions">
+                                    <button type="button" class="btn-secondary" data-action="superadminCloseCreateModal" data-i18n="btn_cancel">Otkaži</button>
+                                    <button type="submit" id="sa-create-company-btn" class="btn-primary">
+                                        <i data-lucide="plus"></i>
+                                        <span data-i18n="btn_register_company">Kreiraj</span>
+                                    </button>
+                                </div>
+                            </form>
+                            <div id="sa-ca-list" class="hidden" hidden></div>
                         </div>
-                        <div id="sa-ca-list" style="margin-top:16px;display:flex;flex-direction:column;gap:6px;"></div>
-                    </div>
-
-                    <!-- List of companies -->
-                    <div id="sa-companies-panel" class="table-container" tabindex="-1">
-                        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
-                            <h3 style="margin:0;font-size:1.05rem;" data-i18n="sa_companies_panel_title">Companies</h3>
-                            <p style="margin:0;font-size:0.78rem;color:var(--text-muted);" data-i18n="sa_companies_panel_hint">Open, suspend, support or permanently delete each company.</p>
-                        </div>
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th data-i18n="disp_name_label">Name</th>
-                                    <th data-i18n="company_id_label">Company ID</th>
-                                    <th data-i18n="superadmin_status">Status</th>
-                                    <th data-i18n="sa_col_plan">Plan</th>
-                                    <th data-i18n="sa_col_country">Country</th>
-                                    <th data-i18n="email_label">Email</th>
-                                    <th data-i18n="table_actions">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="superadmin-companies-list">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
                     </div>
                 </section>
 
@@ -1279,10 +1306,66 @@
                     </div>
 
                     <div class="company-drivers-layout">
+                        <div class="company-drivers-create-stack">
+                        <div class="card company-drivers-add-card">
+                            <div class="company-drivers-card-heading">
+                                <div>
+                                    <span class="service-plan-kicker" data-i18n="ca_drivers_add_kicker">JEDAN VOZAČ</span>
+                                    <h3 data-i18n="ca_drivers_add_title">Dodaj vozača ručno</h3>
+                                    <p data-i18n="ca_drivers_add_hint">Redosled: EID, ime, prezime, email, telefon, PIN, grupa(e).</p>
+                                </div>
+                                <i data-lucide="user-plus" aria-hidden="true"></i>
+                            </div>
+                            <form id="ca-driver-add-form" class="company-drivers-add-form" data-submit-action="submitCompanyDriverManualAdd" novalidate>
+                                <div class="company-drivers-add-grid">
+                                    <label class="form-group" for="ca-driver-add-eid">
+                                        <span data-i18n="ca_drivers_eid">EID</span>
+                                        <input type="text" id="ca-driver-add-eid" maxlength="128" autocomplete="off" required>
+                                    </label>
+                                    <label class="form-group" for="ca-driver-add-first-name">
+                                        <span data-i18n="ca_drivers_edit_first_name">Ime</span>
+                                        <input type="text" id="ca-driver-add-first-name" maxlength="80" autocomplete="given-name" required>
+                                    </label>
+                                    <label class="form-group" for="ca-driver-add-last-name">
+                                        <span data-i18n="ca_drivers_edit_last_name">Prezime</span>
+                                        <input type="text" id="ca-driver-add-last-name" maxlength="80" autocomplete="family-name" required>
+                                    </label>
+                                    <label class="form-group" for="ca-driver-add-email">
+                                        <span data-i18n="email">Email</span>
+                                        <input type="email" id="ca-driver-add-email" maxlength="254" autocomplete="email" required>
+                                    </label>
+                                    <label class="form-group" for="ca-driver-add-phone">
+                                        <span data-i18n="ca_drivers_phone">Telefon (E.164)</span>
+                                        <input type="tel" id="ca-driver-add-phone" maxlength="40" inputmode="tel" autocomplete="tel" placeholder="+43699…" required>
+                                    </label>
+                                    <label class="form-group" for="ca-driver-add-pin">
+                                        <span data-i18n="ca_drivers_add_pin">PIN (5–12 cifara)</span>
+                                        <input type="password" id="ca-driver-add-pin" inputmode="numeric" pattern="[0-9]{5,12}" minlength="5" maxlength="12" autocomplete="new-password" required>
+                                    </label>
+                                    <label class="form-group company-drivers-add-primary-group" for="ca-driver-add-group">
+                                        <span data-i18n="ca_drivers_add_primary_group">Primarna grupa</span>
+                                        <select id="ca-driver-add-group" required>
+                                            <option value="" data-i18n="ca_plan_group_placeholder">Izaberite grupu</option>
+                                        </select>
+                                    </label>
+                                </div>
+                                <fieldset class="company-driver-known-fieldset company-drivers-add-known">
+                                    <legend data-i18n="ca_drivers_add_extra_groups">Dodatne grupe (opciono)</legend>
+                                    <p class="company-driver-known-hint" data-i18n="ca_drivers_add_extra_groups_hint">Disponenti svih označenih grupa vide ovog vozača.</p>
+                                    <div id="ca-driver-add-known-groups" class="company-driver-known-grid"></div>
+                                </fieldset>
+                                <p class="company-drivers-security-note"><i data-lucide="smartphone"></i> <span data-i18n="ca_drivers_add_sms_note">SMS aktivacija na telefon; uneti PIN postaje prijavni kod.</span></p>
+                                <button type="submit" id="ca-driver-add-submit" class="btn-primary company-drivers-add-submit">
+                                    <i data-lucide="user-plus"></i>
+                                    <span data-i18n="ca_drivers_add_submit">Dodaj vozača i pošalji SMS</span>
+                                </button>
+                            </form>
+                        </div>
+
                         <div class="card company-drivers-import-card">
                             <div class="company-drivers-card-heading">
                                 <div>
-                                    <span class="service-plan-kicker" data-i18n="ca_drivers_import_kicker">NOVI NALOZI</span>
+                                    <span class="service-plan-kicker" data-i18n="ca_drivers_import_kicker">CSV UVOZ</span>
                                     <h3 data-i18n="ca_drivers_import_title">Uvezite vozače u izabranu grupu</h3>
                                     <p data-i18n="ca_drivers_import_hint">Prihvata BusCommand CSV i pilot format (ime_prezime;firma_id;licni_kod_za_app;…). Izaberite grupu kao rezervu; ako CSV ima kolonu grupa koja odgovara postojećoj liniji, koristi se ona.</p>
                                 </div>
@@ -1302,6 +1385,7 @@
                             <input type="file" id="ca-drivers-import-file" accept=".csv,text/csv" hidden data-change-action="handleCompanyDriversFile" data-change-pass="event">
                             <p class="company-drivers-security-note"><i data-lucide="lock-keyhole"></i> <span data-i18n="ca_drivers_security_note">Kod firme se šalje direktno serveru, čuva se samo kao hash i nikada se ne prikazuje nakon uvoza.</span></p>
                             <div id="ca-drivers-import-preview" aria-live="polite"></div>
+                        </div>
                         </div>
 
                         <div class="card company-drivers-directory-card">

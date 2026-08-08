@@ -208,12 +208,23 @@ async function _loadAllowedCollection(companyRef, item) {
         const assignedIds = _dispatcherAssignedGroupIds();
         if (assignedIds.length === 0) return [];
 
-        const snapshots = await Promise.all(assignedIds.map(groupId =>
-            _readFirestoreOperation(
-                `load_assigned_${item.key}`, `${companyRef.path}/${item.col}?groupId=${groupId}`,
-                () => companyRef.collection(item.col).where("groupId", "==", groupId).get()
-            )
-        ));
+        const snapshots = item.key === "drivers"
+            ? await Promise.all(assignedIds.flatMap((groupId) => [
+                _readFirestoreOperation(
+                    `load_assigned_drivers`, `${companyRef.path}/drivers?groupId=${groupId}`,
+                    () => companyRef.collection("drivers").where("groupId", "==", groupId).get()
+                ),
+                _readFirestoreOperation(
+                    `load_assigned_drivers_known`, `${companyRef.path}/drivers?known=${groupId}`,
+                    () => companyRef.collection("drivers").where("knownGroupIds", "array-contains", groupId).get()
+                )
+            ]))
+            : await Promise.all(assignedIds.map((groupId) =>
+                _readFirestoreOperation(
+                    `load_assigned_${item.key}`, `${companyRef.path}/${item.col}?groupId=${groupId}`,
+                    () => companyRef.collection(item.col).where("groupId", "==", groupId).get()
+                )
+            ));
         const unique = new Map();
         snapshots.flatMap(snapshot => snapshot.docs).forEach(doc => unique.set(doc.id, doc));
         return item.key === "drivers"
@@ -619,13 +630,23 @@ function startFirestoreSync(companyId) {
                 _applyRemoteDocs(item, [...unique.values()], companyId);
             };
             const assignedIds = _dispatcherAssignedGroupIds();
-            assignedIds.forEach(groupId => {
-                const listener = companyRef.collection(item.col).where("groupId", "==", groupId).onSnapshot((snap) => {
+            assignedIds.forEach((groupId) => {
+                const primaryListener = companyRef.collection(item.col).where("groupId", "==", groupId).onSnapshot((snap) => {
                     if (snap.metadata.hasPendingWrites) return;
-                    queryDocs.set(groupId, snap.docs);
+                    queryDocs.set(`g:${groupId}`, snap.docs);
                     refresh();
                 });
-                _firestoreListeners.push(listener);
+                _firestoreListeners.push(primaryListener);
+                if (item.key === "drivers") {
+                    const knownListener = companyRef.collection("drivers")
+                        .where("knownGroupIds", "array-contains", groupId)
+                        .onSnapshot((snap) => {
+                            if (snap.metadata.hasPendingWrites) return;
+                            queryDocs.set(`k:${groupId}`, snap.docs);
+                            refresh();
+                        });
+                    _firestoreListeners.push(knownListener);
+                }
             });
             return;
         }

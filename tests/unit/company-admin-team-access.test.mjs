@@ -10,6 +10,7 @@ test("dispatcher lifecycle endpoints are Company Admin-only, tenant-bound and ra
     "/api/company-admin/dispatchers",
     "/api/company-admin/dispatchers/:uid/groups",
     "/api/company-admin/dispatchers/:uid/status",
+    "/api/company-admin/dispatchers/:uid/profile",
     "/api/company-admin/dispatchers/:uid/revoke-sessions"
   ]) {
     const index = api.indexOf(route);
@@ -41,6 +42,9 @@ test("team and onboarding share the same validated provisioning path without pro
   const onboarding = read("../../js/admin/company-admin-onboarding.js");
   assert.match(team, /ApiClient\.createCompanyDispatcher/);
   assert.match(team, /ApiClient\.deleteCompanyDispatcher/);
+  assert.match(team, /ApiClient\.updateCompanyDispatcherProfile/);
+  assert.match(team, /toggleCompanyDispatcherStatus/);
+  assert.match(team, /company-team-status-toggle/);
   assert.match(team, /dispatcher\.active !== false/);
   assert.match(team, /if \(USE_LOCAL_STATE\) \{[\s\S]*?dispatcher\.password/);
   assert.doesNotMatch(team, /TEMP_RESET_PASSWORD|ChangeMe123/);

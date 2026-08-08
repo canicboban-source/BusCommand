@@ -4,6 +4,11 @@
 "use strict";
 
 const { z } = require("zod");
+const {
+  LICENSE_TYPES,
+  normalizeLicenseType,
+  maxDriversForType
+} = require("./license-packages");
 
 const EDITABLE_FEATURE_KEYS = Object.freeze([
   "supportSession",
@@ -17,11 +22,23 @@ const EDITABLE_FEATURE_KEYS = Object.freeze([
   "multiLanguage"
 ]);
 
+const planEnum = z.enum([
+  ...LICENSE_TYPES,
+  "trial",
+  "standard"
+]);
+
 const tenantSettingsPatchSchema = z.object({
-  plan: z.enum(["trial", "standard", "enterprise"]).optional(),
+  plan: planEnum.optional(),
+  licenseType: planEnum.optional(),
+  licenseStatus: z.enum(["trial", "active", "expired", "suspended"]).optional(),
   maxDrivers: z.number().int().min(1).max(5000).optional(),
   maxDispatchers: z.number().int().min(1).max(500).optional(),
   trialEndsAt: z.union([
+    z.string().trim().min(10).max(40),
+    z.null()
+  ]).optional(),
+  trialValidUntil: z.union([
     z.string().trim().min(10).max(40),
     z.null()
   ]).optional(),
@@ -48,9 +65,22 @@ function buildTenantSettingsPatch(body, { now = new Date() } = {}) {
   const patch = {};
   const audit = {};
 
-  if (data.plan) {
-    patch.plan = data.plan;
-    audit.plan = data.plan;
+  const rawType = data.licenseType || data.plan;
+  if (rawType) {
+    const licenseType = normalizeLicenseType(rawType);
+    patch.plan = licenseType;
+    patch.licenseType = licenseType;
+    audit.plan = licenseType;
+    audit.licenseType = licenseType;
+    if (typeof data.maxDrivers !== "number") {
+      const pkgMax = maxDriversForType(licenseType);
+      patch.maxDrivers = pkgMax == null ? 5000 : pkgMax;
+      audit.maxDrivers = patch.maxDrivers;
+    }
+  }
+  if (data.licenseStatus) {
+    patch.licenseStatus = data.licenseStatus;
+    audit.licenseStatus = data.licenseStatus;
   }
   if (typeof data.maxDrivers === "number") {
     patch.maxDrivers = data.maxDrivers;
@@ -60,18 +90,26 @@ function buildTenantSettingsPatch(body, { now = new Date() } = {}) {
     patch.maxDispatchers = data.maxDispatchers;
     audit.maxDispatchers = data.maxDispatchers;
   }
-  if (Object.prototype.hasOwnProperty.call(data, "trialEndsAt")) {
-    if (data.trialEndsAt == null || data.trialEndsAt === "") {
+  const trialRaw = Object.prototype.hasOwnProperty.call(data, "trialValidUntil")
+    ? data.trialValidUntil
+    : Object.prototype.hasOwnProperty.call(data, "trialEndsAt")
+      ? data.trialEndsAt
+      : undefined;
+  if (trialRaw !== undefined) {
+    if (trialRaw == null || trialRaw === "") {
       patch.trialEndsAt = null;
+      patch.trialValidUntil = null;
       audit.trialEndsAt = null;
+      audit.trialValidUntil = null;
     } else {
-      const date = new Date(data.trialEndsAt);
+      const date = new Date(trialRaw);
       if (Number.isNaN(date.getTime())) {
         return { ok: false, error: "Nevažeći datum isteka trial-a." };
       }
-      // Allow past dates (SA may end trial immediately).
       patch.trialEndsAt = date;
+      patch.trialValidUntil = date;
       audit.trialEndsAt = date.toISOString();
+      audit.trialValidUntil = date.toISOString();
     }
   }
   if (data.features) {
@@ -91,12 +129,21 @@ function buildTenantSettingsPatch(body, { now = new Date() } = {}) {
 function applyTenantSettingsPatch(existing, patch, { adminTimestampFromDate }) {
   const next = { ...(existing || {}) };
   if (patch.plan) next.plan = patch.plan;
+  if (patch.licenseType) next.licenseType = patch.licenseType;
+  if (patch.licenseStatus) next.licenseStatus = patch.licenseStatus;
   if (typeof patch.maxDrivers === "number") next.maxDrivers = patch.maxDrivers;
   if (typeof patch.maxDispatchers === "number") next.maxDispatchers = patch.maxDispatchers;
   if (Object.prototype.hasOwnProperty.call(patch, "trialEndsAt")) {
-    next.trialEndsAt = patch.trialEndsAt
-      ? adminTimestampFromDate(patch.trialEndsAt)
+    const stamp = patch.trialEndsAt ? adminTimestampFromDate(patch.trialEndsAt) : null;
+    next.trialEndsAt = stamp;
+    next.trialValidUntil = stamp;
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, "trialValidUntil")
+    && !Object.prototype.hasOwnProperty.call(patch, "trialEndsAt")) {
+    next.trialValidUntil = patch.trialValidUntil
+      ? adminTimestampFromDate(patch.trialValidUntil)
       : null;
+    next.trialEndsAt = next.trialValidUntil;
   }
   if (patch.features) {
     next.features = { ...(existing?.features || {}), ...patch.features };

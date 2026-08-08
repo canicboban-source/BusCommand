@@ -1,15 +1,15 @@
 // BusCommand — staff surface action handlers
 import { handleCompanyAuditFilters, loadMoreCompanyAudit, refreshCompanyAudit, resetCompanyAuditFilters } from "./admin/company-admin-audit.js";
 import { applyBrandingSettings, clearCompanyBrandingLogo, handleCompanyBrandingLogoFile } from "./admin/company-admin-branding.js";
-import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriverEdit, confirmCompanyDriversImport, handleCompanyDriversFile, handleCompanyDriversFilter, handleCompanyDriversSearch, openCompanyDriverEdit, saveCompanyDriverEdit, toggleCompanyDriverStatus } from "./admin/company-admin-drivers.js";
+import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriverEdit, confirmCompanyDriversImport, handleCompanyDriversFile, handleCompanyDriversFilter, handleCompanyDriversSearch, openCompanyDriverEdit, saveCompanyDriverEdit, submitCompanyDriverManualAdd, toggleCompanyDriverStatus } from "./admin/company-admin-drivers.js";
 import { cancelCompanyGroupEdit, deleteCompanyGroup, focusCompanyGroupForm, saveCompanyGroup, startEditCompanyGroup } from "./admin/company-admin-groups.js";
 import { caWizardBack, caWizardNext, caWizardSelectColor, caWizardSelectColorFromHex, caWizardSelectColorFromPicker, caWizardHandleLogo, caWizardSkip } from "./admin/company-admin-onboarding.js";
 import { clearCompanyServicePlanPreview, closeCompanyServicePlanDuty, closeCompanyServicePlanHistory, handleCompanyServicePlanFile, handleCompanyServicePlanGroupChange, openCompanyServicePlanDuty, openCompanyServicePlanHistory, publishCompanyServicePlan, activateCompanyServicePlanVersion } from "./admin/company-admin-service-plan.js";
 import { handleCompanySettingsCountry, handleCompanySettingsInput, resetCompanySettingsForm, saveCompanyProfileSettings } from "./admin/company-admin-settings.js";
-import { addCompanyDispatcher, focusCompanyDispatcherForm, removeCompanyDispatcher, resetCompanyDispatcherPassword, revokeCompanyDispatcherSessions, saveCompanyDispatcherGroups, toggleCaDispGroupsEdit, toggleCompanyDispatcherStatus } from "./admin/company-admin-team.js";
+import { addCompanyDispatcher, focusCompanyDispatcherForm, removeCompanyDispatcher, resetCompanyDispatcherPassword, revokeCompanyDispatcherSessions, saveCompanyDispatcherGroups, saveCompanyDispatcherProfile, toggleCaDispGroupsEdit, toggleCaDispProfileEdit, toggleCompanyDispatcherStatus } from "./admin/company-admin-team.js";
 import { endCompanySupportSession, openCompanyOpsOverview } from "./admin/company-admin.js";
 import { createDispatcherGroup, enterDispatcherActiveGroup, exitImpersonation, saveNewDispatcherPassword, switchToGroupSetup } from "./admin/dispatcher-setup.js";
-import { superadminCreateCompany, superadminCreateCompanyAdmin, superadminDeleteCompany, superadminCancelDeleteCompanyModal, superadminConfirmDeleteCompany, superadminDeleteCompanyAdmin, superadminFocusCompanies, superadminCopyCompanyId, superadminCopyText, superadminImpersonate, superadminOpenCompany, superadminOpenCompanyDetail, superadminCloseCompanyDetail, superadminSetCompanyAdminStatus, superadminResetCompanyAdminPassword, superadminResetPin, superadminToggleStatus, superadminStartSupport, superadminCancelSupportModal, superadminConfirmSupportStart, superadminEndSupport, superadminSaveCompanySettings, superadminSaveDemoCompanyProfile } from "./admin/superadmin.js";
+import { superadminCreateCompany, superadminCreateCompanyAdmin, superadminDeleteCompany, superadminCancelDeleteCompanyModal, superadminConfirmDeleteCompany, superadminDeleteCompanyAdmin, superadminFocusCompanies, superadminCopyCompanyId, superadminCopyText, superadminImpersonate, superadminOpenCompany, superadminOpenCompanyDetail, superadminCloseCompanyDetail, superadminSetCompanyAdminStatus, superadminResetCompanyAdminPassword, superadminResetPin, superadminToggleStatus, superadminStartSupport, superadminCancelSupportModal, superadminConfirmSupportStart, superadminEndSupport, superadminSaveCompanySettings, superadminSaveDemoCompanyProfile, superadminOpenCreateModal, superadminCloseCreateModal, superadminSubmitCreateModal } from "./admin/superadmin.js";
 import { forgotDispatcherPassword, loginAsDispatcher, logout } from "./auth/login-dispatcher.js";
 import { closeSuperAdminModal, confirmSuperAdminPin, handleLogoClick } from "./auth/superadmin.js";
 import { clickElementById, installActionDelegates, removeElementById } from "./core/action-delegate.js";
@@ -169,6 +169,7 @@ const HANDLERS = {
     confirmBulkPlanImport,
     confirmClearSOS,
     confirmCompanyDriversImport,
+    submitCompanyDriverManualAdd,
     confirmFactoryReset,
     confirmModalYes,
     confirmPackageImport,
@@ -284,6 +285,7 @@ const HANDLERS = {
     openLostItemPhoto,
     revokeCompanyDispatcherSessions,
     saveCompanyDispatcherGroups,
+    saveCompanyDispatcherProfile,
     saveCompanyDriverEdit,
     saveCompanyGroup,
     saveCompanyProfileSettings,
@@ -299,6 +301,9 @@ const HANDLERS = {
     showModal,
     startEditCompanyGroup,
     submitDispatcherMessage,
+    superadminOpenCreateModal,
+    superadminCloseCreateModal,
+    superadminSubmitCreateModal,
     superadminCreateCompany,
     superadminCreateCompanyAdmin,
     superadminDeleteCompany,
@@ -327,6 +332,7 @@ const HANDLERS = {
     switchToGroupSetup,
     t,
     toggleCaDispGroupsEdit,
+    toggleCaDispProfileEdit,
     toggleCompanyDispatcherStatus,
     toggleRowActionsMenu,
     removeCompanyDispatcher,
