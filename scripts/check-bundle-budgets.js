@@ -18,12 +18,12 @@ const BUDGETS = {
    */
   /** After cutting dispatcher graph from shared i18n (target ~init+driver+shell). */
   driverAppJsBytesExclTranslations: 220 * 1024,
-  /** Same for staff.html (dispatcher graph; CDN parsers are deferred). Ops B2 + soft-remove + guided incident reasons. */
-  staffAppJsBytesExclTranslations: 560 * 1024,
+  /** Staff graph: SA companies table/modal + license badge + Phase 1 multi-group (Ultimate v3.1). */
+  staffAppJsBytesExclTranslations: 568 * 1024,
   /** Soft-pilot ceiling for shared init/firebase chunk on driver (no dispatcher UI). */
   maxSingleDriverChunkBytes: 150 * 1024,
-  /** Shared EN/DE/SR dictionary chunk (Phase 3 header/nav a11y strings). */
-  translationsChunkBytes: 362 * 1024,
+  /** Shared EN/DE/SR dictionary (license packages + SA table strings). */
+  translationsChunkBytes: 368 * 1024,
 };
 
 function readHtml(name) {

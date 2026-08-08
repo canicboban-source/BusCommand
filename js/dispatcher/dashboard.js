@@ -412,7 +412,7 @@ function renderDispatcherDashboard() {
                         <span class="alert-item-meta">${escapeHtml(metaParts.join(" · ") || "—")}</span>
                         <div class="alert-item-actions">
                             <button type="button" class="urgent-action alert-item-resolve" ${actionAttr("openOpsAttentionPanel", [item.id])}>
-                                <i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}
+                                <i data-lucide="zap"></i> ${escapeHtml(t("ops_btn_resolve") || t("ops_attn_solve_now") || "Reši problem")}
                             </button>
                         </div>
                     </div>

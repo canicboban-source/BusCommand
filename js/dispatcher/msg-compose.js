@@ -2,6 +2,7 @@
 import { saveState } from "../core/state.js";
 import { escapeHtml, showToast } from "../core/utils.js";
 import { getGroupById } from "../data/groups.js";
+import { driverKnowsGroup } from "../data/driver-known-groups.js";
 import { renderDispatcherDashboard } from "./dashboard.js";
 import { renderDispatcherMessagesPage } from "./sent-messages.js";
 import { t, translateUI } from "../ui/i18n.js";
@@ -104,7 +105,7 @@ function populateMessageRecipients(formId) {
 
     if (scope === "group") {
         (window.state.groups || []).forEach(g => {
-            const cnt = (window.state.drivers || []).filter(d => d.groupId === g.id).length;
+            const cnt = (window.state.drivers || []).filter((d) => driverKnowsGroup(d, g.id)).length;
             const opt = document.createElement("option");
             opt.value = `group:${g.id}`;
             opt.textContent = `${g.name} (${cnt})`;
@@ -180,7 +181,7 @@ function buildLocalDemoMessages({ scope, recipient, template, detail, requiresAc
 
     if (scope === "group" && recipient.startsWith("group:")) {
         const gid = recipient.replace("group:", "");
-        const groupDrivers = (window.state.drivers || []).filter(d => d.groupId === gid);
+        const groupDrivers = (window.state.drivers || []).filter((d) => driverKnowsGroup(d, gid));
         recipients = groupDrivers.map(d => d.name);
     } else if (recipient === "__all__") {
         recipients = [t("msg_all_drivers") || "Svi vozači"];

@@ -231,9 +231,7 @@ test.describe("UI smoke", () => {
     await expect(page.locator("#ca-groups-stat-total")).toHaveText("1");
     await expect(page.locator("#ca-groups-stat-ready")).toHaveText("1");
     const usedGroup = page.locator(".company-group-row").filter({ hasText: "Line 101" });
-    await usedGroup.locator(".row-actions-trigger").click();
-    await expect(usedGroup.locator(".row-actions-item.is-danger")).toBeDisabled();
-    await page.keyboard.press("Escape");
+    await expect(usedGroup.locator(".company-group-delete-btn")).toBeDisabled();
 
     await page.locator("#ca-new-group-line-id").fill("north");
     await page.locator("#ca-new-group-name").fill("N");
@@ -264,8 +262,7 @@ test.describe("UI smoke", () => {
     await expect.poll(() => page.evaluate(() => window.state.groups.find(group => group.id === "310")?.name)).toBe("North operations");
 
     const editedGroup = page.locator(".company-group-row").filter({ hasText: "North operations" });
-    await editedGroup.locator(".row-actions-trigger").click();
-    await editedGroup.locator('.row-actions-item[data-action="deleteCompanyGroup"]').click();
+    await editedGroup.locator(".company-group-delete-btn").click();
     await expect(page.locator("#global-confirm-modal")).toBeVisible();
     await page.locator("#global-confirm-yes").click();
     await expect.poll(() => page.evaluate(() => window.state.groups.some(group => group.id === "310"))).toBe(false);
@@ -469,7 +466,12 @@ test.describe("UI smoke", () => {
     await page.locator("#ca-team-search").fill("");
     const updatedAna = page.locator(".company-team-card").filter({ hasText: "ana@example.test" });
     await updatedAna.locator(".row-actions-trigger").click();
-    await updatedAna.locator('.row-actions-item[data-action="toggleCompanyDispatcherStatus"]').click();
+    await updatedAna.locator('.row-actions-item[data-action="toggleCaDispProfileEdit"]').click();
+    await updatedAna.locator('input[id^="ca-disp-edit-phone-"]').fill("+4369912345678");
+    await updatedAna.getByRole("button", { name: /Save changes/i }).click();
+    await expect(page.locator(".company-team-card").filter({ hasText: "ana@example.test" })).toContainText("+4369912345678");
+
+    await updatedAna.locator(".company-team-status-toggle").click();
     await page.locator("#global-confirm-yes").click();
     await expect(page.locator(".company-team-card").filter({ hasText: "ana@example.test" })).toContainText("Deactivated");
     await page.locator("#ca-team-status-filter").selectOption("inactive");

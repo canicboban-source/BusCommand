@@ -1,4 +1,5 @@
 const { ProvisioningError, normalizeFirebaseUid } = require("./provisioning");
+const { resolveLicenseSnapshot } = require("./license-packages");
 
 function toIso(value) {
   if (!value) return null;
@@ -93,17 +94,22 @@ async function getCompanyDetail({ db, companyId }) {
   const dispatchers = users.filter(user => user.role === "dispatcher");
   const supportActive = isSupportActive(support);
 
+  const license = resolveLicenseSnapshot(settings);
   return {
     id: companyId,
     name: profile.name || companyId,
     country: profile.country || null,
     contactEmail: profile.contactEmail || null,
     status: settings.status || "unknown",
-    plan: settings.plan || "trial",
-    maxDrivers: Number.isInteger(Number(settings.maxDrivers)) ? Number(settings.maxDrivers) : null,
+    plan: license.plan,
+    licenseType: license.licenseType,
+    licenseStatus: license.licenseStatus,
+    trialValidUntil: license.trialValidUntil,
+    packageLabel: license.packageLabel,
+    maxDrivers: license.maxDrivers,
     maxDispatchers: Number.isInteger(Number(settings.maxDispatchers)) ? Number(settings.maxDispatchers) : null,
     features: settings.features && typeof settings.features === "object" ? settings.features : {},
-    trialEndsAt: toIso(settings.trialEndsAt),
+    trialEndsAt: license.trialValidUntil || toIso(settings.trialEndsAt),
     suspendedAt: toIso(settings.suspendedAt),
     suspendReason: settings.suspendReason || null,
     supportSessionEnabled: settings.features?.supportSession === true,

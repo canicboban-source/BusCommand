@@ -53,6 +53,11 @@ test("personal login code requires 5-12 digits", () => {
 });
 
 test("SMS stub never echoes plaintext codes and production defaults to none", async () => {
+  const forced = createSmsProvider({
+    env: { NODE_ENV: "development", SMS_PROVIDER: "seven", SEVEN_API_KEY: "x", BUSCOMMAND_QA_HARNESS: "1" }
+  });
+  assert.equal(forced.mode, "stub");
+
   const stub = createSmsProvider({ env: { NODE_ENV: "development", SMS_PROVIDER: "stub" } });
   const result = await stub.sendActivationSms({
     phone: "+43123456789",
@@ -76,6 +81,112 @@ test("SMS stub never echoes plaintext codes and production defaults to none", as
   assert.equal(prod.mode, "none");
   const skipped = await prod.sendActivationSms({ phone: "+43123456789", companyId: "x", driverId: "y", otp: "123456" });
   assert.equal(skipped.status, "skipped");
+});
+
+test("Twilio adapter sends form body and never returns plaintext OTP", async () => {
+  const calls = [];
+  const fetchImpl = async (url, options) => {
+    calls.push({ url, options });
+    return {
+      ok: true,
+      json: async () => ({ sid: "SM_test_123" })
+    };
+  };
+  const twilio = createSmsProvider({
+    env: {
+      SMS_PROVIDER: "twilio",
+      TWILIO_ACCOUNT_SID: "ACtest",
+      TWILIO_AUTH_TOKEN: "tokentest",
+      TWILIO_FROM_NUMBER: "+4915888623971",
+      APP_PUBLIC_URL: "https://www.buscommand.com"
+    },
+    fetchImpl
+  });
+  const sent = await twilio.sendActivationSms({
+    phone: "+4369917137535",
+    companyId: "qa",
+    driverId: "drv-9",
+    portalUrl: "/driver.html?company=qa",
+    otp: "SECRET99"
+  });
+  assert.equal(sent.status, "sent");
+  assert.equal(sent.providerMessageId, "SM_test_123");
+  assert.equal(JSON.stringify(sent).includes("SECRET99"), false);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].url, /Accounts\/ACtest\/Messages\.json/);
+  assert.match(calls[0].options.body, /To=%2B4369917137535/);
+  assert.match(calls[0].options.body, /SECRET99/);
+  assert.match(calls[0].options.body, /www\.buscommand\.com/);
+
+  const missingCreds = createSmsProvider({
+    env: { SMS_PROVIDER: "twilio" },
+    fetchImpl
+  });
+  const fail = await missingCreds.sendActivationSms({
+    phone: "+4369917137535",
+    companyId: "qa",
+    driverId: "drv-9",
+    otp: "123456"
+  });
+  assert.equal(fail.status, "error");
+  assert.equal(fail.reason, "missing_twilio_credentials");
+
+  const trialBlocked = createSmsProvider({
+    env: {
+      SMS_PROVIDER: "twilio",
+      TWILIO_ACCOUNT_SID: "ACtest",
+      TWILIO_AUTH_TOKEN: "tokentest",
+      TWILIO_FROM_NUMBER: "+4915888623971"
+    },
+    fetchImpl: async () => ({
+      ok: false,
+      json: async () => ({ code: 572006, message: "Invalid template name" })
+    })
+  });
+  const blocked = await trialBlocked.sendActivationSms({
+    phone: "+4369917137535",
+    companyId: "qa",
+    driverId: "drv-9",
+    otp: "123456"
+  });
+  assert.equal(blocked.status, "error");
+  assert.equal(blocked.reason, "twilio_trial_requires_upgrade_for_custom_body");
+});
+
+test("seven.io adapter sends form body and never returns plaintext OTP", async () => {
+  const calls = [];
+  const fetchImpl = async (url, options) => {
+    calls.push({ url, options });
+    return {
+      ok: true,
+      json: async () => ({ success: "100", messages: [{ id: "777" }] })
+    };
+  };
+  const seven = createSmsProvider({
+    env: {
+      SMS_PROVIDER: "seven",
+      SEVEN_API_KEY: "seven-test-key",
+      SEVEN_FROM: "SMS",
+      APP_PUBLIC_URL: "https://www.buscommand.com"
+    },
+    fetchImpl
+  });
+  const sent = await seven.sendActivationSms({
+    phone: "+4369917137535",
+    companyId: "qa",
+    driverId: "drv-9",
+    portalUrl: "/driver.html?company=qa",
+    otp: "SECRET77"
+  });
+  assert.equal(seven.mode, "seven");
+  assert.equal(sent.status, "sent");
+  assert.equal(sent.providerMessageId, "777");
+  assert.equal(JSON.stringify(sent).includes("SECRET77"), false);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].url, /gateway\.seven\.io\/api\/sms/);
+  assert.equal(calls[0].options.headers["X-Api-Key"], "seven-test-key");
+  assert.match(calls[0].options.body, /SECRET77/);
+  assert.match(calls[0].options.body, /from=SMS/);
 });
 
 test("import and resend pass OTP into the SMS adapter", () => {

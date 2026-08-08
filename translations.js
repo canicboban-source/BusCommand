@@ -4100,6 +4100,12 @@ const MISSING_EN = {
     ca_disp_active:     "Active",
     ca_disp_must_change_pwd: "Must change password",
     ca_edit_groups:     "Edit groups",
+    ca_edit_disp_profile: "Edit details",
+    ca_edit_disp_profile_hint: "Update name, email and phone. Changing email signs them out everywhere.",
+    ca_disp_phone_label: "Phone (optional)",
+    ca_disp_profile_saved: "Dispatcher details saved.",
+    ca_disp_profile_saved_relogin: "Saved. Dispatcher must sign in again with the new email.",
+    ca_disp_profile_save_failed: "Could not save dispatcher details.",
     ca_reset_password:  "Reset password",
     ca_assign_groups_hint: "Select lines this dispatcher may manage:",
     ca_groups_saved:    "Dispatcher groups saved",
@@ -4152,6 +4158,8 @@ const MISSING_EN = {
     ca_team_error_password_long: "The password may contain at most 128 characters.",
     ca_team_error_password_weak: "Include at least one letter and one number.",
     ca_team_error_groups_required: "Select at least one line.",
+    ca_team_error_phone_invalid: "Enter at least 8 digits, or leave phone empty.",
+    ca_team_error_phone_long: "Phone may contain at most 40 characters.",
     ca_confirm_activate_disp: "Reactivate access for {name}?",
     ca_confirm_deactivate_disp: "Deactivate {name}? Their sessions will be revoked and login blocked.",
     ca_disp_activated: "Dispatcher access was reactivated.",
@@ -5098,6 +5106,12 @@ const MISSING_SR = {
     ca_disp_active:     "Aktivan",
     ca_disp_must_change_pwd: "Mora promeniti lozinku",
     ca_edit_groups:     "Izmeni grupe",
+    ca_edit_disp_profile: "Izmeni podatke",
+    ca_edit_disp_profile_hint: "Ažurirajte ime, email i telefon. Promena emaila odjavljuje dispečera svuda.",
+    ca_disp_phone_label: "Telefon (opciono)",
+    ca_disp_profile_saved: "Podaci dispečera su sačuvani.",
+    ca_disp_profile_saved_relogin: "Sačuvano. Dispečer mora ponovo da se prijavi novim emailom.",
+    ca_disp_profile_save_failed: "Podaci dispečera nisu sačuvani.",
     ca_reset_password:  "Reset lozinke",
     ca_assign_groups_hint: "Označite linije koje dispečer sme da vodi:",
     ca_groups_saved:    "Grupe dispečera sačuvane",
@@ -5150,6 +5164,8 @@ const MISSING_SR = {
     ca_team_error_password_long: "Lozinka može imati najviše 128 znakova.",
     ca_team_error_password_weak: "Dodajte najmanje jedno slovo i jedan broj.",
     ca_team_error_groups_required: "Izaberite najmanje jednu liniju.",
+    ca_team_error_phone_invalid: "Unesite najmanje 8 cifara ili ostavite telefon prazan.",
+    ca_team_error_phone_long: "Telefon može imati najviše 40 karaktera.",
     ca_confirm_activate_disp: "Ponovo aktivirati pristup za {name}?",
     ca_confirm_deactivate_disp: "Deaktivirati {name}? Sve sesije će biti opozvane, a prijava blokirana.",
     ca_disp_activated: "Pristup dispečera je ponovo aktiviran.",
@@ -5946,6 +5962,12 @@ const MISSING_DE = {
     ca_disp_active:     "Aktiv",
     ca_disp_must_change_pwd: "Passwort ändern erforderlich",
     ca_edit_groups:     "Gruppen bearbeiten",
+    ca_edit_disp_profile: "Daten bearbeiten",
+    ca_edit_disp_profile_hint: "Name, E-Mail und Telefon aktualisieren. E-Mail-Änderung meldet überall ab.",
+    ca_disp_phone_label: "Telefon (optional)",
+    ca_disp_profile_saved: "Disponentendaten gespeichert.",
+    ca_disp_profile_saved_relogin: "Gespeichert. Mit neuer E-Mail erneut anmelden.",
+    ca_disp_profile_save_failed: "Disponentendaten nicht gespeichert.",
     ca_reset_password:  "Passwort zurücksetzen",
     ca_assign_groups_hint: "Linien auswählen, die der Disponent führt:",
     ca_groups_saved:    "Disponenten-Gruppen gespeichert",
@@ -5998,6 +6020,8 @@ const MISSING_DE = {
     ca_team_error_password_long: "Das Passwort darf höchstens 128 Zeichen enthalten.",
     ca_team_error_password_weak: "Mindestens einen Buchstaben und eine Zahl verwenden.",
     ca_team_error_groups_required: "Mindestens eine Linie auswählen.",
+    ca_team_error_phone_invalid: "Mindestens 8 Ziffern eingeben oder Telefon leer lassen.",
+    ca_team_error_phone_long: "Telefon darf höchstens 40 Zeichen enthalten.",
     ca_confirm_activate_disp: "Zugriff für {name} reaktivieren?",
     ca_confirm_deactivate_disp: "{name} deaktivieren? Alle Sitzungen werden widerrufen und die Anmeldung gesperrt.",
     ca_disp_activated: "Der Disponenten-Zugriff wurde reaktiviert.",
@@ -6217,6 +6241,16 @@ Object.assign(TRANSLATIONS.en, {
     ca_drivers_pin_saved: "PIN saved: {code}. Show it to the driver now — it cannot be read again.",
     ca_drivers_edit_first_name: "First name", ca_drivers_edit_last_name: "Last name",
     ca_drivers_edit_required: "First name, last name, phone, email and group are required.",
+    ca_drivers_add_pin: "PIN (5–12 digits)", ca_drivers_add_primary_group: "Primary group",
+    ca_drivers_add_extra_groups: "Extra groups (optional)",
+    ca_drivers_add_extra_groups_hint: "All Dispos of selected groups see this driver.",
+    ca_drivers_add_phone_e164: "Phone must be E.164 (e.g. +436991234567).",
+    ca_drivers_add_pin_invalid: "PIN must be 5–12 digits.",
+    ca_drivers_add_success: "Driver added. SMS sent; login PIN set.",
+    ca_drivers_add_hint: "Order: EID, first, last, email, phone, PIN, group(s).",
+    ca_drivers_add_sms_note: "SMS activation to the phone; entered PIN becomes login code.",
+    ca_drivers_add_submit: "Add driver and send SMS", ca_drivers_add_title: "Add driver manually",
+    ca_drivers_add_kicker: "ONE DRIVER",
     ca_drivers_edit_email_invalid: "Email address is invalid.",
     ca_drivers_edit_not_found: "Driver was not found.",
     ca_drivers_edit_saved: "Driver profile saved.",
@@ -6270,6 +6304,16 @@ Object.assign(TRANSLATIONS.sr, {
     ca_drivers_pin_saved: "PIN sačuvan: {code}. Prikaži vozaču sada — više se neće moći pročitati.",
     ca_drivers_edit_first_name: "Ime", ca_drivers_edit_last_name: "Prezime",
     ca_drivers_edit_required: "Ime, prezime, telefon, email i grupa su obavezni.",
+    ca_drivers_add_pin: "PIN (5–12 cifara)", ca_drivers_add_primary_group: "Primarna grupa",
+    ca_drivers_add_extra_groups: "Dodatne grupe (opciono)",
+    ca_drivers_add_extra_groups_hint: "Disponenti označenih grupa vide ovog vozača.",
+    ca_drivers_add_phone_e164: "Telefon mora biti E.164 (npr. +436991234567).",
+    ca_drivers_add_pin_invalid: "PIN mora imati 5–12 cifara.",
+    ca_drivers_add_success: "Vozač dodat. SMS poslat; prijavni PIN postavljen.",
+    ca_drivers_add_hint: "Redosled: EID, ime, prezime, email, telefon, PIN, grupa(e).",
+    ca_drivers_add_sms_note: "SMS aktivacija na telefon; uneti PIN postaje prijavni kod.",
+    ca_drivers_add_submit: "Dodaj vozača i pošalji SMS", ca_drivers_add_title: "Dodaj vozača ručno",
+    ca_drivers_add_kicker: "JEDAN VOZAČ",
     ca_drivers_edit_email_invalid: "Email adresa nije ispravna.",
     ca_drivers_edit_not_found: "Vozač nije pronađen.",
     ca_drivers_edit_saved: "Profil vozača je sačuvan.",
@@ -6323,6 +6367,16 @@ Object.assign(TRANSLATIONS.de, {
     ca_drivers_pin_saved: "PIN gespeichert: {code}. Jetzt dem Fahrer zeigen — danach nicht mehr lesbar.",
     ca_drivers_edit_first_name: "Vorname", ca_drivers_edit_last_name: "Nachname",
     ca_drivers_edit_required: "Vorname, Nachname, Telefon, E-Mail und Gruppe sind erforderlich.",
+    ca_drivers_add_pin: "PIN (5–12 Ziffern)", ca_drivers_add_primary_group: "Primärgruppe",
+    ca_drivers_add_extra_groups: "Weitere Gruppen (optional)",
+    ca_drivers_add_extra_groups_hint: "Disponenten der gewählten Gruppen sehen diesen Fahrer.",
+    ca_drivers_add_phone_e164: "Telefon muss E.164 sein (z. B. +436991234567).",
+    ca_drivers_add_pin_invalid: "PIN muss 5–12 Ziffern haben.",
+    ca_drivers_add_success: "Fahrer angelegt. SMS gesendet; Login-PIN gesetzt.",
+    ca_drivers_add_hint: "Reihenfolge: EID, Vorname, Nachname, E-Mail, Telefon, PIN, Gruppe(n).",
+    ca_drivers_add_sms_note: "SMS-Aktivierung an Telefon; PIN wird zum Login-Code.",
+    ca_drivers_add_submit: "Fahrer hinzufügen und SMS senden", ca_drivers_add_title: "Fahrer manuell hinzufügen",
+    ca_drivers_add_kicker: "EIN FAHRER",
     ca_drivers_edit_email_invalid: "E-Mail-Adresse ist ungültig.",
     ca_drivers_edit_not_found: "Fahrer wurde nicht gefunden.",
     ca_drivers_edit_saved: "Fahrerprofil gespeichert.",
@@ -6376,21 +6430,24 @@ Object.assign(TRANSLATIONS.en, {
     ca_audit_event_dispatcher_activated: "Dispatcher access reactivated",
     ca_audit_event_dispatcher_deactivated: "Dispatcher access deactivated",
     ca_audit_event_dispatcher_sessions_revoked: "Dispatcher sessions revoked",
-    ca_audit_event_dispatcher_deleted: "Dispatcher account permanently deleted"
+    ca_audit_event_dispatcher_deleted: "Dispatcher account permanently deleted",
+    ca_audit_event_dispatcher_profile_updated: "Dispatcher profile updated"
 });
 Object.assign(TRANSLATIONS.sr, {
     ca_audit_event_user_created: "Kreiran nalog dispečera",
     ca_audit_event_dispatcher_activated: "Ponovo aktiviran pristup dispečera",
     ca_audit_event_dispatcher_deactivated: "Deaktiviran pristup dispečera",
     ca_audit_event_dispatcher_sessions_revoked: "Opozvane sesije dispečera",
-    ca_audit_event_dispatcher_deleted: "Nalog dispečera trajno obrisan"
+    ca_audit_event_dispatcher_deleted: "Nalog dispečera trajno obrisan",
+    ca_audit_event_dispatcher_profile_updated: "Ažuriran profil dispečera"
 });
 Object.assign(TRANSLATIONS.de, {
     ca_audit_event_user_created: "Disponentenkonto erstellt",
     ca_audit_event_dispatcher_activated: "Disponentenzugriff reaktiviert",
     ca_audit_event_dispatcher_deactivated: "Disponentenzugriff deaktiviert",
     ca_audit_event_dispatcher_sessions_revoked: "Disponentensitzungen widerrufen",
-    ca_audit_event_dispatcher_deleted: "Disponentenkonto dauerhaft gelöscht"
+    ca_audit_event_dispatcher_deleted: "Disponentenkonto dauerhaft gelöscht",
+    ca_audit_event_dispatcher_profile_updated: "Disponentenprofil aktualisiert"
 });
 
 Object.assign(TRANSLATIONS.en, {
@@ -6403,7 +6460,9 @@ Object.assign(TRANSLATIONS.en, {
     ca_settings_license_kicker: "READ ONLY", ca_settings_license_title: "License and capacity", ca_settings_license_hint: "Only BusCommand administration can change the plan and limits. Company Admin sees the effective values here.", ca_settings_plan: "Plan", ca_settings_license_status: "Status", ca_settings_driver_limit: "Max. drivers", ca_settings_dispatcher_limit: "Max. dispatchers", ca_value_unavailable: "Unavailable",
     ca_settings_privacy_kicker: "FIXED POLICY", ca_settings_privacy_title: "Off-duty privacy", ca_settings_no_gps: "No GPS tracking", ca_settings_no_gps_hint: "Location is not tracked after sign-out or outside the active work window.", ca_settings_no_push: "No push messages", ca_settings_no_push_hint: "The app remains idle until the driver's next sign-in.", ca_settings_auto_logout: "Automatic sign-out", ca_settings_auto_logout_hint: "The session closes no later than 30 minutes after the shift ends.",
     ca_settings_export_kicker: "AUDITED CSV", ca_settings_export_hint: "Production exports come directly from the server, are limited to this company and are recorded in Activity.", ca_settings_export_reports_hint: "Breakdowns, delays and processing status", ca_settings_export_drivers_hint: "No PIN, EID or access codes", ca_settings_export_lost_hint: "Items, location and return status", export_failed: "Data export failed.",
-    ca_settings_demo_title: "Local demo tool", ca_audit_event_company_profile_settings_updated: "Company settings updated", ca_audit_event_company_data_exported: "Company data exported"
+    ca_settings_demo_title: "Local demo tool", ca_audit_event_company_profile_settings_updated: "Company settings updated", ca_audit_event_company_data_exported: "Company data exported",
+    sa_new_company_admin: "+ New company / Admin", sa_col_tenant: "ID / Tenant", sa_col_admin: "Company Admin", sa_col_license_status: "Status", sa_col_actions: "Actions", sa_status_active: "Active", sa_status_expired: "License expired",
+    license_upgrade_confirm: "{pkg} allows max {max} drivers. Upgrade package?", license_upgrade_contact: "Contact BusCommand support to upgrade."
 });
 Object.assign(TRANSLATIONS.sr, {
     settings_title: "Podešavanja firme", settings_subtitle: "Sedište, jezik, privatnost i kontrolisani izvoz podataka.",
@@ -6415,7 +6474,9 @@ Object.assign(TRANSLATIONS.sr, {
     ca_settings_license_kicker: "SAMO ZA ČITANJE", ca_settings_license_title: "Licenca i kapacitet", ca_settings_license_hint: "Plan i limite menja samo BusCommand administracija. Company Admin ovde vidi važeće vrednosti.", ca_settings_plan: "Plan", ca_settings_license_status: "Status", ca_settings_driver_limit: "Maks. vozača", ca_settings_dispatcher_limit: "Maks. dispečera", ca_value_unavailable: "Nije dostupno",
     ca_settings_privacy_kicker: "FIKSNA POLITIKA", ca_settings_privacy_title: "Privatnost van radnog vremena", ca_settings_no_gps: "Nema GPS praćenja", ca_settings_no_gps_hint: "Lokacija se ne prati posle odjave ili van aktivnog radnog prozora.", ca_settings_no_push: "Nema push poruka", ca_settings_no_push_hint: "Aplikacija miruje do sledeće prijave vozača.", ca_settings_auto_logout: "Automatska odjava", ca_settings_auto_logout_hint: "Sesija se zatvara najkasnije 30 minuta posle završetka smene.",
     ca_settings_export_kicker: "AUDITOVANI CSV", ca_settings_export_hint: "Produkcijski izvoz dolazi direktno sa servera, ograničen je na ovu firmu i beleži se u aktivnostima.", ca_settings_export_reports_hint: "Kvarovi, kašnjenja i status obrade", ca_settings_export_drivers_hint: "Bez PIN-a, EID-a i pristupnih kodova", ca_settings_export_lost_hint: "Predmeti, lokacija i status povrata", export_failed: "Izvoz podataka nije uspeo.",
-    ca_settings_demo_title: "Lokalni demo alat", ca_audit_event_company_profile_settings_updated: "Promenjena podešavanja firme", ca_audit_event_company_data_exported: "Izvezeni podaci firme"
+    ca_settings_demo_title: "Lokalni demo alat", ca_audit_event_company_profile_settings_updated: "Promenjena podešavanja firme", ca_audit_event_company_data_exported: "Izvezeni podaci firme",
+    sa_new_company_admin: "+ Nova Firma / Admin", sa_col_tenant: "ID / Tenant", sa_col_admin: "Company Admin", sa_col_license_status: "Status", sa_col_actions: "Akcije", sa_status_active: "Aktivan", sa_status_expired: "Istekla licenca",
+    license_upgrade_confirm: "{pkg} dozvoljava najviše {max} vozača. Nadograditi paket?", license_upgrade_contact: "Kontaktirajte BusCommand podršku za nadogradnju."
 });
 Object.assign(TRANSLATIONS.de, {
     settings_title: "Firmeneinstellungen", settings_subtitle: "Firmensitz, Sprache, Datenschutz und kontrollierte Datenexporte.",
@@ -6427,7 +6488,9 @@ Object.assign(TRANSLATIONS.de, {
     ca_settings_license_kicker: "NUR LESEN", ca_settings_license_title: "Lizenz und Kapazität", ca_settings_license_hint: "Nur die BusCommand-Administration kann Plan und Limits ändern. Der Firmen-Admin sieht hier die gültigen Werte.", ca_settings_plan: "Plan", ca_settings_license_status: "Status", ca_settings_driver_limit: "Max. Fahrer", ca_settings_dispatcher_limit: "Max. Disponenten", ca_value_unavailable: "Nicht verfügbar",
     ca_settings_privacy_kicker: "FESTE REGEL", ca_settings_privacy_title: "Datenschutz außerhalb der Arbeitszeit", ca_settings_no_gps: "Kein GPS-Tracking", ca_settings_no_gps_hint: "Nach der Abmeldung oder außerhalb des aktiven Arbeitsfensters wird kein Standort erfasst.", ca_settings_no_push: "Keine Push-Nachrichten", ca_settings_no_push_hint: "Die App bleibt bis zur nächsten Anmeldung des Fahrers inaktiv.", ca_settings_auto_logout: "Automatische Abmeldung", ca_settings_auto_logout_hint: "Die Sitzung endet spätestens 30 Minuten nach Dienstende.",
     ca_settings_export_kicker: "PROTOKOLLIERTE CSV", ca_settings_export_hint: "Produktive Exporte kommen direkt vom Server, sind auf diese Firma begrenzt und werden im Aktivitätsprotokoll erfasst.", ca_settings_export_reports_hint: "Pannen, Verspätungen und Bearbeitungsstatus", ca_settings_export_drivers_hint: "Ohne PIN, EID oder Zugangscodes", ca_settings_export_lost_hint: "Gegenstände, Fundort und Rückgabestatus", export_failed: "Datenexport fehlgeschlagen.",
-    ca_settings_demo_title: "Lokales Demo-Werkzeug", ca_audit_event_company_profile_settings_updated: "Firmeneinstellungen geändert", ca_audit_event_company_data_exported: "Firmendaten exportiert"
+    ca_settings_demo_title: "Lokales Demo-Werkzeug", ca_audit_event_company_profile_settings_updated: "Firmeneinstellungen geändert", ca_audit_event_company_data_exported: "Firmendaten exportiert",
+    sa_new_company_admin: "+ Neue Firma / Admin", sa_col_tenant: "ID / Tenant", sa_col_admin: "Company Admin", sa_col_license_status: "Status", sa_col_actions: "Aktionen", sa_status_active: "Aktiv", sa_status_expired: "Lizenz abgelaufen",
+    license_upgrade_confirm: "{pkg} erlaubt max. {max} Fahrer. Paket upgraden?", license_upgrade_contact: "BusCommand-Support für Upgrade kontaktieren."
 });
 
 Object.assign(TRANSLATIONS.en, {

@@ -5,7 +5,8 @@ import {
   filterCompanyDispatchers,
   getCompanyTeamScope,
   normalizeDispatcherGroups,
-  validateCompanyDispatcherDraft
+  validateCompanyDispatcherDraft,
+  validateCompanyDispatcherProfile
 } from "../../js/admin/company-admin-team-model.js";
 
 const groups = [
@@ -45,6 +46,24 @@ test("dispatcher draft requires strong bounded fields and at least one allowed g
     name: "A", email: "not-an-email", password: "short", groups: ["999"]
   }, groups);
   assert.deepEqual(Object.keys(invalid.errors).sort(), ["email", "groups", "name", "password"]);
+});
+
+test("dispatcher profile edit validates name, email and optional phone", () => {
+  const valid = validateCompanyDispatcherProfile({
+    name: " Ana Dispatcher ",
+    email: "ANA@EXAMPLE.TEST",
+    phone: "+43 699 12345678"
+  });
+  assert.equal(valid.valid, true);
+  assert.equal(valid.value.email, "ana@example.test");
+  assert.equal(valid.value.phone, "+43 699 12345678");
+  assert.equal(validateCompanyDispatcherProfile({
+    name: "Ana", email: "ana@example.test", phone: ""
+  }).valid, true);
+  const invalid = validateCompanyDispatcherProfile({
+    name: "A", email: "bad", phone: "123"
+  });
+  assert.deepEqual(Object.keys(invalid.errors).sort(), ["email", "name", "phone"]);
 });
 
 test("group normalization, readiness and filtering are deterministic", () => {

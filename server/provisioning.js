@@ -8,6 +8,7 @@ class ProvisioningError extends Error {
 
 const STAFF_ROLES = new Set(["company_admin", "dispatcher"]);
 const { normalizeGroupIds, assertCompanyGroupsExist } = require("./group-access");
+const { buildNewCompanyLicenseFields } = require("./license-packages");
 
 function normalizeFirebaseUid(value) {
   const uid = String(value || "").trim();
@@ -17,7 +18,9 @@ function normalizeFirebaseUid(value) {
   return uid;
 }
 
-async function createCompanyAtomic({ db, admin, companyId, name, country, contactEmail, actorId }) {
+async function createCompanyAtomic({
+  db, admin, companyId, name, country, contactEmail, actorId, licenseType = "pro"
+}) {
   const companyRef = db.collection("companies").doc(companyId);
   const profileRef = companyRef.collection("profile").doc("main");
   const brandingRef = companyRef.collection("branding").doc("main");
@@ -25,10 +28,9 @@ async function createCompanyAtomic({ db, admin, companyId, name, country, contac
   const sosRef = companyRef.collection("settings").doc("sos");
   const auditRef = companyRef.collection("audit_log").doc();
   const timestamp = admin.firestore.FieldValue.serverTimestamp();
-  const trialEnd = new Date();
-  trialEnd.setDate(trialEnd.getDate() + 30);
   const normalizedCountry = String(country || "AT").trim().toUpperCase();
   const timezone = normalizedCountry === "RS" ? "Europe/Belgrade" : "Europe/Vienna";
+  const licenseFields = buildNewCompanyLicenseFields({ licenseType, admin, trialDays: 30 });
 
   await db.runTransaction(async (transaction) => {
     const existing = await Promise.all([
@@ -48,8 +50,7 @@ async function createCompanyAtomic({ db, admin, companyId, name, country, contac
     });
     transaction.set(brandingRef, { name, primaryColor: "#3b82f6", logo: null, appTitle: `${name} Fleet` });
     transaction.set(settingsRef, {
-      plan: "trial", status: "active", maxDrivers: 50, maxDispatchers: 5,
-      trialEndsAt: admin.firestore.Timestamp.fromDate(trialEnd),
+      ...licenseFields,
       features: {
         liveMap: true,
         liveGps: false,
@@ -64,11 +65,14 @@ async function createCompanyAtomic({ db, admin, companyId, name, country, contac
     });
     transaction.set(sosRef, { sosActive: false, sosDriver: "", sosBus: "" });
     transaction.set(auditRef, {
-      action: "company_created", actorId, details: { companyId, name }, timestamp
+      action: "company_created",
+      actorId,
+      details: { companyId, name, licenseType: licenseFields.licenseType },
+      timestamp
     });
   });
 
-  return { companyId, name };
+  return { companyId, name, licenseType: licenseFields.licenseType };
 }
 
 /** Known top-level subcollections under companies/{id} (ops + config). */
@@ -459,6 +463,102 @@ async function revokeDispatcherSessions({ db, admin, companyId, uid, actorId }) 
   return { uid, requiresReauthentication: true };
 }
 
+async function updateDispatcherProfile({ db, admin, companyId, uid, name, email, phone, actorId }) {
+  const dispatcher = await readCompanyDispatcher({ db, companyId, uid });
+  const { companyRef, userRef, userData } = dispatcher;
+  uid = dispatcher.uid;
+  if (userData.deletionPending === true) {
+    throw new ProvisioningError("dispatcher-deleting", "Brisanje ovog disponenta je već pokrenuto.");
+  }
+
+  const nextName = String(name || "").trim();
+  const nextEmail = String(email || "").trim().toLowerCase();
+  const nextPhone = String(phone || "").trim();
+  const previousEmail = String(userData.email || "").trim().toLowerCase();
+  const emailChanged = nextEmail !== previousEmail;
+
+  const authUser = await admin.auth().getUser(uid);
+  const previousClaims = authUser.customClaims || {};
+  const previousAuth = {
+    displayName: authUser.displayName || previousClaims.name || userData.name || "",
+    email: String(authUser.email || previousEmail).trim().toLowerCase()
+  };
+
+  const authUpdate = { displayName: nextName };
+  if (emailChanged) authUpdate.email = nextEmail;
+  try {
+    await admin.auth().updateUser(uid, authUpdate);
+  } catch (error) {
+    if (error.code === "auth/email-already-exists") {
+      throw new ProvisioningError("email-exists", "Email adresa je već u upotrebi.");
+    }
+    if (error.code === "auth/invalid-email") {
+      throw new ProvisioningError("email-invalid", "Email adresa nije ispravna.");
+    }
+    throw error;
+  }
+
+  const nextClaims = {
+    ...previousClaims,
+    role: "dispatcher",
+    companyId,
+    name: nextName,
+    mustChangeLoginCode: false,
+    groups: Array.isArray(previousClaims.groups) ? previousClaims.groups : (userData.groups || [])
+  };
+  await admin.auth().setCustomUserClaims(uid, nextClaims);
+
+  try {
+    const timestamp = admin.firestore.FieldValue.serverTimestamp();
+    const sessionsValidAfterEpoch = emailChanged ? Math.floor(Date.now() / 1000) : undefined;
+    await db.runTransaction(async (transaction) => {
+      const current = await transaction.get(userRef);
+      const data = current.exists ? current.data() : null;
+      if (!data || data.companyId !== companyId || data.role !== "dispatcher") {
+        throw new ProvisioningError("user-not-found", "Dispatcher nije pronađen u ovoj firmi.");
+      }
+      const patch = {
+        name: nextName,
+        email: nextEmail,
+        phone: nextPhone,
+        updatedAt: timestamp
+      };
+      if (sessionsValidAfterEpoch !== undefined) patch.sessionsValidAfterEpoch = sessionsValidAfterEpoch;
+      transaction.set(userRef, patch, { merge: true });
+      transaction.set(companyRef.collection("audit_log").doc(), {
+        action: "dispatcher_profile_updated",
+        actorId,
+        details: {
+          uid,
+          emailChanged,
+          fields: ["name", "email", "phone"]
+        },
+        timestamp
+      });
+    });
+  } catch (error) {
+    try {
+      await admin.auth().updateUser(uid, {
+        displayName: previousAuth.displayName,
+        email: previousAuth.email
+      });
+      await admin.auth().setCustomUserClaims(uid, previousClaims);
+    } catch (cleanupError) {
+      throw new ProvisioningError("compensation-failed", "Profil nije bezbedno vraćen.", cleanupError);
+    }
+    throw error;
+  }
+
+  if (emailChanged) await admin.auth().revokeRefreshTokens(uid);
+  return {
+    uid,
+    name: nextName,
+    email: nextEmail,
+    phone: nextPhone,
+    requiresReauthentication: emailChanged
+  };
+}
+
 module.exports = {
   ProvisioningError,
   STAFF_ROLES,
@@ -471,5 +571,6 @@ module.exports = {
   readCompanyDispatcher,
   revokeDispatcherSessions,
   setDispatcherActive,
-  updateDispatcherGroups
+  updateDispatcherGroups,
+  updateDispatcherProfile
 };

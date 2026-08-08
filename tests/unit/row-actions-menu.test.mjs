@@ -6,19 +6,24 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
-test("CA groups and team route destructive delete through row-actions menu + confirm", () => {
+test("CA groups expose visible delete next to edit; team keeps overflow menu + confirm", () => {
     const groups = readFileSync(join(root, "js/admin/company-admin-groups.js"), "utf8");
     const team = readFileSync(join(root, "js/admin/company-admin-team.js"), "utf8");
+    const menu = readFileSync(join(root, "js/ui/row-actions-menu.js"), "utf8");
     const registry = readFileSync(join(root, "js/register-onclick-staff.js"), "utf8");
-    assert.match(groups, /rowActionsMenuHtml/);
+    assert.doesNotMatch(groups, /rowActionsMenuHtml/);
+    assert.match(groups, /company-group-delete-btn/);
+    assert.match(groups, /btn-danger-ghost/);
     assert.match(groups, /deleteCompanyGroup/);
     assert.match(groups, /showConfirm/);
     assert.match(groups, /btn_yes/);
-    assert.doesNotMatch(groups, /btn-danger-ghost"[^>]*deleteCompanyGroup/);
     assert.match(team, /rowActionsMenuHtml/);
     assert.match(team, /removeCompanyDispatcher/);
     assert.match(team, /showConfirm/);
     assert.match(registry, /toggleRowActionsMenu/);
+    assert.match(menu, /list\.length === 1/);
+    assert.match(menu, /row-actions-direct/);
+    assert.match(menu, /document\.body\.appendChild/);
 });
 
 test("driver bottom nav order keeps SOS as center slot", () => {

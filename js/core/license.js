@@ -5,14 +5,22 @@ import { t } from "../ui/i18n.js";
 
 async function checkCompanyLicense(companyId) {
     if (USE_LOCAL_STATE) {
-        window._licenseInfo = { companyId, status: "active", plan: "trial", daysRemaining: 30 };
+        window._licenseInfo = {
+            companyId,
+            status: "active",
+            plan: "pro",
+            licenseType: "pro",
+            licenseStatus: "trial",
+            packageLabel: "PRO",
+            daysRemaining: 31,
+            maxDrivers: 50
+        };
         updateTrialBadge();
         return window._licenseInfo;
     }
     if (!companyId || companyId === "buscommand-preview") {
         throw new Error("Confirmed companyId is required for license lookup.");
     }
-    // Never allow license calls for a tenant other than the authenticated session.
     const sessionCompanyId = window.currentUser?.companyId;
     if (sessionCompanyId && sessionCompanyId !== companyId) {
         console.warn("License lookup blocked: companyId does not match authenticated session.", {
@@ -26,7 +34,9 @@ async function checkCompanyLicense(companyId) {
         if (data.success) {
             window._licenseInfo = { ...data, companyId };
             updateTrialBadge();
-            if (data.status === "suspended") showLicenseBlockedBanner(data);
+            if (data.status === "suspended" || data.licenseStatus === "suspended") {
+                showLicenseBlockedBanner(data);
+            }
         }
     } catch (e) {
         console.warn("License check failed:", e);
@@ -36,7 +46,10 @@ async function checkCompanyLicense(companyId) {
 }
 
 function isCompanyAccessBlocked() {
-    return !USE_LOCAL_STATE && window._licenseInfo && window._licenseInfo.status === "suspended";
+    return !USE_LOCAL_STATE && window._licenseInfo && (
+        window._licenseInfo.status === "suspended"
+        || window._licenseInfo.licenseStatus === "suspended"
+    );
 }
 
 function showLicenseBlockedBanner(_info) {
@@ -52,11 +65,20 @@ function showLicenseBlockedBanner(_info) {
 
 /** Platform owner has no company trial — never show countdown to Super Admin. */
 function isTrialBadgeRoleAllowed(role = window.currentUser?.role) {
-    return role !== "superadmin";
+    return role === "company-admin";
 }
 
 function hasActiveTrialLicense(info = window._licenseInfo) {
-    return Boolean(info && info.plan === "trial" && info.daysRemaining != null);
+    return Boolean(info && (info.licenseStatus === "trial" || info.plan === "trial") && info.daysRemaining != null);
+}
+
+function packageLabel(info = window._licenseInfo) {
+    if (info?.packageLabel) return String(info.packageLabel).toUpperCase();
+    const type = String(info?.licenseType || info?.plan || "PRO").toLowerCase();
+    if (type === "starter") return "STARTER";
+    if (type === "fleet_master") return "FLEET MASTER";
+    if (type === "enterprise") return "ENTERPRISE";
+    return "PRO";
 }
 
 function formatTrialLabel(days, forLogin) {
@@ -71,14 +93,50 @@ function formatTrialLabel(days, forLogin) {
 function setBadgeVisible(el, visible) {
     if (!el) return;
     el.classList.toggle("hidden", !visible);
+    if (visible) {
+        if (typeof el.removeAttribute === "function") el.removeAttribute("hidden");
+    } else if (typeof el.setAttribute === "function") {
+        el.setAttribute("hidden", "");
+    }
     el.setAttribute("aria-hidden", visible ? "false" : "true");
 }
 
 function updateTrialBadge() {
-    // Phase 3: never surface Trial/Demo countdown chips in product UI.
-    // License suspension still uses showLicenseBlockedBanner; plan data stays on server.
-    setBadgeVisible(document.getElementById("login-trial-badge"), false);
-    setBadgeVisible(document.getElementById("app-trial-badge"), false);
+    const loginBadge = document.getElementById("login-trial-badge");
+    setBadgeVisible(loginBadge, false);
+
+    const badge = document.getElementById("app-trial-badge");
+    if (!badge) return;
+
+    const info = window._licenseInfo;
+    const allowed = isTrialBadgeRoleAllowed();
+    if (!allowed || !info) {
+        setBadgeVisible(badge, false);
+        badge.textContent = "";
+        badge.classList.remove("is-trial", "is-active", "license-package-badge");
+        return;
+    }
+
+    const label = packageLabel(info);
+    const days = info.daysRemaining;
+    const isTrial = info.licenseStatus === "trial" || (info.plan === "trial" && days != null);
+    const isExpired = info.licenseStatus === "expired";
+    let text = `${label} PAKET`;
+    if (isTrial && days != null) {
+        text = `${label} PAKET · Još ${days} dan`;
+    } else if (isExpired) {
+        text = `${label} PAKET · Istekla`;
+    } else if (days != null) {
+        text = `${label} PAKET · Još ${days} dan`;
+    } else {
+        text = `${label} PAKET · Aktivan`;
+    }
+
+    badge.textContent = text;
+    badge.classList.add("license-package-badge");
+    badge.classList.toggle("is-trial", isTrial || isExpired);
+    badge.classList.toggle("is-active", !isTrial && !isExpired);
+    setBadgeVisible(badge, true);
 }
 
 export {
@@ -87,5 +145,7 @@ export {
     showLicenseBlockedBanner,
     updateTrialBadge,
     isTrialBadgeRoleAllowed,
-    hasActiveTrialLicense
+    hasActiveTrialLicense,
+    formatTrialLabel,
+    packageLabel
 };

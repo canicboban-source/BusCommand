@@ -15,7 +15,8 @@ import {
     filterCompanyDispatchers,
     getCompanyTeamScope,
     normalizeDispatcherGroups,
-    validateCompanyDispatcherDraft
+    validateCompanyDispatcherDraft,
+    validateCompanyDispatcherProfile
 } from "./company-admin-team-model.js";
 import { safeGroupColor } from "./company-admin-groups-model.js";
 
@@ -23,6 +24,7 @@ let teamSearch = "";
 let teamStatus = "all";
 const pendingDispatcherActions = new Set();
 const openGroupEditors = new Set();
+const openProfileEditors = new Set();
 
 function getScope() {
     return getCompanyTeamScope(window.state, window.currentUser, USE_LOCAL_STATE);
@@ -130,6 +132,17 @@ function groupEditorHtml(dispatcher, groups) {
     }).join("");
 }
 
+function profileFieldHtml(id, field, type, labelKey, value, attrs) {
+    const safeId = escapeHtml(id);
+    return `<label for="ca-disp-edit-${field}-${safeId}"><span>${escapeHtml(t(labelKey))}</span><input type="${type}" id="ca-disp-edit-${field}-${safeId}" value="${escapeHtml(value || "")}" ${attrs}><span class="field-error" data-dispatcher-profile-error="${safeId}" data-field="${field}" aria-live="polite"></span></label>`;
+}
+
+function profileEditorHtml(dispatcher) {
+    const id = String(dispatcher.id);
+    const safeId = escapeHtml(id);
+    return `<div id="ca-disp-profile-edit-${safeId}" class="company-team-editor company-team-profile-editor"><div><strong>${escapeHtml(t("ca_edit_disp_profile"))}</strong><p>${escapeHtml(t("ca_edit_disp_profile_hint"))}</p></div><div class="company-team-profile-grid">${profileFieldHtml(id, "name", "text", "disp_name_label", dispatcher.name, 'maxlength="80" autocomplete="name"')}${profileFieldHtml(id, "email", "email", "email_label", dispatcher.email, 'maxlength="254" autocomplete="email" inputmode="email"')}${profileFieldHtml(id, "phone", "tel", "ca_disp_phone_label", dispatcher.phone, 'maxlength="40" autocomplete="tel" inputmode="tel" placeholder="+43699…"')}</div><div class="company-team-editor-actions"><button type="button" class="btn-secondary" ${actionAttr("toggleCaDispProfileEdit", [id])}><i data-lucide="x"></i><span>${escapeHtml(t("btn_cancel"))}</span></button><button type="button" class="btn-primary" ${actionAttr("saveCompanyDispatcherProfile", [id])}><i data-lucide="save"></i><span>${escapeHtml(t("btn_save_changes"))}</span></button></div></div>`;
+}
+
 function dispatcherCardHtml(dispatcher, groups) {
     const readiness = dispatcherReadiness(dispatcher, groups);
     const active = readiness.active;
@@ -140,12 +153,37 @@ function dispatcherCardHtml(dispatcher, groups) {
     const toggleLabel = t(active ? "ca_disp_deactivate" : "ca_disp_activate");
     const toggleIcon = active ? "user-x" : "user-check";
     const initials = String(dispatcher.name || dispatcher.email || "D").split(/\s+/).slice(0, 2).map(part => part[0] || "").join("").toUpperCase();
+    const phone = String(dispatcher.phone || "").trim();
 
     const editingGroups = openGroupEditors.has(String(dispatcher.id));
-    return `<article class="company-team-card ${stateClass}${editingGroups ? " is-editing-groups" : ""}">
+    const editingProfile = openProfileEditors.has(String(dispatcher.id));
+    const menuItems = [
+        {
+            action: "toggleCaDispProfileEdit",
+            args: [String(dispatcher.id)],
+            label: t("ca_edit_disp_profile"),
+            icon: "user-pen",
+            disabled: busy
+        },
+        ...(active
+            ? []
+            : [{
+                action: "removeCompanyDispatcher",
+                args: [String(dispatcher.id)],
+                label: t("ca_disp_delete"),
+                icon: "trash-2",
+                danger: true,
+                disabled: busy
+            }])
+    ];
+    return `<article class="company-team-card ${stateClass}${editingGroups ? " is-editing-groups" : ""}${editingProfile ? " is-editing-profile" : ""}">
         <div class="company-team-person">
             <span class="company-team-avatar" aria-hidden="true">${escapeHtml(initials)}</span>
-            <div><strong>${escapeHtml(dispatcher.name || t("dispatcher"))}</strong><a href="mailto:${escapeHtml(dispatcher.email || "")}">${escapeHtml(dispatcher.email || "—")}</a></div>
+            <div>
+                <strong>${escapeHtml(dispatcher.name || t("dispatcher"))}</strong>
+                <a href="mailto:${escapeHtml(dispatcher.email || "")}">${escapeHtml(dispatcher.email || "—")}</a>
+                ${phone ? `<span class="company-team-phone"><i data-lucide="phone"></i><a href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a></span>` : ""}
+            </div>
         </div>
         <div class="company-team-state">
             <span class="company-team-status ${stateClass}"><i data-lucide="${stateIcon}"></i>${escapeHtml(stateLabel)}</span>
@@ -156,26 +194,10 @@ function dispatcherCardHtml(dispatcher, groups) {
             <button type="button" class="btn-secondary company-team-edit-groups${editingGroups ? " is-active" : ""}" ${actionAttr("toggleCaDispGroupsEdit", [String(dispatcher.id)])} ${busy ? "disabled" : ""} aria-expanded="${editingGroups ? "true" : "false"}"><i data-lucide="pencil-line"></i><span>${escapeHtml(t("ca_edit_groups"))}</span></button>
             <button type="button" class="btn-secondary" ${actionAttr("resetCompanyDispatcherPassword", [String(dispatcher.id)])} ${busy || !active ? "disabled" : ""}><i data-lucide="mail-key"></i><span>${escapeHtml(t("ca_send_reset_link"))}</span></button>
             <button type="button" class="btn-secondary" ${actionAttr("revokeCompanyDispatcherSessions", [String(dispatcher.id)])} ${busy || !active ? "disabled" : ""}><i data-lucide="log-out"></i><span>${escapeHtml(t("ca_revoke_sessions"))}</span></button>
-            ${rowActionsMenuHtml(`ca-disp-${dispatcher.id}`, [
-                {
-                    action: "toggleCompanyDispatcherStatus",
-                    args: [String(dispatcher.id)],
-                    label: toggleLabel,
-                    icon: toggleIcon,
-                    danger: active,
-                    disabled: busy
-                },
-                ...(active
-                    ? []
-                    : [{
-                        action: "removeCompanyDispatcher",
-                        args: [String(dispatcher.id)],
-                        label: t("ca_disp_delete"),
-                        icon: "trash-2",
-                        danger: true,
-                        disabled: busy
-                    }])
-            ])}
+            <button type="button" class="${active ? "btn-danger-ghost" : "btn-secondary"} company-team-status-toggle" ${actionAttr("toggleCompanyDispatcherStatus", [String(dispatcher.id)])} ${busy ? "disabled" : ""}>
+                <i data-lucide="${toggleIcon}"></i><span>${escapeHtml(toggleLabel)}</span>
+            </button>
+            ${rowActionsMenuHtml(`ca-disp-${dispatcher.id}`, menuItems)}
         </div>
         <div id="ca-disp-groups-edit-${escapeHtml(String(dispatcher.id))}" class="company-team-editor${editingGroups ? "" : " hidden"}">
             <div><strong>${escapeHtml(t("ca_assign_groups"))}</strong><p>${escapeHtml(t("ca_assign_groups_hint"))}</p></div>
@@ -186,6 +208,7 @@ function dispatcherCardHtml(dispatcher, groups) {
                 <button type="button" class="btn-primary" ${actionAttr("saveCompanyDispatcherGroups", [String(dispatcher.id)])}><i data-lucide="save"></i><span>${escapeHtml(t("btn_save_changes"))}</span></button>
             </div>
         </div>
+        ${editingProfile ? profileEditorHtml(dispatcher) : ""}
     </article>`;
 }
 
@@ -229,8 +252,91 @@ function focusCompanyDispatcherForm() {
 function toggleCaDispGroupsEdit(dispId) {
     const key = String(dispId);
     if (openGroupEditors.has(key)) openGroupEditors.delete(key);
-    else openGroupEditors.add(key);
+    else {
+        openGroupEditors.add(key);
+        openProfileEditors.delete(key);
+    }
     renderCompanyAdminTeam();
+}
+
+function toggleCaDispProfileEdit(dispId) {
+    const key = String(dispId);
+    if (openProfileEditors.has(key)) openProfileEditors.delete(key);
+    else {
+        openProfileEditors.add(key);
+        openGroupEditors.delete(key);
+    }
+    renderCompanyAdminTeam();
+}
+
+function setDispatcherProfileFieldErrors(dispId, errors = {}) {
+    for (const field of ["name", "email", "phone"]) {
+        const error = document.querySelector(`[data-dispatcher-profile-error="${CSS.escape(String(dispId))}"][data-field="${field}"]`);
+        const input = document.getElementById(`ca-disp-edit-${field}-${dispId}`);
+        const key = errors[field];
+        if (input) input.setAttribute("aria-invalid", key ? "true" : "false");
+        if (error) error.textContent = key ? t(`ca_team_error_${key}`) : "";
+    }
+}
+
+async function saveCompanyDispatcherProfile(dispId) {
+    const dispatcher = findCompanyDispatcher(dispId);
+    if (!dispatcher || pendingDispatcherActions.has(String(dispId))) return false;
+    const draft = {
+        name: document.getElementById(`ca-disp-edit-name-${dispId}`)?.value || "",
+        email: document.getElementById(`ca-disp-edit-email-${dispId}`)?.value || "",
+        phone: document.getElementById(`ca-disp-edit-phone-${dispId}`)?.value || ""
+    };
+    const validation = validateCompanyDispatcherProfile(draft);
+    setDispatcherProfileFieldErrors(dispId, validation.errors);
+    if (!validation.valid) {
+        showToast(t("ca_team_form_errors"), "error");
+        return false;
+    }
+    const emailChanged = validation.value.email !== String(dispatcher.email || "").trim().toLowerCase();
+    if (emailChanged) {
+        const clash = [...(window.state.dispatchers || []), ...(window.state.companyAdmins || [])]
+            .some((user) => String(user.id) !== String(dispId)
+                && String(user.email || "").trim().toLowerCase() === validation.value.email);
+        if (clash) {
+            setDispatcherProfileFieldErrors(dispId, { email: "email_exists" });
+            showToast(t("ca_email_exists"), "error");
+            return false;
+        }
+    }
+    pendingDispatcherActions.add(String(dispId));
+    renderCompanyAdminTeam();
+    try {
+        if (!USE_LOCAL_STATE) {
+            const result = await ApiClient.updateCompanyDispatcherProfile(
+                getCompanyId(),
+                dispId,
+                validation.value
+            );
+            if (!result.success) {
+                if (result.code === "email-exists") {
+                    setDispatcherProfileFieldErrors(dispId, { email: "email_exists" });
+                }
+                throw new Error(result.error || t("ca_disp_profile_save_failed"));
+            }
+        }
+        Object.assign(dispatcher, validation.value);
+        if (USE_LOCAL_STATE) saveState();
+        openProfileEditors.delete(String(dispId));
+        showToast(
+            t(emailChanged ? "ca_disp_profile_saved_relogin" : "ca_disp_profile_saved"),
+            "success",
+            emailChanged ? 7000 : 4500
+        );
+        return true;
+    } catch (cause) {
+        showToast(cause.message || t("ca_disp_profile_save_failed"), "error");
+        return false;
+    } finally {
+        pendingDispatcherActions.delete(String(dispId));
+        renderCompanyAdminTeam();
+        renderCompanyAdminDashboard();
+    }
 }
 
 async function saveCompanyDispatcherGroups(dispId) {
@@ -489,6 +595,8 @@ export {
     resetCompanyDispatcherPassword,
     revokeCompanyDispatcherSessions,
     saveCompanyDispatcherGroups,
+    saveCompanyDispatcherProfile,
     toggleCaDispGroupsEdit,
+    toggleCaDispProfileEdit,
     toggleCompanyDispatcherStatus
 };

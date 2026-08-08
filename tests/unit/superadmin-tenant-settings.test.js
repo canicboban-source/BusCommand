@@ -15,10 +15,18 @@ test("tenant settings patch accepts plan limits and known flags", () => {
     features: { supportSession: true, liveGps: false, unknownFlag: true }
   });
   assert.equal(built.ok, true);
-  assert.equal(built.patch.plan, "standard");
+  assert.equal(built.patch.plan, "pro");
+  assert.equal(built.patch.licenseType, "pro");
   assert.equal(built.patch.maxDrivers, 120);
   assert.deepEqual(built.patch.features, { supportSession: true, liveGps: false });
   assert.ok(!Object.prototype.hasOwnProperty.call(built.patch.features, "unknownFlag"));
+});
+
+test("tenant settings patch maps starter package defaults", () => {
+  const built = buildTenantSettingsPatch({ plan: "starter" });
+  assert.equal(built.ok, true);
+  assert.equal(built.patch.licenseType, "starter");
+  assert.equal(built.patch.maxDrivers, 15);
 });
 
 test("tenant settings patch rejects empty body", () => {
