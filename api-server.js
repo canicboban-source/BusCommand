@@ -90,56 +90,35 @@ const SERVICE_ACCOUNT_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS
   ? path.resolve(process.env.GOOGLE_APPLICATION_CREDENTIALS)
   : path.join(__dirname, "firebase-admin-key.json");
 const SERVICE_ACCOUNT_JSON = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-// Isolated QA / Playwright local API — never a product demo seed path.
-const QA_HARNESS = String(process.env.BUSCOMMAND_QA_HARNESS || "").trim() === "1";
-const HAS_FIREBASE = !QA_HARNESS && Boolean(SERVICE_ACCOUNT_JSON || fs.existsSync(SERVICE_ACCOUNT_PATH));
 
-const DEFAULT_CORS_ORIGINS = [
-  `http://localhost:${PORT}`,
-  `http://127.0.0.1:${PORT}`,
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  // Always allow live surfaces — Vite marks /assets/* with crossorigin, so the
-  // browser sends Origin even for same-site CSS/JS. Missing ACAO → CSS blocked →
-  // overlays with inline display:flex stay visible (e.g. clear-sos-modal).
-  "https://buscommand.com",
-  "https://www.buscommand.com",
-  "https://buscommand-preview.onrender.com"
-];
+const { evaluateCorsOrigin } = require("./server/cors-policy");
+const { validateRuntimeBeforeListen } = require("./server/runtime-isolation");
 
-function isLocalDevCorsOrigin(origin) {
-  // Vite tags hashed assets with crossorigin; browsers send Origin even for same-host CSS/JS.
-  // Allow any localhost port locally so Playwright/alternate PORT still loads /assets/*.
-  if (process.env.NODE_ENV === "production") return false;
-  try {
-    const url = new URL(origin);
-    return (url.protocol === "http:" || url.protocol === "https:")
-      && (url.hostname === "localhost" || url.hostname === "127.0.0.1");
-  } catch {
-    return false;
-  }
+let runtimeValidation;
+try {
+  runtimeValidation = validateRuntimeBeforeListen(process.env, {
+    keyFileExists: fs.existsSync(SERVICE_ACCOUNT_PATH)
+  });
+} catch (err) {
+  console.error("Runtime configuration invalid:", err.code || "runtime-config-invalid");
+  process.exit(1);
 }
 
-function isBusCommandCorsOrigin(origin) {
-  try {
-    const { protocol, hostname } = new URL(origin);
-    if (protocol !== "https:" && protocol !== "http:") return false;
-    if (hostname === "buscommand.com" || hostname.endsWith(".buscommand.com")) return true;
-    if (hostname === "buscommand-preview.onrender.com") return true;
-    return false;
-  } catch {
-    return false;
-  }
-}
+const corsPolicy = runtimeValidation.corsPolicy;
+const HAS_FIREBASE = runtimeValidation.hasFirebase;
+const allowedOrigins = corsPolicy.configuredOrigins;
 
 let admin = null;
 let db    = null;
 
 if (HAS_FIREBASE) {
   admin = require("firebase-admin");
-  const serviceAccount = SERVICE_ACCOUNT_JSON
-    ? JSON.parse(SERVICE_ACCOUNT_JSON)
-    : JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, "utf8"));
+  let serviceAccount = runtimeValidation.serviceAccount;
+  if (!serviceAccount) {
+    serviceAccount = SERVICE_ACCOUNT_JSON
+      ? JSON.parse(SERVICE_ACCOUNT_JSON)
+      : JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, "utf8"));
+  }
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
   db = admin.firestore();
 }
@@ -148,14 +127,6 @@ const app = express();
 
 app.set("trust proxy", 1);
 
-const allowedOrigins = [...new Set([
-  ...DEFAULT_CORS_ORIGINS,
-  ...(process.env.CORS_ORIGINS || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-])];
-
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false
@@ -163,14 +134,12 @@ app.use(helmet({
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (
-      allowedOrigins.includes(origin)
-      || isLocalDevCorsOrigin(origin)
-      || isBusCommandCorsOrigin(origin)
-    ) {
-      return callback(null, true);
-    }
+    const decision = evaluateCorsOrigin(origin, {
+      runtime: corsPolicy.runtime,
+      configuredOrigins: allowedOrigins,
+      nodeEnv: process.env.NODE_ENV
+    });
+    if (decision.allowed) return callback(null, true);
     callback(new Error("Not allowed by CORS"));
   },
   credentials: true
@@ -238,15 +207,10 @@ const {
 
 // ─── API: Konfiguracija servera ────────────────────────────
 
+// LIVENESS only — process alive. Not a Firebase/DB readiness proof.
 app.get("/api/health", (req, res) => {
-  res.json({
-    success: true,
-    status: "ok",
-    uptime: Math.floor(process.uptime()),
-    mode: HAS_FIREBASE ? "production" : "demo",
-    version: APP_VERSION,
-    firebase: HAS_FIREBASE
-  });
+  res.setHeader("Cache-Control", "no-store");
+  res.status(200).json({ ok: true });
 });
 
 app.get("/api/config", (req, res) => {
@@ -1689,8 +1653,10 @@ app.listen(PORT, "0.0.0.0", () => {
   logger.info({
     port: PORT,
     mode: startup.mode,
+    runtimeEnv: corsPolicy.runtime,
     frontend: HAS_DIST ? "dist/" : "dev",
-    corsOrigins: allowedOrigins
+    corsOriginCount: allowedOrigins.length,
+    corsFailClosedEmpty: Boolean(corsPolicy.failClosedEmpty)
   }, "BusCommand server started");
 
   startup.lines.forEach((line) => console.log(line));

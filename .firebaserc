@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "buscommand-preview"
+    "default": "buscommand-preview",
+    "staging": "buscommand-preview"
   }
 }
