@@ -47,7 +47,7 @@ test("VOR 320 group plan has 5 drivers and complementary F05–F09 on Ferien day
 test("crew drivers CSV matches BusCommand template headers", () => {
   const csv = fs.readFileSync(path.join(fixtures, "vor320-crew-drivers.csv"), "utf8");
   const [header, ...rows] = csv.trim().split(/\r?\n/);
-  assert.equal(header, "eid,first_name,last_name,phone,email,company_code");
+  assert.equal(header, "eid,first_name,last_name,phone,email");
   assert.equal(rows.length, 5);
   assert.ok(rows.some((r) => r.startsWith("100615,")));
 });

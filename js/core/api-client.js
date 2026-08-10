@@ -33,7 +33,10 @@ const ApiClient = (() => {
                 conflict: data && data.conflict,
                 lock: data && data.lock,
                 bus: data && data.bus,
-                details: data && (data.details || data.errors)
+                details: data && (data.details || data.errors),
+                recoveryRequired: data && data.recoveryRequired === true,
+                retryable: data && data.retryable === true,
+                compensated: data && data.compensated === true
             };
         }
 
@@ -189,6 +192,18 @@ const ApiClient = (() => {
             body: JSON.stringify({ companyId, importId, fingerprint })
         });
     }
+    async function previewStaffMonthlyPlanImport(payload) {
+        return apiFetch("/api/staff/monthly-plans/import/preview", {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+    }
+    async function commitStaffMonthlyPlanImport(importId, fingerprint) {
+        return apiFetch("/api/staff/monthly-plans/import/commit", {
+            method: "PUT",
+            body: JSON.stringify({ importId, fingerprint })
+        });
+    }
     async function getActiveServicePlan(companyId, groupId) {
         const query = new URLSearchParams({ companyId, groupId });
         return apiFetch("/api/staff/service-plans/active?" + query.toString());
@@ -284,6 +299,12 @@ const ApiClient = (() => {
         return apiFetch("/api/company-admin/drivers/" + encodeURIComponent(driverId) + "/personal-code", {
             method: "POST",
             body: JSON.stringify({ companyId, companyCode })
+        });
+    }
+    async function createCompanyDriver(companyId, payload) {
+        return apiFetch("/api/company-admin/drivers", {
+            method: "POST",
+            body: JSON.stringify({ companyId, ...(payload || {}) })
         });
     }
     async function createDriverReport(report) {
@@ -508,10 +529,11 @@ const ApiClient = (() => {
         revokeCompanyDispatcherSessions, deleteCompanyDispatcher,
         updateCompanyProfileSettings, downloadCompanyExport,
         previewServicePlan, publishServicePlan, activateServicePlan, previewGroupMonthlyPlanImport, commitGroupMonthlyPlanImport,
+        previewStaffMonthlyPlanImport, commitStaffMonthlyPlanImport,
         getActiveServicePlan, getServicePlanHistory, getServicePlanVersion, getCompanyAudit, updateCompanyBranding,
         createCompanyGroup, updateCompanyGroup, deleteCompanyGroup, reportStateSync, importDriversCsv, setDriverActive,
         detachStaffDriverFromLine, detachStaffBusFromLine,
-        updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode,
+        updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode, createCompanyDriver,
         createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage, ackDriverMessage,
         createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, transitionStaffOperationalIncident, resolveStaffOperationalIncident, getStaffOpsActivity, resolveStaffSos,
         setLostItemStatus, createStaffBus, updateStaffBus, setStaffBusActive, assignStaffShift, undoStaffShift,

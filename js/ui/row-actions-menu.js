@@ -4,6 +4,8 @@ import { escapeHtml } from "../core/utils.js";
 import { t } from "./i18n.js";
 
 let _openMenuId = "";
+/** Ignore outside/scroll closes briefly after open (lucide/layout settle). */
+let _ignoreOutsideUntil = 0;
 /** @type {HTMLElement | null} */
 let _portedMenu = null;
 /** @type {HTMLElement | null} */
@@ -133,6 +135,7 @@ function toggleRowActionsMenu(menuId) {
     requestAnimationFrame(() => positionRowActionsMenu(liveMenu, trigger));
     trigger.setAttribute("aria-expanded", "true");
     _openMenuId = id;
+    _ignoreOutsideUntil = Date.now() + 150;
     if (typeof lucide !== "undefined") lucide.createIcons();
     return true;
 }
@@ -141,6 +144,7 @@ function installRowActionsOutsideClose() {
     if (window.__BUSCOMMAND_ROW_ACTIONS_OUTSIDE__) return;
     window.__BUSCOMMAND_ROW_ACTIONS_OUTSIDE__ = true;
     document.addEventListener("click", (event) => {
+        // Outside click always closes (no grace). Grace is only for scroll/resize settle.
         const target = event.target;
         if (!(target instanceof Element)) return;
         if (target.closest(".row-actions") || target.closest(".row-actions-menu")) return;
@@ -149,8 +153,14 @@ function installRowActionsOutsideClose() {
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") closeAllRowActionsMenus();
     });
-    window.addEventListener("resize", () => closeAllRowActionsMenus());
-    window.addEventListener("scroll", () => closeAllRowActionsMenus(), true);
+    window.addEventListener("resize", () => {
+        if (Date.now() < _ignoreOutsideUntil) return;
+        closeAllRowActionsMenus();
+    });
+    window.addEventListener("scroll", () => {
+        if (Date.now() < _ignoreOutsideUntil) return;
+        closeAllRowActionsMenus();
+    }, true);
 }
 
 installRowActionsOutsideClose();

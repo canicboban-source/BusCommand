@@ -197,7 +197,7 @@ test.describe("Dispo soft-remove (list, not company)", () => {
 
   test("clear one daily shift with confirm", async ({ page }) => {
     // Not "today" so covered-shift incident gate does not block clear.
-    const date = "2026-08-10";
+    const date = "2026-08-20";
     const state = softRemoveState();
     state.shifts = [
       {

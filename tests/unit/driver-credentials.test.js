@@ -90,12 +90,24 @@ test("driver import is company-admin owned, group-scoped, licensed and rate limi
   const source = DRIVER_ROUTES_SOURCE;
   assert.match(source, /app\.post\("\/api\/staff\/drivers\/import", rateLimit\(5, 60_000\), requireStaff/);
   assert.match(source, /req\.staff\.role !== "company_admin"/);
-  assert.match(source, /collection\("groups"\)\.doc\(parsed\.data\.groupId\)/);
-  assert.match(source, /existingProfiles\.size \+ drivers\.length > maxDrivers/);
-  assert.match(source, /safeProfilePayload\(item\.driver, parsed\.data\.groupId, parsed\.data\.companyId, createdAt\)/);
+  // D24.2: group/license/uniqueness live inside commitImportedDriversWithIdentityGuard.
+  assert.match(source, /commitImportedDriversWithIdentityGuard/);
+  assert.match(source, /safeProfilePayload\(driver, parsed\.data\.groupId, parsed\.data\.companyId, createdAt\)/);
   assert.match(source, /generateActivationOtp\(\)/);
   assert.match(source, /driver_csv_import"/);
   assert.match(source, /sendActivationSms/);
+  assert.match(source, /EID_EXISTS/);
+  assert.match(source, /DRIVER_LIMIT_REACHED/);
+  assert.doesNotMatch(
+    source.slice(source.indexOf('"/api/staff/drivers/import"'), source.indexOf('"/api/staff/drivers/:driverId/resend-activation"')),
+    /COMPANY_CODE_EXISTS/
+  );
+  const ops = require("fs").readFileSync(
+    require("path").join(__dirname, "../../server/company-admin-driver-ops.js"),
+    "utf8"
+  );
+  assert.match(ops, /collection\("groups"\)\.doc\(groupId\)/);
+  assert.match(ops, /existingProfiles\.size \+ prepared\.length > maxDrivers/);
 });
 
 test("driver operational writes use narrow authenticated audited endpoints", () => {

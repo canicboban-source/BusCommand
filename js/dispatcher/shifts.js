@@ -12,10 +12,11 @@ import { switchSection } from "../layout/navigation.js";
 import { isOperationalReadOnly } from "../core/access.js";
 import { ensureLocalDayLock } from "./plan-edit-lock-local.js";
 import {
-    findCrossGroupBusConflicts,
-    formatCrossGroupBusWarn,
+    findOverlappingBusConflicts,
+    formatBusConflictBlock,
     ACTIVE_DUTY_TYPES
 } from "../core/bus-shift-conflicts.js";
+import { busIsAssignable } from "../data/bus-ops.js";
 import {
     ensureShiftCatalogForEdit,
     getShiftCatalogForLine,
@@ -78,22 +79,73 @@ function driverByName(driverName) {
     return getVisibleDrivers().find(driver => driver.name === driverName) || null;
 }
 
-function warnIfBusUsedInOtherGroup(driver, date, type, start, end, busValue) {
+/**
+ * Local preflight for bus conflicts / inactive / non-ready.
+ * Returns an error toast key detail string, or "" when clear.
+ * Server remains final authority when not in local demo state.
+ */
+function preflightBusAssignment(driver, date, type, start, end, busValue) {
     const dutyType = String(type || "").toLowerCase();
-    if (!ACTIVE_DUTY_TYPES.has(dutyType)) return;
-    if (!String(busValue || "").trim()) return;
-    const groupId = driver.groupId || driver.lineId || window.state?.activeGroupHubId || null;
-    const conflicts = findCrossGroupBusConflicts(window.state?.shifts || [], {
-        bus: busValue,
+    if (!ACTIVE_DUTY_TYPES.has(dutyType)) return "";
+    const busNumber = String(busValue || "").trim();
+    if (!busNumber) return "";
+
+    const buses = window.state?.buses || [];
+    const bus = buses.find((row) => String(row.number || "").trim() === busNumber) || null;
+    if (!bus) {
+        return t("ops_bus_not_found") || "Bus not found in fleet.";
+    }
+    if (bus.active === false) {
+        return t("ops_bus_inactive") || "Bus is inactive.";
+    }
+    const existing = getShiftForDriverDate(driver.name, date);
+    const keepCurrent = String(existing?.bus || "").trim() === busNumber;
+    if (!busIsAssignable(bus) && !keepCurrent) {
+        return t("ops_bus_not_ready") || "Bus is not ready for assignment.";
+    }
+    const groupId = String(driver.groupId || driver.lineId || window.state?.activeGroupHubId || "");
+    const busGroups = [
+        ...(Array.isArray(bus.groupIds) ? bus.groupIds : []),
+        bus.groupId,
+        bus.lineId
+    ].map((id) => String(id || "").trim()).filter(Boolean);
+    if (groupId && busGroups.length && !busGroups.includes(groupId)) {
+        return t("ops_bus_outside_group") || "Bus is outside the allowed group pool.";
+    }
+
+    const conflicts = findOverlappingBusConflicts(window.state?.shifts || [], {
+        bus: busNumber,
         date,
-        groupId,
         excludeDriverId: driver.id,
         start,
         end,
         drivers: window.state?.drivers || []
     });
-    if (!conflicts.length) return;
-    showToast(formatCrossGroupBusWarn(conflicts, t), "warning", 6000);
+    if (conflicts.length) {
+        return formatBusConflictBlock(conflicts, t);
+    }
+    return "";
+}
+
+function toastForAssignmentCode(code, fallback) {
+    const map = {
+        BUS_NOT_FOUND: "ops_bus_not_found",
+        BUS_INACTIVE: "ops_bus_inactive",
+        BUS_NOT_AVAILABLE: "ops_bus_not_ready",
+        BUS_OUTSIDE_GROUP: "ops_bus_outside_group",
+        BUS_DOUBLE_BOOKED: "ops_bus_conflict_blocked",
+        DUTY_CATALOG_MISSING: "ops_duty_catalog_missing",
+        DUTY_NOT_IN_ACTIVE_CATALOG: "ops_duty_not_in_catalog",
+        DUTY_TIME_MISMATCH: "ops_duty_time_mismatch",
+        REVISION_CONFLICT: "shift_conflict_refresh",
+        STAFF_SESSION_INVALID: "ops_staff_session_invalid",
+        DRIVER_SCOPE_CHANGED: "ops_driver_scope_changed",
+        DRIVER_SCOPE_DENIED: "ops_driver_scope_denied",
+        DRIVER_INACTIVE: "ops_driver_inactive"
+    };
+    const key = map[code];
+    if (!key) return fallback;
+    return t(key) || fallback;
 }
 
 function applyServerShiftConflict(driver, date, conflict) {
@@ -122,6 +174,11 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
         showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
         return false;
     }
+    // Client UX preflight only — server revalidates LIVE active in the mutation tx (D24.1.1).
+    if (type !== "clear" && driver?.active === false) {
+        showToast(t("ops_driver_inactive") || t("shift_save_failed"), "error");
+        return false;
+    }
     const groupId = driver.groupId || driver.lineId || window.state?.activeGroupHubId || null;
     if (USE_LOCAL_STATE && groupId) {
         const lock = ensureLocalDayLock(groupId, date);
@@ -139,7 +196,11 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
     pendingShiftAssignments.add(key);
     try {
         const busValue = bus != null ? String(bus) : (driver.bus || "");
-        warnIfBusUsedInOtherGroup(driver, date, type, start, end, busValue);
+        const busBlock = preflightBusAssignment(driver, date, type, start, end, busValue);
+        if (busBlock) {
+            showToast(busBlock, "error", 6000);
+            return false;
+        }
         const existing = getShiftForDriverDate(driver.name, date);
         // Mirror-only cells report revision 0; never invent a positive revision locally.
         const expectedRevision = existing?.source === "shift" && Number.isInteger(existing.revision)
@@ -153,15 +214,40 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
                 ...(start ? { start } : {}), ...(end ? { end } : {})
             });
             if (!result.success) {
-                if (result.status === 409 || result.code === "REVISION_CONFLICT") {
+                if (result.code === "REVISION_CONFLICT") {
                     applyServerShiftConflict(driver, date, result.conflict);
-                    showToast(t("shift_conflict_refresh") || "Raspored je izmenjen. Osvežite i pokušajte ponovo.", "error");
+                    showToast(toastForAssignmentCode(result.code, result.error), "error");
+                } else if (result.code === "BUS_DOUBLE_BOOKED" || result.code === "BUS_NOT_FOUND"
+                    || result.code === "BUS_INACTIVE" || result.code === "BUS_NOT_AVAILABLE"
+                    || result.code === "BUS_OUTSIDE_GROUP"
+                    || result.code === "DUTY_CATALOG_MISSING"
+                    || result.code === "DUTY_NOT_IN_ACTIVE_CATALOG"
+                    || result.code === "DUTY_TIME_MISMATCH"
+                    || result.code === "STAFF_SESSION_INVALID"
+                    || result.code === "DRIVER_SCOPE_CHANGED"
+                    || result.code === "DRIVER_SCOPE_DENIED"
+                    || result.code === "DRIVER_INACTIVE") {
+                    // No optimistic write — refresh remote shift if server sent one.
+                    if (result.conflict?.shift) {
+                        applyServerShiftConflict(driver, date, result.conflict);
+                    }
+                    const msg = toastForAssignmentCode(result.code, result.error || t("shift_save_failed"));
+                    showToast(
+                        String(msg)
+                            .replace("{bus}", result.bus || busValue || "")                            .replace("{group}", result.conflict?.bus?.groupId || "—")
+                            .replace("{driver}", result.conflict?.bus?.driverName || "—"),
+                        "error",
+                        6000
+                    );
                 } else if (result.code === "LOCK_HELD") {
                     const who = result.lock?.holderName || result.lock?.holderUid || "";
                     showToast(
                         (t("plan_lock_held") || "Plan is locked by {name}.").replace("{name}", who || "another dispatcher"),
                         "error"
                     );
+                } else if (result.status === 409) {
+                    applyServerShiftConflict(driver, date, result.conflict);
+                    showToast(result.error || t("shift_conflict_refresh"), "error");
                 } else {
                     showToast(result.error || t("shift_save_failed") || "Smena nije sačuvana.", "error");
                 }

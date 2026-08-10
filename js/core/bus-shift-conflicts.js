@@ -1,6 +1,6 @@
 /**
- * Cross-group bus usage warning (operational soft signal).
- * Same company bus may belong to multiple groups; concurrent active duty = warn, not ban.
+ * Bus overlap detection for local preflight (server remains authority).
+ * Conflicting interval = hard block — never "warn but save".
  */
 
 const ACTIVE_DUTY_TYPES = new Set(["morning", "afternoon", "night", "bereitschaft"]);
@@ -24,7 +24,7 @@ function timeRangesOverlap(aStart, aEnd, bStart, bEnd) {
   const ae0 = parseHmToMinutes(aEnd);
   const bs0 = parseHmToMinutes(bStart);
   const be0 = parseHmToMinutes(bEnd);
-  // Missing times → treat same calendar day as potential conflict (ops warning).
+  // Missing times → treat same calendar day as potential conflict.
   if (as0 == null || ae0 == null || bs0 == null || be0 == null) return true;
 
   function expanded(start, end) {
@@ -58,14 +58,13 @@ function resolveShiftGroupId(shift, drivers = []) {
 }
 
 /**
+ * Overlapping active bus duties on the same date (any group — hard conflict).
  * @param {Array<object>} shifts
- * @param {{ bus: string, date: string, groupId?: string|null, excludeDriverId?: string|null, start?: string|null, end?: string|null, drivers?: Array<object> }} query
- * @returns {Array<{ bus: string, date: string, groupId: string, driverId: string|null, driverName: string, type: string, start: string|null, end: string|null }>}
+ * @param {{ bus: string, date: string, excludeDriverId?: string|null, start?: string|null, end?: string|null, drivers?: Array<object> }} query
  */
-function findCrossGroupBusConflicts(shifts, query = {}) {
+function findOverlappingBusConflicts(shifts, query = {}) {
   const busKey = normalizeBusNumber(query.bus);
   const date = String(query.date || "");
-  const targetGroup = String(query.groupId || "");
   const excludeDriverId = query.excludeDriverId != null ? String(query.excludeDriverId) : "";
   const drivers = query.drivers || [];
   if (!busKey || !date) return [];
@@ -77,10 +76,6 @@ function findCrossGroupBusConflicts(shifts, query = {}) {
     const type = String(shift?.type || "").toLowerCase();
     if (!ACTIVE_DUTY_TYPES.has(type)) continue;
 
-    const otherGroup = resolveShiftGroupId(shift, drivers);
-    if (!otherGroup) continue;
-    if (targetGroup && otherGroup === targetGroup) continue;
-
     const otherDriverId = shift.driverId != null ? String(shift.driverId) : "";
     if (excludeDriverId && otherDriverId && otherDriverId === excludeDriverId) continue;
 
@@ -89,7 +84,7 @@ function findCrossGroupBusConflicts(shifts, query = {}) {
     hits.push({
       bus: String(shift.bus || query.bus),
       date,
-      groupId: otherGroup,
+      groupId: resolveShiftGroupId(shift, drivers),
       driverId: otherDriverId || null,
       driverName: String(shift.driverName || ""),
       type,
@@ -100,14 +95,28 @@ function findCrossGroupBusConflicts(shifts, query = {}) {
   return hits;
 }
 
-function formatCrossGroupBusWarn(conflicts, translate) {
+/** @deprecated use findOverlappingBusConflicts — kept as alias for cross-group callers. */
+function findCrossGroupBusConflicts(shifts, query = {}) {
+  const targetGroup = String(query.groupId || "");
+  return findOverlappingBusConflicts(shifts, query).filter((hit) => {
+    if (!targetGroup) return true;
+    return hit.groupId && hit.groupId !== targetGroup;
+  });
+}
+
+function formatBusConflictBlock(conflicts, translate) {
   const first = conflicts?.[0];
   if (!first) return "";
   const tFn = typeof translate === "function" ? translate : (k) => k;
-  return tFn("ops_bus_cross_group_warn")
+  return tFn("ops_bus_conflict_blocked")
     .replace("{bus}", first.bus)
-    .replace("{group}", first.groupId)
+    .replace("{group}", first.groupId || "—")
     .replace("{driver}", first.driverName || "—");
+}
+
+/** @deprecated alias — product copy is hard-block, not warn. */
+function formatCrossGroupBusWarn(conflicts, translate) {
+  return formatBusConflictBlock(conflicts, translate);
 }
 
 export {
@@ -115,6 +124,8 @@ export {
   normalizeBusNumber,
   timeRangesOverlap,
   resolveShiftGroupId,
+  findOverlappingBusConflicts,
   findCrossGroupBusConflicts,
+  formatBusConflictBlock,
   formatCrossGroupBusWarn
 };

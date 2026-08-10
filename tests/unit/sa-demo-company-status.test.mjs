@@ -26,16 +26,17 @@ test("inspect closes SA modal before entering Dispo", () => {
   assert.match(src, /superadminCloseCompanyDetail\(\)/);
 });
 
-test("SA Open never spawns a production login tab in demo", () => {
+test("legacy superadminOpenCompany never spawns a production login tab", () => {
   const openStart = src.indexOf("function superadminOpenCompany");
   const openEnd = src.indexOf("let _pendingDetailCompanyId", openStart);
   assert.ok(openStart > -1 && openEnd > openStart, "Open handler missing");
   const openFn = src.slice(openStart, openEnd);
   assert.doesNotMatch(openFn, /window\.open\(/);
   assert.doesNotMatch(openFn, /mode=production/);
+  assert.doesNotMatch(openFn, /sa_open_prod_hint/);
   assert.match(openFn, /USE_LOCAL_STATE/);
   assert.match(openFn, /superadminImpersonate/);
-  assert.match(openFn, /sa_open_prod_hint|Start support/);
+  assert.match(openFn, /superadminStartSupport/);
 });
 
 test("staff action registry wires demo profile save", () => {

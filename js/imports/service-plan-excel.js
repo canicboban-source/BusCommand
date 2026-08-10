@@ -1,5 +1,4 @@
 import { TEMPLATE_VERSION } from "../../shared/service-plan-contract.mjs";
-import { ensureXlsx } from "../core/office-parsers.js";
 import { parseServicePlanCsvFile } from "./service-plan-csv.js";
 import { parseServicePlanPdfFile } from "./service-plan-pdf.js";
 import {
@@ -82,6 +81,7 @@ function parseServicePlanWorkbook(workbook, xlsxLib = globalThis.XLSX) {
 }
 
 async function parseServicePlanXlsxFile(file) {
+    const { ensureXlsx } = await import("../core/office-parsers.js");
     const XLSX = await ensureXlsx();
     const arrayBuffer = await file.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: "array", cellDates: false });

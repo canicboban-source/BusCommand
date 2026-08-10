@@ -239,6 +239,24 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
   uređuje polje i ne vidi credentials.
 - Posledica: `server/validation.js`, CA edit modal, `ops-attention` sort/label.
 
+### D18.1 — Uska server projekcija za other-group zamene (FAZA 1 follow-up)
+
+- Datum: 2026-08-09 · Status: **Odlučeno** (odobreno; implementacija nije pokrenuta u ovom STOP)
+- Pitanje: kako Dispo dobija dostupne other-group zamene posle zatvaranja
+  Firestore direktorijuma / `knownGroupIds` client expansion (v4.1 FAZA 1)?
+- Odluka vlasnika: da — **uska server projekcija** za dostupne other-group zamene.
+- Obavezni uslovi:
+  1. **Tenant-bound** — companyId samo iz autentikovane staff sesije; klijent ne bira `companyId`.
+  2. **Server-authoritative** — Admin SDK / API; direktni Firestore direktorijum ostaje zatvoren.
+  3. **Bounded** — strogo ograničen broj kandidata (cap); bez company-wide dump-a.
+  4. **Data-minimal** — ne sme vraćati EID, PIN, login kod, hash, telefon, email niti kompletan profil.
+  5. **Mutation re-check** — konačna assignment/resolve mutacija mora ponovo proveriti
+     group scope, dostupnost, konflikt i `revision` (klijent nije autoritet).
+  6. **Nema nove kolekcije ni promene šeme** bez posebnog owner odobrenja.
+- Posledica (kad se implementira, van ovog STOP-a): postojeći ili eksplicitno
+  odobren API surface + Needs Attention pool čita samo projekciju; FAZA 2 ne
+  kreće dok vlasnik ne pošalje `NASTAVI FAZU 2`.
+
 ### D19 — Adresa / proximity (odloženo)
 
 - Datum: 2026-08-06 · Status: **Odlučeno** (odloženo za kasnije)
@@ -280,6 +298,134 @@ Legenda statusa: **Odlučeno** · **Otvoreno** (čeka vlasnika) · **Privremeno*
   po labeli garaže, 2 min, po `holderUid`).
 - UX pri konfliktu: toast „osvežite“ + lokalni state osvežen iz servera; bez
   forme za opis konflikta.
+
+### D23 — UI jezici proizvoda: samo en / de / sr
+
+- Datum: 2026-08-09 · Status: **Odlučeno** (FAZA 2R-B)
+- Odluka:
+  1. BusCommand trenutno podržava isključivo `en`, `de`, `sr`.
+  2. Ostali jezici nisu deo proizvoda niti trenutnog pravca razvoja
+     (uključujući `hr`, `es`, `fr`, `it`, `tr`, `pl`, `pt`, `nl`, `ro`,
+     `hu`, `cs`, `sk`, `bg`).
+  3. Novi jezik se ubuduće dodaje pojedinačno, samo nakon posebne owner
+     odluke i kompletnog prevoda/testova.
+  4. Nepodržan stari persisted jezik (`buscommand_lang` / tenant state)
+     mora bezbedno pasti na `en` i normalizovati storage.
+  5. Nedostajući ključ u DE/SR i dalje pada na EN string (EN fallback).
+- Posledica: `Object.keys(TRANSLATIONS) === ["de","en","sr"]`; login/header/
+  settings selektori i server `defaultLanguage` ostaju usklađeni; D17
+  translations budget se zatvara bez skraćivanja stvarnih EN/DE/SR ključeva.
+
+### D24 — Assignment resource integrity: hard fail (no warn-but-save)
+
+- Datum: 2026-08-09 · Status: **Odlučeno** (FAZA 3 / Ultimate §9)
+- Odluka:
+  1. Server je autoritet za dodelu autobusa/smena: postoji, pool, `active`,
+     `opsStatus === ready` (osim keep-current), vremensko preklapanje, duty
+     katalog kada je kod prosleđen.
+  2. Stabilni 409 kodovi: `BUS_NOT_FOUND`, `BUS_INACTIVE`, `BUS_NOT_AVAILABLE`,
+     `BUS_OUTSIDE_GROUP`, `BUS_DOUBLE_BOOKED`, `DUTY_*`, `REVISION_CONFLICT`.
+  3. Soft „warn but saves“ za cross-group bus je zabranjen — lokalni preflight
+     i server blokiraju upis.
+  4. CA ručno dodavanje vozača je atomsko (`POST /api/company-admin/drivers`):
+     profil + credentials + PIN + known groups u jednom batch-u; PIN/OTP nikada
+     u auditu.
+- Posledica: `server/assignment-resource-guard.js`, `PUT …/shifts/assignment`,
+  `js/dispatcher/shifts.js`, ukinut warn-but-save E2E.
+
+### D24.1 — EID isolation + transactional assignment revalidation
+
+- Datum: 2026-08-09 · Status: **Odlučeno** (FAZA 3 security correction)
+- Odluka:
+  1. EID postoji samo u server-only `driver_credentials`; profil i Dispo
+     Firestore dokumenti ne smeju ga sadržati.
+  2. CA GET spaja EID iz credentials u API odgovor; zabranjen backfill na profil.
+  3. Rules fail-closed: Dispo ne čita driver profil koji i dalje nosi
+     credential polja (`eid`/PIN/hash…); čist profil ostaje čitljiv; CA
+     own-tenant read nepromenjen.
+  4. LIVE bus / driver scope / duty katalog se revalidiraju unutar iste
+     mutation transakcije kao shift write; sva čitanja pre prvog write-a.
+  5. Parallel EID/license uniqueness preko različitih novih doc ID-eva zahteva
+     reservation dokument (nova šema) — **nije implementirano**; traži posebnu
+     owner odluku. Sekvencijalni EID_EXISTS / DRIVER_LIMIT_REACHED ostaju.
+- Posledica: `server/company-admin-driver-ops.js`, `getActiveServicePlanInTx`,
+  Rules `driverProfileExposesCredentials`, executable emulator HTTP dokazi.
+
+### D24.1.1 — Assignment/auth/migration closeout (no uniqueness schema)
+
+- Datum: 2026-08-09 · Status: **Odlučeno**
+- Odluka:
+  1. LIVE staff u mutation tx: dokument mora postojati, `active !== false`,
+     role `dispatcher`, LIVE `groups` jedini autoritet — bez fallbacka na claims.
+  2. Day-lock grupa mora ostati LIVE home group (`DRIVER_SCOPE_CHANGED` inače);
+     neaktivnom vozaču zabranjena nova dodela; `clear` dozvoljen za uklanjanje.
+  3. Credential dirty = key ownership (uključujući `null`); Rules blokiraju
+     Dispo / own-driver / SA browser; CA own-tenant ostaje radi migracije.
+  4. CA create čita home/known grupe u istoj transakciji pre write-ova.
+  5. Budući rollout (ne sada): clean server writes → dry-run → backup/verify →
+     apply migration → zero-dirty verify → Rules deploy.
+  6. D24.2 uniqueness guard bio zabranjen ovde; **odobren i zatvoren u D24.2**.
+- Posledica: `STAFF_SESSION_INVALID`, `DRIVER_SCOPE_CHANGED`, `DRIVER_INACTIVE`,
+  null-key migration, `register-company-admin-drivers.js`.
+
+### D24.1.1.1 — Privacy / proof honesty (enumeration-safe scope)
+
+- Datum: 2026-08-09 · Status: **Odlučeno**
+- Odluka:
+  1. `DRIVER_SCOPE_CHANGED` API odgovor je data-minimal:
+     `{ success, code, error }` — bez `liveGroupId` / `lockedGroupId` / nove grupe.
+  2. Emulator dokaz migracije mora zvati production `migrateCompany` (ne ručni set).
+  3. Fail-first logovi moraju biti istiniti; fabrikovanje crvenih dokaza zabranjeno.
+- Posledica: Dispo ne može enumerisati nedodeljene grupe preko error payload-a.
+
+### D24.2 — Concurrency-safe driver identity uniqueness (tenant guard)
+
+- Datum: 2026-08-10 · Status: **Odlučeno** (owner odobrio minimalnu novu šemu)
+- Guard putanja (jedan fiksni dokument po tenantu):
+  `companies/{companyId}/ops/driver_identity_guard`
+- Guard polja (samo tehnička): `revision` (number), `updatedAt` (server timestamp).
+- Guard **ne sme** sadržati: EID (raw/hash), `company_code` / license broj, ime,
+  telefon/email, PIN/login/hash, listu vozača ili rezervacija po EID-u.
+- Vlasništvo: potpuno server-owned (Admin SDK). Browser read/write/list = deny
+  preko `ops/{opsId}` Rules match-a; SuperAdmin rekurzivni read eksplicitno
+  isključuje `ops` (sužavanje, ne proširenje CA/Dispo/SA browser ovlašćenja).
+- Identitet / kapacitet u istom ugovoru (sva čitanja pre prvog write-a):
+  1. LIVE guard;
+  2. LIVE company `settings/main` status + licenca (`resolveLicenseSnapshot`) +
+     `maxDrivers`;
+  3. LIVE grupe;
+  4. LIVE EID uniqueness (`driver_credentials.eid`) → `EID_EXISTS`;
+  5. upis profila + credentials + guard `revision` bump.
+- Putevi: CA manual create, CSV/import create. EID nije editable posle create.
+- Napomena (D24.2.1-A): CSV `company_code` više nije identity ključ ni import
+  podatak; EID je jedini import identity ključ. Manual `body.companyCode` =
+  lični PIN → `loginCodeHash`.
+- Fail-closed paralelizam preko različitih novih doc ID-eva; retry ne sme
+  duplirati vozača ni brojače; bez orphan profil/credentials; error payload ne
+  otkriva EID ni tuđi `driverId`.
+- Posledica: `server/driver-identity-guard.js`, wire u
+  `company-admin-driver-ops.js` + staff drivers import; Rules deny na `ops/*`
+  (SA rekurzivni read isključuje `ops`); CSV max redova 249.
+
+### D24.2.1-A — Retire legacy company_code from new imports
+
+- Datum: 2026-08-10 · Status: **Odlučeno**
+- Odluka:
+  1. EID je jedini import identity ključ za nove CSV/import upise.
+  2. Manual `body.companyCode` ostaje legacy API ime za **lični PIN** →
+     `loginCodeHash` (ne mešati sa CSV `company_code`).
+  3. CSV `company_code` je zastarelo: parsira se radi kompatibilnosti, vrednost
+     se ignoriše, ne hashira se, ne upisuje `companyCodeHash`, ne učestvuje u
+     uniqueness, nije login/aktivacija.
+  4. Aktivni tok: SMS OTP → vozač postavlja lični PIN.
+  5. Postojeći `companyCodeHash` u starim credentials: ne brisati / ne migrirati
+     ovde; ostaje server-only denylist polje; ne sme u profil/API/audit/browser.
+  6. Import Firestore transakcija ne sme sadržati `bcrypt.hash` /
+     `bcrypt.compare` / `companyCodePlain` / O(N×M) identity petlju.
+  7. Guard i dalje samo `revision` + `updatedAt`.
+- Posledica: uklonjen `findCompanyCodeConflict` / `COMPANY_CODE_EXISTS` iz
+  import puta; template bez `company_code`; UI notice
+  `ca_drivers_legacy_company_code_ignored`.
 
 ---
 

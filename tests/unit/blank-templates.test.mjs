@@ -56,7 +56,7 @@ test("blank Dienstplan XLSX has PLAN/SMENE/AKTIVNOSTI sheets without duties", ()
 
 test("drivers import CSV is header-only official blank", () => {
   const csv = fs.readFileSync(path.join(templates, "BusCommand_Drivers_Import_v1.csv"), "utf8").trim();
-  assert.equal(csv, "eid,first_name,last_name,phone,email,company_code");
+  assert.equal(csv, "eid,first_name,last_name,phone,email");
 });
 
 test("monthly group CSV and XLSX are header-only official blanks", () => {

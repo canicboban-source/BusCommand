@@ -175,6 +175,24 @@ const companyDriverPersonalCodeBody = z.object({
   companyCode: z.string().trim().regex(/^\d{5,12}$/, "Lični kod mora imati 5–12 cifara.")
 }).strict();
 
+/**
+ * CA manual driver create — atomic profile + credentials + PIN + known groups.
+ * Never accepts OTP plaintext; PIN is hashed server-side and returned once.
+ */
+const companyDriverCreateBody = z.object({
+  companyId: z.string().trim().min(1).max(64),
+  eid: z.string().trim().min(1).max(64),
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(80),
+  phone: z.string().trim().min(3).max(40),
+  email: z.string().trim().toLowerCase().email().max(254),
+  groupId: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/),
+  knownGroupIds: z.array(
+    z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/)
+  ).max(40).optional().default([]),
+  companyCode: z.string().trim().regex(/^\d{5,12}$/, "Lični kod mora imati 5–12 cifara.")
+}).strict();
+
 function validateBody(schema) {
   return (req, res, next) => {
     const parsed = schema.safeParse(req.body);
@@ -226,5 +244,6 @@ module.exports = {
   companyGroupBody,
   companyGroupUpdateBody,
   companyDriverProfileBody,
-  companyDriverPersonalCodeBody
+  companyDriverPersonalCodeBody,
+  companyDriverCreateBody
 };

@@ -32,36 +32,53 @@ test.before(async () => {
   });
 
   await env.withSecurityRulesDisabled(async (context) => {
-    const db = context.firestore();
-    for (const companyId of ["alpha", "beta"]) {
-      await db.collection("companies").doc(companyId).set({ name: companyId });
-      await doc(db, companyId, "settings", "main").set({ status: "active" });
-      await doc(db, companyId, "profile", "main").set({ name: `${companyId} Transit` });
-    }
-    await doc(db, "alpha", "drivers", "driver-a").set({ firstName: "Ana", lastName: "Alpha" });
-    await doc(db, "alpha", "drivers", "driver-b").set({ firstName: "Ben", lastName: "Alpha" });
-    await doc(db, "beta", "drivers", "driver-c").set({ firstName: "Cora", lastName: "Beta" });
-    await doc(db, "alpha", "driver_sessions", "driver-a").set({
-      notificationsUntil: new Date("2100-01-01T00:00:00.000Z")
-    });
-    await doc(db, "alpha", "driver_credentials", "driver-a").set({ eid: "private", loginCodeHash: "private" });
-    await doc(db, "alpha", "messages", "for-a").set({ recipientDriverId: "driver-a", broadcast: false, text: "Private A" });
-    await doc(db, "alpha", "messages", "for-b").set({ recipientDriverId: "driver-b", broadcast: false, text: "Private B" });
-    await doc(db, "alpha", "messages", "broadcast").set({ recipientDriverId: null, broadcast: true, text: "All drivers" });
-    for (const [companyId, uid, role] of [
-      ["alpha", "admin-a", "company_admin"],
-      ["alpha", "company_admin-a", "company_admin"],
-      ["alpha", "dispatcher-a", "dispatcher"],
-      ["alpha", "company_admin-safe", "company_admin"],
-      ["alpha", "dispatcher-safe", "dispatcher"],
-      ["beta", "dispatcher-b", "dispatcher"]
-    ]) {
-      await doc(db, companyId, "users", uid).set({
-        id: uid, role, companyId, active: true, groups: companyId === "alpha" ? ["310"] : ["105"]
-      });
-    }
+    await seedTenantFixtures(context.firestore());
   });
 });
+
+async function seedTenantFixtures(db) {
+  for (const companyId of ["alpha", "beta"]) {
+    await db.collection("companies").doc(companyId).set({ name: companyId });
+    await doc(db, companyId, "settings", "main").set({ status: "active" });
+    await doc(db, companyId, "profile", "main").set({ name: `${companyId} Transit` });
+  }
+  await doc(db, "alpha", "drivers", "driver-a").set({
+    firstName: "Ana", lastName: "Alpha", groupId: "310", lineId: "310", knownGroupIds: ["310", "105"]
+  });
+  await doc(db, "alpha", "drivers", "driver-b").set({
+    firstName: "Ben", lastName: "Alpha", groupId: "105", lineId: "105", knownGroupIds: ["105", "310"]
+  });
+  await doc(db, "beta", "drivers", "driver-c").set({
+    firstName: "Cora", lastName: "Beta", groupId: "105", lineId: "105"
+  });
+  await doc(db, "alpha", "driver_sessions", "driver-a").set({
+    notificationsUntil: new Date("2100-01-01T00:00:00.000Z")
+  });
+  await doc(db, "alpha", "driver_credentials", "driver-a").set({ eid: "private", loginCodeHash: "private" });
+  await doc(db, "alpha", "messages", "for-a").set({
+    recipientDriverId: "driver-a", broadcast: false, text: "Private A", groupId: "310"
+  });
+  await doc(db, "alpha", "messages", "for-b").set({
+    recipientDriverId: "driver-b", broadcast: false, text: "Private B", groupId: "105"
+  });
+  await doc(db, "alpha", "messages", "broadcast").set({
+    recipientDriverId: null, broadcast: true, text: "All drivers"
+  });
+  await doc(db, "alpha", "groups", "310").set({ lineId: "310", name: "Line 310", active: true });
+  await doc(db, "alpha", "groups", "105").set({ lineId: "105", name: "Line 105", active: true });
+  for (const [companyId, uid, role] of [
+    ["alpha", "admin-a", "company_admin"],
+    ["alpha", "company_admin-a", "company_admin"],
+    ["alpha", "dispatcher-a", "dispatcher"],
+    ["alpha", "company_admin-safe", "company_admin"],
+    ["alpha", "dispatcher-safe", "dispatcher"],
+    ["beta", "dispatcher-b", "dispatcher"]
+  ]) {
+    await doc(db, companyId, "users", uid).set({
+      id: uid, role, companyId, active: true, groups: companyId === "alpha" ? ["310"] : ["105"]
+    });
+  }
+}
 
 test.after(async () => {
   await env.cleanup();
@@ -70,34 +87,7 @@ test.after(async () => {
 test.beforeEach(async () => {
   await env.clearFirestore();
   await env.withSecurityRulesDisabled(async (context) => {
-    const db = context.firestore();
-    for (const companyId of ["alpha", "beta"]) {
-      await db.collection("companies").doc(companyId).set({ name: companyId });
-      await doc(db, companyId, "settings", "main").set({ status: "active" });
-      await doc(db, companyId, "profile", "main").set({ name: `${companyId} Transit` });
-    }
-    await doc(db, "alpha", "drivers", "driver-a").set({ firstName: "Ana", lastName: "Alpha" });
-    await doc(db, "alpha", "drivers", "driver-b").set({ firstName: "Ben", lastName: "Alpha" });
-    await doc(db, "beta", "drivers", "driver-c").set({ firstName: "Cora", lastName: "Beta" });
-    await doc(db, "alpha", "driver_sessions", "driver-a").set({
-      notificationsUntil: new Date("2100-01-01T00:00:00.000Z")
-    });
-    await doc(db, "alpha", "driver_credentials", "driver-a").set({ eid: "private", loginCodeHash: "private" });
-    await doc(db, "alpha", "messages", "for-a").set({ recipientDriverId: "driver-a", broadcast: false, text: "Private A" });
-    await doc(db, "alpha", "messages", "for-b").set({ recipientDriverId: "driver-b", broadcast: false, text: "Private B" });
-    await doc(db, "alpha", "messages", "broadcast").set({ recipientDriverId: null, broadcast: true, text: "All drivers" });
-    for (const [companyId, uid, role] of [
-      ["alpha", "admin-a", "company_admin"],
-      ["alpha", "company_admin-a", "company_admin"],
-      ["alpha", "dispatcher-a", "dispatcher"],
-      ["alpha", "company_admin-safe", "company_admin"],
-      ["alpha", "dispatcher-safe", "dispatcher"],
-      ["beta", "dispatcher-b", "dispatcher"]
-    ]) {
-      await doc(db, companyId, "users", uid).set({
-        id: uid, role, companyId, active: true, groups: companyId === "alpha" ? ["310"] : ["105"]
-      });
-    }
+    await seedTenantFixtures(context.firestore());
   });
 });
 
@@ -219,16 +209,13 @@ test("driver credentials are inaccessible to every client role", async () => {
   }
 });
 
-test("company group mutations are server-only while company members may read them", async () => {
-  await env.withSecurityRulesDisabled(async (context) => {
-    await doc(context.firestore(), "alpha", "groups", "310").set({
-      lineId: "310", name: "Line 310", color: "#3D7EF5", active: true
-    });
-  });
+test("company group mutations are server-only; Dispo reads only assigned groups", async () => {
   const companyAdmin = env.authenticatedContext("admin-a", claims("company_admin", "alpha")).firestore();
   const dispatcher = env.authenticatedContext("dispatcher-a", claims("dispatcher", "alpha")).firestore();
   await assertSucceeds(doc(companyAdmin, "alpha", "groups", "310").get());
+  await assertSucceeds(doc(companyAdmin, "alpha", "groups", "105").get());
   await assertSucceeds(doc(dispatcher, "alpha", "groups", "310").get());
+  await assertFails(doc(dispatcher, "alpha", "groups", "105").get());
   await assertFails(doc(companyAdmin, "alpha", "groups", "105").set({ lineId: "105", name: "Blocked" }));
   await assertFails(doc(companyAdmin, "alpha", "groups", "310").delete());
   await assertFails(doc(dispatcher, "alpha", "groups", "310").update({ name: "Blocked" }));
@@ -305,12 +292,200 @@ test("deactivated dispatcher cannot use Firestore with an existing token", async
   await assertFails(doc(db, "alpha", "drivers", "driver-a").get());
 });
 
-test("staff reads only the safe driver profile document", async () => {
+test("staff reads only the safe driver profile document fields from fixtures", async () => {
   for (const role of ["dispatcher", "company_admin"]) {
     const db = env.authenticatedContext(`${role}-safe`, claims(role, "alpha")).firestore();
     const snapshot = await assertSucceeds(doc(db, "alpha", "drivers", "driver-a").get());
-    assert.deepEqual(Object.keys(snapshot.data()).sort(), ["firstName", "lastName"]);
+    assert.deepEqual(Object.keys(snapshot.data()).sort(), [
+      "firstName", "groupId", "knownGroupIds", "lastName", "lineId"
+    ]);
   }
+});
+
+test("FAZA1: knownGroupIds does not grant Dispo read of foreign-home drivers", async () => {
+  const dispatcher = env.authenticatedContext("dispatcher-a", claims("dispatcher", "alpha")).firestore();
+  // driver-b home=105 but knownGroupIds includes 310 — must still deny
+  await assertSucceeds(doc(dispatcher, "alpha", "drivers", "driver-a").get());
+  await assertFails(doc(dispatcher, "alpha", "drivers", "driver-b").get());
+  await assertFails(
+    dispatcher.collection("companies").doc("alpha").collection("drivers")
+      .where("knownGroupIds", "array-contains", "310").get()
+  );
+});
+
+test("FAZA1: CA retains own-tenant reads across groups; Dispo own-group only", async () => {
+  await env.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await doc(db, "alpha", "shifts", "shift-310").set({
+      driverId: "driver-a", groupId: "310", date: "2026-08-01"
+    });
+    await doc(db, "alpha", "shifts", "shift-105").set({
+      driverId: "driver-b", groupId: "105", date: "2026-08-01"
+    });
+    await doc(db, "alpha", "schedules", "sched-310").set({
+      driverId: "driver-a", groupId: "310", date: "2026-08-01"
+    });
+    await doc(db, "alpha", "schedules", "sched-105").set({
+      driverId: "driver-b", groupId: "105", date: "2026-08-01"
+    });
+    await doc(db, "alpha", "buses", "bus-310").set({
+      number: "B310", groupId: "310", groupIds: ["310"]
+    });
+    await doc(db, "alpha", "buses", "bus-105").set({
+      number: "B105", groupId: "105", groupIds: ["105"]
+    });
+    await doc(db, "alpha", "routes", "route-310").set({ number: "310", groupId: "310" });
+    await doc(db, "alpha", "routes", "route-105").set({ number: "105", groupId: "105" });
+    await doc(db, "alpha", "vacations", "vac-310").set({
+      driverId: "driver-a", groupId: "310", status: "pending"
+    });
+    await doc(db, "alpha", "vacations", "vac-105").set({
+      driverId: "driver-b", groupId: "105", status: "pending"
+    });
+    await doc(db, "alpha", "lost_items", "lost-310").set({
+      driverId: "driver-a", groupId: "310", status: "in_depot"
+    });
+    await doc(db, "alpha", "lost_items", "lost-105").set({
+      driverId: "driver-b", groupId: "105", status: "in_depot"
+    });
+    await doc(db, "alpha", "sos", "sos-310").set({
+      driverId: "driver-a", groupId: "310", status: "active"
+    });
+    await doc(db, "alpha", "sos", "sos-105").set({
+      driverId: "driver-b", groupId: "105", status: "active"
+    });
+    await doc(db, "alpha", "service_plans", "plan-310").set({
+      groupId: "310", status: "active", version: 1
+    });
+    await doc(db, "alpha", "service_plans", "plan-105").set({
+      groupId: "105", status: "active", version: 1
+    });
+    await db.collection("companies").doc("alpha").collection("service_plans")
+      .doc("plan-310").collection("duties").doc("d1").set({ code: "A1", start: "05:00" });
+    await db.collection("companies").doc("alpha").collection("service_plans")
+      .doc("plan-105").collection("duties").doc("d2").set({ code: "B1", start: "06:00" });
+    await doc(db, "alpha", "shift_confirmations", "conf-a").set({
+      driverId: "driver-a", date: "2026-08-01"
+    });
+    await doc(db, "alpha", "shift_confirmations", "conf-b").set({
+      driverId: "driver-b", date: "2026-08-01"
+    });
+    await doc(db, "alpha", "confirmation_outbox", "out-a").set({
+      driverId: "driver-a", targetDate: "2026-08-01"
+    });
+    await doc(db, "alpha", "confirmation_outbox", "out-b").set({
+      driverId: "driver-b", targetDate: "2026-08-01"
+    });
+    await doc(db, "alpha", "driver_sessions", "driver-b").set({
+      notificationsUntil: new Date("2100-01-01T00:00:00.000Z")
+    });
+    await doc(db, "alpha", "reports", "report-310").set({
+      driverId: "driver-a", groupId: "310", status: "active", type: "delay:10"
+    });
+    await doc(db, "alpha", "reports", "report-105").set({
+      driverId: "driver-b", groupId: "105", status: "active", type: "delay:10"
+    });
+  });
+
+  const ca = env.authenticatedContext("admin-a", claims("company_admin", "alpha")).firestore();
+  const dispo = env.authenticatedContext("dispatcher-a", claims("dispatcher", "alpha")).firestore();
+
+  for (const [collection, ownId, foreignId] of [
+    ["drivers", "driver-a", "driver-b"],
+    ["shifts", "shift-310", "shift-105"],
+    ["schedules", "sched-310", "sched-105"],
+    ["messages", "for-a", "for-b"],
+    ["buses", "bus-310", "bus-105"],
+    ["routes", "route-310", "route-105"],
+    ["vacations", "vac-310", "vac-105"],
+    ["lost_items", "lost-310", "lost-105"],
+    ["sos", "sos-310", "sos-105"],
+    ["service_plans", "plan-310", "plan-105"],
+    ["shift_confirmations", "conf-a", "conf-b"],
+    ["confirmation_outbox", "out-a", "out-b"],
+    ["reports", "report-310", "report-105"]
+  ]) {
+    await assertSucceeds(doc(ca, "alpha", collection, ownId).get());
+    await assertSucceeds(doc(ca, "alpha", collection, foreignId).get());
+    await assertSucceeds(doc(dispo, "alpha", collection, ownId).get());
+    await assertFails(doc(dispo, "alpha", collection, foreignId).get());
+  }
+
+  await assertSucceeds(doc(dispo, "alpha", "driver_sessions", "driver-a").get());
+  await assertFails(doc(dispo, "alpha", "driver_sessions", "driver-b").get());
+  await assertSucceeds(
+    doc(dispo, "alpha", "service_plans", "plan-310").collection("duties").doc("d1").get()
+  );
+  await assertFails(
+    doc(dispo, "alpha", "service_plans", "plan-105").collection("duties").doc("d2").get()
+  );
+  await assertSucceeds(
+    doc(ca, "alpha", "service_plans", "plan-105").collection("duties").doc("d2").get()
+  );
+});
+
+test("FAZA1: driver reads only own vacations/lost items and home-group buses/routes", async () => {
+  await env.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await doc(db, "alpha", "vacations", "vac-a").set({
+      driverId: "driver-a", groupId: "310", status: "pending"
+    });
+    await doc(db, "alpha", "vacations", "vac-b").set({
+      driverId: "driver-b", groupId: "105", status: "pending"
+    });
+    await doc(db, "alpha", "lost_items", "lost-a").set({
+      driverId: "driver-a", groupId: "310", status: "in_depot"
+    });
+    await doc(db, "alpha", "lost_items", "lost-b").set({
+      driverId: "driver-b", groupId: "105", status: "in_depot"
+    });
+    await doc(db, "alpha", "buses", "bus-310").set({
+      number: "B310", groupId: "310", groupIds: ["310"]
+    });
+    await doc(db, "alpha", "buses", "bus-105").set({
+      number: "B105", groupId: "105", groupIds: ["105"]
+    });
+    await doc(db, "alpha", "routes", "route-310").set({ number: "310", groupId: "310" });
+    await doc(db, "alpha", "routes", "route-105").set({ number: "105", groupId: "105" });
+    await doc(db, "alpha", "sos", "sos-b").set({
+      driverId: "driver-b", groupId: "105", status: "active"
+    });
+  });
+  const driver = env.authenticatedContext("driver-a", claims("driver", "alpha")).firestore();
+  await assertSucceeds(doc(driver, "alpha", "vacations", "vac-a").get());
+  await assertFails(doc(driver, "alpha", "vacations", "vac-b").get());
+  await assertSucceeds(doc(driver, "alpha", "lost_items", "lost-a").get());
+  await assertFails(doc(driver, "alpha", "lost_items", "lost-b").get());
+  await assertSucceeds(doc(driver, "alpha", "buses", "bus-310").get());
+  await assertFails(doc(driver, "alpha", "buses", "bus-105").get());
+  await assertSucceeds(doc(driver, "alpha", "routes", "route-310").get());
+  await assertFails(doc(driver, "alpha", "routes", "route-105").get());
+  await assertFails(doc(driver, "alpha", "sos", "sos-b").get());
+  await assertSucceeds(doc(driver, "alpha", "groups", "310").get());
+  await assertFails(doc(driver, "alpha", "groups", "105").get());
+});
+
+test("FAZA1: Dispo cannot read foreign-group SOS settings while inactive remains readable", async () => {
+  await env.withSecurityRulesDisabled(async (context) => {
+    await doc(context.firestore(), "alpha", "settings", "sos").set({
+      sosActive: true,
+      sosDriverId: "driver-b",
+      sosDriver: "Ben Alpha",
+      sosBus: "B105",
+      groupId: "105"
+    });
+  });
+  const dispo = env.authenticatedContext("dispatcher-a", claims("dispatcher", "alpha")).firestore();
+  const ca = env.authenticatedContext("admin-a", claims("company_admin", "alpha")).firestore();
+  await assertFails(doc(dispo, "alpha", "settings", "sos").get());
+  await assertSucceeds(doc(ca, "alpha", "settings", "sos").get());
+
+  await env.withSecurityRulesDisabled(async (context) => {
+    await doc(context.firestore(), "alpha", "settings", "sos").set({
+      sosActive: false, sosDriverId: null, sosDriver: "", sosBus: "", groupId: null
+    });
+  });
+  await assertSucceeds(doc(dispo, "alpha", "settings", "sos").get());
 });
 
 test("rules suite is pinned to the preview project", () => {

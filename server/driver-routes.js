@@ -2,7 +2,13 @@ const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const { z } = require("zod");
 const { parseDriverCsv } = require("./driver-csv");
-const { evaluateDriverWorkPolicy, validTimezone, localDateString, addDays } = require("./driver-work-policy");
+const {
+  evaluateDriverWorkPolicy,
+  fingerprintShift,
+  validTimezone,
+  localDateString,
+  addDays
+} = require("./driver-work-policy");
 const { dispatcherCanAccessGroup, isActiveReportStatus, isResolvedReportStatus } = require("./report-lifecycle");
 const {
   buildProblemCreateFields,
@@ -34,10 +40,33 @@ const {
   simulateUndoWrite
 } = require("./shift-assignment");
 const {
+  isActiveDutyType,
+  evaluateBusResource,
+  findOverlappingBusAssignments,
+  evaluateDutyAgainstCatalog,
+  assignmentResourceErrorMessage
+} = require("./assignment-resource-guard");
+const { getActiveServicePlan, getActiveServicePlanInTx } = require("./service-plans");
+const { commitImportedDriversWithIdentityGuard } = require("./company-admin-driver-ops");
+
+/** Test-only barrier inside assignment mutation (after reads, before writes). */
+let _assignmentMutationHookForTests = null;
+function setAssignmentMutationHookForTests(fn) {
+  _assignmentMutationHookForTests = typeof fn === "function" ? fn : null;
+}
+const {
   PlanImportValidationError,
   buildPlanImportPreview
 } = require("./plan-import-preview");
-const { assertNoActiveGroupMonthlyImport } = require("./group-monthly-plan-import");
+const {
+  assertNoActiveGroupMonthlyImport,
+  GroupMonthlyImportError,
+  readMonthlyImportLockInTx
+} = require("./group-monthly-plan-import");
+const {
+  prepareStaffMonthlyImport,
+  commitStaffMonthlyImport
+} = require("./staff-monthly-plan-import");
 const {
   staffMessageSchema,
   messageTypeForTemplate,
@@ -268,6 +297,10 @@ const monthlyPlanImportPreviewSchema = z.object({
   reason: z.string().trim().min(3).max(200),
   rows: z.array(shiftAssignmentSchema).min(1).max(1000)
 });
+const monthlyPlanImportCommitSchema = z.object({
+  importId: z.string().trim().min(8).max(80),
+  fingerprint: z.string().trim().regex(/^[a-f0-9]{64}$/)
+});
 const shiftConfirmationSchema = z.object({
   dates: z.array(isoDateSchema).min(1).max(4).transform((dates) => [...new Set(dates)])
 });
@@ -294,7 +327,7 @@ function safeProfilePayload(driver, groupId, companyId, createdAt) {
     email: driver.email,
     groupId: home,
     lineId: home,
-    // Primary home group is always in knownGroupIds so Dispo array-contains queries work.
+    // knownGroupIds = CA metadata (D18); home always included. Not a Dispo Firestore directory grant.
     knownGroupIds: home ? [home] : [],
     companyId,
     active: true,
@@ -303,15 +336,12 @@ function safeProfilePayload(driver, groupId, companyId, createdAt) {
   };
 }
 
-/** Dispatcher-scoped driver docs: primary groupId OR knownGroupIds membership. */
+/** Dispatcher-scoped driver docs: home groupId only (knownGroupIds is CA metadata, not a directory). */
 async function loadDriverDocsForGroups(companyRef, groupIds) {
   const ids = [...new Set((groupIds || []).map((id) => String(id || "").trim()).filter(Boolean))].slice(0, 40);
   if (!ids.length) return [];
   const snaps = await Promise.all(
-    ids.flatMap((groupId) => [
-      companyRef.collection("drivers").where("groupId", "==", groupId).get(),
-      companyRef.collection("drivers").where("knownGroupIds", "array-contains", groupId).get()
-    ])
+    ids.map((groupId) => companyRef.collection("drivers").where("groupId", "==", groupId).get())
   );
   const unique = new Map();
   snaps.flatMap((snap) => snap.docs).forEach((doc) => unique.set(doc.id, doc));
@@ -811,18 +841,22 @@ function registerDriverRoutes(app, deps) {
       }
       const sosId = crypto.randomUUID();
       const driverName = safeDriver(profileSnap).name;
+      const groupId = profileSnap.data().groupId || profileSnap.data().lineId || null;
       const activatedAt = admin().firestore.FieldValue.serverTimestamp();
       const batch = db().batch();
       batch.set(companyRef.collection("sos").doc(sosId), {
         driverId: req.driver.uid, driver: driverName, bus: parsed.data.bus,
+        groupId: groupId || null,
         status: "active", activatedAt
       });
       batch.set(companyRef.collection("settings").doc("sos"), {
         sosActive: true, sosDriverId: req.driver.uid, sosDriver: driverName,
-        sosBus: parsed.data.bus, sosId, activatedAt
+        sosBus: parsed.data.bus, sosId, groupId: groupId || null, activatedAt
       });
       await batch.commit();
-      await logAudit(req.driver.companyId, req.driver.uid, "driver_sos_created", { sosId });
+      await logAudit(req.driver.companyId, req.driver.uid, "driver_sos_created", {
+        sosId, groupId: groupId || null
+      });
       return res.status(201).json({ success: true, sos: { id: sosId, driver: driverName, bus: parsed.data.bus } });
     } catch (error) {
       req.log?.error?.({ err: error }, "Slanje SOS alarma nije uspelo");
@@ -1091,56 +1125,111 @@ function registerDriverRoutes(app, deps) {
     }
     try {
       const companyRef = req.driverWorkPolicy.companyRef;
-      const shiftRefs = parsed.data.dates.map((date) =>
-        companyRef.collection("shifts").doc(shiftDocumentId(req.driver.uid, date))
-      );
-      const shiftSnaps = shiftRefs.length ? await db().getAll(...shiftRefs) : [];
-      const liveByDate = new Map();
-      shiftSnaps.forEach((snap, index) => {
-        liveByDate.set(parsed.data.dates[index], snap.exists ? snap.data() : null);
-      });
-
-      for (const date of parsed.data.dates) {
-        const target = allowed.get(date);
-        const live = liveByDate.get(date);
-        if (live?.shiftFingerprint && target?.fingerprint
-          && live.shiftFingerprint !== target.fingerprint
-          && live.confirmedByDriver === true) {
-          return res.status(409).json({
-            success: false,
-            code: "CONFIRMATION_STALE",
-            error: "Plan smene je izmenjen. Osvežite potvrdu i pokušajte ponovo."
-          });
-        }
-      }
-
-      const batch = db().batch();
       const confirmedAt = admin().firestore.FieldValue.serverTimestamp();
-      parsed.data.dates.forEach((date) => {
-        const target = allowed.get(date);
-        const live = liveByDate.get(date);
-        const boundRevision = live ? currentRevision(live) : 0;
-        batch.set(companyRef.collection("shift_confirmations").doc(`${req.driver.uid}_${date}`), {
-          driverId: req.driver.uid,
-          date,
-          shiftFingerprint: target.fingerprint,
-          confirmationBoundRevision: boundRevision,
-          confirmedAt,
-          confirmationSourceShiftDate: req.driverWorkPolicy.shift.date
-        }, { merge: true });
-        // Mirror onto assignment doc so staff UI that reads shifts sees confirm immediately.
-        batch.set(companyRef.collection("shifts").doc(shiftDocumentId(req.driver.uid, date)), {
-          driverId: req.driver.uid,
-          date,
-          confirmedByDriver: true,
-          confirmedAt,
-          shiftFingerprint: target.fingerprint,
-          confirmationBoundRevision: boundRevision,
-          confirmationSourceShiftDate: req.driverWorkPolicy.shift.date,
-          updatedAt: confirmedAt
-        }, { merge: true });
+      const boundRevisions = await db().runTransaction(async (tx) => {
+        const dates = parsed.data.dates;
+        // 1) All live shift reads first.
+        const shiftRefs = dates.map((date) =>
+          companyRef.collection("shifts").doc(shiftDocumentId(req.driver.uid, date))
+        );
+        const shiftSnaps = typeof tx.getAll === "function"
+          ? await tx.getAll(...shiftRefs)
+          : await Promise.all(shiftRefs.map((ref) => tx.get(ref)));
+
+        // 2) Unique group/month lock scopes from live shifts.
+        const lockScopes = new Map();
+        for (let i = 0; i < dates.length; i += 1) {
+          const live = shiftSnaps[i].exists ? shiftSnaps[i].data() : null;
+          const groupId = live?.groupId
+            || req.driverWorkPolicy?.shift?.groupId
+            || req.driver?.groupId
+            || null;
+          const month = scheduleMonthFromDate(dates[i]);
+          if (groupId && month) lockScopes.set(`${groupId}|${month}`, { groupId, month });
+        }
+
+        // 3) Read all locks (+ jobs) before any write.
+        const gates = [];
+        for (const scope of lockScopes.values()) {
+          gates.push(await readMonthlyImportLockInTx(tx, companyRef, scope.groupId, scope.month));
+        }
+
+        // 4) Validate every import gate — still no writes.
+        for (const gate of gates) {
+          if (!gate.decision.ok) {
+            const error = new Error(gate.decision.code);
+            error.code = gate.decision.code;
+            error.recoveryRequired = gate.decision.recoveryRequired === true;
+            error.retryable = gate.decision.retryable === true;
+            throw error;
+          }
+        }
+
+        // 5) Validate every confirmation target against LIVE canonical fingerprint.
+        const revisions = {};
+        const pending = [];
+        for (let i = 0; i < dates.length; i += 1) {
+          const date = dates[i];
+          const target = allowed.get(date);
+          const snap = shiftSnaps[i];
+          if (!snap.exists) {
+            const error = new Error("no_live_shift");
+            error.code = "SHIFT_MISSING";
+            throw error;
+          }
+          const live = snap.data() || {};
+          // Canonical writers set shiftFingerprint=null — compute from LIVE fields.
+          const liveFingerprint = fingerprintShift({
+            date: live.date || date,
+            type: live.type,
+            start: live.start,
+            end: live.end,
+            routeCode: live.routeCode,
+            bus: live.bus,
+            name: live.name
+          });
+          if (target?.fingerprint && liveFingerprint !== target.fingerprint) {
+            const error = new Error("confirmation_stale");
+            error.code = "CONFIRMATION_STALE";
+            throw error;
+          }
+          if (target?.revision != null
+            && Number(target.revision) !== currentRevision(live)) {
+            const error = new Error("confirmation_stale");
+            error.code = "CONFIRMATION_STALE";
+            throw error;
+          }
+          const boundRevision = currentRevision(live);
+          revisions[date] = boundRevision;
+          pending.push({ snap, date, target, boundRevision });
+        }
+
+        // 6) Writes only after all reads + gates: clear safe-expired locks, then confirms.
+        for (const gate of gates) {
+          if (gate.decision.clearLock) tx.delete(gate.lockRef);
+        }
+        for (const item of pending) {
+          tx.set(companyRef.collection("shift_confirmations").doc(`${req.driver.uid}_${item.date}`), {
+            driverId: req.driver.uid,
+            date: item.date,
+            shiftFingerprint: item.target.fingerprint,
+            confirmationBoundRevision: item.boundRevision,
+            confirmedAt,
+            confirmationSourceShiftDate: req.driverWorkPolicy.shift.date
+          }, { merge: true });
+          // Update existing shift only — never merge-create a phantom assignment.
+          tx.set(item.snap.ref, {
+            confirmedByDriver: true,
+            confirmedAt,
+            shiftFingerprint: item.target.fingerprint,
+            confirmationBoundRevision: item.boundRevision,
+            confirmationSourceShiftDate: req.driverWorkPolicy.shift.date,
+            updatedAt: confirmedAt
+          }, { merge: true });
+        }
+        return revisions;
       });
-      await batch.commit();
+
       if (confirmationScheduler) {
         const fingerprints = Object.fromEntries(
           parsed.data.dates.map((date) => [date, allowed.get(date)?.fingerprint || null])
@@ -1155,15 +1244,33 @@ function registerDriverRoutes(app, deps) {
       await logAudit(req.driver.companyId, req.driver.uid, "driver_shifts_confirmed", {
         dates: parsed.data.dates,
         sourceShiftDate: req.driverWorkPolicy.shift.date,
-        boundRevisions: Object.fromEntries(
-          parsed.data.dates.map((date) => [
-            date,
-            liveByDate.get(date) ? currentRevision(liveByDate.get(date)) : 0
-          ])
-        )
+        boundRevisions
       });
       return res.json({ success: true, confirmedDates: parsed.data.dates });
     } catch (error) {
+      if (error.code === "CONFIRMATION_STALE") {
+        return res.status(409).json({
+          success: false,
+          code: "CONFIRMATION_STALE",
+          error: "Plan smene je izmenjen. Osvežite potvrdu i pokušajte ponovo."
+        });
+      }
+      if (error.code === "SHIFT_MISSING") {
+        return res.status(409).json({
+          success: false,
+          code: "SHIFT_MISSING",
+          error: "Smena nije dostupna za potvrdu."
+        });
+      }
+      if (error.code === "MONTHLY_IMPORT_IN_PROGRESS" || error.code === "MONTHLY_IMPORT_RECOVERY_REQUIRED") {
+        return res.status(409).json({
+          success: false,
+          code: error.code,
+          retryable: error.retryable === true,
+          recoveryRequired: error.recoveryRequired === true,
+          error: "Uvoz mesečnog plana je u toku ili zahteva proveru. Pokušajte kasnije."
+        });
+      }
       req.log?.error?.({ err: error }, "Potvrda smena nije uspela");
       return res.status(500).json({ success: false, error: "Smene nisu mogle biti potvr\u0111ene." });
     }
@@ -1176,63 +1283,75 @@ function registerDriverRoutes(app, deps) {
     if (req.staff.role !== "company_admin") return res.status(403).json({ success: false, error: "Samo administrator firme može uvoziti vozačke naloge." });
     try {
       const drivers = parseDriverCsv(parsed.data.csv);
-      const companyRef = db().collection("companies").doc(parsed.data.companyId);
-      const profileCol = companyRef.collection("drivers");
-      const credentialCol = companyRef.collection("driver_credentials");
-      const [existingCredentials, existingProfiles, groupSnap, settingsSnap] = await Promise.all([
-        credentialCol.get(),
-        profileCol.get(),
-        companyRef.collection("groups").doc(parsed.data.groupId).get(),
-        companyRef.collection("settings").doc("main").get()
-      ]);
-      if (!groupSnap.exists) return res.status(404).json({ success: false, error: "Izabrana grupa nije pronađena." });
-      const { resolveLicenseSnapshot } = require("./license-packages");
-      const license = resolveLicenseSnapshot(settingsSnap.data() || {});
-      const maxDrivers = license.maxDrivers;
-      if (maxDrivers != null && existingProfiles.size + drivers.length > maxDrivers) {
-        return res.status(409).json({
-          success: false,
-          code: "DRIVER_LIMIT_REACHED",
-          error: `Licenca dozvoljava najviše ${maxDrivers} vozača.`,
-          maxDrivers,
-          licenseType: license.licenseType,
-          packageLabel: license.packageLabel
-        });
-      }
-      const credentialDocs = [...existingCredentials.docs];
-      const eids = new Set(credentialDocs.map((d) => String(d.data().eid || "").toLowerCase()));
-      for (const driver of drivers) if (eids.has(driver.eid.toLowerCase())) return res.status(409).json({ success: false, error: "EID već postoji." });
-      for (const driver of drivers) {
-        if (!driver.company_code) continue;
-        for (const doc of credentialDocs) if (doc.data().companyCodeHash && await bcrypt.compare(driver.company_code, doc.data().companyCodeHash)) return res.status(409).json({ success: false, error: "Company code već postoji." });
-      }
-      const prepared = await Promise.all(drivers.map(async (driver) => {
+      const legacyCompanyCodeIgnored = drivers.legacyCompanyCodeIgnored === true;
+      const FieldValue = admin().firestore.FieldValue;
+      // OTP hashes prepared outside the tx; EID uniqueness + writes use D24.2 guard.
+      // D24.2.1-A: CSV company_code is ignored — never hashed or written.
+      const preparedRows = await Promise.all(drivers.map(async (driver) => {
         const otp = generateActivationOtp();
+        const driverId = crypto.randomUUID();
+        const createdAt = FieldValue.serverTimestamp();
         return {
+          driverId,
           driver,
           otp,
-          companyCodeHash: driver.company_code ? await hashSecret(driver.company_code, COST) : null,
-          activationCodeHash: await hashSecret(otp, COST),
-          expiresAt: activationExpiresAt()
+          profile: safeProfilePayload(driver, parsed.data.groupId, parsed.data.companyId, createdAt),
+          credentials: credentialPayload(driver, {
+            companyCodeHash: null,
+            activationCodeHash: await hashSecret(otp, COST),
+            activationExpiresAt: activationExpiresAt().toISOString(),
+            createdAt
+          })
         };
       }));
-      const batch = db().batch();
-      const delivery = [];
-      for (const item of prepared) {
-        const driverId = crypto.randomUUID();
-        const createdAt = admin().firestore.FieldValue.serverTimestamp();
-        batch.set(profileCol.doc(driverId), safeProfilePayload(item.driver, parsed.data.groupId, parsed.data.companyId, createdAt));
-        batch.set(credentialCol.doc(driverId), credentialPayload(item.driver, {
-          companyCodeHash: item.companyCodeHash,
-          activationCodeHash: item.activationCodeHash,
-          activationExpiresAt: item.expiresAt.toISOString(),
-          createdAt
-        }));
-        delivery.push({ driverId, driver: item.driver, otp: item.otp });
+
+      try {
+        await commitImportedDriversWithIdentityGuard({
+          db: db(),
+          FieldValue,
+          companyId: parsed.data.companyId,
+          groupId: parsed.data.groupId,
+          prepared: preparedRows.map((row) => ({
+            driverId: row.driverId,
+            profile: row.profile,
+            credentials: row.credentials
+          }))
+        });
+      } catch (err) {
+        if (err?.code === "group-not-found") {
+          return res.status(404).json({ success: false, error: "Izabrana grupa nije pronađena." });
+        }
+        if (err?.code === "license-suspended") {
+          return res.status(403).json({ success: false, code: "license-suspended", error: "Licenca firme je suspendovana." });
+        }
+        if (err?.code === "license-unavailable") {
+          return res.status(403).json({ success: false, code: "license-unavailable", error: "Licenca firme nije aktivna." });
+        }
+        if (err?.code === "EID_EXISTS") {
+          return res.status(409).json({
+            success: false,
+            code: "EID_EXISTS",
+            error: "Vozač sa ovim EID-om već postoji."
+          });
+        }
+        if (err?.code === "DRIVER_LIMIT_REACHED") {
+          return res.status(409).json({
+            success: false,
+            code: "DRIVER_LIMIT_REACHED",
+            error: `Licenca dozvoljava najviše ${err.maxDrivers} vozača.`,
+            maxDrivers: err.maxDrivers,
+            licenseType: err.licenseType,
+            packageLabel: err.packageLabel
+          });
+        }
+        if (err?.code === "import-too-large") {
+          return res.status(400).json({ success: false, error: err.message });
+        }
+        throw err;
       }
-      await batch.commit();
+
       const smsResults = [];
-      for (const item of delivery) {
+      for (const item of preparedRows) {
         const sms = await smsProvider.sendActivationSms({
           phone: item.driver.phone,
           companyId: parsed.data.companyId,
@@ -1253,11 +1372,13 @@ function registerDriverRoutes(app, deps) {
         count: drivers.length,
         groupId: parsed.data.groupId,
         smsProvider: smsProvider.mode,
-        smsQueued: smsResults.filter((row) => row.status === "stub_queued" || row.status === "sent").length
+        smsQueued: smsResults.filter((row) => row.status === "stub_queued" || row.status === "sent").length,
+        legacyCompanyCodeIgnored
       });
       return res.status(201).json({
         success: true,
         imported: drivers.length,
+        legacyCompanyCodeIgnored,
         activation: {
           otpTtlHours: 24,
           smsProvider: smsProvider.mode,
@@ -1634,19 +1755,31 @@ function registerDriverRoutes(app, deps) {
     }
     const parsed = messageIdSchema.safeParse(req.params.messageId);
     if (!parsed.success) return res.status(400).json({ success: false, error: "Nevažeća poruka." });
+    // Enumeration-safe: nonexistent / foreign / unscoped all look identical to Dispo.
+    const messageUnavailable = () => res.status(404).json({
+      success: false,
+      code: "MESSAGE_UNAVAILABLE",
+      error: "Poruka nije dostupna."
+    });
     try {
       const companyRef = db().collection("companies").doc(req.staff.companyId);
       const snapshot = await companyRef.collection("messages").doc(parsed.data).get();
-      if (!snapshot.exists) return res.status(404).json({ success: false, error: "Poruka nije pronađena." });
+      if (!snapshot.exists) return messageUnavailable();
       const message = snapshot.data();
       if (req.staff.role === "dispatcher") {
         const groups = Array.isArray(req.staff.groups) ? req.staff.groups : [];
-        const gid = message.groupId || null;
+        let gid = message.groupId || null;
         if (message.broadcast === true && message.recipientDriverId == null) {
-          return res.status(403).json({ success: false, error: "Pristup CA broadcast poruci nije dozvoljen." });
+          return messageUnavailable();
         }
-        if (gid && !groups.includes(gid)) {
-          return res.status(403).json({ success: false, error: "Pristup poruci van dodeljene grupe nije dozvoljen." });
+        if (!gid && message.recipientDriverId) {
+          const driverSnap = await companyRef.collection("drivers").doc(String(message.recipientDriverId)).get();
+          if (driverSnap.exists) {
+            gid = driverSnap.data().groupId || driverSnap.data().lineId || null;
+          }
+        }
+        if (!gid || !groups.includes(gid)) {
+          return messageUnavailable();
         }
       }
       await snapshot.ref.update({
@@ -1684,15 +1817,31 @@ function registerDriverRoutes(app, deps) {
     if (req.staff.role !== "dispatcher") {
       return res.status(403).json({ success: false, error: "Samo disponent može rešiti SOS alarm." });
     }
+    // Enumeration-safe: no SOS and foreign-group SOS share the same public response.
+    const sosUnavailable = () => res.status(409).json({
+      success: false,
+      code: "SOS_UNAVAILABLE",
+      error: "Nema aktivnog SOS alarma."
+    });
     try {
       const companyRef = db().collection("companies").doc(req.staff.companyId);
       const settingsRef = companyRef.collection("settings").doc("sos");
       const settingsSnap = await settingsRef.get();
       if (!settingsSnap.exists || settingsSnap.data().sosActive !== true) {
-        return res.status(409).json({ success: false, error: "Nema aktivnog SOS alarma." });
+        return sosUnavailable();
       }
       const settings = settingsSnap.data() || {};
       const sosId = typeof settings.sosId === "string" ? settings.sosId : null;
+      let groupId = settings.groupId || null;
+      if (!groupId && settings.sosDriverId) {
+        const driverSnap = await companyRef.collection("drivers").doc(String(settings.sosDriverId)).get();
+        if (driverSnap.exists) {
+          groupId = driverSnap.data().groupId || driverSnap.data().lineId || null;
+        }
+      }
+      if (!dispatcherCanAccessGroup(req.staff.groups, groupId)) {
+        return sosUnavailable();
+      }
       const resolvedAt = admin().firestore.FieldValue.serverTimestamp();
       const batch = db().batch();
       if (sosId) {
@@ -1712,13 +1861,15 @@ function registerDriverRoutes(app, deps) {
         sosDriver: "",
         sosBus: "",
         sosId: null,
+        groupId: null,
         resolvedAt,
         resolvedBy: req.staff.uid
       }, { merge: true });
       await batch.commit();
       await logAudit(req.staff.companyId, req.staff.uid, "staff_sos_resolved", {
         sosId,
-        driverId: settings.sosDriverId || null
+        driverId: settings.sosDriverId || null,
+        groupId: groupId || null
       });
       return res.json({
         success: true,
@@ -2478,6 +2629,9 @@ function registerDriverRoutes(app, deps) {
         } else if (groupIds.length) {
           const visible = groupIds.some((gid) => dispatcherCanAccessGroup(req.staff.groups, gid));
           if (!visible) continue;
+        } else {
+          // Ungrouped audit rows must not leak company-wide to Dispo.
+          continue;
         }
         const ts = data.timestamp;
         events.push({
@@ -2595,6 +2749,17 @@ function registerDriverRoutes(app, deps) {
           tx.get(replacementScheduleRef),
           tx.get(busConflictQuery)
         ]);
+        // Import locks for incident group and replacement driver's group (same month).
+        const replacementGroupId = replacementDriver.groupId || replacementDriver.lineId || groupId;
+        const lockScopes = new Map();
+        if (groupId && month) lockScopes.set(`${groupId}|${month}`, { groupId, month });
+        if (replacementGroupId && month) {
+          lockScopes.set(`${replacementGroupId}|${month}`, { groupId: replacementGroupId, month });
+        }
+        const importGates = [];
+        for (const scope of lockScopes.values()) {
+          importGates.push(await readMonthlyImportLockInTx(tx, companyRef, scope.groupId, scope.month));
+        }
         if (!reportSnap.exists || !isActiveReportStatus(reportSnap.data().status)) {
           const error = new Error("incident_not_active");
           error.code = "incident_not_active";
@@ -2606,6 +2771,15 @@ function registerDriverRoutes(app, deps) {
           const error = new Error("revision_conflict");
           error.code = "revision_conflict";
           throw error;
+        }
+        for (const gate of importGates) {
+          if (!gate.decision.ok) {
+            const error = new Error(gate.decision.code);
+            error.code = gate.decision.code;
+            error.recoveryRequired = gate.decision.recoveryRequired === true;
+            error.retryable = gate.decision.retryable === true;
+            throw error;
+          }
         }
         const replacementScheduleDay = day != null
           ? replacementScheduleSnap.data()?.parsedShifts?.[day]
@@ -2627,6 +2801,10 @@ function registerDriverRoutes(app, deps) {
           const error = new Error("bus_conflict");
           error.code = "bus_conflict";
           throw error;
+        }
+
+        for (const gate of importGates) {
+          if (gate.decision.clearLock) tx.delete(gate.lockRef);
         }
 
         const assignedAt = admin().firestore.FieldValue.serverTimestamp();
@@ -2803,6 +2981,15 @@ function registerDriverRoutes(app, deps) {
         notifiedDriverIds: notified
       });
     } catch (error) {
+      if (error.code === "MONTHLY_IMPORT_IN_PROGRESS" || error.code === "MONTHLY_IMPORT_RECOVERY_REQUIRED") {
+        return res.status(409).json({
+          success: false,
+          code: error.code,
+          retryable: error.retryable === true,
+          recoveryRequired: error.recoveryRequired === true,
+          error: "Uvoz mesečnog plana je u toku ili zahteva proveru."
+        });
+      }
       if (error.code === "revision_conflict") {
         return res.status(409).json({ success: false, code: "REVISION_CONFLICT", error: "Plan je u međuvremenu izmenjen. Osvežite prikaz." });
       }
@@ -2852,7 +3039,7 @@ function registerDriverRoutes(app, deps) {
         const groups = staffSnap.exists && Array.isArray(staffSnap.data().groups)
           ? staffSnap.data().groups
           : (req.staff.groups || []);
-        // Soft-pilot: avoid full drivers collection scan — primary + knownGroupIds.
+        // Soft-pilot: home groupId queries only (knownGroupIds is not a directory).
         const groupIds = [...new Set((groups || []).filter(Boolean))].slice(0, 40);
         const driverDocs = await loadDriverDocsForGroups(companyRef, groupIds);
         allowedDriverIds = new Set(driverDocs.map((doc) => doc.id));
@@ -2956,7 +3143,7 @@ function registerDriverRoutes(app, deps) {
     }
   });
 
-  app.post("/api/staff/monthly-plans/import/preview", requireStaff, async (req, res) => {
+  app.post("/api/staff/monthly-plans/import/preview", rateLimit(10, 60_000), requireStaff, async (req, res) => {
     if (req.staff.role !== "dispatcher") {
       return res.status(403).json({ success: false, error: "Samo disponent može pripremiti mesečni plan." });
     }
@@ -2980,29 +3167,60 @@ function registerDriverRoutes(app, deps) {
       const companyRef = db().collection("companies").doc(req.staff.companyId);
       const driverIds = [...new Set(parsed.data.rows.map((row) => row.driverId))];
       const driverRefs = driverIds.map((driverId) => companyRef.collection("drivers").doc(driverId));
-      const [driverSnaps, monthlyShiftsSnap] = await Promise.all([
+      const [driverSnaps, monthlyShiftsSnap, activePlan, busesSnap] = await Promise.all([
         db().getAll(...driverRefs),
         companyRef.collection("shifts")
           .where("date", ">=", `${parsed.data.month}-01`)
           .where("date", "<=", `${parsed.data.month}-31`)
-          .get()
+          .get(),
+        getActiveServicePlan({
+          db: db(),
+          companyId: req.staff.companyId,
+          groupId: parsed.data.groupId
+        }),
+        companyRef.collection("buses").get()
       ]);
       const driversById = new Map(driverSnaps
         .filter((snap) => snap.exists)
-        .map((snap) => [snap.id, snap.data()]));
+        .map((snap) => [snap.id, { id: snap.id, ...snap.data() }]));
       const shiftsById = new Map(monthlyShiftsSnap.docs
         .map((doc) => doc.data())
         .filter((shift) => shift.driverId && shift.date)
         .map((shift) => [`${shift.driverId}|${shift.date}`, shift]));
+      const dutiesByCode = new Map();
+      for (const duty of activePlan?.duties || []) {
+        const code = String(duty.code || "").trim().toUpperCase();
+        if (code) dutiesByCode.set(code, duty);
+      }
+      const busesByNumber = new Map();
+      busesSnap.docs.forEach((doc) => {
+        const bus = { id: doc.id, ...doc.data() };
+        const number = String(bus.number || "").trim();
+        if (number) {
+          busesByNumber.set(number, bus);
+          busesByNumber.set(number.toUpperCase(), bus);
+        }
+      });
 
       const preview = buildPlanImportPreview({
         companyId: req.staff.companyId,
         staffUid: req.staff.uid,
         payload: parsed.data,
         driversById,
-        shiftsById
+        shiftsById,
+        dutiesByCode,
+        busesByNumber,
+        requireDutyCatalog: true
+      });
+      const prepared = await prepareStaffMonthlyImport({
+        db: db(),
+        admin: admin(),
+        companyId: req.staff.companyId,
+        actorId: req.staff.uid,
+        preview
       });
       await logAudit(req.staff.companyId, req.staff.uid, "monthly_plan_import_previewed", {
+        importId: prepared.id,
         fingerprint: preview.fingerprint,
         groupId: preview.groupId,
         month: preview.month,
@@ -3010,9 +3228,31 @@ function registerDriverRoutes(app, deps) {
         reason: preview.reason,
         summary: preview.summary
       });
-      return res.json({ success: true, preview });
+      return res.json({
+        success: true,
+        importId: prepared.id,
+        fingerprint: prepared.fingerprint,
+        expiresAt: prepared.expiresAt,
+        preview: {
+          fingerprint: preview.fingerprint,
+          groupId: preview.groupId,
+          month: preview.month,
+          sourceName: preview.sourceName,
+          reason: preview.reason,
+          summary: preview.summary,
+          rows: prepared.rows
+        }
+      });
     } catch (error) {
       if (error instanceof PlanImportValidationError) {
+        await logAudit(req.staff.companyId, req.staff.uid, "monthly_plan_import_preview_failed", {
+          groupId: parsed.data.groupId,
+          month: parsed.data.month,
+          sourceName: parsed.data.sourceName,
+          reason: parsed.data.reason,
+          errorCount: error.errors.length,
+          codes: [...new Set(error.errors.map((item) => item.code))].slice(0, 20)
+        }).catch(() => {});
         return res.status(422).json({
           success: false,
           code: error.code,
@@ -3020,11 +3260,130 @@ function registerDriverRoutes(app, deps) {
           details: error.errors
         });
       }
+      if (error instanceof GroupMonthlyImportError) {
+        return res.status(error.status || 409).json({
+          success: false,
+          code: error.code,
+          error: "Uvoz nije mogao biti pripremljen.",
+          details: error.details || []
+        });
+      }
       req.log?.error?.({ err: error }, "Pregled uvoza mesečnog plana nije uspeo");
       return res.status(500).json({
         success: false,
         code: "PLAN_IMPORT_PREVIEW_FAILED",
         error: "Pregled mesečnog plana nije mogao biti pripremljen."
+      });
+    }
+  });
+
+  app.put("/api/staff/monthly-plans/import/commit", rateLimit(10, 60_000), requireStaff, async (req, res) => {
+    if (req.staff.role !== "dispatcher") {
+      return res.status(403).json({ success: false, error: "Samo disponent može potvrditi mesečni plan." });
+    }
+    const parsed = monthlyPlanImportCommitSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        code: "INVALID_PLAN_IMPORT_COMMIT",
+        error: "Potvrda uvoza nije ispravna."
+      });
+    }
+    try {
+      const companyRef = db().collection("companies").doc(req.staff.companyId);
+      const importSnap = await companyRef.collection("monthly_plan_imports").doc(parsed.data.importId).get();
+      if (!importSnap.exists) {
+        return res.status(404).json({
+          success: false,
+          code: "MONTHLY_IMPORT_NOT_FOUND",
+          error: "Pripremljeni uvoz nije pronađen."
+        });
+      }
+      const job = importSnap.data() || {};
+      if (!req.staff.groups.includes(job.groupId)) {
+        return res.status(403).json({
+          success: false,
+          code: "GROUP_ACCESS_DENIED",
+          error: "Pristup izabranoj grupi nije dozvoljen."
+        });
+      }
+      const result = await commitStaffMonthlyImport({
+        db: db(),
+        admin: admin(),
+        companyId: req.staff.companyId,
+        actorId: req.staff.uid,
+        importId: parsed.data.importId,
+        fingerprint: parsed.data.fingerprint,
+        actorGroups: req.staff.groups
+      });
+      await logAudit(req.staff.companyId, req.staff.uid, "monthly_plan_import_committed", {
+        importId: result.id,
+        fingerprint: parsed.data.fingerprint,
+        groupId: job.groupId,
+        month: job.month,
+        summary: result.summary,
+        idempotent: result.idempotent === true
+      });
+      return res.json({
+        success: true,
+        importId: result.id,
+        summary: result.summary,
+        idempotent: result.idempotent === true
+      });
+    } catch (error) {
+      if (error instanceof GroupMonthlyImportError) {
+        const compensationFailed = error.code === "MONTHLY_IMPORT_COMPENSATION_FAILED";
+        const recovery = error.recoveryRequired === true
+          || compensationFailed
+          || error.code === "MONTHLY_IMPORT_RECOVERY_REQUIRED";
+        const inProgress = error.code === "MONTHLY_IMPORT_IN_PROGRESS"
+          || error.retryable === true;
+        const compensated = error.compensated === true;
+        // compensation_failed audit action only for real compensation process failure.
+        const auditAction = compensationFailed
+          ? "monthly_plan_import_compensation_failed"
+          : "monthly_plan_import_failed";
+        await logAudit(req.staff.companyId, req.staff.uid, auditAction, {
+          importId: parsed.data.importId,
+          fingerprint: parsed.data.fingerprint,
+          code: error.code,
+          details: (error.details || []).slice(0, 20),
+          recoveryRequired: recovery === true,
+          retryable: inProgress === true,
+          compensated: compensated === true
+        }).catch(() => {});
+        let message = "Uvoz nije potvrđen.";
+        if (compensationFailed) {
+          message = "Uvoz nije potvrđen. Automatski povrat nije uspeo — potrebna je provera (recovery_required).";
+        } else if (recovery) {
+          message = "Uvoz nije potvrđen. Stanje zahteva proveru — plan se ne smatra čistim.";
+        } else if (inProgress) {
+          message = "Uvoz se još obrađuje — pokušajte ponovo uskoro.";
+        } else if (compensated) {
+          message = "Uvoz nije potvrđen. Delimične izmene su poništene.";
+        }
+        return res.status(error.status || 409).json({
+          success: false,
+          code: error.code,
+          recoveryRequired: recovery === true,
+          retryable: inProgress === true,
+          compensated: compensated === true,
+          error: message,
+          details: error.details || []
+        });
+      }
+      req.log?.error?.({ err: error }, "Potvrda uvoza mesečnog plana nije uspela");
+      await logAudit(req.staff.companyId, req.staff.uid, "monthly_plan_import_failed", {
+        importId: parsed.data.importId,
+        fingerprint: parsed.data.fingerprint,
+        code: "MONTHLY_IMPORT_COMMIT_FAILED"
+      }).catch(() => {});
+      return res.status(500).json({
+        success: false,
+        code: "MONTHLY_IMPORT_COMMIT_FAILED",
+        recoveryRequired: false,
+        compensated: false,
+        error: "Uvoz nije potvrđen. Ishod nije potvrđen — proverite plan pre novog uvoza."
       });
     }
   });
@@ -3042,10 +3401,33 @@ function registerDriverRoutes(app, deps) {
         companyRef.collection("users").doc(req.staff.uid).get()
       ]);
       if (!driverSnap.exists) return res.status(404).json({ success: false, error: "Voza\u010d nije prona\u0111en." });
+      // Preflight gate only — LIVE staff/groups are revalidated fail-closed inside the mutation tx (D24.1.1).
+      if (!staffSnap.exists) {
+        return res.status(403).json({
+          success: false,
+          code: "STAFF_SESSION_INVALID",
+          error: assignmentResourceErrorMessage("STAFF_SESSION_INVALID")
+        });
+      }
+      const preflightStaff = staffSnap.data() || {};
+      if (preflightStaff.active === false || String(preflightStaff.role || "") !== "dispatcher") {
+        return res.status(403).json({
+          success: false,
+          code: "STAFF_SESSION_INVALID",
+          error: assignmentResourceErrorMessage("STAFF_SESSION_INVALID")
+        });
+      }
+      const groups = Array.isArray(preflightStaff.groups) ? preflightStaff.groups : null;
+      if (!groups) {
+        return res.status(403).json({
+          success: false,
+          code: "STAFF_SESSION_INVALID",
+          error: assignmentResourceErrorMessage("STAFF_SESSION_INVALID")
+        });
+      }
       const driver = driverSnap.data();
-      const groups = staffSnap.exists ? staffSnap.data().groups : req.staff.groups;
       const driverGroupId = driver.groupId || driver.lineId || null;
-      if (!Array.isArray(groups) || !driverGroupId || !groups.includes(driverGroupId)) {
+      if (!driverGroupId || !groups.includes(driverGroupId)) {
         return res.status(403).json({ success: false, error: "Pristup voza\u010du van dodeljene grupe nije dozvoljen." });
       }
 
@@ -3080,6 +3462,8 @@ function registerDriverRoutes(app, deps) {
           lock: lockCheck.lock || null
         });
       }
+      // Group for which the day-lock was acquired — must match LIVE home group in tx.
+      const lockedGroupId = driverGroupId;
 
       const driverName = safeDriver(driverSnap).name;
       const shiftId = shiftDocumentId(parsed.data.driverId, parsed.data.date);
@@ -3099,7 +3483,23 @@ function registerDriverRoutes(app, deps) {
         .filter((doc) => doc.id !== shiftId)
         .map((doc) => doc.ref);
 
+      const busNumber = String(parsed.data.bus || "").trim();
+      const needsBusGuard = parsed.data.type !== "clear" && isActiveDutyType(parsed.data.type) && Boolean(busNumber);
+      const dutyCode = String(parsed.data.routeCode || parsed.data.name || "").trim();
+      const needsDutyGuard = parsed.data.type !== "clear" && isActiveDutyType(parsed.data.type) && Boolean(dutyCode);
+      const driverRef = companyRef.collection("drivers").doc(parsed.data.driverId);
+      const staffUserRef = companyRef.collection("users").doc(req.staff.uid);
+      const busConflictQuery = needsBusGuard
+        ? companyRef.collection("shifts").where("date", "==", parsed.data.date).where("bus", "==", busNumber)
+        : null;
+      const busLookupQuery = needsBusGuard
+        ? companyRef.collection("buses").where("number", "==", busNumber).limit(5)
+        : null;
+
       const result = await db().runTransaction(async (tx) => {
+        // D24.1: all authoritative reads before first write (live bus/scope/duty/revision).
+        const liveDriverSnap = await tx.get(driverRef);
+        const liveStaffSnap = await tx.get(staffUserRef);
         const shiftSnap = await tx.get(shiftRef);
         const legacyShiftSnaps = [];
         for (const ref of legacyShiftRefs) {
@@ -3107,6 +3507,101 @@ function registerDriverRoutes(app, deps) {
         }
         const scheduleSnap = await tx.get(scheduleRef);
         const legacyScheduleSnap = await tx.get(legacyScheduleRef);
+        const busLookupSnap = busLookupQuery ? await tx.get(busLookupQuery) : null;
+        const busConflictSnap = busConflictQuery ? await tx.get(busConflictQuery) : null;
+
+        // D24.1.1 — LIVE staff fail-closed (no claims/middleware fallback).
+        if (!liveStaffSnap.exists) {
+          const error = new Error("STAFF_SESSION_INVALID");
+          error.code = "STAFF_SESSION_INVALID";
+          throw error;
+        }
+        const liveStaff = liveStaffSnap.data() || {};
+        if (liveStaff.active === false) {
+          const error = new Error("STAFF_SESSION_INVALID");
+          error.code = "STAFF_SESSION_INVALID";
+          throw error;
+        }
+        if (String(liveStaff.role || "") !== "dispatcher") {
+          const error = new Error("STAFF_SESSION_INVALID");
+          error.code = "STAFF_SESSION_INVALID";
+          throw error;
+        }
+        const liveGroups = Array.isArray(liveStaff.groups) ? liveStaff.groups : null;
+        if (!liveGroups) {
+          const error = new Error("STAFF_SESSION_INVALID");
+          error.code = "STAFF_SESSION_INVALID";
+          throw error;
+        }
+
+        if (!liveDriverSnap.exists) {
+          const error = new Error("DRIVER_NOT_FOUND");
+          error.code = "DRIVER_NOT_FOUND";
+          throw error;
+        }
+        const liveDriver = liveDriverSnap.data() || {};
+        const liveDriverGroupId = liveDriver.groupId || liveDriver.lineId || null;
+        if (!liveDriverGroupId || String(liveDriverGroupId) !== String(lockedGroupId)) {
+          // D24.1.1.1: mismatch is authoritative internally; response must stay data-minimal.
+          const error = new Error("DRIVER_SCOPE_CHANGED");
+          error.code = "DRIVER_SCOPE_CHANGED";
+          throw error;
+        }
+        if (!liveGroups.includes(liveDriverGroupId)) {
+          const error = new Error("DRIVER_SCOPE_DENIED");
+          error.code = "DRIVER_SCOPE_DENIED";
+          throw error;
+        }
+        // New assignments require an active driver; clear may remove an existing duty.
+        if (parsed.data.type !== "clear" && liveDriver.active === false) {
+          const error = new Error("DRIVER_INACTIVE");
+          error.code = "DRIVER_INACTIVE";
+          throw error;
+        }
+        // Import lock stays on the locked group (same as LIVE after drift check).
+        const importGate = await readMonthlyImportLockInTx(
+          tx, companyRef, lockedGroupId, yearMonth
+        );
+
+        let assignmentStart = parsed.data.start || null;
+        let assignmentEnd = parsed.data.end || null;
+        if (needsDutyGuard) {
+          let activePlan = null;
+          try {
+            activePlan = await getActiveServicePlanInTx(tx, companyRef, liveDriverGroupId);
+          } catch (catalogErr) {
+            if (catalogErr?.code === "invalid-group") {
+              const error = new Error("invalid-group");
+              error.code = "invalid-group";
+              throw error;
+            }
+            throw catalogErr;
+          }
+          const dutiesByCode = new Map();
+          for (const duty of activePlan?.duties || []) {
+            const code = String(duty.code || "").trim();
+            if (!code) continue;
+            dutiesByCode.set(code, duty);
+            dutiesByCode.set(code.toUpperCase(), duty);
+          }
+          const dutyCheck = evaluateDutyAgainstCatalog({
+            type: parsed.data.type,
+            dutyCode,
+            start: assignmentStart,
+            end: assignmentEnd,
+            dutiesByCode
+          });
+          if (!dutyCheck.ok) {
+            const error = new Error(dutyCheck.code);
+            error.code = dutyCheck.code;
+            error.dutyCode = dutyCheck.dutyCode || dutyCode;
+            error.expectedStart = dutyCheck.expectedStart || null;
+            error.expectedEnd = dutyCheck.expectedEnd || null;
+            throw error;
+          }
+          if (dutyCheck.start && !assignmentStart) assignmentStart = dutyCheck.start;
+          if (dutyCheck.end && !assignmentEnd) assignmentEnd = dutyCheck.end;
+        }
 
         const legacyExisting = legacyShiftSnaps.find((snap) => snap.exists)?.data() || null;
         const existing = shiftSnap.exists ? shiftSnap.data() : legacyExisting;
@@ -3118,6 +3613,74 @@ function registerDriverRoutes(app, deps) {
           error.current = revisionCheck.current || existing;
           throw error;
         }
+        if (!importGate.decision.ok) {
+          const error = new Error(importGate.decision.code);
+          error.code = importGate.decision.code;
+          error.recoveryRequired = importGate.decision.recoveryRequired === true;
+          error.retryable = importGate.decision.retryable === true;
+          throw error;
+        }
+
+        if (needsBusGuard) {
+          const liveBusDoc = (busLookupSnap?.docs || [])
+            .map((doc) => ({ id: doc.id, ...doc.data() }))
+            .find((row) => row.active !== false)
+            || (busLookupSnap?.docs?.[0]
+              ? { id: busLookupSnap.docs[0].id, ...busLookupSnap.docs[0].data() }
+              : null);
+          const busCheck = evaluateBusResource({
+            bus: liveBusDoc,
+            busNumber,
+            groupId: liveDriverGroupId,
+            existingBusNumber: existing?.bus || null
+          });
+          if (!busCheck.ok) {
+            const error = new Error(busCheck.code);
+            error.code = busCheck.code;
+            error.bus = busNumber;
+            error.opsStatus = busCheck.opsStatus || null;
+            throw error;
+          }
+          const conflictShifts = (busConflictSnap?.docs || []).map((doc) => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          const overlaps = findOverlappingBusAssignments(conflictShifts, {
+            bus: busNumber,
+            date: parsed.data.date,
+            excludeDriverId: parsed.data.driverId,
+            excludeShiftId: shiftId,
+            start: assignmentStart,
+            end: assignmentEnd
+          });
+          if (overlaps.length) {
+            const error = new Error("BUS_DOUBLE_BOOKED");
+            error.code = "BUS_DOUBLE_BOOKED";
+            error.bus = busNumber;
+            error.conflict = { bus: overlaps[0] };
+            throw error;
+          }
+        }
+
+        // Apply duty-derived times for the write payload (still inside tx, before writes).
+        if (assignmentStart && !parsed.data.start) parsed.data.start = assignmentStart;
+        if (assignmentEnd && !parsed.data.end) parsed.data.end = assignmentEnd;
+        const writeDriverGroupId = lockedGroupId;
+        const writeDriverName = safeDriver(liveDriverSnap).name || driverName;
+
+        if (_assignmentMutationHookForTests) {
+          await _assignmentMutationHookForTests({
+            tx,
+            phase: "before-writes",
+            companyRef,
+            busNumber,
+            lockedGroupId,
+            driverId: parsed.data.driverId,
+            date: parsed.data.date
+          });
+        }
+
+        if (importGate.decision.clearLock) tx.delete(importGate.lockRef);
 
         legacyShiftSnaps.forEach((snap) => {
           if (snap.exists) tx.delete(snap.ref);
@@ -3131,8 +3694,8 @@ function registerDriverRoutes(app, deps) {
           const assignedAt = admin().firestore.FieldValue.serverTimestamp();
           const cleared = buildClearedShift({
             data: parsed.data,
-            driverName,
-            driverGroupId,
+            driverName: writeDriverName,
+            driverGroupId: writeDriverGroupId,
             staffUid: req.staff.uid,
             revision,
             priorSnapshot,
@@ -3149,8 +3712,8 @@ function registerDriverRoutes(app, deps) {
               ...schedule,
               id: scheduleIds.canonical,
               driverId: parsed.data.driverId,
-              driverName,
-              groupId: driverGroupId,
+              driverName: writeDriverName,
+              groupId: writeDriverGroupId,
               month: yearMonth,
               parsedShifts,
               revision: currentRevision(schedule) + 1,
@@ -3167,8 +3730,8 @@ function registerDriverRoutes(app, deps) {
         const assignedAt = admin().firestore.FieldValue.serverTimestamp();
         const shift = buildAssignedShift({
           data: parsed.data,
-          driverName,
-          driverGroupId,
+          driverName: writeDriverName,
+          driverGroupId: writeDriverGroupId,
           staffUid: req.staff.uid,
           revision,
           assignedAt,
@@ -3186,8 +3749,8 @@ function registerDriverRoutes(app, deps) {
             ...base,
             id: scheduleIds.canonical,
             driverId: parsed.data.driverId,
-            driverName,
-            groupId: driverGroupId,
+            driverName: writeDriverName,
+            groupId: writeDriverGroupId,
             month: yearMonth,
             parsedShifts,
             revision: currentRevision(base) + 1,
@@ -3248,6 +3811,15 @@ function registerDriverRoutes(app, deps) {
         shift: { ...result.shift, id: result.shiftId, assignedAt: null }
       });
     } catch (error) {
+      if (error.code === "MONTHLY_IMPORT_IN_PROGRESS" || error.code === "MONTHLY_IMPORT_RECOVERY_REQUIRED") {
+        return res.status(409).json({
+          success: false,
+          code: error.code,
+          retryable: error.retryable === true,
+          recoveryRequired: error.recoveryRequired === true,
+          error: "Uvoz mesečnog plana za ovu grupu je u toku ili zahteva proveru."
+        });
+      }
       if (error.code === "revision_conflict" || error.message === "revision_conflict") {
         return res.status(409).json({
           success: false,
@@ -3257,6 +3829,63 @@ function registerDriverRoutes(app, deps) {
             currentRevision: error.currentRevision ?? 0,
             shift: error.current || null
           }
+        });
+      }
+      if (error.code === "DRIVER_NOT_FOUND") {
+        return res.status(404).json({ success: false, error: "Voza\u010d nije prona\u0111en." });
+      }
+      if (error.code === "STAFF_SESSION_INVALID") {
+        return res.status(403).json({
+          success: false,
+          code: "STAFF_SESSION_INVALID",
+          error: assignmentResourceErrorMessage("STAFF_SESSION_INVALID")
+        });
+      }
+      if (error.code === "DRIVER_SCOPE_DENIED") {
+        return res.status(403).json({
+          success: false,
+          code: "DRIVER_SCOPE_DENIED",
+          error: "Pristup voza\u010du van dodeljene grupe nije dozvoljen."
+        });
+      }
+      if (error.code === "DRIVER_SCOPE_CHANGED") {
+        return res.status(409).json({
+          success: false,
+          code: "DRIVER_SCOPE_CHANGED",
+          error: assignmentResourceErrorMessage("DRIVER_SCOPE_CHANGED")
+        });
+      }
+      if (error.code === "DRIVER_INACTIVE") {
+        return res.status(409).json({
+          success: false,
+          code: "DRIVER_INACTIVE",
+          error: assignmentResourceErrorMessage("DRIVER_INACTIVE")
+        });
+      }
+      if (error.code === "invalid-group") {
+        return res.status(400).json({ success: false, error: "Nevažeća grupa za katalog smena." });
+      }
+      const resourceCodes = new Set([
+        "BUS_NOT_FOUND",
+        "BUS_INACTIVE",
+        "BUS_NOT_AVAILABLE",
+        "BUS_OUTSIDE_GROUP",
+        "BUS_DOUBLE_BOOKED",
+        "DUTY_CATALOG_MISSING",
+        "DUTY_NOT_IN_ACTIVE_CATALOG",
+        "DUTY_TIME_MISMATCH"
+      ]);
+      if (resourceCodes.has(error.code)) {
+        return res.status(409).json({
+          success: false,
+          code: error.code,
+          bus: error.bus || null,
+          opsStatus: error.opsStatus || null,
+          conflict: error.conflict || null,
+          dutyCode: error.dutyCode || null,
+          expectedStart: error.expectedStart || null,
+          expectedEnd: error.expectedEnd || null,
+          error: assignmentResourceErrorMessage(error.code)
         });
       }
       req.log?.error?.({ err: error }, "Dodela smene nije uspela");
@@ -3328,6 +3957,9 @@ function registerDriverRoutes(app, deps) {
         const shiftSnap = await tx.get(shiftRef);
         const scheduleSnap = await tx.get(scheduleRef);
         const legacyScheduleSnap = await tx.get(legacyScheduleRef);
+        const importGate = await readMonthlyImportLockInTx(
+          tx, companyRef, driverGroupId, yearMonth
+        );
         const existing = shiftSnap.exists ? shiftSnap.data() : null;
         const plan = simulateUndoWrite(existing, parsed.data.expectedRevision);
         if (!plan.ok) {
@@ -3337,6 +3969,14 @@ function registerDriverRoutes(app, deps) {
           error.current = plan.current || existing;
           throw error;
         }
+        if (!importGate.decision.ok) {
+          const error = new Error(importGate.decision.code);
+          error.code = importGate.decision.code;
+          error.recoveryRequired = importGate.decision.recoveryRequired === true;
+          error.retryable = importGate.decision.retryable === true;
+          throw error;
+        }
+        if (importGate.decision.clearLock) tx.delete(importGate.lockRef);
 
         const assignedAt = admin().firestore.FieldValue.serverTimestamp();
         const scheduleBaseSnap = scheduleSnap.exists ? scheduleSnap : legacyScheduleSnap;
@@ -3455,6 +4095,15 @@ function registerDriverRoutes(app, deps) {
         shift: { ...result.shift, id: result.shiftId, assignedAt: null }
       });
     } catch (error) {
+      if (error.code === "MONTHLY_IMPORT_IN_PROGRESS" || error.code === "MONTHLY_IMPORT_RECOVERY_REQUIRED") {
+        return res.status(409).json({
+          success: false,
+          code: error.code,
+          retryable: error.retryable === true,
+          recoveryRequired: error.recoveryRequired === true,
+          error: "Uvoz mesečnog plana za ovu grupu je u toku ili zahteva proveru."
+        });
+      }
       if (error.code === "nothing_to_undo") {
         return res.status(409).json({
           success: false,
@@ -3488,5 +4137,6 @@ module.exports = {
   verifyDriverLogin, verifyCompanyCode, createRequireActivatedDriver,
   inclusiveDays, vacationOverlaps,
   generateActivationOtp, verifyActivationOtp, isValidPersonalLoginCode,
-  hashSecret, activationExpiresAt, smsProvider
+  hashSecret, activationExpiresAt, smsProvider,
+  setAssignmentMutationHookForTests
 };

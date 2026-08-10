@@ -5,7 +5,9 @@ import { URL } from "node:url";
 import {
   normalizeGroupIds,
   resolveDispatcherGroupIds,
-  filterAssignedGroups
+  filterAssignedGroups,
+  sanitizeDispatcherActiveGroups,
+  isDispatcherAssignedGroupId
 } from "../../js/core/dispatcher-scope.js";
 
 test("cold load uses own profile groups when claims omit groups", () => {
@@ -35,6 +37,19 @@ test("existing profile is authoritative over stale claims", () => {
 
 test("group IDs are trimmed, unique and stable", () => {
   assert.deepEqual(normalizeGroupIds([" 311 ", "310", "310", ""]), ["310", "311"]);
+});
+
+test("sanitizeDispatcherActiveGroups rejects foreign active/hub IDs", () => {
+  const out = sanitizeDispatcherActiveGroups({
+    assignedIds: ["101"],
+    activeGroupId: "202",
+    activeGroupHubId: "202"
+  });
+  assert.equal(out.rejected, true);
+  assert.equal(out.activeGroupId, "101");
+  assert.equal(out.activeGroupHubId, "101");
+  assert.equal(isDispatcherAssignedGroupId(["101"], "202"), false);
+  assert.equal(isDispatcherAssignedGroupId(["101"], "101"), true);
 });
 
 test("dispatcher create-group control remains unavailable", () => {

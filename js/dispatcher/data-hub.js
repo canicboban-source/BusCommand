@@ -5,7 +5,6 @@ import { renderBusesList } from "../data/buses-routes.js";
 import { renderDriversList } from "../data/drivers.js";
 import { renderPackageImportPreview } from "../imports/package-import.js";
 import { getHubGroupId } from "./group-hub.js";
-import { renderPlanImportPreview } from "./plan-import.js";
 import { t } from "../ui/i18n.js";
 
 function renderShiftCatalogStatus() {
@@ -50,7 +49,11 @@ function renderDispatcherDataHub() {
     renderShiftCatalogStatus();
     renderDriversList();
     renderBusesList();
-    renderPlanImportPreview();
+    // D23/2R-B: plan-import is a lazy chunk — refresh preview only if already loaded
+    // or the monthly import panel is present (do not pull chunk into staff main).
+    if (document.getElementById("plan-import-preview")) {
+        void import("./plan-import.js").then((m) => m.renderPlanImportPreview()).catch(() => {});
+    }
     renderPackageImportPreview();
 }
 

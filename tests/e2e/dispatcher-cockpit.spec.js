@@ -246,7 +246,8 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await loginDispatcher(page);
 
     const resolve = page.locator("#dispatcher-live-alerts .urgent-action").first();
-    await expect(resolve).toContainText(/Resolve now|Reši odmah|Sofort lösen/i);
+    // Report rows use ops_btn_resolve; coverage incidents use ops_attn_solve_now.
+    await expect(resolve).toContainText(/Resolve(?: now| issue)?|Reši(?: odmah| problem)?|Sofort lösen|Lösen|Problem lösen/i);
     await resolve.click();
     await expect(page.locator("#ops-attention-panel")).toBeVisible();
 

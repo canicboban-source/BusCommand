@@ -12,7 +12,7 @@
     "lint:fix": "eslint . --fix",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "node --test tests/unit/**/*.test.js tests/unit/**/*.test.mjs",
-    "test:rules": "firebase emulators:exec --only firestore,auth --project buscommand-preview \"node --test tests/rules/**/*.test.js\"",
+    "test:rules": "firebase emulators:exec --only firestore,auth --project buscommand-preview \"node --test --test-concurrency=1 tests/rules/**/*.test.js\"",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "setup": "node scripts/setup-company.js",

@@ -535,7 +535,7 @@
                             </div>
                             <form id="sa-create-company-form" class="sa-create-form" data-submit-action="superadminSubmitCreateModal" novalidate>
                                 <fieldset class="sa-create-fieldset">
-                                    <legend data-i18n="add_new_company">Firma</legend>
+                                    <legend data-i18n="add_new_company">Register New Company</legend>
                                     <label class="form-group" for="sa-new-name">
                                         <span data-i18n="company_name_label">Naziv</span>
                                         <input type="text" id="sa-new-name" required maxlength="200" autocomplete="organization">
@@ -1673,6 +1673,11 @@
                         </p>
                         <div id="plan-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bulk-plan-import-files"]'
                             data-drop-action="handleBulkPlanDrop" data-i18n="hub_plan_drop_hint">Drop Excel/CSV/PDF/TXT/image (OCR)</div>
+                        <div class="plan-import-choose-row" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                            <button type="button" id="plan-import-choose-files" class="btn-secondary" data-action="clickElementById" data-action-args='["bulk-plan-import-files"]'>
+                                <i data-lucide="folder-open"></i> <span data-i18n="plan_import_choose_files">Choose files</span>
+                            </button>
+                        </div>
                         <input type="file" id="bulk-plan-import-files" multiple accept=".xlsx,.xls,.pdf,.csv,.txt,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display:none;" data-change-action="handleBulkPlanFileInput" data-change-pass="event">
                         <div id="plan-import-preview" hidden></div>
                     </div>
@@ -2547,7 +2552,7 @@
     <div id="sa-company-detail-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sa-detail-title" style="display:none;">
         <div class="modal-content sa-detail-modal">
             <div class="sa-detail-header">
-                <h3 id="sa-detail-title" data-i18n="sa_detail_title">Company details</h3>
+                <h3 id="sa-detail-title" data-i18n="sa_detail_title">Manage company account</h3>
                 <button type="button" class="btn-secondary" data-action="superadminCloseCompanyDetail" aria-label="Close">
                     <i data-lucide="x" style="width:16px;height:16px;"></i>
                 </button>
@@ -2555,7 +2560,10 @@
             <p id="sa-detail-error" class="error-message hidden" role="alert"></p>
             <div id="sa-detail-body"></div>
             <div class="sa-detail-footer">
-                <button type="button" id="sa-detail-open-app-btn" class="btn-secondary" data-action="superadminOpenCompany" data-action-args='[]' data-i18n="btn_open">Open</button>
+                <button type="button" id="sa-detail-support-btn" class="btn-secondary hidden" hidden data-action="superadminStartSupport" data-action-args='[]'>
+                    <i data-lucide="headset" style="width:16px;height:16px;"></i>
+                    <span data-i18n="sa_support_start_audited">Start audited support</span>
+                </button>
                 <button type="button" class="btn-primary" data-action="superadminCloseCompanyDetail" data-i18n="btn_close">Close</button>
             </div>
         </div>

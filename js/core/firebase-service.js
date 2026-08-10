@@ -208,23 +208,13 @@ async function _loadAllowedCollection(companyRef, item) {
         const assignedIds = _dispatcherAssignedGroupIds();
         if (assignedIds.length === 0) return [];
 
-        const snapshots = item.key === "drivers"
-            ? await Promise.all(assignedIds.flatMap((groupId) => [
-                _readFirestoreOperation(
-                    `load_assigned_drivers`, `${companyRef.path}/drivers?groupId=${groupId}`,
-                    () => companyRef.collection("drivers").where("groupId", "==", groupId).get()
-                ),
-                _readFirestoreOperation(
-                    `load_assigned_drivers_known`, `${companyRef.path}/drivers?known=${groupId}`,
-                    () => companyRef.collection("drivers").where("knownGroupIds", "array-contains", groupId).get()
-                )
-            ]))
-            : await Promise.all(assignedIds.map((groupId) =>
-                _readFirestoreOperation(
-                    `load_assigned_${item.key}`, `${companyRef.path}/${item.col}?groupId=${groupId}`,
-                    () => companyRef.collection(item.col).where("groupId", "==", groupId).get()
-                )
-            ));
+        // Home groupId only — knownGroupIds must not open a company directory (FAZA 1 / D18).
+        const snapshots = await Promise.all(assignedIds.map((groupId) =>
+            _readFirestoreOperation(
+                `load_assigned_${item.key}`, `${companyRef.path}/${item.col}?groupId=${groupId}`,
+                () => companyRef.collection(item.col).where("groupId", "==", groupId).get()
+            )
+        ));
         const unique = new Map();
         snapshots.flatMap(snapshot => snapshot.docs).forEach(doc => unique.set(doc.id, doc));
         return item.key === "drivers"
@@ -241,6 +231,7 @@ async function _loadAllowedCollection(companyRef, item) {
             : _docsToList(snapshot.docs, companyId);
     }
     const uid = _driverUid();
+    const homeGroupId = String(window.currentUser?.groupId || window.currentUser?.lineId || "").trim();
     if (item.key === "drivers") {
         const snap = await companyRef.collection("drivers").doc(uid).get();
         return snap.exists ? _docsToDriversList([snap], companyId) : [];
@@ -255,12 +246,18 @@ async function _loadAllowedCollection(companyRef, item) {
         [...privateSnap.docs, ...broadcastSnap.docs].forEach(doc => unique.set(doc.id, doc));
         return _docsToList([...unique.values()], companyId);
     }
-    if (item.key === "reports") {
+    if (item.key === "reports" || item.key === "vacations" || item.key === "lostItems"
+        || item.key === "shifts" || item.key === "schedules") {
         const snapshot = await companyRef.collection(item.col).where("driverId", "==", uid).get();
         return _docsToList(snapshot.docs, companyId);
     }
+    if (item.key === "buses" || item.key === "routes") {
+        if (!homeGroupId) return [];
+        const snapshot = await companyRef.collection(item.col).where("groupId", "==", homeGroupId).get();
+        return _docsToList(snapshot.docs, companyId);
+    }
     if (item.key === "dispatchers" || item.key === "companyAdmins") return [];
-    return _docsToList((await companyRef.collection(item.col).get()).docs, companyId);
+    return [];
 }
 
 function _resetSyncBaselines(stateObj) {
@@ -359,17 +356,28 @@ async function loadStateFromFirestore(companyId) {
             );
         }
 
-        const sosSnap = await companyRef.collection("settings").doc("sos").get();
-        if (sosSnap.exists) {
-            const sosData = sosSnap.data();
-            loadedState.sosActive = sosData.sosActive || false;
-            loadedState.sosDriver = sosData.sosDriver || "";
-            loadedState.sosBus = sosData.sosBus || "";
-            _lastSosSnapshot = {
-                sosActive: loadedState.sosActive,
-                sosDriver: loadedState.sosDriver,
-                sosBus: loadedState.sosBus
-            };
+        try {
+            const sosSnap = await _readFirestoreOperation(
+                "load_sos_settings", `${companyRef.path}/settings/sos`,
+                () => companyRef.collection("settings").doc("sos").get()
+            );
+            if (sosSnap.exists) {
+                const sosData = sosSnap.data();
+                loadedState.sosActive = sosData.sosActive || false;
+                loadedState.sosDriver = sosData.sosDriver || "";
+                loadedState.sosBus = sosData.sosBus || "";
+                _lastSosSnapshot = {
+                    sosActive: loadedState.sosActive,
+                    sosDriver: loadedState.sosDriver,
+                    sosBus: loadedState.sosBus
+                };
+            }
+        } catch (sosErr) {
+            // Cross-group active SOS is denied for Dispo — fail closed (no oracle toast).
+            loadedState.sosActive = false;
+            loadedState.sosDriver = "";
+            loadedState.sosBus = "";
+            console.warn(`Firebase SOS settings unavailable | code=${sosErr?.code || "unknown"}`);
         }
 
         console.log("✅ Firebase: Granular State loaded for", companyId);
@@ -556,7 +564,7 @@ function startFirestoreSync(companyId) {
     const companyRef = db.collection("companies").doc(companyId);
     if (_isDispatcherSession()) _startDispatcherAccessSync(companyRef, companyId);
 
-    const sosListener = companyRef.collection("settings").doc("sos").onSnapshot(async (snap) => {
+    const sosListener = companyRef.collection("settings").doc("sos").onSnapshot((snap) => {
         if (!snap.exists) return;
         const data = snap.data();
         const sosChanged = window.state.sosActive !== data.sosActive;
@@ -576,6 +584,13 @@ function startFirestoreSync(companyId) {
                 showToast(t("sos_alarm_received"), "error", 8000);
             }
         }
+    }, (error) => {
+        // Permission denied when SOS belongs to another Dispo group — clear local alarm UI.
+        window.state.sosActive = false;
+        window.state.sosDriver = "";
+        window.state.sosBus = "";
+        _lastSosSnapshot = { sosActive: false, sosDriver: "", sosBus: "" };
+        console.warn(`Firebase SOS listener denied | code=${error?.code || "unknown"}`);
     });
     _firestoreListeners.push(sosListener);
 
@@ -613,9 +628,23 @@ function startFirestoreSync(companyId) {
             _firestoreListeners.push(listener);
             return;
         }
-        if (_isDriverSession() && item.key === "reports") {
+        if (_isDriverSession() && (item.key === "reports" || item.key === "vacations" || item.key === "lostItems")) {
             const listener = companyRef.collection(item.col)
                 .where("driverId", "==", _driverUid())
+                .onSnapshot((snap) => {
+                    if (!snap.metadata.hasPendingWrites) _applyRemoteDocs(item, snap.docs, companyId);
+                });
+            _firestoreListeners.push(listener);
+            return;
+        }
+        if (_isDriverSession() && (item.key === "buses" || item.key === "routes")) {
+            const homeGroupId = String(window.currentUser?.groupId || window.currentUser?.lineId || "").trim();
+            if (!homeGroupId) {
+                _applyRemoteDocs(item, [], companyId);
+                return;
+            }
+            const listener = companyRef.collection(item.col)
+                .where("groupId", "==", homeGroupId)
                 .onSnapshot((snap) => {
                     if (!snap.metadata.hasPendingWrites) _applyRemoteDocs(item, snap.docs, companyId);
                 });
@@ -630,6 +659,7 @@ function startFirestoreSync(companyId) {
                 _applyRemoteDocs(item, [...unique.values()], companyId);
             };
             const assignedIds = _dispatcherAssignedGroupIds();
+            // Home groupId only — never knownGroupIds directory expansion.
             assignedIds.forEach((groupId) => {
                 const primaryListener = companyRef.collection(item.col).where("groupId", "==", groupId).onSnapshot((snap) => {
                     if (snap.metadata.hasPendingWrites) return;
@@ -637,16 +667,6 @@ function startFirestoreSync(companyId) {
                     refresh();
                 });
                 _firestoreListeners.push(primaryListener);
-                if (item.key === "drivers") {
-                    const knownListener = companyRef.collection("drivers")
-                        .where("knownGroupIds", "array-contains", groupId)
-                        .onSnapshot((snap) => {
-                            if (snap.metadata.hasPendingWrites) return;
-                            queryDocs.set(`k:${groupId}`, snap.docs);
-                            refresh();
-                        });
-                    _firestoreListeners.push(knownListener);
-                }
             });
             return;
         }

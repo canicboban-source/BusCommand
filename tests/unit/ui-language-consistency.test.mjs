@@ -35,7 +35,7 @@ function loadUiLanguageHelpers() {
     };
     const FRESH_STATE = { language: "en", branding: { name: "" }, drivers: [], groups: [] };
     const pure = `
-      const PILOT_UI_LANGS = new Set(["de", "en", "sr", "hr"]);
+      const PILOT_UI_LANGS = new Set(["de", "en", "sr"]);
       function getBaseState() { return { ...FRESH_STATE }; }
       function resolveUiLanguage(preferred) {
         const normalize = (value) => {

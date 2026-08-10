@@ -17,7 +17,16 @@ function fakeDb(rows) {
 }
 
 test("audit details redact credentials and bound nested payloads", () => {
-  const safe = sanitizeDetails({ password: "no", token: "no", pinCode: "no", groupId: "north", nested: { authorization: "no", count: 2 } });
+  const safe = sanitizeDetails({
+    password: "no",
+    token: "no",
+    pinCode: "no",
+    otp: "12345",
+    activationCode: "99999",
+    eid: "EID-SECRET",
+    groupId: "north",
+    nested: { authorization: "no", count: 2 }
+  });
   assert.deepEqual(safe, { groupId: "north", nested: { count: 2 } });
   assert.equal(sanitizeDetails("x".repeat(300)).length, 180);
 });

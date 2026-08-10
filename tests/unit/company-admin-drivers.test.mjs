@@ -17,7 +17,7 @@ test("Company Admin driver page exposes a safe group-scoped CSV workflow", async
   assert.match(html, /id="ca-driver-edit-modal"/);
   assert.match(html, /BusCommand_Drivers_Import_v1\.csv/);
   assert.match(client, /MAX_FILE_BYTES = 1_000_000/);
-  assert.match(client, /MAX_IMPORT_ROWS = 250/);
+  assert.match(client, /MAX_IMPORT_ROWS = 249/);
   assert.match(client, /pendingImport\.groupId/);
   assert.doesNotMatch(client, /company_code[^\n]*innerHTML/);
   assert.match(api, /JSON\.stringify\(\{ companyId, groupId, csv \}\)/);
@@ -59,22 +59,52 @@ test("Company Admin can edit driver profile fields and CA-only EID/PIN controls"
   assert.match(client, /ApiClient\.updateCompanyDriver/);
   assert.match(client, /listCompanyDrivers/);
   assert.match(client, /setCompanyDriverPersonalCode/);
+  assert.match(client, /createCompanyDriver/);
+  assert.match(client, /ApiClient\.createCompanyDriver/);
   assert.match(client, /ca_drivers_eid/);
   assert.doesNotMatch(client, /updateCompanyDriver\([^)]*(?:eid|pin|company_code)/);
   assert.match(api, /updateCompanyDriver\(companyId, driverId, payload\)/);
+  assert.match(api, /createCompanyDriver\(companyId, payload\)/);
   assert.match(api, /personal-code/);
   assert.match(validation, /companyDriverProfileBody/);
   assert.match(validation, /companyDriverPersonalCodeBody/);
+  assert.match(validation, /companyDriverCreateBody/);
   assert.match(validation, /\.strict\(\)/);
-  assert.doesNotMatch(validation, /companyDriverProfileBody[\s\S]*?\beid\b/);
+  const profileBodyBlock = validation.match(
+    /const companyDriverProfileBody = z\.object\(\{[\s\S]*?\}\)\.strict\(\);/
+  )?.[0] || "";
+  assert.ok(profileBodyBlock, "companyDriverProfileBody block missing");
+  assert.doesNotMatch(profileBodyBlock, /\beid\b/);
+  assert.match(validation, /const companyDriverCreateBody = z\.object\(\{[\s\S]*?\beid\b/);
+  assert.match(server, /registerCompanyAdminDriverRoutes/);
   assert.match(server, /app\.patch\(\s*"\/api\/company-admin\/drivers\/:driverId"/);
   assert.match(server, /driver_profile_updated/);
   assert.match(server, /driver_personal_code_set/);
-  assert.match(server, /loginCodeHash/);
-  assert.match(server, /codeActivated:\s*true/);
+  assert.doesNotMatch(server, /batch\.update\([^\n]*\{\s*eid\s*\}/);
+  const registerSrc = await read("../../server/register-company-admin-drivers.js");
+  assert.match(registerSrc, /app\.post\(\s*"\/api\/company-admin\/drivers"/);
+  assert.match(registerSrc, /createManualCompanyDriver/);
+  assert.match(registerSrc, /listCompanyDriversForAdmin/);
+  assert.match(registerSrc, /driver_manual_created/);
   assert.match(validation, /\\d\{5,12\}/);
   assert.match(firebase, /sanitizeDriverRecordForClient/);
   assert.match(firebase, /role !== "dispatcher"/);
+  // Manual add must not chain CSV import + PIN (partial-state risk).
+  const manualAddFn = client.match(
+    /async function submitCompanyDriverManualAdd\([\s\S]*?\n\}/
+  )?.[0] || "";
+  assert.ok(manualAddFn.includes("createCompanyDriver"), "manual add must call atomic create");
+  assert.doesNotMatch(manualAddFn, /importDriversCsv/);
+  assert.doesNotMatch(manualAddFn, /setCompanyDriverPersonalCode/);
+  // D24.1: profile write path must not embed eid (ops module owns create).
+  const ops = await read("../../server/company-admin-driver-ops.js");
+  const profileSet = ops.match(/tx\.set\(profileCol\.doc\(driverId\), \{[\s\S]*?\}\);/)?.[0] || "";
+  const credentialSet = ops.match(/tx\.set\(credentialCol\.doc\(driverId\), \{[\s\S]*?\}\);/)?.[0] || "";
+  assert.ok(profileSet, "profile tx.set missing");
+  assert.ok(credentialSet, "credential tx.set missing");
+  assert.doesNotMatch(profileSet, /\beid\b/);
+  assert.match(credentialSet, /\beid\b/);
+  assert.match(ops, /tx\.get\(companyRef\.collection\("groups"\)\.doc\(groupId\)\)/);
 });
 
 test("driver account translations are complete in pilot languages", async () => {

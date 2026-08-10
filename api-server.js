@@ -7,6 +7,7 @@ require("./server/load-env").loadEnvFile();
 
 const express = require("express");
 const bcrypt  = require("bcrypt");
+const crypto  = require("crypto");
 const path    = require("path");
 const fs      = require("fs");
 const cors    = require("cors");
@@ -78,7 +79,8 @@ const {
   companyGroupBody,
   companyGroupUpdateBody,
   companyDriverProfileBody,
-  companyDriverPersonalCodeBody
+  companyDriverPersonalCodeBody,
+  companyDriverCreateBody
 } = require("./server/validation");
 
 const { version: APP_VERSION } = require("./package.json");
@@ -1163,64 +1165,23 @@ app.delete(
   }
 );
 
-app.get(
-  "/api/company-admin/drivers",
-  rateLimit(40, 60 * 1000),
+const { registerCompanyAdminDriverRoutes } = require("./server/register-company-admin-drivers");
+registerCompanyAdminDriverRoutes(app, {
+  rateLimit,
   requireCompanyAdmin,
-  async (req, res) => {
-    const companyId = requireOwnCompany(req, res);
-    if (!companyId) return;
-    try {
-      const companyRef = db.collection("companies").doc(companyId);
-      const [profileSnap, credSnap] = await Promise.all([
-        companyRef.collection("drivers").get(),
-        companyRef.collection("driver_credentials").get()
-      ]);
-      const eidById = new Map(
-        credSnap.docs.map((doc) => [doc.id, String(doc.data()?.eid || "").trim()])
-      );
-      const hasLoginCodeById = new Map(
-        credSnap.docs.map((doc) => [doc.id, Boolean(doc.data()?.loginCodeHash)])
-      );
-      const batch = db.batch();
-      let backfill = 0;
-      const drivers = profileSnap.docs.map((doc) => {
-        const data = doc.data() || {};
-        const eid = String(data.eid || eidById.get(doc.id) || "").trim();
-        if (eid && !data.eid) {
-          batch.update(doc.ref, { eid });
-          backfill += 1;
-        }
-        const homeGroup = data.groupId || data.lineId || "";
-        const known = Array.isArray(data.knownGroupIds)
-          ? data.knownGroupIds.map((id) => String(id || "").trim()).filter(Boolean)
-          : [];
-        if (homeGroup && !known.includes(homeGroup)) known.unshift(homeGroup);
-        return {
-          id: doc.id,
-          firstName: data.firstName || "",
-          lastName: data.lastName || "",
-          name: data.name || `${data.firstName || ""} ${data.lastName || ""}`.trim(),
-          phone: data.phone || "",
-          email: data.email || "",
-          groupId: homeGroup,
-          lineId: data.lineId || data.groupId || "",
-          knownGroupIds: known,
-          companyId,
-          eid,
-          active: data.active !== false,
-          codeActivated: data.codeActivated === true,
-          hasPersonalCode: hasLoginCodeById.get(doc.id) === true || data.codeActivated === true
-        };
-      });
-      if (backfill) await batch.commit().catch(() => {});
-      return res.json({ success: true, drivers });
-    } catch (err) {
-      req.log?.error({ err }, "company-admin drivers list failed");
-      return res.status(500).json({ success: false, error: "Lista vozača nije učitana." });
-    }
-  }
-);
+  requireOwnCompany,
+  validateBody,
+  companyDriverCreateBody,
+  db,
+  // Lazy: QA harness may boot with admin === null (D24.1.1).
+  FieldValue: {
+    serverTimestamp: (...args) => admin.firestore.FieldValue.serverTimestamp(...args),
+    delete: (...args) => admin.firestore.FieldValue.delete(...args)
+  },
+  bcryptHash: (value, rounds) => bcrypt.hash(value, rounds),
+  randomUUID: () => crypto.randomUUID(),
+  logAudit: (...args) => _logAuditEvent(...args)
+});
 
 app.post(
   "/api/company-admin/drivers/:driverId/personal-code",

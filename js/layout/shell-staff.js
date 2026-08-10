@@ -2,7 +2,6 @@
 import { renderCompanyAdminDashboard } from "../admin/company-admin.js";
 import { renderSuperAdminDashboard } from "../admin/superadmin.js";
 import { checkSOSStatus } from "../maps/sos-siren.js";
-import { showCompanyAdminOnboarding, shouldShowCompanyAdminOnboarding } from "../admin/company-admin-onboarding.js";
 import { rejectDispatcherWithoutGroups, clearAllSensitiveAuthFields } from "../auth/login-ui.js";
 import { clearUserSession, syncUserSession } from "../auth/login-session.js";
 import { switchSection } from "./navigation.js";
@@ -15,6 +14,7 @@ import { canUseDriverOperationalUi } from "../auth/driver-access-gate.js";
 import { escapeHtml } from "../core/utils.js";
 import { updateTrialBadge } from "../core/license.js";
 import { startHeaderConnectionStatus } from "../ui/connection-status.js";
+import { sanitizeDispatcherActiveGroups } from "../core/dispatcher-scope.js";
 
 export function showAppLayout() {
     if (!canUseDriverOperationalUi()) return false;
@@ -76,24 +76,43 @@ export function showAppLayout() {
         saNav?.classList.add("hidden");
         caNav?.classList.remove("hidden");
         renderCompanyAdminDashboard();
-        if (shouldShowCompanyAdminOnboarding()) {
-            switchSection("company-admin-dashboard");
-            setTimeout(() => showCompanyAdminOnboarding(), 350);
-        } else if (!window.state.branding?.name?.trim()) {
-            switchSection("company-admin-branding");
-        } else {
-            switchSection("company-admin-dashboard");
-        }
+        // Lazy onboarding chunk — keeps D17 staff budget under 568 KiB ceiling.
+        switchSection("company-admin-dashboard");
+        void import("../admin/company-admin-onboarding.js").then((mod) => {
+            if (mod.shouldShowCompanyAdminOnboarding()) {
+                setTimeout(() => mod.showCompanyAdminOnboarding(), 350);
+                return;
+            }
+            if (!window.state.branding?.name?.trim()) {
+                switchSection("company-admin-branding");
+            }
+        }).catch((err) => {
+            console.warn("[shell-staff] CA onboarding chunk failed to load", err);
+            if (!window.state.branding?.name?.trim()) {
+                switchSection("company-admin-branding");
+            }
+        });
     } else {
         const disp = window.state.dispatchers.find((d) => d.id === window.currentUser.id);
         if (disp && rejectDispatcherWithoutGroups(disp)) return false;
-        if (disp && !window.currentUser.activeGroupId && disp.groups?.length > 0) {
-            window.currentUser.activeGroupId = disp.groups[0];
-            syncUserSession(window.currentUser);
-        } else if (!window.currentUser.activeGroupId) {
+        // Profile groups win; drop any stale/foreign activeGroupId before painting the header.
+        const assignedGroups = Array.isArray(disp?.groups) && disp.groups.length
+            ? disp.groups
+            : (window.currentUser.groups || []);
+        const sanitized = sanitizeDispatcherActiveGroups({
+            assignedIds: assignedGroups,
+            activeGroupId: window.currentUser.activeGroupId,
+            activeGroupHubId: window.state.activeGroupHubId
+        });
+        window.currentUser.groups = sanitized.assignedIds;
+        window.currentUser.activeGroupId = sanitized.activeGroupId;
+        window.state.activeGroupHubId = sanitized.activeGroupHubId;
+        window.state.activeGroupFilter = sanitized.activeGroupHubId;
+        if (!window.currentUser.activeGroupId) {
             rejectDispatcherWithoutGroups(disp || {});
             return false;
         }
+        syncUserSession(window.currentUser);
 
         if (roleBadge) roleBadge.innerText = t("dispatcher");
         const sub = document.getElementById("header-user-sub");

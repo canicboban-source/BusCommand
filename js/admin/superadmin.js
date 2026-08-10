@@ -233,7 +233,7 @@ function _saCompanyRowHtml({
         <td class="sa-col-status"><span class="badge ${license.cls}">${escapeHtml(license.text)}</span></td>
         <td class="sa-col-actions">
             <button type="button" class="btn-secondary sa-detail-btn" ${actionAttr("superadminOpenCompanyDetail", [openId])}>
-                <i data-lucide="panel-right-open"></i> <span>${escapeHtml(t("sa_detail_open") || "Detalji")}</span>
+                <i data-lucide="panel-right-open"></i> <span>${escapeHtml(t("sa_detail_open") || "Manage account")}</span>
             </button>
             ${rowActionsMenuHtml(`sa-co-${companyKey}`, menuItems)}
         </td>
@@ -415,13 +415,17 @@ async function superadminToggleStatus(companyId, status) {
     }, { danger: status === "suspended" });
 }
 
+/**
+ * Legacy entry retained for registry compatibility.
+ * Production: opens the real audited support-session modal (never toast-only).
+ * Demo: Inspect (read-only) via impersonation — also available from the row menu.
+ */
 function superadminOpenCompany(companyId) {
     const id = String(companyId || _pendingDetailCompanyId || "").trim();
     if (!id) {
         showToast(tf("error_generic", "Company not found."), "error");
         return;
     }
-    // Demo never has a separate production tenant URL — Open used to spawn a dead login tab.
     if (USE_LOCAL_STATE) {
         const disp = _findDemoCompanyDispatcher(id);
         if (disp?.id) {
@@ -434,11 +438,7 @@ function superadminOpenCompany(companyId) {
         );
         return;
     }
-    // Production: SA must use an audited support session — never a bare company login tab.
-    showToast(
-        tf("sa_open_prod_hint", "Use Start support for a timed, audited company view."),
-        "info"
-    );
+    superadminStartSupport(id);
 }
 
 let _pendingDetailCompanyId = null;
@@ -499,7 +499,7 @@ function fillCompanyDetailModal(company) {
     const countsEl = document.getElementById("sa-detail-counts");
     const errorEl = document.getElementById("sa-detail-error");
     const resetBox = document.getElementById("sa-detail-reset-link-box");
-    const openBtn = document.getElementById("sa-detail-open-app-btn");
+    const supportBtn = document.getElementById("sa-detail-support-btn");
     const copyBtn = document.getElementById("sa-detail-copy-id-btn");
 
     if (errorEl) {
@@ -510,7 +510,12 @@ function fillCompanyDetailModal(company) {
         resetBox.classList.add("hidden");
         resetBox.innerHTML = "";
     }
-    if (title) title.textContent = company.name || company.id;
+    if (title) {
+        const accountLabel = t("sa_detail_title") || "Manage company account";
+        title.textContent = company.name
+            ? `${accountLabel}: ${company.name}`
+            : accountLabel;
+    }
     if (nameEl) nameEl.textContent = company.name || "—";
     if (idEl) idEl.textContent = company.id || "—";
     const licenseBadge = _licenseStatusLabel(
@@ -551,14 +556,15 @@ function fillCompanyDetailModal(company) {
             <div><span>${escapeHtml(t("sa_detail_count_groups") || "Groups")}</span><strong>${Number(counts.groups) || 0}</strong></div>
         `;
     }
-    if (openBtn) {
-        openBtn.setAttribute("data-action-args", JSON.stringify([company.id]));
-        openBtn.textContent = USE_LOCAL_STATE
-            ? tf("sa_inspect_dispatcher", "Inspect")
-            : tf("btn_open", "Open");
-        openBtn.title = USE_LOCAL_STATE
-            ? tf("sa_open_demo_hint", "Demo: open a read-only Dispo view for this firm.")
-            : tf("sa_open_prod_hint", "Use Start support for a timed, audited company view.");
+    if (supportBtn) {
+        const canStartSupport = !!company.supportSessionEnabled && !company.supportSessionActive;
+        supportBtn.setAttribute("data-action-args", JSON.stringify([company.id]));
+        supportBtn.classList.toggle("hidden", !canStartSupport);
+        if (canStartSupport) supportBtn.removeAttribute("hidden");
+        else supportBtn.setAttribute("hidden", "");
+        const label = supportBtn.querySelector("[data-i18n='sa_support_start_audited']")
+            || supportBtn.querySelector("span");
+        if (label) label.textContent = t("sa_support_start_audited") || t("sa_support_start") || "Start audited support";
     }
     if (copyBtn) copyBtn.setAttribute("data-action-args", JSON.stringify([company.id]));
     renderCompanyDetailDispatcher(company);

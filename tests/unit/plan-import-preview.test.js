@@ -100,9 +100,66 @@ test("rejects missing, inactive and cross-group drivers", () => {
 test("dispatcher preview route is server-owned, scoped and audited", () => {
   const source = fs.readFileSync(path.join(__dirname, "../../server/driver-routes.js"), "utf8");
   assert.match(source, /monthly-plans\/import\/preview/);
+  assert.match(source, /monthly-plans\/import\/commit/);
   assert.match(source, /req\.staff\.role !== "dispatcher"/);
   assert.match(source, /req\.staff\.groups\.includes\(parsed\.data\.groupId\)/);
   assert.match(source, /buildPlanImportPreview/);
+  assert.match(source, /prepareStaffMonthlyImport/);
+  assert.match(source, /commitStaffMonthlyImport/);
   assert.match(source, /monthly_plan_import_previewed/);
+  assert.match(source, /monthly_plan_import_committed/);
+  assert.match(source, /requireDutyCatalog:\s*true/);
   assert.match(source, /reason: z\.string\(\)\.trim\(\)\.min\(3\)/);
+});
+
+test("rejects unknown duty when catalog is required", () => {
+  const input = validInput({
+    dutiesByCode: new Map([["310.S99", { code: "310.S99" }]]),
+    requireDutyCatalog: true
+  });
+  assert.throws(() => buildPlanImportPreview(input), (error) => {
+    assert.ok(error.errors.some((item) => item.code === "DUTY_NOT_IN_ACTIVE_CATALOG"));
+    return true;
+  });
+});
+
+test("rejects missing inactive and unavailable buses when bus map provided", () => {
+  const missing = validInput({ busesByNumber: new Map() });
+  assert.throws(() => buildPlanImportPreview(missing), (error) => {
+    assert.ok(error.errors.some((item) => item.code === "BUS_NOT_FOUND"));
+    return true;
+  });
+
+  const inactive = validInput({
+    busesByNumber: new Map([["101", { number: "101", active: false, groupId: "31099", opsStatus: "ready" }]])
+  });
+  assert.throws(() => buildPlanImportPreview(inactive), (error) => {
+    assert.ok(error.errors.some((item) => item.code === "BUS_INACTIVE"));
+    return true;
+  });
+
+  const busy = validInput({
+    busesByNumber: new Map([["101", { number: "101", active: true, groupId: "31099", opsStatus: "maintenance" }]])
+  });
+  assert.throws(() => buildPlanImportPreview(busy), (error) => {
+    assert.ok(error.errors.some((item) => item.code === "BUS_NOT_AVAILABLE"));
+    return true;
+  });
+});
+
+test("preview rows include previous snapshot for compensation", () => {
+  const preview = buildPlanImportPreview(validInput({
+    dutiesByCode: new Map([["310.S01", { code: "310.S01" }]]),
+    busesByNumber: new Map([["101", { number: "101", active: true, groupId: "31099", opsStatus: "ready" }]]),
+    shiftsById: new Map([[`${DRIVER_ID}|2026-08-03`, {
+      revision: 2,
+      type: "morning",
+      name: "old",
+      bus: "99",
+      groupId: "31099"
+    }]])
+  }));
+  assert.equal(preview.rows[0].previous.revision, 2);
+  assert.equal(preview.rows[0].previous.bus, "99");
+  assert.equal(preview.rows[0].driverName, "");
 });

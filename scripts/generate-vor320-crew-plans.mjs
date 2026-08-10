@@ -119,8 +119,8 @@ for (const day of bobanDays) {
 // Extra: ensure colleagues have a light Saturday pattern when Boban has 701 on 15.08 — already handled.
 // Drivers template (BusCommand CA import shape)
 const driversCsv = [
-  "eid,first_name,last_name,phone,email,company_code",
-  ...CREW.map((c) => [c.eid, c.first, c.last, c.phone, c.email, c.eid].join(","))
+  "eid,first_name,last_name,phone,email",
+  ...CREW.map((c) => [c.eid, c.first, c.last, c.phone, c.email].join(","))
 ].join("\n") + "\n";
 
 const groupRows = [header];

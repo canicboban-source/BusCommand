@@ -1108,7 +1108,7 @@
     <div id="sa-company-detail-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sa-detail-title" style="display:none;">
         <div class="modal-content sa-detail-modal">
             <div class="sa-detail-header">
-                <h3 id="sa-detail-title" data-i18n="sa_detail_title">Company details</h3>
+                <h3 id="sa-detail-title" data-i18n="sa_detail_title">Manage company account</h3>
                 <button type="button" class="btn-secondary" data-action="superadminCloseCompanyDetail" aria-label="Close">
                     <i data-lucide="x" style="width:16px;height:16px;"></i>
                 </button>
@@ -1116,7 +1116,10 @@
             <p id="sa-detail-error" class="error-message hidden" role="alert"></p>
             <div id="sa-detail-body"></div>
             <div class="sa-detail-footer">
-                <button type="button" id="sa-detail-open-app-btn" class="btn-secondary" data-action="superadminOpenCompany" data-action-args='[]' data-i18n="btn_open">Open</button>
+                <button type="button" id="sa-detail-support-btn" class="btn-secondary hidden" hidden data-action="superadminStartSupport" data-action-args='[]'>
+                    <i data-lucide="headset" style="width:16px;height:16px;"></i>
+                    <span data-i18n="sa_support_start_audited">Start audited support</span>
+                </button>
                 <button type="button" class="btn-primary" data-action="superadminCloseCompanyDetail" data-i18n="btn_close">Close</button>
             </div>
         </div>

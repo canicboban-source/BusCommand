@@ -1384,7 +1384,7 @@ html[data-app-surface="staff"] .sa-new-company-btn {
 html[data-app-surface="staff"] .sa-companies-table-wrap {
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;
+    overflow-x: auto;
 }
 
 html[data-app-surface="staff"] .sa-companies-table {
@@ -1453,9 +1453,19 @@ html[data-app-surface="staff"] .sa-admin-missing {
     font-size: 0.72rem;
 }
 
+html[data-app-surface="staff"] .sa-companies-table th.sa-col-actions,
+html[data-app-surface="staff"] .sa-companies-table td.sa-col-actions,
+html[data-app-surface="staff"] .sa-col-actions {
+    width: 12.5rem;
+    min-width: 12.5rem;
+    overflow: visible;
+    text-overflow: clip;
+}
+
 html[data-app-surface="staff"] .sa-col-actions {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 6px;
     white-space: nowrap;
 }
@@ -1464,6 +1474,7 @@ html[data-app-surface="staff"] .sa-detail-btn {
     padding: 5px 10px;
     font-size: 0.75rem;
     height: auto;
+    flex: 0 0 auto;
 }
 
 html[data-app-surface="staff"] .sa-companies-empty {
@@ -4349,6 +4360,16 @@ html[data-app-surface="staff"] #ca-groups-manage-list {
   min-width: 0;
   max-width: 100%;
   overflow-x: hidden;
+}
+
+html[data-app-surface="staff"] .company-drivers-legacy-notice {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--bc-accent, #3d7ef5);
+  background: color-mix(in srgb, var(--bc-accent, #3d7ef5) 10%, transparent);
+  color: var(--bc-text, #1a1a1a);
+  font-size: 0.92rem;
+  line-height: 1.4;
 }
 
 html[data-app-surface="staff"] .company-drivers-directory-table {
