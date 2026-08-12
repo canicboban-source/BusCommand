@@ -1,9 +1,10 @@
 // BusCommand — automatski uvoz planova (Excel, PDF, CSV, TXT, slike) + serverski preview/commit
-import { saveState } from "../core/state.js";
+import { resolveUiLanguage, saveState } from "../core/state.js";
 import { escapeHtml, getVisibleDrivers, showToast } from "../core/utils.js";
 import { detectDriverFromFilename, detectMonthFromFilename, getShiftForDriverDate } from "../core/shift-plan.js";
 import { extractTextFromScheduleFile, parseExtractedScheduleText } from "../maps/schedule-import-utils.js";
 import { t } from "../ui/i18n.js";
+import { buildYearMonthSelectOptions, formatYearMonthDisplay } from "../ui/month-abbr.js";
 import { actionAttr, changeAttr } from "../core/action-delegate.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { findDriverByName, normalizeType } from "../imports/monthly-plan-persist-utils.js";
@@ -221,6 +222,29 @@ function formatValidationErrors(details) {
     });
 }
 
+function planImportUiLang() {
+    return resolveUiLanguage();
+}
+
+function renderPendingMonthSelect(item, idx, disabled) {
+    const lang = planImportUiLang();
+    const monthLabel = t("plan_import_month") || "";
+    const options = buildYearMonthSelectOptions(item.month, lang);
+    const selectedLabel = formatYearMonthDisplay(item.month, lang);
+    return `
+        <select
+            class="plan-import-month-select"
+            data-testid="plan-import-month-select"
+            aria-label="${escapeHtml(monthLabel)}"
+            title="${escapeHtml(selectedLabel || monthLabel)}"
+            ${changeAttr("updatePendingImportMonth", [idx], "args-value")}
+            ${disabled ? "disabled" : ""}>
+            ${options.map((opt) =>
+                `<option value="${escapeHtml(opt.value)}" ${opt.value === item.month ? "selected" : ""}>${escapeHtml(opt.label)}</option>`
+            ).join("")}
+        </select>`;
+}
+
 function renderPlanImportPreview() {
     const container = document.getElementById("plan-import-preview");
     if (!container) return;
@@ -251,54 +275,68 @@ function renderPlanImportPreview() {
     const phase = _serverImport?.phase || "parsed";
     const retainedImportId = (_serverImport?.jobs?.[0] && _serverImport.jobs[0].importId) || "";
 
+    const rowDisabled = busy || showCommitAction || recoveryPhase;
+    const driverAria = t("plan_import_driver") || "";
     container.hidden = false;
     container.innerHTML = `
-        <table class="app-table" style="margin-top:12px;" data-plan-import-phase="${escapeHtml(phase)}" data-testid="plan-import-phase">
+        <table class="app-table plan-import-preview-table" style="margin-top:12px;" data-plan-import-phase="${escapeHtml(phase)}" data-testid="plan-import-phase">
             <thead>
                 <tr>
-                    <th>${t("plan_import_file")}</th>
-                    <th>${t("plan_import_driver")}</th>
-                    <th>${t("plan_import_month")}</th>
-                    <th>${t("plan_import_days")}</th>
-                    <th>${t("plan_import_status")}</th>
-                    <th></th>
+                    <th class="plan-import-col-file">${t("plan_import_file")}</th>
+                    <th class="plan-import-col-driver">${t("plan_import_driver")}</th>
+                    <th class="plan-import-col-month">${t("plan_import_month")}</th>
+                    <th class="plan-import-col-days">${t("plan_import_days")}</th>
+                    <th class="plan-import-col-status">${t("plan_import_status")}</th>
+                    <th class="plan-import-col-actions"></th>
                 </tr>
             </thead>
             <tbody>
-                ${_pendingImports.map((item, idx) => `
+                ${_pendingImports.map((item, idx) => {
+                    const driverOptions = driversForPlanImport().map((d) => {
+                        const label = (item.ambiguousName || item.needsDriverPick)
+                            ? `${d.name} · ${shortOpaqueDriverId(d.id)}`
+                            : d.name;
+                        return { id: d.id, label, name: d.name };
+                    });
+                    const selectedDriver = driverOptions.find((d) => d.id === item.driverId);
+                    const driverDisplayName = selectedDriver?.name
+                        || String(item.driverName || "").trim()
+                        || (t("plan_import_pick_driver") || "Select driver");
+                    return `
                     <tr data-testid="plan-import-pending-row" data-driver-id="${escapeHtml(item.driverId || "")}">
-                        <td style="font-size:0.85rem;" data-testid="plan-import-file-name">${escapeHtml(item.fileName)}</td>
-                        <td>
-                            <select data-testid="plan-import-driver-select" ${changeAttr("updatePendingImportDriver", [idx], "args-value")} style="width:100%;padding:6px;background:rgba(0,0,0,0.3);border:1px solid var(--panel-border);color:white;border-radius:6px;" ${busy || showCommitAction || recoveryPhase ? "disabled" : ""}>
-                                ${item.needsDriverPick || !item.driverId ? `<option value="">${t("plan_import_pick_driver") || "Select driver"}</option>` : ""}
-                                ${driversForPlanImport().map((d) => {
-                                    const label = (item.ambiguousName || item.needsDriverPick)
-                                        ? `${d.name} · ${shortOpaqueDriverId(d.id)}`
-                                        : d.name;
-                                    return `<option value="${escapeHtml(d.id)}" ${d.id === item.driverId ? "selected" : ""}>${escapeHtml(label)}</option>`;
-                                }).join("")}
-                            </select>
-                            ${item.needsDriverPick || item.ambiguousName ? `<div data-testid="plan-import-driver-ambiguous" style="font-size:0.72rem;color:#fcd34d;margin-top:4px;">${t("plan_import_driver_ambiguous_hint") || "Same display name — pick the correct ID."}</div>` : ""}
+                        <td class="plan-import-col-file" data-label="${escapeHtml(t("plan_import_file") || "")}">
+                            <span class="plan-import-file-name" data-testid="plan-import-file-name" title="${escapeHtml(item.fileName)}" aria-label="${escapeHtml(item.fileName)}">${escapeHtml(item.fileName)}</span>
                         </td>
-                        <td>
-                            <input type="month" value="${escapeHtml(item.month)}" ${changeAttr("updatePendingImportMonth", [idx], "args-value")}
-                                style="padding:6px;background:rgba(0,0,0,0.3);border:1px solid var(--panel-border);color:white;border-radius:6px;" ${busy || showCommitAction || recoveryPhase ? "disabled" : ""}>
+                        <td class="plan-import-col-driver" data-label="${escapeHtml(driverAria)}">
+                            <div class="plan-import-driver-cell">
+                                <div class="plan-import-driver-name" data-testid="plan-import-driver-name" title="${escapeHtml(driverDisplayName)}">${escapeHtml(driverDisplayName)}</div>
+                                <select class="plan-import-driver-select" data-testid="plan-import-driver-select" aria-label="${escapeHtml(driverAria)}" ${changeAttr("updatePendingImportDriver", [idx], "args-value")} ${rowDisabled ? "disabled" : ""}>
+                                    ${item.needsDriverPick || !item.driverId ? `<option value="">${t("plan_import_pick_driver") || "Select driver"}</option>` : ""}
+                                    ${driverOptions.map((d) =>
+                                        `<option value="${escapeHtml(d.id)}" ${d.id === item.driverId ? "selected" : ""}>${escapeHtml(d.label)}</option>`
+                                    ).join("")}
+                                </select>
+                                ${item.needsDriverPick || item.ambiguousName ? `<div data-testid="plan-import-driver-ambiguous" class="plan-import-driver-ambiguous">${t("plan_import_driver_ambiguous_hint") || "Same display name — pick the correct ID."}</div>` : ""}
+                            </div>
                         </td>
-                        <td style="text-align:center;font-weight:700;">${Number(item.dayCount) || 0}</td>
-                        <td>
-                            <span style="font-size:0.75rem;padding:3px 8px;border-radius:12px;font-weight:700;
-                                background:${item.parseQuality === "ok" ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)"};
+                        <td class="plan-import-col-month" data-label="${escapeHtml(t("plan_import_month") || "")}">
+                            ${renderPendingMonthSelect(item, idx, rowDisabled)}
+                        </td>
+                        <td class="plan-import-col-days" data-label="${escapeHtml(t("plan_import_days") || "")}" data-testid="plan-import-day-count">${Number(item.dayCount) || 0}</td>
+                        <td class="plan-import-col-status" data-label="${escapeHtml(t("plan_import_status") || "")}">
+                            <span class="plan-import-status-pill" data-testid="plan-import-status"
+                                style="background:${item.parseQuality === "ok" ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)"};
                                 color:${item.parseQuality === "ok" ? "#6ee7b7" : "#fcd34d"};">
                                 ${item.parseQuality === "ok" ? t("plan_import_ok") : t("plan_import_review")}
                             </span>
                         </td>
-                        <td>
-                            <button type="button" ${actionAttr("removePendingImport", [idx])} style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;" ${busy ? "disabled" : ""}>
+                        <td class="plan-import-col-actions">
+                            <button type="button" class="plan-import-remove-btn" data-testid="plan-import-remove-btn" ${actionAttr("removePendingImport", [idx])} ${busy ? "disabled" : ""}>
                                 ${t("btn_remove")}
                             </button>
                         </td>
-                    </tr>
-                `).join("")}
+                    </tr>`;
+                }).join("")}
             </tbody>
         </table>
         ${showServerPreview ? `

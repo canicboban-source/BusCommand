@@ -3,8 +3,10 @@ import { registerSectionHandlers } from "../layout/section-registry.js";
 import { renderGroupFilterBar } from "../data/groups.js";
 import { renderDispatcherDashboard } from "../dispatcher/dashboard.js";
 import { renderDispatcherLostItems } from "../dispatcher/lost-items.js";
-import { populateTemplateSelect, renderAllMessagesList, setMessagesPageTab } from "../dispatcher/msg-compose.js";
 import { renderDispatcherReports } from "../dispatcher/reports.js";
+import { loadMsgCompose } from "../dispatcher/msg-compose-loader.js";
+import { showToast } from "../core/utils.js";
+import { t } from "../ui/i18n.js";
 import { renderCompanyAdminDashboard, renderCompanyAdminBranding } from "../admin/company-admin.js";
 import { renderCompanyAdminTeam } from "../admin/company-admin-team.js";
 import { renderCompanyAdminGroups } from "../admin/company-admin-groups.js";
@@ -58,10 +60,22 @@ export function registerStaffSections() {
             bindDailyPlanFullPage();
             renderDailyPlanFullPage();
         },
-        "dispatcher-messages": () => {
-            setMessagesPageTab("personal");
-            populateTemplateSelect("message-template-messages");
-            renderAllMessagesList();
+        "dispatcher-messages": async () => {
+            let mod;
+            try {
+                mod = await loadMsgCompose();
+            } catch {
+                showToast(t("msg_compose_chunk_load_failed"), "error", 8000);
+                return;
+            }
+            try {
+                mod.setMessagesPageTab("personal");
+                mod.populateTemplateSelect("message-template-messages");
+                mod.renderAllMessagesList();
+            } catch (err) {
+                console.error("dispatcher-messages section execution failed", err);
+                showToast(t("error_generic"), "error", 8000);
+            }
         },
         "superadmin-dashboard": () => {}
     });

@@ -15,6 +15,7 @@ import { clickElementById, installActionDelegates, removeElementById } from "./c
 import { exportDriversCSV, exportLostItemsCSV, exportReportsCSV } from "./core/export-csv.js";
 import { getScheduleByKey, showToast } from "./core/utils.js";
 import { loadPlanImport, prefetchPlanImport } from "./dispatcher/plan-import-loader.js";
+import { loadMsgCompose } from "./dispatcher/msg-compose-loader.js";
 import { addBus, deleteBus, deleteRoute, toggleBusEdit, saveBusOpsProfile } from "./data/buses-routes.js";
 import {
     clearBusImportPreview,
@@ -47,9 +48,7 @@ import { returnLostItem, setLostItemStatus, openLostItemPhoto } from "./dispatch
 import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, deleteMonthlyPlan, exportMonthlyGroupPlanCsv, focusMonthlyDriverPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, openMonthlyDayEditForDriver, previewMonthlyMassAbsence, saveMonthlyDayEdit, selectMonthlyPlanGroup, undoMonthlyDayEdit } from "./dispatcher/monthly-plans.js";
 import { goToOpsPlanProblems } from "./dispatcher/plan-health-banner.js";
 import { openVehiclesForGroup } from "./dispatcher/vehicles-panel.js";
-import { setMessagesPageTab, submitDispatcherMessage } from "./dispatcher/msg-compose.js";
 import { resolveReport, openReportResolution, closeReportResolution } from "./dispatcher/reports.js";
-import { archiveAllDispatcherMessages, archiveDispatcherMessage } from "./dispatcher/sent-messages.js";
 import { shiftWeekNav } from "./dispatcher/shift-utils.js";
 import { assignShift, openShiftCell, persistShift, removeShift } from "./dispatcher/shifts.js";
 import { dailyPlanAssignDriver, clearDailyShift } from "./dispatcher/daily-plan.js";
@@ -132,6 +131,57 @@ async function updatePendingImportDriver(...args) {
 }
 async function updatePendingImportMonth(...args) {
     return withPlanImportModule((mod) => mod.updatePendingImportMonth(...args));
+}
+
+/**
+ * Lazy Dispo messages chunk (H1-A / D17) — msg-compose + co-lazy sent-messages.
+ * Rejected loads are not permanently cached; module errors after load must propagate.
+ */
+async function withMsgComposeModule(run) {
+    let mod;
+    try {
+        mod = await loadMsgCompose();
+    } catch {
+        showToast(t("msg_compose_chunk_load_failed"), "error", 8000);
+        return undefined;
+    }
+    try {
+        return await run(mod);
+    } catch (err) {
+        console.error("msg-compose execution failed", err);
+        showToast(t("error_generic"), "error", 8000);
+        return undefined;
+    }
+}
+
+async function withSentMessagesModule(run) {
+    try {
+        await loadMsgCompose();
+    } catch {
+        showToast(t("msg_compose_chunk_load_failed"), "error", 8000);
+        return undefined;
+    }
+    try {
+        const mod = await import("./dispatcher/sent-messages.js");
+        return await run(mod);
+    } catch (err) {
+        console.error("sent-messages execution failed", err);
+        showToast(t("error_generic"), "error", 8000);
+        return undefined;
+    }
+}
+
+async function setMessagesPageTab(...args) {
+    return withMsgComposeModule((mod) => mod.setMessagesPageTab(...args));
+}
+async function submitDispatcherMessage(...args) {
+    return withMsgComposeModule((mod) => mod.submitDispatcherMessage(...args));
+}
+async function archiveDispatcherMessage(...args) {
+    return withSentMessagesModule((mod) => mod.archiveDispatcherMessage(...args));
+}
+async function archiveAllDispatcherMessages(...args) {
+    return withSentMessagesModule((mod) => mod.archiveAllDispatcherMessages(...args));
 }
 
 /** Prefetch plan-import when entering monthly plan so CTA first click is warm. */

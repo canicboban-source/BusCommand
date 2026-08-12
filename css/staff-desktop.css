@@ -2163,6 +2163,186 @@ html[data-app-surface="staff"] #dispatcher-group-hub #plan-import-preview .btn-p
     box-shadow: 0 8px 18px rgba(var(--primary-rgb), 0.28);
 }
 
+/* B2C-02 — monthly import preview: Driver priority, compact Month, File ellipsis-first */
+html[data-app-surface="staff"] #plan-import-preview .plan-import-preview-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+html[data-app-surface="staff"] #plan-import-preview .plan-import-col-file {
+    width: 14%;
+}
+
+html[data-app-surface="staff"] #plan-import-preview .plan-import-col-driver {
+    width: 36%;
+    min-width: 10rem;
+}
+
+html[data-app-surface="staff"] #plan-import-preview .plan-import-col-month {
+    width: 6.5rem;
+}
+
+html[data-app-surface="staff"] #plan-import-preview .plan-import-col-days {
+    width: 5.5rem;
+    text-align: center;
+    font-weight: 700;
+}
+
+html[data-app-surface="staff"] #plan-import-preview .plan-import-col-status {
+    width: 6.5rem;
+}
+
+html[data-app-surface="staff"] #plan-import-preview .plan-import-col-actions {
+    width: 5.5rem;
+}
+
+html[data-app-surface="staff"] #plan-import-preview .plan-import-file-name {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+}
+
+html[data-app-surface="staff"] #plan-import-preview .plan-import-driver-cell {
+    min-width: 0;
+}
+
+html[data-app-surface="staff"] #plan-import-preview .plan-import-driver-name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--text-main);
+    margin-bottom: 6px;
+}
+
+html[data-app-surface="staff"] #plan-import-preview .plan-import-driver-select {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--panel-border);
+    color: white;
+    border-radius: 6px;
+}
+
+html[data-app-surface="staff"] #plan-import-preview .plan-import-driver-ambiguous {
+    font-size: 0.72rem;
+    color: #fcd34d;
+    margin-top: 4px;
+}
+
+html[data-app-surface="staff"] #plan-import-preview .plan-import-month-select {
+    width: auto;
+    max-width: 100%;
+    min-width: 5.5rem;
+    padding: 6px 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--panel-border);
+    color: white;
+    border-radius: 6px;
+    font-variant-numeric: tabular-nums;
+}
+
+html[data-app-surface="staff"] #plan-import-preview .plan-import-status-pill {
+    display: inline-block;
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 700;
+}
+
+html[data-app-surface="staff"] #plan-import-preview .plan-import-remove-btn {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+@media (max-width: 1100px) {
+    html[data-app-surface="staff"] #plan-import-preview .plan-import-preview-table thead {
+        display: none;
+    }
+
+    html[data-app-surface="staff"] #plan-import-preview .plan-import-preview-table tbody tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) auto auto;
+        grid-template-areas:
+            "driver month actions"
+            "file days status";
+        gap: 8px 12px;
+        padding: 12px 10px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        align-items: start;
+    }
+
+    html[data-app-surface="staff"] #plan-import-preview .plan-import-preview-table tbody td {
+        border-bottom: none;
+        padding: 0;
+        min-width: 0;
+    }
+
+    html[data-app-surface="staff"] #plan-import-preview .plan-import-col-driver {
+        grid-area: driver;
+        width: auto;
+        min-width: 0;
+    }
+
+    html[data-app-surface="staff"] #plan-import-preview .plan-import-col-month {
+        grid-area: month;
+        width: auto;
+        justify-self: end;
+    }
+
+    html[data-app-surface="staff"] #plan-import-preview .plan-import-col-actions {
+        grid-area: actions;
+        width: auto;
+        justify-self: end;
+    }
+
+    html[data-app-surface="staff"] #plan-import-preview .plan-import-col-file {
+        grid-area: file;
+        width: auto;
+    }
+
+    html[data-app-surface="staff"] #plan-import-preview .plan-import-col-days {
+        grid-area: days;
+        width: auto;
+        text-align: left;
+    }
+
+    html[data-app-surface="staff"] #plan-import-preview .plan-import-col-status {
+        grid-area: status;
+        width: auto;
+        justify-self: end;
+    }
+
+    html[data-app-surface="staff"] #plan-import-preview .plan-import-col-file::before,
+    html[data-app-surface="staff"] #plan-import-preview .plan-import-col-days::before,
+    html[data-app-surface="staff"] #plan-import-preview .plan-import-col-status::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 2px;
+    }
+}
+
 html[data-app-surface="staff"] #dispatcher-group-hub .hub-workspace {
     display: grid;
     grid-template-columns: 1fr 1fr;

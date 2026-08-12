@@ -100,13 +100,15 @@ function translateUI() {
         if (val) el.setAttribute("aria-label", val);
     });
 
-    // Staff-only: message templates live in the dispatcher compose module.
-    // Dynamic import keeps that graph out of the driver bundle (Ch17).
+    // Staff-only: refresh message templates only if msg-compose is already loaded (H1-A.1).
+    // Never cold-start the payload from translateUI / changeLanguage.
     if (isStaffSurface()) {
-        import("../dispatcher/msg-compose.js")
-            .then(({ populateTemplateSelect }) => {
-                populateTemplateSelect("message-template");
-                populateTemplateSelect("message-template-messages");
+        import("../dispatcher/msg-compose-loader.js")
+            .then(({ getMsgComposeIfLoaded }) => {
+                const mod = getMsgComposeIfLoaded();
+                if (!mod) return;
+                mod.populateTemplateSelect("message-template");
+                mod.populateTemplateSelect("message-template-messages");
             })
             .catch(() => {});
     }

@@ -5,7 +5,7 @@ import {
     parseRouteCodeFromText,
     setShiftForDriverDate
 } from "../core/shift-plan.js";
-import { saveState } from "../core/state.js";
+import { resolveUiLanguage, saveState } from "../core/state.js";
 import {
     ensureShiftCatalogForEdit,
     inferOperationalShiftType,
@@ -19,6 +19,7 @@ import { getActiveLineId, getGroupById } from "../data/groups.js";
 import { closeModal, showModal } from "../ui/modals.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
+import { formatYearMonthDisplay } from "../ui/month-abbr.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { paintPlanHealthBanner } from "./plan-health-banner.js";
 import { persistShift, undoShift } from "./shifts.js";
@@ -127,12 +128,13 @@ function ensureMonthlyMonthOptions() {
     const selected = /^\d{4}-\d{2}$/.test(select.value) ? select.value : currentMonthKey();
     const base = new Date();
     base.setDate(1);
-    const language = window.state.language || "en";
-    const formatter = new Intl.DateTimeFormat(language, { month: "long", year: "numeric" });
+    // Deterministic sr/en/de labels via month-abbr — never Intl/browser locale long names.
+    const language = resolveUiLanguage();
     const months = [];
     for (let offset = -2; offset <= 9; offset += 1) {
         const date = new Date(base.getFullYear(), base.getMonth() + offset, 1);
-        months.push({ value: currentMonthKey(date), label: formatter.format(date) });
+        const value = currentMonthKey(date);
+        months.push({ value, label: formatYearMonthDisplay(value, language) });
     }
     select.innerHTML = "";
     for (const month of months) {
@@ -142,6 +144,9 @@ function ensureMonthlyMonthOptions() {
         select.appendChild(option);
     }
     select.value = months.some(month => month.value === selected) ? selected : currentMonthKey();
+    const monthAria = t("monthly_label_month") || "";
+    if (monthAria) select.setAttribute("aria-label", monthAria);
+    select.setAttribute("data-testid", "monthly-month-select");
     return select.value;
 }
 

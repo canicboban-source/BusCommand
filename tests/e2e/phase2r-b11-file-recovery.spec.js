@@ -141,7 +141,7 @@ test.describe("2R-B.1.1 file-event + recovery-origin", () => {
     await expect(row).toBeVisible();
     await expect(row).toHaveAttribute("data-driver-id", "11111111-1111-4111-8111-111111111111");
     await expect(page.locator('[data-testid="plan-import-file-name"]')).toHaveText("qa-monthly-plan-import-loose.txt");
-    await expect(row.locator('input[type="month"]')).toHaveValue("2026-08");
+    await expect(row.locator('[data-testid="plan-import-month-select"]')).toHaveValue("2026-08");
     await expect(row.locator("td").nth(3)).toHaveText("1");
     expect(chunkRequests).toBeGreaterThan(failedRequests);
     expect(unhandled).toEqual([]);
@@ -181,7 +181,7 @@ test.describe("2R-B.1.1 file-event + recovery-origin", () => {
     const rows = page.locator('[data-testid="plan-import-pending-row"]');
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toHaveAttribute("data-driver-id", "11111111-1111-4111-8111-111111111111");
-    await expect(rows.first().locator('input[type="month"]')).toHaveValue("2026-08");
+    await expect(rows.first().locator('[data-testid="plan-import-month-select"]')).toHaveValue("2026-08");
     await expect(rows.first().locator("td").nth(3)).toHaveText("1");
   });
 });

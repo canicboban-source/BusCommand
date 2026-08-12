@@ -21,7 +21,10 @@ test("driver entry does not import staff dispatcher state-observer setup", () =>
   assert.match(staffSetup, /renderDispatcherDashboard/);
   assert.match(staffSetup, /renderGroupHub/);
   assert.doesNotMatch(i18n, /import \{ populateTemplateSelect \} from/);
-  assert.match(i18n, /import\("\.\.\/dispatcher\/msg-compose\.js"\)/);
+  assert.match(i18n, /msg-compose-loader\.js/);
+  assert.match(i18n, /getMsgComposeIfLoaded/);
+  assert.doesNotMatch(i18n, /loadMsgCompose\s*\(/);
+  assert.doesNotMatch(i18n, /import\("\.\.\/dispatcher\/msg-compose\.js"\)/);
 });
 
 test("Lucide CDN is pinned and office parsers are not eager in monolith head", () => {

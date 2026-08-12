@@ -12,19 +12,31 @@ export function createLazyModuleLoader(importer) {
         throw new TypeError("createLazyModuleLoader requires an importer function");
     }
     let cached = null;
+    /** Settled successful module only — never an in-flight Promise. */
+    let resolved = null;
 
     function load() {
         if (!cached) {
             const attempt = Promise.resolve().then(() => importer());
             cached = attempt;
             void attempt.then(
-                () => {},
+                (mod) => {
+                    if (cached === attempt) resolved = mod;
+                },
                 () => {
-                    if (cached === attempt) cached = null;
+                    if (cached === attempt) {
+                        cached = null;
+                        resolved = null;
+                    }
                 }
             );
         }
         return cached;
+    }
+
+    /** Read-only: returns loaded module or null. Does not start import/recovery. */
+    function getIfLoaded() {
+        return resolved;
     }
 
     function peekCached() {
@@ -33,9 +45,10 @@ export function createLazyModuleLoader(importer) {
 
     function reset() {
         cached = null;
+        resolved = null;
     }
 
-    return { load, peekCached, reset };
+    return { load, getIfLoaded, peekCached, reset };
 }
 
 /** Production hashed asset or exact Vite source path used in local/QA runtime. */
