@@ -224,11 +224,11 @@
                     <div style="display:flex; flex-direction:column; gap:12px;">
                         <div class="form-group" style="margin:0;">
                             <label for="setup-new-group-id" data-i18n="label_group_id">Group ID (e.g. 105)</label>
-                            <input type="text" id="setup-new-group-id" placeholder="105" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 16px; outline: none;">
+                            <input type="text" id="setup-new-group-id" placeholder="105" autocomplete="off" autocorrect="off" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 16px; outline: none;">
                         </div>
                         <div class="form-group" style="margin:0;">
                             <label for="setup-new-group-name" data-i18n="label_group_name">Group Name (e.g. Route 105)</label>
-                            <input type="text" id="setup-new-group-name" placeholder="Linija 105" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 16px; outline: none;">
+                            <input type="text" id="setup-new-group-name" placeholder="Linija 105" autocomplete="off" autocorrect="off" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 16px; outline: none;">
                         </div>
                         <button type="button" class="btn-primary" data-action="createDispatcherGroup" style="width:100%;">
                             <span data-i18n="btn_create_group">Create Group</span> <i data-lucide="plus"></i>
@@ -778,19 +778,19 @@
                         <div class="company-group-form-grid">
                             <div class="form-group company-group-id-field">
                                 <label for="ca-new-group-line-id" data-i18n="label_group_id">ID linije</label>
-                                <input type="text" id="ca-new-group-line-id" placeholder="310" maxlength="6" inputmode="numeric" pattern="[0-9]{1,6}" aria-describedby="ca-group-id-help ca-group-id-error">
+                                <input type="text" id="ca-new-group-line-id" placeholder="310" maxlength="6" inputmode="numeric" pattern="[0-9]{1,6}" autocomplete="off" autocorrect="off" aria-describedby="ca-group-id-help ca-group-id-error">
                                 <span id="ca-group-id-help" class="form-help" data-i18n="ca_group_id_help">1–6 cifara, npr. 310</span>
                                 <span id="ca-group-id-error" class="field-error" data-group-error="id" aria-live="polite"></span>
                             </div>
                             <div class="form-group">
                                 <label for="ca-new-group-name" data-i18n="group_name_label">Naziv</label>
-                                <input type="text" id="ca-new-group-name" maxlength="80" autocomplete="off" data-i18n-placeholder="ph_group_name" placeholder="Linija 310" aria-describedby="ca-group-name-help ca-group-name-error">
+                                <input type="text" id="ca-new-group-name" maxlength="80" autocomplete="off" autocorrect="off" data-i18n-placeholder="ph_group_name" placeholder="Linija 310" aria-describedby="ca-group-name-help ca-group-name-error">
                                 <span id="ca-group-name-help" class="form-help" data-i18n="ca_group_name_help">Jasan naziv koji vide dispečeri.</span>
                                 <span id="ca-group-name-error" class="field-error" data-group-error="name" aria-live="polite"></span>
                             </div>
                             <div class="form-group company-group-description-field">
                                 <label for="ca-new-group-desc"><span data-i18n="group_desc_label">Opis</span> <span class="field-optional" data-i18n="optional">opciono</span></label>
-                                <input type="text" id="ca-new-group-desc" maxlength="200" autocomplete="off" data-i18n-placeholder="ca_group_description_placeholder" placeholder="Depo, pravac ili interna napomena" aria-describedby="ca-group-description-help ca-group-description-error">
+                                <input type="text" id="ca-new-group-desc" maxlength="200" autocomplete="off" autocorrect="off" data-i18n-placeholder="ca_group_description_placeholder" placeholder="Depo, pravac ili interna napomena" aria-describedby="ca-group-description-help ca-group-description-error">
                                 <span id="ca-group-description-help" class="form-help" data-i18n="ca_group_description_help">Najviše 200 karaktera.</span>
                                 <span id="ca-group-description-error" class="field-error" data-group-error="description" aria-live="polite"></span>
                             </div>
@@ -798,7 +798,7 @@
                                 <label for="ca-new-group-color" data-i18n="group_color_label">Boja</label>
                                 <div class="company-group-color-control">
                                     <input type="color" id="ca-new-group-color" value="#0EA5E9" data-i18n-aria-label="ca_group_color_picker_label" aria-label="Izaberite boju grupe">
-                                    <input type="text" id="ca-new-group-color-hex" value="#0EA5E9" maxlength="7" spellcheck="false" data-i18n-aria-label="ca_group_color_hex_label" aria-label="HEX boja grupe" aria-describedby="ca-group-color-error">
+                                    <input type="text" id="ca-new-group-color-hex" value="#0EA5E9" maxlength="7" spellcheck="false" autocomplete="off" autocorrect="off" data-i18n-aria-label="ca_group_color_hex_label" aria-label="HEX boja grupe" aria-describedby="ca-group-color-error">
                                     <span id="ca-group-color-swatch" aria-hidden="true"></span>
                                 </div>
                                 <span class="field-error" id="ca-group-color-error" data-group-error="color" aria-live="polite"></span>
@@ -2261,12 +2261,12 @@
                     <div style="display:grid;grid-template-columns:100px 1fr;gap:12px;margin-bottom:16px;">
                         <div>
                             <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="label_group_id">ID linije</label>
-                            <input id="ca-wizard-line-id" type="text" placeholder="310" maxlength="6"
+                            <input id="ca-wizard-line-id" type="text" placeholder="310" maxlength="6" autocomplete="off" autocorrect="off"
                                 style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-main);font-size:0.95rem;outline:none;box-sizing:border-box;" />
                         </div>
                         <div>
                             <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="group_name_label">Naziv</label>
-                            <input id="ca-wizard-group-name" type="text" data-i18n-placeholder="ca_wizard_ph_group_name"
+                            <input id="ca-wizard-group-name" type="text" data-i18n-placeholder="ca_wizard_ph_group_name" autocomplete="off" autocorrect="off"
                                 style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-main);font-size:0.95rem;outline:none;box-sizing:border-box;" />
                         </div>
                     </div>
