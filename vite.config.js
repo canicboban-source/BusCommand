@@ -12,6 +12,14 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    modulePreload: {
+      // plan-import-loader.js is a shared lazy-module-loader utility (also used by
+      // msg-compose/sa-create-company-flow). It's a static dep of the eager staff
+      // bundle, so Vite would otherwise modulepreload it — but its filename still
+      // reads "plan-import", which the D17 lazy-load contract treats as the heavy
+      // chunk. Keep it a normal on-demand fetch instead of a preload hint.
+      resolveDependencies: (_filename, deps) => deps.filter((dep) => !/plan-import/i.test(dep)),
+    },
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, "index.html"),

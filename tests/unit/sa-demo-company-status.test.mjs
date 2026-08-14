@@ -6,12 +6,15 @@ import test from "node:test";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const src = fs.readFileSync(path.join(root, "js/admin/superadmin.js"), "utf8");
+// companyDisp.status mutation moved to the lazy create-company-flow chunk as part
+// of the B2C-01-F1 split; _demoCompanyHasAdmin (status read side) stayed here.
+const flowSrc = fs.readFileSync(path.join(root, "js/admin/sa-create-company-flow.js"), "utf8");
 
 test("demo company status becomes active when a CA exists", () => {
   assert.match(src, /function _demoCompanyHasAdmin\(/);
   assert.match(src, /_demoCompanyHasAdmin\(companyKey\)/);
-  assert.match(src, /Creating a CA means the firm is no longer/);
-  assert.match(src, /companyDisp\.status = "active"/);
+  assert.match(src, /Active once a CA exists for the firm/);
+  assert.match(flowSrc, /companyDisp\.status = "active"/);
 });
 
 test("demo company detail can save email and country", () => {
