@@ -71,7 +71,7 @@ function getVisibleGroups() {
 // ============================================================
 function showToast(message, type = "success", duration = 4000) {
     const container = document.getElementById("toast-container");
-    if (!container) { console.warn(message); return; }
+    if (!container) { console.warn(message); return null; }
 
     const toast = document.createElement("div");
     toast.className = `toast toast-${type}`;
@@ -93,6 +93,8 @@ function showToast(message, type = "success", duration = 4000) {
     toast.addEventListener("click", dismiss);
     container.appendChild(toast);
     setTimeout(dismiss, duration);
+    // Safe DOM handle for callers that must replace only their own toast (never wipe the tray).
+    return toast;
 }
 
 // --- INITIAL STATE ---

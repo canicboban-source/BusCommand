@@ -7,8 +7,11 @@ import { showAppLayout } from "../layout/shell.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr, changeAttr } from "../core/action-delegate.js";
-import { runSingleSubmission } from "../core/submit-lock.js";
 import { rowActionsMenuHtml } from "../ui/row-actions-menu.js";
+import {
+    loadSaCreateCompanyFlow,
+    getSaCreateFlowIfLoaded
+} from "./sa-create-company-flow-loader.js";
 
 const LICENSE_PACKAGE_LIMITS = Object.freeze({
     starter: { maxDrivers: 15, maxDispatchers: 2, label: "STARTER" },
@@ -240,34 +243,158 @@ function _saCompanyRowHtml({
     </tr>`;
 }
 
-function superadminOpenCreateModal() {
-    const modal = document.getElementById("sa-create-company-modal");
-    if (!modal) return;
-    modal.classList.remove("hidden");
-    modal.removeAttribute("hidden");
-    document.getElementById("sa-demo-company-pin")?.classList.toggle("hidden", !USE_LOCAL_STATE);
-    document.getElementById("sa-new-name")?.focus();
+let _saCreateFlowInitialized = false;
+
+function initSaCreateFlowHooks(mod) {
+    if (!_saCreateFlowInitialized) {
+        mod.initSaCreateCompanyFlow({
+            refreshDashboard: () => renderSuperAdminDashboard(),
+            openCompanyDetail: (companyId) => superadminOpenCompanyDetail(companyId),
+            findDemoCompanyDispatcher: (companyId) => _findDemoCompanyDispatcher(companyId),
+            renderCompanyAdminList: () => renderCompanyAdminList()
+        });
+        _saCreateFlowInitialized = true;
+    }
+    return mod;
 }
 
-function superadminCloseCreateModal() {
+/** Loader-failure toast ownership — never wipe flow-outcome or unrelated toasts. */
+let _saCreateLoaderToastEl = null;
+
+function dismissSaCreateLoaderFailureToast() {
+    const el = _saCreateLoaderToastEl;
+    _saCreateLoaderToastEl = null;
+    if (el && typeof el.remove === "function" && el.isConnected) {
+        el.remove();
+    }
+}
+
+function showSaCreateLoaderFailureToast() {
+    dismissSaCreateLoaderFailureToast();
+    const el = showToast(t("sa_create_chunk_load_failed"), "error", 8000);
+    if (el && el.nodeType === 1) {
+        el.setAttribute("data-sa-create-loader-toast", "1");
+        _saCreateLoaderToastEl = el;
+    }
+    return el;
+}
+
+/**
+ * H1-A.1 wrapper: load failures vs execution failures are separate catch boundaries.
+ * Rejected imports are cleared by sa-create-company-flow-loader (retry without reload).
+ */
+async function withSaCreateFlowModule(run) {
+    let mod;
+    try {
+        mod = await loadSaCreateCompanyFlow();
+        initSaCreateFlowHooks(mod);
+        // Successful load clears any prior loader-failure toast from this surface.
+        dismissSaCreateLoaderFailureToast();
+        // Flow module owns Escape from this point — drop unloaded document guard.
+        unbindSaCreateUnloadedEscapeGuard();
+    } catch {
+        showSaCreateLoaderFailureToast();
+        return undefined;
+    }
+    try {
+        return await run(mod);
+    } catch (err) {
+        console.error("sa-create-company-flow execution failed", err);
+        // Execution errors are not load failures — do not use loader-toast ownership.
+        showToast(t("error_generic"), "error", 8000);
+        return undefined;
+    }
+}
+
+/** Document-level Escape while create-flow chunk is not loaded (focus may stay outside modal). */
+let _saCreateUnloadedEscapeGuard = null;
+
+function unbindSaCreateUnloadedEscapeGuard() {
+    if (!_saCreateUnloadedEscapeGuard) return;
+    document.removeEventListener("keydown", _saCreateUnloadedEscapeGuard, true);
+    _saCreateUnloadedEscapeGuard = null;
+}
+
+function bindSaCreateUnloadedEscapeGuard() {
+    if (_saCreateUnloadedEscapeGuard) return;
+    _saCreateUnloadedEscapeGuard = (event) => {
+        if (event.key !== "Escape") return;
+        const modal = document.getElementById("sa-create-company-modal");
+        if (!modal || modal.classList.contains("hidden") || modal.hasAttribute("hidden")) return;
+        // Once payload is loaded, flow module owns Escape / leave-confirm.
+        if (getSaCreateFlowIfLoaded()) return;
+        event.preventDefault();
+        event.stopPropagation();
+        dismissSaCreateModalShellLocal();
+    };
+    document.addEventListener("keydown", _saCreateUnloadedEscapeGuard, true);
+}
+
+function focusSaCreateModalShellSync() {
     const modal = document.getElementById("sa-create-company-modal");
+    if (!modal) return;
+    let target = null;
+    try {
+        target = document.getElementById("sa-new-name")
+            || modal.querySelector("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+    } catch {
+        // Never let focus helpers break Open / Escape ownership.
+        return;
+    }
+    if (!target || typeof target.focus !== "function") return;
+    try {
+        target.focus({ preventScroll: true });
+    } catch {
+        try { target.focus(); } catch { /* ignore */ }
+    }
+}
+
+function dismissSaCreateModalShellLocal() {
+    unbindSaCreateUnloadedEscapeGuard();
+    const modal = document.getElementById("sa-create-company-modal");
+    const pwd = document.getElementById("sa-ca-password");
+    if (pwd) pwd.value = "";
     if (!modal) return;
     modal.classList.add("hidden");
     modal.setAttribute("hidden", "");
 }
 
+function superadminOpenCreateModal() {
+    const modal = document.getElementById("sa-create-company-modal");
+    if (!modal) return;
+    modal.classList.remove("hidden");
+    modal.removeAttribute("hidden");
+    // Focus inside the shell before lazy import so keyboard events are not stranded on
+    // #sa-open-create-modal when the chunk fails. Document guard covers residual cases.
+    focusSaCreateModalShellSync();
+    if (!getSaCreateFlowIfLoaded()) {
+        bindSaCreateUnloadedEscapeGuard();
+    }
+    void withSaCreateFlowModule((mod) => mod.superadminOpenCreateModal());
+}
+
+function superadminCloseCreateModal() {
+    const loaded = getSaCreateFlowIfLoaded();
+    if (loaded) {
+        initSaCreateFlowHooks(loaded);
+        loaded.superadminCloseCreateModal();
+        return;
+    }
+    // No module loaded: Close must not start import/recovery or emit toasts.
+    dismissSaCreateModalShellLocal();
+}
+
 async function superadminSubmitCreateModal(event) {
     if (event?.preventDefault) event.preventDefault();
-    const created = await superadminCreateCompany();
-    if (!created) return false;
-    const name = String(document.getElementById("sa-ca-name")?.value || "").trim();
-    const email = String(document.getElementById("sa-ca-email")?.value || "").trim();
-    const password = String(document.getElementById("sa-ca-password")?.value || "").trim();
-    if (name || email || password) {
-        await superadminCreateCompanyAdmin();
-    }
-    superadminCloseCreateModal();
-    return true;
+    return withSaCreateFlowModule((mod) => mod.superadminSubmitCreateModal(event));
+}
+
+async function superadminCreateCompany() {
+    return withSaCreateFlowModule((mod) => mod.superadminCreateCompany());
+}
+
+async function superadminCreateCompanyAdmin() {
+    return withSaCreateFlowModule((mod) => mod.superadminCreateCompanyAdmin());
 }
 
 function superadminFocusCompanies() {
@@ -454,7 +581,31 @@ function renderCompanyDetailAdmins(company) {
     const list = document.getElementById("sa-detail-admins");
     if (!list) return;
     const admins = company.admins || [];
+    const state = company.caProvisionState || null;
+    const createEligible = company.caCreateEligible === true
+        || (state === "missing_firestore_ca" && company.caSlotClaimed !== true);
+    const slotOrphan = state === "missing_firestore_ca" && company.caSlotClaimed === true;
+
     if (!admins.length) {
+        if (slotOrphan) {
+            list.innerHTML = `<p class="sa-detail-empty sa-detail-ca-ops-error" data-sa-ca-slot-orphan="1">${escapeHtml(
+                t("sa_detail_ca_slot_orphan") || "Company admin slot is claimed but no admin profile exists. Contact ops — create is blocked."
+            )}</p>`;
+            return;
+        }
+        if (createEligible && state === "missing_firestore_ca") {
+            list.innerHTML = `
+                <p class="sa-detail-empty">${escapeHtml(t("sa_detail_no_admins") || "No company admins yet.")}</p>
+                <div class="sa-detail-admin-actions sa-detail-create-missing-wrap">
+                    <button type="button" class="btn-primary" data-sa-create-missing-ca-cta="1"
+                        ${actionAttr("superadminOpenCreateMissingAdmin", [company.id])}>
+                        ${escapeHtml(t("sa_detail_create_company_admin") || "Create company admin")}
+                    </button>
+                </div>
+                <div id="sa-detail-create-missing-host" class="sa-detail-create-missing-host hidden" hidden></div>
+            `;
+            return;
+        }
         list.innerHTML = `<p class="sa-detail-empty">${escapeHtml(t("sa_detail_no_admins") || "No company admins yet.")}</p>`;
         return;
     }
@@ -484,6 +635,36 @@ function renderCompanyDetailAdmins(company) {
             </div>
         `;
     }).join("");
+}
+
+function clearCreateMissingAdminPasswordLocal() {
+    const pwd = document.getElementById("sa-missing-ca-password");
+    if (pwd) pwd.value = "";
+}
+
+function superadminOpenCreateMissingAdmin(companyId) {
+    return withSaCreateFlowModule((mod) => mod.superadminOpenCreateMissingAdmin(companyId));
+}
+
+function superadminSubmitCreateMissingAdmin(event) {
+    if (event?.preventDefault) event.preventDefault();
+    return withSaCreateFlowModule((mod) => mod.superadminSubmitCreateMissingAdmin(event));
+}
+
+function superadminCancelCreateMissingAdmin() {
+    const loaded = getSaCreateFlowIfLoaded();
+    if (loaded) {
+        initSaCreateFlowHooks(loaded);
+        loaded.superadminCancelCreateMissingAdmin();
+        return;
+    }
+    clearCreateMissingAdminPasswordLocal();
+    const host = document.getElementById("sa-detail-create-missing-host");
+    if (host) {
+        host.innerHTML = "";
+        host.classList.add("hidden");
+        host.setAttribute("hidden", "");
+    }
 }
 
 function fillCompanyDetailModal(company) {
@@ -829,6 +1010,18 @@ async function superadminOpenCompanyDetail(companyId) {
 
     const res = await ApiClient.getCompanyDetail(id);
     if (!res.success || !res.company) {
+        // Network/API failure → unknown: no Create CTA.
+        fillCompanyDetailModal({
+            id,
+            name: id,
+            admins: [],
+            counts: {},
+            caProvisionState: null,
+            caCreateEligible: false,
+            caSlotClaimed: false,
+            _detailUnknown: true
+        });
+        // Set error after fill — fillCompanyDetailModal clears the banner by design.
         if (errorEl) {
             errorEl.textContent = res.error || t("error_generic");
             errorEl.classList.remove("hidden");
@@ -843,6 +1036,11 @@ async function superadminOpenCompanyDetail(companyId) {
 
 function superadminCloseCompanyDetail() {
     _pendingDetailCompanyId = null;
+    clearCreateMissingAdminPasswordLocal();
+    const loaded = getSaCreateFlowIfLoaded();
+    if (loaded?.superadminCancelCreateMissingAdmin) {
+        try { loaded.superadminCancelCreateMissingAdmin(); } catch { /* ignore */ }
+    }
     const modal = document.getElementById("sa-company-detail-modal");
     if (modal) {
         modal.classList.add("hidden");
@@ -956,140 +1154,6 @@ async function superadminCopyText(value) {
     }
 }
 
-
-async function superadminCreateCompany() {
-    const nameInput = document.getElementById("sa-new-name");
-    const pinInput = document.getElementById("sa-new-pin");
-    const submitButton = document.getElementById("sa-create-company-btn");
-    if (!nameInput) return false;
-
-    const name = nameInput.value.trim();
-    const pin = pinInput?.value.trim() || "1234";
-    const country = String(document.getElementById("sa-new-country")?.value || "AT").trim().toUpperCase();
-    const licenseType = String(document.getElementById("sa-new-license")?.value || "pro").trim();
-    const tenantOverride = String(document.getElementById("sa-new-tenant")?.value || "").trim().toLowerCase();
-    const companyId = tenantOverride
-        || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
-        || (`firma-${Date.now()}`);
-    const caEmail = String(document.getElementById("sa-ca-email")?.value || "").trim().toLowerCase();
-    const contactEmail = caEmail || `admin@${companyId}.com`;
-
-    if (!name) { showToast(t("company_name_required"), "error"); return false; }
-    const tenantEl = document.getElementById("sa-ca-company-id");
-    if (tenantEl) tenantEl.value = companyId;
-
-    if (!USE_LOCAL_STATE) {
-        const submission = await runSingleSubmission(submitButton, t("creating"), async () => {
-            const res = await ApiClient.createCompany({
-                companyId,
-                name,
-                country,
-                contactEmail,
-                licenseType
-            });
-            if (!res.success) {
-                showToast(res.error || t("error_generic"), "error");
-                return false;
-            }
-            await renderSuperAdminDashboard();
-            showToast(t("company_created", { name, companyId }), "success");
-            return true;
-        });
-        return submission.started && submission.value === true;
-    }
-
-    if (USE_LOCAL_STATE && pinInput && (pin.length < 4 || pin.length > 6)) {
-        showToast(t("sa_pin_length_error"), "error");
-        return false;
-    }
-
-    const id = `disp-${Date.now()}`;
-    window.state.dispatchers = window.state.dispatchers || [];
-    window.state.dispatchers.push({
-        id,
-        name,
-        pin,
-        password: pin.length >= 6 ? pin : ["Local", "Qa-", "9"].join(""),
-        passwordChanged: false,
-        groups: [],
-        companyId,
-        email: contactEmail,
-        country,
-        plan: licenseType,
-        licenseType,
-        status: "pending",
-        active: true
-    });
-    saveState();
-    renderSuperAdminDashboard();
-    initializeLoginSelects();
-    showToast(t("company_created_add_ca", { name, companyId }) || `Company ${name} created (${companyId}).`, "success", 7000);
-    return true;
-}
-
-async function superadminCreateCompanyAdmin() {
-    const name      = (document.getElementById('sa-ca-name')       || {}).value?.trim();
-    const email     = (document.getElementById('sa-ca-email')      || {}).value?.trim().toLowerCase();
-    const password  = (document.getElementById('sa-ca-password')   || {}).value?.trim();
-    const companyId = (document.getElementById('sa-ca-company-id') || {}).value?.trim().toLowerCase();
-    const submitButton = document.getElementById("sa-create-admin-btn");
-
-    if (!name || !email || !password || !companyId) {
-        showToast(t("error_fill_admin_fields"), 'error'); return false;
-    }
-    if (password.length < 6 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
-        showToast(t("ca_password_min"), "error");
-        return false;
-    }
-
-    if (!USE_LOCAL_STATE) {
-        const submission = await runSingleSubmission(submitButton, t("creating"), async () => {
-                const res = await ApiClient.createUser({ email, password, name, role: "company_admin", companyId });
-                if (res.success) {
-                    ['sa-ca-name','sa-ca-email','sa-ca-password','sa-ca-company-id'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.value = '';
-                    });
-                    if (!window.state.companyAdmins) window.state.companyAdmins = [];
-                    window.state.companyAdmins = window.state.companyAdmins.filter(admin => admin.email !== email);
-                    window.state.companyAdmins.push({
-                        id: res.uid, name, email, companyId, role: "company-admin"
-                    });
-                    await renderSuperAdminDashboard();
-                    showToast(t("admin_created", { name }), 'success');
-                    return true;
-                } else {
-                    showToast(res.error || t("error_generic"), 'error');
-                    return false;
-                }
-        });
-        return submission.started && submission.value === true;
-    }
-
-    if (!window.state.companyAdmins) window.state.companyAdmins = [];
-    if (window.state.companyAdmins.find(ca => ca.email === email)) {
-        showToast(t("sa_ca_email_exists"), "error"); return;
-    }
-    window.state.companyAdmins.push({
-        id: 'ca-' + Date.now(), name, email, password, companyId,
-        role: 'company-admin', active: true, createdAt: new Date().toISOString()
-    });
-    // Creating a CA means the firm is no longer "awaiting setup".
-    const companyDisp = _findDemoCompanyDispatcher(companyId);
-    if (companyDisp) {
-        companyDisp.status = "active";
-        companyDisp.passwordChanged = true;
-        if (!companyDisp.email) companyDisp.email = email;
-    }
-    ['sa-ca-name','sa-ca-email','sa-ca-password','sa-ca-company-id'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-    });
-    saveState();
-    renderCompanyAdminList();
-    renderSuperAdminDashboard();
-    showToast(t("sa_ca_created_for_company", { name, companyId }), "success");
-}
 
 function renderCompanyAdminList() {
     const container = document.getElementById('sa-ca-list');
@@ -1407,6 +1471,9 @@ export {
     superadminOpenCompany,
     superadminOpenCompanyDetail,
     superadminCloseCompanyDetail,
+    superadminOpenCreateMissingAdmin,
+    superadminSubmitCreateMissingAdmin,
+    superadminCancelCreateMissingAdmin,
     superadminSetCompanyAdminStatus,
     superadminResetCompanyAdminPassword,
     superadminCopyText,

@@ -25,6 +25,7 @@ const {
   deleteDispatcher,
   deleteCompanyAtomic,
   provisionUser,
+  provisionCompanyAdminMissingOnly,
   revokeDispatcherSessions,
   setDispatcherActive,
   updateDispatcherGroups,
@@ -67,6 +68,7 @@ const {
   createCompanyBody,
   deleteCompanyBody,
   createUserBody,
+  createMissingAdminBody,
   updateUserGroupsBody,
   companyDispatcherBody,
   companyDispatcherStatusBody,
@@ -635,6 +637,70 @@ app.post(
 );
 
 app.post(
+  "/api/admin/company/:companyId/create-missing-admin",
+  rateLimit(10, 5 * 60 * 1000),
+  requireSuperAdmin,
+  validateBody(createMissingAdminBody),
+  async (req, res) => {
+    const parsed = parseCompanyParam(req.params.companyId);
+    if (!parsed.ok) {
+      return res.status(400).json({ success: false, error: parsed.error });
+    }
+    const { name, email, password, companyId: bodyCompanyId } = req.validatedBody;
+    if (bodyCompanyId && String(bodyCompanyId).trim() !== parsed.id) {
+      return res.status(400).json({
+        success: false,
+        error: "companyId u telu zahteva mora odgovarati putanji.",
+        code: "COMPANY_ID_MISMATCH"
+      });
+    }
+    try {
+      const result = await provisionCompanyAdminMissingOnly({
+        db,
+        admin,
+        email,
+        password,
+        name,
+        companyId: parsed.id,
+        actorId: req.adminUser.uid
+      });
+      return res.status(201).json({ success: true, uid: result.uid, email: result.email });
+    } catch (err) {
+      // Never log password; keep peer emails out of error payloads.
+      req.log?.error({ err, code: err.code, companyId: parsed.id }, "create-missing-admin greška");
+      if (err instanceof ProvisioningError || err?.code) {
+        if (err.code === "company-not-found") {
+          return res.status(404).json({ success: false, error: err.message, code: "COMPANY_NOT_FOUND" });
+        }
+        if (err.code === "ca-exists") {
+          return res.status(409).json({ success: false, error: err.message, code: "CA_EXISTS" });
+        }
+        if (err.code === "license-suspended") {
+          return res.status(403).json({ success: false, error: err.message, code: "LICENSE_SUSPENDED" });
+        }
+        if (err.code === "license-unavailable") {
+          return res.status(409).json({ success: false, error: err.message, code: "LICENSE_UNAVAILABLE" });
+        }
+        if (err.code === "compensation-failed") {
+          return res.status(500).json({
+            success: false,
+            error: err.message,
+            code: "COMPENSATION_FAILED"
+          });
+        }
+        if (err.code === "auth/email-already-exists") {
+          return res.status(409).json({ success: false, error: "Email već postoji.", code: "EMAIL_EXISTS" });
+        }
+        if (err.code === "company-required") {
+          return res.status(400).json({ success: false, error: err.message });
+        }
+      }
+      return res.status(500).json({ success: false, error: "Greška pri kreiranju company admina." });
+    }
+  }
+);
+
+app.post(
   "/api/admin/create-user",
   rateLimit(20, 5 * 60 * 1000),
   requireUserProvisioner,
@@ -660,6 +726,18 @@ app.post(
       }
       if (["role-not-allowed", "company-required", "superadmin-company-forbidden"].includes(err.code)) {
         return res.status(400).json({ success: false, error: err.message });
+      }
+      if (err.code === "ca-exists") {
+        return res.status(409).json({ success: false, error: err.message, code: "CA_EXISTS" });
+      }
+      if (err.code === "license-suspended") {
+        return res.status(403).json({ success: false, error: err.message, code: "LICENSE_SUSPENDED" });
+      }
+      if (err.code === "license-unavailable") {
+        return res.status(409).json({ success: false, error: err.message, code: "LICENSE_UNAVAILABLE" });
+      }
+      if (err.code === "compensation-failed") {
+        return res.status(500).json({ success: false, error: err.message, code: "COMPENSATION_FAILED" });
       }
       if (err.code === "auth/email-already-exists") {
         return res.status(409).json({ success: false, error: "Email već postoji." });

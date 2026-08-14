@@ -2423,6 +2423,66 @@ const PREVIEW_SECURITY_TRANSLATIONS = {
     company_name_required: { en: "Enter a company name.", de: "Firmennamen eingeben.", sr: "Unesite naziv firme." },
     company_created: { en: "Company {name} created (ID: {companyId}).", de: "Unternehmen {name} erstellt (ID: {companyId}).", sr: "Firma {name} je kreirana (ID: {companyId})." },
     admin_created: { en: "Company admin {name} created.", de: "Firmen-Admin {name} erstellt.", sr: "Administrator firme {name} je kreiran." },
+    sa_create_retry_ca: {
+        en: "Retry company admin",
+        de: "Firmenadmin erneut versuchen",
+        sr: "Ponovi kreiranje administratora"
+    },
+    sa_create_partial_company_ok_ca_fail: {
+        en: "Company created (ID: {companyId}), but the company admin was not created. Fix the admin fields and retry only the admin step.",
+        de: "Unternehmen erstellt (ID: {companyId}), aber der Firmenadmin wurde nicht erstellt. Adminfelder korrigieren und nur den Adminschritt wiederholen.",
+        sr: "Firma je kreirana (ID: {companyId}), ali administrator nije. Ispravite podatke administratora i ponovite samo taj korak."
+    },
+    sa_create_close_partial_confirm: {
+        en: "The company already exists, but the company admin was not created. Leave without finishing the admin step?",
+        de: "Das Unternehmen existiert bereits, aber der Firmenadmin wurde nicht erstellt. Ohne Adminschritt verlassen?",
+        sr: "Firma već postoji, ali administrator nije kreiran. Napustiti bez završetka admin koraka?"
+    },
+    sa_create_close_unknown_confirm: {
+        en: "Company create result is not confirmed. Check the company list / Manage account. Company-admin retry is not allowed. Leaving does not mean the company was confirmed created. Leave anyway?",
+        de: "Ergebnis der Firmenerstellung ist nicht bestätigt. Firmenliste / Konto verwalten prüfen. Firmenadmin-Wiederholung ist nicht erlaubt. Verlassen bedeutet nicht, dass die Firma bestätigt erstellt wurde. Trotzdem verlassen?",
+        sr: "Ishod kreiranja firme nije potvrđen. Proverite listu firmi / Upravljaj nalogom. Ponavljanje administratora nije dozvoljeno. Napuštanje ne znači da je firma potvrđeno kreirana. Ipak napustiti?"
+    },
+    sa_create_leave_partial: {
+        en: "Leave incomplete",
+        de: "Unvollständig verlassen",
+        sr: "Napusti nepotpuno"
+    },
+    sa_create_partial_abandoned_hint: {
+        en: "Company remains created. Reopen New company / Admin in this session to retry the admin step.",
+        de: "Unternehmen bleibt erstellt. In dieser Sitzung erneut „Neue Firma / Admin“ öffnen, um den Adminschritt zu wiederholen.",
+        sr: "Firma ostaje kreirana. Ponovo otvorite Nova firma / Admin u ovoj sesiji da ponovite admin korak."
+    },
+    sa_create_unknown_abandoned_hint: {
+        en: "Create result stays unconfirmed. Check the company list / Manage account before trying again.",
+        de: "Ergebnis bleibt unbestätigt. Firmenliste / Konto verwalten prüfen, bevor erneut versucht wird.",
+        sr: "Ishod ostaje nepotvrđen. Proverite listu firmi / Upravljaj nalogom pre ponovnog pokušaja."
+    },
+    sa_create_unknown_check_company: {
+        en: "Company create result is unclear. Check the company list / Manage account before trying again.",
+        de: "Ergebnis der Firmenerstellung ist unklar. Firmenliste / Konto verwalten prüfen, bevor erneut versucht wird.",
+        sr: "Ishod kreiranja firme nije jasan. Proverite listu firmi / Upravljaj nalogom pre ponovnog pokušaja."
+    },
+    sa_create_busy_wait: {
+        en: "Please wait — create is still in progress.",
+        de: "Bitte warten — Erstellung läuft noch.",
+        sr: "Sačekajte — kreiranje je još u toku."
+    },
+    sa_create_ca_requires_pending: {
+        en: "Company admin retry is available only after a confirmed company create in this session.",
+        de: "Firmenadmin-Wiederholung ist nur nach bestätigter Firmenerstellung in dieser Sitzung möglich.",
+        sr: "Ponavljanje administratora dostupno je samo posle potvrđenog kreiranja firme u ovoj sesiji."
+    },
+    sa_create_chunk_load_failed: {
+        en: "Create-company module could not be loaded. Check your connection, then try again.",
+        de: "Modul zur Firmenerstellung konnte nicht geladen werden. Verbindung prüfen, dann erneut versuchen.",
+        sr: "Modul za kreiranje firme nije učitan. Proverite vezu, zatim pokušajte ponovo."
+    },
+    sa_create_company_exists: {
+        en: "A company with this ID already exists.",
+        de: "Ein Unternehmen mit dieser ID existiert bereits.",
+        sr: "Firma sa ovim ID-jem već postoji."
+    },
     export_downloaded: { en: "{filename} downloaded.", de: "{filename} heruntergeladen.", sr: "{filename} je preuzet." },
     group_id_label: { en: "Group ID", de: "Gruppen-ID", sr: "ID grupe" },
     location_label: { en: "Location", de: "Ort", sr: "Lokacija" },
@@ -2479,6 +2539,36 @@ const PREVIEW_SECURITY_TRANSLATIONS = {
     sa_detail_support_off: { en: "Off", de: "Aus", sr: "Isključeno" },
     sa_detail_admins_title: { en: "Company admins", de: "Firmen-Admins", sr: "Administratori firme" },
     sa_detail_no_admins: { en: "No company admins yet.", de: "Noch keine Firmen-Admins.", sr: "Još nema administratora firme." },
+    sa_detail_create_company_admin: {
+        en: "Create company admin",
+        de: "Firmenadmin erstellen",
+        sr: "Kreiraj administratora firme"
+    },
+    sa_detail_create_missing_title: {
+        en: "New company admin",
+        de: "Neuer Firmenadmin",
+        sr: "Novi administrator firme"
+    },
+    sa_detail_create_missing_name: { en: "Admin name", de: "Admin-Name", sr: "Ime administratora" },
+    sa_detail_create_missing_email: { en: "Email", de: "E-Mail", sr: "Email" },
+    sa_detail_create_missing_password: { en: "Password", de: "Passwort", sr: "Lozinka" },
+    sa_detail_create_missing_save: { en: "Create", de: "Erstellen", sr: "Kreiraj" },
+    sa_detail_create_missing_cancel: { en: "Cancel", de: "Abbrechen", sr: "Otkaži" },
+    sa_detail_create_missing_success: {
+        en: "Company admin created.",
+        de: "Firmenadmin erstellt.",
+        sr: "Administrator firme je kreiran."
+    },
+    sa_detail_create_missing_busy: {
+        en: "Create already in progress. Please wait.",
+        de: "Erstellung läuft bereits. Bitte warten.",
+        sr: "Kreiranje je već u toku. Sačekajte."
+    },
+    sa_detail_ca_slot_orphan: {
+        en: "Company admin slot is claimed but no admin profile exists. Contact ops — create is blocked.",
+        de: "Firmenadmin-Slot ist belegt, aber kein Admin-Profil vorhanden. Ops kontaktieren — Erstellen gesperrt.",
+        sr: "Slot administratora firme je zauzet, ali profil ne postoji. Kontaktirajte ops — kreiranje je blokirano."
+    },
     sa_detail_admin_active: { en: "Active", de: "Aktiv", sr: "Aktivan" },
     sa_detail_admin_inactive: { en: "Disabled", de: "Deaktiviert", sr: "Onemogućen" },
     sa_detail_reset_password: { en: "Reset password", de: "Passwort zurücksetzen", sr: "Reset lozinke" },

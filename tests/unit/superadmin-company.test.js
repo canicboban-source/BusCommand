@@ -116,6 +116,54 @@ test("getCompanyDetail returns tenant summary and company admins", async () => {
   assert.equal(company.counts.dispatchers, 1);
   assert.equal(company.counts.companyAdmins, 1);
   assert.equal(company.admins[0].email, "ca@alpha.test");
+  assert.equal(company.caProvisionState, "present_active");
+  assert.equal(company.caCreateEligible, false);
+  assert.equal(company.caSlotClaimed, false);
+});
+
+test("getCompanyDetail derives missing_firestore_ca when no CA docs and slot free", async () => {
+  const db = fakeFirestore({
+    initial: {
+      "companies/alpha": { createdAt: "ts" },
+      "companies/alpha/profile/main": { name: "Alpha Transit" },
+      "companies/alpha/settings/main": { status: "active" }
+    }
+  });
+  const company = await getCompanyDetail({ db, companyId: "alpha" });
+  assert.equal(company.caProvisionState, "missing_firestore_ca");
+  assert.equal(company.caSlotClaimed, false);
+  assert.equal(company.caCreateEligible, true);
+});
+
+test("getCompanyDetail marks slot orphan as create-ineligible", async () => {
+  const db = fakeFirestore({
+    initial: {
+      "companies/alpha": { createdAt: "ts" },
+      "companies/alpha/profile/main": { name: "Alpha Transit" },
+      "companies/alpha/settings/main": { status: "active" },
+      "companies/alpha/ops/company_admin_slot": { uid: "orphan-uid", claimedAt: "ts" }
+    }
+  });
+  const company = await getCompanyDetail({ db, companyId: "alpha" });
+  assert.equal(company.caProvisionState, "missing_firestore_ca");
+  assert.equal(company.caSlotClaimed, true);
+  assert.equal(company.caCreateEligible, false);
+});
+
+test("getCompanyDetail derives present_inactive when only disabled CA exists", async () => {
+  const db = fakeFirestore({
+    initial: {
+      "companies/alpha": { createdAt: "ts" },
+      "companies/alpha/profile/main": { name: "Alpha Transit" },
+      "companies/alpha/settings/main": { status: "active" },
+      "companies/alpha/users/ca-1": {
+        role: "company_admin", companyId: "alpha", email: "ca@alpha.test", active: false
+      }
+    }
+  });
+  const company = await getCompanyDetail({ db, companyId: "alpha" });
+  assert.equal(company.caProvisionState, "present_inactive");
+  assert.equal(company.caCreateEligible, false);
 });
 
 test("listAllCompanyAdmins returns admins across companies from users/", async () => {

@@ -956,6 +956,14 @@
                                         <input type="password" id="sa-new-pin" maxlength="6" autocomplete="off">
                                     </div>
                                 </fieldset>
+                                <div id="sa-create-partial-banner" class="sa-create-partial-banner hidden" data-testid="sa-create-partial-banner" hidden role="status" aria-live="polite"></div>
+                                <div id="sa-create-leave-confirm" class="sa-create-leave-confirm hidden" data-testid="sa-create-leave-confirm" hidden>
+                                    <p id="sa-create-leave-confirm-msg"></p>
+                                    <div class="sa-create-leave-actions">
+                                        <button type="button" class="btn-secondary" id="sa-create-leave-cancel" data-i18n="btn_cancel">Cancel</button>
+                                        <button type="button" class="btn-primary" id="sa-create-leave-confirm-btn" data-i18n="sa_create_leave_partial">Leave incomplete</button>
+                                    </div>
+                                </div>
                                 <fieldset class="sa-create-fieldset">
                                     <legend data-i18n="sa_create_admin_title">Company Admin</legend>
                                     <label class="form-group" for="sa-ca-name">

@@ -92,6 +92,17 @@ const ApiClient = (() => {
     async function createUser(data) {
         return apiFetch("/api/admin/create-user", { method: "POST", body: JSON.stringify(data) });
     }
+    async function createMissingCompanyAdmin(companyId, data) {
+        const id = encodeURIComponent(String(companyId || "").trim());
+        return apiFetch("/api/admin/company/" + id + "/create-missing-admin", {
+            method: "POST",
+            body: JSON.stringify({
+                name: data?.name,
+                email: data?.email,
+                password: data?.password
+            })
+        });
+    }
     async function updateUserGroups(uid, companyId, groups) {
         return apiFetch("/api/admin/users/" + encodeURIComponent(uid) + "/groups", {
             method: "PUT",
@@ -523,7 +534,7 @@ const ApiClient = (() => {
     return {
         fetch: apiFetch, getConfig, getLicense, getCompanies, getCompanyAdmins, getSuperAdminOverview,
         getCompanyDetail, patchCompanySettings, getPlatformHealth, setCompanyAdminStatus, resetCompanyAdminPassword,
-        setCompanyStatus, deleteCompany, createCompany, createUser, updateUserGroups,
+        setCompanyStatus, deleteCompany, createCompany, createUser, createMissingCompanyAdmin, updateUserGroups,
         createCompanyDispatcher, updateCompanyDispatcherGroups,
         setCompanyDispatcherStatus, updateCompanyDispatcherProfile,
         revokeCompanyDispatcherSessions, deleteCompanyDispatcher,

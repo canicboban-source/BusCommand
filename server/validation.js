@@ -53,6 +53,15 @@ const createUserBody = z.object({
   }
 });
 
+/** Manage-account recovery: path companyId is authoritative; body companyId optional and must match. */
+const createMissingAdminBody = z.object({
+  name: z.string().trim().min(1).max(200),
+  email: z.string().trim().email().max(254),
+  password: z.string().min(6).max(128)
+    .refine((value) => /[A-Za-z]/.test(value) && /\d/.test(value), "Lozinka mora sadrzati slovo i broj."),
+  companyId: z.string().trim().max(64).optional()
+});
+
 const updateUserGroupsBody = z.object({
   companyId: z.string().trim().min(1).max(64),
   groups: z.array(z.string().trim().min(1).max(64)).max(100)
@@ -232,6 +241,7 @@ module.exports = {
   createCompanyBody,
   deleteCompanyBody,
   createUserBody,
+  createMissingAdminBody,
   updateUserGroupsBody,
   companyDispatcherBody,
   companyDispatcherStatusBody,

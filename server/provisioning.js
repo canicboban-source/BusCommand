@@ -199,6 +199,140 @@ async function deleteWithRetry(operation, attempts = 3) {
   throw lastError;
 }
 
+const COMPANY_ADMIN_SLOT_DOC = "company_admin_slot";
+
+/**
+ * Production path for role=company_admin only.
+ * Auth is outside Firestore; uniqueness uses ops/company_admin_slot + existing CA docs.
+ */
+async function provisionCompanyAdminMissingOnly({
+  db, admin, email, password, name, companyId, actorId
+}) {
+  if (!companyId) {
+    throw new ProvisioningError("company-required", "companyId je obavezan za staff nalog.");
+  }
+  const displayName = name || email;
+  const companyRef = db.collection("companies").doc(companyId);
+  const settingsRef = companyRef.collection("settings").doc("main");
+  const slotRef = companyRef.collection("ops").doc(COMPANY_ADMIN_SLOT_DOC);
+
+  // Fail closed before Auth when company is obviously missing / suspended.
+  const [companySnap, settingsSnap, slotSnap, adminsSnap] = await Promise.all([
+    companyRef.get(),
+    settingsRef.get(),
+    slotRef.get(),
+    companyRef.collection("users").where("role", "==", "company_admin").get()
+  ]);
+  if (!companySnap.exists) {
+    throw new ProvisioningError("company-not-found", "Firma nije pronađena.");
+  }
+  if (!settingsSnap.exists) {
+    throw new ProvisioningError("license-unavailable", "Licenca firme nije dostupna.");
+  }
+  const preStatus = settingsSnap.data()?.status;
+  if (preStatus === "suspended") {
+    throw new ProvisioningError("license-suspended", "Licenca firme je suspendovana.");
+  }
+  if (preStatus !== "active") {
+    throw new ProvisioningError("license-unavailable", "Licenca firme nije aktivna.");
+  }
+  const preAdminCount = Number(adminsSnap.size) || (adminsSnap.docs || []).length || 0;
+  if (slotSnap.exists || preAdminCount > 0) {
+    throw new ProvisioningError("ca-exists", "Company admin već postoji za ovu firmu.");
+  }
+
+  let userRecord;
+  try {
+    userRecord = await admin.auth().createUser({ email, password, displayName });
+    const claims = {
+      role: "company_admin",
+      companyId,
+      name: displayName,
+      mustChangeLoginCode: false
+    };
+    await admin.auth().setCustomUserClaims(userRecord.uid, claims);
+
+    const userRef = companyRef.collection("users").doc(userRecord.uid);
+    const auditRef = companyRef.collection("audit_log").doc();
+    const timestamp = admin.firestore.FieldValue.serverTimestamp();
+    const adminsQuery = companyRef.collection("users").where("role", "==", "company_admin");
+
+    await db.runTransaction(async (transaction) => {
+      // All reads before any writes.
+      const company = await transaction.get(companyRef);
+      const settings = await transaction.get(settingsRef);
+      const slot = await transaction.get(slotRef);
+      const admins = await transaction.get(adminsQuery);
+
+      if (!company.exists) {
+        throw new ProvisioningError("company-not-found", "Firma nije pronađena.");
+      }
+      if (!settings.exists) {
+        throw new ProvisioningError("license-unavailable", "Licenca firme nije dostupna.");
+      }
+      const status = settings.data()?.status;
+      if (status === "suspended") {
+        throw new ProvisioningError("license-suspended", "Licenca firme je suspendovana.");
+      }
+      if (status !== "active") {
+        throw new ProvisioningError("license-unavailable", "Licenca firme nije aktivna.");
+      }
+      const adminCount = admins.empty === true
+        ? 0
+        : (Number(admins.size) || (admins.docs || []).length || 0);
+      if (slot.exists || adminCount > 0) {
+        throw new ProvisioningError("ca-exists", "Company admin već postoji za ovu firmu.");
+      }
+
+      transaction.set(userRef, {
+        id: userRecord.uid,
+        email,
+        name: displayName,
+        role: "company_admin",
+        companyId,
+        groups: [],
+        active: true,
+        sessionsValidAfterEpoch: 0,
+        createdAt: timestamp
+      });
+      // Slot: only uid + claimedAt (no PII).
+      transaction.set(slotRef, {
+        uid: userRecord.uid,
+        claimedAt: timestamp
+      });
+      transaction.set(auditRef, {
+        action: "user_created",
+        actorId,
+        details: { uid: userRecord.uid, role: "company_admin", companyId },
+        timestamp
+      });
+    });
+
+    return {
+      uid: userRecord.uid,
+      email,
+      claims: {
+        role: "company_admin",
+        companyId,
+        name: displayName,
+        mustChangeLoginCode: false
+      }
+    };
+  } catch (error) {
+    if (!userRecord) throw error;
+    try {
+      await deleteWithRetry(() => admin.auth().deleteUser(userRecord.uid));
+    } catch (cleanupError) {
+      throw new ProvisioningError(
+        "compensation-failed",
+        "Provisioning cleanup nije uspio.",
+        cleanupError
+      );
+    }
+    throw error;
+  }
+}
+
 async function provisionUser({ db, admin, email, password, name, role, companyId, groups = [], actorId }) {
   if (![...STAFF_ROLES, "superadmin"].includes(role)) {
     throw new ProvisioningError("role-not-allowed", "Uloga nije dozvoljena.");
@@ -208,6 +342,13 @@ async function provisionUser({ db, admin, email, password, name, role, companyId
   }
   if (STAFF_ROLES.has(role) && !companyId) {
     throw new ProvisioningError("company-required", "companyId je obavezan za staff nalog.");
+  }
+
+  // Every production company_admin create shares the slot guard.
+  if (role === "company_admin") {
+    return provisionCompanyAdminMissingOnly({
+      db, admin, email, password, name, companyId, actorId
+    });
   }
 
   const displayName = name || email;
@@ -563,10 +704,12 @@ module.exports = {
   ProvisioningError,
   STAFF_ROLES,
   COMPANY_SUBCOLLECTIONS,
+  COMPANY_ADMIN_SLOT_DOC,
   createCompanyAtomic,
   deleteCompanyAtomic,
   deleteDispatcher,
   provisionUser,
+  provisionCompanyAdminMissingOnly,
   normalizeFirebaseUid,
   readCompanyDispatcher,
   revokeDispatcherSessions,

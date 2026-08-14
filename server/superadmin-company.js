@@ -54,6 +54,13 @@ async function listAllCompanyAdmins({ db }) {
     .sort((a, b) => String(a.email || "").localeCompare(String(b.email || "")));
 }
 
+function deriveCaProvisionState(admins) {
+  const list = Array.isArray(admins) ? admins : [];
+  if (list.some((admin) => admin.active !== false)) return "present_active";
+  if (list.length > 0) return "present_inactive";
+  return "missing_firestore_ca";
+}
+
 async function getCompanyDetail({ db, companyId }) {
   const companyRef = db.collection("companies").doc(companyId);
   const companySnap = await companyRef.get();
@@ -67,14 +74,16 @@ async function getCompanyDetail({ db, companyId }) {
     supportSnap,
     driversSnap,
     groupsSnap,
-    usersSnap
+    usersSnap,
+    slotSnap
   ] = await Promise.all([
     companyRef.collection("profile").doc("main").get(),
     companyRef.collection("settings").doc("main").get(),
     companyRef.collection("settings").doc("support").get(),
     companyRef.collection("drivers").get(),
     companyRef.collection("groups").get(),
-    companyRef.collection("users").get()
+    companyRef.collection("users").get(),
+    companyRef.collection("ops").doc("company_admin_slot").get()
   ]);
 
   const profile = profileSnap.exists ? profileSnap.data() : (companySnap.data() || {});
@@ -93,6 +102,10 @@ async function getCompanyDetail({ db, companyId }) {
     .sort((a, b) => String(a.email || "").localeCompare(String(b.email || "")));
   const dispatchers = users.filter(user => user.role === "dispatcher");
   const supportActive = isSupportActive(support);
+  const caProvisionState = deriveCaProvisionState(admins);
+  const caSlotClaimed = slotSnap.exists === true;
+  // Create CTA only when FS has no CA docs and slot is free (slot orphan = ops problem).
+  const caCreateEligible = caProvisionState === "missing_firestore_ca" && !caSlotClaimed;
 
   const license = resolveLicenseSnapshot(settings);
   return {
@@ -122,7 +135,10 @@ async function getCompanyDetail({ db, companyId }) {
       dispatchers: dispatchers.length,
       companyAdmins: admins.length
     },
-    admins
+    admins,
+    caProvisionState,
+    caSlotClaimed,
+    caCreateEligible
   };
 }
 
@@ -205,6 +221,7 @@ async function requestCompanyAdminPasswordReset({ db, admin, companyId, uid, act
 
 module.exports = {
   getCompanyDetail,
+  deriveCaProvisionState,
   listAllCompanyAdmins,
   readCompanyAdmin,
   setCompanyAdminActive,
