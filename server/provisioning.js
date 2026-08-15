@@ -19,7 +19,8 @@ function normalizeFirebaseUid(value) {
 }
 
 async function createCompanyAtomic({
-  db, admin, companyId, name, country, contactEmail, actorId, licenseType = "pro"
+  db, admin, companyId, name, country, contactEmail, actorId, licenseType = "pro",
+  legalName, taxId, maxBuses
 }) {
   const companyRef = db.collection("companies").doc(companyId);
   const profileRef = companyRef.collection("profile").doc("main");
@@ -30,7 +31,7 @@ async function createCompanyAtomic({
   const timestamp = admin.firestore.FieldValue.serverTimestamp();
   const normalizedCountry = String(country || "AT").trim().toUpperCase();
   const timezone = normalizedCountry === "RS" ? "Europe/Belgrade" : "Europe/Vienna";
-  const licenseFields = buildNewCompanyLicenseFields({ licenseType, admin, trialDays: 30 });
+  const licenseFields = buildNewCompanyLicenseFields({ licenseType, admin, trialDays: 30, maxBuses });
 
   await db.runTransaction(async (transaction) => {
     const existing = await Promise.all([
@@ -46,6 +47,7 @@ async function createCompanyAtomic({
     transaction.set(profileRef, {
       name, slug: companyId, country: normalizedCountry,
       contactEmail: contactEmail || `admin@${companyId}.com`,
+      legalName: legalName || null, taxId: taxId || null,
       timezone, defaultLanguage: normalizedCountry === "RS" ? "sr" : "de", status: "active", createdAt: timestamp
     });
     transaction.set(brandingRef, { name, primaryColor: "#3b82f6", logo: null, appTitle: `${name} Fleet` });
@@ -67,7 +69,7 @@ async function createCompanyAtomic({
     transaction.set(auditRef, {
       action: "company_created",
       actorId,
-      details: { companyId, name, licenseType: licenseFields.licenseType },
+      details: { companyId, name, licenseType: licenseFields.licenseType, maxBuses: licenseFields.maxBuses },
       timestamp
     });
   });

@@ -16,7 +16,7 @@ import { exportDriversCSV, exportLostItemsCSV, exportReportsCSV } from "./core/e
 import { getScheduleByKey, showToast } from "./core/utils.js";
 import { loadPlanImport, prefetchPlanImport } from "./dispatcher/plan-import-loader.js";
 import { loadMsgCompose } from "./dispatcher/msg-compose-loader.js";
-import { addBus, deleteBus, deleteRoute, toggleBusEdit, saveBusOpsProfile, quickSetBusStatus, changeBusGroup } from "./data/buses-routes.js";
+import { addBus, deleteBus, deleteRoute, toggleBusEdit, saveBusOpsProfile, quickSetBusStatus, changeBusGroup, toggleShowArchivedBuses } from "./data/buses-routes.js";
 import {
     clearBusImportPreview,
     confirmBusImport,
@@ -24,7 +24,7 @@ import {
     handleBusImportFile,
     handleBusImportPaste
 } from "./data/bus-import.js";
-import { addDriver, editDriver, toggleDriverActive } from "./data/drivers.js";
+import { addDriver, editDriver, toggleDriverActive, toggleDriverKG } from "./data/drivers.js";
 import { deleteGroup, setGroupFilter } from "./data/groups.js";
 import { clearScheduleFile, clearScheduleText, deleteScheduleEntry, formatScheduleText, handleScheduleDrop, handleScheduleFileSelect, insertScheduleTable, sendScheduleToDrivers, switchScheduleTab } from "./data/schedules.js";
 import {
@@ -268,6 +268,7 @@ const HANDLERS = {
     saveBusOpsProfile,
     quickSetBusStatus,
     changeBusGroup,
+    toggleShowArchivedBuses,
     clearBusImportPreview,
     confirmBusImport,
     handleBusImportDrop,
@@ -493,6 +494,7 @@ const HANDLERS = {
     removeCompanyDispatcher,
     toggleCompanyDriverStatus,
     toggleDriverActive,
+    toggleDriverKG,
     toggleTheme,
     updateDriverBusInline,
     updateDriverShiftInline,

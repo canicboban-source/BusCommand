@@ -22,7 +22,7 @@ test("driver list escapes user-controlled values rendered through innerHTML", ()
 
 test("production status control follows the company-admin permission", () => {
     assert.match(source, /USE_LOCAL_STATE \|\| window\.currentUser\?\.role === "company-admin"/);
-    assert.match(source, /canDeleteDrivers \? `<button class="btn-delete-item"/);
+    assert.match(source, /canDeleteDrivers \? `<button class="btn-delete-item /);
     assert.match(source, /actionAttr\("toggleDriverActive"/);
     assert.doesNotMatch(source, /window\.state\.drivers = window\.state\.drivers\.filter/);
     assert.match(source, /aria-label=/);

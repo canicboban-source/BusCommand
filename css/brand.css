@@ -68,6 +68,18 @@
     font-size: 1.05rem;
 }
 
+.bc-tenant-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding-left: 10px;
+    border-left: 1px solid var(--panel-border);
+}
+
+.bc-tenant-name:empty {
+    display: none;
+}
+
 .driver-pwa-brand {
     display: inline-flex;
     align-items: center;

@@ -35,6 +35,35 @@ test("createCompanyBody requires name", () => {
   assert.equal(result.success, false);
 });
 
+test("createCompanyBody accepts legalName/taxId/maxBuses when provided", () => {
+  const result = createCompanyBody.safeParse({
+    companyId: "acme", name: "Acme", legalName: "Acme Transit GmbH", taxId: "ATU12345678", maxBuses: 30
+  });
+  assert.equal(result.success, true);
+  assert.equal(result.data.legalName, "Acme Transit GmbH");
+  assert.equal(result.data.taxId, "ATU12345678");
+  assert.equal(result.data.maxBuses, 30);
+});
+
+test("createCompanyBody omits legalName/taxId/maxBuses cleanly when absent", () => {
+  const result = createCompanyBody.safeParse({ companyId: "acme", name: "Acme" });
+  assert.equal(result.success, true);
+  assert.equal(result.data.legalName, undefined);
+  assert.equal(result.data.taxId, undefined);
+  assert.equal(result.data.maxBuses, undefined);
+});
+
+test("createCompanyBody rejects invalid maxBuses", () => {
+  assert.equal(createCompanyBody.safeParse({ companyId: "acme", name: "Acme", maxBuses: 0 }).success, false);
+  assert.equal(createCompanyBody.safeParse({ companyId: "acme", name: "Acme", maxBuses: 1.5 }).success, false);
+  assert.equal(createCompanyBody.safeParse({ companyId: "acme", name: "Acme", maxBuses: 5001 }).success, false);
+});
+
+test("createCompanyBody rejects taxId over 32 chars", () => {
+  const result = createCompanyBody.safeParse({ companyId: "acme", name: "Acme", taxId: "X".repeat(33) });
+  assert.equal(result.success, false);
+});
+
 test("createUserBody requires companyId for dispatcher", () => {
   const result = createUserBody.safeParse({
     email: "d@acme.com",
@@ -144,4 +173,48 @@ test("company profile settings schema supports only pilot headquarters and langu
   assert.equal(companyProfileSettingsBody.safeParse({
     companyId: "alpha", country: "US", defaultLanguage: "fr", contactEmail: "bad"
   }).success, false);
+});
+
+test("company profile settings schema accepts the new legal fields", () => {
+  const result = companyProfileSettingsBody.safeParse({
+    companyId: "alpha", country: "AT", defaultLanguage: "de", contactEmail: "office@example.at",
+    taxId: "ATU12345678",
+    billingEmail: "billing@example.at", smsSenderId: "alpenbus"
+  });
+  assert.equal(result.success, true);
+  assert.equal(result.data.smsSenderId, "ALPENBUS");
+});
+
+test("company profile settings schema still succeeds with only the original 4 fields", () => {
+  const result = companyProfileSettingsBody.safeParse({
+    companyId: "alpha", country: "AT", defaultLanguage: "de", contactEmail: "office@example.at"
+  });
+  assert.equal(result.success, true);
+});
+
+test("company profile settings schema rejects malformed billingEmail", () => {
+  const result = companyProfileSettingsBody.safeParse({
+    companyId: "alpha", country: "AT", defaultLanguage: "de", contactEmail: "office@example.at",
+    billingEmail: "not-an-email"
+  });
+  assert.equal(result.success, false);
+});
+
+test("company profile settings schema rejects malformed smsSenderId", () => {
+  assert.equal(companyProfileSettingsBody.safeParse({
+    companyId: "alpha", country: "AT", defaultLanguage: "de", contactEmail: "office@example.at",
+    smsSenderId: "toolongsenderid"
+  }).success, false);
+  assert.equal(companyProfileSettingsBody.safeParse({
+    companyId: "alpha", country: "AT", defaultLanguage: "de", contactEmail: "office@example.at",
+    smsSenderId: "bad id!"
+  }).success, false);
+});
+
+test("company profile settings schema accepts an 11-char uppercase smsSenderId", () => {
+  const result = companyProfileSettingsBody.safeParse({
+    companyId: "alpha", country: "AT", defaultLanguage: "de", contactEmail: "office@example.at",
+    smsSenderId: "ALPENBUS123"
+  });
+  assert.equal(result.success, true);
 });

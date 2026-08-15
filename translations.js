@@ -50,6 +50,12 @@ const TRANSLATIONS = {
         bus_ops_out: "Van upotrebe",
         bus_ops_reserve: "Rezerva",
         bus_ops_other_line: "Druga linija",
+        bus_other_line_badge: "Na liniji {line}",
+        bus_other_line_prompt: "Na kojoj je liniji ovaj autobus trenutno?",
+        bus_other_line_no_groups: "Nema druge linije za izbor.",
+        bus_import_toggle: "Bulk uvoz (TXT/CSV/XLSX)",
+        bus_show_archived: "Prikaži arhivirana vozila",
+        bus_all_archived_hint: "{count} arhivirano — uključi „Prikaži arhivirana vozila” da vidiš.",
         table_plate: "Tablice",
         ph_bus_plate: "npr. MD-101AB",
         bus_edit_saved: "Autobus sačuvan.",
@@ -818,6 +824,12 @@ const TRANSLATIONS = {
         bus_ops_out: "Out of service",
         bus_ops_reserve: "Reserve",
         bus_ops_other_line: "On another line",
+        bus_other_line_badge: "On line {line}",
+        bus_other_line_prompt: "Which line is this bus currently on?",
+        bus_other_line_no_groups: "No other line to pick.",
+        bus_import_toggle: "Bulk import (TXT/CSV/XLSX)",
+        bus_show_archived: "Show archived vehicles",
+        bus_all_archived_hint: "{count} archived — enable \"Show archived vehicles\" to view.",
         table_plate: "Plate",
         ph_bus_plate: "e.g. MD-101AB",
         bus_edit_saved: "Bus saved.",
@@ -1458,6 +1470,12 @@ const TRANSLATIONS = {
         bus_ops_out: "Außer Betrieb",
         bus_ops_reserve: "Reserve",
         bus_ops_other_line: "Auf anderer Linie",
+        bus_other_line_badge: "Auf Linie {line}",
+        bus_other_line_prompt: "Auf welcher Linie ist dieser Bus gerade?",
+        bus_other_line_no_groups: "Keine andere Linie zur Auswahl.",
+        bus_import_toggle: "Massenimport (TXT/CSV/XLSX)",
+        bus_show_archived: "Archivierte Fahrzeuge anzeigen",
+        bus_all_archived_hint: "{count} archiviert — „Archivierte Fahrzeuge anzeigen” aktivieren, um sie zu sehen.",
         table_plate: "Kennzeichen",
         ph_bus_plate: "z. B. MD-101AB",
         bus_edit_saved: "Bus gespeichert.",
@@ -6628,6 +6646,64 @@ Object.assign(TRANSLATIONS.de, {
     monthly_below_entry_hint: "Tag wählen oder Tag 1 öffnen.",
     monthly_below_empty_days: "Tage ohne Dienst",
     monthly_below_no_problems: "Keine Lücken diesen Monat."
+});
+
+// SA company-creation legal/limit fields + CA "Company Profile & Legal" section.
+Object.assign(TRANSLATIONS.en, {
+    sa_legal_name_label: "Legal Company Name",
+    sa_tax_id_label: "Tax ID / VAT Number",
+    sa_max_buses_label: "Bus / Line Limit",
+    ca_settings_legal_title: "Company Profile & Legal",
+    ca_settings_legal_kicker: "LEGAL DETAILS",
+    ca_settings_tax_id: "Tax ID / VAT number",
+    ca_settings_billing_email: "Billing email",
+    ca_settings_sms_sender_id: "SMS sender ID",
+    ca_settings_error_tax_id_invalid: "Tax ID is too long.",
+    ca_settings_error_billing_email_invalid: "Enter a valid billing email.",
+    ca_settings_error_sms_sender_id_invalid: "1-11 uppercase letters/digits only."
+});
+Object.assign(TRANSLATIONS.sr, {
+    sa_legal_name_label: "Pravni naziv firme",
+    sa_tax_id_label: "PIB / VAT broj",
+    sa_max_buses_label: "Limit autobusa / linija",
+    ca_settings_legal_title: "Profil firme i pravni podaci",
+    ca_settings_legal_kicker: "PRAVNI PODACI",
+    ca_settings_tax_id: "PIB / VAT broj",
+    ca_settings_billing_email: "Email za fakturisanje",
+    ca_settings_sms_sender_id: "SMS pošiljalac (ID)",
+    ca_settings_error_tax_id_invalid: "PIB/VAT broj je predugačak.",
+    ca_settings_error_billing_email_invalid: "Unesite validan email za fakturisanje.",
+    ca_settings_error_sms_sender_id_invalid: "1-11 velikih slova/cifara."
+});
+Object.assign(TRANSLATIONS.de, {
+    sa_legal_name_label: "Rechtlicher Firmenname",
+    sa_tax_id_label: "Steuernummer / USt-IdNr.",
+    sa_max_buses_label: "Bus-/Linienlimit",
+    ca_settings_legal_title: "Firmenprofil & rechtliche Angaben",
+    ca_settings_legal_kicker: "RECHTLICHE ANGABEN",
+    ca_settings_tax_id: "Steuernummer / USt-IdNr.",
+    ca_settings_billing_email: "Rechnungs-E-Mail",
+    ca_settings_sms_sender_id: "SMS-Absender-ID",
+    ca_settings_error_tax_id_invalid: "Steuernummer ist zu lang.",
+    ca_settings_error_billing_email_invalid: "Bitte gültige Rechnungs-E-Mail eingeben.",
+    ca_settings_error_sms_sender_id_invalid: "1-11 Großbuchstaben/Ziffern."
+});
+
+// Dispatcher known-lines (Streckenkenntnis) toggle + driver postal code.
+Object.assign(TRANSLATIONS.en, {
+    dispo_kl: "Known lines",
+    dispo_kl_failed: "Known lines could not be saved.",
+    ca_drivers_postal_code: "Postal code"
+});
+Object.assign(TRANSLATIONS.sr, {
+    dispo_kl: "Poznate linije",
+    dispo_kl_failed: "Poznate linije nisu sačuvane.",
+    ca_drivers_postal_code: "Poštanski broj"
+});
+Object.assign(TRANSLATIONS.de, {
+    dispo_kl: "Bekannte Linien",
+    dispo_kl_failed: "Bekannte Linien konnten nicht gespeichert werden.",
+    ca_drivers_postal_code: "Postleitzahl"
 });
 
 

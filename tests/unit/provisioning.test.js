@@ -160,6 +160,35 @@ test("createCompanyAtomic creates parent, configuration and audit together", asy
   assert.equal(db.store.get("companies/alpha/profile/main").timezone, "Europe/Vienna");
 });
 
+test("createCompanyAtomic stores legalName/taxId and defaults maxBuses from the package", async () => {
+  const db = fakeFirestore();
+  await createCompanyAtomic({
+    db, admin: fakeAdmin(), companyId: "beta", name: "Beta", licenseType: "pro",
+    legalName: "Beta Transit GmbH", taxId: "ATU99999999", actorId: "root"
+  });
+  const profile = db.store.get("companies/beta/profile/main");
+  assert.equal(profile.legalName, "Beta Transit GmbH");
+  assert.equal(profile.taxId, "ATU99999999");
+  assert.equal(db.store.get("companies/beta/settings/main").maxBuses, 25);
+});
+
+test("createCompanyAtomic stores an explicit maxBuses override", async () => {
+  const db = fakeFirestore();
+  await createCompanyAtomic({
+    db, admin: fakeAdmin(), companyId: "gamma", name: "Gamma", licenseType: "starter",
+    maxBuses: 12, actorId: "root"
+  });
+  assert.equal(db.store.get("companies/gamma/settings/main").maxBuses, 12);
+});
+
+test("createCompanyAtomic resolves enterprise maxBuses default when unset", async () => {
+  const db = fakeFirestore();
+  await createCompanyAtomic({
+    db, admin: fakeAdmin(), companyId: "delta", name: "Delta", licenseType: "enterprise", actorId: "root"
+  });
+  assert.equal(db.store.get("companies/delta/settings/main").maxBuses, 2000);
+});
+
 test("Serbian companies use the headquarters timezone and language", async () => {
   const db = fakeFirestore();
   await createCompanyAtomic({ db, admin: fakeAdmin(), companyId: "serbia", name: "Serbia", country: "RS", actorId: "root" });

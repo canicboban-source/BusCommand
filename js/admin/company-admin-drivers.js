@@ -233,6 +233,7 @@ function readManualDriverForm() {
         last_name: String(document.getElementById("ca-driver-add-last-name")?.value || "").trim(),
         phone: normalizeE164Phone(document.getElementById("ca-driver-add-phone")?.value || ""),
         email: String(document.getElementById("ca-driver-add-email")?.value || "").trim().toLowerCase(),
+        postalCode: String(document.getElementById("ca-driver-add-postal-code")?.value || "").trim(),
         pin: String(document.getElementById("ca-driver-add-pin")?.value || "").trim(),
         groupId,
         knownGroupIds: normalizeKnownGroupIds({ knownGroupIds: knownFromDom, groupId }, groupId)
@@ -246,6 +247,7 @@ function clearManualDriverForm() {
         "ca-driver-add-last-name",
         "ca-driver-add-phone",
         "ca-driver-add-email",
+        "ca-driver-add-postal-code",
         "ca-driver-add-pin"
     ]) {
         const el = document.getElementById(id);
@@ -340,6 +342,7 @@ async function submitCompanyDriverManualAdd(event) {
                 lastName: draft.last_name,
                 phone: draft.phone,
                 email: draft.email,
+                postalCode: draft.postalCode,
                 groupId: draft.groupId,
                 knownGroupIds: draft.knownGroupIds,
                 companyCode: draft.pin
@@ -691,6 +694,7 @@ function openCompanyDriverEdit(driverId) {
     const lastName = document.getElementById("ca-driver-edit-last-name");
     const phone = document.getElementById("ca-driver-edit-phone");
     const email = document.getElementById("ca-driver-edit-email");
+    const postalCode = document.getElementById("ca-driver-edit-postal-code");
     const group = document.getElementById("ca-driver-edit-group");
     const pin = document.getElementById("ca-driver-edit-pin");
     if (!idInput || !firstName || !lastName || !phone || !email || !group) return;
@@ -707,6 +711,7 @@ function openCompanyDriverEdit(driverId) {
             : "");
     phone.value = String(driver.phone || "");
     email.value = String(driver.email || "");
+    if (postalCode) postalCode.value = String(driver.postalCode || "");
     fillGroupSelect(group, "ca_plan_group_placeholder", driverGroupId(driver));
     paintKnownGroupChecks(driver.knownGroupIds || [], driverGroupId(driver));
     group.onchange = () => {
@@ -764,6 +769,7 @@ async function saveCompanyDriverEdit() {
     const lastName = String(document.getElementById("ca-driver-edit-last-name")?.value || "").trim();
     const phone = String(document.getElementById("ca-driver-edit-phone")?.value || "").trim();
     const email = String(document.getElementById("ca-driver-edit-email")?.value || "").trim();
+    const postalCode = String(document.getElementById("ca-driver-edit-postal-code")?.value || "").trim();
     const groupId = String(document.getElementById("ca-driver-edit-group")?.value || "").trim();
     const personalCode = String(document.getElementById("ca-driver-edit-pin")?.value || "").trim();
     const driver = companyDrivers().find((entry) => entry.id === driverId);
@@ -786,7 +792,7 @@ async function saveCompanyDriverEdit() {
 
     const knownFromDom = readKnownGroupIdsFromDom(document.getElementById("ca-driver-edit-known-groups"));
     const knownGroupIds = normalizeKnownGroupIds({ knownGroupIds: knownFromDom, groupId }, groupId);
-    const payload = { firstName, lastName, phone, email, groupId, knownGroupIds };
+    const payload = { firstName, lastName, phone, email, postalCode, groupId, knownGroupIds };
     editSavePending = true;
     const saveBtn = document.getElementById("ca-driver-edit-save");
     if (saveBtn) saveBtn.disabled = true;
@@ -851,6 +857,7 @@ async function enrichCompanyDriversFromApi() {
             name: enriched.name || driver.name,
             phone: enriched.phone || driver.phone,
             email: enriched.email || driver.email,
+            postalCode: enriched.postalCode || driver.postalCode,
             groupId: enriched.groupId || driver.groupId,
             lineId: enriched.lineId || driver.lineId,
             knownGroupIds: Array.isArray(enriched.knownGroupIds)

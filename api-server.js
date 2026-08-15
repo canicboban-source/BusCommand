@@ -447,6 +447,9 @@ app.post(
         country: body.country,
         contactEmail: body.contactEmail,
         licenseType: body.licenseType || "pro",
+        legalName: body.legalName,
+        taxId: body.taxId,
+        maxBuses: body.maxBuses,
         actorId: req.adminUser.uid
       });
 
@@ -811,7 +814,11 @@ app.put(
           actorRole: req.staffUser.role,
           actorName: req.staffUser.name || null,
           source: "server",
-          details: { country: profile.country, timezone: profile.timezone, defaultLanguage: profile.defaultLanguage },
+          details: {
+            country: profile.country, timezone: profile.timezone, defaultLanguage: profile.defaultLanguage,
+            taxId: profile.taxId,
+            billingEmail: profile.billingEmail, smsSenderId: profile.smsSenderId
+          },
           timestamp
         });
       });
@@ -1304,7 +1311,7 @@ app.patch(
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(driverId)) {
       return res.status(400).json({ success: false, error: "Nevažeći vozač." });
     }
-    const { firstName, lastName, phone, email, groupId, knownGroupIds: rawKnown = [] } = req.validatedBody;
+    const { firstName, lastName, phone, email, postalCode = "", groupId, knownGroupIds: rawKnown = [] } = req.validatedBody;
     const companyRef = db.collection("companies").doc(companyId);
     const profileRef = companyRef.collection("drivers").doc(driverId);
     try {
@@ -1327,6 +1334,7 @@ app.patch(
         name,
         phone,
         email,
+        postalCode,
         groupId,
         lineId: groupId,
         knownGroupIds,
@@ -1343,7 +1351,7 @@ app.patch(
           groupId: previous.groupId || previous.lineId || null,
           knownGroupIds: Array.isArray(previous.knownGroupIds) ? previous.knownGroupIds : []
         },
-        next: { firstName, lastName, phone, email, groupId, knownGroupIds }
+        next: { firstName, lastName, phone, email, postalCode, groupId, knownGroupIds }
       }, {
         actorRole: req.staffUser.role,
         actorName: req.staffUser.name || null
@@ -1357,6 +1365,7 @@ app.patch(
           name,
           phone,
           email,
+          postalCode,
           groupId,
           lineId: groupId,
           knownGroupIds,

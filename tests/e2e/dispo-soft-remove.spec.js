@@ -3,8 +3,10 @@ const { minimalDemoState, seedDemoState, loginDispatcher } = require("./helpers.
 
 function softRemoveState() {
   const month = "2026-08";
+  const base = minimalDemoState();
   return {
-    ...minimalDemoState(),
+    ...base,
+    groups: [...base.groups, { id: "202", name: "Line 202", color: "#22C55E", active: true, companyId: "qa-local" }],
     drivers: [
       {
         id: "drv-soft-1",
@@ -98,7 +100,7 @@ test.describe("Dispo soft-remove (list, not company)", () => {
     await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("101"));
     await expect(page.locator("#settings-buses-list")).toContainText("91103");
 
-    await page.locator('#settings-buses-list li[data-bus-id="bus-soft-1"] [data-action="deleteBus"]').click();
+    await page.locator('#settings-buses-list tr[data-bus-id="bus-soft-1"] [data-action="deleteBus"]').click();
     await confirmModal(page);
 
     const stillInCompany = await page.evaluate(() => {
@@ -107,8 +109,8 @@ test.describe("Dispo soft-remove (list, not company)", () => {
     });
     expect(stillInCompany).toBeTruthy();
 
-    await page.locator('#settings-buses-list li[data-bus-id="bus-soft-2"] [data-action="detachBusFromLine"]').click();
-    await confirmModal(page);
+    // Line/group reassignment is now a direct dropdown pick (D21), not a separate detach button.
+    await page.locator('#settings-buses-list tr[data-bus-id="bus-soft-2"] select.bus-group-switch').selectOption("202");
 
     const detached = await page.evaluate(() => {
       const bus = (window.state.buses || []).find((b) => b.id === "bus-soft-2");

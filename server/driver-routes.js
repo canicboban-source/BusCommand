@@ -10,6 +10,7 @@ const {
   addDays
 } = require("./driver-work-policy");
 const { dispatcherCanAccessGroup, isActiveReportStatus, isResolvedReportStatus } = require("./report-lifecycle");
+const { normalizeGroupIds, assertCompanyGroupsExist } = require("./group-access");
 const {
   buildProblemCreateFields,
   simulateProblemTransition,
@@ -133,6 +134,9 @@ const busIdSchema = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/);
 const busOpsStatusSchema = z.enum(["active", "breakdown", "reserve", "other_line"]);
 const busGarageSchema = z.string().trim().max(40).optional().default("");
 const busPlateSchema = z.string().trim().max(20).regex(/^[A-Za-z0-9 -]*$/).optional().default("");
+// Informational only — which line an "other_line" bus is currently reported at.
+// Never touches real group membership (bus.groupIds); ignored unless opsStatus is other_line.
+const busOtherLineIdSchema = z.string().trim().max(64).regex(/^[A-Za-z0-9_-]*$/).optional().default("");
 const busCreateSchema = z.object({
   number: z.string().trim().min(1).max(32).regex(/^[\p{L}\p{N} ._/-]+$/u),
   groupId: groupIdSchema,
@@ -150,6 +154,7 @@ const busProfileSchema = z.object({
   plate: busPlateSchema,
   garage: busGarageSchema,
   opsStatus: busOpsStatusSchema,
+  otherLineId: busOtherLineIdSchema,
   expectedRevision: z.number().int().min(0)
 });
 const changeReasonSchema = z.string().trim().max(40).optional();
@@ -159,6 +164,10 @@ const lineDetachSchema = z.object({
   action: z.literal("detach"),
   reason: changeReasonSchema,
   note: changeNoteSchema
+});
+/** Dispatcher-callable, full-company access (Streckenkenntnis) — never touches eid/pin/companyCode. */
+const knownGroupsUpdateSchema = z.object({
+  knownGroupIds: z.array(groupIdSchema).max(40)
 });
 const busGroupDetachSchema = z.object({
   groupId: groupIdSchema,
@@ -191,6 +200,7 @@ function publicBusPayload(id, data = {}) {
     opsStatus: busOpsStatusSchema.options.includes(String(data.opsStatus || ""))
       ? String(data.opsStatus)
       : "active",
+    otherLineId: String(data.otherLineId || "").trim().slice(0, 64) || null,
     revision: busRevisionOf(data),
     createdAt: null
   };
@@ -1593,6 +1603,45 @@ function registerDriverRoutes(app, deps) {
     }
   });
 
+  /** Dispatcher-editable "Streckenkenntnis" — full company line list, never eid/pin/companyCode. */
+  app.put("/api/staff/drivers/:driverId/known-groups", rateLimit(30, 5 * 60_000), requireStaff, async (req, res) => {
+    if (req.staff.role !== "dispatcher") {
+      return res.status(403).json({ success: false, error: "Samo disponent može urediti poznate linije vozača." });
+    }
+    const driverId = driverIdSchema.safeParse(req.params.driverId);
+    const body = knownGroupsUpdateSchema.safeParse(req.body);
+    if (!driverId.success || !body.success) {
+      return res.status(400).json({ success: false, error: "Nevažeći zahtev za poznate linije." });
+    }
+    try {
+      const companyRef = db().collection("companies").doc(req.staff.companyId);
+      const profileRef = companyRef.collection("drivers").doc(driverId.data);
+      const profileSnap = await profileRef.get();
+      if (!profileSnap.exists) {
+        return res.status(404).json({ success: false, error: "Vozač nije pronađen." });
+      }
+      const driver = profileSnap.data() || {};
+      const homeGroupId = String(driver.groupId || driver.lineId || "").trim();
+      const requested = normalizeGroupIds(body.data.knownGroupIds);
+      await assertCompanyGroupsExist(companyRef, requested);
+      const knownGroupIds = homeGroupId && !requested.includes(homeGroupId)
+        ? [homeGroupId, ...requested]
+        : requested;
+      await profileRef.update({ knownGroupIds });
+      await logAudit(req.staff.companyId, req.staff.uid, "driver_known_groups_updated", {
+        driverId: driverId.data,
+        knownGroupIds
+      });
+      return res.json({ success: true, driverId: driverId.data, knownGroupIds });
+    } catch (error) {
+      if (error.code === "group-not-found") {
+        return res.status(400).json({ success: false, error: error.message });
+      }
+      req.log?.error?.({ err: error }, "Ažuriranje poznatih linija nije uspelo");
+      return res.status(500).json({ success: false, error: "Poznate linije vozača nisu sačuvane." });
+    }
+  });
+
   app.put("/api/staff/vacations/:vacationId/status", requireStaff, async (req, res) => {
     if (req.staff.role !== "dispatcher") {
       return res.status(403).json({ success: false, error: "Samo disponent može obrađivati zahteve za odmor." });
@@ -2122,6 +2171,8 @@ function registerDriverRoutes(app, deps) {
       const plate = String(profile.data.plate || "").trim().slice(0, 20);
       const garage = String(profile.data.garage || "").trim().slice(0, 40);
       const opsStatus = profile.data.opsStatus;
+      // Only meaningful alongside other_line — never stored otherwise.
+      const otherLineId = opsStatus === "other_line" ? String(profile.data.otherLineId || "").trim().slice(0, 64) : "";
       const expectedRevision = profile.data.expectedRevision;
       const result = await db().runTransaction(async (tx) => {
         const snapshot = await tx.get(busRef);
@@ -2176,15 +2227,16 @@ function registerDriverRoutes(app, deps) {
           plate,
           garage,
           opsStatus,
+          otherLineId: otherLineId || admin().firestore.FieldValue.delete(),
           revision: nextRevision,
           profileUpdatedAt: admin().firestore.FieldValue.serverTimestamp(),
           profileUpdatedBy: req.staff.uid
         });
         return {
           previous: { plate: prevPlate, garage: prevGarage, opsStatus: bus.opsStatus || "active", revision: currentRevision },
-          next: { plate, garage, opsStatus, revision: nextRevision },
+          next: { plate, garage, opsStatus, otherLineId, revision: nextRevision },
           groupIds,
-          bus: { ...bus, plate, garage, opsStatus, revision: nextRevision, groupIds }
+          bus: { ...bus, plate, garage, opsStatus, otherLineId, revision: nextRevision, groupIds }
         };
       });
       await logAudit(req.staff.companyId, req.staff.uid, "bus_profile_updated", {

@@ -207,16 +207,8 @@ function applyBrandingToUI() {
         const tenantLogo = logoUrl
             ? `<img class="bc-tenant-logo" src="${escapeAttr(logoUrl)}" alt="${safeName}" referrerpolicy="no-referrer" style="max-height: 28px; max-width: 96px; object-fit: contain;">`
             : "";
-        headerLogoContainer.innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px;">
-                ${productBrandMarkHtml({
-                    size: "sm",
-                    titleId: "app-branding-title",
-                    name: displayName
-                })}
-                ${tenantLogo}
-            </div>
-        `;
+        const tenantNameText = displayName && displayName !== "BusCommand" ? escapeAttr(displayName) : "";
+        headerLogoContainer.innerHTML = `<div style="display:flex; align-items:center; gap:10px;">${productBrandMarkHtml({ name: "BusCommand" })}<span class="bc-tenant-name" id="app-branding-title">${tenantNameText}</span>${tenantLogo}</div>`;
     }
 
     const brandInput = document.getElementById("settings-brand-name");

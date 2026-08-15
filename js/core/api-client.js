@@ -284,6 +284,12 @@ const ApiClient = (() => {
             })
         });
     }
+    async function updateStaffDriverKnownGroups(driverId, knownGroupIds) {
+        return apiFetch("/api/staff/drivers/" + encodeURIComponent(driverId) + "/known-groups", {
+            method: "PUT",
+            body: JSON.stringify({ knownGroupIds })
+        });
+    }
     async function detachStaffBusFromLine(busId, groupId, expectedRevision = 0, extras = {}) {
         return apiFetch("/api/staff/buses/" + encodeURIComponent(busId) + "/groups", {
             method: "PUT",
@@ -553,7 +559,7 @@ const ApiClient = (() => {
         previewStaffMonthlyPlanImport, commitStaffMonthlyPlanImport,
         getActiveServicePlan, getServicePlanHistory, getServicePlanVersion, getCompanyAudit, updateCompanyBranding,
         createCompanyGroup, updateCompanyGroup, deleteCompanyGroup, reportStateSync, importDriversCsv, setDriverActive,
-        detachStaffDriverFromLine, detachStaffBusFromLine,
+        detachStaffDriverFromLine, updateStaffDriverKnownGroups, detachStaffBusFromLine,
         updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode, createCompanyDriver,
         createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage, ackDriverMessage,
         createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, transitionStaffOperationalIncident, resolveStaffOperationalIncident, getStaffOpsActivity, resolveStaffSos,

@@ -26,7 +26,10 @@ const createCompanyBody = z.object({
   name: z.string().trim().min(1).max(200),
   country: z.string().trim().max(64).optional(),
   contactEmail: z.string().trim().email().max(254).optional(),
-  licenseType: z.enum(["starter", "pro", "fleet_master", "enterprise"]).optional()
+  licenseType: z.enum(["starter", "pro", "fleet_master", "enterprise"]).optional(),
+  legalName: z.string().trim().max(200).optional(),
+  taxId: z.string().trim().max(32).optional(),
+  maxBuses: z.number().int().min(1).max(5000).optional()
 });
 
 const deleteCompanyBody = z.object({
@@ -105,11 +108,17 @@ const companyAdminStatusBody = z.object({
   active: z.boolean()
 });
 
+const smsSenderIdPattern = /^[A-Z0-9]{1,11}$/;
+
 const companyProfileSettingsBody = z.object({
   companyId: z.string().trim().min(1).max(64),
   country: z.enum(["AT", "RS"]),
   defaultLanguage: z.enum(["de", "sr", "en"]),
-  contactEmail: z.string().trim().toLowerCase().email().max(254)
+  contactEmail: z.string().trim().toLowerCase().email().max(254),
+  taxId: z.string().trim().max(32).optional(),
+  billingEmail: z.string().trim().toLowerCase().email().max(254).optional(),
+  smsSenderId: z.string().trim().toUpperCase().max(11).optional()
+    .refine((value) => !value || smsSenderIdPattern.test(value), "SMS Sender ID mora imati 1-11 velikih slova/cifara.")
 });
 
 const httpsLogoUrl = z.string().trim().max(350000).superRefine((value, ctx) => {
@@ -164,6 +173,9 @@ const companyGroupUpdateBody = z.object({
   ...companyGroupFields
 });
 
+const driverGroupIdSchema = z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/);
+const driverPostalCodeSchema = z.string().trim().max(10).optional();
+
 /** Profile-only driver update — never accepts eid/pin/company_code/credentials. */
 const companyDriverProfileBody = z.object({
   companyId: z.string().trim().min(1).max(64),
@@ -171,11 +183,10 @@ const companyDriverProfileBody = z.object({
   lastName: z.string().trim().min(1).max(80),
   phone: z.string().trim().min(3).max(40),
   email: z.string().trim().toLowerCase().email().max(254),
-  groupId: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/),
+  groupId: driverGroupIdSchema,
+  postalCode: driverPostalCodeSchema,
   /** Extra lines the driver can operate (home groupId is always stored too). */
-  knownGroupIds: z.array(
-    z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/)
-  ).max(40).optional().default([])
+  knownGroupIds: z.array(driverGroupIdSchema).max(40).optional().default([])
 }).strict();
 
 /** CA-only: set a new personal login code (PIN) — plaintext returned once. Must match driver login rules. */
@@ -195,10 +206,9 @@ const companyDriverCreateBody = z.object({
   lastName: z.string().trim().min(1).max(80),
   phone: z.string().trim().min(3).max(40),
   email: z.string().trim().toLowerCase().email().max(254),
-  groupId: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/),
-  knownGroupIds: z.array(
-    z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/)
-  ).max(40).optional().default([]),
+  groupId: driverGroupIdSchema,
+  postalCode: driverPostalCodeSchema,
+  knownGroupIds: z.array(driverGroupIdSchema).max(40).optional().default([]),
   companyCode: z.string().trim().regex(/^\d{5,12}$/, "Lični kod mora imati 5–12 cifara.")
 }).strict();
 

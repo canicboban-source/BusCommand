@@ -469,7 +469,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
 
     await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("101"));
     await expect(page.locator("#dispatcher-vehicles")).toBeVisible();
-    await page.locator('.hub-bus-row[data-bus-id="bus-edit"] button.hub-bus-edit-btn').click();
+    await page.locator('.bus-fleet-row[data-bus-id="bus-edit"] button.hub-bus-edit-btn').click();
     const form = page.locator('[data-bus-edit="bus-edit"]');
     await expect(form).toBeVisible();
     await form.locator('input[name="plate"]').fill("MD-200BB");
@@ -481,7 +481,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     })).toBe("MD-200BB|active|1");
 
     // Fast 1-click status switch (D21) — no form, just the status pill.
-    await page.locator('.hub-bus-row[data-bus-id="bus-edit"] .bus-status-breakdown').click();
+    await page.locator('.bus-fleet-row[data-bus-id="bus-edit"] .bus-status-breakdown').click();
 
     await expect.poll(async () => page.evaluate(() => {
       const bus = window.state.buses.find(item => item.id === "bus-edit");

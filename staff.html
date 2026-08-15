@@ -258,9 +258,12 @@
         <header class="app-header">
             <div class="header-left">
                 <div id="header-logo-container">
-                    <div class="logo bc-brand">
-                        <img class="bc-brand-mark bc-brand-mark--sm" src="/brand/logo-mark.png" width="28" height="28" alt="">
-                        <span class="bc-brand-text" id="app-branding-title">BusCommand</span>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="logo bc-brand">
+                            <img class="bc-brand-mark bc-brand-mark--sm" src="/brand/logo-mark.png" width="28" height="28" alt="">
+                            <span class="bc-brand-text">BusCommand</span>
+                        </div>
+                        <span class="bc-tenant-name" id="app-branding-title"></span>
                     </div>
                 </div>
                 <div class="trial-indicator hidden" id="app-trial-badge" hidden aria-hidden="true"></div>
@@ -561,6 +564,18 @@
                                     <label class="form-group" for="sa-new-tenant">
                                         <span data-i18n="sa_col_tenant">ID / Tenant</span>
                                         <input type="text" id="sa-new-tenant" maxlength="64" placeholder="auto" autocomplete="off">
+                                    </label>
+                                    <label class="form-group" for="sa-new-legal-name">
+                                        <span data-i18n="sa_legal_name_label">Legal Company Name</span>
+                                        <input type="text" id="sa-new-legal-name" maxlength="200" autocomplete="off">
+                                    </label>
+                                    <label class="form-group" for="sa-new-tax-id">
+                                        <span data-i18n="sa_tax_id_label">Tax ID / VAT Number</span>
+                                        <input type="text" id="sa-new-tax-id" maxlength="32" autocomplete="off">
+                                    </label>
+                                    <label class="form-group" for="sa-new-max-buses">
+                                        <span data-i18n="sa_max_buses_label">Bus / Line Limit</span>
+                                        <input type="number" id="sa-new-max-buses" min="1" max="5000" placeholder="auto" inputmode="numeric">
                                     </label>
                                     <div id="sa-demo-company-pin" class="form-group hidden">
                                         <label for="sa-new-pin" data-i18n="disp_pin_label">Initial PIN</label>
@@ -1029,6 +1044,10 @@
                                         <span data-i18n="ca_drivers_phone">Telefon (E.164)</span>
                                         <input type="tel" id="ca-driver-add-phone" maxlength="40" inputmode="tel" autocomplete="tel" placeholder="+43699…" required>
                                     </label>
+                                    <label class="form-group" for="ca-driver-add-postal-code">
+                                        <span data-i18n="ca_drivers_postal_code">Poštanski broj</span>
+                                        <input type="text" id="ca-driver-add-postal-code" maxlength="10" autocomplete="postal-code">
+                                    </label>
                                     <label class="form-group" for="ca-driver-add-pin">
                                         <span data-i18n="ca_drivers_add_pin">PIN (5–12 cifara)</span>
                                         <input type="password" id="ca-driver-add-pin" inputmode="numeric" pattern="[0-9]{5,12}" minlength="5" maxlength="12" autocomplete="new-password" required>
@@ -1088,6 +1107,10 @@
                                 <label class="form-group" for="ca-driver-edit-email">
                                     <span>Email</span>
                                     <input type="email" id="ca-driver-edit-email" maxlength="254" autocomplete="email">
+                                </label>
+                                <label class="form-group" for="ca-driver-edit-postal-code">
+                                    <span data-i18n="ca_drivers_postal_code">Poštanski broj</span>
+                                    <input type="text" id="ca-driver-edit-postal-code" maxlength="10" autocomplete="postal-code">
                                 </label>
                                 <label class="form-group company-driver-edit-group" for="ca-driver-edit-group">
                                     <span data-i18n="ca_plan_group">Grupa / linija</span>
@@ -1624,27 +1647,38 @@
                     <div class="ops-health" id="vehicles-plan-health" role="status" aria-live="polite"></div>
 
                     <div class="card vehicles-panel-card">
-                        <form id="add-bus-form" data-submit-action="addBus" class="crud-form hub-bus-form" style="margin-bottom:10px;">
+                        <h3 class="bus-fleet-section-title" data-i18n="hub_add_bus_btn">Add bus</h3>
+                        <form id="add-bus-form" data-submit-action="addBus" class="crud-form hub-bus-form bus-add-form" style="margin-bottom:14px;">
                             <input type="text" id="new-bus-num" required maxlength="32" autocomplete="off" autocorrect="off" placeholder="e.g. 3101" aria-label="Bus number" data-i18n-aria-label="hub_add_bus_label" data-i18n-placeholder="hub_add_bus_placeholder">
                             <input type="text" id="new-bus-plate" maxlength="20" autocomplete="off" autocorrect="off" placeholder="MD-101AB" aria-label="License plate" data-i18n-aria-label="table_plate" data-i18n-placeholder="ph_bus_plate">
                             <select id="new-bus-group" aria-label="Group / line" data-i18n-aria-label="ca_col_groups"></select>
                             <select id="new-bus-status" aria-label="Status" data-i18n-aria-label="bus_ops_status"></select>
                             <button type="submit" class="btn-primary hub-add-bus-btn" data-i18n="hub_add_bus_btn" aria-label="Add bus" data-i18n-aria-label="hub_add_bus_aria">Add bus</button>
                         </form>
-                        <div class="vehicles-bus-import hub-bus-import" style="margin-bottom:12px;">
-                            <p class="subtitle" style="font-size:0.8rem;margin:0 0 8px;" data-i18n="bus_import_hint">Import buses: TXT, CSV, XLSX or paste — one number per line.</p>
-                            <div id="bus-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bus-import-file"]'
-                                data-drop-action="handleBusImportDrop" data-i18n="bus_import_drop">Drop TXT / CSV / XLSX here</div>
-                            <input type="file" id="bus-import-file" accept=".txt,.csv,.tsv,.xlsx,.xls" style="display:none;" data-change-action="handleBusImportFile" data-change-pass="event">
-                            <textarea id="bus-import-paste" rows="3" style="width:100%;margin-top:8px;box-sizing:border-box;" data-i18n-placeholder="bus_import_paste_placeholder" placeholder="Paste bus numbers…"></textarea>
-                            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-                                <button type="button" class="btn-secondary" data-action="handleBusImportPaste" data-i18n="bus_import_preview_btn">Preview import</button>
-                                <button type="button" class="btn-secondary" data-action="clearBusImportPreview" data-i18n="bus_import_cancel">Clear</button>
+                        <details class="bus-import-details" style="margin-bottom:14px;">
+                            <summary class="bus-fleet-section-title bus-import-summary"><span>📁 <span data-i18n="bus_import_toggle">Bulk import (TXT/CSV/XLSX)</span></span></summary>
+                            <div class="vehicles-bus-import hub-bus-import">
+                                <p class="subtitle" style="font-size:0.8rem;margin:0 0 8px;" data-i18n="bus_import_hint">Import buses: TXT, CSV, XLSX or paste — one number per line.</p>
+                                <div id="bus-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bus-import-file"]'
+                                    data-drop-action="handleBusImportDrop" data-i18n="bus_import_drop">Drop TXT / CSV / XLSX here</div>
+                                <input type="file" id="bus-import-file" accept=".txt,.csv,.tsv,.xlsx,.xls" style="display:none;" data-change-action="handleBusImportFile" data-change-pass="event">
+                                <textarea id="bus-import-paste" rows="3" style="width:100%;margin-top:8px;box-sizing:border-box;" data-i18n-placeholder="bus_import_paste_placeholder" placeholder="Paste bus numbers…"></textarea>
+                                <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                                    <button type="button" class="btn-secondary" data-action="handleBusImportPaste" data-i18n="bus_import_preview_btn">Preview import</button>
+                                    <button type="button" class="btn-secondary" data-action="clearBusImportPreview" data-i18n="bus_import_cancel">Clear</button>
+                                </div>
+                                <div id="bus-import-preview"></div>
                             </div>
-                            <div id="bus-import-preview"></div>
-                        </div>
-                        <div class="table-container" style="max-height:420px;overflow-y:auto;">
-                            <table class="app-table">
+                        </details>
+                        <h3 class="bus-fleet-section-title">
+                            <span data-i18n="ca_nav_buses">Buses</span>
+                            <label class="bus-archived-toggle">
+                                <input type="checkbox" id="bus-show-archived" data-change-action="toggleShowArchivedBuses" data-change-pass="element">
+                                <span data-i18n="bus_show_archived">Show archived vehicles</span>
+                            </label>
+                        </h3>
+                        <div class="table-container bus-fleet-table-wrap" style="max-height:420px;overflow-y:auto;overflow-x:auto;">
+                            <table class="app-table bus-fleet-table">
                                 <thead>
                                     <tr>
                                         <th data-i18n="hub_add_bus_label">Interni broj</th>
@@ -1969,6 +2003,12 @@
                                 <label for="ca-settings-timezone"><span data-i18n="ca_settings_timezone">Vremenska zona</span><input id="ca-settings-timezone" type="text" readonly aria-readonly="true"><small data-i18n="ca_settings_timezone_locked">Automatski se vezuje za državu sedišta.</small></label>
                                 <label for="ca-settings-language"><span data-i18n="ca_settings_language">Podrazumevani jezik firme</span><select id="ca-settings-language" data-change-action="handleCompanySettingsInput"><option value="en">English</option><option value="de">Deutsch</option><option value="sr">Srpski</option></select><span class="field-error" data-company-settings-error="defaultLanguage" aria-live="polite"></span></label>
                                 <label for="ca-settings-contact-email"><span data-i18n="ca_settings_contact_email">Poslovni kontakt email</span><input id="ca-settings-contact-email" type="email" maxlength="254" autocomplete="email" inputmode="email" data-input-action="handleCompanySettingsInput" placeholder="office@firma.at" required><span class="field-error" data-company-settings-error="contactEmail" aria-live="polite"></span></label>
+                            </div>
+                            <div class="company-panel-heading company-settings-legal-heading"><div><span data-i18n="ca_settings_legal_kicker">PRAVNI PODACI</span><h3 data-i18n="ca_settings_legal_title">Profil firme i pravni podaci</h3></div><i data-lucide="scroll-text"></i></div>
+                            <div class="company-settings-form-grid">
+                                <label for="ca-settings-tax-id"><span data-i18n="ca_settings_tax_id">PIB / VAT broj</span><input id="ca-settings-tax-id" type="text" maxlength="32" data-input-action="handleCompanySettingsInput"><span class="field-error" data-company-settings-error="taxId" aria-live="polite"></span></label>
+                                <label for="ca-settings-billing-email"><span data-i18n="ca_settings_billing_email">Email za fakturisanje</span><input id="ca-settings-billing-email" type="email" maxlength="254" autocomplete="email" data-input-action="handleCompanySettingsInput"><span class="field-error" data-company-settings-error="billingEmail" aria-live="polite"></span></label>
+                                <label for="ca-settings-sms-sender-id"><span data-i18n="ca_settings_sms_sender_id">SMS pošiljalac (ID)</span><input id="ca-settings-sms-sender-id" type="text" maxlength="11" placeholder="ALPENBUS" style="text-transform:uppercase" data-input-action="handleCompanySettingsInput"><span class="field-error" data-company-settings-error="smsSenderId" aria-live="polite"></span></label>
                             </div>
                             <div class="company-settings-form-actions"><button type="button" class="btn-secondary" data-action="resetCompanySettingsForm" data-i18n="btn_cancel">Otkaži</button><button id="ca-settings-save" type="submit" class="btn-primary"><i data-lucide="save"></i><span data-i18n="ca_settings_save">Sačuvaj podešavanja</span></button></div>
                         </form>

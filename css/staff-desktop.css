@@ -4094,9 +4094,303 @@ html[data-app-surface="staff"] .hub-bus-form {
   align-items: center;
 }
 
-html[data-app-surface="staff"] .hub-bus-form input {
+html[data-app-surface="staff"] .hub-bus-form input,
+html[data-app-surface="staff"] .hub-bus-form select {
   min-width: 120px;
   flex: 1;
+  background: var(--input-bg);
+  border: 1px solid var(--panel-border);
+  color: var(--text-main);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+/* D21 fleet table: bus number / plate / group / status / actions */
+html[data-app-surface="staff"] .bus-fleet-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+html[data-app-surface="staff"] .bus-fleet-section-title:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+html[data-app-surface="staff"] .bus-archived-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+html[data-app-surface="staff"] .bus-archived-toggle input {
+  cursor: pointer;
+}
+
+html[data-app-surface="staff"] .drv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+}
+
+html[data-app-surface="staff"] .drv-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
+html[data-app-surface="staff"] .drv-name {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+html[data-app-surface="staff"] .drv-id {
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: normal;
+  margin-left: 8px;
+}
+
+html[data-app-surface="staff"] .drv-grp {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 12px;
+  margin-left: 6px;
+}
+
+html[data-app-surface="staff"] .drv-status {
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+html[data-app-surface="staff"] .drv-status.is-active {
+  color: var(--success-color, #16a34a);
+}
+
+html[data-app-surface="staff"] .drv-status.is-inactive {
+  color: var(--text-muted);
+}
+
+html[data-app-surface="staff"] .drv-ct {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+html[data-app-surface="staff"] .drv-actions {
+  display: flex;
+  gap: 6px;
+}
+
+html[data-app-surface="staff"] .drv-btn {
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+html[data-app-surface="staff"] .drv-edit {
+  background: rgba(59, 130, 246, 0.08);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+html[data-app-surface="staff"] .drv-del {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid currentColor;
+}
+
+html[data-app-surface="staff"] .drv-del.is-active {
+  color: #ef4444;
+}
+
+html[data-app-surface="staff"] .drv-del.is-inactive {
+  color: #16a34a;
+}
+
+html[data-app-surface="staff"] .drv-kl {
+  margin-top: 4px;
+}
+
+html[data-app-surface="staff"] .drv-kl summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+html[data-app-surface="staff"] .drv-kl-list {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0 0 4px;
+}
+
+html[data-app-surface="staff"] .drv-kl-opt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+html[data-app-surface="staff"] .bus-fleet-table-wrap {
+  overflow-x: auto;
+}
+
+html[data-app-surface="staff"] .bus-fleet-table-wrap .bus-fleet-table {
+  table-layout: auto;
+  width: 100%;
+  min-width: 720px;
+}
+
+html[data-app-surface="staff"] .bus-fleet-table tr,
+html[data-app-surface="staff"] .bus-fleet-table th,
+html[data-app-surface="staff"] .bus-fleet-table td {
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+html[data-app-surface="staff"] .bus-import-summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+html[data-app-surface="staff"] .bus-import-summary::-webkit-details-marker {
+  display: none;
+}
+
+html[data-app-surface="staff"] .bus-import-summary::after {
+  content: "▾";
+  transition: transform 0.15s ease;
+}
+
+html[data-app-surface="staff"] details[open] > .bus-import-summary::after {
+  transform: rotate(180deg);
+}
+
+html[data-app-surface="staff"] .bus-status-cell {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 4px;
+  align-items: center;
+}
+
+html[data-app-surface="staff"] .bus-fleet-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-items: center;
+}
+
+html[data-app-surface="staff"] .bus-status-pill {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--panel-border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+html[data-app-surface="staff"] .bus-status-pill:hover:not(:disabled) {
+  border-color: rgba(var(--primary-rgb), 0.5);
+  color: var(--text-main);
+}
+
+html[data-app-surface="staff"] .bus-status-pill:disabled {
+  cursor: default;
+}
+
+html[data-app-surface="staff"] .bus-status-pill.is-current {
+  font-weight: 700;
+}
+
+html[data-app-surface="staff"] .bus-status-pill.bus-status-active.is-current {
+  background: var(--success-bg);
+  color: var(--success-color);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+html[data-app-surface="staff"] .bus-status-pill.bus-status-reserve.is-current {
+  background: var(--warning-bg);
+  color: var(--warning-color);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+html[data-app-surface="staff"] .bus-status-pill.bus-status-breakdown.is-current {
+  background: var(--danger-bg);
+  color: var(--danger-color);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+html[data-app-surface="staff"] .bus-status-pill.bus-status-other_line.is-current {
+  background: rgba(139, 92, 246, 0.14);
+  color: #a78bfa;
+  border-color: rgba(139, 92, 246, 0.35);
+}
+
+html[data-app-surface="staff"] .bus-other-line-badge {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  background: rgba(139, 92, 246, 0.14);
+  color: #a78bfa;
+  border: 1px solid rgba(139, 92, 246, 0.35);
+}
+
+html[data-app-surface="staff"] .bus-group-switch {
+  width: 100%;
+  min-width: 0;
+  background: var(--input-bg);
+  border: 1px solid var(--panel-border);
+  color: var(--text-main);
+  border-radius: var(--radius-md);
+  padding: 6px 8px;
+  font-size: 0.8rem;
+  box-sizing: border-box;
+}
+
+html[data-app-surface="staff"] .hub-bus-edit-row td {
+  padding-top: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
 }
 
 /* Dispatcher help / self-recovery */
@@ -4519,10 +4813,6 @@ html[data-app-surface="staff"] .shift-duty-resolved {
 html[data-app-surface="staff"] .shift-assign-hint {
   margin: 8px 0 0;
   font-size: 0.85rem;
-}
-
-html[data-app-surface="staff"] .vehicles-panel-card {
-  max-width: 720px;
 }
 
 @media (max-width: 960px) {

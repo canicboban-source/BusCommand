@@ -44,6 +44,7 @@ test.describe("Bus multi-group pool", () => {
     await expect(page.locator("#dispatcher-vehicles")).toBeVisible();
     await expect(page.locator("#settings-buses-list")).not.toContainText("91504");
 
+    await page.locator(".bus-import-details summary").click();
     await page.locator("#bus-import-paste").fill("91504\n");
     await page.locator('[data-action="handleBusImportPaste"]').click();
     await expect(page.locator("#bus-import-preview")).toContainText(/Link|verknüpfen|Poveži/i);
@@ -101,10 +102,11 @@ test.describe("Bus multi-group pool", () => {
     await loginDispatcher(page);
     await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("320"));
 
+    await page.locator(".bus-import-details summary").click();
     await page.locator("#bus-import-paste").fill("  \n");
     await page.locator('[data-action="handleBusImportPaste"]').click();
     await expect(page.locator("#bus-import-preview")).toBeEmpty();
-    await expect(page.locator("#settings-buses-list li")).toHaveCount(0);
+    await expect(page.locator("#settings-buses-list tr[data-bus-id]")).toHaveCount(0);
 
     const stillOneGroup = await page.evaluate(() => {
       const bus = window.state.buses.find((b) => b.number === "91504");

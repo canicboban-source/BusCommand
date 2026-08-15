@@ -113,7 +113,8 @@ function validateSaCaFields(ca) {
 }
 
 function setSaCreateCompanyFieldsLocked(locked) {
-    ["sa-new-name", "sa-new-country", "sa-new-license", "sa-new-tenant", "sa-new-pin"].forEach((id) => {
+    ["sa-new-name", "sa-new-country", "sa-new-license", "sa-new-tenant", "sa-new-pin",
+        "sa-new-legal-name", "sa-new-tax-id", "sa-new-max-buses"].forEach((id) => {
         const el = document.getElementById(id);
         if (!el) return;
         el.disabled = Boolean(locked);
@@ -250,7 +251,8 @@ function applySaCreateUnknownUi() {
 }
 
 function clearSaCreateFormFields({ keepCompanyLocked = false } = {}) {
-    ["sa-new-name", "sa-new-tenant", "sa-new-pin", "sa-ca-name", "sa-ca-email", "sa-ca-password", "sa-ca-company-id"]
+    ["sa-new-name", "sa-new-tenant", "sa-new-pin", "sa-ca-name", "sa-ca-email", "sa-ca-password", "sa-ca-company-id",
+        "sa-new-legal-name", "sa-new-tax-id", "sa-new-max-buses"]
         .forEach((id) => {
             const el = document.getElementById(id);
             if (el) el.value = "";
@@ -471,6 +473,10 @@ async function runSaFullCreateFlow() {
     const country = String(document.getElementById("sa-new-country")?.value || "AT").trim().toUpperCase();
     const licenseType = String(document.getElementById("sa-new-license")?.value || "pro").trim();
     const tenantOverride = String(document.getElementById("sa-new-tenant")?.value || "").trim().toLowerCase();
+    const legalName = String(document.getElementById("sa-new-legal-name")?.value || "").trim();
+    const taxId = String(document.getElementById("sa-new-tax-id")?.value || "").trim();
+    const maxBusesRaw = document.getElementById("sa-new-max-buses")?.value;
+    const maxBuses = maxBusesRaw ? Number(maxBusesRaw) : undefined;
     const requestCompanyId = tenantOverride
         || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
         || (`firma-${Date.now()}`);
@@ -493,7 +499,10 @@ async function runSaFullCreateFlow() {
                     name,
                     country,
                     contactEmail,
-                    licenseType
+                    licenseType,
+                    legalName: legalName || undefined,
+                    taxId: taxId || undefined,
+                    maxBuses: Number.isFinite(maxBuses) ? maxBuses : undefined
                 });
             } catch {
                 saCreateFlow.status = SA_CREATE_FLOW.UNKNOWN_REQUIRES_CHECK;

@@ -18,6 +18,7 @@ import { ApiClient } from "../core/api-client.js";
 import { saveState } from "../core/state.js";
 import { busHasGroup } from "../data/bus-group-membership.js";
 import { busIsAssignable } from "../data/bus-ops.js";
+import { driverKnowsGroup } from "../data/driver-known-groups.js";
 import {
     collectOpsAttentionItems,
     collectAllAttentionItems,
@@ -605,7 +606,7 @@ function coverageDriverCandidates(report) {
     const groupId = String(report?.groupId || report?.lineId || "");
     return getVisibleDrivers().filter(driver => {
         if (driver.active === false || driverUid(driver) === report.driverId) return false;
-        if (String(driver.groupId || driver.lineId || "") !== groupId) return false;
+        if (!driverKnowsGroup(driver, groupId)) return false;
         const duty = getShiftForDriverDate(driver.name, report.date);
         return !duty || AVAILABLE_REPLACEMENT_TYPES.has(String(duty.type || "").toLowerCase());
     });
