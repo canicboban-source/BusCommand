@@ -29,8 +29,10 @@ services:
         value: "475316242257"
       - key: VITE_FIREBASE_APP_ID
         value: 1:475316242257:web:5782bb509578f28ac6b570
+      # Every browser-facing surface host must be listed exactly. A host missing
+      # here is answered 403 application/json by the CORS gate on every /api call.
       - key: CORS_ORIGINS
-        value: https://buscommand.com,https://www.buscommand.com,https://buscommand-preview.onrender.com
+        value: https://buscommand.com,https://www.buscommand.com,https://app.buscommand.com,https://d.buscommand.com,https://buscommand-preview.onrender.com
 
   - type: cron
     name: buscommand-confirm-dispatch

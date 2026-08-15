@@ -134,6 +134,82 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
+app.use(pinoHttp({
+  logger,
+  autoLogging: { ignore: (req) => req.url === "/api/config" }
+}));
+
+const DIST_DIR = path.join(__dirname, "dist");
+const HAS_DIST = fs.existsSync(path.join(DIST_DIR, "index.html"));
+const STATIC_DIR = HAS_DIST ? DIST_DIR : __dirname;
+
+function sendStaffApp(res) {
+  res.setHeader("Cache-Control", "no-cache");
+  return res.sendFile(path.join(STATIC_DIR, "staff.html"));
+}
+
+function sendDriverApp(res) {
+  res.setHeader("Cache-Control", "no-cache");
+  return res.sendFile(path.join(STATIC_DIR, "driver.html"));
+}
+
+/**
+ * Which surface shell a bare host serves. Matched on the leftmost hostname label
+ * only — never on a full domain — so the same build serves preview, staging and
+ * production without embedding a production host in the source.
+ * `d.` / `driver.` → driver PWA; every other host → staff app.
+ */
+const DRIVER_HOST_LABELS = new Set(["d", "driver"]);
+
+function isDriverHost(req) {
+  const host = String(req.hostname || req.headers.host || "").toLowerCase();
+  return DRIVER_HOST_LABELS.has(host.split(":")[0].split(".")[0]);
+}
+
+function sendSurfaceForHost(req, res) {
+  return isDriverHost(req) ? sendDriverApp(res) : sendStaffApp(res);
+}
+
+// Shell routes stay ahead of express.static so the host decides which surface `/`
+// opens; otherwise static's directory index would answer with dist/index.html.
+// Preview / desktop entry: `/` is BusCommand (email + password). No driver-PWA
+// gate, unless the request arrives on the driver subdomain.
+app.get(["/", "/index.html"], (req, res) => sendSurfaceForHost(req, res));
+
+app.get("/driver", (_req, res) => sendDriverApp(res));
+
+app.get("/staff", (_req, res) => sendStaffApp(res));
+
+// ─── Public static assets ──────────────────────────────────
+// Mounted BEFORE the CORS gate on purpose. The build emits hashed /assets/*.js
+// referenced by <script type="module"> and <link rel="modulepreload">, which the
+// browser fetches in CORS mode. If such a request carries an Origin that is not
+// in CORS_ORIGINS, the gate below rejects it and the error handler answers
+// 403 application/json — the browser then reports a MIME-type failure because it
+// expected JavaScript. Public build output carries no credentials and no tenant
+// data, so it must never depend on the origin allowlist.
+const staticOptions = {
+  etag: true,
+  lastModified: true,
+  // `/` and `/index.html` are surface shells resolved by host above, not a
+  // directory listing served out of dist/.
+  index: false,
+  setHeaders: (res, filePath) => {
+    const hashedAsset = /[\\/](assets)[\\/].*-[a-zA-Z0-9_-]{8,}\.(?:js|css|woff2?|png|svg)$/.test(filePath);
+    res.setHeader("Cache-Control", hashedAsset
+      ? "public, max-age=31536000, immutable"
+      : "no-cache");
+    if (hashedAsset) {
+      // Immutable, credential-free build output: readable from any surface origin.
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    }
+  }
+};
+
+app.use("/assets", express.static(path.join(STATIC_DIR, "assets"), staticOptions));
+app.use(express.static(STATIC_DIR, staticOptions));
+
 app.use(cors({
   origin(origin, callback) {
     const decision = evaluateCorsOrigin(origin, {
@@ -147,11 +223,6 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(pinoHttp({
-  logger,
-  autoLogging: { ignore: (req) => req.url === "/api/config" }
-}));
-
 const defaultJsonParser = express.json({ limit: "64kb" });
 const servicePlanJsonParser = express.json({ limit: "4mb" });
 const brandingJsonParser = express.json({ limit: "512kb" });
@@ -162,36 +233,6 @@ app.use((req, res, next) => {
   const isServicePlanWrite = req.path.startsWith("/api/company-admin/service-plans/");
   return (isServicePlanWrite ? servicePlanJsonParser : defaultJsonParser)(req, res, next);
 });
-
-const DIST_DIR = path.join(__dirname, "dist");
-const HAS_DIST = fs.existsSync(path.join(DIST_DIR, "index.html"));
-const STATIC_DIR = HAS_DIST ? DIST_DIR : __dirname;
-
-function sendStaffApp(res) {
-  res.setHeader("Cache-Control", "no-cache");
-  return res.sendFile(path.join(STATIC_DIR, "staff.html"));
-}
-
-// Preview / desktop entry: `/` is BusCommand (email + password). No driver-PWA gate.
-app.get(["/", "/index.html"], (_req, res) => sendStaffApp(res));
-
-app.use(express.static(STATIC_DIR, {
-  etag: true,
-  lastModified: true,
-  setHeaders: (res, filePath) => {
-    const hashedAsset = /[\\/](assets)[\\/].*-[a-zA-Z0-9_-]{8,}\.(?:js|css|woff2?|png|svg)$/.test(filePath);
-    res.setHeader("Cache-Control", hashedAsset
-      ? "public, max-age=31536000, immutable"
-      : "no-cache");
-  }
-}));
-
-app.get("/driver", (_req, res) => {
-  res.setHeader("Cache-Control", "no-cache");
-  res.sendFile(path.join(STATIC_DIR, "driver.html"));
-});
-
-app.get("/staff", (_req, res) => sendStaffApp(res));
 
 const requireSuperAdmin = createRequireSuperAdmin({ hasFirebase: () => HAS_FIREBASE, admin: () => admin });
 
@@ -1664,13 +1705,14 @@ app.get("*", (req, res) => {
   }
   // Deep links: keep surface if path hints driver/staff assets already served by static
   if (req.path.startsWith("/driver")) {
-    return res.sendFile(path.join(STATIC_DIR, "driver.html"));
+    return sendDriverApp(res);
   }
   if (req.path.startsWith("/staff")) {
     return sendStaffApp(res);
   }
-  // Fallback HTML routes open BusCommand staff app (email + password), not a surface chooser
-  return sendStaffApp(res);
+  // Otherwise the host decides: driver subdomain keeps the PWA, everything else
+  // opens the BusCommand staff app (email + password), not a surface chooser.
+  return sendSurfaceForHost(req, res);
 });
 
 // ─── Error handler ─────────────────────────────────────────
