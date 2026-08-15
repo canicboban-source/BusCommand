@@ -4265,13 +4265,23 @@ html[data-app-surface="staff"] .bus-fleet-table-wrap {
 html[data-app-surface="staff"] .bus-fleet-table-wrap .bus-fleet-table {
   table-layout: auto;
   width: 100%;
-  min-width: 720px;
+  min-width: 920px;
+}
+
+html[data-app-surface="staff"] .bus-fleet-table tr.bus-fleet-row,
+html[data-app-surface="staff"] .bus-fleet-table thead tr {
+  white-space: nowrap;
 }
 
 html[data-app-surface="staff"] .bus-fleet-table tr,
 html[data-app-surface="staff"] .bus-fleet-table th,
 html[data-app-surface="staff"] .bus-fleet-table td {
   vertical-align: middle;
+  white-space: nowrap;
+}
+
+html[data-app-surface="staff"] .bus-fleet-table td {
+  /* Keep Busnummer / Kennzeichen / Gruppe / Status / Aktionen on one straight row */
   white-space: nowrap;
 }
 
@@ -4299,6 +4309,7 @@ html[data-app-surface="staff"] .bus-status-cell {
   flex-wrap: nowrap;
   gap: 4px;
   align-items: center;
+  white-space: nowrap;
 }
 
 html[data-app-surface="staff"] .bus-fleet-actions {
@@ -4307,11 +4318,20 @@ html[data-app-surface="staff"] .bus-fleet-actions {
   flex-wrap: nowrap;
   gap: 8px;
   align-items: center;
+  white-space: nowrap;
+}
+
+html[data-app-surface="staff"] .bus-fleet-actions .btn-secondary,
+html[data-app-surface="staff"] .bus-fleet-actions .hub-bus-toggle,
+html[data-app-surface="staff"] .bus-fleet-actions .hub-bus-edit-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 html[data-app-surface="staff"] .bus-status-pill {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   white-space: nowrap;
   padding: 4px 10px;
   font-size: 0.72rem;
@@ -4376,8 +4396,9 @@ html[data-app-surface="staff"] .bus-other-line-badge {
 }
 
 html[data-app-surface="staff"] .bus-group-switch {
-  width: 100%;
-  min-width: 0;
+  width: auto;
+  min-width: 7rem;
+  max-width: 14rem;
   background: var(--input-bg);
   border: 1px solid var(--panel-border);
   color: var(--text-main);
@@ -4385,6 +4406,7 @@ html[data-app-surface="staff"] .bus-group-switch {
   padding: 6px 8px;
   font-size: 0.8rem;
   box-sizing: border-box;
+  white-space: nowrap;
 }
 
 html[data-app-surface="staff"] .hub-bus-edit-row td {

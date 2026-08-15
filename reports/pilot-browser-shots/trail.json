@@ -1,0 +1,50 @@
+[
+  {
+    "step": "01-login",
+    "note": "Opened demo staff login",
+    "url": "http://localhost:8766/staff.html?mode=demo"
+  },
+  {
+    "step": "02-sa-dashboard",
+    "note": "SA dashboard visible",
+    "url": "http://localhost:8766/staff.html?mode=demo"
+  },
+  {
+    "step": "sa-cards",
+    "note": "cards=1 hOverflow=0"
+  },
+  {
+    "step": "03-ca-dashboard",
+    "note": "CA overview visible",
+    "url": "http://localhost:8766/staff.html?mode=demo"
+  },
+  {
+    "step": "04-ca-groups",
+    "note": "CA groups section",
+    "url": "http://localhost:8766/staff.html?mode=demo"
+  },
+  {
+    "step": "05-dispo",
+    "note": "Dispo app shell shown",
+    "url": "http://localhost:8766/staff.html?mode=demo"
+  },
+  {
+    "step": "06-dispo-ops",
+    "note": "Dispo dashboard/ops",
+    "url": "http://localhost:8766/staff.html?mode=demo"
+  },
+  {
+    "step": "07-driver-login",
+    "note": "Driver surface login",
+    "url": "http://localhost:8766/driver.html?mode=demo"
+  },
+  {
+    "step": "driver-options",
+    "note": "Alex NoBus | Sam Standby | Canic Boban | Marko Petrović | Nikola Jovanović | Stefan Ilić | Aleksandar Nikolić"
+  },
+  {
+    "step": "08-driver-app",
+    "note": "After driver login attempt",
+    "url": "http://localhost:8766/driver.html?mode=demo"
+  }
+]

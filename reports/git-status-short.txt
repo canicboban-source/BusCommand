@@ -1,0 +1,481 @@
+ M .gitignore
+ M api-server.js
+ M css/staff-desktop.css
+ M docs/decisions.md
+ M driver.html
+ M firestore.rules
+ M index.legacy-monolith.html
+ M js/admin/company-admin-drivers.js
+ M js/admin/superadmin.js
+ M js/core/api-client.js
+ M js/core/bus-shift-conflicts.js
+ M js/core/dispatcher-scope.js
+ M js/core/firebase-service.js
+ M js/core/state.js
+ M js/data/group-membership.js
+ M js/dispatcher/data-hub.js
+ M js/dispatcher/group-hub.js
+ M js/dispatcher/monthly-plans.js
+ M js/dispatcher/plan-import.js
+ M js/dispatcher/shifts.js
+ M js/imports/service-plan-excel.js
+ M js/install-staff.js
+ M js/layout/shell-staff.js
+ M js/register-onclick-staff.js
+ M js/ui/row-actions-menu.js
+ M package.json
+ M public/templates/BusCommand_Drivers_Import_v1.csv
+ M reports/downloads-plan-import-test-2026-08-07.md
+ M reports/full-function-inventory.json
+ M reports/full-function-matrix.csv
+ M reports/full-function-matrix.md
+ M reports/phase4-final-gate-2026-08-08.md
+ M scripts/build-function-inventory.mjs
+ M scripts/check-bundle-budgets.js
+ M scripts/generate-dienstplan-blank-templates.mjs
+ M scripts/generate-vor320-crew-plans.mjs
+ M scripts/run-function-matrix.mjs
+ M server/audit-log.js
+ M server/driver-credential-migration.js
+ M server/driver-csv.js
+ M server/driver-routes.js
+ M server/group-monthly-plan-import.js
+ M server/plan-import-preview.js
+ M server/service-plans.js
+ M server/validation.js
+ M staff.html
+ M tests/e2e/bus-cross-group-warn.spec.js
+ M tests/e2e/dispatcher-cockpit.spec.js
+ M tests/e2e/dispo-soft-remove.spec.js
+ M tests/e2e/line-310.spec.js
+ M tests/e2e/qa-factory.js
+ M tests/e2e/superadmin-demo.spec.js
+ M tests/e2e/ui-smoke.spec.js
+ M tests/fixtures/downloads-safe/BusCommand_Dienstplan_Blank_v1.csv
+ M tests/fixtures/downloads-safe/dienst_vorlage.csv
+ M tests/fixtures/downloads-safe/qa-driver-import-20260727.csv
+ M tests/fixtures/vor320-crew-drivers.csv
+ M tests/rules/firestore.rules.test.js
+ M tests/unit/audit-log.test.js
+ M tests/unit/blank-templates.test.mjs
+ M tests/unit/bus-shift-conflicts.test.mjs
+ M tests/unit/company-admin-drivers.test.mjs
+ M tests/unit/company-admin-overview.test.mjs
+ M tests/unit/dispatcher-multi-group-query.test.mjs
+ M tests/unit/dispatcher-plan-navigation.test.mjs
+ M tests/unit/dispatcher-scope.test.mjs
+ M tests/unit/driver-company-login.test.mjs
+ M tests/unit/driver-credential-migration.test.js
+ M tests/unit/driver-credentials.test.js
+ M tests/unit/driver-csv.test.js
+ M tests/unit/plan-import-preview.test.js
+ M tests/unit/poglavlje-17-performance-budgets.test.mjs
+ M tests/unit/sa-demo-company-status.test.mjs
+ M tests/unit/sa-trial-banner.test.mjs
+ M tests/unit/ui-language-consistency.test.mjs
+ M tests/unit/ui-security.test.mjs
+ M tests/unit/vor320-crew-plan.test.mjs
+ M translations.js
+?? js/dispatcher/plan-import-loader.js
+?? reports/_phase2r-a2-zip.py
+?? reports/_phase2r-b12-full-list.txt
+?? reports/_phase2r-b12-ziplist.txt
+?? reports/base-to-working.patch
+?? reports/deploy-phase1-2-live-2026-08-08.md
+?? reports/dispo-eval-e2e-pass1.txt
+?? reports/dispo-eval-e2e-pass2-core.txt
+?? reports/dispo-eval-live-pass.json
+?? reports/dispo-eval-live-pass.log
+?? reports/dispo-eval-shots/
+?? reports/dispo-eval-unit-pass1.txt
+?? reports/dispo-fix-build.txt
+?? reports/dispo-fix-e2e-pass2.txt
+?? reports/dispo-fix-e2e-pass3.txt
+?? reports/dispo-fix-e2e.txt
+?? reports/dispo-full-eval-2026-08-07.md
+?? reports/dispo-stress-run.txt
+?? reports/dispo-stress-run2.txt
+?? reports/dispo-stress-run3.txt
+?? reports/dispo-stress-run4.txt
+?? reports/e2e-pass1-20260806-0314.log
+?? reports/e2e-pass2.log
+?? reports/full-function-inventory-2026-08-07.json
+?? reports/full-function-inventory-2026-08-07.md
+?? reports/full-function-inventory-2026-08-09.json
+?? reports/full-function-inventory-2026-08-09.md
+?? reports/full-function-matrix-2026-08-07.csv
+?? reports/full-function-matrix-2026-08-07.md
+?? reports/full-function-matrix-2026-08-09.csv
+?? reports/full-function-matrix-2026-08-09.md
+?? reports/git-diff-stat.txt
+?? reports/git-status-short.txt
+?? reports/hotfix-build.log
+?? reports/hotfix-no-empty-build.log
+?? reports/live-owner-qa-shots/
+?? reports/matrix-shots/
+?? reports/matrix-trail-2026-08-09.json
+?? reports/phase-0-change-ledger.md
+?? reports/phase-0-closeout-2026-08-09.md
+?? reports/phase-0-closeout-deliverable-2026-08-09.zip
+?? reports/phase-0-deliverable-2026-08-08.zip
+?? reports/phase-0-report-2026-08-08.md
+?? reports/phase-0-visual/
+?? reports/phase-1-change-ledger.md
+?? reports/phase-1-deliverable-2026-08-09.zip
+?? reports/phase-1-report-2026-08-09.md
+?? reports/phase-1-security-closeout-2026-08-09.md
+?? reports/phase-1-security-closeout-deliverable-2026-08-09.zip
+?? reports/phase-1-security-closeout-logs/
+?? reports/phase-1-security-closeout-visual/
+?? reports/phase-1-visual/
+?? reports/phase-2-change-ledger.md
+?? reports/phase-2-deliverable-2026-08-09.zip
+?? reports/phase-2-logs/
+?? reports/phase-2-report-2026-08-09.md
+?? reports/phase-2-review-source-2026-08-09.zip
+?? reports/phase-2-source-manifest.txt
+?? reports/phase-2-visual/
+?? reports/phase-2r-a-change-ledger.md
+?? reports/phase-2r-a-deliverable-2026-08-09.zip
+?? reports/phase-2r-a-logs/
+?? reports/phase-2r-a-report-2026-08-09.md
+?? reports/phase-2r-a-review-source-2026-08-09.zip
+?? reports/phase-2r-a-source-manifest.txt
+?? reports/phase-2r-a-visual/
+?? reports/phase-2r-a1-change-ledger.md
+?? reports/phase-2r-a1-logs/
+?? reports/phase-2r-a1-report-2026-08-09.md
+?? reports/phase-2r-a1-review-source-2026-08-09.zip
+?? reports/phase-2r-a1-source-manifest.txt
+?? reports/phase-2r-a1-visual/
+?? reports/phase-2r-a1-workspace-2026-08-09.zip
+?? reports/phase-2r-a2-change-ledger.md
+?? reports/phase-2r-a2-full-deliverable-2026-08-09.zip
+?? reports/phase-2r-a2-logs/
+?? reports/phase-2r-a2-report-2026-08-09.md
+?? reports/phase-2r-a2-review-source-2026-08-09.zip
+?? reports/phase-2r-a2-source-manifest.txt
+?? reports/phase-2r-a2-visual/
+?? reports/phase-2r-a3-base-to-working.patch
+?? reports/phase-2r-a3-change-ledger.md
+?? reports/phase-2r-a3-full-deliverable-2026-08-09.zip
+?? reports/phase-2r-a3-git-diff-stat.txt
+?? reports/phase-2r-a3-git-status-short.txt
+?? reports/phase-2r-a3-logs/
+?? reports/phase-2r-a3-report-2026-08-09.md
+?? reports/phase-2r-a3-review-source-2026-08-09.zip
+?? reports/phase-2r-a3-source-manifest.txt
+?? reports/phase-2r-a3-visual/
+?? reports/phase-2r-a31-base-to-working.patch
+?? reports/phase-2r-a31-change-ledger.md
+?? reports/phase-2r-a31-full-deliverable-2026-08-09.zip
+?? reports/phase-2r-a31-git-diff-stat.txt
+?? reports/phase-2r-a31-git-status-short.txt
+?? reports/phase-2r-a31-logs/
+?? reports/phase-2r-a31-report-2026-08-09.md
+?? reports/phase-2r-a31-review-source-2026-08-09.zip
+?? reports/phase-2r-a31-source-manifest.txt
+?? reports/phase-2r-a31-visual/
+?? reports/phase-2r-a31-writer-inventory.md
+?? reports/phase-2r-a311-base-to-working.patch
+?? reports/phase-2r-a311-change-ledger.md
+?? reports/phase-2r-a311-full-deliverable-2026-08-09.zip
+?? reports/phase-2r-a311-git-diff-stat.txt
+?? reports/phase-2r-a311-git-status-short.txt
+?? reports/phase-2r-a311-logs/
+?? reports/phase-2r-a311-report-2026-08-09.md
+?? reports/phase-2r-a311-review-source-2026-08-09.zip
+?? reports/phase-2r-a311-source-manifest.txt
+?? reports/phase-2r-a311-visual/
+?? reports/phase-2r-b-base-to-working.patch
+?? reports/phase-2r-b-change-ledger.md
+?? reports/phase-2r-b-full-deliverable-2026-08-09.zip
+?? reports/phase-2r-b-git-diff-stat.txt
+?? reports/phase-2r-b-git-status-short.txt
+?? reports/phase-2r-b-logs/
+?? reports/phase-2r-b-report-2026-08-09.md
+?? reports/phase-2r-b-review-source-2026-08-09.zip
+?? reports/phase-2r-b-source-manifest.txt
+?? reports/phase-2r-b-visual/
+?? reports/phase-2r-b1-base-to-working.patch
+?? reports/phase-2r-b1-change-ledger.md
+?? reports/phase-2r-b1-full-deliverable-2026-08-09.zip
+?? reports/phase-2r-b1-git-diff-stat.txt
+?? reports/phase-2r-b1-git-status-short.txt
+?? reports/phase-2r-b1-logs/
+?? reports/phase-2r-b1-report-2026-08-09.md
+?? reports/phase-2r-b1-review-source-2026-08-09.zip
+?? reports/phase-2r-b1-source-manifest.txt
+?? reports/phase-2r-b1-visual/
+?? reports/phase-2r-b11-base-to-working.patch
+?? reports/phase-2r-b11-change-ledger.md
+?? reports/phase-2r-b11-full-deliverable-2026-08-09.zip
+?? reports/phase-2r-b11-git-diff-stat.txt
+?? reports/phase-2r-b11-git-status-short.txt
+?? reports/phase-2r-b11-logs/
+?? reports/phase-2r-b11-report-2026-08-09.md
+?? reports/phase-2r-b11-review-source-2026-08-09.zip
+?? reports/phase-2r-b11-source-manifest.txt
+?? reports/phase-2r-b11-visual/
+?? reports/phase-2r-b12-change-ledger.md
+?? reports/phase-2r-b12-full-deliverable-2026-08-09.zip
+?? reports/phase-2r-b12-logs/
+?? reports/phase-2r-b12-report-2026-08-09.md
+?? reports/phase-2r-b12-review-source-2026-08-09.zip
+?? reports/phase-2r-b12-source-manifest.txt
+?? reports/phase-2r-b12-visual/
+?? reports/phase-3-base-to-working.patch
+?? reports/phase-3-change-ledger.md
+?? reports/phase-3-d241-base-to-working.patch
+?? reports/phase-3-d241-change-ledger.md
+?? reports/phase-3-d241-full-deliverable-2026-08-09.zip
+?? reports/phase-3-d241-git-diff-stat.txt
+?? reports/phase-3-d241-git-status-short.txt
+?? reports/phase-3-d241-logs/
+?? reports/phase-3-d241-report-2026-08-09.md
+?? reports/phase-3-d241-review-source-2026-08-09.zip
+?? reports/phase-3-d241-source-manifest.txt
+?? reports/phase-3-d2411-base-to-working.patch
+?? reports/phase-3-d2411-change-ledger.md
+?? reports/phase-3-d2411-full-deliverable-2026-08-09.zip
+?? reports/phase-3-d2411-git-diff-stat.txt
+?? reports/phase-3-d2411-git-status-short.txt
+?? reports/phase-3-d2411-logs/
+?? reports/phase-3-d2411-report-2026-08-09.md
+?? reports/phase-3-d2411-review-source-2026-08-09.zip
+?? reports/phase-3-d2411-source-manifest.txt
+?? reports/phase-3-d2411-visual-2026-08-09T19-03-50/
+?? reports/phase-3-d2411-visual-2026-08-09T19-05-05/
+?? reports/phase-3-d2411-visual-latest.txt
+?? reports/phase-3-d24111-base-to-working.patch
+?? reports/phase-3-d24111-change-ledger.md
+?? reports/phase-3-d24111-full-deliverable-2026-08-09.zip
+?? reports/phase-3-d24111-git-diff-stat.txt
+?? reports/phase-3-d24111-git-status-short.txt
+?? reports/phase-3-d24111-logs/
+?? reports/phase-3-d24111-report-2026-08-09.md
+?? reports/phase-3-d24111-review-source-2026-08-09.zip
+?? reports/phase-3-d24111-source-manifest.txt
+?? reports/phase-3-d24111-visual-2026-08-09T19-57-09/
+?? reports/phase-3-d24111-visual-latest.txt
+?? reports/phase-3-d242-base-to-working.patch
+?? reports/phase-3-d242-change-ledger.md
+?? reports/phase-3-d242-full-deliverable-2026-08-10.zip
+?? reports/phase-3-d242-git-diff-stat.txt
+?? reports/phase-3-d242-git-status-short.txt
+?? reports/phase-3-d242-logs/
+?? reports/phase-3-d242-report-2026-08-10.md
+?? reports/phase-3-d242-review-source-2026-08-10.zip
+?? reports/phase-3-d242-source-manifest.txt
+?? reports/phase-3-d242-visual-2026-08-10T14-01-05/
+?? reports/phase-3-d242-visual-2026-08-10T14-01-39/
+?? reports/phase-3-d242-visual-latest.txt
+?? reports/phase-3-d2421-base-to-working.patch
+?? reports/phase-3-d2421-change-ledger.md
+?? reports/phase-3-d2421-full-deliverable-2026-08-10.zip
+?? reports/phase-3-d2421-git-diff-stat.txt
+?? reports/phase-3-d2421-git-status-short.txt
+?? reports/phase-3-d2421-logs/
+?? reports/phase-3-d2421-report-2026-08-10.md
+?? reports/phase-3-d2421-review-source-2026-08-10.zip
+?? reports/phase-3-d2421-source-manifest.txt
+?? reports/phase-3-d2421-visual-2026-08-10T15-12-07/
+?? reports/phase-3-d2421-visual-2026-08-10T15-27-47/
+?? reports/phase-3-d2421-visual-2026-08-10T15-29-07/
+?? reports/phase-3-d2421-visual-latest.txt
+?? reports/phase-3-d2421a1-report-2026-08-10.md
+?? reports/phase-3-full-deliverable-2026-08-09.zip
+?? reports/phase-3-gate30-base-to-working.patch
+?? reports/phase-3-gate30-change-ledger.md
+?? reports/phase-3-gate30-full-deliverable-2026-08-09.zip
+?? reports/phase-3-gate30-git-diff-stat.txt
+?? reports/phase-3-gate30-git-status-short.txt
+?? reports/phase-3-gate30-logs/
+?? reports/phase-3-gate30-report-2026-08-09.md
+?? reports/phase-3-gate30-review-source-2026-08-09.zip
+?? reports/phase-3-gate30-source-manifest.txt
+?? reports/phase-3-gate30-visual/
+?? reports/phase-3-git-diff-stat.txt
+?? reports/phase-3-git-status-short.txt
+?? reports/phase-3-logs/
+?? reports/phase-3-report-2026-08-09.md
+?? reports/phase-3-review-source-2026-08-09.zip
+?? reports/phase-3-source-manifest.txt
+?? reports/phase-3-visual/
+?? reports/phase0-all-fail-context.txt
+?? reports/phase0-audit.txt
+?? reports/phase0-baseline-commands.txt
+?? reports/phase0-build.txt
+?? reports/phase0-closeout-audit.txt
+?? reports/phase0-closeout-build.txt
+?? reports/phase0-closeout-build2.txt
+?? reports/phase0-closeout-build3.txt
+?? reports/phase0-closeout-build4.txt
+?? reports/phase0-closeout-build5.txt
+?? reports/phase0-closeout-e2e.txt
+?? reports/phase0-closeout-firebase.txt
+?? reports/phase0-closeout-lint.txt
+?? reports/phase0-closeout-node.txt
+?? reports/phase0-closeout-rules.txt
+?? reports/phase0-closeout-secrets.txt
+?? reports/phase0-closeout-unit.txt
+?? reports/phase0-closeout-visual.txt
+?? reports/phase0-closeout-visual2.txt
+?? reports/phase0-closeout-visual3.txt
+?? reports/phase0-closeout-visual5.txt
+?? reports/phase0-e2e-cta.txt
+?? reports/phase0-e2e-full.txt
+?? reports/phase0-e2e-full2.txt
+?? reports/phase0-e2e-rerun.txt
+?? reports/phase0-e2e-rerun2.txt
+?? reports/phase0-e2e-rerun3.txt
+?? reports/phase0-firebase.txt
+?? reports/phase0-lint.txt
+?? reports/phase0-npm-ci.txt
+?? reports/phase0-rules.txt
+?? reports/phase0-secrets.txt
+?? reports/phase0-ui-security.txt
+?? reports/phase0-unit-fail-detail.txt
+?? reports/phase0-unit.txt
+?? reports/phase0-visual-run.txt
+?? reports/phase2-build.log
+?? reports/phase2-e2e-2.log
+?? reports/phase2-e2e-3.log
+?? reports/phase2-e2e-full.log
+?? reports/phase2-e2e-retry.log
+?? reports/phase2-e2e.log
+?? reports/phase2-isolation.log
+?? reports/phase2-matrix.log
+?? reports/phase2-rules.log
+?? reports/phase2-unit.log
+?? reports/phase3-build.log
+?? reports/phase3-e2e.log
+?? reports/phase3-responsive-shots/
+?? reports/phase3-responsive.log
+?? reports/phase3-unit.log
+?? reports/phase4-gate-pass1-cmd.tmp
+?? reports/phase4-gate-pass2-cmd.tmp
+?? reports/pilot-baseline-audit-all.txt
+?? reports/pilot-baseline-audit.txt
+?? reports/pilot-baseline-e2e.txt
+?? reports/pilot-baseline-lint.txt
+?? reports/pilot-baseline-unit.txt
+?? reports/pilot-browser-shots/
+?? reports/pilot-browser-trail.txt
+?? reports/pilot-e2e-pass1.txt
+?? reports/pilot-e2e-pass2.txt
+?? reports/pilot-e2e-retry-failing.txt
+?? reports/pilot-functional-candidate-2026-08-07.md
+?? reports/pilot-rules.txt
+?? reports/pilot-unit-pass1.txt
+?? reports/pilot-verify-sa-open.txt
+?? reports/pr-body-daily-plan-incident.md
+?? reports/verify-night-e2e.txt
+?? reports/verify-pass1-build.txt
+?? reports/verify-pass1-e2e-ops-a.txt
+?? reports/verify-pass1-e2e-ops-b.txt
+?? reports/verify-pass1-e2e-ops.txt
+?? reports/verify-pass1-e2e-ui-smoke.txt
+?? reports/verify-pass1-lint.txt
+?? reports/verify-pass1-unit.txt
+?? reports/verify-pass2-e2e-full.txt
+?? reports/verify-pass3-e2e-full.txt
+?? scripts/_d24111-run-scope-test.mjs
+?? scripts/_d24111-scope-inner.js
+?? scripts/dispo-eval-live-pass.mjs
+?? scripts/phase0-visual-trail.mjs
+?? scripts/phase1-inspect-xlsx.mjs
+?? scripts/phase1-inspect-xlsx2.mjs
+?? scripts/phase1-security-closeout-visual.mjs
+?? scripts/phase1-visual-trail.mjs
+?? scripts/phase2-diag-driver-login.mjs
+?? scripts/phase2-visual-trail.mjs
+?? scripts/phase2r-a-pack-artifacts.mjs
+?? scripts/phase2r-a-visual-trail.mjs
+?? scripts/phase2r-a1-pack-artifacts.mjs
+?? scripts/phase2r-a1-visual-trail.mjs
+?? scripts/phase2r-a2-d17-measure.mjs
+?? scripts/phase2r-a2-pack-artifacts.mjs
+?? scripts/phase2r-a2-visual-trail.mjs
+?? scripts/phase2r-a3-d17-measure.mjs
+?? scripts/phase2r-a3-pack-artifacts.mjs
+?? scripts/phase2r-a3-visual-trail.mjs
+?? scripts/phase2r-a31-d17-measure.mjs
+?? scripts/phase2r-a31-pack-artifacts.mjs
+?? scripts/phase2r-a31-visual-trail.mjs
+?? scripts/phase2r-a311-pack-artifacts.mjs
+?? scripts/phase2r-a311-visual-trail.mjs
+?? scripts/phase2r-b-pack-artifacts.mjs
+?? scripts/phase2r-b-purge-translations.mjs
+?? scripts/phase2r-b-visual-trail.mjs
+?? scripts/phase2r-b1-pack-artifacts.mjs
+?? scripts/phase2r-b1-visual-trail.mjs
+?? scripts/phase2r-b11-pack-artifacts.mjs
+?? scripts/phase2r-b11-visual-trail.mjs
+?? scripts/phase2r-b12-visual-trail.mjs
+?? scripts/phase3-d241-pack-artifacts.mjs
+?? scripts/phase3-d2411-pack-artifacts.mjs
+?? scripts/phase3-d2411-visual-trail.mjs
+?? scripts/phase3-d24111-pack-artifacts.mjs
+?? scripts/phase3-d24111-visual-trail.mjs
+?? scripts/phase3-d242-fail-first-race.mjs
+?? scripts/phase3-d242-pack-artifacts.mjs
+?? scripts/phase3-d242-visual-trail.mjs
+?? scripts/phase3-d2421-pack-artifacts.mjs
+?? scripts/phase3-d2421-visual-trail.mjs
+?? scripts/phase3-gate30-pack-artifacts.mjs
+?? scripts/phase3-pack-artifacts.mjs
+?? scripts/phase3-visual-trail.mjs
+?? scripts/pilot-browser-qa.mjs
+?? scripts/pilot-verify-sa-open.mjs
+?? scripts/strip-v66-labels.mjs
+?? server/assignment-resource-guard.js
+?? server/company-admin-driver-ops.js
+?? server/driver-identity-guard.js
+?? server/register-company-admin-drivers.js
+?? server/staff-monthly-plan-import.js
+?? shared/monthly-plan-day-stats.mjs
+?? tests/e2e/dispo-monthly-import-server.spec.js
+?? tests/e2e/monthly-plan-import-cta.spec.js
+?? tests/e2e/phase2r-b1-lazy-chunk-recovery.spec.js
+?? tests/e2e/phase2r-b11-file-recovery.spec.js
+?? tests/e2e/phase2r-b12-import-cta-filechooser.spec.js
+?? tests/e2e/phase2r-b12-sa-manage-account.spec.js
+?? tests/e2e/row-actions-menu.spec.js
+?? tests/fixtures/qa-monthly-plan-import-loose.txt
+?? tests/rules/firestore.query-contract.test.js
+?? tests/rules/phase2r-a3-commit-concurrency.test.js
+?? tests/rules/phase2r-a31-cross-writer-atomicity.test.js
+?? tests/rules/phase2r-a311-confirm-lock-consistency.test.js
+?? tests/rules/phase3-d241-assignment-resource.test.js
+?? tests/rules/phase3-d241-eid-isolation.test.js
+?? tests/rules/phase3-d2411-closeout.test.js
+?? tests/rules/phase3-d242-driver-uniqueness.test.js
+?? tests/unit/assignment-resource-guard.test.js
+?? tests/unit/monthly-plan-day-stats.test.mjs
+?? tests/unit/monthly-plan-import-cta.test.mjs
+?? tests/unit/phase1-dispatcher-group-api.test.mjs
+?? tests/unit/phase1-message-sos-http.test.js
+?? tests/unit/phase2r-a-monthly-import-http.test.js
+?? tests/unit/phase2r-a1-http.test.js
+?? tests/unit/phase2r-a1-reliability-closeout.test.js
+?? tests/unit/phase2r-a2-html-escape.test.js
+?? tests/unit/phase2r-a2-http-outcomes.test.js
+?? tests/unit/phase2r-a2-reliability-guard.test.js
+?? tests/unit/phase2r-a3-no-schema-single-flight.test.js
+?? tests/unit/phase2r-a31-fail-first.test.js
+?? tests/unit/phase2r-a311-confirm-lock-consistency.test.js
+?? tests/unit/phase2r-a311-fail-first.test.js
+?? tests/unit/phase2r-b-language.test.mjs
+?? tests/unit/phase2r-b-lazy-plan-import.test.js
+?? tests/unit/phase2r-b1-lazy-chunk-recovery.test.mjs
+?? tests/unit/phase2r-b11-file-recovery.test.mjs
+?? tests/unit/phase2r-b12-import-cta.test.mjs
+?? tests/unit/phase2r-b12-sa-manage-account.test.mjs
+?? tests/unit/phase3-assignment-integrity.test.js
+?? tests/unit/phase3-d241-ca-drivers-http.test.js
+?? tests/unit/phase3-d2411-ca-drivers-http.test.js
+?? tests/unit/phase3-d242-driver-identity-guard.test.js
+?? tests/unit/phase3-d2421a-retire-company-code.test.js
+?? tests/unit/row-actions-menu-behavior.test.mjs
+?? tests/unit/staff-monthly-plan-import.test.js

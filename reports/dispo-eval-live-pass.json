@@ -1,0 +1,547 @@
+[
+  {
+    "step": "login",
+    "ok": true,
+    "nav": [
+      {
+        "text": "Operations center",
+        "section": "dispatcher-dashboard"
+      },
+      {
+        "text": "Daily plan",
+        "section": "dispatcher-daily-plan-pick"
+      },
+      {
+        "text": "Monthly plan",
+        "section": "dispatcher-monthly-plan-pick"
+      },
+      {
+        "text": "Vehicles",
+        "section": "dispatcher-vehicles"
+      },
+      {
+        "text": "Messages",
+        "section": "dispatcher-messages"
+      },
+      {
+        "text": "Map",
+        "section": "dispatcher-live-map-section"
+      },
+      {
+        "text": "Problem reports",
+        "section": "dispatcher-reports"
+      },
+      {
+        "text": "Lost & Found",
+        "section": "dispatcher-lost-found"
+      },
+      {
+        "text": "Vacation Requests",
+        "section": "dispatcher-vacations"
+      }
+    ]
+  },
+  {
+    "step": "nav",
+    "id": "dispatcher-dashboard",
+    "exists": true,
+    "hidden": false,
+    "h2": "Operations center",
+    "buttonCount": 11,
+    "buttons": [
+      {
+        "text": "No bus Alex NoBus is on duty 101.S02 without a bus.",
+        "action": "openOpsAttentionPanel"
+      },
+      {
+        "text": "Line 101 Line 101 Ready 2 Drivers 2 Buses 0 Plans Click for ",
+        "action": "openDailyPlanForGroup"
+      },
+      {
+        "text": "0 Unread messages",
+        "action": "switchSection"
+      },
+      {
+        "text": "0 Live Issues",
+        "action": "switchSection"
+      },
+      {
+        "text": "See all",
+        "action": "switchSection"
+      },
+      {
+        "text": "See all",
+        "action": "switchSection"
+      },
+      {
+        "text": "Resolve now",
+        "action": "openOpsAttentionPanel"
+      },
+      {
+        "text": "Resolve now",
+        "action": "openOpsAttentionPanel"
+      },
+      {
+        "text": "Show all",
+        "action": "switchSection"
+      },
+      {
+        "text": "Edit",
+        "action": "opsAssignDriver"
+      },
+      {
+        "text": "Edit",
+        "action": "opsAssignDriver"
+      }
+    ]
+  },
+  {
+    "step": "nav",
+    "id": "dispatcher-daily-plan-pick",
+    "exists": true,
+    "hidden": false,
+    "h2": "Daily plan",
+    "buttonCount": 1,
+    "buttons": [
+      {
+        "text": "Line 101 Line 101 Ready 2 Drivers 2 Buses 0 Plans Click to o",
+        "action": "openDailyPlanForGroup"
+      }
+    ]
+  },
+  {
+    "step": "nav",
+    "id": "dispatcher-monthly-plan-pick",
+    "exists": true,
+    "hidden": false,
+    "h2": "Monthly plan",
+    "buttonCount": 1,
+    "buttons": [
+      {
+        "text": "Line 101 Line 101 Ready 2 Drivers 2 Buses 0 Plans Click to o",
+        "action": "openMonthlyPlanForGroup"
+      }
+    ]
+  },
+  {
+    "step": "nav",
+    "id": "dispatcher-vehicles",
+    "exists": true,
+    "hidden": false,
+    "h2": "Vehicles",
+    "buttonCount": 3,
+    "buttons": [
+      {
+        "text": "Operations center",
+        "action": "switchSection"
+      },
+      {
+        "text": "No bus Alex NoBus is on duty 101.S02 without a bus.",
+        "action": "openOpsAttentionPanel"
+      },
+      {
+        "text": "Add bus",
+        "action": "submit"
+      }
+    ]
+  },
+  {
+    "step": "nav",
+    "id": "dispatcher-messages",
+    "exists": true,
+    "hidden": false,
+    "h2": "Messages",
+    "buttonCount": 3,
+    "buttons": [
+      {
+        "text": "Personal",
+        "action": "setMessagesPageTab"
+      },
+      {
+        "text": "Group",
+        "action": "setMessagesPageTab"
+      },
+      {
+        "text": "Send message",
+        "action": "submit"
+      }
+    ]
+  },
+  {
+    "step": "nav",
+    "id": "dispatcher-live-map-section",
+    "exists": true,
+    "hidden": false,
+    "h2": "Map",
+    "buttonCount": 0,
+    "buttons": []
+  },
+  {
+    "step": "nav",
+    "id": "dispatcher-reports",
+    "exists": true,
+    "hidden": false,
+    "h2": "Live Reports (Breakdowns & Delays)",
+    "buttonCount": 2,
+    "buttons": [
+      {
+        "text": "All Groups",
+        "action": "setGroupFilter"
+      },
+      {
+        "text": "Line 101",
+        "action": "openGroupHub"
+      }
+    ]
+  },
+  {
+    "step": "nav",
+    "id": "dispatcher-lost-found",
+    "exists": true,
+    "hidden": false,
+    "h2": "Lost & Found",
+    "buttonCount": 0,
+    "buttons": []
+  },
+  {
+    "step": "nav",
+    "id": "dispatcher-vacations",
+    "exists": true,
+    "hidden": false,
+    "h2": "Manage Vacation Requests",
+    "buttonCount": 2,
+    "buttons": [
+      {
+        "text": "Approve",
+        "action": "handleVacation"
+      },
+      {
+        "text": "Reject",
+        "action": "handleVacation"
+      }
+    ]
+  },
+  {
+    "step": "open-daily",
+    "dailyOpened": "openDailyPlanForGroup",
+    "daily": {
+      "id": "dispatcher-daily-plan-full",
+      "exists": true,
+      "hidden": false,
+      "h2": "Daily shift plan",
+      "buttonCount": 5,
+      "buttons": [
+        {
+          "text": "Back",
+          "action": "backFromPlanFullPage"
+        },
+        {
+          "text": "1 issues",
+          "action": "openOpsAttentionPanel"
+        },
+        {
+          "text": "Claim lock",
+          "action": "acquirePlanEditLock"
+        },
+        {
+          "text": "Edit",
+          "action": "openShiftCell"
+        },
+        {
+          "text": "Clear shift",
+          "action": "clearDailyShift"
+        }
+      ]
+    }
+  },
+  {
+    "step": "ops-stats",
+    "alerts": 1,
+    "crew": 4,
+    "needsAttentionBtn": true,
+    "healthBanner": true,
+    "groupCards": 0
+  },
+  {
+    "step": "attention",
+    "how": "api",
+    "exists": true,
+    "visible": true,
+    "cards": 1,
+    "navItems": 1,
+    "closeVisible": true,
+    "subtitle": "1 of 1"
+  },
+  {
+    "step": "monthly",
+    "monthlyOpen": "openMonthlyPlanForGroup",
+    "full": {
+      "id": "dispatcher-monthly-plans-full",
+      "exists": true,
+      "hidden": false,
+      "h2": "Monthly plan",
+      "buttonCount": 40,
+      "buttons": [
+        {
+          "text": "Back",
+          "action": "backFromPlanFullPage"
+        },
+        {
+          "text": "Vacation Requests",
+          "action": "switchSection"
+        },
+        {
+          "text": "No bus Alex NoBus is on duty 101.S02 without a bus.",
+          "action": "openOpsAttentionPanel"
+        },
+        {
+          "text": "Create empty plan",
+          "action": "createEmptyMonthlyPlan"
+        },
+        {
+          "text": "Alex NoBus",
+          "action": "focusMonthlyDriverPlan"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "101.S02",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "Sam Standby",
+          "action": "focusMonthlyDriverPlan"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        },
+        {
+          "text": "·",
+          "action": "openMonthlyDayEditForDriver"
+        }
+      ]
+    },
+    "hub": {
+      "id": "dispatcher-group-hub",
+      "exists": true,
+      "hidden": true,
+      "h2": "Grupa",
+      "buttonCount": 0,
+      "buttons": []
+    }
+  },
+  {
+    "step": "vehicles",
+    "rows": 0,
+    "text": "Vehicles — Line 101\n\nvehicles_panel_sub_group\n\n Operations center\nPlan needs attention\nClick here — one panel for every fix.\nNo bus\nAlex NoBus is on duty 101.S02 without a bus.\nAdd bus\n\nImport buses: TXT, CSV, XLSX or paste — one number per line.\n\nDrop TXT / CSV / XLSX here\nPreview import\nClear\nVehicle BUS-2\nReady · Depot A\nEdit\nRemove from this line\nDeactivate\nVehicle BUS-1\nReady · Depot A\nEdit\nRemove from this line\nDeactivate"
+  },
+  {
+    "step": "section-text",
+    "id": "dispatcher-messages",
+    "text": "Messages\n\nPersonal driver messages and group broadcasts — separate.\n\n Personal\n Group\nSend message to driver\nRecipient (Driver)\nAll drivers\nAlex NoBus [Line 101]\nSam Standby [Line 101]\nMessage template\nDelay: 5 minutes\nDelay: 10 minutes\nDelay: 15 minutes\nDelay: 20 minutes\nDelay: 30+ minutes\nDetour in effect — see detail\nStop cancelled — see detail\nTerminate service at end of line\nRoute change — ch"
+  },
+  {
+    "step": "section-text",
+    "id": "dispatcher-reports",
+    "text": "Filter:\nAll Groups\nLine 101\nLive Reports (Breakdowns & Delays)\nTIME\tDRIVER / BUS\tPROBLEM TYPE\tDETAILS & DESCRIPTION\tSEVERITY\tACTIONS\nNo drivers in this group"
+  },
+  {
+    "step": "section-text",
+    "id": "dispatcher-vacations",
+    "text": "Manage Vacation Requests\n\nApprove or reject pending requests\n\nDRIVER\tLEAVE TYPE\tPERIOD\tDAYS\tREASON\tACTION\n—\t\t-\tundefined days\tDemo leave request\t\nApprove\nReject"
+  },
+  {
+    "step": "section-text",
+    "id": "dispatcher-lost-found",
+    "text": "Lost & Found\n\nLog of lost items found by drivers in vehicles\n\nStatus\nOpen\nIn Depot\nStays on the bus\nReturned\nAll\nTIME\tDRIVER / BUS\tFOUND ITEM\tWHERE WAS ITEM FOUND?\tITEM DESCRIPTION (COLOR, BRAND, DETAILS)\tPHOTO (OPTIONAL)\tSTATUS\tACTION\nNo active reports from the route."
+  },
+  {
+    "step": "section-text",
+    "id": "dispatcher-live-map-section",
+    "text": "Map\n\nGPS tracking of active vehicles — optional, separate from the dashboard.\n\nLive Map & GPS Tracking\nGPS LIVE\n—\n—\n+\n−\n Leaflet | © OpenStreetMap © CARTO"
+  },
+  {
+    "step": "hub-discover",
+    "fromNav": false,
+    "fromOps": false
+  },
+  {
+    "step": "orphans",
+    "orphans": [
+      {
+        "id": "dispatcher-shifts",
+        "exists": true,
+        "inNav": false
+      },
+      {
+        "id": "dispatcher-daily-schedule",
+        "exists": true,
+        "inNav": false
+      },
+      {
+        "id": "dispatcher-group-hub",
+        "exists": true,
+        "inNav": false
+      }
+    ]
+  },
+  {
+    "step": "incident-ui",
+    "modalExists": false,
+    "reasonSelectInDom": false,
+    "freeTextReason": false
+  },
+  {
+    "step": "daily-aside",
+    "found": true,
+    "hidden": true,
+    "text": "\n                            \n                                \n                                Situation overview\n                            \n                            \n        \n            No bus\n"
+  },
+  {
+    "step": "daily-actions",
+    "open": true,
+    "uniqueActions": [
+      "backFromPlanFullPage",
+      "openOpsAttentionPanel",
+      "acquirePlanEditLock",
+      "openShiftCell",
+      "clearDailyShift"
+    ],
+    "cellish": 0
+  },
+  {
+    "step": "group-hub",
+    "how": null,
+    "hub": {
+      "id": "dispatcher-group-hub",
+      "exists": true,
+      "hidden": true,
+      "h2": "Grupa",
+      "buttonCount": 0,
+      "buttons": []
+    }
+  }
+]

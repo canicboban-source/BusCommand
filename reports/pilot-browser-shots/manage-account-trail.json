@@ -1,0 +1,26 @@
+{
+  "trail": [
+    {
+      "step": "09-sa-before-manage",
+      "note": "SA logged in",
+      "url": "http://127.0.0.1:8766/staff.html"
+    },
+    {
+      "step": "10-sa-manage-account-modal",
+      "note": "settings=true; footer= Start audited support Close",
+      "url": "http://127.0.0.1:8766/staff.html"
+    },
+    {
+      "step": "11-sa-start-audited-support",
+      "note": "supportModal=true",
+      "url": "http://127.0.0.1:8766/staff.html"
+    },
+    {
+      "step": "12-sa-close-detail",
+      "note": "closed=true",
+      "url": "http://127.0.0.1:8766/staff.html"
+    }
+  ],
+  "failed": false,
+  "manageText": "Manage account"
+}

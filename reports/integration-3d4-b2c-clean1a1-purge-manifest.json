@@ -1,0 +1,957 @@
+{
+  "manifestVersion": "3D.4-B2C-CLEAN1-A.1",
+  "checkpoint": "3D.4-B2C-CLEAN1-A.1",
+  "capturedAt": "2026-08-11T15:20:00.000Z",
+  "mode": "READ_ONLY_EXACT_MANIFEST",
+  "purgeExecuted": false,
+  "projectId": "buscommand-preview",
+  "databaseId": "(default)",
+  "companyId": "buscommand-staging-qa-no-real-data",
+  "runId": "BC-STG-B2C-20260811-5432cb",
+  "sensitiveFieldsOmitted": true,
+  "alternateActionsForbidden": true,
+  "ambiguityCount": 0,
+  "blagussCandidates": 0,
+  "verdict": "READY_FOR_OWNER_PURGE_APPROVAL",
+  "currentCounts": {
+    "admins": 2,
+    "dispatchers": 0,
+    "drivers": 1,
+    "groups": 1
+  },
+  "expectedPostcondition": {
+    "admins": 1,
+    "dispatchers": 0,
+    "drivers": 0,
+    "groups": 0,
+    "runAuthUsers": 0,
+    "activeShifts": 0,
+    "activeLocks": 0,
+    "nonterminalImportJobs": 0,
+    "persistentQaCa": 1,
+    "qaTenantRoot": "present",
+    "identityGuardUnchanged": true,
+    "identityGuardExpectedUpdateTime": "2026-08-11T14:22:34.387710Z",
+    "identityGuardExpectedRevision": 1,
+    "blaguss": "unchanged_out_of_scope"
+  },
+  "importJobRetentionDecision": {
+    "decision": "DELETE",
+    "appliesTo": [
+      "48bc7166-8fa7-40f9-a880-c9d7c486ecfe",
+      "ad44c56d-558e-458e-939a-96f051cae6ab"
+    ],
+    "rationale": "Production code retains completed monthly_plan_imports only for same-importId idempotency (staff-monthly-plan-import.js status===completed early return). There is no mandatory long-term retention/TTL requiring completed jobs to remain. Preview TTL is for prepared jobs only. Audit evidence remains in audit_log (RETAIN). Future QA runs must use new importIds. Therefore both run-scoped terminal jobs are DELETE with no optional retain alternative."
+  },
+  "retainFreeze": [
+    {
+      "id": "RETAIN-COMPANY-ROOT",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data",
+      "actionProposed": "RETAIN",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "createTime": "2026-08-11T13:58:42.776610Z",
+      "updateTime": "2026-08-11T13:58:42.776610Z",
+      "reason": "Persistent QA tenant root",
+      "mutationAllowed": false
+    },
+    {
+      "id": "RETAIN-PROFILE-MAIN",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/profile/main",
+      "actionProposed": "RETAIN",
+      "expectedExistence": true,
+      "createTime": "2026-08-11T13:58:42.776610Z",
+      "updateTime": "2026-08-11T13:58:42.776610Z",
+      "reason": "QA profile baseline",
+      "mutationAllowed": false
+    },
+    {
+      "id": "RETAIN-SETTINGS-MAIN",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/settings/main",
+      "actionProposed": "RETAIN",
+      "expectedExistence": true,
+      "createTime": "2026-08-11T13:58:42.776610Z",
+      "updateTime": "2026-08-11T13:58:42.776610Z",
+      "reason": "Plan/status/limits baseline",
+      "mutationAllowed": false
+    },
+    {
+      "id": "RETAIN-BRANDING-COLLECTION",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/branding",
+      "actionProposed": "RETAIN",
+      "expectedExistence": true,
+      "reason": "QA branding baseline collection present under tenant",
+      "mutationAllowed": false
+    },
+    {
+      "id": "RETAIN-AUDIT-LOG-COLLECTION",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/audit_log",
+      "actionProposed": "RETAIN",
+      "expectedExistence": true,
+      "reason": "Immutable audit residue; never delete",
+      "mutationAllowed": false
+    },
+    {
+      "id": "RETAIN-IDENTITY-GUARD",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/ops/driver_identity_guard",
+      "actionProposed": "RETAIN",
+      "expectedExistence": true,
+      "createTime": "2026-08-11T14:22:34.387710Z",
+      "updateTime": "2026-08-11T14:22:34.387710Z",
+      "expectedRevision": 1,
+      "reason": "Identity guard must remain completely unchanged (no revision bump, no updatedAt write)",
+      "mutationAllowed": false
+    },
+    {
+      "id": "RETAIN-PERSISTENT-CA-USER",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/users/jQYUfo1QjsgVw1zn5ez37ONLYI32",
+      "authUid": "jQYUfo1QjsgVw1zn5ez37ONLYI32",
+      "actionProposed": "RETAIN",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "expectedRole": "company_admin",
+      "createTime": "2026-08-11T14:05:42.533220Z",
+      "updateTime": "2026-08-11T14:05:42.533220Z",
+      "reason": "Persistent baseline QA Company Admin Firestore user",
+      "mutationAllowed": false
+    },
+    {
+      "id": "RETAIN-PERSISTENT-CA-AUTH",
+      "kind": "auth",
+      "authUid": "jQYUfo1QjsgVw1zn5ez37ONLYI32",
+      "actionProposed": "RETAIN",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "reason": "Persistent baseline QA Company Admin Auth UID",
+      "mutationAllowed": false
+    }
+  ],
+  "categoryInventory": [
+    {
+      "category": "shifts",
+      "action": "DELETE",
+      "ids": [
+        "DEL-SHIFT-2026-08-11",
+        "DEL-SHIFT-2026-08-12"
+      ]
+    },
+    {
+      "category": "schedules",
+      "action": "DELETE",
+      "ids": [
+        "DEL-SCHEDULE-2026-08"
+      ]
+    },
+    {
+      "category": "revisions",
+      "action": "VERIFY_ABSENT",
+      "note": "No separate revisions collection; revision fields live on shift docs that are DELETE targets"
+    },
+    {
+      "category": "confirmations",
+      "action": "VERIFY_ABSENT",
+      "ids": [
+        "VERIFY-ABSENT-SHIFT-CONFIRMATIONS",
+        "VERIFY-ABSENT-CONFIRMATION-OUTBOX"
+      ]
+    },
+    {
+      "category": "monthly_import_jobs",
+      "action": "DELETE",
+      "ids": [
+        "DEL-IMPORT-JOB-48BC7166",
+        "DEL-IMPORT-JOB-AD44C56D"
+      ],
+      "retentionDecision": "DELETE"
+    },
+    {
+      "category": "import_locks",
+      "action": "VERIFY_ABSENT",
+      "ids": [
+        "VERIFY-ABSENT-IMPORT-LOCKS"
+      ]
+    },
+    {
+      "category": "chunks_appliedChunks",
+      "action": "N/A_FIELD_ON_JOB",
+      "note": "appliedChunks field deleted with job docs; no chunk subcollections"
+    },
+    {
+      "category": "service_plan",
+      "action": "DELETE",
+      "ids": [
+        "DEL-SERVICE-PLAN"
+      ]
+    },
+    {
+      "category": "duties",
+      "action": "DELETE",
+      "ids": [
+        "DEL-DUTY-543201-S01"
+      ]
+    },
+    {
+      "category": "buses",
+      "action": "VERIFY_ABSENT",
+      "ids": [
+        "VERIFY-ABSENT-BUSES"
+      ]
+    },
+    {
+      "category": "driver_profile",
+      "action": "DELETE",
+      "ids": [
+        "DEL-DRIVER-PROFILE"
+      ]
+    },
+    {
+      "category": "driver_credentials",
+      "action": "DELETE",
+      "ids": [
+        "DEL-DRIVER-CREDENTIALS"
+      ]
+    },
+    {
+      "category": "group_membership_references",
+      "action": "DELETE_WITH_DRIVER_PROFILE",
+      "note": "knownGroupIds/groupId/lineId on driver profile; no separate membership docs"
+    },
+    {
+      "category": "group_543201",
+      "action": "DELETE",
+      "ids": [
+        "DEL-GROUP-543201"
+      ]
+    },
+    {
+      "category": "run_ca_firestore_user",
+      "action": "DELETE",
+      "ids": [
+        "DEL-RUN-CA-USER"
+      ]
+    },
+    {
+      "category": "run_ca_auth",
+      "action": "DELETE",
+      "ids": [
+        "DEL-RUN-CA-AUTH"
+      ]
+    },
+    {
+      "category": "driver_auth",
+      "action": "DELETE",
+      "ids": [
+        "DEL-RUN-DRIVER-AUTH"
+      ]
+    },
+    {
+      "category": "dispo_firestore_auth",
+      "action": "VERIFY_ABSENT",
+      "ids": [
+        "VERIFY-ABSENT-DISPO-USER",
+        "VERIFY-ABSENT-DISPO-AUTH"
+      ]
+    },
+    {
+      "category": "audit_residue",
+      "action": "RETAIN",
+      "ids": [
+        "RETAIN-AUDIT-LOG-COLLECTION"
+      ]
+    },
+    {
+      "category": "identity_guard",
+      "action": "RETAIN_UNCHANGED",
+      "ids": [
+        "RETAIN-IDENTITY-GUARD"
+      ]
+    }
+  ],
+  "authScope": {
+    "retain": [
+      "jQYUfo1QjsgVw1zn5ez37ONLYI32"
+    ],
+    "delete": [
+      "xfoYMF95iUdBWUKQnMKyLlLMuMh1",
+      "5b3d1050-a58b-4d05-9949-f90fbcb73593"
+    ],
+    "verifyAbsent": [
+      "rbIR3IRkbne9s742q6ci5dI3hf12"
+    ],
+    "noOtherAuthUsersInScope": true,
+    "authDeletesMustBeLast": true,
+    "authDeleteOrderAfterFirestore": true
+  },
+  "resources": [
+    {
+      "id": "VERIFY-ABSENT-DISPO-USER",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/users/rbIR3IRkbne9s742q6ci5dI3hf12",
+      "authUid": "rbIR3IRkbne9s742q6ci5dI3hf12",
+      "actionProposed": "VERIFY_ABSENT",
+      "expectedExistence": false,
+      "runOwnershipProofs": [
+        {
+          "source": "firestore-list",
+          "ref": "companies/buscommand-staging-qa-no-real-data/users",
+          "fact": "users collection contains only persistent+run CA"
+        },
+        {
+          "source": "b2c-log",
+          "ref": "reports/integration-3d4b2c-logs/09-cleanup-blocker.txt",
+          "fact": "dispo hard-deleted via product path"
+        }
+      ],
+      "deleteOrder": 1
+    },
+    {
+      "id": "VERIFY-ABSENT-DISPO-AUTH",
+      "kind": "auth",
+      "authUid": "rbIR3IRkbne9s742q6ci5dI3hf12",
+      "actionProposed": "VERIFY_ABSENT",
+      "expectedExistence": false,
+      "runOwnershipProofs": [
+        {
+          "source": "auth-list",
+          "ref": "rbIR3IRkbne9s742q6ci5dI3hf12",
+          "fact": "Auth users list lacks dispo UID"
+        },
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/users/rbIR3IRkbne9s742q6ci5dI3hf12",
+          "fact": "Firestore user absent"
+        }
+      ],
+      "deleteOrder": 2
+    },
+    {
+      "id": "VERIFY-ABSENT-IMPORT-LOCKS",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/monthly_plan_import_locks",
+      "actionProposed": "VERIFY_ABSENT",
+      "expectedExistence": false,
+      "expectedDocCount": 0,
+      "note": "collection listable empty (0 docs)",
+      "deleteOrder": 3
+    },
+    {
+      "id": "VERIFY-ABSENT-PLAN-LOCKS",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/plan_locks",
+      "actionProposed": "VERIFY_ABSENT",
+      "expectedExistence": false,
+      "expectedDocCount": 0,
+      "deleteOrder": 4
+    },
+    {
+      "id": "VERIFY-ABSENT-BUSES",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/buses",
+      "actionProposed": "VERIFY_ABSENT",
+      "expectedExistence": false,
+      "expectedDocCount": 0,
+      "deleteOrder": 5
+    },
+    {
+      "id": "VERIFY-ABSENT-SHIFT-CONFIRMATIONS",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/shift_confirmations",
+      "actionProposed": "VERIFY_ABSENT",
+      "expectedExistence": false,
+      "expectedDocCount": 0,
+      "note": "revisions/confirmations: confirmedByDriver=false on shifts; no shift_confirmations docs",
+      "deleteOrder": 6
+    },
+    {
+      "id": "VERIFY-ABSENT-CONFIRMATION-OUTBOX",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/confirmation_outbox",
+      "actionProposed": "VERIFY_ABSENT",
+      "expectedExistence": false,
+      "expectedDocCount": 0,
+      "deleteOrder": 7
+    },
+    {
+      "id": "VERIFY-ABSENT-DRIVER-SESSIONS",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/driver_sessions",
+      "actionProposed": "VERIFY_ABSENT",
+      "expectedExistence": false,
+      "expectedDocCount": 0,
+      "deleteOrder": 8
+    },
+    {
+      "id": "VERIFY-ABSENT-IMPORT-CHUNK-SUBCOLLECTIONS",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/monthly_plan_imports/48bc7166-8fa7-40f9-a880-c9d7c486ecfe",
+      "actionProposed": "VERIFY_ABSENT",
+      "expectedExistence": true,
+      "note": "appliedChunks is a field on job docs (value 1), not a subcollection; no chunks/appliedChunks subcollections under import jobs",
+      "relatedFieldOnly": "appliedChunks",
+      "deleteOrder": 9
+    },
+    {
+      "id": "DEL-SHIFT-2026-08-11",
+      "kind": "firestore",
+      "projectId": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/shifts/5b3d1050-a58b-4d05-9949-f90fbcb73593_2026-08-11",
+      "actionProposed": "DELETE",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "createTime": "2026-08-11T14:27:50.952680Z",
+      "updateTime": "2026-08-11T14:29:09.582574Z",
+      "contentFingerprint": {
+        "driverId": "5b3d1050-a58b-4d05-9949-f90fbcb73593",
+        "groupId": "543201",
+        "date": "2026-08-11",
+        "dutyName": "543201.S01",
+        "importId": "48bc7166-8fa7-40f9-a880-c9d7c486ecfe",
+        "revision": 2
+      },
+      "runOwnershipProofs": [
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/shifts/5b3d1050-a58b-4d05-9949-f90fbcb73593_2026-08-11",
+          "fact": "shift doc driverId+date+groupId+importId"
+        },
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/monthly_plan_imports/48bc7166-8fa7-40f9-a880-c9d7c486ecfe",
+          "fact": "import job completed with same importId referenced by shift"
+        }
+      ],
+      "dependenciesMustBeRemovedBefore": [],
+      "deleteOrder": 10,
+      "abortIf": [
+        "updateTime mismatch",
+        "path missing when expectedExistence true",
+        "groupId!=543201",
+        "importId mismatch"
+      ]
+    },
+    {
+      "id": "DEL-SHIFT-2026-08-12",
+      "kind": "firestore",
+      "projectId": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/shifts/5b3d1050-a58b-4d05-9949-f90fbcb73593_2026-08-12",
+      "actionProposed": "DELETE",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "createTime": "2026-08-11T14:27:50.952680Z",
+      "updateTime": "2026-08-11T14:29:09.582574Z",
+      "contentFingerprint": {
+        "driverId": "5b3d1050-a58b-4d05-9949-f90fbcb73593",
+        "groupId": "543201",
+        "date": "2026-08-12",
+        "dutyName": "543201.S01",
+        "importId": "48bc7166-8fa7-40f9-a880-c9d7c486ecfe",
+        "revision": 2
+      },
+      "runOwnershipProofs": [
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/shifts/5b3d1050-a58b-4d05-9949-f90fbcb73593_2026-08-12",
+          "fact": "shift doc driverId+date+groupId+importId"
+        },
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/monthly_plan_imports/48bc7166-8fa7-40f9-a880-c9d7c486ecfe",
+          "fact": "import job completed with same importId referenced by shift"
+        }
+      ],
+      "dependenciesMustBeRemovedBefore": [],
+      "deleteOrder": 20,
+      "abortIf": [
+        "updateTime mismatch",
+        "path missing when expectedExistence true",
+        "groupId!=543201",
+        "importId mismatch"
+      ]
+    },
+    {
+      "id": "DEL-SCHEDULE-2026-08",
+      "kind": "firestore",
+      "projectId": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/schedules/5b3d1050-a58b-4d05-9949-f90fbcb73593_2026-08",
+      "actionProposed": "DELETE",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "createTime": "2026-08-11T14:27:51.075418Z",
+      "updateTime": "2026-08-11T14:29:09.686888Z",
+      "contentFingerprint": {
+        "driverId": "5b3d1050-a58b-4d05-9949-f90fbcb73593",
+        "groupId": "543201",
+        "month": "2026-08",
+        "importId": "48bc7166-8fa7-40f9-a880-c9d7c486ecfe"
+      },
+      "runOwnershipProofs": [
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/schedules/5b3d1050-a58b-4d05-9949-f90fbcb73593_2026-08",
+          "fact": "schedule month doc for run driverId"
+        },
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/shifts/5b3d1050-a58b-4d05-9949-f90fbcb73593_2026-08-11",
+          "fact": "paired shift docs for same driver/month"
+        }
+      ],
+      "dependenciesMustBeRemovedBefore": [
+        "DEL-SHIFT-2026-08-11",
+        "DEL-SHIFT-2026-08-12"
+      ],
+      "deleteOrder": 30,
+      "abortIf": [
+        "updateTime mismatch",
+        "path missing when expectedExistence true"
+      ]
+    },
+    {
+      "id": "DEL-IMPORT-JOB-48BC7166",
+      "kind": "firestore",
+      "projectId": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/monthly_plan_imports/48bc7166-8fa7-40f9-a880-c9d7c486ecfe",
+      "actionProposed": "DELETE",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "createTime": "2026-08-11T14:29:07.229938Z",
+      "updateTime": "2026-08-11T14:29:09.783298Z",
+      "contentFingerprint": {
+        "status": "completed",
+        "groupId": "543201",
+        "month": "2026-08",
+        "sourceName": "BC-STG-5432cb-monthly.csv",
+        "actorId": "rbIR3IRkbne9s742q6ci5dI3hf12",
+        "fingerprint": "d8dc9c338af0c24c856a4986d3b52f09e95477a8e0fac559d0d651394639357c",
+        "appliedChunks": 1
+      },
+      "retentionDecision": "DELETE",
+      "retentionRationale": "No production mandatory retention for completed monthly_plan_imports. PREVIEW_TTL applies to prepared previews only (server/staff-monthly-plan-import.js). Completed jobs enable same-importId idempotency only; future runs use new importIds. Audit trail remains in audit_log (RETAIN).",
+      "runOwnershipProofs": [
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/monthly_plan_imports/48bc7166-8fa7-40f9-a880-c9d7c486ecfe",
+          "fact": "terminal completed job fingerprint+sourceName+groupId"
+        },
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/shifts/5b3d1050-a58b-4d05-9949-f90fbcb73593_2026-08-11",
+          "fact": "shift importId points to this job"
+        }
+      ],
+      "dependenciesMustBeRemovedBefore": [
+        "DEL-SHIFT-2026-08-11",
+        "DEL-SHIFT-2026-08-12",
+        "DEL-SCHEDULE-2026-08"
+      ],
+      "deleteOrder": 40,
+      "abortIf": [
+        "updateTime mismatch",
+        "status!=completed",
+        "fingerprint mismatch",
+        "companyId mismatch"
+      ]
+    },
+    {
+      "id": "DEL-IMPORT-JOB-AD44C56D",
+      "kind": "firestore",
+      "projectId": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/monthly_plan_imports/ad44c56d-558e-458e-939a-96f051cae6ab",
+      "actionProposed": "DELETE",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "createTime": "2026-08-11T14:26:30.572887Z",
+      "updateTime": "2026-08-11T14:27:51.165119Z",
+      "contentFingerprint": {
+        "status": "completed",
+        "groupId": "543201",
+        "month": "2026-08",
+        "sourceName": "BC-STG-5432cb-monthly.csv",
+        "actorId": "rbIR3IRkbne9s742q6ci5dI3hf12",
+        "fingerprint": "c417a3200952122b03a2ac4aa9bbca6e2a45562493e6603bef0f1e75152a30eb",
+        "appliedChunks": 1
+      },
+      "retentionDecision": "DELETE",
+      "retentionRationale": "Same as DEL-IMPORT-JOB-48BC7166: completed import jobs are not under mandatory retention; DELETE both run-scoped terminal jobs.",
+      "runOwnershipProofs": [
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/monthly_plan_imports/ad44c56d-558e-458e-939a-96f051cae6ab",
+          "fact": "terminal completed job fingerprint+sourceName+groupId"
+        },
+        {
+          "source": "b2c-log",
+          "ref": "reports/integration-3d4b2c-logs/07-monthly-import.txt",
+          "fact": "run monthly import file BC-STG-5432cb-monthly.csv for group 543201"
+        }
+      ],
+      "dependenciesMustBeRemovedBefore": [
+        "DEL-SHIFT-2026-08-11",
+        "DEL-SHIFT-2026-08-12",
+        "DEL-SCHEDULE-2026-08"
+      ],
+      "deleteOrder": 50,
+      "abortIf": [
+        "updateTime mismatch",
+        "status!=completed",
+        "fingerprint mismatch",
+        "companyId mismatch"
+      ]
+    },
+    {
+      "id": "DEL-DUTY-543201-S01",
+      "kind": "firestore",
+      "projectId": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/service_plans/543201-543201-1-2026-08-01/duties/543201.S01",
+      "actionProposed": "DELETE",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "createTime": "2026-08-11T14:23:40.347047Z",
+      "updateTime": "2026-08-11T14:23:40.347047Z",
+      "contentFingerprint": {
+        "dutyId": "543201.S01",
+        "parentPlanId": "543201-543201-1-2026-08-01"
+      },
+      "runOwnershipProofs": [
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/service_plans/543201-543201-1-2026-08-01/duties/543201.S01",
+          "fact": "duty document under run plan"
+        },
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/service_plans/543201-543201-1-2026-08-01",
+          "fact": "parent plan sourceFileName BC-STG-5432cb-dienstplan.csv groupId 543201"
+        }
+      ],
+      "dependenciesMustBeRemovedBefore": [
+        "DEL-SHIFT-2026-08-11",
+        "DEL-SHIFT-2026-08-12"
+      ],
+      "deleteOrder": 60,
+      "abortIf": [
+        "updateTime mismatch",
+        "path missing when expectedExistence true"
+      ]
+    },
+    {
+      "id": "DEL-SERVICE-PLAN",
+      "kind": "firestore",
+      "projectId": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/service_plans/543201-543201-1-2026-08-01",
+      "actionProposed": "DELETE",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "createTime": "2026-08-11T14:23:40.347047Z",
+      "updateTime": "2026-08-11T14:23:40.882858Z",
+      "contentFingerprint": {
+        "status": "active",
+        "groupId": "543201",
+        "sourceFileName": "BC-STG-5432cb-dienstplan.csv",
+        "sourceHash": "aa9e647d5e36185335f8a9256469b5eb2a0376e2b93ca62c9f7948fa70688d35",
+        "publishedBy": "xfoYMF95iUdBWUKQnMKyLlLMuMh1"
+      },
+      "runOwnershipProofs": [
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/service_plans/543201-543201-1-2026-08-01",
+          "fact": "active plan groupId+sourceFileName+publishedBy run CA"
+        },
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/service_plans/543201-543201-1-2026-08-01/duties/543201.S01",
+          "fact": "paired duty 543201.S01 under plan"
+        }
+      ],
+      "dependenciesMustBeRemovedBefore": [
+        "DEL-DUTY-543201-S01"
+      ],
+      "deleteOrder": 70,
+      "abortIf": [
+        "updateTime mismatch",
+        "status!=active",
+        "sourceHash mismatch",
+        "groupId!=543201"
+      ]
+    },
+    {
+      "id": "DEL-DRIVER-CREDENTIALS",
+      "kind": "firestore",
+      "projectId": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/driver_credentials/5b3d1050-a58b-4d05-9949-f90fbcb73593",
+      "actionProposed": "DELETE",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "createTime": "2026-08-11T14:22:34.387710Z",
+      "updateTime": "2026-08-11T14:29:55.614057Z",
+      "contentFingerprint": {
+        "driverId": "5b3d1050-a58b-4d05-9949-f90fbcb73593"
+      },
+      "runOwnershipProofs": [
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/driver_credentials/5b3d1050-a58b-4d05-9949-f90fbcb73593",
+          "fact": "credentials doc id equals run driverId"
+        },
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/drivers/5b3d1050-a58b-4d05-9949-f90fbcb73593",
+          "fact": "paired public driver profile active=false groupId=543201"
+        }
+      ],
+      "dependenciesMustBeRemovedBefore": [
+        "DEL-SHIFT-2026-08-11",
+        "DEL-SHIFT-2026-08-12",
+        "DEL-SCHEDULE-2026-08"
+      ],
+      "deleteOrder": 80,
+      "abortIf": [
+        "updateTime mismatch",
+        "path missing when expectedExistence true"
+      ],
+      "sensitiveFieldsOmitted": true
+    },
+    {
+      "id": "DEL-DRIVER-PROFILE",
+      "kind": "firestore",
+      "projectId": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/drivers/5b3d1050-a58b-4d05-9949-f90fbcb73593",
+      "actionProposed": "DELETE",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "createTime": "2026-08-11T14:22:34.387710Z",
+      "updateTime": "2026-08-11T14:33:18.488802Z",
+      "contentFingerprint": {
+        "active": false,
+        "groupId": "543201",
+        "name": "BC-STG 5432cb Driver",
+        "companyId": "buscommand-staging-qa-no-real-data"
+      },
+      "runOwnershipProofs": [
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/drivers/5b3d1050-a58b-4d05-9949-f90fbcb73593",
+          "fact": "inactive run driver profile groupId 543201"
+        },
+        {
+          "source": "auth",
+          "ref": "5b3d1050-a58b-4d05-9949-f90fbcb73593",
+          "fact": "Auth UID equals driverId for run driver"
+        }
+      ],
+      "dependenciesMustBeRemovedBefore": [
+        "DEL-DRIVER-CREDENTIALS"
+      ],
+      "deleteOrder": 90,
+      "abortIf": [
+        "updateTime mismatch",
+        "active!=false",
+        "companyId mismatch",
+        "groupId!=543201"
+      ]
+    },
+    {
+      "id": "DEL-GROUP-543201",
+      "kind": "firestore",
+      "projectId": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/groups/543201",
+      "actionProposed": "DELETE",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "createTime": "2026-08-11T14:20:08.827238Z",
+      "updateTime": "2026-08-11T14:20:08.827238Z",
+      "contentFingerprint": {
+        "name": "BC-STG-5432cb Line",
+        "companyId": "buscommand-staging-qa-no-real-data",
+        "active": true
+      },
+      "runOwnershipProofs": [
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/groups/543201",
+          "fact": "group name BC-STG-5432cb Line"
+        },
+        {
+          "source": "b2c-log",
+          "ref": "reports/integration-3d4b2c-logs/04-group-dispo-created.txt",
+          "fact": "run created group 543201"
+        }
+      ],
+      "dependenciesMustBeRemovedBefore": [
+        "DEL-DRIVER-PROFILE",
+        "DEL-SERVICE-PLAN",
+        "DEL-SHIFT-2026-08-11",
+        "DEL-SHIFT-2026-08-12",
+        "DEL-SCHEDULE-2026-08"
+      ],
+      "deleteOrder": 100,
+      "abortIf": [
+        "updateTime mismatch",
+        "name mismatch",
+        "companyId mismatch",
+        "findCompanyGroupReferences nonempty"
+      ]
+    },
+    {
+      "id": "DEL-RUN-CA-USER",
+      "kind": "firestore",
+      "projectId": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/users/xfoYMF95iUdBWUKQnMKyLlLMuMh1",
+      "authUid": "xfoYMF95iUdBWUKQnMKyLlLMuMh1",
+      "actionProposed": "DELETE",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "createTime": "2026-08-11T14:16:50.927344Z",
+      "updateTime": "2026-08-11T14:16:50.927344Z",
+      "contentFingerprint": {
+        "role": "company_admin",
+        "name": "BC-STG-B2C-20260811-5432cb Run CA",
+        "companyId": "buscommand-staging-qa-no-real-data",
+        "active": true
+      },
+      "runOwnershipProofs": [
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/users/xfoYMF95iUdBWUKQnMKyLlLMuMh1",
+          "fact": "run-prefixed CA name + role company_admin"
+        },
+        {
+          "source": "auth",
+          "ref": "xfoYMF95iUdBWUKQnMKyLlLMuMh1",
+          "fact": "matching Auth user UID present"
+        }
+      ],
+      "dependenciesMustBeRemovedBefore": [
+        "DEL-GROUP-543201"
+      ],
+      "deleteOrder": 110,
+      "abortIf": [
+        "updateTime mismatch",
+        "uid==persistentCaUid",
+        "companyId mismatch",
+        "role mismatch"
+      ]
+    },
+    {
+      "id": "DEL-RUN-CA-AUTH",
+      "kind": "auth",
+      "projectId": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "authUid": "xfoYMF95iUdBWUKQnMKyLlLMuMh1",
+      "actionProposed": "DELETE",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "contentFingerprint": {
+        "authUid": "xfoYMF95iUdBWUKQnMKyLlLMuMh1",
+        "pairedFirestoreUserPath": "companies/buscommand-staging-qa-no-real-data/users/xfoYMF95iUdBWUKQnMKyLlLMuMh1"
+      },
+      "runOwnershipProofs": [
+        {
+          "source": "auth",
+          "ref": "xfoYMF95iUdBWUKQnMKyLlLMuMh1",
+          "fact": "Auth UID is run CA"
+        },
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/users/xfoYMF95iUdBWUKQnMKyLlLMuMh1",
+          "fact": "paired Firestore user deleted in prior step"
+        }
+      ],
+      "dependenciesMustBeRemovedBefore": [
+        "DEL-RUN-CA-USER"
+      ],
+      "deleteOrder": 200,
+      "abortIf": [
+        "authUid==persistentCaUid",
+        "Auth user missing when expected",
+        "Firestore user still present"
+      ]
+    },
+    {
+      "id": "DEL-RUN-DRIVER-AUTH",
+      "kind": "auth",
+      "projectId": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "authUid": "5b3d1050-a58b-4d05-9949-f90fbcb73593",
+      "actionProposed": "DELETE",
+      "expectedExistence": true,
+      "expectedCompanyId": "buscommand-staging-qa-no-real-data",
+      "contentFingerprint": {
+        "authUid": "5b3d1050-a58b-4d05-9949-f90fbcb73593",
+        "pairedDriverPath": "companies/buscommand-staging-qa-no-real-data/drivers/5b3d1050-a58b-4d05-9949-f90fbcb73593"
+      },
+      "runOwnershipProofs": [
+        {
+          "source": "auth",
+          "ref": "5b3d1050-a58b-4d05-9949-f90fbcb73593",
+          "fact": "Auth UID equals run driverId"
+        },
+        {
+          "source": "firestore",
+          "ref": "companies/buscommand-staging-qa-no-real-data/drivers/5b3d1050-a58b-4d05-9949-f90fbcb73593",
+          "fact": "paired driver profile (deleted earlier)"
+        }
+      ],
+      "dependenciesMustBeRemovedBefore": [
+        "DEL-DRIVER-PROFILE",
+        "DEL-DRIVER-CREDENTIALS",
+        "DEL-RUN-CA-USER"
+      ],
+      "deleteOrder": 210,
+      "abortIf": [
+        "authUid==persistentCaUid",
+        "Auth user missing when expected"
+      ]
+    }
+  ],
+  "deleteOrderSummary": [
+    "VERIFY absences (dispo/locks/buses/confirmations/sessions)",
+    "DELETE shifts 11+12",
+    "DELETE schedule",
+    "DELETE both terminal import jobs",
+    "DELETE duty then service plan",
+    "DELETE driver credentials then profile",
+    "DELETE group 543201",
+    "DELETE run CA Firestore user",
+    "DELETE Auth run CA then Auth driver (last)",
+    "POST-CHECK counts 1/0/0/0 + guard updateTime/revision unchanged + BLAGUSS untouched"
+  ],
+  "forbiddenPatterns": [
+    "wildcard delete",
+    "collection-wide delete",
+    "recursiveDelete",
+    "deleteCompanyAtomic",
+    "companies/buscommand-staging-qa-no-real-data/** as delete",
+    "identity guard write"
+  ],
+  "clean1bAbortContract": {
+    "requireExactManifestSha256": true,
+    "abortOnUpdateTimeMismatch": true,
+    "abortOnUidMismatch": true,
+    "abortOnCompanyIdMismatch": true,
+    "abortOnMissingRunProof": true,
+    "abortOnPersistentCaInDeleteSet": true,
+    "abortOnBlagussPath": true,
+    "authOnlyAfterFirestoreSuccess": true
+  },
+  "manifestSha256": "d95dc839d9fa30677a27a9d45a19722e94d2c35b087c293aa2c9ebc6c11c70da",
+  "manifestCanonicalization": "sha256 over canonical JSON with recursively sorted object keys; arrays preserve order; excludes manifestSha256 and manifestCanonicalization"
+}

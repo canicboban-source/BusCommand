@@ -1,0 +1,359 @@
+﻿
+> ∩╣ú Admin SDK aggregation and filtered queries return expected counts (0.173ms) # SKIP
+  ∩╣ú uuid resolves to a patched version for every Admin SDK dependent (0.1551ms) # SKIP
+  Γ£û unauthenticated clients cannot read company data (1.164ms)
+  Γ£û mustChangeLoginCode blocks every role from Firestore (0.1196ms)
+  Γ£û revoking staff sessions blocks a token issued before the cutoff (0.0742ms)
+  Γ£û driver reads only their own driver profile (0.0755ms)
+  Γ£û driver master profile writes are server-only for every browser role (0.0957ms)
+> Γ£ö client and server wire bus expectedRevision without reason fields (4.9722ms)
+  Γ£ö same group active bus is not a cross-group conflict (1.3495ms)
+  Γ£ö other group active bus same day warns (1.3561ms)
+  Γ£ö off vacation sick clear do not warn (0.2978ms)
+  Γ£ö non-overlapping times do not warn; missing times do (0.405ms)
+  Γ£ö formatCrossGroupBusWarn fills placeholders (0.275ms)
+  Γ£ö CA personal-code validation requires 5ΓÇô12 digit login PIN (5.8831ms)
+> Γ£ö revision requires expectedRevision and rejects stale values (0.4713ms)
+  Γ£ö assigned shift resets confirmation and binds the new revision (0.416ms)
+> Γ£ö two writers: second stale expectedRevision loses without overwriting (0.3575ms)
+  Γ£ö confirmation is valid only for the bound revision (0.2848ms)
+  Γ£ö assignment route wires revision conflict and schedule mirror (1.2611ms)
+  Γ£ö client sync skips shifts and schedules writes (2.8369ms)
+> Γ£ö client monthly and daily assignment go through persistShift with expectedRevision (2.0594ms)
+  Γ£ö soft-pilot bootstrap defaults keep supportSession and scheduler OFF (2.3237ms)
+  Γ£ö provisioning creates companies with supportSession and liveGps disabled (0.6455ms)
+  Γ£ö production SMS defaults to none when unset (2.8783ms)
+  Γ£ö effective SR translations use Latin ekavian Serbian (7.1807ms)
+  Γ£ö production source outside language catalogs has no listed ijekavian fragments (123.6987ms)
+  Γ£ö staff API rejects requests without a bearer token (107.1371ms)
+> Γ£û failing tests:
+  
+  test at tests\rules\firestore.rules.test.js:104:1
+  Γ£û unauthenticated clients cannot read company data (1.164ms)
+    Error: The host and port of the firestore emulator must be specified. (You may wrap the test script with `firebase 
+emulators:exec './your-test-script'` to enable automatic discovery, or specify manually via 
+initializeTestEnvironment({firestore: {host, port}}).
+        at assertEmulatorRunning 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\node_modules\@firebase\rules-unit-testing\dist\index.cjs.js:359:19)
+        at initializeTestEnvironment 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\node_modules\@firebase\rules-unit-testing\dist\index.cjs.js:493:9)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:27:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\firestore.rules.test.js:67:13)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.runHook (node:internal/test_runner/test:1269:20)
+        at after (node:internal/test_runner/test:1322:20)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\server-owned-writes.test.js:107:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\server-owned-writes.test.js:107:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\server-owned-writes.test.js:107:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\server-owned-writes.test.js:107:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\server-owned-writes.test.js:107:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\server-owned-writes.test.js:107:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\server-owned-writes.test.js:107:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\server-owned-writes.test.js:107:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\server-owned-writes.test.js:107:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\server-owned-writes.test.js:107:15)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.createHook (node:internal/test_runner/test:1103:33)
+        at test.before (node:internal/test_runner/harness:426:12)
+>       at TestContext.<anonymous> 
+(C:\Users\cane\Desktop\BusCommand-ca-monthly-import\tests\rules\server-owned-writes.test.js:122:13)
+        at TestHook.runInAsyncScope (node:async_hooks:226:14)
+        at TestHook.run (node:internal/test_runner/test:1382:25)
+        at TestHook.run (node:internal/test_runner/test:1726:18)
+        at TestHook.run (node:internal/util:581:20)
+        at Test.runHook (node:internal/test_runner/test:1269:20)
+        at after (node:internal/test_runner/test:1322:20)
+>   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+>   + actual - expected
+    
+      {
+        available: false,
+        daysRemaining: null,
+    +   licenseStatus: 'unknown',
+    +   packageLabel: null,
+>       at TestContext.<anonymous> 
+(file:///C:/Users/cane/Desktop/BusCommand-ca-monthly-import/tests/unit/company-admin-overview.test.mjs:90:10)
+        at Test.runInAsyncScope (node:async_hooks:226:14)
+        at Test.run (node:internal/test_runner/test:1382:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+        at Test.postRun (node:internal/test_runner/test:1522:19)
+        at Test.run (node:internal/test_runner/test:1447:12)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+>     expected: { plan: 'unknown', status: 'unknown', daysRemaining: null, available: false },
+      operator: 'deepStrictEqual',
+      diff: 'simple'
+    }
+  
+  test at tests\unit\sa-trial-banner.test.mjs:77:1
+  Γ£û updateTrialBadge shows CA package badge during trial (3.4945ms)
+>   ReferenceError: t is not defined
+        at Object.updateTrialBadge (evalmachine.<anonymous>:138:9)
+>       at TestContext.<anonymous> 
+(file:///C:/Users/cane/Desktop/BusCommand-ca-monthly-import/tests/unit/sa-trial-banner.test.mjs:89:9)
+        at Test.runInAsyncScope (node:async_hooks:226:14)
+        at Test.run (node:internal/test_runner/test:1382:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+        at Test.postRun (node:internal/test_runner/test:1522:19)
+        at Test.run (node:internal/test_runner/test:1447:12)
+        at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+>   AssertionError [ERR_ASSERTION]: The input did not match the regular expression 
+/data-i18n="add_new_company">Register New Company</. Input:
+    
+    '<!DOCTYPE html>\r\n' +
+      '<html lang="en" data-app-surface="staff">\r\n' +
+      '<head>\r\n' +
+      '    <meta charset="UTF-8">\r\n' +
+      '    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, 
+user-scalable=no">\r\n' +
+>       at TestContext.<anonymous> 
+(file:///C:/Users/cane/Desktop/BusCommand-ca-monthly-import/tests/unit/ui-security.test.mjs:66:10)
+        at Test.runInAsyncScope (node:async_hooks:226:14)
+        at Test.run (node:internal/test_runner/test:1382:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+        at Test.postRun (node:internal/test_runner/test:1522:19)
+        at Test.run (node:internal/test_runner/test:1447:12)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+>     expected: /data-i18n="add_new_company">Register New Company</,
+      operator: 'match',
+      diff: 'simple'
+    }
+
+

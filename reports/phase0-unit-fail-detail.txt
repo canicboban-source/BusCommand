@@ -1,0 +1,31 @@
+﻿Γ£ö package caps match Phase 2 model (1.1476ms)
+Γ£ö legacy plan values normalize to package types (1.1305ms)
+Γ£ö resolveLicenseSnapshot derives trial countdown (1.8969ms)
+Γ£ö SA companies panel uses table rows and create modal (5.3349ms)
+Γ£ö messages send button forced to primary blue; attention uses resolve label (1.5433ms)
+Γ£ö isTrialBadgeRoleAllowed only allows company-admin (4.4221ms)
+Γ£û updateTrialBadge shows CA package badge during trial (1.7342ms)
+Γ£ö updateTrialBadge hides chips for Super Admin (3.4348ms)
+Γ£ö staff HTML keeps license badge slot and connection status (3.4017ms)
+Γä╣ tests 9
+Γä╣ suites 0
+Γä╣ pass 8
+Γä╣ fail 1
+Γä╣ cancelled 0
+Γä╣ skipped 0
+Γä╣ todo 0
+Γä╣ duration_ms 255.2064
+
+Γ£û failing tests:
+
+test at tests\unit\sa-trial-banner.test.mjs:77:1
+Γ£û updateTrialBadge shows CA package badge during trial (1.7342ms)
+  ReferenceError: t is not defined
+      at Object.updateTrialBadge (evalmachine.<anonymous>:138:9)
+      at TestContext.<anonymous> (file:///C:/Users/cane/Desktop/BusCommand-ca-monthly-import/tests/unit/sa-trial-banner.test.mjs:89:9)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)

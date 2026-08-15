@@ -1,0 +1,956 @@
+
+=== check:secrets ===
+CMD: npm run check:secrets
+
+> buscommand-server@1.0.10 check:secrets
+> node scripts/check-no-secrets.js
+
+check-no-secrets: OK
+
+EXIT=0
+=== lint ===
+CMD: npm run lint
+
+> buscommand-server@1.0.10 lint
+> eslint js api-server.js server tests
+
+
+EXIT=0
+=== build ===
+CMD: npm run build
+
+> buscommand-server@1.0.10 build
+> node scripts/check-no-secrets.js && node scripts/clean-dist.js && node scripts/build-surface-html.js && node scripts/ensure-favicon.js && vite build && node scripts/copy-static-to-dist.js && node scripts/check-firebase-isolation.js && node scripts/check-bundle-budgets.js
+
+check-no-secrets: OK
+Cleaned generated dist/
+Wrote driver.html, staff.html, index.html (landing) from index.legacy-monolith.html
+  driver bytes: 77262 | staff bytes: 216463
+Synced surface HTML + brand assets GåÆ dist/
+FAVICON OK index.html -> /brand/logo-hero.png
+FAVICON OK staff.html -> /brand/logo-hero.png
+FAVICON OK driver.html -> /brand/logo-hero.png
+vite v6.4.3 building for production...
+transforming...
+G£ô 180 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                     0.74 kB Göé gzip:   0.44 kB
+dist/driver.html                                   77.90 kB Göé gzip:  15.44 kB
+dist/assets/staff-BK-QJZPE.html                   217.26 kB Göé gzip:  36.73 kB
+dist/staff.html                                   217.73 kB Göé gzip:  36.86 kB
+dist/assets/driver-BC0pKL4m.css                     8.12 kB Göé gzip:   2.22 kB
+dist/assets/staff-DfWZ0SEm.css                     91.96 kB Göé gzip:  13.82 kB
+dist/assets/init-Bis54pep.css                     123.59 kB Göé gzip:  20.47 kB
+dist/assets/shell-driver-Cgoc7xTN.js                1.44 kB Göé gzip:   0.63 kB
+dist/assets/office-parsers-BGZdoc9w.js              1.64 kB Göé gzip:   0.67 kB
+dist/assets/help-support-BTWpdAva.js                3.82 kB Göé gzip:   1.45 kB
+dist/assets/line-roster-TEtSug_i.js                 4.09 kB Göé gzip:   1.38 kB
+dist/assets/shell-staff-BoJkn8kq.js                 5.03 kB Göé gzip:   1.96 kB
+dist/assets/reports-BNigv18r.js                     7.67 kB Göé gzip:   2.66 kB
+dist/assets/msg-compose-Dg9XfZ_O.js                13.70 kB Göé gzip:   4.84 kB
+dist/assets/network-status-DkENUYPf.js             15.77 kB Göé gzip:   5.60 kB
+dist/assets/driver-CGFdBpIp.js                     16.93 kB Göé gzip:   5.32 kB
+dist/assets/company-admin-onboarding-BYx3u4MV.js  104.86 kB Göé gzip:  27.07 kB
+dist/assets/staff-BloqbE_U.js                     126.46 kB Göé gzip:  37.61 kB
+dist/assets/init-C1L-UsUo.js                      138.67 kB Göé gzip:  40.67 kB
+dist/assets/dashboard-DZPquUYN.js                 194.07 kB Göé gzip:  55.48 kB
+dist/assets/translations-Bgtx0jVw.js              375.71 kB Göé gzip: 113.65 kB
+G£ô built in 3.09s
+COPY translations.js
+COPY sw-driver.js
+COPY manifest-driver.webmanifest
+COPY templates/BusCommand_Drivers_Import_v1.csv
+COPY templates/BusCommand_Dienstplan_Blank_v1.csv
+COPY templates/BusCommand_Dienstplan_Blank_v1.xlsx
+COPY templates/BusCommand_Monthly_Group_Plan_Blank_v1.csv
+COPY templates/BusCommand_Monthly_Group_Plan_Blank_v1.xlsx
+COPY icons\driver-192.png
+COPY icons\driver-512.png
+COPY brand\logo-full.svg
+COPY brand\logo-hero.png
+COPY brand\logo-icon-512.png
+COPY brand\logo-mark.png
+COPY brand\logo-mark.svg
+COPY style.css
+COPY css/design-tokens.css
+COPY css/driver-pwa.css
+COPY css/brand.css
+COPY css/staff-desktop.css
+Firebase isolation check passed for source and build output.
+OK  driver app JS excl. translations: 171361 <= 225280
+OK  staff app JS excl. translations: 587068 <= 593920
+OK  largest non-translations driver chunk: 138668 <= 153600
+OK  translations chunk: 375710 <= 376832
+Bundle budgets OK (D17 soft-pilot).
+
+EXIT=0
+=== test:unit ===
+CMD: npm run test:unit
+
+> buscommand-server@1.0.10 test:unit
+> node --test tests/unit/**/*.test.js tests/unit/**/*.test.mjs
+
+G£ö actionAttr encodes handler name and args (2.2453ms)
+G£ö actionAttr supports self-only backdrop clicks (0.2583ms)
+G£ö actionAttr supports stopPropagation (0.1992ms)
+G£ö changeAttr encodes change handler with args-value pass (2.6392ms)
+G£ö clickElementById calls click on element (0.4432ms)
+G£ö driver auth API errors expose stable codes (not locale-only) (5.27ms)
+G£ö driver login UI never toasts raw Serbian server error strings (1.108ms)
+G£ö api_error_* keys exist for en/sr/de (5.7582ms)
+G£ö translateApiError maps code to active language, never raw server Serbian (2.2914ms)
+G£ö isStaffRole accepts only dispatcher / company-admin / superadmin (8.4872ms)
+G£ö driver surface rejects staff roles (3.2598ms)
+G£ö audit details redact credentials and bound nested payloads (2.3722ms)
+G£ö audit filters are bounded and state-sync accepts only known counters (0.5548ms)
+G£ö company audit listing filters by category and never returns sensitive fields (5.3595ms)
+G£ö bcrypt accepts a cost-12 hash generated by bcrypt 5 (1053.2294ms)
+G£ö blank Dienstplan CSV has headers and no sample duties (2.3108ms)
+G£ö blank Dienstplan XLSX has PLAN/SMENE/AKTIVNOSTI sheets without duties (4.9259ms)
+G£ö drivers import CSV is header-only official blank (0.4615ms)
+G£ö monthly group CSV and XLSX are header-only official blanks (1.1961ms)
+G£ö normalizeGroupIds merges legacy groupId and groupIds (3.718ms)
+G£ö attach keeps one record and adds membership (0.3748ms)
+G£ö buildNewBusGroups seeds single membership (0.2939ms)
+G£ö withDetachedGroup removes membership without deleting bus (0.3678ms)
+G£ö server CJS helpers stay aligned with ESM (0.3546ms)
+G£ö normalizeBusNumber accepts common fleet labels (3.7112ms)
+G£ö parseBusImportText reads one number per line (1.3461ms)
+G£ö parseBusImportText supports CSV with header aliases (0.4279ms)
+G£ö parseBusImportText supports comma CSV without header (0.2415ms)
+G£ö parseBusImportText supports paste lists on one line (0.2026ms)
+G£ö parseBusImportRows uses first sheet style rows (0.3611ms)
+G£ö classifyBusImport splits new existing and reactivate (0.7272ms)
+G£ö classifyBusImport attaches company bus from another group (0.2923ms)
+G£ö normalizeBusOpsStatus defaults to ready and rejects unknown (2.3361ms)
+G£ö normalizeBusGarage trims and caps length (0.3985ms)
+G£ö busIsAssignable requires active ready status (0.2836ms)
+G£ö busRevisionOf defaults missing revision to 0 (0.2002ms)
+G£ö client and server wire bus expectedRevision without reason fields (1.5998ms)
+G£ö same group active bus is not a cross-group conflict (1.8392ms)
+G£ö other group active bus same day warns (1.7965ms)
+G£ö off vacation sick clear do not warn (0.4591ms)
+G£ö non-overlapping times do not warn; missing times do (0.6605ms)
+G£ö formatCrossGroupBusWarn fills placeholders (0.2674ms)
+G£ö CA personal-code validation requires 5GÇô12 digit login PIN (3.2919ms)
+G£ö CA personal-code route writes loginCodeHash and activates the driver account (1.5562ms)
+G£ö after CA sets PIN, verifyDriverLogin accepts that PIN without OTP (2453.3509ms)
+G£ö normalizeShiftCode accepts F-codes, bare Dienst and Urlaub (2.019ms)
+G£ö Canic Boban August CSV from screenshot parses fully (3.1118ms)
+G£ö Canic Boban July and June CSV fixtures parse (1.958ms)
+G£ö Tag/Bus/Linie-Dienst sheet with inline Dienstplan f++r: name (1.3364ms)
+G£ö loose text parser recognizes F-codes and Von/bis month (3.3196ms)
+G£ö company audit API is admin-only and tenant scoped (3.406ms)
+G£ö audit writes are server-only and client sync uses a narrow endpoint (0.8045ms)
+G£ö company admin activity page exposes filters and server source status (2.3058ms)
+G£ö branding endpoint is Company Admin-only, tenant-bound, validated and audited (5.0056ms)
+G£ö Firestore keeps branding and audit writes server-only (0.6489ms)
+G£ö company onboarding reuses the validated branding save path without mutating the active brand preview (0.5416ms)
+G£ö branding draft trims the name, normalizes color and canonicalizes HTTPS logo (2.9045ms)
+G£ö branding draft rejects unsafe and malformed values (1.8042ms)
+G£ö branding draft accepts compressed data URL logos from file upload (0.9135ms)
+G£ö optional logo is accepted and normalized branding equality ignores casing and whitespace (0.3845ms)
+G£ö Company Admin driver page exposes a safe group-scoped CSV workflow (12.3498ms)
+G£ö driver directory supports filtering, pagination and immediate access revocation (2.9747ms)
+G£ö Company Admin can edit driver profile fields and CA-only EID/PIN controls (3.7737ms)
+G£ö driver account translations are complete in pilot languages (38.9345ms)
+G£ö group CRUD endpoints are Company Admin-only, validated, tenant-bound and audited (3.2977ms)
+G£ö group writes are server-only and global state sync skips the group collection (0.8813ms)
+G£ö onboarding uses the same validated group persistence path (0.4883ms)
+G£ö production group scope fails closed for foreign and unscoped records (2.9362ms)
+G£ö legacy unscoped groups are accepted only in explicit demo mode (1.576ms)
+G£ö dependencies block destructive deletion and drive truthful readiness (3.2604ms)
+G£ö group draft enforces immutable numeric ID and bounded metadata (0.5263ms)
+G£ö group search and readiness filter are deterministic and naturally sorted (25.1593ms)
+G£ö wizard stays hidden when group and dispatcher already exist (re-login safe) (3.2831ms)
+G£ö wizard ignores session-only done flag when provisioning is incomplete (0.2465ms)
+G£ö wizard starts at branding when nothing is provisioned (0.1819ms)
+G£ö wizard skips branding when name exists but no group (0.1749ms)
+G£ö wizard jumps to dispatcher step when group exists without dispatcher (0.2354ms)
+G£ö wizard does not show for non-CA roles (0.1721ms)
+G£ö wizard ignores malformed empty group and dispatcher entries (0.1856ms)
+G£ö onboarding UI uses resolveCompanyAdminOnboarding instead of done-flag alone (0.5756ms)
+G£ö Company Admin overview fails closed for foreign and unscoped production records (3.1696ms)
+G£ö legacy unscoped records are accepted only in explicit local demo mode (0.3051ms)
+G£ö group readiness requires drivers, buses, active plan and assigned dispatcher (0.5009ms)
+G£û production license state never fabricates a trial fallback or reuses another tenant (4.0835ms)
+G£ö overview markup exposes active plans and responsive table labels (2.5623ms)
+G£ö profile settings endpoint is Company Admin-only, tenant-bound, validated and transactionally audited (6.1859ms)
+G£ö company exports are server-owned, bounded, tenant-bound, non-cacheable and audited (1.0259ms)
+G£ö profile, branding, license settings and SOS cannot be changed through global client state sync (0.95ms)
+G£ö settings page contains no production SOS, print or destructive company controls (3.1706ms)
+G£ö company settings has complete pilot-language labels, policies and errors (1.3473ms)
+G£ö company settings derive headquarters timezone instead of trusting device input (1.1682ms)
+G£ö company settings validate country, pilot language and contact email (1.6609ms)
+G£ö settings equality compares normalized persisted business values (1.0379ms)
+G£ö dispatcher lifecycle endpoints are Company Admin-only, tenant-bound and rate limited (4.4954ms)
+G£ö dispatcher profiles are server-write-only and global sync skips them (1.31ms)
+G£ö team and onboarding share the same validated provisioning path without production plaintext state (4.4772ms)
+G£ö dispatcher team has complete pilot-language labels, states and errors (1.3463ms)
+G£ö dispatcher team markup is semantic, labelled and contains no legacy multi-select or fixed reset secret (2.8805ms)
+G£ö production team scope rejects foreign and unscoped records (2.8505ms)
+G£ö dispatcher draft requires strong bounded fields and at least one allowed group (2.1351ms)
+G£ö dispatcher profile edit validates name, email and optional phone (0.9796ms)
+G£ö group normalization, readiness and filtering are deterministic (20.7398ms)
+G£ö driver export contains only safe operational fields and no credentials (7.2184ms)
+G£ö CSV export neutralizes spreadsheet formulas and quotes every cell (1.8658ms)
+G£ö unsupported and oversized exports fail closed (27.2868ms)
+G£ö CA group/team pickers see Firestore groups after companyId stamp (2.5732ms)
+G£ö CA group delete deps count buses attached only via groupIds (3.1743ms)
+G£ö company group IDs are bounded numeric line identifiers (3.2441ms)
+G£ö server detects every supported group dependency without duplicate labels (1.7993ms)
+G£ö server reports an empty group as unreferenced (3.2741ms)
+G£ö server blocks delete when bus only references group via groupIds (1.5362ms)
+G£ö server derives the same headquarters timezone and normalizes profile settings (4.7256ms)
+G£ö copy-static-to-dist includes shared style.css and design tokens (1.898ms)
+G£ö confirm modal CSS hides closed overlay from pointer events (6.8247ms)
+G£ö api-server allows localhost CORS ports outside production for Vite crossorigin assets (1.6778ms)
+G£ö closed overlay modals use display:none so CSS failure cannot leave SOS open (2.4492ms)
+G£ö daily plan builds selected drivers from group shifts after monthly import (3.0014ms)
+G£ö daily plan resolves driver name from driverId when name is missing (0.4828ms)
+G£ö daily plan builds display name from firstName/lastName when name is empty (0.2745ms)
+G£ö daily plan is constrained to today and directs future changes to monthly plan (9.6293ms)
+G£ö daily driver replacement opens the guided incident flow before changing the plan (1.494ms)
+G£ö truly empty daily slot still supports a direct single assignment (2.5715ms)
+G£ö daily replacement guidance exists in EN SR and DE (2.5561ms)
+G£ö packaged demo baseline module is removed (1.3116ms)
+G£ö bootstrap never imports demo baseline seed (2.0128ms)
+G£ö runtime activates local state only via QA harness, never mode=demo URL (0.3989ms)
+G£ö state layer never auto-seeds platform admin credentials (0.2091ms)
+G£ö uuid is pinned above the advisory range for every transitive dependent (1.9087ms)
+G£ö firebase-admin stays on the namespaced major that the server code targets (0.1712ms)
+G£ö server source uses the namespaced Admin SDK surface consistently (0.6678ms)
+G£ö design tokens declare the -º33 catalogue (1.6996ms)
+G£ö staff urgent-action and density consume tokens, not raw amber hex (1.3569ms)
+G£ö driver surface page pad uses density tokens (0.302ms)
+G£ö style.css does not redeclare the light-theme token block (0.3767ms)
+G£ö dispatcher driver loading is constrained to assigned groups (1.885ms)
+G£ö dispatcher bus management uses authenticated group-scoped APIs (8.5385ms)
+G£ö daily plan Edit opens the visible shift editor before focusing its form (1.5759ms)
+G£ö staff controls keep contrast when Windows renders a light native select popup (8.2521ms)
+G£ö dispatcher monthly plan uses a dynamic month selector and has no upload duplicate (4.3156ms)
+G£ö Firestore dispatcher driver load queries knownGroupIds array-contains (2.6996ms)
+G£ö server import stores knownGroupIds and loads Dispo drivers via multi-group helper (1.8739ms)
+G£ö dispatcher loads and observes every operational collection by assigned group (4.8033ms)
+G£ö server-created dispatcher resources persist canonical groupId (0.7286ms)
+G£ö daily and monthly group cards register working delegated handlers (6.2298ms)
+G£ö report creation stores a server-derived group and resolution is dispatcher-only, scoped and audited (5.157ms)
+G£ö report writes are server-only and global state sync cannot bypass lifecycle (2.2773ms)
+G£ö report UI has one locked resolution path, no delete and hides resolved records from dashboard alerts (0.8062ms)
+G£ö report lifecycle normalizes legacy statuses without keeping resolved alerts active (1.2652ms)
+G£ö dispatcher reports fail closed outside assigned groups and production requires a stable identity (1.2588ms)
+G£ö operational sorting keeps active newest first and resolved records in history (0.4031ms)
+G£ö cold load uses own profile groups when claims omit groups (2.9905ms)
+G£ö hard refresh deterministically restores the same assigned group (1.9142ms)
+G£ö existing profile is authoritative over stale claims (0.4386ms)
+G£ö group IDs are trimmed, unique and stable (0.3217ms)
+G£ö dispatcher create-group control remains unavailable (2.7934ms)
+G£ö dispatcher visibility merges claim groups with Firestore dispatcher doc (2.8641ms)
+G£ö dispatcher group list also merges claim groups with stale Firestore doc (0.4895ms)
+(node:10100) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+G£ö withDetachedGroup removes line membership and keeps company bus (2.419ms)
+G£ö inactive bus is not assignable (0.2486ms)
+G£ö clearDriverLineMembership removes line visibility for dispatcher (0.9805ms)
+G£ö lineDetachGroupIds includes subgroups (0.2811ms)
+G£ö incident reason lists include sick and ac_climate (1.7447ms)
+G£ö activation OTP is six digits and never the shared 123456 constant path (2.0537ms)
+G£ö OTP verifies within TTL and fails when expired or consumed (38.5809ms)
+G£ö personal login code requires 5-12 digits (0.4298ms)
+G£ö SMS stub never echoes plaintext codes and production defaults to none (0.9791ms)
+G£ö Twilio adapter sends form body and never returns plaintext OTP (1.2274ms)
+G£ö seven.io adapter sends form body and never returns plaintext OTP (0.5587ms)
+G£ö import and resend pass OTP into the SMS adapter (1.4546ms)
+G£ö bcrypt round-trip for hashed OTP (16.1308ms)
+G£ö driver first login uses a masked custom activation modal and no native prompt (3.5727ms)
+G£ö pending activation cannot initialize the dashboard and cancel signs out (0.8244ms)
+G£ö Escape, backdrop close and browser Back all cancel pending activation (0.514ms)
+G£ö all operational UI roots and action handlers are gated while activation is pending (0.9939ms)
+G£ö hard refresh pending callback cannot load cloud, offline state or driver shell (0.427ms)
+G£ö activation refreshes the Firebase token and fails closed (0.4615ms)
+G£ö driver activation translations are complete and language-specific (50.005ms)
+G£ö production source has no Reset App control or direct reset handler (1.4693ms)
+G£ö duty checklist keeps exactly the first four checks and optional damage upload (1.3748ms)
+G£ö driver calendar uses real month and schedule data without fabricated shifts (1.3727ms)
+G£ö calendar and document viewer render untrusted schedule values as text (0.2247ms)
+G£ö schedule upload code stays bounded while dispatcher monthly UI has no duplicate uploader (0.2697ms)
+G£ö drivers load only their own shifts and schedules (0.3744ms)
+G£ö calendar controls expose localized accessible names (0.22ms)
+G£ö production driver profile writes are server-owned (8.593ms)
+G£ö normalizeCompanyId rejects empty and reserved project id (5.5944ms)
+G£ö resolveDriverLoginCompanyId prefers typed field over URL and memory (1.6039ms)
+G£ö resolveDriverLoginCompanyId falls back to remembered when URL missing (1.3203ms)
+G£ö bare driver.html would previously send null GÇö now resolution fails closed without input (1.1074ms)
+G£ö driverPortalUrl embeds company for SMS deep link (1.3742ms)
+G£ö driver login sends the resolved tenant, never the bare URL company (0.6509ms)
+G£ö driver.html exposes company ID field (5.6556ms)
+G£ö SMS activation portalUrl includes ?company= (1.8121ms)
+G£ö CA driver import hint is translated and describes secure SMS activation (5.9649ms)
+G£ö CA wizard placeholders are i18n keys not hard Serbian (5.6356ms)
+G£ö migration plan extracts credentials and rejects another project (3.1774ms)
+G£ö migration dry-run writes nothing, apply is idempotent, and logs no secret values (1.8204ms)
+G£ö new import payload splits safe profile from OTP activation credentials (985.1397ms)
+G£ö first login uses unique OTP; personal code replaces it; OTP cannot reuse after consume (2928.2466ms)
+G£ö credential operations ignore sensitive fields in a legacy public profile (419.7438ms)
+G£ö server routes use only driver_credentials and contain no public-profile fallback (0.6502ms)
+G£ö driver deactivation is company-admin only, audited and revokes sessions (0.4739ms)
+G£ö driver import is company-admin owned, group-scoped, licensed and rate limited (0.7592ms)
+G£ö driver operational writes use narrow authenticated audited endpoints (0.5937ms)
+G£ö vacation workflow validates periods, prevents overlaps and audits status changes (0.4089ms)
+G£ö dispatcher vacation review is registered in the delegated action bundle (1.2986ms)
+G£ö staff shift assignment is tenant and dispatcher-group scoped (1.1523ms)
+G£ö driver work session and shift confirmations are server enforced (0.9285ms)
+G£ö Firestore does not permit bypassing validated driver write endpoints (0.9212ms)
+G£ö missing credentials fail closed even when the public profile contains legacy secrets (882.8215ms)
+G£ö public safe driver shape never exposes credential fields (1.2164ms)
+G£ö pending driver token is rejected before any operational API handler (0.6557ms)
+G£ö activated driver token may reach an operational API handler (0.2268ms)
+G£ö parses quoted EN, semicolon DE and tab SR CSV (2.6539ms)
+G£ö parses pilot pack ime_prezime;firma_id and ignores licni_kod as login PIN (1.9501ms)
+G£ö accepts the secure activation format without a plaintext personal/company code (0.3836ms)
+G£ö rejects duplicate EID; shared company codes are uniquified instead of rejected (0.901ms)
+G£ö rejects missing fields and malformed quotes (0.5172ms)
+G£ö rejects imports larger than the bounded company batch (0.7438ms)
+G£ö driver dashboard tolerates missing route, stops and report fields (1.2087ms)
+G£ö route stops are rendered as keyboard controls without innerHTML interpolation (0.2908ms)
+G£ö tp picks _one keys when count is 1 (3.5002ms)
+G£ö driver import UI uses tp for pluralized copy (3.0189ms)
+G£ö normalizeKnownGroupIds always includes home group and dedupes (10.0294ms)
+G£ö driverKnowsGroup uses known list plus home group (0.2663ms)
+G£ö companyDriverProfileBody accepts editable knownGroupIds without credentials (4.1623ms)
+G£ö driver list escapes user-controlled values rendered through innerHTML (1.4202ms)
+G£ö production status control follows the company-admin permission (0.2699ms)
+G£ö driver status uses the authenticated server API outside demo mode (0.1823ms)
+G£ö manual driver create and edit stay demo-only (0.5124ms)
+G£ö liveGps is off unless features.liveGps === true (1.4374ms)
+G£ö location payload sanitizes coords and rejects stale samples (1.4049ms)
+G£ö location throttle respects minimum interval (0.3742ms)
+G£ö public last location strips unknown shapes (1.8431ms)
+G£ö login reminder stub stays silent without upcoming start (0.5152ms)
+G£ö provisioning and routes keep liveGps OFF by default (2.1719ms)
+G£ö login by EID succeeds and clears the failure counters (842.2262ms)
+G£ö an unknown EID is answered exactly like a wrong code and reveals no driver (822.6964ms)
+G£ö the account locks after ten failures and refuses even the correct code (5300.0152ms)
+G£ö a suspended company is refused before any credential is checked (434.2244ms)
+G£ö a deactivated driver cannot sign in with a valid personal code (443.2399ms)
+G£ö the activation OTP works once and the replay is rejected (840.8824ms)
+G£ö the identify endpoint is gone and answers without touching driver data (429.3765ms)
+G£ö a login without any identifier is rejected by validation (422.181ms)
+G£ö normalizeKnownGroupIds always includes primary home group (5.3988ms)
+G£ö driverKnowsGroup matches primary and extra groups (0.3221ms)
+G£ö driverBelongsToLine uses driverKnowsGroup for multi-group Dispo visibility (2.2546ms)
+G£ö production driver actions use narrow server APIs instead of global state sync (1.6446ms)
+G£ö vacation clients use narrow APIs, stable states and safe DOM rendering (0.2832ms)
+G£ö dispatcher shift assignments use the narrow staff API outside demo mode (0.3337ms)
+G£ö driver privacy mode stops GPS, realtime notifications and the session after work (0.2803ms)
+G£ö quick report rejects unknown actions and blocks duplicate submission (0.1894ms)
+G£ö detailed reports use stable codes, bounded inputs and submission locks (0.1841ms)
+G£ö archived messages are identity-scoped and removed from the active inbox (0.1741ms)
+G£ö SW cache name is versioned v2 (1.3021ms)
+G£ö SW allowlist covers driver shell and rejects staff/api (0.7577ms)
+G£ö public sw-driver.js stays aligned with policy (2.1041ms)
+G£ö idempotency key normalization (0.3228ms)
+G£ö routes accept idempotencyKey on reports and lost-items (1.3654ms)
+G£ö the /api/driver gate asks Firebase to check revocation (2.3776ms)
+G£ö a revoked driver token is refused by the /api/driver gate (0.4015ms)
+G£ö setting a personal code asks Firebase to check revocation (392.9643ms)
+G£ö a revoked token cannot set a new personal code (0.6513ms)
+G£ö company timezone, not device time, controls the work window (38.4936ms)
+G£ö overnight shifts end on the following local day (3.4878ms)
+G£ö Friday confirmation package includes assigned weekend and Monday shifts (2.0211ms)
+G£ö Thursday becomes the weekend confirmation day when Friday is free (0.2537ms)
+G£ö Wednesday is weekend package day when Thu and Fri are free (0.2672ms)
+G£ö ordinary workdays request only the next assigned shift (1.4954ms)
+G£ö outbox upsert is idempotent for same fingerprint (0.9791ms)
+G£ö outbox recreates pending when plan fingerprint changes (0.3056ms)
+G£ö dispatch retry respects backoff window (0.4137ms)
+G£ö delivery idempotency key is stable (0.351ms)
+G£ö outbox status summary counts known and unknown statuses (0.2807ms)
+G£ö ops classification separates failed delivery from awaiting confirm (0.3798ms)
+G£ö ops classification marks past targetDate as expired (0.1585ms)
+G£ö ops classification marks fingerprint mismatch as expired (0.1382ms)
+G£ö invalidate outbox cancels confirmed and pending rows (0.2816ms)
+G£ö dispatch retry stops after max attempts (0.2016ms)
+G£ö stale confirmation detects fingerprint and bound revision drift (0.2053ms)
+G£ö plan change after confirm reopens outbox via cancel_stale (0.1595ms)
+G£ö reads the Firebase browser configuration from Vite variables (4.2266ms)
+G£ö fails closed when Firebase browser configuration is missing (0.4607ms)
+G£ö rejects any Firebase project other than Preview (0.9922ms)
+G£ö rejects auth domains and buckets outside Preview (0.2406ms)
+G£ö dispatcher loaders exclude company admins, users list and admin collections (6.0817ms)
+G£ö company admin retains its tenant-scoped administrative loaders (0.2084ms)
+G£ö dispatcher source reads own profile and assigned group documents only (0.8632ms)
+G£ö forbidden optional loaders are skipped while core reads still fail closed (0.6376ms)
+G£ö production auth loading and error state hide dashboard and mobile navigation (0.5227ms)
+G£ö three dispatcher cold loads preserve only assigned group 310 (1.1006ms)
+G£ö docIdFromRecord prefers id then number (1.2389ms)
+G£ö diffCollectionOps detects add/update/delete (4.9654ms)
+G£ö diffCollectionOps skips delete when baseline unknown (0.2579ms)
+G£ö chunkArray respects batch limit (0.4397ms)
+G£ö summarizeAuditChanges compacts audit payload (0.5339ms)
+G£ö fleet writes stay server-owned; buses use narrow APIs and routes remain local-only (6.5603ms)
+G£ö group management has complete EN DE SR translations without raw keys (1.2434ms)
+G£ö group management terminology does not mix EN SR and DE (0.5193ms)
+G£ö production group management has no legacy manual PIN form and keeps secure CSV import (5.8301ms)
+G£ö CA monthly preview resolves EID and exact active-catalog times (16.6941ms)
+G£ö replace preview adds removals for existing assignments omitted from file (0.4446ms)
+G£ö preview rejects unknown EID, inactive/cross-group driver and unknown duty (0.9666ms)
+G£ö server shift document preserves catalog times, clears bus and carries import revision (0.3553ms)
+G£ö merge import preserves bus and confirmation when duty identity is unchanged (0.2365ms)
+G£ö CA monthly assignment routes are closed; dispatcher assignment still lock-aware (D21) (2.8858ms)
+G£ö group monthly CSV parses EID assignments and absence codes (3.6969ms)
+G£ö group monthly parser rejects missing columns, duplicates and wrong month (0.8738ms)
+G£ö group monthly parser accepts semicolon CSV and quoted EID (0.3144ms)
+G£ö Company Admin page no longer exposes group monthly assignment import (D21) (4.5953ms)
+G£ö package caps match Phase 2 model (1.2627ms)
+G£ö legacy plan values normalize to package types (0.3524ms)
+G£ö resolveLicenseSnapshot derives trial countdown (1.2777ms)
+G£ö normalizes legacy lost-item statuses (2.0881ms)
+G£ö lost-item transitions allow open triad and terminal return (0.2825ms)
+G£ö foundAt fields prefer client timestamp (3.3196ms)
+G£ö photo validation accepts PNG and rejects EXIF JPEG (0.8702ms)
+G£ö urgent templates require ack by default; explicit false wins (3.2817ms)
+G£ö in-app delivery fields start as delivered with optional ack (0.3111ms)
+G£ö ack plan rejects non-critical and stamps critical (1.0346ms)
+G£ö read plan marks personal messages read (0.2266ms)
+G£ö awaiting receipt and staff classification cover ack/read/failed (1.6547ms)
+G£ö isMobileUserAgent blocks phones and tablets by UA (1.616ms)
+G£ö isMobileUserAgent allows desktop Chromium even when panel is narrow (0.3161ms)
+G£ö isMobileUserAgent does not treat empty or tool UAs as mobile (0.2119ms)
+G£ö ensureShiftCatalogForEdit does not invent fallback duties by default (1.7222ms)
+G£ö locked active catalog stays replace-only without fallbacks (2.3571ms)
+G£ö mass absence helpers accept only neutral absence types (0.696ms)
+G£ö capturePriorSnapshot marks empty for missing or clear docs (2.3134ms)
+G£ö simulateUndoWrite restores prior assignment and bumps revision (0.4797ms)
+G£ö simulateUndoWrite to empty prior returns deleted tombstone plan (0.3753ms)
+G£ö simulateUndoWrite rejects stale revision and missing prior (0.2228ms)
+G£ö buildClearedShift keeps priorSnapshot for undo (0.3023ms)
+G£ö previewMassDayRange counts inclusive days (0.2822ms)
+G£ö assignment undo route and soft-clear are wired (1.3933ms)
+G£ö monthly plan UI no longer saveState on empty shell; mass + undo actions exist (0.814ms)
+G£ö dispatcher monthly plan import is enabled on monthly full page (D21) (2.6386ms)
+G£ö resolveSchedule prefers driverId month key over empty name shell (1.5234ms)
+G£ö resolveSchedule falls back to name key when id key missing (0.2761ms)
+G£ö normalizeType keeps allowed shift types (1.2697ms)
+G£ö findDriverByName matches case-insensitively (0.2558ms)
+G£ö parses an individual Dienstplan using the real Tag/Bus/Linie-Dienst layout (2.8584ms)
+G£ö parses the strict long-form monthly CSV and preserves bus assignments (1.8123ms)
+G£ö long-form import rejects a line mismatch and duplicate driver/day assignment (0.7503ms)
+G£ö overview matrices are not silently treated as import plans (0.1931ms)
+G£ö raspored-style Datum/Voza-ì/Smena sheet parses without being named Detaljno (3.9806ms)
+G£ö Detaljno sheet recognizes Serbian Voza-ì header with diacritics (0.6699ms)
+G£ö dispatcher incident endpoint is today-only, group-scoped and audited (8.8119ms)
+G£ö operations center requires a reason and keeps the shift until replacement (1.7256ms)
+G£ö daily replacement delegates the matching active incident to the atomic resolver (2.8096ms)
+G£ö atomic resolver validates schedule availability and writes plan plus audit in one transaction (1.7297ms)
+G£ö incident workflow has genuine EN SR and DE text (2.705ms)
+G£ö health consistency opens solutions panel for plan gaps (1.3676ms)
+G£ö ops attention includes plan-gap cards with solutions (0.9678ms)
+G£ö plan-health banner click opens attention panel (0.3991ms)
+G£ö plan package accepts one month with known drivers and unique days (2.1481ms)
+G£ö plan package rejects mixed months, unknown drivers and duplicate driver-days (0.598ms)
+G£ö plan package rejects empty parsed plans (3.3033ms)
+G£ö package import exposes only verified CSV/XLSX formats and separates dispatcher permissions (3.3863ms)
+G£ö lockDocId encodes colons for Firestore doc ids (1.1952ms)
+G£ö hydrateLock loads from Firestore into memory when L1 empty (0.6359ms)
+G£ö ensureAssignmentDayLock auto-acquires when free (2.1538ms)
+G£ö ensureAssignmentDayLock blocks second writer (0.7551ms)
+G£ö persistLock and deletePersistedLock are no-ops without db (0.3949ms)
+G£ö CA can open operational view sections but cannot write roster (1.2686ms)
+G£ö first writer acquires lock; second is blocked; holder can continue (0.538ms)
+G£ö TTL expiry frees the lock for another dispatcher (0.2432ms)
+G£ö release and break-glass clear the lock (0.4232ms)
+G£ö heartbeat extends expiry for the holder only (0.2822ms)
+G£ö builds deterministic server preview for a valid monthly plan (3.3437ms)
+G£ö rejects duplicate assignments for the same driver and date (0.6805ms)
+G£ö rejects rows outside the selected month and stale revisions (0.3063ms)
+G£ö validation reports the original source row before canonical sorting (1.6847ms)
+G£ö rejects missing, inactive and cross-group drivers (0.8757ms)
+G£ö dispatcher preview route is server-owned, scoped and audited (1.3208ms)
+G£ö Ch16 i18n keys exist in en/sr/de with real copy (32.224ms)
+G£ö SA toast paths use i18n keys instead of hardcoded EN status strings (1.0129ms)
+G£ö SOS modals expose dialog semantics on staff/driver/monolith (9.9296ms)
+G£ö shared focus trap module is wired into modals and SOS trigger (0.8176ms)
+G£ö ops status rails use design tokens not raw status hex (1.3443ms)
+G£ö driver entry does not import staff dispatcher state-observer setup (4.7737ms)
+G£ö Lucide CDN is pinned and office parsers are not eager in monolith head (2.0171ms)
+G£ö bundle budget gate script exports D17 soft-pilot thresholds (0.6246ms)
+G£ö staff confirmation and message compose avoid unbounded driver collection scans for dispatchers (1.1513ms)
+G£ö CA groups and drivers search use debounce (2.7735ms)
+G£ö D17 decision and SURFACE split item reflect Ch17 work (0.7941ms)
+G£ö P7.3 driver plan confirm status reacts to pending targets and off days (8.571ms)
+G£ö P7.3 ops health and confirmation fetch failures are surfaced (2.1817ms)
+G£ö P7.4 staff and driver expose skip link and main landmark (11.7587ms)
+G£ö build source of truth keeps skip-link a11y markers (3.1763ms)
+G£ö en/sr/de required languages have matching key counts after P7.2 parity (37.1826ms)
+G£ö staff and driver surfaces prefer design tokens over hard brand hex (1.7916ms)
+G£ö canonical brand blue matches design tokens and branding default (9.269ms)
+G£ö confirm modal has dialog semantics and focus trap wiring (6.4187ms)
+G£ö p7 staff and driver surfaces expose i18n aria labels for icon controls (9.0604ms)
+G£ö required p7 keys exist in en, sr and de (6.3449ms)
+G£ö legacy active normalizes to open and stays open for ops (1.4091ms)
+G£ö problem lifecycle allows openGåÆacknowledgedGåÆapplyingGåÆresolved path (0.2838ms)
+G£ö simulateProblemTransition bumps revision and records lifecycle (0.4731ms)
+G£ö vehicle create fields mark affectedEntity (1.5124ms)
+G£ö ops activity filter includes incident and assignment audits (0.206ms)
+G£ö driver-routes wires transition, ops-activity and open status create (1.5003ms)
+G£ö dashboard exposes vehicle out, acknowledge and recent activity (0.7933ms)
+G£ö slow auth callback makes no tenant calls from cached UID or Firebase project ID (7.3938ms)
+G£ö Firebase project ID can never become a tenant ID (0.255ms)
+G£ö pending driver claim routes only to activation and never tenant initialization (0.2914ms)
+G£ö production bootstrap contains no project/company fallback and dispatcher onboarding is absent (1.1377ms)
+G£ö dispatcher UID normalization rejects Firestore path and control characters (2.1221ms)
+G£ö createCompanyAtomic creates parent, configuration and audit together (4.6998ms)
+G£ö Serbian companies use the headquarters timezone and language (0.45ms)
+G£ö createCompanyAtomic rejects an existing company without writes (0.5156ms)
+G£ö createCompanyAtomic rejects a legacy partial company (0.3802ms)
+G£ö createCompanyAtomic rolls back every write on transaction failure (0.3915ms)
+G£ö provisionUser creates company_admin claims and company user document (1.8164ms)
+G£ö provisionUser creates dispatcher claims and company user document (0.3283ms)
+G£ö provisionUser checks company existence before creating Auth user (0.333ms)
+G£ö provisionUser safely rejects a duplicate email without creating orphan data (0.5924ms)
+G£ö new dispatcher stores normalized groups in claims and profile (0.513ms)
+G£ö group assignment update aligns profile and claims and revokes old tokens (0.7198ms)
+G£ö dispatcher deactivation disables Auth, updates tenant profile, audits and revokes sessions (1.1479ms)
+G£ö dispatcher reactivation fails closed when the licensed active-seat limit is reached (0.5001ms)
+G£ö dispatcher deletion requires inactive tenant profile and exact email confirmation (0.4952ms)
+G£ö dispatcher deletion removes Auth and active profile but preserves an audit record (0.3879ms)
+G£ö session revocation rejects foreign-tenant IDs and audits valid dispatcher (0.4914ms)
+G£ö provisionUser rejects a forbidden role before external writes (0.232ms)
+G£ö provisionUser compensates Auth and Firestore after partial failure (0.4128ms)
+G£ö provisionUser deletes a new Auth user when claims assignment fails (0.225ms)
+G£ö provisionUser never attaches a company to superadmin claims (0.2315ms)
+G£ö deleteCompanyAtomic requires typed companyId confirmation (0.4292ms)
+G£ö deleteCompanyAtomic removes company tree and Auth users (1.3275ms)
+G£ö no unauthenticated endpoint answers questions about who works here (6.8419ms)
+G£ö QA local-state driver company resolves to COMPANY_ID / qa-local, never hardcoded demo (1.4275ms)
+G£ö clearUserSession does not wipe pretrip seed on cold boot without a user (1.1538ms)
+G£ö QA factory seeds stable entity ids and non-empty branding for CA shell routing (3.955ms)
+G£ö separate route limiters do not consume each other's IP budget (1.5693ms)
+G£ö no service account private key material is committed (13.3802ms)
+G£ö admin service-account key file must not exist in the working tree (0.4252ms)
+G£ö gitignore keeps admin keys and env files out of version control (0.485ms)
+G£ö Firebase Web API key appears only in declared configuration (5.278ms)
+G£ö server secrets are injected by the platform, never stored in the repository (1.1179ms)
+G£ö live smoke script resolves its target and Web API key from the environment (0.4577ms)
+G£ö incident live smoke resolves its target and Web API key from the environment (0.893ms)
+G£ö server report status and dispatcher group checks fail closed (1.6322ms)
+G£ö CA groups expose visible delete next to edit; team keeps overflow menu + confirm (3.0272ms)
+G£ö driver bottom nav order keeps SOS as center slot (4.6896ms)
+G£ö never activates local state from URL on Preview (?mode=demo) (4.4962ms)
+G£ö never activates local state from URL on Preview (?demo=driver) (0.2734ms)
+G£ö never activates local state from URL on Preview (?demo=dispatcher) (0.4456ms)
+G£ö never activates local state from URL on Preview (empty) (0.2121ms)
+G£ö never activates local state from URL on Preview (?mode=production) (0.1455ms)
+G£ö localhost ignores URL demo activation (?mode=demo) (0.1865ms)
+G£ö localhost ignores URL demo activation (?demo=driver) (0.1168ms)
+G£ö localhost ignores URL demo activation (empty) (0.1071ms)
+G£ö localhost ignores URL demo activation (?mode=production) (0.3879ms)
+G£ö 127.0.0.1 never defaults to packaged demo state (0.3761ms)
+G£ö SA companies panel uses table rows and create modal (7.4499ms)
+G£ö messages send button forced to primary blue; attention uses resolve label (1.5005ms)
+G£ö demo company status becomes active when a CA exists (1.2769ms)
+G£ö demo company detail can save email and country (2.0994ms)
+G£ö inspect closes SA modal before entering Dispo (0.7257ms)
+G£ö SA Open never spawns a production login tab in demo (0.7155ms)
+G£ö staff action registry wires demo profile save (0.4613ms)
+G£ö isTrialBadgeRoleAllowed only allows company-admin (3.9779ms)
+G£û updateTrialBadge shows CA package badge during trial (4.7096ms)
+G£ö updateTrialBadge hides chips for Super Admin (1.8069ms)
+G£ö staff HTML keeps license badge slot and connection status (3.0611ms)
+G£ö published service plan APIs are company-admin owned and dispatcher scoped (4.2859ms)
+G£ö firestore keeps service plan writes server-only and separates roster ownership (0.6647ms)
+G£ö company admin UI accepts versioned XLSX CSV and structured PDF without bundled plan data (5.538ms)
+G£ö Company Admin cannot use the staff shift-assignment endpoint (1.1476ms)
+G£ö inferOperationalShiftType never maps S/F letters to Fr++h/Sp+ñt (1.3253ms)
+G£ö servicePlanToCatalog keeps 310.S01 dayType + exact plan times (3.3156ms)
+G£ö service plan validates the 310.S01 work and trip boundaries (35.6875ms)
+G£ö service plan rejects unsupported templates and mismatched trip boundaries (0.8649ms)
+G£ö service plan rejects gaps, unknown duty references and cross-plan codes (1.0459ms)
+G£ö overnight times unfold into the next company-local day (5.5464ms)
+G£ö XLSX parser requires exact sheets and canonical headers (1.4804ms)
+G£ö file gate accepts BusCommand xlsx, csv and pdf up to 5 MB (0.3049ms)
+G£ö ephemeral QA CSV fixture parses into the validated contract (not a product template) (1.8742ms)
+G£ö structured PDF payload parses and rejects non-BusCommand text (2.5907ms)
+G£ö company Dienstplan PDF text parses duties with day types and version (11.1099ms)
+G£ö pdf.js Version glyph spacing joins and parses (2.3512ms)
+G£ö Austrian public Fahrplan text converts courses into duties (2.3781ms)
+G£ö publish stages an immutable revision with source hash and does not go live (45.0094ms)
+G£ö activate flips the live pointer and supersedes the prior active version (3.9478ms)
+G£ö rollback re-activates a superseded version with audit trail (4.6109ms)
+G£ö service plan history keeps immutable metadata and loads an archived duty detail (3.4028ms)
+G£ö an already staged version cannot overwrite audit history (2.9587ms)
+G£ö service plan IDs are stable and contain no Firestore path separators (0.2458ms)
+G£ö the same plan can be published independently to multiple company groups (1.8288ms)
+G£ö publishing rejects a group that does not belong to the company (0.5813ms)
+G£ö absence short codes differ by language for vacation and sick (1.0655ms)
+G£ö absence full labels are localized for monthly plan display (0.3654ms)
+G£ö canonical shift id is driverId_date (4.0894ms)
+G£ö schedule helpers parse month and day (0.2578ms)
+G£ö schedule document ids prefer driverId key with legacy name alias (0.9846ms)
+G£ö revision requires expectedRevision and rejects stale values (0.301ms)
+G£ö assigned shift resets confirmation and binds the new revision (0.3552ms)
+G£ö two writers: second stale expectedRevision loses without overwriting (0.3914ms)
+G£ö confirmation is valid only for the bound revision (0.2732ms)
+G£ö assignment route wires revision conflict and schedule mirror (1.4667ms)
+G£ö client sync skips shifts and schedules writes (0.9398ms)
+G£ö client monthly and daily assignment go through persistShift with expectedRevision (2.0602ms)
+G£ö soft-pilot bootstrap defaults keep supportSession and scheduler OFF (2.1654ms)
+G£ö provisioning creates companies with supportSession and liveGps disabled (0.6678ms)
+G£ö production SMS defaults to none when unset (1.5716ms)
+G£ö effective SR translations use Latin ekavian Serbian (5.3396ms)
+G£ö production source outside language catalogs has no listed ijekavian fragments (112.6571ms)
+G£ö staff API rejects requests without a bearer token (189.5232ms)
+G£ö staff API rejects unknown and revoked tokens with checkRevoked enabled (36.8608ms)
+G£ö driver and superadmin tokens cannot reach staff routes (15.6305ms)
+G£ö staff route resolves dispatcher groups from the tenant profile, not from claims (12.2713ms)
+G£ö deactivated, missing and role-drifted profiles are refused even with a valid token (38.4588ms)
+G£ö suspended company blocks staff API even with an active profile (12.1044ms)
+G£ö a session started before the tenant cutoff is refused, a later one is allowed (12.7758ms)
+G£ö staff token without a companyId claim cannot reach tenant data (6.7807ms)
+G£ö company admin routes refuse dispatchers and accept the tenant owner (291.4426ms)
+G£ö cross-tenant and malformed company ids are refused before any handler work (25.4176ms)
+G£ö provisioning gate accepts superadmin and company admin, refuses dispatcher (15.39ms)
+G£ö tenant metadata routes are members-only and never leak company existence (63.2002ms)
+G£ö profile lookup failures fail closed instead of granting access (4.3407ms)
+G£ö staff routes report unconfigured Firebase instead of authorizing (8.09ms)
+G£ö company id parsing normalizes case and rejects traversal or oversized ids (0.3877ms)
+G£ö credential Firebase codes share one enumeration-safe error key (6.7871ms)
+G£ö staff login UI maps user-not-found and wrong-password to the same key (1.7103ms)
+G£ö auth-client loginWithEmail returns errorKey, not Serbian literals (0.7174ms)
+G£ö error_invalid_credentials exists for sr/en/de (2.9448ms)
+G£ö staff message schema accepts known templates and modes (4.425ms)
+G£ö message type inference matches dispatcher templates (0.2157ms)
+G£ö dispatcher cannot target drivers outside assigned groups (2.9336ms)
+G£ö dispatcher broadcast fans out only to accessible drivers without broadcast flag (1.2435ms)
+G£ö company admin broadcast uses single company-wide message (0.2097ms)
+G£ö multi-group send unions drivers and enforces ACL per group (0.4128ms)
+G£ö buildStaffMessageDoc keeps driver delivery fields and ack flag (1.4503ms)
+G£ö staff message route and client compose use the API path (2.3806ms)
+G£ö server-created message ids are acknowledged without client message writes (0.4894ms)
+G£ö staff SOS resolve and lost-item status are server-owned (9.7067ms)
+G£ö public startup output identifies Preview without demo credentials or local addresses (1.4123ms)
+G£ö local development startup exposes local URLs without bundled test credentials (0.2739ms)
+G£ö local startup survives restricted network-interface discovery (1.6734ms)
+G£ö getActiveSectionId returns visible section id (1.11ms)
+G£ö refreshObservedSections calls registered renderer for visible section (0.46ms)
+G£ö getCompanyDetail returns tenant summary and company admins (4.4491ms)
+G£ö listAllCompanyAdmins returns admins across companies from users/ (17.773ms)
+G£ö setCompanyAdminActive disables auth and audits (1.0541ms)
+G£ö requestCompanyAdminPasswordReset returns link and audits (0.6905ms)
+G£ö company admin helpers reject foreign tenant users (0.8507ms)
+G£ö superadmin auth always uses real staff credentials (4.0732ms)
+G£ö product state never auto-seeds platform Super Admin credentials (0.4331ms)
+G£ö superadmin modal HTML hides both field groups by default (2.6491ms)
+G£ö superadminOpenCompanyDetail shows the company detail modal (4.5643ms)
+G£ö staff surface includes sa-company-detail-modal markup (2.1781ms)
+G£ö demo Super Admin dashboard aligns with company table headers (0.8371ms)
+G£ö demo company detail hydrates from dispatcher state (1.9962ms)
+G£ö demo Super Admin delete and support have local branches (2.4834ms)
+G£ö overview rejects unauthenticated and non-superadmin roles (1.6484ms)
+G£ö overview aggregation sums tenants and preserves zero-count companies (1.6988ms)
+G£ö superadmin response contains numeric counters only and supports Preview shape (1.2847ms)
+G£ö production client clears stale counters and reloads company admins from server (5.7227ms)
+G£ö tenant settings patch accepts plan limits and known flags (6.473ms)
+G£ö tenant settings patch maps starter package defaults (0.3758ms)
+G£ö tenant settings patch rejects empty body (0.7068ms)
+G£ö editable feature keys stay allowlisted (0.1908ms)
+G£ö support session constants match approved L7 decisions (1.8539ms)
+G£ö start schema requires category and reason length (3.1438ms)
+G£ö public session view never invents secrets fields (1.7563ms)
+G£ö support session audit actions map to access category (0.3132ms)
+G£ö routes, rules, provisioning flag and UI hooks are wired (2.0174ms)
+G£ö driver surface keeps single SOS hold control after surface build source (7.2501ms)
+G£ö staff service plan limit copy is 5 MB (3.216ms)
+G£ö legacy monolith source matches Swiss SOS and plan limit (1.6752ms)
+G£ö driver modules do not import dispatcher UI (5.7375ms)
+G£ö driver messages use shared message-text helper (0.97ms)
+G£ö surface HTML is stripped per role (4.6322ms)
+G£ö surface entry files exist (1.0765ms)
+G£ö D1 openGroupHub adopts active group on currentUser and dispatcher record (2.5926ms)
+G£ö C4 hub has sticky readonly banner slot for Company Admin (3.6622ms)
+G£ö D3 dropzone i18n mentions images/OCR (3.6378ms)
+G£ö C2 staff login role hint exists (4.573ms)
+G£ö D21 orphan CA monthly-import client module is removed (0.8532ms)
+G£ö state.js clears tenant caches and refuses URL companyId fallback on save (4.7161ms)
+G£ö logout, SA delete and license paths wire tenant cache clearing (1.8605ms)
+G£ö resolveUiLanguage defaults to en when nothing is stored (2.9003ms)
+G£ö resolveUiLanguage prefers buscommand_lang over FRESH_STATE en (0.959ms)
+G£ö applyUiLanguagePreference restores de after tenant-style en merge (1.0402ms)
+G£ö resetInMemoryTenantState keeps buscommand_lang when state was en (0.8814ms)
+G£ö loadStateFromStorage without companyId does not leave language as en when DE selected (0.9114ms)
+G£ö pilot UI languages en/de/sr remain selectable (3.4097ms)
+G£ö state.js wires resolve/apply helpers into reset and load paths (0.8142ms)
+G£ö init bootstrap resolves UI language via resolveUiLanguage (1.4131ms)
+G£ö initFirebase reapplies UI language after base-state merge (0.8478ms)
+G£ö staff login skips Firestore init for superadmin (0.6005ms)
+G£ö shell-staff reapplies UI language before rendering SA dashboard (0.3323ms)
+G£ö t()/translateUI resolve language via resolveUiLanguage (0.4388ms)
+G£ö production dispatcher cannot open company settings or run admin actions (1.263ms)
+G£ö company admin retains own-company administration sections but production reset stays disabled (0.197ms)
+G£ö single-submission lock ignores a rapid second click and restores the button (1.1304ms)
+G£ö security-sensitive production labels have distinct EN, DE and SR translations (33.2666ms)
+G£û production company form has i18n labels and no visible PIN field (6.4911ms)
+G£ö driver export is tenant-scoped and excludes identity and login secrets (0.3245ms)
+G£ö dispatcher deletion requires tenant and exact email-shaped confirmation (7.5052ms)
+G£ö createCompanyBody requires name (0.7737ms)
+G£ö createUserBody requires companyId for dispatcher (1.2594ms)
+G£ö createUserBody rejects minting superadmin via admin API (0.436ms)
+G£ö createUserBody rejects password without letter and digit (0.5337ms)
+G£ö assertCompanyIdUsable blocks reserved demo id (0.2493ms)
+G£ö sanitizeCompanyId strips invalid characters (0.3695ms)
+G£ö companyBrandingBody accepts normalized HTTPS branding (1.2915ms)
+G£ö companyBrandingBody rejects HTTP, credentials and malformed color (1.3542ms)
+G£ö company group schemas normalize safe metadata and keep the ID immutable on update (2.0962ms)
+G£ö company dispatcher schemas require a strong password, group and explicit status (4.7691ms)
+G£ö company profile settings schema supports only pilot headquarters and languages (0.7095ms)
+G£ö VOR 320 group plan has 5 drivers and complementary F05GÇôF09 on Ferien days (6.5181ms)
+G£ö crew drivers CSV matches BusCommand template headers (0.596ms)
+G£ö setup wizards use scrollable card + sticky footer structure (6.5345ms)
+G£ö overlay and wizard CSS keep tall dialogs reachable on short viewports (5.1262ms)
+Gä¦ tests 616
+Gä¦ suites 0
+Gä¦ pass 613
+Gä¦ fail 3
+Gä¦ cancelled 0
+Gä¦ skipped 0
+Gä¦ todo 0
+Gä¦ duration_ms 17778.4027
+
+G£û failing tests:
+
+test at tests\unit\company-admin-overview.test.mjs:84:1
+G£û production license state never fabricates a trial fallback or reuses another tenant (4.0835ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+      available: false,
+      daysRemaining: null,
+  +   licenseStatus: 'unknown',
+  +   packageLabel: null,
+      plan: 'unknown',
+      status: 'unknown'
+    }
+  
+      at TestContext.<anonymous> (file:///C:/Users/cane/Desktop/BusCommand-ca-monthly-import/tests/unit/company-admin-overview.test.mjs:90:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { plan: 'unknown', status: 'unknown', licenseStatus: 'unknown', packageLabel: null, daysRemaining: null, available: false },
+    expected: { plan: 'unknown', status: 'unknown', daysRemaining: null, available: false },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\unit\sa-trial-banner.test.mjs:77:1
+G£û updateTrialBadge shows CA package badge during trial (4.7096ms)
+  ReferenceError: t is not defined
+      at Object.updateTrialBadge (evalmachine.<anonymous>:138:9)
+      at TestContext.<anonymous> (file:///C:/Users/cane/Desktop/BusCommand-ca-monthly-import/tests/unit/sa-trial-banner.test.mjs:89:9)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+
+test at tests\unit\ui-security.test.mjs:63:1
+G£û production company form has i18n labels and no visible PIN field (6.4911ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /data-i18n="add_new_company">Register New Company</. Input:
+  
+  '<!DOCTYPE html>\r\n' +
+    '<html lang="en" data-app-surface="staff">\r\n' +
+    '<head>\r\n' +
+    '    <meta charset="UTF-8">\r\n' +
+    '    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\r\n' +
+    '    <title>BusCommand GÇö Dispatcher & Admin</title>\n' +
+    '  <link rel="icon" type="image/png" href="/brand/logo-hero.png">\n' +
+    '  <link rel="apple-touch-icon" href="/brand/logo-hero.png">\r\n' +
+    '    <!-- Google Font: Outfit (Moderan i premium izgled) -->\r\n' +
+    '    <link rel="preconnect" href="https://fonts.googleapis.com">\r\n' +
+    '    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\r\n' +
+    '    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">\r\n' +
+    '    <!-- Lucide ikone -->\r\n' +
+    '    <script src="https://unpkg.com/lucide@0.469.0"></script>\r\n' +
+    '    <!-- PDF.js / SheetJS: lazy-loaded via js/core/office-parsers.js on first import -->\r\n' +
+    '    <!-- Leaflet.js za mape u++ivo -->\r\n' +
+    '    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />\r\n' +
+    '    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>\r\n' +
+    '    <!-- G£à Firebase compat SDK (v10) -->\r\n' +
+    '    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>\r\n' +
+    '    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>\r\n' +
+    '    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>\r\n' +
+    '\r\n' +
+    '\r\n' +
+    '    <!-- Runtime (mora biti pre Vite modula) -->\r\n' +
+    '    <script type="module" src="translations.js"></script>\r\n' +
+    '    <link rel="stylesheet" href="css/design-tokens.css">\r\n' +
+    '    <link rel="stylesheet" href="css/brand.css">\r\n' +
+    '    <link rel="stylesheet" href="style.css">\r\n' +
+    '    \n' +
+    '<link rel="stylesheet" href="css/staff-desktop.css">\n' +
+    '    <script type="module" src="js/main-staff.js"></script>\r\n' +
+    '</head>\r\n' +
+    '<body>\r\n' +
+    '    <a class="bc-skip-link" href="#main-content" data-i18n="skip_to_main">Skip to main content</a>\r\n' +
+    '\r\n' +
+    '    <!-- 1. EKRAN ZA PRIJAVU (LOGIN) -->\r\n' +
+    '    <div id="login-screen" class="login-container">\r\n' +
+    '        <div class="login-card">\r\n' +
+    '\r\n' +
+    '            <!-- Selektor jezika (gore desno) -->\r\n' +
+    '            <div class="login-lang-selector">\r\n' +
+    '                <select id="login-lang-select" data-change-action="changeLanguage" aria-label="Language" data-i18n-aria-label="language_select_aria">\r\n' +
+    '                    <option value="en">=ƒç¼=ƒçº English</option>\r\n' +
+    '                    <option value="de">=ƒç¬=ƒç¬ Deutsch</option>\r\n' +
+    '                    <option value="sr">=ƒç+=ƒç+ Srpski</option>\r\n' +
+    '                </select>\r\n' +
+    '            </div>\r\n' +
+    '\r\n' +
+    '            <!-- Logo / Header -->\r\n' +
+    '            <div class="login-header">\r\n' +
+    '                <div class="logo bc-brand" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;">\r\n' +
+    '                    <img class="bc-brand-mark bc-brand-mark--hero" src="/brand/logo-hero.png" width="80" height="80" alt="BusCommand">\r\n' +
+    '                    <span class="bc-brand-text">BusCommand</span>\r\n' +
+    '                </div>\r\n' +
+    '                <p data-i18n="login_subtitle">Fleet Management Platform</p>\r\n' +
+    '                <div class="trial-badge-login hidden" id="login-trial-badge" hidden aria-hidden="true"></div>\r\n' +
+    '            </div>\r\n' +
+    '\r\n' +
+    '            <!-- GöÇGöÇ Driver / Dispatcher tabovi GÇö direktno bez Company ID GöÇGöÇ -->\r\n' +
+    '            <div id="login-tabs-section" class="login-step">\r\n' +
+    '\r\n' +
+    '                <!-- Tabovi -->\r\n' +
+    '                <div class="login-tabs">\r\n' +
+    `                    <button id="tab-driver-btn" class="login-tab hidden" hidden class="login-tab active" data-action="switchLoginTab" data-action-args='["driver"]'>\r\n` +
+    '                        <i data-lucide="user"></i>\r\n' +
+    '                        <span data-i18n="driver">Driver</span>\r\n' +
+    '                    </button>\r\n' +
+    `                    <button id="tab-dispatcher-btn" class="login-tab" data-action="switchLoginTab" data-action-args='["dispatcher"]'>\r\n` +
+    '                        <i data-lucide="shield"></i>\r\n' +
+    '                        <span data-i18n="staff_login_tab">Staff</span>\r\n' +
+    '                    </button>\r\n' +
+    '                </div>\r\n' +
+    '                <p id="staff-login-role-hint" class="subtitle" style="margin:8px 0 14px;font-size:0.8rem;line-height:1.35;color:var(--text-muted);" data-i18n="staff_login_role_hint">\r\n' +
+    '                    Staff: Dispo, Company Admin or Super Admin (own email). Drivers: Driver tab.\r\n' +
+    '                </p>\r\n' +
+    '\r\n' +
+    '                <!-- Forma za voza-ìa -->\r\n' +
+    '                <div id="driver-login-form" class="login-form-content hidden" hidden>\r\n' +
+    '                    <div class="form-group">\r\n' +
+    '                        <label for="login-driver-company" data-i18n="login_company_label">Company ID</label>\r\n' +
+    '                        <input type="text" id="login-driver-company" maxlength="64" autocomplete="organization"\r\n' +
+    '                            data-i18n-placeholder="login_company_placeholder" placeholder="e.g. city-transit">\r\n' +
+    '                    </div>\r\n' +
+    '                    <div class="form-group">\r\n' +
+    '                        <label for="login-driver-select" data-i18n="select_driver">Select Driver</label>\r\n' +
+    '                        <select id="login-driver-select"></select>\r\n' +
+    '                    </div>\r\n' +
+    '                    <div class="form-group">\r\n' +
+    '                        <label for="login-driver-eid">EID</label>\r\n' +
+    '                        <input type="text" id="login-driver-eid" maxlength="128" autocomplete="off" placeholder="EID (optional)">\r\n' +
+    '                    </div>\r\n' +
+    '                    <div class="form-group">\r\n' +
+    '                        <label for="login-driver-pin" data-i18n="driver_login_code_label">Login code</label>\r\n' +
+    '                        <div class="input-icon-wrapper">\r\n' +
+    '                            <i data-lucide="lock"></i>\r\n' +
+    '                            <input type="password" id="login-driver-pin"\r\n' +
+    '                                placeholder="GÇóGÇóGÇóGÇóGÇó" minlength="5" maxlength="12" inputmode="numeric"\r\n' +
+    '                                autocomplete="off"\r\n' +
+    `                                onkeydown="if(event.key==='Enter') loginAsDriver()">\r\n` +
+    '                        </div>\r\n' +
+    '                    </div>\r\n' +
+    '                    <div id="login-error-driver" class="login-error hidden"></div>\r\n' +
+    '                    <button class="btn-primary btn-full-width" data-action="loginAsDriver">\r\n' +
+    '                        <span data-i18n="login_btn_driver">Start Shift</span>\r\n' +
+    '                        <i data-lucide="arrow-right"></i>\r\n' +
+    '                    </button>\r\n' +
+    '                </div>\r\n' +
+    '\r\n' +
+    '                <!-- Forma za dispe-ìera GÇö samo desktop/PC -->\r\n' +
+    '                <div id="dispatcher-login-form" class="login-form-content">\r\n' +
+    '\r\n' +
+    '                    <!-- Blokada mobilnih ure-æaja -->\r\n' +
+    '                    <div id="dispatcher-mobile-block" class="login-error hidden" style="margin-bottom:14px; text-align:center; padding:14px; border-radius:10px;">\r\n' +
+    '                        <i data-lucide="monitor-x" style="width:24px;height:24px;display:block;margin:0 auto 8px; opacity:0.7;"></i>\r\n' +
+    '                        <strong data-i18n="dispatcher_desktop_only_title">Desktop access only</strong><br>\r\n' +
+    '                        <small data-i18n="dispatcher_desktop_only">Dispatcher login is restricted to authorized desktop computers.</small>\r\n' +
+    '                    </div>\r\n' +
+    '\r\n' +
+    '                    <div id="dispatcher-login-fields">\r\n' +
+    '                        <div class="form-group">\r\n' +
+    '                            <label for="login-dispatcher-email" data-i18n="email">Email</label>\r\n' +
+    '                            <div class="input-icon-wrapper">\r\n' +
+    '                                <i data-lucide="mail"></i>\r\n' +
+    '                                <input type="email" id="login-dispatcher-email"\r\n' +
+    '                                    data-i18n-placeholder="email_placeholder"\r\n' +
+    '                                    placeholder="dispatcher@company.com"\r\n' +
+    '                                    autocomplete="off">\r\n' +
+    '                            </div>\r\n' +
+    '                        </div>\r\n' +
+    '                        <div class="form-group">\r\n' +
+    '                            <label for="login-dispatcher-password" data-i18n="password">Password</label>\r\n' +
+    '                            <div class="input-icon-wrapper">\r\n' +
+    '                                <i data-lucide="lock"></i>\r\n' +
+    '                                <input type="password" id="login-dispatcher-password"\r\n' +
+    '                                    placeholder="GÇóGÇóGÇóGÇóGÇóGÇóGÇóGÇó"\r\n' +
+    '                                    autocomplete="new-password"\r\n' +
+    '                                    data-enter-action="loginAsDispatcher">\r\n' +
+    '                            </div>\r\n' +
+    '                        </div>\r\n' +
+    '                        <div id="login-error-dispatcher" class="login-error hidden"></div>\r\n' +
+    '                        <button class="btn-primary btn-full-width" id="dispatcher-login-btn" data-action="loginAsDispatcher">\r\n' +
+    '                            <span data-i18n="login_btn_disp">Login</span>\r\n' +
+    '                            <i data-lucide="arrow-right"></i>\r\n' +
+    '                        </button>\r\n' +
+    '                        <div style="text-align:center; margin-top:10px;">\r\n' +
+    '                            <button data-action="forgotDispatcherPassword" class="btn-reset-subtle" data-i18n="forgot_password">Forgot password?</button>\r\n' +
+    '                        </div>\r\n' +
+    '                    </div>\r\n' +
+    '\r\n' +
+    '                </div>\r\n' +
+    '\r\n' +
+    '            </div><!-- /login-tabs-section -->\r\n' +
+    '\r\n' +
+    '            <!-- Reset link (diskretan) -->\r\n' +
+    '            <div style="text-align:center; margin-top:24px;">\r\n' +
+    '            </div>\r\n' +
+    '\r\n' +
+    '        </div><!-- /login-card -->\r\n' +
+    '    </div><!-- /login-screen -->\r\n' +
+    '\r\n' +
+    '    <!-- MODAL / VIEW ZA PROMENU LOZINKE NA PRVOM LOGOVANJU -->\r\n' +
+    '    <div id="dispatcher-password-setup-view" class="login-container hidden">\r\n' +
+    '        <div class="login-card">\r\n' +
+    '            <div class="login-header">\r\n' +
+    '                <div class="logo">\r\n' +
+    '                    <i data-lucide="key-round" style="color: var(--primary-color);"></i>\r\n' +
+    '                    <span '... 206588 more characters
+  
+      at TestContext.<anonymous> (file:///C:/Users/cane/Desktop/BusCommand-ca-monthly-import/tests/unit/ui-security.test.mjs:66:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: `<!DOCTYPE html>\r\n<html lang="en" data-app-surface="staff">\r\n<head>\r\n    <meta charset="UTF-8">\r\n    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\r\n    <title>BusCommand GÇö Dispatcher & Admin</title>\n  <link rel="icon" type="image/png" href="/brand/logo-hero.png">\n  <link rel="apple-touch-icon" href="/brand/logo-hero.png">\r\n    <!-- Google Font: Outfit (Moderan i premium izgled) -->\r\n    <link rel="preconnect" href="https://fonts.googleapis.com">\r\n    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\r\n    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">\r\n    <!-- Lucide ikone -->\r\n    <script src="https://unpkg.com/lucide@0.469.0"></script>\r\n    <!-- PDF.js / SheetJS: lazy-loaded via js/core/office-parsers.js on first import -->\r\n    <!-- Leaflet.js za mape u++ivo -->\r\n    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />\r\n    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>\r\n    <!-- G£à Firebase compat SDK (v10) -->\r\n    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>\r\n    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>\r\n    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>\r\n\r\n\r\n    <!-- Runtime (mora biti pre Vite modula) -->\r\n    <script type="module" src="translations.js"></script>\r\n    <link rel="stylesheet" href="css/design-tokens.css">\r\n    <link rel="stylesheet" href="css/brand.css">\r\n    <link rel="stylesheet" href="style.css">\r\n    \n<link rel="stylesheet" href="css/staff-desktop.css">\n    <script type="module" src="js/main-staff.js"></script>\r\n</head>\r\n<body>\r\n    <a class="bc-skip-link" href="#main-content" data-i18n="skip_to_main">Skip to main content</a>\r\n\r\n    <!-- 1. EKRAN ZA PRIJAVU (LOGIN) -->\r\n    <div id="login-screen" class="login-container">\r\n        <div class="login-card">\r\n\r\n            <!-- Selektor jezika (gore desno) -->\r\n            <div class="login-lang-selector">\r\n                <select id="login-lang-select" data-change-action="changeLanguage" aria-label="Language" data-i18n-aria-label="language_select_aria">\r\n                    <option value="en">=ƒç¼=ƒçº English</option>\r\n                    <option value="de">=ƒç¬=ƒç¬ Deutsch</option>\r\n                    <option value="sr">=ƒç+=ƒç+ Srpski</option>\r\n                </select>\r\n            </div>\r\n\r\n            <!-- Logo / Header -->\r\n            <div class="login-header">\r\n                <div class="logo bc-brand" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;">\r\n                    <img class="bc-brand-mark bc-brand-mark--hero" src="/brand/logo-hero.png" width="80" height="80" alt="BusCommand">\r\n                    <span class="bc-brand-text">BusCommand</span>\r\n                </div>\r\n                <p data-i18n="login_subtitle">Fleet Management Platform</p>\r\n                <div class="trial-badge-login hidden" id="login-trial-badge" hidden aria-hidden="true"></div>\r\n            </div>\r\n\r\n            <!-- GöÇGöÇ Driver / Dispatcher tabovi GÇö direktno bez Company ID GöÇGöÇ -->\r\n            <div id="login-tabs-section" class="login-step">\r\n\r\n                <!-- Tabovi -->\r\n                <div class="login-tabs">\r\n                    <button id="tab-driver-btn" class="login-tab hidden" hidden class="login-tab active" data-action="switchLoginTab" data-action-args='["driver"]'>\r\n                        <i data-lucide="user"></i>\r\n                        <span data-i18n="driver">Driver</span>\r\n                    </button>\r\n                    <button id="tab-dispatcher-btn" class="login-tab" data-action="switchLoginTab" data-action-args='["dispatcher"]'>\r\n                        <i data-lucide="shield"></i>\r\n                        <span data-i18n="staff_login_tab">Staff</span>\r\n                    </button>\r\n                </div>\r\n                <p id="staff-login-role-hint" class="subtitle" style="margin:8px 0 14px;font-size:0.8rem;line-height:1.35;color:var(--text-muted);" data-i18n="staff_login_role_hint">\r\n                    Staff: Dispo, Company Admin or Super Admin (own email). Drivers: Driver tab.\r\n                </p>\r\n\r\n                <!-- Forma za voza-ìa -->\r\n                <div id="driver-login-form" class="login-form-content hidden" hidden>\r\n                    <div class="form-group">\r\n                        <label for="login-driver-company" data-i18n="login_company_label">Company ID</label>\r\n                        <input type="text" id="login-driver-company" maxlength="64" autocomplete="organization"\r\n                            data-i18n-placeholder="login_company_placeholder" placeholder="e.g. city-transit">\r\n                    </div>\r\n                    <div class="form-group">\r\n                        <label for="login-driver-select" data-i18n="select_driver">Select Driver</label>\r\n                        <select id="login-driver-select"></select>\r\n                    </div>\r\n                    <div class="form-group">\r\n                        <label for="login-driver-eid">EID</label>\r\n                        <input type="text" id="login-driver-eid" maxlength="128" autocomplete="off" placeholder="EID (optional)">\r\n                    </div>\r\n                    <div class="form-group">\r\n                        <label for="login-driver-pin" data-i18n="driver_login_code_label">Login code</label>\r\n                        <div class="input-icon-wrapper">\r\n                            <i data-lucide="lock"></i>\r\n                            <input type="password" id="login-driver-pin"\r\n                                placeholder="GÇóGÇóGÇóGÇóGÇó" minlength="5" maxlength="12" inputmode="numeric"\r\n                                autocomplete="off"\r\n                                onkeydown="if(event.key==='Enter') loginAsDriver()">\r\n                        </div>\r\n                    </div>\r\n                    <div id="login-error-driver" class="login-error hidden"></div>\r\n                    <button class="btn-primary btn-full-width" data-action="loginAsDriver">\r\n                        <span data-i18n="login_btn_driver">Start Shift</span>\r\n                        <i data-lucide="arrow-right"></i>\r\n                    </button>\r\n                </div>\r\n\r\n                <!-- Forma za dispe-ìera GÇö samo desktop/PC -->\r\n                <div id="dispatcher-login-form" class="login-form-content">\r\n\r\n                    <!-- Blokada mobilnih ure-æaja -->\r\n                    <div id="dispatcher-mobile-block" class="login-error hidden" style="margin-bottom:14px; text-align:center; padding:14px; border-radius:10px;">\r\n                        <i data-lucide="monitor-x" style="width:24px;height:24px;display:block;margin:0 auto 8px; opacity:0.7;"></i>\r\n                        <strong data-i18n="dispatcher_desktop_only_title">Desktop access only</strong><br>\r\n                        <small data-i18n="dispatcher_desktop_only">Dispatcher login is restricted to authorized desktop computers.</small>\r\n                    </div>\r\n\r\n                    <div id="dispatcher-login-fields">\r\n                        <div class="form-group">\r\n                            <label for="login-dispatcher-email" data-i18n="email">Email</label>\r\n                            <div class="input-icon-wrapper">\r\n                                <i data-lucide="mail"></i>\r\n                                <input type="email" id="login-dispatcher-email"\r\n                                    data-i18n-placeholder="email_placeholder"\r\n                                    placeholder="dispatcher@company.com"\r\n                                    autocomplete="off">\r\n                            </div>\r\n                        </div>\r\n                        <div class="form-group">\r\n                            <label for="login-dispatcher-password" data-i18n="password">Password</label>\r\n                            <div class="input-icon-wrapper">\r\n                                <i data-lucide="lock"></i>\r\n                                <input type="password" id="login-dispatcher-password"\r\n                                    placeholder="GÇóGÇóGÇóGÇóGÇóGÇóGÇóGÇó"\r\n                                    autocomplete="new-password"\r\n                                    data-enter-action="loginAsDispatcher">\r\n                            </div>\r\n                        </div>\r\n                        <div id="login-error-dispatcher" class="login-error hidden"></div>\r\n                        <button class="btn-primary btn-full-width" id="dispatcher-login-btn" data-action="loginAsDispatcher">\r\n                            <span data-i18n="login_btn_disp">Login</span>\r\n                            <i data-lucide="arrow-right"></i>\r\n                        </button>\r\n                        <div style="text-align:center; margin-top:10px;">\r\n                            <button data-action="forgotDispatcherPassword" class="btn-reset-subtle" data-i18n="forgot_password">Forgot password?</button>\r\n                        </div>\r\n                    </div>\r\n\r\n                </div>\r\n\r\n            </div><!-- /login-tabs-section -->\r\n\r\n            <!-- Reset link (diskretan) -->\r\n            <div style="text-align:center; margin-top:24px;">\r\n            </div>\r\n\r\n        </div><!-- /login-card -->\r\n    </div><!-- /login-screen -->\r\n\r\n    <!-- MODAL / VIEW ZA PROMENU LOZINKE NA PRVOM LOGOVANJU -->\r\n    <div id="dispatcher-password-setup-view" class="login-container hidden">\r\n        <div class="login-card">\r\n            <div class="login-header">\r\n                <div class="logo">\r\n                    <i data-lucide="key-round" style="color: var(--primary-color);"></i>\r\n                    <span `... 206588 more characters,
+    expected: /data-i18n="add_new_company">Register New Company</,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+EXIT=1
+SUMMARY test:unit==== test:unit === EXIT=1 1
+SUMMARY check:secrets==== check:secrets === EXIT=0 0
+SUMMARY build==== build === EXIT=0 0
+SUMMARY lint==== lint === EXIT=0 0

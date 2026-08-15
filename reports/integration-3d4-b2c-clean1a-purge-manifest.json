@@ -1,0 +1,489 @@
+{
+  "checkpoint": "3D.4-B2C-CLEAN1-A",
+  "generatedAt": "2026-08-11T17:00:00+02:00",
+  "mode": "READ_ONLY_MANIFEST_ONLY",
+  "purgeExecuted": false,
+  "projectId": "buscommand-preview",
+  "databaseId": "(default)",
+  "companyId": "buscommand-staging-qa-no-real-data",
+  "runId": "BC-STG-B2C-20260811-5432cb",
+  "sensitiveFieldsOmitted": true,
+  "blagussCandidates": 0,
+  "ambiguityCount": 0,
+  "verdict": "READY_FOR_OWNER_PURGE_APPROVAL",
+  "currentCounts": {
+    "admins": 2,
+    "dispatchers": 0,
+    "drivers": 1,
+    "groups": 1
+  },
+  "expectedPostcondition": {
+    "admins": 1,
+    "dispatchers": 0,
+    "drivers": 0,
+    "groups": 0,
+    "activeShifts": 0,
+    "activeLocks": 0,
+    "activeNonterminalJobs": 0,
+    "runAuthUsers": 0,
+    "runCredentialsProfiles": 0,
+    "persistentQaCa": 1,
+    "qaTenantRoot": "present",
+    "blaguss": "unchanged_out_of_scope"
+  },
+  "retainFreeze": [
+    {
+      "id": "RETAIN-COMPANY-ROOT",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data",
+      "actionProposed": "RETAIN",
+      "reason": "Persistent QA tenant root"
+    },
+    {
+      "id": "RETAIN-PROFILE-MAIN",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/profile/main",
+      "actionProposed": "RETAIN",
+      "reason": "QA company profile baseline"
+    },
+    {
+      "id": "RETAIN-SETTINGS-MAIN",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/settings/main",
+      "actionProposed": "RETAIN",
+      "reason": "Plan/status/limits baseline"
+    },
+    {
+      "id": "RETAIN-IDENTITY-GUARD",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/ops/driver_identity_guard",
+      "actionProposed": "RETAIN",
+      "optionalSafeUpdate": "revision_bump_plus_updatedAt_only",
+      "liveRevision": 1,
+      "reason": "Server-owned uniqueness guard; fields revision+updatedAt only (server/driver-identity-guard.js)"
+    },
+    {
+      "id": "RETAIN-PERSISTENT-CA-USER",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/users/jQYUfo1QjsgVw1zn5ez37ONLYI32",
+      "actionProposed": "RETAIN",
+      "authUid": "jQYUfo1QjsgVw1zn5ez37ONLYI32",
+      "role": "company_admin",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "createdAt": "2026-08-11T15:58:42+02:00",
+      "reason": "Persistent baseline QA Company Admin"
+    },
+    {
+      "id": "RETAIN-PERSISTENT-CA-AUTH",
+      "kind": "auth",
+      "authUid": "jQYUfo1QjsgVw1zn5ez37ONLYI32",
+      "actionProposed": "RETAIN",
+      "reason": "Persistent baseline QA Company Admin Auth"
+    },
+    {
+      "id": "RETAIN-AUDIT-LOG-COLLECTION",
+      "kind": "firestore",
+      "path": "companies/buscommand-staging-qa-no-real-data/audit_log/*",
+      "actionProposed": "RETAIN",
+      "note": "Immutable audit/tombstone retention; path wildcard is RETAIN-only, never DELETE",
+      "reason": "Audit retention; does not affect SA counts"
+    }
+  ],
+  "resources": [
+    {
+      "id": "DEL-SHIFT-2026-08-11",
+      "kind": "firestore",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/shifts/5b3d1050-a58b-4d05-9949-f90fbcb73593_2026-08-11",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "DELETE",
+      "runScopeEvidence": [
+        "exact driverId 5b3d1050-a58b-4d05-9949-f90fbcb73593 from B2C data-ledger",
+        "date 2026-08-11 inside run monthly import window",
+        "groupId 543201 on related import/shift trail",
+        "B2C log 07-monthly-import.txt"
+      ],
+      "dependencies": [],
+      "deleteOrder": 10,
+      "precondition": "document exists; no active import lock",
+      "expectedPostcondition": "doc absent",
+      "rollback": "restore from backup only; no product undo",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true
+    },
+    {
+      "id": "DEL-SHIFT-2026-08-12",
+      "kind": "firestore",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/shifts/5b3d1050-a58b-4d05-9949-f90fbcb73593_2026-08-12",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "DELETE",
+      "runScopeEvidence": [
+        "exact driverId from B2C data-ledger",
+        "date 2026-08-12 inside run monthly import window",
+        "groupId 543201",
+        "B2C log 07-monthly-import.txt"
+      ],
+      "dependencies": [],
+      "deleteOrder": 20,
+      "precondition": "document exists; no active import lock",
+      "expectedPostcondition": "doc absent",
+      "rollback": "restore from backup only",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true
+    },
+    {
+      "id": "DEL-SCHEDULE-2026-08",
+      "kind": "firestore",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/schedules/5b3d1050-a58b-4d05-9949-f90fbcb73593_2026-08",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "DELETE",
+      "runScopeEvidence": [
+        "exact driverId month schedule doc",
+        "month 2026-08 from run import",
+        "only schedule doc in QA schedules collection"
+      ],
+      "dependencies": ["DEL-SHIFT-2026-08-11", "DEL-SHIFT-2026-08-12"],
+      "deleteOrder": 30,
+      "precondition": "shifts for driver/month deleted or accepted residual",
+      "expectedPostcondition": "doc absent",
+      "rollback": "restore from backup only",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true
+    },
+    {
+      "id": "DEL-IMPORT-JOB-48BC",
+      "kind": "firestore",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/monthly_plan_imports/48bc7166-8fa7-40f9-a880-c9d7c486ecfe",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "DELETE",
+      "runScopeEvidence": [
+        "status completed",
+        "driverId 5b3d1050-a58b-4d05-9949-f90fbcb73593",
+        "driverName BC-STG 5432cb Driver",
+        "groupId 543201",
+        "month 2026-08",
+        "assignedBy dispo uid rbIR3IRkbne9s742q6ci5dI3hf12 from run"
+      ],
+      "dependencies": [],
+      "deleteOrder": 40,
+      "precondition": "status terminal completed; lock absent",
+      "expectedPostcondition": "doc absent; future runs use new importId",
+      "rollback": "not required for counts; optional retain as immutable residue",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true,
+      "alternateAction": "RETAIN_IMMUTABLE_TERMINAL_EVIDENCE"
+    },
+    {
+      "id": "DEL-IMPORT-JOB-AD44",
+      "kind": "firestore",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/monthly_plan_imports/ad44c56d-558e-458e-939a-96f051cae6ab",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "DELETE",
+      "runScopeEvidence": [
+        "status completed",
+        "sourceName BC-STG-5432cb-monthly.csv",
+        "driverId 5b3d1050-a58b-4d05-9949-f90fbcb73593",
+        "month 2026-08"
+      ],
+      "dependencies": [],
+      "deleteOrder": 50,
+      "precondition": "status terminal completed; lock absent",
+      "expectedPostcondition": "doc absent",
+      "rollback": "optional retain",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true,
+      "alternateAction": "RETAIN_IMMUTABLE_TERMINAL_EVIDENCE"
+    },
+    {
+      "id": "DEL-DUTY-543201-S01",
+      "kind": "firestore",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/service_plans/543201-543201-1-2026-08-01/duties/543201.S01",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "DELETE",
+      "runScopeEvidence": [
+        "duty code 543201.S01 from B2C service plan",
+        "parent plan publishedBy run CA xfoYMF95iUdBWUKQnMKyLlLMuMh1",
+        "sourceFileName BC-STG-5432cb-dienstplan.csv"
+      ],
+      "dependencies": ["DEL-SHIFT-2026-08-11", "DEL-SHIFT-2026-08-12"],
+      "deleteOrder": 60,
+      "precondition": "no remaining shifts referencing duty",
+      "expectedPostcondition": "duty doc absent",
+      "rollback": "restore from backup only",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true
+    },
+    {
+      "id": "DEL-SERVICE-PLAN",
+      "kind": "firestore",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/service_plans/543201-543201-1-2026-08-01",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "DELETE",
+      "runScopeEvidence": [
+        "plan id group 543201",
+        "publishedBy run CA UID",
+        "sourceFileName BC-STG-5432cb-dienstplan.csv",
+        "status active"
+      ],
+      "dependencies": ["DEL-DUTY-543201-S01"],
+      "deleteOrder": 70,
+      "precondition": "duties subdocs deleted",
+      "expectedPostcondition": "plan doc absent; findCompanyGroupReferences plans=false",
+      "rollback": "restore from backup only",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true
+    },
+    {
+      "id": "DEL-DRIVER-CREDENTIALS",
+      "kind": "firestore",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/driver_credentials/5b3d1050-a58b-4d05-9949-f90fbcb73593",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "DELETE",
+      "runScopeEvidence": [
+        "exact driverId from B2C ledger",
+        "paired driver profile active=false groupId=543201",
+        "run-prefixed driver email on profile"
+      ],
+      "dependencies": ["DEL-SHIFT-2026-08-11", "DEL-SHIFT-2026-08-12", "DEL-SCHEDULE-2026-08"],
+      "deleteOrder": 80,
+      "precondition": "shifts/schedule removed",
+      "expectedPostcondition": "credentials absent; EID uniqueness slot free (findEidConflict)",
+      "rollback": "restore from backup only",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true
+    },
+    {
+      "id": "DEL-DRIVER-PROFILE",
+      "kind": "firestore",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/drivers/5b3d1050-a58b-4d05-9949-f90fbcb73593",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "DELETE",
+      "runScopeEvidence": [
+        "active false",
+        "groupId/lineId 543201",
+        "name BC-STG 5432cb Driver",
+        "email bc-stg-b2c-20260811-5432cb-driver@example.invalid",
+        "statusChangedBy run CA UID",
+        "createdAt 2026-08-11 16:22:34 UTC+2"
+      ],
+      "dependencies": ["DEL-DRIVER-CREDENTIALS"],
+      "deleteOrder": 90,
+      "precondition": "credentials deleted; no shift/schedule refs",
+      "expectedPostcondition": "driversSnap.size decreases by 1 → Drivers=0",
+      "rollback": "restore from backup only",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true
+    },
+    {
+      "id": "DEL-GROUP-543201",
+      "kind": "firestore",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/groups/543201",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "DELETE",
+      "runScopeEvidence": [
+        "exact groupId 543201",
+        "name BC-STG-5432cb Line",
+        "B2C log 04-group-dispo-created.txt",
+        "created in run window 2026-08-11"
+      ],
+      "dependencies": [
+        "DEL-DRIVER-PROFILE",
+        "DEL-SERVICE-PLAN",
+        "DEL-SHIFT-2026-08-11",
+        "DEL-SHIFT-2026-08-12",
+        "DEL-SCHEDULE-2026-08"
+      ],
+      "deleteOrder": 100,
+      "precondition": "findCompanyGroupReferences returns empty for 543201",
+      "expectedPostcondition": "Groups=0",
+      "rollback": "restore from backup only",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true
+    },
+    {
+      "id": "DEL-RUN-CA-USER",
+      "kind": "firestore",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/users/xfoYMF95iUdBWUKQnMKyLlLMuMh1",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "DELETE",
+      "runScopeEvidence": [
+        "Auth/Firestore UID xfoYMF95iUdBWUKQnMKyLlLMuMh1",
+        "run-prefixed email bc-stg-b2c-20260811-5432cb-ca@example.invalid",
+        "role company_admin",
+        "B2C log 03-run-ca-created.txt",
+        "createdAt run window"
+      ],
+      "dependencies": ["DEL-GROUP-543201"],
+      "deleteOrder": 110,
+      "precondition": "run-owned group/plan/driver refs removed; persistent CA path untouched",
+      "expectedPostcondition": "companyAdmins count=1 (persistent only)",
+      "rollback": "restore from backup only",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true
+    },
+    {
+      "id": "DEL-RUN-CA-AUTH",
+      "kind": "auth",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "authUid": "xfoYMF95iUdBWUKQnMKyLlLMuMh1",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "DELETE",
+      "runScopeEvidence": [
+        "exact Auth UID matches run CA Firestore user",
+        "run-prefixed synthetic email present in Auth list",
+        "created 11 Aug 2026"
+      ],
+      "dependencies": ["DEL-RUN-CA-USER"],
+      "deleteOrder": 120,
+      "precondition": "Firestore user doc deleted or deletionPending; revokeRefreshTokens first",
+      "expectedPostcondition": "Auth user absent; no login possible",
+      "rollback": "recreate Auth only with owner approval",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true
+    },
+    {
+      "id": "DEL-RUN-DRIVER-AUTH",
+      "kind": "auth",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "authUid": "5b3d1050-a58b-4d05-9949-f90fbcb73593",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "DELETE",
+      "runScopeEvidence": [
+        "Auth UID equals exact run driverId",
+        "created 11 Aug 2026 in run window",
+        "paired Firestore drivers + driver_credentials docs"
+      ],
+      "dependencies": ["DEL-DRIVER-PROFILE", "DEL-DRIVER-CREDENTIALS"],
+      "deleteOrder": 130,
+      "precondition": "Firestore driver profile+credentials deleted",
+      "expectedPostcondition": "Auth user absent",
+      "rollback": "recreate Auth only with owner approval",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true
+    },
+    {
+      "id": "VERIFY-ABSENT-DISPO-AUTH",
+      "kind": "auth",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "authUid": "rbIR3IRkbne9s742q6ci5dI3hf12",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "VERIFY_ABSENT",
+      "runScopeEvidence": [
+        "B2C cleanup deleted dispo",
+        "Auth users list lacks dispo UID/email",
+        "users collection lacks dispo UID"
+      ],
+      "dependencies": [],
+      "deleteOrder": 5,
+      "precondition": "none",
+      "expectedPostcondition": "still absent",
+      "rollback": "n/a",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true
+    },
+    {
+      "id": "VERIFY-ABSENT-DISPO-USER",
+      "kind": "firestore",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/users/rbIR3IRkbne9s742q6ci5dI3hf12",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "VERIFY_ABSENT",
+      "runScopeEvidence": [
+        "users collection lists only persistent+run CA UIDs",
+        "B2C cleanup used deleteCompanyDispatcher product path"
+      ],
+      "dependencies": [],
+      "deleteOrder": 6,
+      "precondition": "none",
+      "expectedPostcondition": "still absent",
+      "rollback": "n/a",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true
+    },
+    {
+      "id": "VERIFY-ABSENT-IMPORT-LOCKS",
+      "kind": "firestore",
+      "project": "buscommand-preview",
+      "companyId": "buscommand-staging-qa-no-real-data",
+      "path": "companies/buscommand-staging-qa-no-real-data/monthly_plan_import_locks",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "VERIFY_ABSENT",
+      "runScopeEvidence": [
+        "Console: This collection has no documents",
+        "import jobs status completed"
+      ],
+      "dependencies": [],
+      "deleteOrder": 1,
+      "precondition": "none",
+      "expectedPostcondition": "collection remains empty",
+      "rollback": "n/a",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true
+    },
+    {
+      "id": "LOCAL-SESSION-BC-STG-B2C-RUN",
+      "kind": "local-file",
+      "path": "browser sessionStorage key BC_STG_B2C_RUN (ephemeral)",
+      "runId": "BC-STG-B2C-20260811-5432cb",
+      "actionProposed": "VERIFY_ABSENT",
+      "runScopeEvidence": [
+        "B2C logs reference sessionStorage BC_STG_B2C_RUN for temp passwords"
+      ],
+      "dependencies": [],
+      "deleteOrder": 140,
+      "precondition": "operator browser only",
+      "expectedPostcondition": "key cleared/absent",
+      "rollback": "n/a",
+      "ambiguityStatus": "NONE",
+      "sensitiveFieldsOmitted": true
+    }
+  ],
+  "forbiddenPatterns": [
+    "companies/{companyId}/** recursive delete",
+    "deleteCompanyAtomic",
+    "collection-wide delete",
+    "companyId=blaguss",
+    "/blaguss/",
+    "persistent CA Auth/Firestore delete"
+  ],
+  "deleteOrderSummary": [
+    "1 VERIFY import locks empty",
+    "5-6 VERIFY dispo Auth+user absent",
+    "10-20 DELETE shifts 11+12",
+    "30 DELETE schedule month",
+    "40-50 DELETE terminal import jobs (or retain immutable)",
+    "60-70 DELETE duty then service plan",
+    "80-90 DELETE driver credentials then profile",
+    "100 DELETE group 543201",
+    "110 DELETE run CA Firestore user",
+    "120 DELETE run CA Auth",
+    "130 DELETE run driver Auth",
+    "140 VERIFY/clear local sessionStorage",
+    "POST SA getCompanyDetail counts 1/0/0/0; guard RETAIN (+optional revision bump)"
+  ]
+}

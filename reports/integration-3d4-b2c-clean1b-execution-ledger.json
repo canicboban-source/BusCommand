@@ -1,0 +1,56 @@
+{
+  "checkpoint": "3D.4-B2C-CLEAN1-B-IAM1",
+  "date": "2026-08-11",
+  "verdict": "BLOCKED_PRE_MUTATION",
+  "executorSha256": "62a08c8598d9163ec0f9a75d5999bf4e6246140b95d01067db30901cc96191e5",
+  "manifestSha256": "d95dc839d9fa30677a27a9d45a19722e94d2c35b087c293aa2c9ebc6c11c70da",
+  "projectId": "buscommand-preview",
+  "companyId": "buscommand-staging-qa-no-real-data",
+  "runId": "BC-STG-B2C-20260811-5432cb",
+  "gitHead": "80bd34bdd85e07bea23cb9bc52793c72e3b31660",
+  "staged": 0,
+  "identity": {
+    "activeCount": 1,
+    "principalType": "user",
+    "emailLogged": false
+  },
+  "stateGate": {
+    "phaseBefore": "BLOCKED",
+    "armed": false,
+    "mutated": false,
+    "stickyMutatedPhase": false
+  },
+  "iam": {
+    "preexisting": false,
+    "role": "roles/firebaseauth.admin",
+    "conditionTitle": "clean1b-iam1-20260811",
+    "expiresUtc": "2026-08-11T18:39:09Z",
+    "added": 1,
+    "removed": 1,
+    "unconditionalFallback": false,
+    "criticalRevocationRequired": false,
+    "memberDisclosed": false
+  },
+  "authProbe": {
+    "maxWaitSec": 300,
+    "finalHttp": 403,
+    "result": "PROPAGATION_TIMEOUT"
+  },
+  "dryRun": { "invoked": false },
+  "execute": { "invoked": false },
+  "mutations": {
+    "firestoreDeletes": 0,
+    "authDeletes": 0,
+    "beginTransaction": 0,
+    "commit": 0
+  },
+  "safety": {
+    "blagussTouched": false,
+    "newAdminKey": false,
+    "renderSecretAccess": false,
+    "sourceChange": false,
+    "commitPushPrDeploy": false,
+    "rulesIndexesChanged": false,
+    "consoleManualDelete": false
+  }
+}

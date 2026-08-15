@@ -1,0 +1,75 @@
+
+> buscommand-server@1.0.10 build
+> node scripts/check-no-secrets.js && node scripts/clean-dist.js && node scripts/build-surface-html.js && node scripts/ensure-favicon.js && vite build && node scripts/copy-static-to-dist.js && node scripts/check-firebase-isolation.js && node scripts/check-bundle-budgets.js
+
+check-no-secrets: OK
+Cleaned generated dist/
+Wrote driver.html, staff.html, index.html (landing) from index.legacy-monolith.html
+  driver bytes: 77452 | staff bytes: 218105
+Synced surface HTML + brand assets → dist/
+FAVICON OK index.html -> /brand/logo-hero.png
+FAVICON OK staff.html -> /brand/logo-hero.png
+FAVICON OK driver.html -> /brand/logo-hero.png
+vite v6.4.3 building for production...
+transforming...
+✓ 186 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                       0.74 kB │ gzip:   0.44 kB
+dist/driver.html                                     78.09 kB │ gzip:  15.46 kB
+dist/assets/staff-Dj_3c3I0.html                     218.90 kB │ gzip:  36.98 kB
+dist/staff.html                                     219.80 kB │ gzip:  37.21 kB
+dist/assets/driver-BC0pKL4m.css                       8.12 kB │ gzip:   2.22 kB
+dist/assets/staff-DSV3M92k.css                       97.79 kB │ gzip:  14.76 kB
+dist/assets/init-Bis54pep.css                       123.59 kB │ gzip:  20.47 kB
+dist/assets/submit-lock-5bNCNtTX.js                   0.36 kB │ gzip:   0.25 kB
+dist/assets/shell-driver-58WNW2MY.js                  1.44 kB │ gzip:   0.63 kB
+dist/assets/office-parsers-BGZdoc9w.js                1.64 kB │ gzip:   0.67 kB
+dist/assets/plan-import-loader-zjek5rUW.js            2.12 kB │ gzip:   1.08 kB
+dist/assets/msg-compose-loader-hsj5RxEX.js            2.31 kB │ gzip:   1.14 kB
+dist/assets/schedule-import-utils-CiV38YJ_.js         3.23 kB │ gzip:   1.50 kB
+dist/assets/help-support-DCtwAiW_.js                  3.82 kB │ gzip:   1.45 kB
+dist/assets/line-roster-DdcseRMA.js                   4.24 kB │ gzip:   1.43 kB
+dist/assets/shell-staff-BwJglRHH.js                   6.02 kB │ gzip:   2.24 kB
+dist/assets/reports-luxxsHtA.js                       7.76 kB │ gzip:   2.71 kB
+dist/assets/company-admin-onboarding-BbL6xfiA.js     10.92 kB │ gzip:   3.52 kB
+dist/assets/monthly-plan-persist-utils-LbE0lSqE.js   11.04 kB │ gzip:   4.51 kB
+dist/assets/msg-compose-CdzYBlQX.js                  14.28 kB │ gzip:   4.92 kB
+dist/assets/network-status-BvH9fEnu.js               15.77 kB │ gzip:   5.60 kB
+dist/assets/sa-create-company-flow-DIR5Eq1-.js       16.36 kB │ gzip:   4.48 kB
+dist/assets/driver-CHH8nw2E.js                       16.93 kB │ gzip:   5.32 kB
+dist/assets/plan-import-fB0WDfUf.js                  22.32 kB │ gzip:   6.67 kB
+dist/assets/company-admin-groups-v70awLFV.js         29.93 kB │ gzip:   8.06 kB
+dist/assets/company-admin-DPaXTgYK.js                65.96 kB │ gzip:  18.19 kB
+dist/assets/monthly-plans-BV8zyeA-.js                88.05 kB │ gzip:  26.09 kB
+dist/assets/dashboard-d-KEhGhH.js                    91.63 kB │ gzip:  26.13 kB
+dist/assets/staff-z_ynttGA.js                       129.68 kB │ gzip:  38.27 kB
+dist/assets/init-DjBZ8--V.js                        140.55 kB │ gzip:  41.09 kB
+dist/assets/translations-4jkj0eAW.js                349.56 kB │ gzip: 105.58 kB
+✓ built in 2.07s
+COPY translations.js
+COPY sw-driver.js
+COPY manifest-driver.webmanifest
+COPY templates/BusCommand_Drivers_Import_v1.csv
+COPY templates/BusCommand_Dienstplan_Blank_v1.csv
+COPY templates/BusCommand_Dienstplan_Blank_v1.xlsx
+COPY templates/BusCommand_Monthly_Group_Plan_Blank_v1.csv
+COPY templates/BusCommand_Monthly_Group_Plan_Blank_v1.xlsx
+COPY icons/driver-192.png
+COPY icons/driver-512.png
+COPY brand/logo-full.svg
+COPY brand/logo-hero.png
+COPY brand/logo-icon-512.png
+COPY brand/logo-mark.png
+COPY brand/logo-mark.svg
+COPY style.css
+COPY css/design-tokens.css
+COPY css/driver-pwa.css
+COPY css/brand.css
+COPY css/staff-desktop.css
+Firebase isolation check passed for source and build output.
+OK  driver app JS excl. translations: 173241 <= 225280
+OK  staff app JS excl. translations: 572596 <= 581632
+OK  largest non-translations driver chunk: 140548 <= 153600
+OK  translations chunk: 349563 <= 377856
+Bundle budgets OK (D17 soft-pilot).

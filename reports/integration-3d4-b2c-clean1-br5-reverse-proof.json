@@ -1,0 +1,17 @@
+{
+  "br4Sha256": "8a90f6b17370589bbe3a6c8c10279920ea1a36cb32acfa1b4d96ecc569e3a5ba",
+  "br5Sha256": "e52c281ccfb38e8ed5cdfb4334e4b5901bfd503b73b887c8ee00ca84aa1c6411",
+  "reversedBr5EqualsBr4": true,
+  "reversedSha256": "8a90f6b17370589bbe3a6c8c10279920ea1a36cb32acfa1b4d96ecc569e3a5ba",
+  "allowedDeltas": [
+    "header comment BR4→BR5",
+    "CHECKPOINT BR4→BR5",
+    "REQUIRED_SHA d95dc839d9fa30677a27a9d45a19722e94d2c35b087c293aa2c9ebc6c11c70da → dde57d99c13cb18756fcae7b08620a5e15527c8d720bda8ae4dd9c47ae310fdd",
+    "assertContentFingerprint empty-object fail-closed",
+    "assertDeleteAllowlist empty-object fail-closed"
+  ],
+  "insertedLineCounts": {
+    "emptyFpAssert": 3,
+    "emptyFpAllowlist": 3
+  }
+}

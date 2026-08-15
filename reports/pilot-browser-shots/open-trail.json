@@ -1,0 +1,34 @@
+{
+  "trail": [
+    {
+      "step": "09-sa-before-open",
+      "note": "SA logged in",
+      "url": "http://localhost:8766/staff.html?mode=demo",
+      "pages": 1
+    },
+    {
+      "step": "modal-labels",
+      "openLabel": "Inspect",
+      "hasRawKey": false,
+      "snippet": "Dispatcher / firm contact\nEmail\nCountry\n\nGroups: 101, 310, 320\n\nSave email & country\nReset password\nInspect"
+    },
+    {
+      "step": "10-sa-detail-modal",
+      "note": "Open btn=\"Inspect\"",
+      "url": "http://localhost:8766/staff.html?mode=demo",
+      "pages": 1
+    },
+    {
+      "step": "11-after-open",
+      "note": "tabs 1->1, impersonated=true, modal=false",
+      "url": "http://localhost:8766/staff.html?mode=demo",
+      "pages": 1
+    }
+  ],
+  "pagesBefore": 1,
+  "pagesAfter": 1,
+  "openLabel": "Inspect",
+  "impersonated": true,
+  "stillSaModal": false,
+  "dispoShell": true
+}

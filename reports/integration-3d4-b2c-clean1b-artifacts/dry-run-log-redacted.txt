@@ -1,0 +1,57 @@
+CHECKPOINT=3D.4-B2C-CLEAN1-B
+TIME_UTC=2026-08-11T17:23:06Z
+PROJECT=buscommand-preview
+COMPANY=buscommand-staging-qa-no-real-data
+RUN_ID=BC-STG-B2C-20260811-5432cb
+EXECUTOR=purge-rest.mjs
+EXECUTOR_SHA256=62a08c8598d9163ec0f9a75d5999bf4e6246140b95d01067db30901cc96191e5
+MANIFEST_SHA256=d95dc839d9fa30677a27a9d45a19722e94d2c35b087c293aa2c9ebc6c11c70da
+MODE=DRY_RUN (no --execute)
+CLOUD_SHELL_STATE=$HOME/clean1b/evidence/execution-state.json
+
+=== LIVE DRY-RUN STDOUT (observed) ===
+PROJECT_OK
+MANIFEST_HASH_OK
+DELETE_FS_COUNT=11
+DELETE_AUTH_COUNT=2
+BLAGUSS_CANDIDATES=0
+ADMIN_READ_PROBE_OK
+FATAL: REST forbidden/conflict/rate status=403
+DRY_EXIT=2
+
+MISSING required markers (not reached):
+AUTH_PREVALIDATION_OK
+DELETE_DOCS_LIVE_OK
+VERIFY_ABSENT_OK
+BASELINE_COUNTS_OK 2/0/1/1
+RETAIN_OK
+COMMIT_BODY_OK
+DRY_RUN_PASS
+
+=== STATE (redacted) ===
+phase=BLOCKED
+mode=DRY_RUN
+errorCode=REST_AUTHZ
+errorMessage=REST forbidden/conflict/rate status=403
+executorSha256=62a08c8598d9163ec0f9a75d5999bf4e6246140b95d01067db30901cc96191e5
+updatedAt=2026-08-11T17:23:06.357Z
+checkpoint=3D.4-B2C-CLEAN1-BR3
+MUTATED_SENTINEL=ABSENT
+ARMED_SENTINEL=ABSENT
+
+=== FAILURE LOCUS ===
+Failed immediately after ADMIN_READ_PROBE_OK, before AUTH_PREVALIDATION_OK.
+Executor next step is authPrevalidation() → Identity Toolkit accounts:lookup.
+Interpretation: user OAuth token can read Firestore admin probe paths, but Auth Admin / identitytoolkit lookup returns HTTP 403.
+
+=== MUTATIONS ===
+FirestoreSTORE_DELETES=0
+AUTH_DELETES=0
+BEGIN_TRANSACTION=0
+COMMIT=0
+EXECUTE_INVOKED=false
+
+=== FOLLOW-ON ===
+Per owner contract: BLOCKED PRE-MUTATION → do not --execute, no retry, no Console manual delete.
+Cloud Shell evidence left in place for read-only reconciliation.
+New owner order required after IAM/Auth Admin capability is available for the Cloud Shell identity.

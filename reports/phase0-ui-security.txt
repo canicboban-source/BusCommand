@@ -1,0 +1,204 @@
+﻿Γ£ö production dispatcher cannot open company settings or run admin actions (1.2375ms)
+Γ£ö company admin retains own-company administration sections but production reset stays disabled (0.1982ms)
+Γ£ö single-submission lock ignores a rapid second click and restores the button (1.1334ms)
+Γ£ö security-sensitive production labels have distinct EN, DE and SR translations (28.4497ms)
+Γ£û production company form has i18n labels and no visible PIN field (3.7125ms)
+Γ£ö driver export is tenant-scoped and excludes identity and login secrets (0.3789ms)
+Γä╣ tests 6
+Γä╣ suites 0
+Γä╣ pass 5
+Γä╣ fail 1
+Γä╣ cancelled 0
+Γä╣ skipped 0
+Γä╣ todo 0
+Γä╣ duration_ms 175.9416
+
+Γ£û failing tests:
+
+test at tests\unit\ui-security.test.mjs:63:1
+Γ£û production company form has i18n labels and no visible PIN field (3.7125ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /data-i18n="add_new_company">Register New Company</. Input:
+  
+  '<!DOCTYPE html>\r\n' +
+    '<html lang="en" data-app-surface="staff">\r\n' +
+    '<head>\r\n' +
+    '    <meta charset="UTF-8">\r\n' +
+    '    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\r\n' +
+    '    <title>BusCommand ΓÇö Dispatcher & Admin</title>\n' +
+    '  <link rel="icon" type="image/png" href="/brand/logo-hero.png">\n' +
+    '  <link rel="apple-touch-icon" href="/brand/logo-hero.png">\r\n' +
+    '    <!-- Google Font: Outfit (Moderan i premium izgled) -->\r\n' +
+    '    <link rel="preconnect" href="https://fonts.googleapis.com">\r\n' +
+    '    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\r\n' +
+    '    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">\r\n' +
+    '    <!-- Lucide ikone -->\r\n' +
+    '    <script src="https://unpkg.com/lucide@0.469.0"></script>\r\n' +
+    '    <!-- PDF.js / SheetJS: lazy-loaded via js/core/office-parsers.js on first import -->\r\n' +
+    '    <!-- Leaflet.js za mape u┼╛ivo -->\r\n' +
+    '    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />\r\n' +
+    '    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>\r\n' +
+    '    <!-- Γ£à Firebase compat SDK (v10) -->\r\n' +
+    '    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>\r\n' +
+    '    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>\r\n' +
+    '    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>\r\n' +
+    '\r\n' +
+    '\r\n' +
+    '    <!-- Runtime (mora biti pre Vite modula) -->\r\n' +
+    '    <script type="module" src="translations.js"></script>\r\n' +
+    '    <link rel="stylesheet" href="css/design-tokens.css">\r\n' +
+    '    <link rel="stylesheet" href="css/brand.css">\r\n' +
+    '    <link rel="stylesheet" href="style.css">\r\n' +
+    '    \n' +
+    '<link rel="stylesheet" href="css/staff-desktop.css">\n' +
+    '    <script type="module" src="js/main-staff.js"></script>\r\n' +
+    '</head>\r\n' +
+    '<body>\r\n' +
+    '    <a class="bc-skip-link" href="#main-content" data-i18n="skip_to_main">Skip to main content</a>\r\n' +
+    '\r\n' +
+    '    <!-- 1. EKRAN ZA PRIJAVU (LOGIN) -->\r\n' +
+    '    <div id="login-screen" class="login-container">\r\n' +
+    '        <div class="login-card">\r\n' +
+    '\r\n' +
+    '            <!-- Selektor jezika (gore desno) -->\r\n' +
+    '            <div class="login-lang-selector">\r\n' +
+    '                <select id="login-lang-select" data-change-action="changeLanguage" aria-label="Language" data-i18n-aria-label="language_select_aria">\r\n' +
+    '                    <option value="en">≡ƒç¼≡ƒçº English</option>\r\n' +
+    '                    <option value="de">≡ƒç⌐≡ƒç¬ Deutsch</option>\r\n' +
+    '                    <option value="sr">≡ƒç╖≡ƒç╕ Srpski</option>\r\n' +
+    '                </select>\r\n' +
+    '            </div>\r\n' +
+    '\r\n' +
+    '            <!-- Logo / Header -->\r\n' +
+    '            <div class="login-header">\r\n' +
+    '                <div class="logo bc-brand" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;">\r\n' +
+    '                    <img class="bc-brand-mark bc-brand-mark--hero" src="/brand/logo-hero.png" width="80" height="80" alt="BusCommand">\r\n' +
+    '                    <span class="bc-brand-text">BusCommand</span>\r\n' +
+    '                </div>\r\n' +
+    '                <p data-i18n="login_subtitle">Fleet Management Platform</p>\r\n' +
+    '                <div class="trial-badge-login hidden" id="login-trial-badge" hidden aria-hidden="true"></div>\r\n' +
+    '            </div>\r\n' +
+    '\r\n' +
+    '            <!-- ΓöÇΓöÇ Driver / Dispatcher tabovi ΓÇö direktno bez Company ID ΓöÇΓöÇ -->\r\n' +
+    '            <div id="login-tabs-section" class="login-step">\r\n' +
+    '\r\n' +
+    '                <!-- Tabovi -->\r\n' +
+    '                <div class="login-tabs">\r\n' +
+    `                    <button id="tab-driver-btn" class="login-tab hidden" hidden class="login-tab active" data-action="switchLoginTab" data-action-args='["driver"]'>\r\n` +
+    '                        <i data-lucide="user"></i>\r\n' +
+    '                        <span data-i18n="driver">Driver</span>\r\n' +
+    '                    </button>\r\n' +
+    `                    <button id="tab-dispatcher-btn" class="login-tab" data-action="switchLoginTab" data-action-args='["dispatcher"]'>\r\n` +
+    '                        <i data-lucide="shield"></i>\r\n' +
+    '                        <span data-i18n="staff_login_tab">Staff</span>\r\n' +
+    '                    </button>\r\n' +
+    '                </div>\r\n' +
+    '                <p id="staff-login-role-hint" class="subtitle" style="margin:8px 0 14px;font-size:0.8rem;line-height:1.35;color:var(--text-muted);" data-i18n="staff_login_role_hint">\r\n' +
+    '                    Staff: Dispo, Company Admin or Super Admin (own email). Drivers: Driver tab.\r\n' +
+    '                </p>\r\n' +
+    '\r\n' +
+    '                <!-- Forma za voza─ìa -->\r\n' +
+    '                <div id="driver-login-form" class="login-form-content hidden" hidden>\r\n' +
+    '                    <div class="form-group">\r\n' +
+    '                        <label for="login-driver-company" data-i18n="login_company_label">Company ID</label>\r\n' +
+    '                        <input type="text" id="login-driver-company" maxlength="64" autocomplete="organization"\r\n' +
+    '                            data-i18n-placeholder="login_company_placeholder" placeholder="e.g. city-transit">\r\n' +
+    '                    </div>\r\n' +
+    '                    <div class="form-group">\r\n' +
+    '                        <label for="login-driver-select" data-i18n="select_driver">Select Driver</label>\r\n' +
+    '                        <select id="login-driver-select"></select>\r\n' +
+    '                    </div>\r\n' +
+    '                    <div class="form-group">\r\n' +
+    '                        <label for="login-driver-eid">EID</label>\r\n' +
+    '                        <input type="text" id="login-driver-eid" maxlength="128" autocomplete="off" placeholder="EID (optional)">\r\n' +
+    '                    </div>\r\n' +
+    '                    <div class="form-group">\r\n' +
+    '                        <label for="login-driver-pin" data-i18n="driver_login_code_label">Login code</label>\r\n' +
+    '                        <div class="input-icon-wrapper">\r\n' +
+    '                            <i data-lucide="lock"></i>\r\n' +
+    '                            <input type="password" id="login-driver-pin"\r\n' +
+    '                                placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇó" minlength="5" maxlength="12" inputmode="numeric"\r\n' +
+    '                                autocomplete="off"\r\n' +
+    `                                onkeydown="if(event.key==='Enter') loginAsDriver()">\r\n` +
+    '                        </div>\r\n' +
+    '                    </div>\r\n' +
+    '                    <div id="login-error-driver" class="login-error hidden"></div>\r\n' +
+    '                    <button class="btn-primary btn-full-width" data-action="loginAsDriver">\r\n' +
+    '                        <span data-i18n="login_btn_driver">Start Shift</span>\r\n' +
+    '                        <i data-lucide="arrow-right"></i>\r\n' +
+    '                    </button>\r\n' +
+    '                </div>\r\n' +
+    '\r\n' +
+    '                <!-- Forma za dispe─ìera ΓÇö samo desktop/PC -->\r\n' +
+    '                <div id="dispatcher-login-form" class="login-form-content">\r\n' +
+    '\r\n' +
+    '                    <!-- Blokada mobilnih ure─æaja -->\r\n' +
+    '                    <div id="dispatcher-mobile-block" class="login-error hidden" style="margin-bottom:14px; text-align:center; padding:14px; border-radius:10px;">\r\n' +
+    '                        <i data-lucide="monitor-x" style="width:24px;height:24px;display:block;margin:0 auto 8px; opacity:0.7;"></i>\r\n' +
+    '                        <strong data-i18n="dispatcher_desktop_only_title">Desktop access only</strong><br>\r\n' +
+    '                        <small data-i18n="dispatcher_desktop_only">Dispatcher login is restricted to authorized desktop computers.</small>\r\n' +
+    '                    </div>\r\n' +
+    '\r\n' +
+    '                    <div id="dispatcher-login-fields">\r\n' +
+    '                        <div class="form-group">\r\n' +
+    '                            <label for="login-dispatcher-email" data-i18n="email">Email</label>\r\n' +
+    '                            <div class="input-icon-wrapper">\r\n' +
+    '                                <i data-lucide="mail"></i>\r\n' +
+    '                                <input type="email" id="login-dispatcher-email"\r\n' +
+    '                                    data-i18n-placeholder="email_placeholder"\r\n' +
+    '                                    placeholder="dispatcher@company.com"\r\n' +
+    '                                    autocomplete="off">\r\n' +
+    '                            </div>\r\n' +
+    '                        </div>\r\n' +
+    '                        <div class="form-group">\r\n' +
+    '                            <label for="login-dispatcher-password" data-i18n="password">Password</label>\r\n' +
+    '                            <div class="input-icon-wrapper">\r\n' +
+    '                                <i data-lucide="lock"></i>\r\n' +
+    '                                <input type="password" id="login-dispatcher-password"\r\n' +
+    '                                    placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó"\r\n' +
+    '                                    autocomplete="new-password"\r\n' +
+    '                                    data-enter-action="loginAsDispatcher">\r\n' +
+    '                            </div>\r\n' +
+    '                        </div>\r\n' +
+    '                        <div id="login-error-dispatcher" class="login-error hidden"></div>\r\n' +
+    '                        <button class="btn-primary btn-full-width" id="dispatcher-login-btn" data-action="loginAsDispatcher">\r\n' +
+    '                            <span data-i18n="login_btn_disp">Login</span>\r\n' +
+    '                            <i data-lucide="arrow-right"></i>\r\n' +
+    '                        </button>\r\n' +
+    '                        <div style="text-align:center; margin-top:10px;">\r\n' +
+    '                            <button data-action="forgotDispatcherPassword" class="btn-reset-subtle" data-i18n="forgot_password">Forgot password?</button>\r\n' +
+    '                        </div>\r\n' +
+    '                    </div>\r\n' +
+    '\r\n' +
+    '                </div>\r\n' +
+    '\r\n' +
+    '            </div><!-- /login-tabs-section -->\r\n' +
+    '\r\n' +
+    '            <!-- Reset link (diskretan) -->\r\n' +
+    '            <div style="text-align:center; margin-top:24px;">\r\n' +
+    '            </div>\r\n' +
+    '\r\n' +
+    '        </div><!-- /login-card -->\r\n' +
+    '    </div><!-- /login-screen -->\r\n' +
+    '\r\n' +
+    '    <!-- MODAL / VIEW ZA PROMENU LOZINKE NA PRVOM LOGOVANJU -->\r\n' +
+    '    <div id="dispatcher-password-setup-view" class="login-container hidden">\r\n' +
+    '        <div class="login-card">\r\n' +
+    '            <div class="login-header">\r\n' +
+    '                <div class="logo">\r\n' +
+    '                    <i data-lucide="key-round" style="color: var(--primary-color);"></i>\r\n' +
+    '                    <span '... 206588 more characters
+  
+      at TestContext.<anonymous> (file:///C:/Users/cane/Desktop/BusCommand-ca-monthly-import/tests/unit/ui-security.test.mjs:66:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: `<!DOCTYPE html>\r\n<html lang="en" data-app-surface="staff">\r\n<head>\r\n    <meta charset="UTF-8">\r\n    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\r\n    <title>BusCommand ΓÇö Dispatcher & Admin</title>\n  <link rel="icon" type="image/png" href="/brand/logo-hero.png">\n  <link rel="apple-touch-icon" href="/brand/logo-hero.png">\r\n    <!-- Google Font: Outfit (Moderan i premium izgled) -->\r\n    <link rel="preconnect" href="https://fonts.googleapis.com">\r\n    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\r\n    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">\r\n    <!-- Lucide ikone -->\r\n    <script src="https://unpkg.com/lucide@0.469.0"></script>\r\n    <!-- PDF.js / SheetJS: lazy-loaded via js/core/office-parsers.js on first import -->\r\n    <!-- Leaflet.js za mape u┼╛ivo -->\r\n    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />\r\n    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>\r\n    <!-- Γ£à Firebase compat SDK (v10) -->\r\n    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>\r\n    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>\r\n    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>\r\n\r\n\r\n    <!-- Runtime (mora biti pre Vite modula) -->\r\n    <script type="module" src="translations.js"></script>\r\n    <link rel="stylesheet" href="css/design-tokens.css">\r\n    <link rel="stylesheet" href="css/brand.css">\r\n    <link rel="stylesheet" href="style.css">\r\n    \n<link rel="stylesheet" href="css/staff-desktop.css">\n    <script type="module" src="js/main-staff.js"></script>\r\n</head>\r\n<body>\r\n    <a class="bc-skip-link" href="#main-content" data-i18n="skip_to_main">Skip to main content</a>\r\n\r\n    <!-- 1. EKRAN ZA PRIJAVU (LOGIN) -->\r\n    <div id="login-screen" class="login-container">\r\n        <div class="login-card">\r\n\r\n            <!-- Selektor jezika (gore desno) -->\r\n            <div class="login-lang-selector">\r\n                <select id="login-lang-select" data-change-action="changeLanguage" aria-label="Language" data-i18n-aria-label="language_select_aria">\r\n                    <option value="en">≡ƒç¼≡ƒçº English</option>\r\n                    <option value="de">≡ƒç⌐≡ƒç¬ Deutsch</option>\r\n                    <option value="sr">≡ƒç╖≡ƒç╕ Srpski</option>\r\n                </select>\r\n            </div>\r\n\r\n            <!-- Logo / Header -->\r\n            <div class="login-header">\r\n                <div class="logo bc-brand" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;">\r\n                    <img class="bc-brand-mark bc-brand-mark--hero" src="/brand/logo-hero.png" width="80" height="80" alt="BusCommand">\r\n                    <span class="bc-brand-text">BusCommand</span>\r\n                </div>\r\n                <p data-i18n="login_subtitle">Fleet Management Platform</p>\r\n                <div class="trial-badge-login hidden" id="login-trial-badge" hidden aria-hidden="true"></div>\r\n            </div>\r\n\r\n            <!-- ΓöÇΓöÇ Driver / Dispatcher tabovi ΓÇö direktno bez Company ID ΓöÇΓöÇ -->\r\n            <div id="login-tabs-section" class="login-step">\r\n\r\n                <!-- Tabovi -->\r\n                <div class="login-tabs">\r\n                    <button id="tab-driver-btn" class="login-tab hidden" hidden class="login-tab active" data-action="switchLoginTab" data-action-args='["driver"]'>\r\n                        <i data-lucide="user"></i>\r\n                        <span data-i18n="driver">Driver</span>\r\n                    </button>\r\n                    <button id="tab-dispatcher-btn" class="login-tab" data-action="switchLoginTab" data-action-args='["dispatcher"]'>\r\n                        <i data-lucide="shield"></i>\r\n                        <span data-i18n="staff_login_tab">Staff</span>\r\n                    </button>\r\n                </div>\r\n                <p id="staff-login-role-hint" class="subtitle" style="margin:8px 0 14px;font-size:0.8rem;line-height:1.35;color:var(--text-muted);" data-i18n="staff_login_role_hint">\r\n                    Staff: Dispo, Company Admin or Super Admin (own email). Drivers: Driver tab.\r\n                </p>\r\n\r\n                <!-- Forma za voza─ìa -->\r\n                <div id="driver-login-form" class="login-form-content hidden" hidden>\r\n                    <div class="form-group">\r\n                        <label for="login-driver-company" data-i18n="login_company_label">Company ID</label>\r\n                        <input type="text" id="login-driver-company" maxlength="64" autocomplete="organization"\r\n                            data-i18n-placeholder="login_company_placeholder" placeholder="e.g. city-transit">\r\n                    </div>\r\n                    <div class="form-group">\r\n                        <label for="login-driver-select" data-i18n="select_driver">Select Driver</label>\r\n                        <select id="login-driver-select"></select>\r\n                    </div>\r\n                    <div class="form-group">\r\n                        <label for="login-driver-eid">EID</label>\r\n                        <input type="text" id="login-driver-eid" maxlength="128" autocomplete="off" placeholder="EID (optional)">\r\n                    </div>\r\n                    <div class="form-group">\r\n                        <label for="login-driver-pin" data-i18n="driver_login_code_label">Login code</label>\r\n                        <div class="input-icon-wrapper">\r\n                            <i data-lucide="lock"></i>\r\n                            <input type="password" id="login-driver-pin"\r\n                                placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇó" minlength="5" maxlength="12" inputmode="numeric"\r\n                                autocomplete="off"\r\n                                onkeydown="if(event.key==='Enter') loginAsDriver()">\r\n                        </div>\r\n                    </div>\r\n                    <div id="login-error-driver" class="login-error hidden"></div>\r\n                    <button class="btn-primary btn-full-width" data-action="loginAsDriver">\r\n                        <span data-i18n="login_btn_driver">Start Shift</span>\r\n                        <i data-lucide="arrow-right"></i>\r\n                    </button>\r\n                </div>\r\n\r\n                <!-- Forma za dispe─ìera ΓÇö samo desktop/PC -->\r\n                <div id="dispatcher-login-form" class="login-form-content">\r\n\r\n                    <!-- Blokada mobilnih ure─æaja -->\r\n                    <div id="dispatcher-mobile-block" class="login-error hidden" style="margin-bottom:14px; text-align:center; padding:14px; border-radius:10px;">\r\n                        <i data-lucide="monitor-x" style="width:24px;height:24px;display:block;margin:0 auto 8px; opacity:0.7;"></i>\r\n                        <strong data-i18n="dispatcher_desktop_only_title">Desktop access only</strong><br>\r\n                        <small data-i18n="dispatcher_desktop_only">Dispatcher login is restricted to authorized desktop computers.</small>\r\n                    </div>\r\n\r\n                    <div id="dispatcher-login-fields">\r\n                        <div class="form-group">\r\n                            <label for="login-dispatcher-email" data-i18n="email">Email</label>\r\n                            <div class="input-icon-wrapper">\r\n                                <i data-lucide="mail"></i>\r\n                                <input type="email" id="login-dispatcher-email"\r\n                                    data-i18n-placeholder="email_placeholder"\r\n                                    placeholder="dispatcher@company.com"\r\n                                    autocomplete="off">\r\n                            </div>\r\n                        </div>\r\n                        <div class="form-group">\r\n                            <label for="login-dispatcher-password" data-i18n="password">Password</label>\r\n                            <div class="input-icon-wrapper">\r\n                                <i data-lucide="lock"></i>\r\n                                <input type="password" id="login-dispatcher-password"\r\n                                    placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó"\r\n                                    autocomplete="new-password"\r\n                                    data-enter-action="loginAsDispatcher">\r\n                            </div>\r\n                        </div>\r\n                        <div id="login-error-dispatcher" class="login-error hidden"></div>\r\n                        <button class="btn-primary btn-full-width" id="dispatcher-login-btn" data-action="loginAsDispatcher">\r\n                            <span data-i18n="login_btn_disp">Login</span>\r\n                            <i data-lucide="arrow-right"></i>\r\n                        </button>\r\n                        <div style="text-align:center; margin-top:10px;">\r\n                            <button data-action="forgotDispatcherPassword" class="btn-reset-subtle" data-i18n="forgot_password">Forgot password?</button>\r\n                        </div>\r\n                    </div>\r\n\r\n                </div>\r\n\r\n            </div><!-- /login-tabs-section -->\r\n\r\n            <!-- Reset link (diskretan) -->\r\n            <div style="text-align:center; margin-top:24px;">\r\n            </div>\r\n\r\n        </div><!-- /login-card -->\r\n    </div><!-- /login-screen -->\r\n\r\n    <!-- MODAL / VIEW ZA PROMENU LOZINKE NA PRVOM LOGOVANJU -->\r\n    <div id="dispatcher-password-setup-view" class="login-container hidden">\r\n        <div class="login-card">\r\n            <div class="login-header">\r\n                <div class="logo">\r\n                    <i data-lucide="key-round" style="color: var(--primary-color);"></i>\r\n                    <span `... 206588 more characters,
+    expected: /data-i18n="add_new_company">Register New Company</,
+    operator: 'match',
+    diff: 'simple'
+  }

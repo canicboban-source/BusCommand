@@ -1,0 +1,47 @@
+# B2C-INTEGRATION-C1 — Accepted checkpoint manifest
+# Date: 2026-08-12
+# Verdict: READY_FOR_C2
+# Branch: staging/phase-3-isolation
+# HEAD: 80bd34bdd85e07bea23cb9bc52793c72e3b31660
+# Remote staging SHA: 80bd34bdd85e07bea23cb9bc52793c72e3b31660 (matches HEAD)
+# staged=0 deletions=0
+# Allowlist dirty identity: 20/20 (M=12 A=8 D=0)
+# Combined patch SHA-256: 98efb56f500f30d3b90c2ad131a904b96c7d35e6cf84d548ad5bda865db2521a
+# Last D17 (from accepted H1-A.1 evidence): staff=570283 max=581632 headroom=11349 translations=344633
+# Authoritative proof: this manifest + reports/b2c-integration-c1-logs/ — screenshot is not sufficient alone.
+
+## ALLOWLIST (exact 20)
+
+# B2C-02
+M	css/staff-desktop.css	+180/-0	MATCH b2c02-review.patch
+M	js/dispatcher/plan-import.js	+70/-32	MATCH b2c02-review.patch
+A	js/ui/month-abbr.js	+86/-0	MATCH b2c02-review.patch
+M	tests/e2e/phase2r-b11-file-recovery.spec.js	+2/-2	MATCH b2c02-review.patch
+A	tests/e2e/b2c02-monthly-import-responsive.spec.js	+192/-0	MATCH b2c02-review.patch
+A	tests/unit/month-abbr.test.mjs	+62/-0	MATCH b2c02-review.patch
+
+# B2C-04
+M	js/dispatcher/monthly-plans.js	+9/-4	MATCH b2c04-review.patch
+M	tests/unit/dispatcher-month-selector.test.mjs	+13/-0	MATCH b2c04-review.patch
+A	tests/e2e/b2c04-monthly-month-locale.spec.js	+134/-0	MATCH b2c04-review.patch
+
+# H1-A / H1-A.1
+A	js/dispatcher/msg-compose-loader.js	+137/-0	MATCH b2c-d17-h1a1-review.patch
+M	js/dispatcher/plan-import-loader.js	+16/-3	MATCH b2c-d17-h1a1-review.patch
+M	js/ui/i18n.js	+8/-6	MATCH b2c-d17-h1a1-review.patch
+M	js/surface/register-staff-sections.js	+19/-5	MATCH b2c-d17-h1a1-review.patch
+M	js/register-onclick-staff.js	+52/-2	MATCH b2c-d17-h1a1-review.patch
+M	js/install-staff.js	+0/-2	MATCH b2c-d17-h1a1-review.patch
+M	translations.js	+3/-0	MATCH b2c-d17-h1a1-review.patch
+A	tests/unit/b2c-d17-h1a-msg-compose-loader.test.mjs	+266/-0	MATCH b2c-d17-h1a1-review.patch
+A	tests/e2e/b2c-d17-h1a1-msg-compose-cold-lazy.spec.js	+226/-0	MATCH b2c-d17-h1a1-review.patch
+A	tests/e2e/b2c-d17-h1a-msg-compose-lazy.spec.js	+125/-0	MATCH b2c-d17-h1a1-review.patch
+M	tests/unit/poglavlje-17-performance-budgets.test.mjs	+4/-1	MATCH b2c-d17-h1a1-review.patch
+
+## C2 PLAN (DO NOT EXECUTE IN C1)
+- Stage only the 20 paths above
+- Pre-commit gates: secrets, targeted lint, relevant unit, B2C-02/04/H1-A.1 E2E, languages sr/en/de, one build+D17
+- Commit on staging/phase-3-isolation
+- Message: fix(staging): harden responsive imports and lazy message loading
+- Push only staging branch; one Integrated QA workflow; no PR/merge/deploy; Render Auto Deploy Off
+- EXCLUDE all reports/, scripts helpers, and other dirty/untracked outside allowlist
