@@ -153,27 +153,41 @@ function sendDriverApp(res) {
   return res.sendFile(path.join(STATIC_DIR, "driver.html"));
 }
 
+function sendLandingApp(res) {
+  res.setHeader("Cache-Control", "no-cache");
+  return res.sendFile(path.join(STATIC_DIR, "index.html"));
+}
+
 /**
- * Which surface shell a bare host serves. Matched on the leftmost hostname label
- * only — never on a full domain — so the same build serves preview, staging and
- * production without embedding a production host in the source.
- * `d.` / `driver.` → driver PWA; every other host → staff app.
+ * Host → surface (leftmost DNS label only — never a hardcoded production domain):
+ *   d. / driver.  → driver PWA
+ *   app.          → staff (SA / CA / Dispo login)
+ *   www. / apex / anything else → marketing landing (index.html)
  */
 const DRIVER_HOST_LABELS = new Set(["d", "driver"]);
+const STAFF_HOST_LABELS = new Set(["app"]);
+
+function leftmostHostLabel(req) {
+  const host = String(req.hostname || req.headers.host || "").toLowerCase();
+  return host.split(":")[0].split(".")[0];
+}
 
 function isDriverHost(req) {
-  const host = String(req.hostname || req.headers.host || "").toLowerCase();
-  return DRIVER_HOST_LABELS.has(host.split(":")[0].split(".")[0]);
+  return DRIVER_HOST_LABELS.has(leftmostHostLabel(req));
+}
+
+function isStaffAppHost(req) {
+  return STAFF_HOST_LABELS.has(leftmostHostLabel(req));
 }
 
 function sendSurfaceForHost(req, res) {
-  return isDriverHost(req) ? sendDriverApp(res) : sendStaffApp(res);
+  if (isDriverHost(req)) return sendDriverApp(res);
+  if (isStaffAppHost(req)) return sendStaffApp(res);
+  return sendLandingApp(res);
 }
 
 // Shell routes stay ahead of express.static so the host decides which surface `/`
 // opens; otherwise static's directory index would answer with dist/index.html.
-// Preview / desktop entry: `/` is BusCommand (email + password). No driver-PWA
-// gate, unless the request arrives on the driver subdomain.
 app.get(["/", "/index.html"], (req, res) => sendSurfaceForHost(req, res));
 
 app.get("/driver", (_req, res) => sendDriverApp(res));
@@ -1710,8 +1724,7 @@ app.get("*", (req, res) => {
   if (req.path.startsWith("/staff")) {
     return sendStaffApp(res);
   }
-  // Otherwise the host decides: driver subdomain keeps the PWA, everything else
-  // opens the BusCommand staff app (email + password), not a surface chooser.
+  // Otherwise the host decides: driver → PWA, app → staff, www/apex/other → landing.
   return sendSurfaceForHost(req, res);
 });
 

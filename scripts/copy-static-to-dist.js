@@ -10,6 +10,8 @@ const FILES = [
   "translations.js",
   "sw-driver.js",
   "manifest-driver.webmanifest",
+  "favicon.ico",
+  "favicon.svg",
   "templates/BusCommand_Drivers_Import_v1.csv",
   "templates/BusCommand_Dienstplan_Blank_v1.csv",
   "templates/BusCommand_Dienstplan_Blank_v1.xlsx",

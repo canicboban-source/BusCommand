@@ -38,19 +38,26 @@ test("hashed build output is readable cross-origin and stays immutable", () => {
   assert.match(SRC, /public, max-age=31536000, immutable/);
 });
 
-test("driver subdomain serves the driver shell, every other host the staff shell", () => {
+test("host labels map to driver / staff / landing shells", () => {
   assert.match(SRC, /const DRIVER_HOST_LABELS = new Set\(\["d", "driver"\]\)/);
+  assert.match(SRC, /const STAFF_HOST_LABELS = new Set\(\["app"\]\)/);
   assert.match(SRC, /function isDriverHost/);
+  assert.match(SRC, /function isStaffAppHost/);
+  assert.match(SRC, /function sendLandingApp/);
   assert.match(SRC, /function sendSurfaceForHost/);
   // `/` and the HTML catch-all must both go through host resolution.
   assert.match(SRC, /app\.get\(\["\/", "\/index\.html"\], \(req, res\) => sendSurfaceForHost\(req, res\)\)/);
+  // app. → staff; d./driver. → driver; otherwise landing (www / apex / localhost).
+  assert.match(SRC, /if \(isDriverHost\(req\)\) return sendDriverApp\(res\);/);
+  assert.match(SRC, /if \(isStaffAppHost\(req\)\) return sendStaffApp\(res\);/);
+  assert.match(SRC, /return sendLandingApp\(res\);/);
 });
 
 test("host routing matches the leftmost label only, never a hardcoded domain", () => {
   // Keeps the no-production-host-in-source contract from cors-local-assets.test.js.
   assert.doesNotMatch(SRC, /app\.buscommand\.com/);
   assert.doesNotMatch(SRC, /d\.buscommand\.com/);
-  assert.match(SRC, /host\.split\(":"\)\[0\]\.split\("\."\)\[0\]/);
+  assert.match(SRC, /leftmostHostLabel|host\.split\(":"\)\[0\]\.split\("\."\)\[0\]/);
 });
 
 test("render.yaml allowlists every browser-facing surface host", () => {
