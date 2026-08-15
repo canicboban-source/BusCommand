@@ -1,7 +1,7 @@
 // BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
 import { activateShiftCatalogForLine } from "../core/line-shift-catalog.js";
-import { showToast } from "../core/utils.js";
+import { showToast, refreshIcons } from "../core/utils.js";
 import { rejectDispatcherWithoutGroups } from "../auth/login-ui.js";
 import { persistUserSession, syncUserSession } from "../auth/login-session.js";
 import { clearAllPasswordFields, clearAuthSetupFields } from "../auth/password-fields.js";
@@ -203,7 +203,7 @@ function switchToGroupSetup() {
     populateGroupSetupSelect(window.currentUser.id);
     const createBlock = document.getElementById("group-setup-create-block");
     if (createBlock) createBlock.style.display = "none";
-    lucide.createIcons();
+    refreshIcons();
 }
 
 export {

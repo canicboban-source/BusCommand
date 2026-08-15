@@ -4317,3 +4317,81 @@ body.light-theme .company-settings-policy-grid article > svg { color:#15803d; }
     .company-groups-stat > span { width: 28px; height: 28px; }
     .company-group-metrics { grid-template-columns: 1fr 1fr; }
 }
+
+/* ── D17 dedup: shared list / doc / mini-control primitives ──────────────
+   Extracted from repeated inline style="" blocks in js/admin/ and js/data/.
+   Keeping them here (static CSS, not counted by the D17 JS budget) instead of
+   re-emitting the same declarations from every innerHTML template. */
+.bc-filter-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; margin-right: 4px; }
+.bc-filter-chip {
+    padding: 5px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1); background: transparent; color: var(--text-muted);
+    transition: all 0.15s;
+}
+.bc-filter-chip.is-on { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.1); color: var(--text-main); }
+.bc-filter-chip.is-line { border-width: 2px; font-weight: 700; }
+.bc-filter-chip.is-line.is-on {
+    border-color: var(--bc-chip-color);
+    background: color-mix(in srgb, var(--bc-chip-color) 20%, transparent);
+    color: var(--bc-chip-color);
+}
+
+.bc-empty-note { font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 16px; }
+
+.bc-list-row {
+    display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    border-left: 3px solid var(--bc-chip-color, rgba(255,255,255,0.07));
+    border-radius: 8px; margin-bottom: 6px;
+}
+.bc-list-row.is-split { justify-content: space-between; margin-bottom: 8px; border-left-width: 1px; border-left-color: rgba(255,255,255,0.07); }
+.bc-list-row.is-plain { padding: 8px 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--panel-border); border-radius: var(--radius-md); }
+.bc-list-main { flex: 1; min-width: 0; text-align: left; }
+.bc-list-title { font-weight: 600; font-size: 0.88rem; color: var(--text-main); }
+.bc-list-title.is-bold { font-weight: 700; }
+.bc-list-sub { font-size: 0.76rem; color: var(--text-muted); margin-top: 3px; }
+.bc-list-meta { color: var(--text-muted); font-size: 0.78rem; margin-left: 8px; }
+.bc-list-meta.is-accent { color: var(--primary-color); font-size: 0.75rem; }
+
+.bc-badge {
+    display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px;
+    border-radius: 12px; margin-right: 8px; color: var(--bc-chip-color);
+    background: color-mix(in srgb, var(--bc-chip-color) 13%, transparent);
+    border: 1px solid color-mix(in srgb, var(--bc-chip-color) 33%, transparent);
+}
+
+.bc-row-actions { display: flex; gap: 8px; }
+.bc-mini-btn {
+    background: none; border: 1px solid transparent; border-radius: 6px; padding: 3px 8px;
+    cursor: pointer; font-size: 0.73rem; font-weight: 600; flex-shrink: 0;
+}
+.bc-mini-btn.is-info { background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.35); color: #3b82f6; padding: 4px 10px; }
+.bc-mini-btn.is-danger { border-color: rgba(239,68,68,0.3); color: #ef4444; }
+.bc-mini-btn.is-danger.is-solid { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); padding: 4px 8px; font-size: 0.75rem; }
+.bc-mini-btn.is-self-center { align-self: center; }
+.bc-mini-link { padding: 4px 8px; font-size: 0.75rem; height: auto; text-decoration: none; display: flex; align-items: center; gap: 4px; }
+
+.bc-doc-frame { width: 100%; border: none; border-radius: 6px; }
+.bc-doc-img { max-width: 100%; border-radius: var(--radius-md); display: block; margin: 0 auto; }
+.bc-doc-text { padding: 14px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; color: var(--text-main); }
+.bc-doc-fallback { padding: 20px; text-align: center; color: var(--text-muted); }
+.bc-doc-fallback i { width: 32px; height: 32px; display: block; margin: 0 auto 8px; }
+.bc-doc-line { margin: 4px 0; }
+
+.bc-icon-xs { width: 12px; height: 12px; }
+.bc-icon-sm { width: 14px; height: 14px; }
+
+.company-overview-support-banner {
+    margin: 12px 0; padding: 12px 14px; border-radius: 10px;
+    border: 1px solid rgba(245,158,11,0.45); background: rgba(245,158,11,0.1);
+}
+.company-overview-support-banner .bc-list-sub { font-size: 0.85rem; margin-top: 4px; }
+.company-overview-support-banner p { margin: 8px 0 0; font-size: 0.85rem; }
+.company-overview-support-banner .btn-secondary { margin-top: 10px; }
+
+.hub-import-preview-body { margin-top: 10px; font-size: 0.85rem; }
+.hub-import-preview-body > p { margin: 0 0 8px; }
+.hub-import-preview-body > ul { margin: 0 0 10px; padding-left: 18px; color: var(--text-muted); }
+.hub-import-preview-body .bc-list-sub { margin: 0; font-size: inherit; }
+.hub-import-preview-body .btn-secondary + .btn-secondary,
+.hub-import-preview-body .btn-primary + .btn-secondary { margin-left: 8px; }

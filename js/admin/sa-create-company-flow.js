@@ -3,12 +3,13 @@ import { initializeLoginSelects } from "../auth/login-ui.js";
 import { saveState } from "../core/state.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import ApiClient from "../core/api-client.js";
-import { escapeHtml, showToast } from "../core/utils.js";
+import { escapeHtml, showToast, refreshIcons, toastApiError } from "../core/utils.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import { runSingleSubmission } from "../core/submit-lock.js";
 import { attachFocusTrap, detachFocusTrap } from "../ui/focus-trap.js";
+import { btnSecondary } from "../ui/markup.js";
 
 let hooks = {
   refreshDashboard: async () => {},
@@ -740,9 +741,7 @@ function superadminOpenCreateMissingAdmin(companyId) {
                 <button type="submit" class="btn-primary" id="sa-missing-ca-submit" data-sa-missing-ca-submit="1">
                     ${escapeHtml(t("sa_detail_create_missing_save") || "Create")}
                 </button>
-                <button type="button" class="btn-secondary" ${actionAttr("superadminCancelCreateMissingAdmin")}>
-                    ${escapeHtml(t("sa_detail_create_missing_cancel") || "Cancel")}
-                </button>
+                ${btnSecondary(actionAttr("superadminCancelCreateMissingAdmin"), `${escapeHtml(t("sa_detail_create_missing_cancel") || "Cancel")}`)}
             </div>
         </form>
     `;
@@ -752,7 +751,7 @@ function superadminOpenCreateMissingAdmin(companyId) {
     if (nameEl && typeof nameEl.focus === "function") {
         try { nameEl.focus({ preventScroll: true }); } catch { try { nameEl.focus(); } catch { /* ignore */ } }
     }
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
     return true;
 }
 
@@ -819,10 +818,10 @@ async function superadminSubmitCreateMissingAdmin(event) {
                 clearMissingCaPassword();
                 const code = String(res?.code || "").toUpperCase();
                 if (code === "COMPENSATION_FAILED") {
-                    showToast(res.error || t("error_generic"), "error");
+                    toastApiError(res);
                     return false;
                 }
-                showToast(res.error || t("error_generic"), "error");
+                toastApiError(res);
                 return false;
             }
             // Success: clear credentials before any refresh/toast.

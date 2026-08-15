@@ -9,7 +9,7 @@ import {
 } from "./bus-ops.js";
 import { getGroupById } from "./groups.js";
 import { saveState } from "../core/state.js";
-import { escapeHtml, showToast } from "../core/utils.js";
+import { escapeHtml, showToast, refreshIcons } from "../core/utils.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr, changeAttr } from "../core/action-delegate.js";
@@ -17,6 +17,7 @@ import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import ApiClient from "../core/api-client.js";
 import { isOperationalReadOnly } from "../core/access.js";
 import { dispoChangeReasonOptions, recordDemoChangeReason } from "../dispatcher/change-reason.js";
+import { tx, btnSecondary } from "../ui/markup.js";
 
 function blockedIfReadOnly() {
     if (!isOperationalReadOnly()) return false;
@@ -43,7 +44,7 @@ function toastBusWriteConflict(result) {
 
 function refreshBusesUi() {
     renderBusesList();
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 /** Call a bus write endpoint; on success upsert the returned (or fallback) bus. */
@@ -151,7 +152,7 @@ function renderBusesList() {
         row.dataset.busId = String(b.id);
 
         const numberCell = row.insertCell();
-        numberCell.innerHTML = `<strong>${escapeHtml(b.number)}</strong>${active ? "" : ` <small>· ${escapeHtml(t("driver_status_inactive"))}</small>`}`;
+        numberCell.innerHTML = `<strong>${escapeHtml(b.number)}</strong>${active ? "" : ` <small>· ${tx("driver_status_inactive")}</small>`}`;
 
         const plateCell = row.insertCell();
         plateCell.dataset.busPlateCell = "1";
@@ -170,7 +171,7 @@ function renderBusesList() {
         actionsCell.className = "bus-fleet-actions";
         const editBtn = readOnly
             ? ""
-            : `<button type="button" class="btn-secondary hub-bus-edit-btn" ${actionAttr("toggleBusEdit", [b.id])}>${escapeHtml(t("btn_edit"))}</button>`;
+            : `<button type="button" class="btn-secondary hub-bus-edit-btn" ${actionAttr("toggleBusEdit", [b.id])}>${tx("btn_edit")}</button>`;
         const deleteBtn = readOnly
             ? ""
             : `<button type="button" class="hub-bus-toggle ${active ? "is-active" : "is-inactive"}" ${actionAttr("deleteBus", [b.id])} title="${escapeHtml(active ? (t("dispo_bus_deactivate_hint") || "") : (t("btn_activate") || ""))}">
@@ -184,12 +185,12 @@ function renderBusesList() {
             <td colspan="5">
                 <form class="hub-bus-edit-form" data-bus-edit="${escapeHtml(b.id)}" data-submit-action="saveBusOpsProfile">
                     <label>
-                        <span>${escapeHtml(t("table_plate"))}</span>
+                        <span>${tx("table_plate")}</span>
                         <input type="text" name="plate" maxlength="20" value="${escapeHtml(plate)}" data-i18n-placeholder="ph_bus_plate">
                     </label>
                     <div class="hub-bus-edit-actions">
-                        <button type="button" class="btn-secondary" ${actionAttr("toggleBusEdit", [b.id])}>${escapeHtml(t("btn_cancel"))}</button>
-                        <button type="submit" class="btn-primary">${escapeHtml(t("btn_save_changes"))}</button>
+                        ${btnSecondary(actionAttr("toggleBusEdit", [b.id]), `${tx("btn_cancel")}`)}
+                        <button type="submit" class="btn-primary">${tx("btn_save_changes")}</button>
                     </div>
                 </form>
             </td>
@@ -429,9 +430,7 @@ function renderRoutesList() {
     myRoutes.forEach(r => {
         const li = document.createElement("li");
         const deleteBtn = USE_LOCAL_STATE
-            ? `<button ${actionAttr("deleteRoute", [r.id])} style="align-self:center;background:rgba(239,68,68,0.08);color:#ef4444;border:1px solid rgba(239,68,68,0.2);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;">
-                ${t("btn_delete") || "Obriši"}
-            </button>`
+            ? `<button ${actionAttr("deleteRoute", [r.id])} class="bc-mini-btn is-danger is-solid is-self-center">${t("btn_delete") || "Obriši"}</button>`
             : "";
         li.innerHTML = `
             <div class="crud-route-info">
@@ -478,7 +477,7 @@ function addRoute(event) {
             saveState();
             document.getElementById("add-route-form").reset();
             renderRoutesList();
-            lucide.createIcons();
+            refreshIcons();
             showToast(num + " " + name + " — " + (t("route_added") || "linija dodana"), "success");
         },
         { danger: false, title: t("btn_add_route") || "Add Route", confirmText: t("btn_yes") || "Da" }
@@ -498,7 +497,7 @@ function deleteRoute(id) {
         window.state.routes = window.state.routes.filter(r => r.id !== id);
         saveState();
         renderRoutesList();
-        lucide.createIcons();
+        refreshIcons();
     }, { danger: true });
 }
 export {

@@ -1,4 +1,5 @@
 // Auto-extracted from app.js (lines 5411-6003)
+import { refreshIcons } from "../core/utils.js";
 function isReadOnly() {
     return currentUser && currentUser.impersonated === true && currentUser.readOnly === true;
 }
@@ -60,7 +61,7 @@ async function renderSuperAdminDashboardProduction() {
         listContainer.appendChild(tr);
     });
     renderCompanyAdminList();
-    lucide.createIcons();
+    refreshIcons();
 }
 
 function _renderSuperAdminDashboardDemo() {
@@ -129,7 +130,7 @@ function _renderSuperAdminDashboardDemo() {
         listContainer.appendChild(tr);
     });
     renderCompanyAdminList();
-    lucide.createIcons();
+    refreshIcons();
 }
 
 async function superadminToggleStatus(companyId, status) {
@@ -169,7 +170,7 @@ function showConfirm(message, onConfirm, opts = {}) {
     }
     if (modal) {
         modal.classList.remove("hidden");
-        lucide.createIcons();
+        refreshIcons();
     }
 }
 
@@ -280,7 +281,7 @@ function renderCompanyAdminDashboard() {
         }
     }
 
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 function superadminCreateCompany() {
@@ -387,7 +388,7 @@ function renderCompanyAdminList() {
             </button>
         </div>
     `).join('');
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+    refreshIcons();
 }
 
 function superadminDeleteCompanyAdmin(id) {
@@ -590,5 +591,5 @@ function switchToGroupSetup() {
     document.getElementById("app-container").classList.add("hidden");
     document.getElementById("dispatcher-group-setup-view").classList.remove("hidden");
     populateGroupSetupSelect(currentUser.id);
-    lucide.createIcons();
+    refreshIcons();
 }

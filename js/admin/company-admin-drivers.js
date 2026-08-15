@@ -3,7 +3,7 @@ import { loadStateFromFirestore } from "../core/firebase-service.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { actionAttr } from "../core/action-delegate.js";
-import { escapeHtml, showToast } from "../core/utils.js";
+import { escapeHtml, showToast, refreshIcons } from "../core/utils.js";
 import {
     normalizeKnownGroupIds,
     readKnownGroupIdsFromDom
@@ -11,6 +11,7 @@ import {
 import { showConfirm } from "../ui/confirm-modal.js";
 import { closeModal, showModal } from "../ui/modals.js";
 import { t, tp } from "../ui/i18n.js";
+import { icon, tx } from "../ui/markup.js";
 
 const MAX_FILE_BYTES = 1_000_000;
 /** Keep in sync with server/driver-csv.js (D24.2 guard tx write budget). */
@@ -420,15 +421,15 @@ function renderImportPreview() {
             <td><strong>${escapeHtml(`${driver.first_name} ${driver.last_name}`)}</strong></td>
             <td>${escapeHtml(driver.email)}</td>
             <td>${escapeHtml(driver.phone)}</td>
-            <td><span class="company-driver-code-ready"><i data-lucide="message-square-lock"></i>${t("ca_drivers_activation_ready")}</span></td>
+            <td><span class="company-driver-code-ready">${icon("message-square-lock")}${t("ca_drivers_activation_ready")}</span></td>
         </tr>`).join("");
     container.innerHTML = `
         <div class="company-drivers-preview-header">
             <div><strong>${escapeHtml(pendingImport.fileName)}</strong><span>${tp("ca_drivers_preview_summary", pendingImport.drivers.length, { count: pendingImport.drivers.length, group: group?.name || pendingImport.groupId })}</span></div>
-            <button type="button" class="btn-icon-nav" ${actionAttr("clearCompanyDriversImport")} aria-label="${escapeHtml(t("ca_drivers_clear_import"))}" title="${escapeHtml(t("ca_drivers_clear_import"))}"><i data-lucide="x"></i></button>
+            <button type="button" class="btn-icon-nav" ${actionAttr("clearCompanyDriversImport")} aria-label="${tx("ca_drivers_clear_import")}" title="${tx("ca_drivers_clear_import")}">${icon("x")}</button>
         </div>
         ${pendingImport.legacyCompanyCodeIgnored
-        ? `<p class="company-drivers-legacy-notice" role="status">${escapeHtml(t("ca_drivers_legacy_company_code_ignored"))}</p>`
+        ? `<p class="company-drivers-legacy-notice" role="status">${tx("ca_drivers_legacy_company_code_ignored")}</p>`
         : ""}
         <div class="company-drivers-table-wrap">
             <table class="company-drivers-table">
@@ -441,7 +442,7 @@ function renderImportPreview() {
             <i data-lucide="${importPending ? "loader-circle" : "user-plus"}"></i>
             <span>${importPending ? t("ca_drivers_importing") : tp("ca_drivers_confirm_import", pendingImport.drivers.length, { count: pendingImport.drivers.length })}</span>
         </button>`;
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 function filteredDrivers() {
@@ -469,8 +470,8 @@ function renderDirectory() {
     currentPage = Math.min(currentPage, pageCount);
     const visible = drivers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
     if (!visible.length) {
-        container.innerHTML = `<div class="company-drivers-empty"><i data-lucide="users-round"></i><strong>${t("ca_drivers_empty_title")}</strong><span>${t("ca_drivers_empty_hint")}</span></div>`;
-        if (typeof lucide !== "undefined") lucide.createIcons();
+        container.innerHTML = `<div class="company-drivers-empty">${icon("users-round")}<strong>${t("ca_drivers_empty_title")}</strong><span>${t("ca_drivers_empty_hint")}</span></div>`;
+        refreshIcons();
         return;
     }
     const rows = visible.map((driver) => {
@@ -487,7 +488,7 @@ function renderDirectory() {
             <td data-label="${t("ca_drivers_pin_short")}"><span class="company-driver-pin-status">${driver.hasPersonalCode === false ? "—" : escapeHtml(t("ca_drivers_pin_set") || "Postavljen")}</span></td>
             <td data-label="${t("ca_col_status")}"><span class="company-driver-status ${active ? "is-active" : "is-inactive"}"><i data-lucide="${active ? "circle-check" : "circle-pause"}"></i>${t(active ? "driver_status_active" : "driver_status_inactive")}</span></td>
             <td data-label="${t("table_actions")}"><div class="company-driver-row-actions">
-                <button type="button" class="btn-secondary company-driver-edit-action" ${actionAttr("openCompanyDriverEdit", [driver.id])} ${pending || editSavePending ? "disabled" : ""}><i data-lucide="pencil"></i><span>${escapeHtml(t("btn_edit"))}</span></button>
+                <button type="button" class="btn-secondary company-driver-edit-action" ${actionAttr("openCompanyDriverEdit", [driver.id])} ${pending || editSavePending ? "disabled" : ""}>${icon("pencil")}<span>${tx("btn_edit")}</span></button>
                 <button type="button" class="btn-secondary company-driver-status-action ${active ? "is-danger" : ""}" ${actionAttr("toggleCompanyDriverStatus", [driver.id])} ${pending || editSavePending ? "disabled" : ""}>${pending ? t("ca_drivers_updating") : escapeHtml(action)}</button>
             </div></td>
         </tr>`;
@@ -498,12 +499,12 @@ function renderDirectory() {
             <thead><tr><th>${t("ca_drivers_eid")}</th><th>${t("ca_drivers_name")}</th><th>${t("ca_plan_group")}</th><th>${t("ca_drivers_known_lines")}</th><th>${t("ca_drivers_phone")}</th><th>${t("ca_drivers_pin_short")}</th><th>${t("ca_col_status")}</th><th>${t("table_actions")}</th></tr></thead>
             <tbody>${rows}</tbody>
         </table></div>
-        ${pageCount > 1 ? `<nav class="company-drivers-pagination" aria-label="${escapeHtml(t("ca_drivers_pagination"))}">
-            <button type="button" class="btn-icon-nav" ${actionAttr("changeCompanyDriversPage", [currentPage - 1])} ${currentPage === 1 ? "disabled" : ""} aria-label="${escapeHtml(t("ca_drivers_previous"))}"><i data-lucide="chevron-left"></i></button>
+        ${pageCount > 1 ? `<nav class="company-drivers-pagination" aria-label="${tx("ca_drivers_pagination")}">
+            <button type="button" class="btn-icon-nav" ${actionAttr("changeCompanyDriversPage", [currentPage - 1])} ${currentPage === 1 ? "disabled" : ""} aria-label="${tx("ca_drivers_previous")}">${icon("chevron-left")}</button>
             <span>${t("ca_drivers_page", { page: currentPage, pages: pageCount })}</span>
-            <button type="button" class="btn-icon-nav" ${actionAttr("changeCompanyDriversPage", [currentPage + 1])} ${currentPage === pageCount ? "disabled" : ""} aria-label="${escapeHtml(t("ca_drivers_next"))}"><i data-lucide="chevron-right"></i></button>
+            <button type="button" class="btn-icon-nav" ${actionAttr("changeCompanyDriversPage", [currentPage + 1])} ${currentPage === pageCount ? "disabled" : ""} aria-label="${tx("ca_drivers_next")}">${icon("chevron-right")}</button>
         </nav>` : ""}`;
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 async function handleCompanyDriversFile(event) {
@@ -677,7 +678,7 @@ function openCompanyDriverAddModal() {
     populateGroupControls();
     clearManualDriverForm();
     showModal("ca-driver-add-modal");
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
     document.getElementById("ca-driver-add-eid")?.focus();
 }
 
@@ -719,7 +720,7 @@ function openCompanyDriverEdit(driverId) {
         paintKnownGroupChecks(selected, group.value);
     };
     showModal("ca-driver-edit-modal");
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
     firstName.focus();
 }
 

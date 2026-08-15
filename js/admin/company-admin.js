@@ -1,5 +1,5 @@
 // BusCommand ESM v9.5 — Company Admin: pregled firme, licence, grupe
-import { escapeHtml, showToast } from "../core/utils.js";
+import { escapeHtml, showToast, refreshIcons, toastApiError } from "../core/utils.js";
 import { checkCompanyLicense } from "../core/license.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { t } from "../ui/i18n.js";
@@ -15,6 +15,7 @@ import ApiClient from "../core/api-client.js";
 import { openGroupHub } from "../dispatcher/group-hub.js";
 import { getFormedLineGroupIds } from "../data/groups.js";
 import { canViewOperationalRoster } from "../core/ui-permissions.js";
+import { icon, tx, btnSecondary, btnPrimary } from "../ui/markup.js";
 
 let _supportSessionCache = null;
 
@@ -34,7 +35,7 @@ async function refreshSupportSessionBadge() {
 async function endCompanySupportSession() {
     const res = await ApiClient.endCompanySupportSession();
     if (!res.success) {
-        showToast(res.error || t("error_generic"), "error");
+        toastApiError(res);
         return;
     }
     _supportSessionCache = null;
@@ -88,35 +89,35 @@ function renderLicenseCard(scope, license, { loading = false, failed = false } =
     const admin = window.currentUser;
     const unique = licenseUniqueBadge(license);
     const stateMessage = loading
-        ? `<div class="company-overview-license-state"><span class="spinner"></span>${escapeHtml(t("ca_license_loading"))}</div>`
+        ? `<div class="company-overview-license-state"><span class="spinner"></span>${tx("ca_license_loading")}</div>`
         : failed
-            ? `<div class="company-overview-license-state is-error"><i data-lucide="cloud-off"></i><span>${escapeHtml(t("ca_license_failed"))}</span><button type="button" class="btn-link" ${actionAttr("switchSection", ["company-admin-dashboard"])}>${escapeHtml(t("btn_retry"))}</button></div>`
+            ? `<div class="company-overview-license-state is-error">${icon("cloud-off")}<span>${tx("ca_license_failed")}</span><button type="button" class="btn-link" ${actionAttr("switchSection", ["company-admin-dashboard"])}>${tx("btn_retry")}</button></div>`
             : "";
 
     const support = _supportSessionCache;
     const supportBanner = support?.status === "active"
-        ? `<div class="company-overview-support-banner" role="status" style="margin:12px 0;padding:12px 14px;border:1px solid rgba(245,158,11,0.45);background:rgba(245,158,11,0.1);border-radius:10px;">
-                <strong>${escapeHtml(t("ca_support_active"))}</strong>
-                <div style="font-size:0.85rem;color:var(--text-muted);margin-top:4px;">
-                    ${escapeHtml(t("ca_support_until", { until: support.expiresAt ? new Date(support.expiresAt).toLocaleString() : "—" }))}
+        ? `<div class="company-overview-support-banner" role="status">
+                <strong>${tx("ca_support_active")}</strong>
+                <div class="bc-list-sub">
+                    ${tx("ca_support_until", { until: support.expiresAt ? new Date(support.expiresAt).toLocaleString() : "—" })}
                     · ${escapeHtml(support.category || "")}
                 </div>
-                <p style="margin:8px 0 0;font-size:0.85rem;">${escapeHtml(support.reason || "")}</p>
-                <button type="button" class="btn-secondary" style="margin-top:10px;" ${actionAttr("endCompanySupportSession")}>${escapeHtml(t("ca_support_end"))}</button>
+                <p>${escapeHtml(support.reason || "")}</p>
+                ${btnSecondary(actionAttr("endCompanySupportSession"), `${tx("ca_support_end")}`)}
            </div>`
         : "";
 
     el.innerHTML = `
         <div class="company-overview-license-main" aria-live="polite">
             <div class="company-overview-license-identity">
-                <span class="company-overview-kicker">${escapeHtml(t("ca_firm_license_title"))}</span>
+                <span class="company-overview-kicker">${tx("ca_firm_license_title")}</span>
                 <strong>${escapeHtml(companyName)}</strong>
-                <span>${escapeHtml(t("ca_firm_id"))}: <b>${escapeHtml(scope.companyId || "—")}</b></span>
-                <span>${escapeHtml(t("ca_firm_admin"))}: ${escapeHtml(admin.email || admin.name || "—")}</span>
+                <span>${tx("ca_firm_id")}: <b>${escapeHtml(scope.companyId || "—")}</b></span>
+                <span>${tx("ca_firm_admin")}: ${escapeHtml(admin.email || admin.name || "—")}</span>
             </div>
             <div class="company-overview-license-metrics">
                 <div>
-                    <span>${escapeHtml(t("ca_firm_status"))}</span>
+                    <span>${tx("ca_firm_status")}</span>
                     <strong class="${unique.tone}">${escapeHtml(unique.text)}</strong>
                 </div>
             </div>
@@ -124,18 +125,10 @@ function renderLicenseCard(scope, license, { loading = false, failed = false } =
         ${supportBanner}
         ${stateMessage}
         <div class="company-overview-license-actions">
-            <button type="button" class="btn-secondary" ${actionAttr("switchSection", ["company-admin-branding"])}>
-                <i data-lucide="palette"></i> ${escapeHtml(t("ca_manage_branding"))}
-            </button>
-            <button type="button" class="btn-secondary" ${actionAttr("switchSection", ["company-admin-groups"])}>
-                <i data-lucide="layers"></i> ${escapeHtml(t("ca_manage_groups"))}
-            </button>
-            <button type="button" class="btn-secondary" ${actionAttr("switchSection", ["company-admin-team"])}>
-                <i data-lucide="users"></i> ${escapeHtml(t("ca_manage_team"))}
-            </button>
-            <button type="button" class="btn-secondary" ${actionAttr("switchSection", ["company-admin-drivers"])}>
-                <i data-lucide="contact-round"></i> ${escapeHtml(t("ca_nav_drivers"))}
-            </button>
+            ${btnSecondary(actionAttr("switchSection", ["company-admin-branding"]), `${icon("palette")} ${tx("ca_manage_branding")}`)}
+            ${btnSecondary(actionAttr("switchSection", ["company-admin-groups"]), `${icon("layers")} ${tx("ca_manage_groups")}`)}
+            ${btnSecondary(actionAttr("switchSection", ["company-admin-team"]), `${icon("users")} ${tx("ca_manage_team")}`)}
+            ${btnSecondary(actionAttr("switchSection", ["company-admin-drivers"]), `${icon("contact-round")} ${tx("ca_nav_drivers")}`)}
         </div>`;
 }
 
@@ -146,11 +139,9 @@ function renderGroupsTable(scope) {
     if (scope.groups.length === 0) {
         el.innerHTML = `
             <div class="company-overview-empty">
-                <i data-lucide="layers-3"></i>
-                <strong>${escapeHtml(t("ca_no_groups_overview"))}</strong>
-                <button type="button" class="btn-primary" ${actionAttr("switchSection", ["company-admin-groups"])}>
-                    <i data-lucide="plus"></i> ${escapeHtml(t("btn_add_group"))}
-                </button>
+                ${icon("layers-3")}
+                <strong>${tx("ca_no_groups_overview")}</strong>
+                ${btnPrimary(actionAttr("switchSection", ["company-admin-groups"]), `${icon("plus")} ${tx("btn_add_group")}`)}
             </div>`;
         return;
     }
@@ -159,22 +150,22 @@ function renderGroupsTable(scope) {
         const st = calculateGroupStats(g, scope);
         const missingText = st.missing.map(key => t(`ca_missing_${key}`)).join(", ");
         const statusBadge = st.ready
-            ? `<span class="company-overview-status is-ready"><i data-lucide="circle-check"></i>${escapeHtml(t("ca_status_ready"))}</span>`
-            : `<span class="company-overview-status is-incomplete" title="${escapeHtml(t("ca_missing_title", { items: missingText }))}"><i data-lucide="circle-alert"></i>${escapeHtml(t("ca_status_incomplete"))}</span>`;
+            ? `<span class="company-overview-status is-ready">${icon("circle-check")}${tx("ca_status_ready")}</span>`
+            : `<span class="company-overview-status is-incomplete" title="${tx("ca_missing_title", { items: missingText })}">${icon("circle-alert")}${tx("ca_status_incomplete")}</span>`;
 
         return `<tr>
-            <td data-label="${escapeHtml(t("ca_col_line"))}">
+            <td data-label="${tx("ca_col_line")}">
                 <span class="company-overview-line">
                     <span style="--line-color:${safeColor(g.color)}"></span>
                     <strong>${escapeHtml(String(g.id))}</strong>
                 </span>
             </td>
-            <td data-label="${escapeHtml(t("ca_col_name"))}"><strong>${escapeHtml(g.name || "—")}</strong></td>
-            <td data-label="${escapeHtml(t("ca_col_drivers"))}">${st.driverCount}</td>
-            <td data-label="${escapeHtml(t("ca_col_buses"))}">${st.busCount}</td>
-            <td data-label="${escapeHtml(t("ca_col_plans"))}">${st.planCount}</td>
-            <td data-label="${escapeHtml(t("ca_col_dispatchers"))}">${st.dispatcherCount}</td>
-            <td data-label="${escapeHtml(t("ca_col_status"))}">${statusBadge}</td>
+            <td data-label="${tx("ca_col_name")}"><strong>${escapeHtml(g.name || "—")}</strong></td>
+            <td data-label="${tx("ca_col_drivers")}">${st.driverCount}</td>
+            <td data-label="${tx("ca_col_buses")}">${st.busCount}</td>
+            <td data-label="${tx("ca_col_plans")}">${st.planCount}</td>
+            <td data-label="${tx("ca_col_dispatchers")}">${st.dispatcherCount}</td>
+            <td data-label="${tx("ca_col_status")}">${statusBadge}</td>
         </tr>`;
     }).join("");
 
@@ -183,13 +174,13 @@ function renderGroupsTable(scope) {
             <table class="company-overview-table">
                 <thead>
                     <tr>
-                        <th scope="col">${escapeHtml(t("ca_col_line"))}</th>
-                        <th scope="col">${escapeHtml(t("ca_col_name"))}</th>
-                        <th scope="col">${escapeHtml(t("ca_col_drivers"))}</th>
-                        <th scope="col">${escapeHtml(t("ca_col_buses"))}</th>
-                        <th scope="col">${escapeHtml(t("ca_col_plans"))}</th>
-                        <th scope="col">${escapeHtml(t("ca_col_dispatchers"))}</th>
-                        <th scope="col">${escapeHtml(t("ca_col_status"))}</th>
+                        <th scope="col">${tx("ca_col_line")}</th>
+                        <th scope="col">${tx("ca_col_name")}</th>
+                        <th scope="col">${tx("ca_col_drivers")}</th>
+                        <th scope="col">${tx("ca_col_buses")}</th>
+                        <th scope="col">${tx("ca_col_plans")}</th>
+                        <th scope="col">${tx("ca_col_dispatchers")}</th>
+                        <th scope="col">${tx("ca_col_status")}</th>
                     </tr>
                 </thead>
                 <tbody>${rows}</tbody>
@@ -215,7 +206,7 @@ function renderSetupChecklist(scope) {
     el.innerHTML = checks.map(c => `
         <button type="button" class="company-overview-check ${c.ok ? "is-complete" : ""}" ${actionAttr("switchSection", [c.section])}>
             <span>
-                <i data-lucide="${c.ok ? "check" : "circle"}" style="width:12px;height:12px;"></i>
+                <i data-lucide="${c.ok ? "check" : "circle"}" class="bc-icon-xs"></i>
             </span>
             <strong>${escapeHtml(c.label)}</strong>
             <i data-lucide="chevron-right" class="company-overview-check-arrow"></i>
@@ -227,7 +218,7 @@ function renderDispatchersSummary(scope) {
     if (!el) return;
 
     if (scope.dispatchers.length === 0) {
-        el.innerHTML = `<div class="company-overview-empty is-compact"><i data-lucide="users"></i><strong>${escapeHtml(t("ca_no_dispatchers_short"))}</strong><button type="button" class="btn-secondary" ${actionAttr("switchSection", ["company-admin-team"])}>${escapeHtml(t("ca_manage_team"))}</button></div>`;
+        el.innerHTML = `<div class="company-overview-empty is-compact">${icon("users")}<strong>${tx("ca_no_dispatchers_short")}</strong>${btnSecondary(actionAttr("switchSection", ["company-admin-team"]), `${tx("ca_manage_team")}`)}</div>`;
         return;
     }
 
@@ -281,11 +272,11 @@ async function renderCompanyAdminDashboard() {
                 state: window.state,
                 isDemoMode: USE_LOCAL_STATE
             }), { failed: !result });
-            if (typeof lucide !== "undefined") lucide.createIcons();
+            refreshIcons();
         });
     }
 
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 function openCompanyOpsOverview() {

@@ -14,6 +14,14 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
+// ── UTILITY: refreshIcons ────────────────────────────────
+// Lucide is a CDN global that may be absent (offline, blocked, tests). Every
+// innerHTML rewrite that emits data-lucide has to re-scan, so keep the guard
+// in one place instead of repeating it at each call site.
+function refreshIcons() {
+    if (typeof lucide !== "undefined") lucide.createIcons();
+}
+
 // ── DATA ISOLATION HELPERS ───────────────────────────────
 // Vraća vozače vidljive trenutnom korisniku po ulozi
 function getVisibleDrivers() {
@@ -97,6 +105,11 @@ function showToast(message, type = "success", duration = 4000) {
     return toast;
 }
 
+/** Toast a failed API envelope, falling back to the generic error string. */
+function toastApiError(result) {
+    showToast(result?.error || t("error_generic"), "error");
+}
+
 // --- INITIAL STATE ---
 
 // ============================================================
@@ -137,9 +150,11 @@ export {
     isMobileUserAgent,
     isMobileDevice,
     escapeHtml,
+    refreshIcons,
     getVisibleDrivers,
     getVisibleGroups,
     showToast,
+    toastApiError,
     formatDateTime,
     todayDateStr,
     getScheduleByKey

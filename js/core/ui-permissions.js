@@ -47,6 +47,11 @@ function canRunCompanyAdminAction(role) {
     return normalizeUiRole(role) === "company-admin";
 }
 
+/** Same check against the signed-in user — the shape every CA write guard uses. */
+function currentUserCanRunCompanyAdminAction() {
+    return canRunCompanyAdminAction(window.currentUser?.role);
+}
+
 function canRunFactoryReset(role, isDemoMode = false) {
     return isDemoMode && ["dispatcher", "company-admin", "superadmin"].includes(normalizeUiRole(role));
 }
@@ -59,5 +64,6 @@ export {
     canViewOperationalRoster,
     canBreakPlanEditLock,
     canRunCompanyAdminAction,
+    currentUserCanRunCompanyAdminAction,
     canRunFactoryReset
 };

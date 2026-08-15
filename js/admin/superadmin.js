@@ -2,7 +2,7 @@
 import { initializeLoginSelects } from "../auth/login-ui.js";
 import { persistUserSession } from "../auth/login-session.js";
 import { saveState, clearTenantStateCache } from "../core/state.js";
-import { escapeHtml, showToast } from "../core/utils.js";
+import { escapeHtml, showToast, refreshIcons, toastApiError } from "../core/utils.js";
 import { showAppLayout } from "../layout/shell.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
@@ -12,6 +12,7 @@ import {
     loadSaCreateCompanyFlow,
     getSaCreateFlowIfLoaded
 } from "./sa-create-company-flow-loader.js";
+import { icon, btnSecondary, btnPrimary } from "../ui/markup.js";
 
 const LICENSE_PACKAGE_LIMITS = Object.freeze({
     starter: { maxDrivers: 15, maxDispatchers: 2, label: "STARTER" },
@@ -161,7 +162,7 @@ async function renderSuperAdminDashboardProduction() {
             });
         }).join("");
     }
-    lucide.createIcons();
+    refreshIcons();
 }
 
 /** Single badge: TRIAL+days (yellow) OR ACTIVE+package (green). Never mix contradictory chips. */
@@ -228,7 +229,7 @@ function _saCompanyRowHtml({
         <td class="sa-col-name"><strong>${escapeHtml(name || companyKey)}</strong></td>
         <td class="sa-col-tenant"><code>${escapeHtml(companyKey)}</code>
             <button type="button" class="btn-secondary sa-company-id-copy" ${actionAttr("superadminCopyCompanyId", [companyKey])} aria-label="${escapeHtml(t("sa_copy_company_id") || "Copy")}">
-                <i data-lucide="copy"></i>
+                ${icon("copy")}
             </button>
         </td>
         <td class="sa-col-admin">${adminLine}</td>
@@ -236,7 +237,7 @@ function _saCompanyRowHtml({
         <td class="sa-col-status"><span class="badge ${license.cls}">${escapeHtml(license.text)}</span></td>
         <td class="sa-col-actions">
             <button type="button" class="btn-secondary sa-detail-btn" ${actionAttr("superadminOpenCompanyDetail", [openId])}>
-                <i data-lucide="panel-right-open"></i> <span>${escapeHtml(t("sa_detail_open") || "Manage account")}</span>
+                ${icon("panel-right-open")} <span>${escapeHtml(t("sa_detail_open") || "Manage account")}</span>
             </button>
             ${rowActionsMenuHtml(`sa-co-${companyKey}`, menuItems)}
         </td>
@@ -485,7 +486,7 @@ function _renderSuperAdminDashboardDemo() {
 
     if (!companies.length) {
         listContainer.innerHTML = `<tr><td colspan="6" class="sa-companies-empty">${escapeHtml(t("sa_companies_empty") || "No companies yet.")}</td></tr>`;
-        lucide.createIcons();
+        refreshIcons();
         return;
     }
 
@@ -513,7 +514,7 @@ function _renderSuperAdminDashboardDemo() {
             dispId: c.id
         });
     }).join("");
-    lucide.createIcons();
+    refreshIcons();
 }
 
 async function superadminToggleStatus(companyId, status) {
@@ -623,14 +624,10 @@ function renderCompanyDetailAdmins(company) {
                     <span class="badge ${statusClass}">${escapeHtml(statusLabel)}</span>
                 </div>
                 <div class="sa-detail-admin-actions">
-                    <button type="button" class="btn-secondary" ${actionAttr("superadminResetCompanyAdminPassword", [company.id, admin.id])}>
-                        ${escapeHtml(t("sa_detail_reset_password") || "Reset password")}
-                    </button>
-                    <button type="button" class="btn-secondary" ${actionAttr("superadminSetCompanyAdminStatus", [company.id, admin.id, !active])}>
-                        ${escapeHtml(active
+                    ${btnSecondary(actionAttr("superadminResetCompanyAdminPassword", [company.id, admin.id]), `${escapeHtml(t("sa_detail_reset_password") || "Reset password")}`)}
+                    ${btnSecondary(actionAttr("superadminSetCompanyAdminStatus", [company.id, admin.id, !active]), `${escapeHtml(active
                             ? (t("sa_detail_disable_admin") || "Disable")
-                            : (t("sa_detail_enable_admin") || "Enable"))}
-                    </button>
+                            : (t("sa_detail_enable_admin") || "Enable"))}`)}
                 </div>
             </div>
         `;
@@ -777,15 +774,9 @@ function renderCompanyDetailDispatcher(company) {
             </label>
             <p class="sa-detail-settings-hint">${escapeHtml(tf("sa_detail_disp_groups", "Groups"))}: ${escapeHtml(groups || "—")}</p>
             <div class="sa-detail-admin-actions">
-                <button type="button" class="btn-primary" ${actionAttr("superadminSaveDemoCompanyProfile", [disp.id])}>
-                    ${escapeHtml(tf("sa_detail_save_profile", "Save email & country"))}
-                </button>
-                <button type="button" class="btn-secondary" ${actionAttr("superadminResetPin", [disp.id])}>
-                    ${escapeHtml(tf("sa_reset_disp_password", "Reset password"))}
-                </button>
-                <button type="button" class="btn-secondary" ${actionAttr("superadminImpersonate", [disp.id])}>
-                    ${escapeHtml(tf("sa_inspect_dispatcher", "Inspect"))}
-                </button>
+                ${btnPrimary(actionAttr("superadminSaveDemoCompanyProfile", [disp.id]), `${escapeHtml(tf("sa_detail_save_profile", "Save email & country"))}`)}
+                ${btnSecondary(actionAttr("superadminResetPin", [disp.id]), `${escapeHtml(tf("sa_reset_disp_password", "Reset password"))}`)}
+                ${btnSecondary(actionAttr("superadminImpersonate", [disp.id]), `${escapeHtml(tf("sa_inspect_dispatcher", "Inspect"))}`)}
             </div>
         </div>
     `;
@@ -899,7 +890,7 @@ async function superadminSaveCompanySettings(companyId) {
     };
     const result = await ApiClient.patchCompanySettings(id, payload);
     if (!result.success) {
-        showToast(result.error || t("error_generic"), "error");
+        toastApiError(result);
         return;
     }
     showToast(t("sa_detail_settings_saved") || "Company settings saved.", "success");
@@ -927,7 +918,7 @@ async function superadminOpenCompanyDetail(companyId) {
                 <div class="sa-company-id-cell">
                     <code id="sa-detail-company-id" class="sa-company-id-code">—</code>
                     <button type="button" id="sa-detail-copy-id-btn" class="btn-secondary sa-company-id-copy" data-action="superadminCopyCompanyId" data-action-args='[]' title="${escapeHtml(t("sa_copy_company_id") || "Copy ID")}">
-                        <i data-lucide="copy" style="width:14px;height:14px;"></i>
+                        <i data-lucide="copy" class="bc-icon-sm"></i>
                     </button>
                 </div>
             </div>
@@ -1004,7 +995,7 @@ async function superadminOpenCompanyDetail(companyId) {
                 : null
         });
         showDetailModal();
-        lucide.createIcons();
+        refreshIcons();
         return;
     }
 
@@ -1031,7 +1022,7 @@ async function superadminOpenCompanyDetail(companyId) {
     }
     fillCompanyDetailModal(res.company);
     showDetailModal();
-    lucide.createIcons();
+    refreshIcons();
 }
 
 function superadminCloseCompanyDetail() {
@@ -1082,7 +1073,7 @@ async function superadminSetCompanyAdminStatus(companyId, uid, active) {
         }
         const res = await ApiClient.setCompanyAdminStatus(companyId, uid, nextActive);
         if (!res.success) {
-            showToast(res.error || t("error_generic"), "error");
+            toastApiError(res);
             return;
         }
         showToast(
@@ -1113,18 +1104,16 @@ async function superadminResetCompanyAdminPassword(companyId, uid) {
                 box.innerHTML = `
                     <p>${escapeHtml(t("sa_detail_reset_ready", { email: match.email }) || `Demo password for ${match.email}:`)}</p>
                     <code class="sa-detail-reset-link">${escapeHtml(tempPass)}</code>
-                    <button type="button" class="btn-secondary" ${actionAttr("superadminCopyText", [tempPass])}>
-                        ${escapeHtml(t("sa_detail_copy_reset_link") || "Copy password")}
-                    </button>
+                    ${btnSecondary(actionAttr("superadminCopyText", [tempPass]), `${escapeHtml(t("sa_detail_copy_reset_link") || "Copy password")}`)}
                 `;
             }
             showToast(t("sa_detail_reset_done") || "Password reset link ready.", "success");
-            lucide.createIcons();
+            refreshIcons();
             return;
         }
         const res = await ApiClient.resetCompanyAdminPassword(companyId, uid);
         if (!res.success) {
-            showToast(res.error || t("error_generic"), "error");
+            toastApiError(res);
             return;
         }
         const box = document.getElementById("sa-detail-reset-link-box");
@@ -1133,13 +1122,11 @@ async function superadminResetCompanyAdminPassword(companyId, uid) {
             box.innerHTML = `
                 <p>${escapeHtml(t("sa_detail_reset_ready", { email: res.email }) || `Reset link for ${res.email}:`)}</p>
                 <code class="sa-detail-reset-link">${escapeHtml(res.resetLink)}</code>
-                <button type="button" class="btn-secondary" ${actionAttr("superadminCopyText", [res.resetLink])}>
-                    ${escapeHtml(t("sa_detail_copy_reset_link") || "Copy reset link")}
-                </button>
+                ${btnSecondary(actionAttr("superadminCopyText", [res.resetLink]), `${escapeHtml(t("sa_detail_copy_reset_link") || "Copy reset link")}`)}
             `;
         }
         showToast(t("sa_detail_reset_done") || "Password reset link ready.", "success");
-        lucide.createIcons();
+        refreshIcons();
     });
 }
 
@@ -1160,22 +1147,22 @@ function renderCompanyAdminList() {
     if (!container) return;
     const list = window.state.companyAdmins || [];
     if (list.length === 0) {
-        container.innerHTML = `<p style="color:var(--text-muted);font-size:0.8rem;">${t("sa_no_company_admins")}</p>`;
+        container.innerHTML = `<p class="bc-empty-note">${t("sa_no_company_admins")}</p>`;
         return;
     }
     container.innerHTML = list.map(ca => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:var(--radius-md);border:1px solid var(--panel-border);">
+        <div class="bc-list-row is-split is-plain">
             <div>
-                <span style="font-weight:600;color:var(--text-main);">${escapeHtml(ca.name)}</span>
-                <span style="color:var(--text-muted);font-size:0.78rem;margin-left:8px;">${escapeHtml(ca.email)}</span>
-                <span style="color:var(--primary-color);font-size:0.75rem;margin-left:8px;">firma: ${escapeHtml(ca.companyId)}</span>
+                <span class="bc-list-title">${escapeHtml(ca.name)}</span>
+                <span class="bc-list-meta">${escapeHtml(ca.email)}</span>
+                <span class="bc-list-meta is-accent">firma: ${escapeHtml(ca.companyId)}</span>
             </div>
-            ${USE_LOCAL_STATE ? `<button ${actionAttr("superadminDeleteCompanyAdmin", [ca.id])} style="background:#ef444422;border:1px solid #ef4444;color:#ef4444;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:0.75rem;" title="Demo only">
-                <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+            ${USE_LOCAL_STATE ? `<button ${actionAttr("superadminDeleteCompanyAdmin", [ca.id])} class="bc-mini-btn is-danger is-solid" title="Demo only">
+                <i data-lucide="trash-2" class="bc-icon-xs"></i>
             </button>` : ""}
         </div>
     `).join('');
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+    refreshIcons();
 }
 
 function superadminDeleteCompanyAdmin(id) {
@@ -1337,7 +1324,7 @@ async function superadminConfirmDeleteCompany() {
             error.textContent = res.error || t("error_generic");
             error.classList.remove("hidden");
         }
-        showToast(res.error || t("error_generic"), "error");
+        toastApiError(res);
         return;
     }
     clearTenantStateCache(companyId);
@@ -1421,7 +1408,7 @@ async function superadminConfirmSupportStart() {
             error.textContent = res.error || t("error_generic");
             error.classList.remove("hidden");
         }
-        showToast(res.error || t("error_generic"), "error");
+        toastApiError(res);
         return;
     }
     superadminCancelSupportModal();
@@ -1455,7 +1442,7 @@ async function superadminEndSupport(companyId) {
     showConfirm(t("sa_support_end_confirm"), async () => {
         const res = await ApiClient.endSupportSessionAdmin(active.session.id, companyId);
         if (!res.success) {
-            showToast(res.error || t("error_generic"), "error");
+            toastApiError(res);
             return;
         }
         showToast(t("sa_support_ended"), "success");

@@ -3,8 +3,8 @@ import ApiClient from "../core/api-client.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { runSingleSubmission } from "../core/submit-lock.js";
-import { canRunCompanyAdminAction } from "../core/ui-permissions.js";
-import { showToast } from "../core/utils.js";
+import { currentUserCanRunCompanyAdminAction } from "../core/ui-permissions.js";
+import { showToast, refreshIcons } from "../core/utils.js";
 import { t } from "../ui/i18n.js";
 import {
     companySettingsEqual,
@@ -73,7 +73,7 @@ function renderSettingsSaveState(state = settingsDirty ? "unsaved" : "saved") {
     const [icon, key, className] = map[state] || map.saved;
     element.className = `company-settings-save-state ${className}`;
     element.innerHTML = `<i data-lucide="${icon}"></i><span>${t(key)}</span>`;
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 function writeDraftToForm(draft) {
@@ -141,7 +141,7 @@ function resetCompanySettingsForm() {
 }
 
 async function saveCompanyProfileSettings() {
-    if (!canRunCompanyAdminAction(window.currentUser?.role)) {
+    if (!currentUserCanRunCompanyAdminAction()) {
         showToast(t("error_access_denied"), "error");
         return false;
     }
@@ -189,7 +189,7 @@ function bindBeforeUnload() {
 }
 
 function renderCompanyAdminSettings() {
-    if (!canRunCompanyAdminAction(window.currentUser?.role)) return;
+    if (!currentUserCanRunCompanyAdminAction()) return;
     const companyId = currentCompanyId();
     if (!companyId) return;
     if (settingsCompanyId !== companyId || !savedSettings) {
@@ -204,7 +204,7 @@ function renderCompanyAdminSettings() {
     const demoTools = document.getElementById("ca-settings-demo-tools");
     if (demoTools) demoTools.hidden = !USE_LOCAL_STATE;
     bindBeforeUnload();
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 export {

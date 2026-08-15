@@ -1,6 +1,6 @@
 // BusCommand — Company Admin onboarding: brend → grupa → dispečer
 import { saveState } from "../core/state.js";
-import { escapeHtml, showToast } from "../core/utils.js";
+import { escapeHtml, showToast, refreshIcons } from "../core/utils.js";
 import { t, translateUI } from "../ui/i18n.js";
 import { renderCompanyAdminDashboard } from "./company-admin.js";
 import { switchSection } from "../layout/navigation.js";
@@ -76,7 +76,7 @@ function showCompanyAdminOnboarding() {
     wiz.style.display = "flex";
     wiz.removeAttribute("aria-hidden");
     wiz.classList.remove("hidden");
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 function closeCompanyAdminOnboarding() {
@@ -137,7 +137,7 @@ function caWizardRenderStep() {
 
     translateUI();
     if (_caWizardStep === CA_WIZARD_STEPS) renderWizardDispatcherGroups();
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 function getWizardGroups() {

@@ -1,7 +1,7 @@
 // BusCommand ESM v9.5
 import { initializeLoginSelects } from "../auth/login-ui.js";
 import { saveState } from "../core/state.js";
-import { escapeHtml, getVisibleDrivers, showToast } from "../core/utils.js";
+import { escapeHtml, getVisibleDrivers, showToast, refreshIcons } from "../core/utils.js";
 import { getGroupById, renderGroupsList } from "./groups.js";
 import { assignDriverToLine, getDriversForLineGroup } from "./group-membership.js";
 import { getActiveLineId } from "./groups.js";
@@ -11,6 +11,7 @@ import { actionAttr, changeAttr } from "../core/action-delegate.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import ApiClient from "../core/api-client.js";
 import { normalizeKnownGroupIds } from "./driver-known-groups.js";
+import { icon, tx } from "../ui/markup.js";
 
 window.editingDriverId = null;
 
@@ -56,7 +57,7 @@ function renderDriversList() {
 function knownGroupsDetailsHtml(d) {
     const known = normalizeKnownGroupIds(d);
     const rows = (window.state.groups || []).map(g => `<label class="drv-kl-opt"><input type="checkbox" ${known.includes(String(g.id)) ? "checked" : ""} ${changeAttr("toggleDriverKG", [d.id, g.id], "element")}><span>${escapeHtml(g.name || g.id)}</span></label>`).join("");
-    return `<details class="drv-kl"><summary>${escapeHtml(t("dispo_kl"))} ▾</summary><div class="drv-kl-list">${rows}</div></details>`;
+    return `<details class="drv-kl"><summary>${tx("dispo_kl")} ▾</summary><div class="drv-kl-list">${rows}</div></details>`;
 }
 
 async function toggleDriverKG(driverId, groupId, el) {
@@ -103,8 +104,8 @@ function editDriver(id) {
     // Promeni dugme forme da piše "Sačuvaj izmene"
     const submitBtn = document.querySelector("#add-driver-form button[type='submit']");
     if (submitBtn) {
-        submitBtn.innerHTML = `<i data-lucide="check"></i> <span>${t("btn_save_changes")}</span>`;
-        if (typeof lucide !== "undefined") lucide.createIcons();
+        submitBtn.innerHTML = `${icon("check")} <span>${t("btn_save_changes")}</span>`;
+        refreshIcons();
     }
 
     showToast(t("driver_loaded_to_form"), "info");
@@ -154,13 +155,13 @@ function addDriver(event) {
             
             const submitBtn = document.querySelector("#add-driver-form button[type='submit']");
             if (submitBtn) {
-                submitBtn.innerHTML = `<i data-lucide="plus"></i> <span>${t("btn_add_driver")}</span>`;
+                submitBtn.innerHTML = `${icon("plus")} <span>${t("btn_add_driver")}</span>`;
             }
             
             renderDriversList();
             initializeLoginSelects();
             showToast(t("driver_changes_saved"), "success");
-            lucide.createIcons();
+            refreshIcons();
         }
         return;
     }
@@ -192,7 +193,7 @@ function addDriver(event) {
             renderDriversList();
             initializeLoginSelects();
             showToast(name + " — " + (t("driver_added") || "vozač dodan"), "success");
-            lucide.createIcons();
+            refreshIcons();
         },
         { danger: false, title: t("btn_add_driver") || "Dodaj vozača", confirmText: t("btn_yes") || "Da" }
     );
@@ -217,7 +218,7 @@ function toggleDriverActive(id) {
         renderDriversList();
         initializeLoginSelects();
         showToast(t(nextActive ? "driver_activated" : "driver_deactivated"), "success");
-        if (typeof lucide !== "undefined") lucide.createIcons();
+        refreshIcons();
     }, { danger: !nextActive });
 }
 

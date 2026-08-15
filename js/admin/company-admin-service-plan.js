@@ -3,9 +3,10 @@ import { applyServicePlanToCatalog, findDemoPlan } from "../core/service-plan.js
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { actionAttr } from "../core/action-delegate.js";
-import { escapeHtml, showToast } from "../core/utils.js";
+import { escapeHtml, showToast, refreshIcons, toastApiError } from "../core/utils.js";
 import { readServicePlanFile } from "../imports/service-plan-excel.js";
 import { t } from "../ui/i18n.js";
+import { icon, tx, btnSecondary, statCell } from "../ui/markup.js";
 
 let pendingImport = null;
 let currentPlans = new Map();
@@ -62,7 +63,7 @@ function renderGroupSelector() {
     if (!select) return;
     const previous = select.value;
     const groups = companyGroups();
-    select.innerHTML = `<option value="">${escapeHtml(t("ca_plan_group_placeholder"))}</option>`
+    select.innerHTML = `<option value="">${tx("ca_plan_group_placeholder")}</option>`
         + groups.map(group => `<option value="${escapeHtml(String(group.id))}">${escapeHtml(group.name || String(group.id))}</option>`).join("");
     if (groups.some(group => String(group.id) === previous)) select.value = previous;
 }
@@ -86,9 +87,9 @@ function formatServicePlanError(error) {
 function renderErrors(errors) {
     if (!errors?.length) return "";
     return `<div class="service-plan-errors" role="alert">
-        <div class="service-plan-errors-title">${escapeHtml(t("ca_plan_errors_title"))}</div>
+        <div class="service-plan-errors-title">${tx("ca_plan_errors_title")}</div>
         <ul>${errors.slice(0, 50).map(error => `<li><code>${escapeHtml(error.path || "PDF")}</code> ${escapeHtml(formatServicePlanError(error))}</li>`).join("")}</ul>
-        ${errors.length > 50 ? `<p>${escapeHtml(t("ca_plan_errors_more", { count: errors.length - 50 }))}</p>` : ""}
+        ${errors.length > 50 ? `<p>${tx("ca_plan_errors_more", { count: errors.length - 50 })}</p>` : ""}
     </div>`;
 }
 
@@ -135,15 +136,15 @@ function renderPlanComparison(activePlan, nextPlan) {
     const comparison = comparePlanDuties(activePlan, nextPlan);
     if (comparison.firstPublish) {
         return `<div class="service-plan-comparison is-first">
-            <i data-lucide="sparkles"></i>
-            <div><strong>${escapeHtml(t("ca_plan_first_publish"))}</strong><span>${escapeHtml(t("ca_plan_first_publish_hint", { count: comparison.added }))}</span></div>
+            ${icon("sparkles")}
+            <div><strong>${tx("ca_plan_first_publish")}</strong><span>${tx("ca_plan_first_publish_hint", { count: comparison.added })}</span></div>
         </div>`;
     }
     return `<div class="service-plan-comparison">
-        <div><span>${escapeHtml(t("ca_plan_compare_active"))}</span><strong>${escapeHtml(activePlan.planVersion || "—")}</strong></div>
-        <div class="positive"><span>${escapeHtml(t("ca_plan_compare_added"))}</span><strong>+${comparison.added}</strong></div>
-        <div><span>${escapeHtml(t("ca_plan_compare_changed"))}</span><strong>${comparison.changed}</strong></div>
-        <div class="negative"><span>${escapeHtml(t("ca_plan_compare_removed"))}</span><strong>−${comparison.removed}</strong></div>
+        ${statCell("ca_plan_compare_active", activePlan.planVersion || "—")}
+        <div class="positive"><span>${tx("ca_plan_compare_added")}</span><strong>+${comparison.added}</strong></div>
+        <div><span>${tx("ca_plan_compare_changed")}</span><strong>${comparison.changed}</strong></div>
+        <div class="negative"><span>${tx("ca_plan_compare_removed")}</span><strong>−${comparison.removed}</strong></div>
     </div>`;
 }
 
@@ -152,8 +153,8 @@ function renderGroupMismatch(plan) {
     const planCode = String(plan?.planCode || "").trim();
     if (!/^\d+$/.test(groupId) || groupId === planCode) return "";
     return `<div class="service-plan-warning" role="status">
-        <i data-lucide="triangle-alert"></i>
-        <span>${escapeHtml(t("ca_plan_group_mismatch", { plan: planCode, group: pendingImport.groupName }))}</span>
+        ${icon("triangle-alert")}
+        <span>${tx("ca_plan_group_mismatch", { plan: planCode, group: pendingImport.groupName })}</span>
     </div>`;
 }
 
@@ -163,13 +164,13 @@ function renderDutyTable(plan) {
     return `<div class="service-plan-table-wrap">
         <table class="service-plan-table">
             <thead><tr>
-                <th>${escapeHtml(t("ca_plan_col_duty"))}</th>
-                <th>${escapeHtml(t("ca_plan_col_work_start"))}</th>
-                <th>${escapeHtml(t("ca_plan_col_first_trip"))}</th>
-                <th>${escapeHtml(t("ca_plan_col_last_trip"))}</th>
-                <th>${escapeHtml(t("ca_plan_col_work_end"))}</th>
-                <th>${escapeHtml(t("ca_plan_col_day_type"))}</th>
-                <th><span class="sr-only">${escapeHtml(t("ca_plan_col_details"))}</span></th>
+                <th>${tx("ca_plan_col_duty")}</th>
+                <th>${tx("ca_plan_col_work_start")}</th>
+                <th>${tx("ca_plan_col_first_trip")}</th>
+                <th>${tx("ca_plan_col_last_trip")}</th>
+                <th>${tx("ca_plan_col_work_end")}</th>
+                <th>${tx("ca_plan_col_day_type")}</th>
+                <th><span class="sr-only">${tx("ca_plan_col_details")}</span></th>
             </tr></thead>
             <tbody>${duties.map(duty => `<tr>
                 <td><button type="button" class="service-plan-duty-link" ${actionAttr("openCompanyServicePlanDuty", duty.code)}>${escapeHtml(duty.code)}</button></td>
@@ -178,7 +179,7 @@ function renderDutyTable(plan) {
                 <td>${escapeHtml(duty.lastTripEnd)}</td>
                 <td>${escapeHtml(duty.workEnd)}${duty.endDayOffset ? `<sup>+${escapeHtml(duty.endDayOffset)}</sup>` : ""}</td>
                 <td><span class="service-plan-day-badge">${escapeHtml(dayTypeLabel(duty.dayType))}</span></td>
-                <td><button type="button" class="service-plan-row-action" aria-label="${escapeHtml(t("ca_plan_open_duty", { duty: duty.code }))}" ${actionAttr("openCompanyServicePlanDuty", duty.code)}><i data-lucide="chevron-right"></i></button></td>
+                <td><button type="button" class="service-plan-row-action" aria-label="${tx("ca_plan_open_duty", { duty: duty.code })}" ${actionAttr("openCompanyServicePlanDuty", duty.code)}>${icon("chevron-right")}</button></td>
             </tr>`).join("")}</tbody>
         </table>
     </div>`;
@@ -191,14 +192,14 @@ function renderDutyDrawer(plan) {
     return `<div class="service-plan-drawer-backdrop" role="presentation" ${actionAttr("closeCompanyServicePlanDuty", undefined, { self: true })}>
         <aside class="service-plan-duty-drawer" role="dialog" aria-modal="true" aria-labelledby="ca-duty-title">
             <div class="service-plan-duty-drawer-header">
-                <div><span class="service-plan-kicker">${escapeHtml(t("ca_plan_duty_details"))}</span><h3 id="ca-duty-title">${escapeHtml(duty.code)}</h3></div>
-                <button type="button" class="btn-icon-nav" aria-label="${escapeHtml(t("ca_plan_close"))}" ${actionAttr("closeCompanyServicePlanDuty")}><i data-lucide="x"></i></button>
+                <div><span class="service-plan-kicker">${tx("ca_plan_duty_details")}</span><h3 id="ca-duty-title">${escapeHtml(duty.code)}</h3></div>
+                <button type="button" class="btn-icon-nav" aria-label="${tx("ca_plan_close")}" ${actionAttr("closeCompanyServicePlanDuty")}>${icon("x")}</button>
             </div>
             <div class="service-plan-duty-summary">
-                <div><span>${escapeHtml(t("ca_plan_col_work_start"))}</span><strong>${escapeHtml(duty.workStart)}</strong></div>
-                <div><span>${escapeHtml(t("ca_plan_col_first_trip"))}</span><strong>${escapeHtml(duty.firstTripStart)}</strong></div>
-                <div><span>${escapeHtml(t("ca_plan_col_last_trip"))}</span><strong>${escapeHtml(duty.lastTripEnd)}</strong></div>
-                <div><span>${escapeHtml(t("ca_plan_col_work_end"))}</span><strong>${escapeHtml(duty.workEnd)}</strong></div>
+                ${statCell("ca_plan_col_work_start", duty.workStart)}
+                ${statCell("ca_plan_col_first_trip", duty.firstTripStart)}
+                ${statCell("ca_plan_col_last_trip", duty.lastTripEnd)}
+                ${statCell("ca_plan_col_work_end", duty.workEnd)}
             </div>
             <div class="service-plan-activity-list">${(duty.activities || []).map(activity => `<article>
                 <span class="service-plan-activity-sequence">${escapeHtml(activity.sequence)}</span>
@@ -213,7 +214,7 @@ function renderServicePlanPreview() {
     const container = document.getElementById("ca-service-plan-preview");
     if (!container) return;
     if (!pendingImport) {
-        container.innerHTML = `<div class="service-plan-empty">${escapeHtml(t("ca_plan_preview_empty"))}</div>`;
+        container.innerHTML = `<div class="service-plan-empty">${tx("ca_plan_preview_empty")}</div>`;
         return;
     }
 
@@ -233,8 +234,8 @@ function renderServicePlanPreview() {
         <div class="service-plan-preview-card ${result.valid ? "is-valid" : "is-invalid"}">
             <div class="service-plan-preview-header">
                 <div>
-                    <span class="service-plan-kicker">${escapeHtml(t("ca_plan_preview_kicker"))}</span>
-                    <h3>${escapeHtml(t("ca_plan_preview_title"))}</h3>
+                    <span class="service-plan-kicker">${tx("ca_plan_preview_kicker")}</span>
+                    <h3>${tx("ca_plan_preview_title")}</h3>
                     <p>${escapeHtml(pendingImport.fileName)}</p>
                 </div>
                 <span class="service-plan-status ${result.valid ? "success" : "error"}">
@@ -242,37 +243,35 @@ function renderServicePlanPreview() {
                 </span>
             </div>
             <div class="service-plan-preview-strip">
-                <div><i data-lucide="bus-front"></i><span>${escapeHtml(t("ca_plan_group"))}</span><strong>${escapeHtml(pendingImport.groupName)}</strong></div>
-                <div><span>${escapeHtml(t("ca_plan_version_short"))}</span><strong>${escapeHtml(plan?.planVersion || "—")}</strong></div>
-                <div><span>${escapeHtml(t("ca_plan_valid_from"))}</span><strong>${escapeHtml(plan?.validFrom || "—")}</strong></div>
-                <div><span>${escapeHtml(t("ca_plan_duties"))}</span><strong>${summary.dutyCount || 0}</strong></div>
-                <div><span>${escapeHtml(t("ca_plan_timezone"))}</span><strong>${escapeHtml(plan?.timezone || "—")}</strong></div>
+                <div>${icon("bus-front")}<span>${tx("ca_plan_group")}</span><strong>${escapeHtml(pendingImport.groupName)}</strong></div>
+                ${statCell("ca_plan_version_short", plan?.planVersion || "—")}
+                ${statCell("ca_plan_valid_from", plan?.validFrom || "—")}
+                <div><span>${tx("ca_plan_duties")}</span><strong>${summary.dutyCount || 0}</strong></div>
+                ${statCell("ca_plan_timezone", plan?.timezone || "—")}
             </div>
             ${renderGroupMismatch(plan)}
             ${renderPlanComparison(activePlan, plan)}
             ${renderErrors(result.errors)}
             ${renderDutyTable(plan)}
             <div class="service-plan-actions">
-                <button type="button" class="btn-secondary" ${actionAttr("clearCompanyServicePlanPreview")}>
-                    ${escapeHtml(t("btn_clear_preview"))}
-                </button>
+                ${btnSecondary(actionAttr("clearCompanyServicePlanPreview"), `${tx("btn_clear_preview")}`)}
             </div>
         </div>
-        <div class="ca-catalog-activation-bar" role="region" aria-label="${escapeHtml(t("ca_plan_activate_bar"))}">
+        <div class="ca-catalog-activation-bar" role="region" aria-label="${tx("ca_plan_activate_bar")}">
             <div>
-                <strong>${escapeHtml(pendingImport.groupName)} · ${escapeHtml(t("ca_plan_version_short"))} ${escapeHtml(plan?.planVersion || "—")}</strong>
-                <span>${escapeHtml(t("ca_plan_activate_bar_hint", {
+                <strong>${escapeHtml(pendingImport.groupName)} · ${tx("ca_plan_version_short")} ${escapeHtml(plan?.planVersion || "—")}</strong>
+                <span>${tx("ca_plan_activate_bar_hint", {
                     duties: summary.dutyCount || 0,
                     warnings: warningCount,
                     validFrom: plan?.validFrom || "—"
-                }))}</span>
+                })}</span>
             </div>
             <button type="button" id="ca-publish-service-plan" class="btn-primary" ${actionAttr("publishCompanyServicePlan")} ${blocking ? "disabled" : ""}>
-                <i data-lucide="badge-check"></i> ${escapeHtml(activateLabel)}
+                ${icon("badge-check")} ${escapeHtml(activateLabel)}
             </button>
         </div>
         ${renderDutyDrawer(plan)}`;
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 function renderCurrentServicePlans() {
@@ -280,7 +279,7 @@ function renderCurrentServicePlans() {
     if (!container) return;
     const groups = companyGroups();
     if (!groups.length) {
-        container.innerHTML = `<div class="service-plan-empty">${escapeHtml(t("ca_plan_groups_required"))}</div>`;
+        container.innerHTML = `<div class="service-plan-empty">${tx("ca_plan_groups_required")}</div>`;
         return;
     }
     container.innerHTML = groups.map(group => {
@@ -288,17 +287,17 @@ function renderCurrentServicePlans() {
         const plan = currentPlans.get(groupId);
         const dutyCount = plan?.dutyCount ?? plan?.duties?.length;
         return `<article class="service-plan-current-card ${selectedGroupId() === groupId ? "is-selected" : ""}">
-            <div class="service-plan-current-icon"><i data-lucide="route"></i></div>
+            <div class="service-plan-current-icon">${icon("route")}</div>
             <div>
                 <strong>${escapeHtml(group.name || String(group.id))}</strong>
                 <span>${plan
-                    ? `${escapeHtml(plan.planCode)} · ${escapeHtml(t("ca_plan_version_short"))} ${escapeHtml(plan.planVersion)} · ${escapeHtml(plan.validFrom)}${Number.isFinite(dutyCount) ? ` · ${escapeHtml(t("ca_plan_duty_count", { count: dutyCount }))}` : ""}`
+                    ? `${escapeHtml(plan.planCode)} · ${tx("ca_plan_version_short")} ${escapeHtml(plan.planVersion)} · ${escapeHtml(plan.validFrom)}${Number.isFinite(dutyCount) ? ` · ${tx("ca_plan_duty_count", { count: dutyCount })}` : ""}`
                     : escapeHtml(loadingPlans ? t("loading") : t("ca_plan_not_published"))}</span>
             </div>
-            ${plan ? `<span class="service-plan-status success">${escapeHtml(t("ca_plan_active"))}</span>` : ""}
+            ${plan ? `<span class="service-plan-status success">${tx("ca_plan_active")}</span>` : ""}
         </article>`;
     }).join("");
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 function formatPublishedAt(value) {
@@ -316,28 +315,28 @@ function historyStatus(plan) {
 }
 
 function renderHistoryDutyDetails(plan) {
-    if (!plan?.duties?.length) return `<div class="service-plan-empty">${escapeHtml(t("ca_plan_history_no_duties"))}</div>`;
+    if (!plan?.duties?.length) return `<div class="service-plan-empty">${tx("ca_plan_history_no_duties")}</div>`;
     return `<div class="service-plan-history-detail">
         <div class="service-plan-history-detail-header">
-            <div><span>${escapeHtml(t("ca_plan_history_viewing"))}</span><strong>${escapeHtml(plan.planCode)} · ${escapeHtml(t("ca_plan_version_short"))} ${escapeHtml(plan.planVersion)}</strong></div>
-            <button type="button" class="btn-secondary" ${actionAttr("closeCompanyServicePlanHistory")}><i data-lucide="x"></i>${escapeHtml(t("ca_plan_history_close"))}</button>
+            <div><span>${tx("ca_plan_history_viewing")}</span><strong>${escapeHtml(plan.planCode)} · ${tx("ca_plan_version_short")} ${escapeHtml(plan.planVersion)}</strong></div>
+            ${btnSecondary(actionAttr("closeCompanyServicePlanHistory"), `${icon("x")}${tx("ca_plan_history_close")}`)}
         </div>
         <div class="service-plan-preview-strip">
-            <div><span>${escapeHtml(t("ca_plan_valid_from"))}</span><strong>${escapeHtml(plan.validFrom || "—")}</strong></div>
-            <div><span>${escapeHtml(t("ca_plan_timezone"))}</span><strong>${escapeHtml(plan.timezone || "—")}</strong></div>
-            <div><span>${escapeHtml(t("ca_plan_duties"))}</span><strong>${escapeHtml(plan.duties.length)}</strong></div>
-            <div><span>${escapeHtml(t("ca_plan_history_published"))}</span><strong>${escapeHtml(formatPublishedAt(plan.publishedAt))}</strong></div>
+            ${statCell("ca_plan_valid_from", plan.validFrom || "—")}
+            ${statCell("ca_plan_timezone", plan.timezone || "—")}
+            ${statCell("ca_plan_duties", plan.duties.length)}
+            ${statCell("ca_plan_history_published", formatPublishedAt(plan.publishedAt))}
         </div>
         <div class="service-plan-history-duties">${plan.duties.map(duty => `<details>
             <summary>
                 <span><strong>${escapeHtml(duty.code)}</strong><small>${escapeHtml(dayTypeLabel(duty.dayType))}</small></span>
-                <span>${escapeHtml(duty.workStart)}–${escapeHtml(duty.workEnd)} <i data-lucide="chevron-down"></i></span>
+                <span>${escapeHtml(duty.workStart)}–${escapeHtml(duty.workEnd)} ${icon("chevron-down")}</span>
             </summary>
             <div class="service-plan-duty-summary">
-                <div><span>${escapeHtml(t("ca_plan_col_work_start"))}</span><strong>${escapeHtml(duty.workStart)}</strong></div>
-                <div><span>${escapeHtml(t("ca_plan_col_first_trip"))}</span><strong>${escapeHtml(duty.firstTripStart)}</strong></div>
-                <div><span>${escapeHtml(t("ca_plan_col_last_trip"))}</span><strong>${escapeHtml(duty.lastTripEnd)}</strong></div>
-                <div><span>${escapeHtml(t("ca_plan_col_work_end"))}</span><strong>${escapeHtml(duty.workEnd)}</strong></div>
+                ${statCell("ca_plan_col_work_start", duty.workStart)}
+                ${statCell("ca_plan_col_first_trip", duty.firstTripStart)}
+                ${statCell("ca_plan_col_last_trip", duty.lastTripEnd)}
+                ${statCell("ca_plan_col_work_end", duty.workEnd)}
             </div>
             <div class="service-plan-activity-list">${(duty.activities || []).map(activity => `<article>
                 <span class="service-plan-activity-sequence">${escapeHtml(activity.sequence)}</span>
@@ -353,40 +352,40 @@ function renderServicePlanHistory() {
     if (!container) return;
     const groupId = selectedGroupId();
     if (!groupId) {
-        container.innerHTML = `<div class="service-plan-empty">${escapeHtml(t("ca_plan_history_select_group"))}</div>`;
+        container.innerHTML = `<div class="service-plan-empty">${tx("ca_plan_history_select_group")}</div>`;
         return;
     }
     if (loadingHistoryGroupId === groupId) {
-        container.innerHTML = `<div class="service-plan-empty">${escapeHtml(t("loading"))}</div>`;
+        container.innerHTML = `<div class="service-plan-empty">${tx("loading")}</div>`;
         return;
     }
     const history = planHistories.get(groupId) || [];
     if (!history.length) {
-        container.innerHTML = `<div class="service-plan-empty">${escapeHtml(t("ca_plan_history_empty"))}</div>`;
+        container.innerHTML = `<div class="service-plan-empty">${tx("ca_plan_history_empty")}</div>`;
         return;
     }
     const rows = history.map(plan => {
         const canActivate = plan.status === "staged" || plan.status === "superseded";
         const activateLabel = plan.status === "superseded" ? t("ca_plan_rollback") : t("ca_plan_activate");
         return `<tr class="${plan.status === "active" ? "is-active" : ""}">
-        <td data-label="${escapeHtml(t("ca_plan_code"))}"><strong>${escapeHtml(plan.planCode)}</strong></td>
-        <td data-label="${escapeHtml(t("ca_plan_version_short"))}">${escapeHtml(plan.planVersion)}</td>
-        <td data-label="${escapeHtml(t("ca_plan_valid_from"))}">${escapeHtml(plan.validFrom)}</td>
-        <td data-label="${escapeHtml(t("ca_plan_duties"))}">${escapeHtml(plan.dutyCount ?? "—")}</td>
-        <td data-label="${escapeHtml(t("ca_plan_history_published"))}">${escapeHtml(formatPublishedAt(plan.publishedAt))}</td>
-        <td data-label="${escapeHtml(t("ca_col_status"))}"><span class="service-plan-status ${plan.status === "active" ? "success" : plan.status === "staged" ? "warning" : "neutral"}">${escapeHtml(historyStatus(plan))}</span></td>
-        <td data-label="${escapeHtml(t("table_actions"))}" class="service-plan-history-actions">
-            <button type="button" class="btn-secondary service-plan-history-view" ${actionAttr("openCompanyServicePlanHistory", [plan.id])} ${selectedHistoryId === plan.id ? "aria-current=\"true\"" : ""}><i data-lucide="eye"></i>${escapeHtml(t("ca_plan_history_view"))}</button>
-            ${canActivate ? `<button type="button" class="btn-primary service-plan-history-activate" ${actionAttr("activateCompanyServicePlanVersion", [plan.id])}><i data-lucide="badge-check"></i>${escapeHtml(activateLabel)}</button>` : ""}
+        <td data-label="${tx("ca_plan_code")}"><strong>${escapeHtml(plan.planCode)}</strong></td>
+        <td data-label="${tx("ca_plan_version_short")}">${escapeHtml(plan.planVersion)}</td>
+        <td data-label="${tx("ca_plan_valid_from")}">${escapeHtml(plan.validFrom)}</td>
+        <td data-label="${tx("ca_plan_duties")}">${escapeHtml(plan.dutyCount ?? "—")}</td>
+        <td data-label="${tx("ca_plan_history_published")}">${escapeHtml(formatPublishedAt(plan.publishedAt))}</td>
+        <td data-label="${tx("ca_col_status")}"><span class="service-plan-status ${plan.status === "active" ? "success" : plan.status === "staged" ? "warning" : "neutral"}">${escapeHtml(historyStatus(plan))}</span></td>
+        <td data-label="${tx("table_actions")}" class="service-plan-history-actions">
+            <button type="button" class="btn-secondary service-plan-history-view" ${actionAttr("openCompanyServicePlanHistory", [plan.id])} ${selectedHistoryId === plan.id ? "aria-current=\"true\"" : ""}>${icon("eye")}${tx("ca_plan_history_view")}</button>
+            ${canActivate ? `<button type="button" class="btn-primary service-plan-history-activate" ${actionAttr("activateCompanyServicePlanVersion", [plan.id])}>${icon("badge-check")}${escapeHtml(activateLabel)}</button>` : ""}
         </td>
     </tr>`;
     }).join("");
     const selected = selectedHistoryId ? historyDetails.get(selectedHistoryId) : null;
     container.innerHTML = `<div class="service-plan-table-wrap"><table class="service-plan-table service-plan-history-table">
-        <thead><tr><th>${escapeHtml(t("ca_plan_code"))}</th><th>${escapeHtml(t("ca_plan_version_short"))}</th><th>${escapeHtml(t("ca_plan_valid_from"))}</th><th>${escapeHtml(t("ca_plan_duties"))}</th><th>${escapeHtml(t("ca_plan_history_published"))}</th><th>${escapeHtml(t("ca_col_status"))}</th><th>${escapeHtml(t("table_actions"))}</th></tr></thead>
+        <thead><tr><th>${tx("ca_plan_code")}</th><th>${tx("ca_plan_version_short")}</th><th>${tx("ca_plan_valid_from")}</th><th>${tx("ca_plan_duties")}</th><th>${tx("ca_plan_history_published")}</th><th>${tx("ca_col_status")}</th><th>${tx("table_actions")}</th></tr></thead>
         <tbody>${rows}</tbody></table></div>
         ${selected ? renderHistoryDutyDetails(selected) : ""}`;
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 async function loadServicePlanHistory() {
@@ -606,7 +605,7 @@ async function publishCompanyServicePlan() {
             }
             const staged = await ApiClient.publishServicePlan(companyId, groupId, plan, source);
             if (!staged.success) {
-                showToast(staged.error || t("error_generic"), "error");
+                toastApiError(staged);
                 return;
             }
             const activated = await ApiClient.activateServicePlan(companyId, groupId, staged.planId);
