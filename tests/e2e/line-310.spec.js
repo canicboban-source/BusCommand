@@ -31,11 +31,17 @@ test.describe("Line 310 / Group Hub", () => {
   });
 
   test("Group Hub shows import step for empty line", async ({ page }) => {
+    // Dispo may only open assigned groups (Phase 1 scope). Fixture must grant 310.
+    const base = require("./helpers.js").minimalDemoState();
     const emptyLineState = {
-      ...(require("./helpers.js").minimalDemoState()),
+      ...base,
       groups: [{ id: "310", name: "310", color: "#2DD4BF", active: true, companyId: "qa-local" }],
       drivers: [],
-      buses: []
+      buses: [],
+      activeGroupHubId: "310",
+      dispatchers: (base.dispatchers || []).map((d) => (
+        d.isSuperAdmin ? d : { ...d, groups: ["310"], activeGroupId: "310" }
+      ))
     };
     await seedDemoState(page, emptyLineState);
     await page.goto("/staff.html");

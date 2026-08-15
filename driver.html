@@ -198,9 +198,12 @@
         <header class="app-header">
             <div class="header-left">
                 <div id="header-logo-container">
-                    <div class="logo bc-brand">
-                        <img class="bc-brand-mark bc-brand-mark--sm" src="/brand/logo-mark.png" width="28" height="28" alt="">
-                        <span class="bc-brand-text" id="app-branding-title">BusCommand</span>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="logo bc-brand">
+                            <img class="bc-brand-mark bc-brand-mark--sm" src="/brand/logo-mark.png" width="28" height="28" alt="">
+                            <span class="bc-brand-text">BusCommand</span>
+                        </div>
+                        <span class="bc-tenant-name" id="app-branding-title"></span>
                     </div>
                 </div>
                 <div class="trial-indicator hidden" id="app-trial-badge" hidden aria-hidden="true"></div>
@@ -742,9 +745,9 @@
                                 <thead>
                                     <tr>
                                         <th data-i18n="table_bus">Autobus</th>
+                                        <th data-i18n="table_plate">Tablice</th>
                                         <th data-i18n="ca_col_groups">Grupe</th>
                                         <th data-i18n="table_status">Status</th>
-                                        <th>ID</th>
                                     </tr>
                                 </thead>
                                 <tbody id="ca-buses-table-body"></tbody>
@@ -1108,7 +1111,7 @@
     <div id="sa-company-detail-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sa-detail-title" style="display:none;">
         <div class="modal-content sa-detail-modal">
             <div class="sa-detail-header">
-                <h3 id="sa-detail-title" data-i18n="sa_detail_title">Company details</h3>
+                <h3 id="sa-detail-title" data-i18n="sa_detail_title">Manage company account</h3>
                 <button type="button" class="btn-secondary" data-action="superadminCloseCompanyDetail" aria-label="Close">
                     <i data-lucide="x" style="width:16px;height:16px;"></i>
                 </button>
@@ -1116,7 +1119,10 @@
             <p id="sa-detail-error" class="error-message hidden" role="alert"></p>
             <div id="sa-detail-body"></div>
             <div class="sa-detail-footer">
-                <button type="button" id="sa-detail-open-app-btn" class="btn-secondary" data-action="superadminOpenCompany" data-action-args='[]' data-i18n="btn_open">Open</button>
+                <button type="button" id="sa-detail-support-btn" class="btn-secondary hidden" hidden data-action="superadminStartSupport" data-action-args='[]'>
+                    <i data-lucide="headset" style="width:16px;height:16px;"></i>
+                    <span data-i18n="sa_support_start_audited">Start audited support</span>
+                </button>
                 <button type="button" class="btn-primary" data-action="superadminCloseCompanyDetail" data-i18n="btn_close">Close</button>
             </div>
         </div>

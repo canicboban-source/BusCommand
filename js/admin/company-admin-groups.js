@@ -4,8 +4,8 @@ import { actionAttr } from "../core/action-delegate.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { runSingleSubmission } from "../core/submit-lock.js";
-import { canRunCompanyAdminAction } from "../core/ui-permissions.js";
-import { escapeHtml, showToast } from "../core/utils.js";
+import { currentUserCanRunCompanyAdminAction } from "../core/ui-permissions.js";
+import { escapeHtml, showToast, refreshIcons } from "../core/utils.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import { renderCompanyAdminDashboard } from "./company-admin.js";
@@ -18,6 +18,7 @@ import {
     safeGroupColor,
     validateCompanyGroupDraft
 } from "./company-admin-groups-model.js";
+import { icon, tx, btnPrimary } from "../ui/markup.js";
 
 let editingGroupId = null;
 let groupSearch = "";
@@ -130,31 +131,31 @@ function groupRowHtml(group, scope) {
         ? t("ca_group_delete_empty_title")
         : t("ca_group_delete_blocked_title", { items: dependencyText });
     const status = readiness.ready
-        ? `<span class="company-group-status is-ready"><i data-lucide="circle-check"></i>${escapeHtml(t("ca_status_ready"))}</span>`
-        : `<span class="company-group-status is-incomplete" title="${escapeHtml(t("ca_missing_title", { items: readiness.missing.map(key => t(`ca_missing_${key === "plans" ? "plan" : key === "dispatchers" ? "dispatcher" : key}`)).join(", ") }))}"><i data-lucide="circle-alert"></i>${escapeHtml(t("ca_status_incomplete"))}</span>`;
+        ? `<span class="company-group-status is-ready">${icon("circle-check")}${tx("ca_status_ready")}</span>`
+        : `<span class="company-group-status is-incomplete" title="${escapeHtml(t("ca_missing_title", { items: readiness.missing.map(key => t(`ca_missing_${key === "plans" ? "plan" : key === "dispatchers" ? "dispatcher" : key}`)).join(", ") }))}">${icon("circle-alert")}${tx("ca_status_incomplete")}</span>`;
 
     const isEditingRow = String(editingGroupId || "") === String(group.id);
     return `<article class="company-group-row${isEditingRow ? " is-editing" : ""}" style="--group-color:${color}">
         <div class="company-group-identity">
             <span class="company-group-color" aria-hidden="true"></span>
-            <div><span>${escapeHtml(t("plan_pick_line"))} ${escapeHtml(String(group.id))}</span><strong>${escapeHtml(group.name || "—")}</strong><small>${escapeHtml(group.description || t("ca_group_no_description"))}</small></div>
+            <div><span>${tx("plan_pick_line")} ${escapeHtml(String(group.id))}</span><strong>${escapeHtml(group.name || "—")}</strong><small>${escapeHtml(group.description || t("ca_group_no_description"))}</small></div>
         </div>
         <div class="company-group-metrics">
-            <span><b>${dependencies.counts.drivers}</b>${escapeHtml(t("ca_col_drivers"))}</span>
-            <span><b>${dependencies.counts.buses}</b>${escapeHtml(t("ca_col_buses"))}</span>
-            <span><b>${dependencies.counts.plans}</b>${escapeHtml(t("ca_col_plans"))}</span>
-            <span><b>${dependencies.counts.dispatchers}</b>${escapeHtml(t("ca_col_dispatchers"))}</span>
+            <span><b>${dependencies.counts.drivers}</b>${tx("ca_col_drivers")}</span>
+            <span><b>${dependencies.counts.buses}</b>${tx("ca_col_buses")}</span>
+            <span><b>${dependencies.counts.plans}</b>${tx("ca_col_plans")}</span>
+            <span><b>${dependencies.counts.dispatchers}</b>${tx("ca_col_dispatchers")}</span>
         </div>
         <div class="company-group-state">${status}</div>
         <div class="company-group-actions">
-            <button type="button" class="btn-secondary company-group-edit-btn${isEditingRow ? " is-active" : ""}" ${actionAttr("startEditCompanyGroup", [String(group.id)])} ${isEditingRow ? "aria-current=\"true\"" : ""}><i data-lucide="pencil"></i><span>${escapeHtml(t("btn_edit"))}</span></button>
-            <button type="button" class="btn-danger-ghost company-group-delete-btn" ${actionAttr("deleteCompanyGroup", [String(group.id)])} ${dependencies.canDelete ? "" : "disabled"} title="${escapeHtml(deleteTitle)}" aria-label="${escapeHtml(t("btn_delete"))}"><i data-lucide="trash-2"></i><span>${escapeHtml(t("btn_delete"))}</span></button>
+            <button type="button" class="btn-secondary company-group-edit-btn${isEditingRow ? " is-active" : ""}" ${actionAttr("startEditCompanyGroup", [String(group.id)])} ${isEditingRow ? "aria-current=\"true\"" : ""}>${icon("pencil")}<span>${tx("btn_edit")}</span></button>
+            <button type="button" class="btn-danger-ghost company-group-delete-btn" ${actionAttr("deleteCompanyGroup", [String(group.id)])} ${dependencies.canDelete ? "" : "disabled"} title="${escapeHtml(deleteTitle)}" aria-label="${tx("btn_delete")}">${icon("trash-2")}<span>${tx("btn_delete")}</span></button>
         </div>
     </article>`;
 }
 
 function renderCompanyAdminGroups() {
-    if (!canRunCompanyAdminAction(window.currentUser?.role)) return;
+    if (!currentUserCanRunCompanyAdminAction()) return;
     const container = document.getElementById("ca-groups-manage-list");
     if (!container) return;
     const scope = getScope();
@@ -163,9 +164,9 @@ function renderCompanyAdminGroups() {
 
     const groups = filterCompanyGroups(scope.groups, groupSearch, groupStatus, scope);
     if (scope.groups.length === 0) {
-        container.innerHTML = `<div class="company-groups-empty"><div class="company-groups-empty-icon" aria-hidden="true"><i data-lucide="layers-3"></i></div><strong>${escapeHtml(t("ca_groups_empty_title"))}</strong><p>${escapeHtml(t("ca_groups_empty"))}</p><button type="button" class="btn-primary" ${actionAttr("focusCompanyGroupForm")}><i data-lucide="plus"></i><span>${escapeHtml(t("btn_add_group"))}</span></button></div>`;
+        container.innerHTML = `<div class="company-groups-empty"><div class="company-groups-empty-icon" aria-hidden="true">${icon("layers-3")}</div><strong>${tx("ca_groups_empty_title")}</strong><p>${tx("ca_groups_empty")}</p>${btnPrimary(actionAttr("focusCompanyGroupForm"), `${icon("plus")}<span>${tx("btn_add_group")}</span>`)}</div>`;
     } else if (groups.length === 0) {
-        container.innerHTML = `<div class="company-groups-empty is-filtered"><div class="company-groups-empty-icon" aria-hidden="true"><i data-lucide="search-x"></i></div><strong>${escapeHtml(t("ca_groups_no_results"))}</strong><p>${escapeHtml(t("ca_groups_no_results_hint"))}</p></div>`;
+        container.innerHTML = `<div class="company-groups-empty is-filtered"><div class="company-groups-empty-icon" aria-hidden="true">${icon("search-x")}</div><strong>${tx("ca_groups_no_results")}</strong><p>${tx("ca_groups_no_results_hint")}</p></div>`;
     } else {
         container.innerHTML = groups.map(group => groupRowHtml(group, scope)).join("");
     }
@@ -191,7 +192,7 @@ function renderCompanyAdminGroups() {
     const hex = document.getElementById("ca-new-group-color-hex");
     if (picker) picker.oninput = () => syncCompanyGroupColor("picker");
     if (hex) hex.oninput = () => syncCompanyGroupColor("hex");
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 function focusCompanyGroupForm() {
@@ -224,7 +225,7 @@ function cancelCompanyGroupEdit() {
 }
 
 async function persistCompanyGroupDraft(draft, { editingId = null } = {}) {
-    if (!canRunCompanyAdminAction(window.currentUser?.role)) {
+    if (!currentUserCanRunCompanyAdminAction()) {
         return { success: false, error: t("error_access_denied"), errors: {} };
     }
     const validated = validateCompanyGroupDraft(draft);
@@ -261,7 +262,7 @@ async function persistCompanyGroupDraft(draft, { editingId = null } = {}) {
 }
 
 async function saveCompanyGroup() {
-    if (!canRunCompanyAdminAction(window.currentUser?.role)) {
+    if (!currentUserCanRunCompanyAdminAction()) {
         showToast(t("error_access_denied"), "error");
         return false;
     }
@@ -296,7 +297,7 @@ function addCompanyGroup() {
 }
 
 function deleteCompanyGroup(id) {
-    if (!canRunCompanyAdminAction(window.currentUser?.role) || deletingGroups.has(String(id))) return false;
+    if (!currentUserCanRunCompanyAdminAction() || deletingGroups.has(String(id))) return false;
     const scope = getScope();
     const group = scope.groups.find(item => String(item.id) === String(id));
     if (!group) {

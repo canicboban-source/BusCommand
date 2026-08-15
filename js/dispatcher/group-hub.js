@@ -22,9 +22,37 @@ import { switchSection } from "../layout/navigation.js";
 import { escapeHtml, showToast } from "../core/utils.js";
 import { isOperationalReadOnly } from "../core/access.js";
 import { syncUserSession } from "../auth/login-session.js";
+import {
+    isDispatcherAssignedGroupId,
+    normalizeGroupIds,
+    sanitizeDispatcherActiveGroups
+} from "../core/dispatcher-scope.js";
 
 function getHubGroupId() {
     return window.state.activeGroupHubId || null;
+}
+
+function isDispatcherRole() {
+    const role = String(window.currentUser?.role || "");
+    return role === "dispatcher" || role === "disp";
+}
+
+function paintActiveGroupHeader(groupId) {
+    const sub = document.getElementById("header-user-sub");
+    if (!sub || !window.currentUser) return;
+    if (!groupId) {
+        sub.innerHTML = "";
+        return;
+    }
+    const activeGroup = (window.state.groups || []).find((g) => String(g.id) === String(groupId));
+    const groupName = escapeHtml(String(activeGroup?.name || groupId));
+    const switchLabel = escapeHtml(t("btn_switch") || "Switch");
+    const activeLabel = escapeHtml(t("active_group_short") || "Active group");
+    let html = `${activeLabel}: ${groupName} <button type="button" ${actionAttr("switchToGroupSetup")} style="background:rgba(255,255,255,0.1); border:none; color:var(--primary-color); border-radius:4px; padding:2px 8px; margin-left:8px; font-size:0.75rem; cursor:pointer;">${switchLabel}</button>`;
+    if (window.currentUser.impersonated) {
+        html += ` <button type="button" ${actionAttr("exitImpersonation")} style="background:var(--danger-color); border:none; color:#fff; border-radius:4px; padding:3px 12px; margin-left:8px; font-size:0.75rem; cursor:pointer; font-weight:600;">${escapeHtml(t("btn_exit_inspect") || "Exit inspect")}</button>`;
+    }
+    sub.innerHTML = html;
 }
 
 /** Keep header "Active group" and dispatcher record aligned with the open hub (D1). */
@@ -33,9 +61,7 @@ function adoptActiveGroup(groupId) {
     window.state.activeGroupHubId = groupId;
     window.state.activeGroupFilter = groupId;
 
-    const role = String(window.currentUser?.role || "");
-    const isDispatcher = role === "dispatcher" || role === "disp";
-    if (!isDispatcher || !window.currentUser) return;
+    if (!isDispatcherRole() || !window.currentUser) return;
 
     window.currentUser.activeGroupId = groupId;
     syncUserSession(window.currentUser);
@@ -46,17 +72,30 @@ function adoptActiveGroup(groupId) {
         saveState();
     }
 
-    const sub = document.getElementById("header-user-sub");
-    if (!sub) return;
-    const activeGroup = (window.state.groups || []).find((g) => String(g.id) === String(groupId));
-    const groupName = escapeHtml(String(activeGroup?.name || groupId));
-    const switchLabel = escapeHtml(t("btn_switch") || "Switch");
-    const activeLabel = escapeHtml(t("active_group_short") || "Active group");
-    let html = `${activeLabel}: ${groupName} <button type="button" ${actionAttr("switchToGroupSetup")} style="background:rgba(255,255,255,0.1); border:none; color:var(--primary-color); border-radius:4px; padding:2px 8px; margin-left:8px; font-size:0.75rem; cursor:pointer;">${switchLabel}</button>`;
-    if (window.currentUser.impersonated) {
-        html += ` <button type="button" ${actionAttr("exitImpersonation")} style="background:var(--danger-color); border:none; color:#fff; border-radius:4px; padding:3px 12px; margin-left:8px; font-size:0.75rem; cursor:pointer; font-weight:600;">${escapeHtml(t("btn_exit_inspect") || "Exit inspect")}</button>`;
+    paintActiveGroupHeader(groupId);
+}
+
+/** Clear invalid active/hub IDs; return a valid fallback or null (defense-in-depth). */
+function enforceDispatcherGroupScope() {
+    if (!isDispatcherRole() || !window.currentUser) return null;
+    const sanitized = sanitizeDispatcherActiveGroups({
+        assignedIds: window.currentUser.groups,
+        activeGroupId: window.currentUser.activeGroupId,
+        activeGroupHubId: window.state?.activeGroupHubId
+    });
+    window.currentUser.groups = sanitized.assignedIds;
+    window.currentUser.activeGroupId = sanitized.activeGroupId;
+    if (window.state) {
+        window.state.activeGroupHubId = sanitized.activeGroupHubId;
+        if (sanitized.activeGroupHubId) {
+            window.state.activeGroupFilter = sanitized.activeGroupHubId;
+        } else {
+            window.state.activeGroupFilter = null;
+        }
     }
-    sub.innerHTML = html;
+    syncUserSession(window.currentUser);
+    paintActiveGroupHeader(sanitized.activeGroupId);
+    return sanitized;
 }
 
 function migrateLineMembership(lineId) {
@@ -93,8 +132,28 @@ function migrateLineMembership(lineId) {
     saveState();
 }
 
+/** @returns {boolean} true when Dispo may open this group (or role is not Dispo). */
+function assertDispatcherMayOpenGroup(groupId) {
+    if (!isDispatcherRole()) return true;
+    const assigned = normalizeGroupIds(window.currentUser?.groups);
+    if (isDispatcherAssignedGroupId(assigned, groupId)) return true;
+    const sanitized = enforceDispatcherGroupScope();
+    showToast(t("dispatcher_select_group") || "Please select a group.", "error");
+    if (sanitized?.fallback) {
+        openAssignedGroupHub(sanitized.fallback);
+    } else {
+        switchSection("dispatcher-dashboard");
+    }
+    return false;
+}
+
 function openGroupHub(groupId) {
     if (!groupId) return;
+    if (!assertDispatcherMayOpenGroup(groupId)) return;
+    openAssignedGroupHub(groupId);
+}
+
+function openAssignedGroupHub(groupId) {
     adoptActiveGroup(groupId);
     migrateLineMembership(groupId);
     activateShiftCatalogForLine(groupId);
@@ -120,6 +179,7 @@ function openDailyPlanFull() {
 
 async function openDailyPlanForGroup(groupId) {
     if (!groupId) return;
+    if (!assertDispatcherMayOpenGroup(groupId)) return;
     adoptActiveGroup(groupId);
     migrateLineMembership(groupId);
     activateShiftCatalogForLine(groupId);
@@ -131,6 +191,7 @@ async function openDailyPlanForGroup(groupId) {
 
 async function openMonthlyPlanForGroup(groupId) {
     if (!groupId) return;
+    if (!assertDispatcherMayOpenGroup(groupId)) return;
     adoptActiveGroup(groupId);
     migrateLineMembership(groupId);
     activateShiftCatalogForLine(groupId);
@@ -431,8 +492,11 @@ function openVehiclesFromPlan() {
 /**
  * Product entry for monthly Dienstplan: import a finished schedule (or open
  * the monthly editor to assign real days). Never creates empty Frei shells.
+ *
+ * FAZA 2R-B.1.2: open the native file chooser in the same user-activation turn.
+ * Scroll/highlight is visual only and must never wrap input.click().
  */
-function openMonthlyPlanImport() {
+function openMonthlyPlanImport(_event) {
     if (isOperationalReadOnly()) {
         showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
         return;
@@ -442,14 +506,18 @@ function openMonthlyPlanImport() {
         return;
     }
     openMonthlyPlansFull();
-    window.setTimeout(() => {
-        const zone = document.getElementById("dispo-monthly-plan-import")
-            || document.getElementById("plan-import-dropzone");
-        zone?.scrollIntoView({ behavior: "smooth", block: "center" });
-        zone?.classList.add("hub-panel-target");
-        window.setTimeout(() => zone?.classList.remove("hub-panel-target"), 1400);
-        document.getElementById("bulk-plan-import-files")?.focus?.();
-    }, 80);
+    const input = document.getElementById("bulk-plan-import-files");
+    // Must stay synchronous with the click handler — no setTimeout around .click().
+    if (input && typeof input.click === "function") {
+        input.click();
+    }
+    const zone = document.getElementById("dispo-monthly-plan-import")
+        || document.getElementById("plan-import-dropzone");
+    if (zone) {
+        zone.scrollIntoView({ behavior: "smooth", block: "center" });
+        zone.classList.add("hub-panel-target");
+        window.setTimeout(() => zone.classList.remove("hub-panel-target"), 1400);
+    }
 }
 
 /** @deprecated koristi scrollHubSection */
@@ -460,6 +528,7 @@ function setGroupHubTab() {
 export {
     getHubGroupId,
     openGroupHub,
+    enforceDispatcherGroupScope,
     closeGroupHub,
     openMonthlyPlansFull,
     openDailyPlanFull,

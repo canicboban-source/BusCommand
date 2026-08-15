@@ -104,7 +104,7 @@ function writeXlsx() {
 function writeDriversCsv() {
   // Header-only official driver import template (no sample people).
   const dest = path.join(outDir, "BusCommand_Drivers_Import_v1.csv");
-  const csv = "eid,first_name,last_name,phone,email,company_code\n";
+  const csv = "eid,first_name,last_name,phone,email\n";
   fs.writeFileSync(dest, csv, "utf8");
   console.log("Wrote", dest);
 }

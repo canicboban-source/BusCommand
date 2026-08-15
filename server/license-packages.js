@@ -7,10 +7,10 @@
 const LICENSE_TYPES = Object.freeze(["starter", "pro", "fleet_master", "enterprise"]);
 
 const PACKAGES = Object.freeze({
-  starter: { licenseType: "starter", maxDrivers: 15, maxDispatchers: 2, label: "STARTER" },
-  pro: { licenseType: "pro", maxDrivers: 50, maxDispatchers: 5, label: "PRO" },
-  fleet_master: { licenseType: "fleet_master", maxDrivers: 200, maxDispatchers: 15, label: "FLEET MASTER" },
-  enterprise: { licenseType: "enterprise", maxDrivers: null, maxDispatchers: 50, label: "ENTERPRISE" }
+  starter: { licenseType: "starter", maxDrivers: 15, maxDispatchers: 2, maxBuses: 8, label: "STARTER" },
+  pro: { licenseType: "pro", maxDrivers: 50, maxDispatchers: 5, maxBuses: 25, label: "PRO" },
+  fleet_master: { licenseType: "fleet_master", maxDrivers: 200, maxDispatchers: 15, maxBuses: 100, label: "FLEET MASTER" },
+  enterprise: { licenseType: "enterprise", maxDrivers: null, maxDispatchers: 50, maxBuses: null, label: "ENTERPRISE" }
 });
 
 /** Map legacy plan values → package type. */
@@ -33,6 +33,12 @@ function maxDriversForType(licenseType) {
 function maxDispatchersForType(licenseType) {
   const pkg = packageForType(licenseType);
   return pkg.maxDispatchers != null ? pkg.maxDispatchers : 50;
+}
+
+/** Informational only — not enforced server-side on bus creation. */
+function maxBusesForType(licenseType) {
+  const pkg = packageForType(licenseType);
+  return pkg.maxBuses != null ? pkg.maxBuses : 2000;
 }
 
 function toMillis(value) {
@@ -124,11 +130,14 @@ function defaultTrialEnd(days = 30) {
   return end;
 }
 
-function buildNewCompanyLicenseFields({ licenseType = "pro", admin, trialDays = 30 } = {}) {
+function buildNewCompanyLicenseFields({ licenseType = "pro", admin, trialDays = 30, maxBuses } = {}) {
   const type = normalizeLicenseType(licenseType);
   const pkg = packageForType(type);
   const trialEnd = defaultTrialEnd(trialDays);
   const maxDrivers = pkg.maxDrivers == null ? 5000 : pkg.maxDrivers;
+  const resolvedMaxBuses = Number.isInteger(maxBuses) && maxBuses > 0
+    ? maxBuses
+    : maxBusesForType(type);
   return {
     plan: type,
     licenseType: type,
@@ -136,6 +145,7 @@ function buildNewCompanyLicenseFields({ licenseType = "pro", admin, trialDays = 
     status: "active",
     maxDrivers,
     maxDispatchers: maxDispatchersForType(type),
+    maxBuses: resolvedMaxBuses,
     trialEndsAt: admin.firestore.Timestamp.fromDate(trialEnd),
     trialValidUntil: admin.firestore.Timestamp.fromDate(trialEnd)
   };
@@ -148,6 +158,7 @@ module.exports = {
   packageForType,
   maxDriversForType,
   maxDispatchersForType,
+  maxBusesForType,
   resolveLicenseSnapshot,
   buildNewCompanyLicenseFields,
   defaultTrialEnd

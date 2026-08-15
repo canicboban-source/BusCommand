@@ -1,0 +1,57 @@
+# Staging-only Render Blueprint (NOT the production root Blueprint).
+# OWNER/DASHBOARD ACTION REQUIRED:
+# - Create or bind a staging Blueprint that uses this file path
+#   (Render Dashboard → Blueprint → specify YAML path `render.staging.yaml`).
+# - Do NOT apply this file to the production Blueprint that uses `render.yaml`.
+# - Create the Render web service named `buscommand-preview-staging`.
+# - After Render assigns the real HTTPS origin, set dashboard env:
+#     CORS_ORIGINS=<assigned-origin>
+#     APP_PUBLIC_URL=<assigned-origin>
+# - Staging origin is UNVERIFIED until that dashboard step
+#   (do NOT assume any prior onrender hostname).
+# - autoDeployTrigger: off — manual deploy of approved SHA only.
+# - Cron is intentionally ABSENT (NOT CREATED / NOT DEPLOYED) for staging.
+#
+# Target branch: staging/phase-3-isolation
+# Firebase project: buscommand-preview (TEST-ONLY)
+# Frontend + API: same web service (dist/ via api-server.js)
+
+services:
+  - type: web
+    name: buscommand-preview-staging
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: staging/phase-3-isolation
+    autoDeployTrigger: "off"
+    buildCommand: npm ci --include=dev && npm run build && npm prune --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BUSCOMMAND_ENV
+        value: staging
+      - key: NODE_VERSION
+        value: "22.14.0"
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: APP_PUBLIC_URL
+        sync: false
+      - key: VITE_FIREBASE_API_KEY
+        sync: false
+      - key: VITE_FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: VITE_FIREBASE_PROJECT_ID
+        sync: false
+      - key: VITE_FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: VITE_FIREBASE_MESSAGING_SENDER_ID
+        sync: false
+      - key: VITE_FIREBASE_APP_ID
+        sync: false
+
+# Staging cron: NOT CREATED / NOT DEPLOYED
+# (no cron service entries — must not call production domains)

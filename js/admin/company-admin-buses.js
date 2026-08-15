@@ -3,6 +3,14 @@ import { escapeHtml, showToast } from "../core/utils.js";
 import { t } from "../ui/i18n.js";
 import { getCompanyScope } from "./company-admin.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
+import { normalizeBusOpsStatus, normalizeBusPlate } from "../data/bus-ops.js";
+
+const OPS_STATUS_BADGE_TONE = Object.freeze({
+    active: "approved",
+    breakdown: "rejected",
+    reserve: "pending",
+    other_line: "pending"
+});
 
 function groupName(groups, groupId) {
     const match = (groups || []).find((group) => group.id === groupId);
@@ -44,16 +52,14 @@ function renderCompanyAdminBuses() {
     );
     for (const bus of sorted) {
         const row = tbody.insertRow();
-        row.insertCell().textContent = bus.number || bus.id || "—";
+        const active = bus.active !== false;
+        row.insertCell().innerHTML = `${escapeHtml(bus.number || bus.id || "—")}${active ? "" : ` <small>· ${escapeHtml(t("driver_status_inactive") || "Inactive")}</small>`}`;
+        row.insertCell().textContent = normalizeBusPlate(bus) || "—";
         row.insertCell().textContent = busGroupLabels(bus, scope.groups);
         const statusCell = row.insertCell();
-        const active = bus.active !== false;
-        statusCell.innerHTML = `<span class="badge ${active ? "approved" : "pending"}">${escapeHtml(
-            active
-                ? (t("js_status_active") || "Active")
-                : (t("driver_status_inactive") || "Inactive")
-        )}</span>`;
-        row.insertCell().textContent = bus.id || "—";
+        const ops = normalizeBusOpsStatus(bus);
+        const tone = OPS_STATUS_BADGE_TONE[ops] || "pending";
+        statusCell.innerHTML = `<span class="badge ${tone}">${escapeHtml(t(`bus_ops_${ops}`) || ops)}</span>`;
     }
 }
 

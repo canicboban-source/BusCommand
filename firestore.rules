@@ -2,8 +2,8 @@ rules_version = '2';
 
 // ============================================================
 // BusCommand — Firestore Security Rules
-// KRITIČNO: Ove rules osiguravaju da firme ne vide
-// jedne druge podatke (multi-tenant izolacija)
+// KRITIČNO: multi-tenant izolacija + Dispo group scope (FAZA 1)
+// knownGroupIds NEVER grants document read (D18 = CA metadata only)
 // ============================================================
 
 service cloud.firestore {
@@ -17,22 +17,22 @@ service cloud.firestore {
     // validira tenant, poslovna pravila i piše audit zapis.
 
     match /companies/{companyId}/{companyCollection}/{document=**} {
+      // D24.1.1: SuperAdmin browser may not read credential-bearing driver profiles.
+      // D24.2: SuperAdmin browser may not read server-only ops (driver_identity_guard).
       allow read: if isSuperAdmin()
-                  && companyCollection != "driver_credentials";
+                  && companyCollection != "driver_credentials"
+                  && companyCollection != "ops"
+                  && (companyCollection != "drivers" || !driverProfileExposesCredentials());
       allow write: if false;
     }
 
     // ─── FIRMA — SOPSTVENI PODACI ───────────────────────────
-    // Firma može čitati SAMO pod svojom companyId putanjom
 
     match /companies/{companyId} {
       allow read: if isSuperAdmin() || isCompanyMember(companyId);
-      // Korijenski dokument nosi naziv, slug i status firme. Licenca i
-      // lifecycle mijenjaju se samo kroz SuperAdmin/CA API sa audit tragom.
       allow write: if false;
     }
 
-    // Profil i branding firme
     match /companies/{companyId}/profile/{doc} {
       allow read: if isCompanyMember(companyId);
       allow write: if false;
@@ -44,30 +44,42 @@ service cloud.firestore {
     }
 
     match /companies/{companyId}/settings/{doc} {
-      allow read: if isCompanyMember(companyId);
+      // settings/sos carries live SOS identity — Dispo only if driver's home group assigned
+      allow read: if isCompanyMember(companyId)
+                  && (doc != "sos"
+                      || isCompanyAdmin(companyId)
+                      || canDispatcherReadSosSettings(companyId)
+                      || (isDriver(companyId)
+                          && resource.data.get("sosDriverId", "") == request.auth.uid));
       allow write: if false;
     }
 
     match /companies/{companyId}/users/{userId} {
-      // Svaki user vidi vlastiti profil, admin vidi sve
       allow read: if isCompanyAdmin(companyId)
                   || (isCompanyMember(companyId) && request.auth.uid == userId);
-      // Kreiranje, status, grupe i uklanjanje naloga idu isključivo kroz server.
       allow create, delete: if false;
       allow update: if isCompanyMember(companyId) && request.auth.uid == userId
                     && onlyUpdatingOwnProfile();
     }
 
     // ─── VOZAČI ─────────────────────────────────────────────
+    // knownGroupIds must NOT grant read (FAZA 1 / req 5). Home groupId only.
 
     match /companies/{companyId}/drivers/{driverId} {
-      // Dispečer i admin vide sve vozače
-      // Vozač vidi SAMO vlastiti profil
-      allow read: if isCompanyStaff(companyId)
-                  || isOwnDriverProfile(companyId, driverId);
-      // Create/delete only via Admin SDK (CSV import / lifecycle APIs)
+      // D24.1.1: credential-bearing profiles are CA-only (migration). Dispo, own driver,
+      // and SuperAdmin browser sessions are denied until the profile is clean.
+      allow read: if isCompanyAdmin(companyId)
+                  || (
+                    !driverProfileExposesCredentials()
+                    && (
+                      canDispatcherReadHomeGroup(
+                        companyId,
+                        resource.data.get("groupId", resource.data.get("lineId", ""))
+                      )
+                      || isOwnDriverProfile(companyId, driverId)
+                    )
+                  );
       allow create, delete: if false;
-      // Client update: only the driver may touch lastSeen/lastLocation
       allow update: if isDriver(companyId) && request.auth.uid == driverId
                     && onlyUpdatingAllowedDriverFields()
                     && isDriverLocationWriteAllowed(companyId);
@@ -76,23 +88,25 @@ service cloud.firestore {
     // ─── SMJENE ─────────────────────────────────────────────
 
     match /companies/{companyId}/shifts/{shiftId} {
-      allow read: if isCompanyStaff(companyId)
+      allow read: if isCompanyAdmin(companyId)
+                  || canDispatcherReadHomeGroup(companyId, resource.data.get("groupId", resource.data.get("lineId", "")))
                   || (isDriver(companyId) && resource.data.driverId == request.auth.uid
                       && isDriverNotificationWindow(companyId));
-      // Writes only via Admin SDK (PUT /api/staff/shifts/assignment)
       allow create, update, delete: if false;
     }
 
     // ─── PORUKE ─────────────────────────────────────────────
 
     match /companies/{companyId}/messages/{msgId} {
-      allow read: if isCompanyStaff(companyId);
+      allow read: if isCompanyAdmin(companyId)
+                  || (isDispatcher(companyId)
+                      && resource.data.keys().hasAny(["groupId"])
+                      && resource.data.groupId is string
+                      && isDispatcherAssignedGroup(companyId, resource.data.groupId));
       allow read: if isDriverNotificationWindow(companyId)
                   && (resource.data.broadcast == true
                       || resource.data.recipientDriverId == request.auth.uid);
-      // Create only via Admin SDK (POST /api/staff/messages)
       allow create: if false;
-      // Vozač može samo markirati poruku kao pročitanu
       allow update: if canDriverReadMessage(companyId) && onlyMarkingRead();
       allow delete: if false;
     }
@@ -100,8 +114,10 @@ service cloud.firestore {
     // ─── SOS ALARMI ─────────────────────────────────────────
 
     match /companies/{companyId}/sos/{sosId} {
-      allow read: if isCompanyMember(companyId);
-      // Create/update only via Admin SDK (driver create + staff resolve)
+      allow read: if isLicenseActive(companyId)
+                  && (isCompanyAdmin(companyId)
+                      || canDispatcherReadHomeGroup(companyId, resource.data.get("groupId", ""))
+                      || (isDriver(companyId) && resource.data.driverId == request.auth.uid));
       allow create, update, delete: if false;
     }
 
@@ -109,54 +125,77 @@ service cloud.firestore {
 
     match /companies/{companyId}/schedules/{scheduleId} {
       allow read: if isLicenseActive(companyId)
-                  && (isCompanyStaff(companyId)
+                  && (isCompanyAdmin(companyId)
+                      || canDispatcherReadHomeGroup(companyId, resource.data.get("groupId", resource.data.get("lineId", "")))
                       || (isDriver(companyId) && resource.data.driverId == request.auth.uid
                           && isDriverNotificationWindow(companyId)));
-      // Writes only via Admin SDK (assignment mirrors schedule day)
       allow write: if false;
     }
 
     match /companies/{companyId}/service_plans/{planId} {
-      allow read: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      allow read: if isLicenseActive(companyId)
+                  && (isCompanyAdmin(companyId)
+                      || canDispatcherReadHomeGroup(companyId, resource.data.get("groupId", "")));
       allow write: if false;
     }
 
     match /companies/{companyId}/service_plans/{planId}/duties/{dutyId} {
-      allow read: if isCompanyStaff(companyId) && isLicenseActive(companyId);
+      allow read: if isLicenseActive(companyId)
+                  && (isCompanyAdmin(companyId)
+                      || (isDispatcher(companyId)
+                          && exists(/databases/$(database)/documents/companies/$(companyId)/service_plans/$(planId))
+                          && isDispatcherAssignedGroup(
+                                companyId,
+                                get(/databases/$(database)/documents/companies/$(companyId)/service_plans/$(planId)).data.get("groupId", "")
+                             )));
       allow write: if false;
     }
 
     match /companies/{companyId}/driver_sessions/{driverId} {
-      allow read: if isCompanyStaff(companyId)
+      allow read: if isCompanyAdmin(companyId)
+                  || canDispatcherAccessDriver(companyId, driverId)
                   || (isDriver(companyId) && request.auth.uid == driverId);
       allow write: if false;
     }
 
     match /companies/{companyId}/shift_confirmations/{confirmationId} {
-      allow read: if isCompanyStaff(companyId);
+      allow read: if isCompanyAdmin(companyId)
+                  || (isDispatcher(companyId)
+                      && resource.data.keys().hasAny(["driverId"])
+                      && canDispatcherAccessDriver(companyId, resource.data.driverId));
       allow write: if false;
     }
 
     match /companies/{companyId}/confirmation_outbox/{outboxId} {
-      allow read: if isCompanyStaff(companyId)
+      allow read: if isCompanyAdmin(companyId)
+                  || (isDispatcher(companyId)
+                      && resource.data.keys().hasAny(["driverId"])
+                      && canDispatcherAccessDriver(companyId, resource.data.driverId))
                   || (isDriver(companyId) && resource.data.driverId == request.auth.uid);
       allow write: if false;
     }
 
     match /companies/{companyId}/groups/{groupId} {
-      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
-      // Server-only: API validates identity, tenant, dependencies and writes audit events.
+      allow read: if isLicenseActive(companyId)
+                  && (isCompanyAdmin(companyId)
+                      || (isDispatcher(companyId) && isDispatcherAssignedGroup(companyId, groupId))
+                      || (isDriver(companyId) && driverHomeGroupEquals(companyId, groupId)));
       allow write: if false;
     }
 
     match /companies/{companyId}/buses/{busId} {
-      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
-      // Fleet CRUD not productized via client; Admin SDK later if needed
+      allow read: if isLicenseActive(companyId)
+                  && (isCompanyAdmin(companyId)
+                      || canDispatcherReadBus(companyId)
+                      || (isDriver(companyId) && driverCanReadBus(companyId)));
       allow write: if false;
     }
 
     match /companies/{companyId}/routes/{routeId} {
-      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
+      allow read: if isLicenseActive(companyId)
+                  && (isCompanyAdmin(companyId)
+                      || canDispatcherReadHomeGroup(companyId, resource.data.get("groupId", resource.data.get("lineId", "")))
+                      || (isDriver(companyId) && driverHomeGroupEquals(companyId, resource.data.get("groupId", resource.data.get("lineId", "")))));
       allow write: if false;
     }
 
@@ -165,35 +204,36 @@ service cloud.firestore {
                   && (isCompanyAdmin(companyId)
                       || (isDispatcher(companyId) && isDispatcherAssignedGroup(companyId, resource.data.groupId))
                       || (isDriver(companyId) && resource.data.driverId == request.auth.uid));
-      // Creation and resolution are validated, identity/group-bound and audited by the server.
       allow create, update, delete: if false;
     }
 
     match /companies/{companyId}/vacations/{vacId} {
-      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
-      // Creation and review are validated, identity-bound and audited by the server.
+      allow read: if isLicenseActive(companyId)
+                  && (isCompanyAdmin(companyId)
+                      || canDispatcherReadHomeGroup(companyId, resource.data.get("groupId", ""))
+                      || (isDriver(companyId) && resource.data.driverId == request.auth.uid));
       allow create, update, delete: if false;
     }
 
     match /companies/{companyId}/lost_items/{itemId} {
-      allow read: if isCompanyMember(companyId) && isLicenseActive(companyId);
-      // Create/status only via Admin SDK
+      allow read: if isLicenseActive(companyId)
+                  && (isCompanyAdmin(companyId)
+                      || canDispatcherReadHomeGroup(companyId, resource.data.get("groupId", ""))
+                      || (isDriver(companyId) && resource.data.driverId == request.auth.uid));
       allow write: if false;
     }
 
     match /companies/{companyId}/company_admins/{adminId} {
       allow read: if isCompanyAdmin(companyId);
-      // Legacy read-only compatibility collection. Lifecycle writes are server-only.
       allow write: if false;
     }
 
     // ─── AUDIT LOG (GDPR — nepromjenjivo) ───────────────────
 
     match /companies/{companyId}/audit_log/{logId} {
-      // Admin može čitati, svi mogu kreirati, niko ne može brisati ni mijenjati
       allow read: if isCompanyAdmin(companyId);
-      allow create: if false; // server-only: clients cannot forge audit records
-      allow update: if false;  // audit log je immutable
+      allow create: if false;
+      allow update: if false;
       allow delete: if false;
     }
 
@@ -205,10 +245,6 @@ service cloud.firestore {
     }
 
     // ─── INTERNA KOORDINACIJA (samo Admin SDK) ──────────────
-    // Zaključavanja i job stanje čuvaju konzistentnost uvoza i izmjena plana.
-    // Klijent ih nikada ne čita direktno — stanje dobija kroz validirane API-je.
-    // Eksplicitno zatvoreno da naredna kolekcija ne bi „pala“ samo na
-    // implicitni default-deny.
 
     match /companies/{companyId}/monthly_plan_imports/{importId} {
       allow read, write: if false;
@@ -222,6 +258,8 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Server-only ops docs (Admin SDK). Includes D24.2 driver_identity_guard
+    // (companies/{companyId}/ops/driver_identity_guard) — browser R/W/L deny.
     match /companies/{companyId}/ops/{opsId} {
       allow read, write: if false;
     }
@@ -274,7 +312,88 @@ service cloud.firestore {
 
     function isDispatcherAssignedGroup(companyId, groupId) {
       return groupId is string
+        && groupId.size() > 0
         && get(/databases/$(database)/documents/companies/$(companyId)/users/$(request.auth.uid)).data.groups.hasAny([groupId]);
+    }
+
+    function canDispatcherReadHomeGroup(companyId, groupId) {
+      return isDispatcher(companyId) && isDispatcherAssignedGroup(companyId, groupId);
+    }
+
+    // Fail-closed for legacy/miswritten profiles that still embed credentials (D24.1.1).
+    // Key ownership (including null values) — keep in sync with CREDENTIAL_FIELDS.
+    function driverProfileExposesCredentials() {
+      return resource.data.keys().hasAny([
+        "eid",
+        "companyCodeHash",
+        "loginCodeHash",
+        "temporaryCodeHash",
+        "temporaryHash",
+        "company_code",
+        "companyCode",
+        "pin",
+        "password",
+        "passwordHash"
+      ]);
+    }
+
+    function driverDoc(companyId, driverId) {
+      return get(/databases/$(database)/documents/companies/$(companyId)/drivers/$(driverId));
+    }
+
+    function driverHomeGroupId(companyId, driverId) {
+      return driverDoc(companyId, driverId).data.get(
+        "groupId",
+        driverDoc(companyId, driverId).data.get("lineId", "")
+      );
+    }
+
+    function canDispatcherAccessDriver(companyId, driverId) {
+      return isDispatcher(companyId)
+        && exists(/databases/$(database)/documents/companies/$(companyId)/drivers/$(driverId))
+        && isDispatcherAssignedGroup(companyId, driverHomeGroupId(companyId, driverId));
+    }
+
+    function driverHomeGroupEquals(companyId, groupId) {
+      return groupId is string
+        && groupId.size() > 0
+        && driverHomeGroupId(companyId, request.auth.uid) == groupId;
+    }
+
+    function dispatcherAssignedGroups(companyId) {
+      return get(/databases/$(database)/documents/companies/$(companyId)/users/$(request.auth.uid)).data.groups;
+    }
+
+    function canDispatcherReadBus(companyId) {
+      return isDispatcher(companyId)
+        && (
+          isDispatcherAssignedGroup(companyId, resource.data.get("groupId", ""))
+          || (resource.data.keys().hasAny(["groupIds"])
+              && resource.data.groupIds is list
+              && dispatcherAssignedGroups(companyId).hasAny(resource.data.groupIds))
+        );
+    }
+
+    function driverCanReadBus(companyId) {
+      return isDriver(companyId)
+        && (
+          driverHomeGroupEquals(companyId, resource.data.get("groupId", ""))
+          || (resource.data.keys().hasAny(["groupIds"])
+              && resource.data.groupIds is list
+              && resource.data.groupIds.hasAny([driverHomeGroupId(companyId, request.auth.uid)]))
+        );
+    }
+
+    function canDispatcherReadSosSettings(companyId) {
+      return isDispatcher(companyId)
+        && (
+          resource.data.get("sosActive", false) != true
+          || (
+            resource.data.get("sosDriverId", "") is string
+            && resource.data.get("sosDriverId", "").size() > 0
+            && canDispatcherAccessDriver(companyId, resource.data.sosDriverId)
+          )
+        );
     }
 
     function isDriverNotificationWindow(companyId) {
@@ -298,27 +417,23 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/companies/$(companyId)/settings/main).data.status != "suspended";
     }
 
-    // Lokacija i lastSeen važe samo dok server potvrđuje aktivnu/grace radnu sesiju.
     function isDriverLocationWriteAllowed(companyId) {
       return exists(/databases/$(database)/documents/companies/$(companyId)/driver_sessions/$(request.auth.uid))
         && get(/databases/$(database)/documents/companies/$(companyId)/driver_sessions/$(request.auth.uid)).data.sessionEndsAt >= request.time;
     }
 
-    // Vozač može mijenjati samo lastSeen i slično — ne PIN, ne bus
     function onlyUpdatingAllowedDriverFields() {
       return request.resource.data.diff(resource.data)
         .affectedKeys()
         .hasOnly(["lastSeen", "lastLocation"]);
     }
 
-    // User može mijenjati samo vlastiti display name
     function onlyUpdatingOwnProfile() {
       return request.resource.data.diff(resource.data)
         .affectedKeys()
         .hasOnly(["name", "language"]);
     }
 
-    // Vozač može samo markirati poruku pročitanom
     function onlyMarkingRead() {
       return request.resource.data.diff(resource.data)
         .affectedKeys()

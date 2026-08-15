@@ -247,6 +247,31 @@ async function getActiveServicePlan({ db, companyId, groupId }) {
   return { ...plainMetadata, duties };
 }
 
+/** Transactional active catalog read — all gets participate in the mutation tx. */
+async function getActiveServicePlanInTx(tx, companyRef, groupId) {
+  const normalizedGroupId = normalizeServicePlanGroupId(groupId);
+  const plansSnap = await tx.get(
+    companyRef.collection("service_plans").where("status", "==", "active")
+  );
+  const candidates = plansSnap.docs
+    .map((doc) => ({ id: doc.id, ref: doc.ref, ...doc.data() }))
+    .filter((plan) => plan.groupId === normalizedGroupId)
+    .sort((a, b) => String(b.validFrom).localeCompare(String(a.validFrom)));
+  const metadata = candidates[0];
+  if (!metadata) return null;
+
+  const dutiesSnapshot = await tx.get(
+    metadata.ref.collection("duties").where("revisionId", "==", metadata.revisionId)
+  );
+  const duties = dutiesSnapshot.docs
+    .map((doc) => ({ ...doc.data(), id: doc.id }))
+    .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+
+  const plainMetadata = { ...metadata };
+  delete plainMetadata.ref;
+  return { ...plainMetadata, duties };
+}
+
 async function listServicePlanHistory({ db, companyId, groupId, limit = 25 }) {
   const normalizedGroupId = normalizeServicePlanGroupId(groupId);
   const boundedLimit = Math.max(1, Math.min(50, Number(limit) || 25));
@@ -305,6 +330,7 @@ async function getServicePlanVersion({ db, companyId, groupId, planId }) {
 module.exports = {
   activateServicePlan,
   getActiveServicePlan,
+  getActiveServicePlanInTx,
   getServicePlanVersion,
   listServicePlanHistory,
   normalizeServicePlanGroupId,

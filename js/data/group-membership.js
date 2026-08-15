@@ -4,7 +4,10 @@ import { getVisibleDrivers } from "../core/utils.js";
 import { busHasGroup, normalizeGroupIds } from "./bus-group-membership.js";
 import { driverKnowsGroup, normalizeKnownGroupIds } from "./driver-known-groups.js";
 
-/** Line/group membership; knownGroupIds → all Dispos of those groups see the driver. */
+/**
+ * Local roster membership helper (home / line / known lines).
+ * Not a security boundary — Firestore Rules + server projection decide Dispo reads.
+ */
 function driverBelongsToLine(driver, lineOrGroupId) {
     if (!driver || !lineOrGroupId) return true;
 

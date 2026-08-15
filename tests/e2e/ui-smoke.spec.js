@@ -355,6 +355,8 @@ test.describe("UI smoke", () => {
     });
     await expect(page.locator("#ca-drivers-import-preview tbody tr")).toHaveCount(2);
     await expect(page.locator("#ca-drivers-import-preview")).not.toContainText("BC-ANA-2026");
+    await expect(page.locator("#ca-drivers-import-preview")).not.toContainText("TEST-001");
+    await expect(page.locator(".company-drivers-legacy-notice")).toBeVisible();
     await page.locator("#ca-drivers-import-preview .company-drivers-import-button").click();
     await expect(page.locator("#ca-drivers-stat-total")).toHaveText("3");
 
@@ -363,6 +365,12 @@ test.describe("UI smoke", () => {
     await expect(page.locator("#ca-drivers-directory")).toContainText("ana.jovanovic@example.com");
 
     await page.locator("#ca-drivers-search").fill("");
+    // Seed driver starts active (assignment E2E); deactivate explicitly to exercise inactive filter.
+    await page.evaluate(() => {
+      const seed = (window.state.drivers || []).find((d) => d.id === "drv-e2e" || d.name === "E2E Driver");
+      if (seed) seed.active = false;
+      if (typeof window.renderCompanyAdminDrivers === "function") window.renderCompanyAdminDrivers();
+    });
     await page.locator("#ca-drivers-status-filter").selectOption("inactive");
     await expect(page.locator("#ca-drivers-directory tbody tr")).toHaveCount(1);
     await page.locator("#ca-drivers-directory .company-driver-status-action").click();
@@ -465,8 +473,8 @@ test.describe("UI smoke", () => {
     await expect(page.locator(".company-team-card")).toHaveCount(1);
     await page.locator("#ca-team-search").fill("");
     const updatedAna = page.locator(".company-team-card").filter({ hasText: "ana@example.test" });
-    await updatedAna.locator(".row-actions-trigger").click();
-    await updatedAna.locator('.row-actions-item[data-action="toggleCaDispProfileEdit"]').click();
+    // Active dispatchers expose a single profile action as .row-actions-direct (not ⋯ menu).
+    await updatedAna.locator('[data-action="toggleCaDispProfileEdit"]').click();
     await updatedAna.locator('input[id^="ca-disp-edit-phone-"]').fill("+4369912345678");
     await updatedAna.getByRole("button", { name: /Save changes/i }).click();
     await expect(page.locator(".company-team-card").filter({ hasText: "ana@example.test" })).toContainText("+4369912345678");
@@ -482,9 +490,11 @@ test.describe("UI smoke", () => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
     expect(overflow).toBe(false);
 
+    // Row-actions portal needs a desktop hit target; restore width before Delete.
+    await page.setViewportSize({ width: 1280, height: 800 });
     const inactiveAna = page.locator(".company-team-card").filter({ hasText: "ana@example.test" });
     await inactiveAna.locator(".row-actions-trigger").click();
-    await inactiveAna.locator('.row-actions-item[data-action="removeCompanyDispatcher"]').click();
+    await page.locator('.row-actions-item[data-action="removeCompanyDispatcher"]:visible').click();
     await expect(page.locator("#global-confirm-message")).toContainText("Historical plans and audit records remain");
     await page.locator("#global-confirm-yes").click();
     await expect(page.locator(".company-team-card").filter({ hasText: "ana@example.test" })).toHaveCount(0);
@@ -545,6 +555,17 @@ test.describe("UI smoke", () => {
     await page.goto("/staff.html");
     await loginDispatcher(page);
     await page.evaluate(() => {
+      // FAZA 3: assignment preflight requires the driver's bus to exist in fleet.
+      window.state.buses = [{
+        id: "bus-e2e-101",
+        number: "101",
+        groupId: "101",
+        groupIds: ["101"],
+        lineId: "101",
+        active: true,
+        opsStatus: "active",
+        companyId: "qa-local"
+      }];
       window.state.shiftCatalogs = window.state.shiftCatalogs || {};
       window.state.shiftCatalogs["101"] = {
         line: "101",

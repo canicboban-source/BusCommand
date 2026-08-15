@@ -1,6 +1,6 @@
 "use strict";
 
-const SENSITIVE_KEY = /(?:password|passcode|pin|secret|token|credential|authorization|cookie|companycode|company_code)/i;
+const SENSITIVE_KEY = /(?:password|passcode|pin|secret|token|credential|authorization|cookie|companycode|company_code|otp|activationcode|activation_code|logincode|login_code|\beid\b)/i;
 const ALLOWED_CATEGORIES = new Set(["access", "drivers", "plans", "scheduling", "company", "other"]);
 
 function toIso(value) {

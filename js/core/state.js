@@ -8,7 +8,8 @@ import { migrateLegacyShiftCatalog } from "./line-shift-catalog.js";
 import { USE_LOCAL_STATE } from "./runtime-config.js";
 
 const TENANT_STATE_PREFIX = "buscommand_state_";
-const PILOT_UI_LANGS = new Set(["de", "en", "sr", "hr"]);
+/** D23 — product UI languages only. */
+const PILOT_UI_LANGS = new Set(["de", "en", "sr"]);
 
 function getBaseState() {
     // Product and QA local-state both start from the same empty shell.

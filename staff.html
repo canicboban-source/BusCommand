@@ -224,11 +224,11 @@
                     <div style="display:flex; flex-direction:column; gap:12px;">
                         <div class="form-group" style="margin:0;">
                             <label for="setup-new-group-id" data-i18n="label_group_id">Group ID (e.g. 105)</label>
-                            <input type="text" id="setup-new-group-id" placeholder="105" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 16px; outline: none;">
+                            <input type="text" id="setup-new-group-id" placeholder="105" autocomplete="off" autocorrect="off" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 16px; outline: none;">
                         </div>
                         <div class="form-group" style="margin:0;">
                             <label for="setup-new-group-name" data-i18n="label_group_name">Group Name (e.g. Route 105)</label>
-                            <input type="text" id="setup-new-group-name" placeholder="Linija 105" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 16px; outline: none;">
+                            <input type="text" id="setup-new-group-name" placeholder="Linija 105" autocomplete="off" autocorrect="off" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 12px; color: white; width: 100%; font-size: 16px; outline: none;">
                         </div>
                         <button type="button" class="btn-primary" data-action="createDispatcherGroup" style="width:100%;">
                             <span data-i18n="btn_create_group">Create Group</span> <i data-lucide="plus"></i>
@@ -258,9 +258,12 @@
         <header class="app-header">
             <div class="header-left">
                 <div id="header-logo-container">
-                    <div class="logo bc-brand">
-                        <img class="bc-brand-mark bc-brand-mark--sm" src="/brand/logo-mark.png" width="28" height="28" alt="">
-                        <span class="bc-brand-text" id="app-branding-title">BusCommand</span>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="logo bc-brand">
+                            <img class="bc-brand-mark bc-brand-mark--sm" src="/brand/logo-mark.png" width="28" height="28" alt="">
+                            <span class="bc-brand-text">BusCommand</span>
+                        </div>
+                        <span class="bc-tenant-name" id="app-branding-title"></span>
                     </div>
                 </div>
                 <div class="trial-indicator hidden" id="app-trial-badge" hidden aria-hidden="true"></div>
@@ -535,7 +538,7 @@
                             </div>
                             <form id="sa-create-company-form" class="sa-create-form" data-submit-action="superadminSubmitCreateModal" novalidate>
                                 <fieldset class="sa-create-fieldset">
-                                    <legend data-i18n="add_new_company">Firma</legend>
+                                    <legend data-i18n="add_new_company">Register New Company</legend>
                                     <label class="form-group" for="sa-new-name">
                                         <span data-i18n="company_name_label">Naziv</span>
                                         <input type="text" id="sa-new-name" required maxlength="200" autocomplete="organization">
@@ -562,11 +565,31 @@
                                         <span data-i18n="sa_col_tenant">ID / Tenant</span>
                                         <input type="text" id="sa-new-tenant" maxlength="64" placeholder="auto" autocomplete="off">
                                     </label>
+                                    <label class="form-group" for="sa-new-legal-name">
+                                        <span data-i18n="sa_legal_name_label">Legal Company Name</span>
+                                        <input type="text" id="sa-new-legal-name" maxlength="200" autocomplete="off">
+                                    </label>
+                                    <label class="form-group" for="sa-new-tax-id">
+                                        <span data-i18n="sa_tax_id_label">Tax ID / VAT Number</span>
+                                        <input type="text" id="sa-new-tax-id" maxlength="32" autocomplete="off">
+                                    </label>
+                                    <label class="form-group" for="sa-new-max-buses">
+                                        <span data-i18n="sa_max_buses_label">Bus / Line Limit</span>
+                                        <input type="number" id="sa-new-max-buses" min="1" max="5000" placeholder="auto" inputmode="numeric">
+                                    </label>
                                     <div id="sa-demo-company-pin" class="form-group hidden">
                                         <label for="sa-new-pin" data-i18n="disp_pin_label">Initial PIN</label>
                                         <input type="password" id="sa-new-pin" maxlength="6" autocomplete="off">
                                     </div>
                                 </fieldset>
+                                <div id="sa-create-partial-banner" class="sa-create-partial-banner hidden" data-testid="sa-create-partial-banner" hidden role="status" aria-live="polite"></div>
+                                <div id="sa-create-leave-confirm" class="sa-create-leave-confirm hidden" data-testid="sa-create-leave-confirm" hidden>
+                                    <p id="sa-create-leave-confirm-msg"></p>
+                                    <div class="sa-create-leave-actions">
+                                        <button type="button" class="btn-secondary" id="sa-create-leave-cancel" data-i18n="btn_cancel">Cancel</button>
+                                        <button type="button" class="btn-primary" id="sa-create-leave-confirm-btn" data-i18n="sa_create_leave_partial">Leave incomplete</button>
+                                    </div>
+                                </div>
                                 <fieldset class="sa-create-fieldset">
                                     <legend data-i18n="sa_create_admin_title">Company Admin</legend>
                                     <label class="form-group" for="sa-ca-name">
@@ -770,19 +793,19 @@
                         <div class="company-group-form-grid">
                             <div class="form-group company-group-id-field">
                                 <label for="ca-new-group-line-id" data-i18n="label_group_id">ID linije</label>
-                                <input type="text" id="ca-new-group-line-id" placeholder="310" maxlength="6" inputmode="numeric" pattern="[0-9]{1,6}" aria-describedby="ca-group-id-help ca-group-id-error">
+                                <input type="text" id="ca-new-group-line-id" placeholder="310" maxlength="6" inputmode="numeric" pattern="[0-9]{1,6}" autocomplete="off" autocorrect="off" aria-describedby="ca-group-id-help ca-group-id-error">
                                 <span id="ca-group-id-help" class="form-help" data-i18n="ca_group_id_help">1–6 cifara, npr. 310</span>
                                 <span id="ca-group-id-error" class="field-error" data-group-error="id" aria-live="polite"></span>
                             </div>
                             <div class="form-group">
                                 <label for="ca-new-group-name" data-i18n="group_name_label">Naziv</label>
-                                <input type="text" id="ca-new-group-name" maxlength="80" autocomplete="off" data-i18n-placeholder="ph_group_name" placeholder="Linija 310" aria-describedby="ca-group-name-help ca-group-name-error">
+                                <input type="text" id="ca-new-group-name" maxlength="80" autocomplete="off" autocorrect="off" data-i18n-placeholder="ph_group_name" placeholder="Linija 310" aria-describedby="ca-group-name-help ca-group-name-error">
                                 <span id="ca-group-name-help" class="form-help" data-i18n="ca_group_name_help">Jasan naziv koji vide dispečeri.</span>
                                 <span id="ca-group-name-error" class="field-error" data-group-error="name" aria-live="polite"></span>
                             </div>
                             <div class="form-group company-group-description-field">
                                 <label for="ca-new-group-desc"><span data-i18n="group_desc_label">Opis</span> <span class="field-optional" data-i18n="optional">opciono</span></label>
-                                <input type="text" id="ca-new-group-desc" maxlength="200" autocomplete="off" data-i18n-placeholder="ca_group_description_placeholder" placeholder="Depo, pravac ili interna napomena" aria-describedby="ca-group-description-help ca-group-description-error">
+                                <input type="text" id="ca-new-group-desc" maxlength="200" autocomplete="off" autocorrect="off" data-i18n-placeholder="ca_group_description_placeholder" placeholder="Depo, pravac ili interna napomena" aria-describedby="ca-group-description-help ca-group-description-error">
                                 <span id="ca-group-description-help" class="form-help" data-i18n="ca_group_description_help">Najviše 200 karaktera.</span>
                                 <span id="ca-group-description-error" class="field-error" data-group-error="description" aria-live="polite"></span>
                             </div>
@@ -790,7 +813,7 @@
                                 <label for="ca-new-group-color" data-i18n="group_color_label">Boja</label>
                                 <div class="company-group-color-control">
                                     <input type="color" id="ca-new-group-color" value="#0EA5E9" data-i18n-aria-label="ca_group_color_picker_label" aria-label="Izaberite boju grupe">
-                                    <input type="text" id="ca-new-group-color-hex" value="#0EA5E9" maxlength="7" spellcheck="false" data-i18n-aria-label="ca_group_color_hex_label" aria-label="HEX boja grupe" aria-describedby="ca-group-color-error">
+                                    <input type="text" id="ca-new-group-color-hex" value="#0EA5E9" maxlength="7" spellcheck="false" autocomplete="off" autocorrect="off" data-i18n-aria-label="ca_group_color_hex_label" aria-label="HEX boja grupe" aria-describedby="ca-group-color-error">
                                     <span id="ca-group-color-swatch" aria-hidden="true"></span>
                                 </div>
                                 <span class="field-error" id="ca-group-color-error" data-group-error="color" aria-live="polite"></span>
@@ -1021,6 +1044,10 @@
                                         <span data-i18n="ca_drivers_phone">Telefon (E.164)</span>
                                         <input type="tel" id="ca-driver-add-phone" maxlength="40" inputmode="tel" autocomplete="tel" placeholder="+43699…" required>
                                     </label>
+                                    <label class="form-group" for="ca-driver-add-postal-code">
+                                        <span data-i18n="ca_drivers_postal_code">Poštanski broj</span>
+                                        <input type="text" id="ca-driver-add-postal-code" maxlength="10" autocomplete="postal-code">
+                                    </label>
                                     <label class="form-group" for="ca-driver-add-pin">
                                         <span data-i18n="ca_drivers_add_pin">PIN (5–12 cifara)</span>
                                         <input type="password" id="ca-driver-add-pin" inputmode="numeric" pattern="[0-9]{5,12}" minlength="5" maxlength="12" autocomplete="new-password" required>
@@ -1080,6 +1107,10 @@
                                 <label class="form-group" for="ca-driver-edit-email">
                                     <span>Email</span>
                                     <input type="email" id="ca-driver-edit-email" maxlength="254" autocomplete="email">
+                                </label>
+                                <label class="form-group" for="ca-driver-edit-postal-code">
+                                    <span data-i18n="ca_drivers_postal_code">Poštanski broj</span>
+                                    <input type="text" id="ca-driver-edit-postal-code" maxlength="10" autocomplete="postal-code">
                                 </label>
                                 <label class="form-group company-driver-edit-group" for="ca-driver-edit-group">
                                     <span data-i18n="ca_plan_group">Grupa / linija</span>
@@ -1616,24 +1647,50 @@
                     <div class="ops-health" id="vehicles-plan-health" role="status" aria-live="polite"></div>
 
                     <div class="card vehicles-panel-card">
-                        <form id="add-bus-form" data-submit-action="addBus" class="crud-form hub-bus-form" style="margin-bottom:10px;">
-                            <input type="text" id="new-bus-num" required placeholder="e.g. 91504" aria-label="Bus number" data-i18n-aria-label="hub_add_bus_label" data-i18n-placeholder="hub_add_bus_placeholder">
-                            <input type="text" id="new-bus-garage" maxlength="40" placeholder="Depot A" aria-label="Garage" data-i18n-aria-label="bus_garage" data-i18n-placeholder="bus_garage_placeholder">
+                        <h3 class="bus-fleet-section-title" data-i18n="hub_add_bus_btn">Add bus</h3>
+                        <form id="add-bus-form" data-submit-action="addBus" class="crud-form hub-bus-form bus-add-form" style="margin-bottom:14px;">
+                            <input type="text" id="new-bus-num" required maxlength="32" autocomplete="off" autocorrect="off" placeholder="e.g. 3101" aria-label="Bus number" data-i18n-aria-label="hub_add_bus_label" data-i18n-placeholder="hub_add_bus_placeholder">
+                            <input type="text" id="new-bus-plate" maxlength="20" autocomplete="off" autocorrect="off" placeholder="MD-101AB" aria-label="License plate" data-i18n-aria-label="table_plate" data-i18n-placeholder="ph_bus_plate">
+                            <select id="new-bus-group" aria-label="Group / line" data-i18n-aria-label="ca_col_groups"></select>
+                            <select id="new-bus-status" aria-label="Status" data-i18n-aria-label="bus_ops_status"></select>
                             <button type="submit" class="btn-primary hub-add-bus-btn" data-i18n="hub_add_bus_btn" aria-label="Add bus" data-i18n-aria-label="hub_add_bus_aria">Add bus</button>
                         </form>
-                        <div class="vehicles-bus-import hub-bus-import" style="margin-bottom:12px;">
-                            <p class="subtitle" style="font-size:0.8rem;margin:0 0 8px;" data-i18n="bus_import_hint">Import buses: TXT, CSV, XLSX or paste — one number per line.</p>
-                            <div id="bus-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bus-import-file"]'
-                                data-drop-action="handleBusImportDrop" data-i18n="bus_import_drop">Drop TXT / CSV / XLSX here</div>
-                            <input type="file" id="bus-import-file" accept=".txt,.csv,.tsv,.xlsx,.xls" style="display:none;" data-change-action="handleBusImportFile" data-change-pass="event">
-                            <textarea id="bus-import-paste" rows="3" style="width:100%;margin-top:8px;box-sizing:border-box;" data-i18n-placeholder="bus_import_paste_placeholder" placeholder="Paste bus numbers…"></textarea>
-                            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-                                <button type="button" class="btn-secondary" data-action="handleBusImportPaste" data-i18n="bus_import_preview_btn">Preview import</button>
-                                <button type="button" class="btn-secondary" data-action="clearBusImportPreview" data-i18n="bus_import_cancel">Clear</button>
+                        <details class="bus-import-details" style="margin-bottom:14px;">
+                            <summary class="bus-fleet-section-title bus-import-summary"><span>📁 <span data-i18n="bus_import_toggle">Bulk import (TXT/CSV/XLSX)</span></span></summary>
+                            <div class="vehicles-bus-import hub-bus-import">
+                                <p class="subtitle" style="font-size:0.8rem;margin:0 0 8px;" data-i18n="bus_import_hint">Import buses: TXT, CSV, XLSX or paste — one number per line.</p>
+                                <div id="bus-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bus-import-file"]'
+                                    data-drop-action="handleBusImportDrop" data-i18n="bus_import_drop">Drop TXT / CSV / XLSX here</div>
+                                <input type="file" id="bus-import-file" accept=".txt,.csv,.tsv,.xlsx,.xls" style="display:none;" data-change-action="handleBusImportFile" data-change-pass="event">
+                                <textarea id="bus-import-paste" rows="3" style="width:100%;margin-top:8px;box-sizing:border-box;" data-i18n-placeholder="bus_import_paste_placeholder" placeholder="Paste bus numbers…"></textarea>
+                                <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                                    <button type="button" class="btn-secondary" data-action="handleBusImportPaste" data-i18n="bus_import_preview_btn">Preview import</button>
+                                    <button type="button" class="btn-secondary" data-action="clearBusImportPreview" data-i18n="bus_import_cancel">Clear</button>
+                                </div>
+                                <div id="bus-import-preview"></div>
                             </div>
-                            <div id="bus-import-preview"></div>
+                        </details>
+                        <h3 class="bus-fleet-section-title">
+                            <span data-i18n="ca_nav_buses">Buses</span>
+                            <label class="bus-archived-toggle">
+                                <input type="checkbox" id="bus-show-archived" data-change-action="toggleShowArchivedBuses" data-change-pass="element">
+                                <span data-i18n="bus_show_archived">Show archived vehicles</span>
+                            </label>
+                        </h3>
+                        <div class="table-container bus-fleet-table-wrap" style="max-height:420px;overflow-y:auto;overflow-x:auto;">
+                            <table class="app-table bus-fleet-table">
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="hub_add_bus_label">Interni broj</th>
+                                        <th data-i18n="table_plate">Tablice</th>
+                                        <th data-i18n="ca_col_groups">Grupa</th>
+                                        <th data-i18n="bus_ops_status">Status</th>
+                                        <th data-i18n="table_actions">Akcije</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="settings-buses-list"></tbody>
+                            </table>
                         </div>
-                        <ul class="crud-list" id="settings-buses-list" style="max-height:420px;overflow-y:auto;"></ul>
                     </div>
                 </section>
 
@@ -1673,6 +1730,11 @@
                         </p>
                         <div id="plan-import-dropzone" class="hub-dropzone hub-dropzone--subtle" data-action="clickElementById" data-action-args='["bulk-plan-import-files"]'
                             data-drop-action="handleBulkPlanDrop" data-i18n="hub_plan_drop_hint">Drop Excel/CSV/PDF/TXT/image (OCR)</div>
+                        <div class="plan-import-choose-row" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                            <button type="button" id="plan-import-choose-files" class="btn-secondary" data-action="clickElementById" data-action-args='["bulk-plan-import-files"]'>
+                                <i data-lucide="folder-open"></i> <span data-i18n="plan_import_choose_files">Choose files</span>
+                            </button>
+                        </div>
                         <input type="file" id="bulk-plan-import-files" multiple accept=".xlsx,.xls,.pdf,.csv,.txt,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display:none;" data-change-action="handleBulkPlanFileInput" data-change-pass="event">
                         <div id="plan-import-preview" hidden></div>
                     </div>
@@ -1914,9 +1976,9 @@
                                 <thead>
                                     <tr>
                                         <th data-i18n="table_bus">Autobus</th>
+                                        <th data-i18n="table_plate">Tablice</th>
                                         <th data-i18n="ca_col_groups">Grupe</th>
                                         <th data-i18n="table_status">Status</th>
-                                        <th>ID</th>
                                     </tr>
                                 </thead>
                                 <tbody id="ca-buses-table-body"></tbody>
@@ -1941,6 +2003,12 @@
                                 <label for="ca-settings-timezone"><span data-i18n="ca_settings_timezone">Vremenska zona</span><input id="ca-settings-timezone" type="text" readonly aria-readonly="true"><small data-i18n="ca_settings_timezone_locked">Automatski se vezuje za državu sedišta.</small></label>
                                 <label for="ca-settings-language"><span data-i18n="ca_settings_language">Podrazumevani jezik firme</span><select id="ca-settings-language" data-change-action="handleCompanySettingsInput"><option value="en">English</option><option value="de">Deutsch</option><option value="sr">Srpski</option></select><span class="field-error" data-company-settings-error="defaultLanguage" aria-live="polite"></span></label>
                                 <label for="ca-settings-contact-email"><span data-i18n="ca_settings_contact_email">Poslovni kontakt email</span><input id="ca-settings-contact-email" type="email" maxlength="254" autocomplete="email" inputmode="email" data-input-action="handleCompanySettingsInput" placeholder="office@firma.at" required><span class="field-error" data-company-settings-error="contactEmail" aria-live="polite"></span></label>
+                            </div>
+                            <div class="company-panel-heading company-settings-legal-heading"><div><span data-i18n="ca_settings_legal_kicker">PRAVNI PODACI</span><h3 data-i18n="ca_settings_legal_title">Profil firme i pravni podaci</h3></div><i data-lucide="scroll-text"></i></div>
+                            <div class="company-settings-form-grid">
+                                <label for="ca-settings-tax-id"><span data-i18n="ca_settings_tax_id">PIB / VAT broj</span><input id="ca-settings-tax-id" type="text" maxlength="32" data-input-action="handleCompanySettingsInput"><span class="field-error" data-company-settings-error="taxId" aria-live="polite"></span></label>
+                                <label for="ca-settings-billing-email"><span data-i18n="ca_settings_billing_email">Email za fakturisanje</span><input id="ca-settings-billing-email" type="email" maxlength="254" autocomplete="email" data-input-action="handleCompanySettingsInput"><span class="field-error" data-company-settings-error="billingEmail" aria-live="polite"></span></label>
+                                <label for="ca-settings-sms-sender-id"><span data-i18n="ca_settings_sms_sender_id">SMS pošiljalac (ID)</span><input id="ca-settings-sms-sender-id" type="text" maxlength="11" placeholder="ALPENBUS" style="text-transform:uppercase" data-input-action="handleCompanySettingsInput"><span class="field-error" data-company-settings-error="smsSenderId" aria-live="polite"></span></label>
                             </div>
                             <div class="company-settings-form-actions"><button type="button" class="btn-secondary" data-action="resetCompanySettingsForm" data-i18n="btn_cancel">Otkaži</button><button id="ca-settings-save" type="submit" class="btn-primary"><i data-lucide="save"></i><span data-i18n="ca_settings_save">Sačuvaj podešavanja</span></button></div>
                         </form>
@@ -2248,12 +2316,12 @@
                     <div style="display:grid;grid-template-columns:100px 1fr;gap:12px;margin-bottom:16px;">
                         <div>
                             <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="label_group_id">ID linije</label>
-                            <input id="ca-wizard-line-id" type="text" placeholder="310" maxlength="6"
+                            <input id="ca-wizard-line-id" type="text" placeholder="310" maxlength="6" autocomplete="off" autocorrect="off"
                                 style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-main);font-size:0.95rem;outline:none;box-sizing:border-box;" />
                         </div>
                         <div>
                             <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;" data-i18n="group_name_label">Naziv</label>
-                            <input id="ca-wizard-group-name" type="text" data-i18n-placeholder="ca_wizard_ph_group_name"
+                            <input id="ca-wizard-group-name" type="text" data-i18n-placeholder="ca_wizard_ph_group_name" autocomplete="off" autocorrect="off"
                                 style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-main);font-size:0.95rem;outline:none;box-sizing:border-box;" />
                         </div>
                     </div>
@@ -2547,7 +2615,7 @@
     <div id="sa-company-detail-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sa-detail-title" style="display:none;">
         <div class="modal-content sa-detail-modal">
             <div class="sa-detail-header">
-                <h3 id="sa-detail-title" data-i18n="sa_detail_title">Company details</h3>
+                <h3 id="sa-detail-title" data-i18n="sa_detail_title">Manage company account</h3>
                 <button type="button" class="btn-secondary" data-action="superadminCloseCompanyDetail" aria-label="Close">
                     <i data-lucide="x" style="width:16px;height:16px;"></i>
                 </button>
@@ -2555,7 +2623,10 @@
             <p id="sa-detail-error" class="error-message hidden" role="alert"></p>
             <div id="sa-detail-body"></div>
             <div class="sa-detail-footer">
-                <button type="button" id="sa-detail-open-app-btn" class="btn-secondary" data-action="superadminOpenCompany" data-action-args='[]' data-i18n="btn_open">Open</button>
+                <button type="button" id="sa-detail-support-btn" class="btn-secondary hidden" hidden data-action="superadminStartSupport" data-action-args='[]'>
+                    <i data-lucide="headset" style="width:16px;height:16px;"></i>
+                    <span data-i18n="sa_support_start_audited">Start audited support</span>
+                </button>
                 <button type="button" class="btn-primary" data-action="superadminCloseCompanyDetail" data-i18n="btn_close">Close</button>
             </div>
         </div>

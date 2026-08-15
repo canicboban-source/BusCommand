@@ -41,14 +41,18 @@ test("Ch16 i18n keys exist in en/sr/de with real copy", () => {
 
 test("SA toast paths use i18n keys instead of hardcoded EN status strings", () => {
   const src = readFileSync(join(root, "js/admin/superadmin.js"), "utf8");
+  // sa_pin_length_error / sa_ca_email_exists / sa_ca_created_for_company moved to the
+  // lazy-loaded create-company-flow chunk as part of the B2C-01-F1 split.
+  const flowSrc = readFileSync(join(root, "js/admin/sa-create-company-flow.js"), "utf8");
   assert.match(src, /t\("sa_status_updated"\)/);
-  assert.match(src, /t\("sa_pin_length_error"\)/);
-  assert.match(src, /t\("sa_ca_email_exists"\)/);
-  assert.match(src, /t\("sa_ca_created_for_company"/);
+  assert.match(flowSrc, /t\("sa_pin_length_error"\)/);
+  assert.match(flowSrc, /t\("sa_ca_email_exists"\)/);
+  assert.match(flowSrc, /t\("sa_ca_created_for_company"/);
   assert.match(src, /t\("sa_ca_deleted"\)/);
   assert.match(src, /t\("sa_company_deleted"\)/);
   assert.doesNotMatch(src, /showToast\(\s*["']Status updated/);
   assert.doesNotMatch(src, /showToast\(\s*["']PIN must be/);
+  assert.doesNotMatch(flowSrc, /showToast\(\s*["']PIN must be/);
 });
 
 test("SOS modals expose dialog semantics on staff/driver/monolith", () => {

@@ -7,7 +7,7 @@ import {
 import { renderBusesList } from "./buses-routes.js";
 import { withAttachedGroup, buildNewBusGroups } from "./bus-group-membership.js";
 import { saveState } from "../core/state.js";
-import { showToast } from "../core/utils.js";
+import { showToast, refreshIcons } from "../core/utils.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
@@ -56,9 +56,9 @@ function renderPreview(parsed, classification, groupId) {
   const actionable = createCount || attachCount || reactivateCount;
 
   setPreviewHtml(`
-    <div class="hub-import-preview-body" style="margin-top:10px;font-size:0.85rem;">
-      <p style="margin:0 0 8px;"><strong>${t("bus_import_preview_title")}</strong></p>
-      <ul style="margin:0 0 10px;padding-left:18px;color:var(--text-muted);">
+    <div class="hub-import-preview-body">
+      <p><strong>${t("bus_import_preview_title")}</strong></p>
+      <ul>
         <li>${t("bus_import_stat_new")}: <strong>${createCount}</strong></li>
         <li>${t("bus_import_stat_attach")}: <strong>${attachCount}</strong></li>
         <li>${t("bus_import_stat_existing")}: <strong>${existCount}</strong></li>
@@ -67,8 +67,8 @@ function renderPreview(parsed, classification, groupId) {
       </ul>
       ${actionable
         ? `<button type="button" class="btn-primary" data-action="confirmBusImport">${t("bus_import_confirm")}</button>
-           <button type="button" class="btn-secondary" data-action="clearBusImportPreview" style="margin-left:8px;">${t("bus_import_cancel")}</button>`
-        : `<p style="margin:0;color:var(--text-muted);">${t("bus_import_nothing_to_apply")}</p>
+           <button type="button" class="btn-secondary" data-action="clearBusImportPreview">${t("bus_import_cancel")}</button>`
+        : `<p class="bc-list-sub">${t("bus_import_nothing_to_apply")}</p>
            <button type="button" class="btn-secondary" data-action="clearBusImportPreview">${t("bus_import_cancel")}</button>`}
     </div>
   `);
@@ -279,7 +279,7 @@ async function confirmBusImport() {
 
       if (USE_LOCAL_STATE) saveState();
       renderBusesList();
-      if (typeof lucide !== "undefined") lucide.createIcons();
+      refreshIcons();
       clearBusImportPreview();
 
       const msg = t("bus_import_done")

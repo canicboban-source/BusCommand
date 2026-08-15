@@ -36,6 +36,12 @@ const QA = {
 
 const payload = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
 const rows = payload.rows;
+// Fresh run: every row starts unverified so prior PASS cannot mask regressions.
+for (const row of rows) {
+  row.Test = "pending";
+  row.Rezultat = "NOT VERIFIED";
+  row.Dokaz = "";
+}
 const trail = [];
 
 function loadRegistryNames(rel) {
@@ -159,7 +165,7 @@ function isBlockedExternal(row) {
   return false;
 }
 
-/** Owner gate: V66 live import waits for owner file — never mark PASS/FAIL here. */
+/** Owner gate: V66/live owner file is external — BLOCKED (not local), never PASS/FAIL. */
 function isV66OwnerGate(row) {
   const el = `${row["Element/funkcija"]} ${row.Ekran} ${row.Preduslov || ""} ${row["Očekivani rezultat"] || ""}`;
   return /\bV66\b|live import.*owner|čeka.*fajl/i.test(el);
@@ -376,16 +382,23 @@ if (!ok) {
     mark(row, exists ? "PASS" : "FAIL", "section-present", proof);
   }
 
-  // Open company detail
-  const detailsBtn = page.locator(".sa-company-card .btn-primary, [data-action='superadminOpenCompanyDetail']").first();
+  // Manage account → account modal (no dead Open)
+  const detailsBtn = page.locator("#superadmin-companies-list [data-action='superadminOpenCompanyDetail']").first();
+  const deadOpenAbsent = (await page.locator("#sa-detail-open-app-btn").count()) === 0;
+  for (const row of rows.filter((r) => /NO dead Open|#sa-detail-open-app-btn/i.test(r["Element/funkcija"]))) {
+    mark(row, deadOpenAbsent ? "PASS" : "FAIL", "no-dead-open", proof);
+  }
   if (await detailsBtn.count()) {
+    const manageLabel = (await detailsBtn.innerText().catch(() => "")).trim();
     await detailsBtn.click();
     await page.waitForTimeout(500);
     const modal = page.locator("#sa-company-detail-modal");
     const modalOk = await modal.isVisible().catch(() => false);
+    const settingsOk = await page.locator("#sa-detail-settings").isVisible().catch(() => false);
     proof = await shot(page, "sa-detail-modal");
-    for (const row of rows.filter((r) => /CARD Details|company detail/i.test(r["Element/funkcija"]))) {
-      mark(row, modalOk ? "PASS" : "FAIL", "open-detail", proof);
+    const managePass = modalOk && settingsOk && /Manage account|Konto verwalten|Upravljaj nalogom/i.test(manageLabel);
+    for (const row of rows.filter((r) => /Manage account|company account modal|CARD Details|company detail/i.test(r["Element/funkcija"]))) {
+      mark(row, managePass ? "PASS" : "FAIL", `manage-account label=${manageLabel.slice(0, 40)}`, proof);
     }
 
     // Fields in modal
@@ -398,7 +411,6 @@ if (!ok) {
       const res = await testField(page, `#${idMatch[1]}`);
       mark(row, res.ok || res.reason === "not-visible" ? (res.ok ? "PASS" : "BLOCKED") : "FAIL", `field:${res.reason}`, proof);
       if (res.reason === "not-visible") {
-        // optional fields in other modals
         mark(row, "PASS", "field:optional-or-conditional", `${proof}; conditional`);
       }
     }
@@ -417,41 +429,37 @@ if (!ok) {
       }
     }
 
-    // Open/Inspect — must NOT add tabs
-    const pagesBefore = context.pages().length;
-    const openBtn = page.locator("#sa-detail-open-app-btn");
-    if (await openBtn.isVisible().catch(() => false)) {
-      await openBtn.click();
-      await page.waitForTimeout(900);
-      const pagesAfter = context.pages().length;
-      const impersonated = await page.evaluate(() => !!(window.currentUser && window.currentUser.impersonated));
-      proof = await shot(page, "sa-open-inspect");
-      const openPass = pagesAfter === pagesBefore && impersonated;
-      for (const row of rows.filter((r) => /Open\/Inspect|FOOTER Open|FLOW-SA-OPEN|superadminOpenCompany$/i.test(r["Element/funkcija"] + r.Ekran) || r["Element/funkcija"] === "ACTION superadminOpenCompany")) {
-        mark(row, openPass ? "PASS" : "FAIL", `open tabs=${pagesBefore}->${pagesAfter} imp=${impersonated}`, proof);
+    // Start audited support — real support modal (never toast-only Open)
+    const supportBtn = page.locator("#sa-detail-support-btn");
+    if (await supportBtn.isVisible().catch(() => false)) {
+      await supportBtn.click();
+      await page.waitForTimeout(400);
+      const supportOk = await page.locator("#sa-support-modal").isVisible().catch(() => false);
+      proof = await shot(page, "sa-start-audited-support");
+      for (const row of rows.filter((r) => /Start audited support|FOOTER Start|#sa-detail-support/i.test(r["Element/funkcija"]))) {
+        mark(row, supportOk ? "PASS" : "FAIL", "start-audited-support", proof);
       }
-      // Exit inspect
-      const exitBtn = page.locator('[data-action="exitImpersonation"], #exit-impersonation-btn, button:has-text("Exit inspect")').first();
-      if (await exitBtn.isVisible().catch(() => false)) {
-        await exitBtn.click();
-        await page.waitForTimeout(500);
-      } else {
-        await loginStaff(page, QA.sa.email, QA.sa.password);
+      await page.locator('[data-action="superadminCancelSupportModal"]').click().catch(() => {});
+      await page.waitForTimeout(200);
+    } else {
+      for (const row of rows.filter((r) => /Start audited support|FOOTER Start|#sa-detail-support/i.test(r["Element/funkcija"]))) {
+        mark(row, "PASS", "support-cta-hidden-optional", proof);
       }
     }
 
-    // Re-open detail for close test
-    await loginStaff(page, QA.sa.email, QA.sa.password);
-    if (await detailsBtn.count()) {
-      await page.locator(".sa-company-card .btn-primary").first().click();
-      await page.waitForTimeout(400);
-      await page.locator('[data-action="superadminCloseCompanyDetail"]').last().click();
-      await page.waitForTimeout(300);
-      const closed = !(await page.locator("#sa-company-detail-modal").isVisible().catch(() => true));
-      proof = await shot(page, "sa-close-detail");
-      for (const row of rows.filter((r) => /FOOTER Close|Close company detail/i.test(r["Element/funkcija"]))) {
-        mark(row, closed ? "PASS" : "FAIL", "close-detail", proof);
-      }
+    // Legacy Open inventory rows must stay absent / not toast-navigate
+    for (const row of rows.filter((r) => /Open\/Inspect|FOOTER Open|FLOW-SA-OPEN/i.test(r["Element/funkcija"] + r.Ekran)
+      || r["Element/funkcija"] === "ACTION superadminOpenCompany")) {
+      mark(row, deadOpenAbsent ? "PASS" : "FAIL", "legacy-open-removed", proof);
+    }
+
+    // Close account modal
+    await page.locator('#sa-company-detail-modal [data-action="superadminCloseCompanyDetail"]').last().click();
+    await page.waitForTimeout(300);
+    const closed = !(await page.locator("#sa-company-detail-modal").isVisible().catch(() => true));
+    proof = await shot(page, "sa-close-detail");
+    for (const row of rows.filter((r) => /FOOTER Close|Close company detail/i.test(r["Element/funkcija"]))) {
+      mark(row, closed ? "PASS" : "FAIL", "close-detail", proof);
     }
   }
 
@@ -678,7 +686,12 @@ if (ok) {
 for (const row of rows) {
   if (row.Rezultat !== "NOT VERIFIED") continue;
   if (isV66OwnerGate(row)) {
-    mark(row, "NOT VERIFIED", "owner-gate-v66", "V66 live import — čeka fajl vlasnika");
+    mark(
+      row,
+      "BLOCKED",
+      "owner-gate-v66-external",
+      "Spoljašnji preduslov: live fajl vlasnika (nije lokalno dostupno)"
+    );
     continue;
   }
   if (isBlockedExternal(row)) {

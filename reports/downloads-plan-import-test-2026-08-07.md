@@ -41,14 +41,5 @@ Owner test driver: **Canic Boban** / firma `100615` / group **320** (VOR 310/320
 - Failed: **0**
 - Staged under `tests/fixtures/downloads-safe/`
 
-## Excel deep-parse (SheetJS, post-fix)
-| File | Format | Month | Rows | Drivers |
-|------|--------|-------|------|---------|
-| `mesecni_plan_vozaca_310_avgust_2026.xlsx` | monthly-excel (Detaljno) | 2026-08 | 310 | 10 |
-| `raspored-10-vozaca-avgust-oktobar-2026.xlsx` | detaljno-scan | 2026-08 | 220 | 10 |
-| `BusCommand_Dienstplan_Blank_v1.xlsx` | empty template | — | 0 | 0 (expected) |
-
 ## Image / WhatsApp screenshots
 Screenshots in Downloads (`WhatsApp Image…`, `dienstplan.jpeg`) are accepted by Dispo import (OCR via Tesseract CDN). Structured CSV fixtures for Jun/Jul/Aug 2026 were built from the same Canic Boban plans for deterministic verification.
-
-Usability score: `reports/dispo-monthly-import-usability-2026-08-07.md` (**8.0 / 10**).

@@ -3,14 +3,16 @@
  * `active` = fleet on/off; `opsStatus` = day-to-day availability.
  */
 
-const BUS_OPS_STATUSES = Object.freeze(["ready", "breakdown", "technical", "out"]);
+const BUS_OPS_STATUSES = Object.freeze(["active", "breakdown", "reserve", "other_line"]);
+/** Assignable to a new shift / offered as a Needs-Attention coverage candidate (D21). */
+const ASSIGNABLE_BUS_STATUSES = Object.freeze(["active", "reserve"]);
 
 function normalizeBusOpsStatus(busOrStatus) {
     const raw = typeof busOrStatus === "string"
         ? busOrStatus
-        : (busOrStatus?.opsStatus || "ready");
-    const status = String(raw || "ready").trim().toLowerCase();
-    return BUS_OPS_STATUSES.includes(status) ? status : "ready";
+        : (busOrStatus?.opsStatus || "active");
+    const status = String(raw || "active").trim().toLowerCase();
+    return BUS_OPS_STATUSES.includes(status) ? status : "active";
 }
 
 function normalizeBusGarage(busOrGarage) {
@@ -20,10 +22,17 @@ function normalizeBusGarage(busOrGarage) {
     return String(raw || "").trim().slice(0, 40);
 }
 
+function normalizeBusPlate(busOrPlate) {
+    const raw = typeof busOrPlate === "string"
+        ? busOrPlate
+        : (busOrPlate?.plate || "");
+    return String(raw || "").trim().slice(0, 20);
+}
+
 /** Eligible for Needs attention / coverage assignment. */
 function busIsAssignable(bus) {
     if (!bus || bus.active === false) return false;
-    return normalizeBusOpsStatus(bus) === "ready";
+    return ASSIGNABLE_BUS_STATUSES.includes(normalizeBusOpsStatus(bus));
 }
 
 function busRevisionOf(bus) {
@@ -33,8 +42,10 @@ function busRevisionOf(bus) {
 
 export {
     BUS_OPS_STATUSES,
+    ASSIGNABLE_BUS_STATUSES,
     normalizeBusOpsStatus,
     normalizeBusGarage,
+    normalizeBusPlate,
     busIsAssignable,
     busRevisionOf
 };

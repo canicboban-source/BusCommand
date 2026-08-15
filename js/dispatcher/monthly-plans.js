@@ -5,7 +5,7 @@ import {
     parseRouteCodeFromText,
     setShiftForDriverDate
 } from "../core/shift-plan.js";
-import { saveState } from "../core/state.js";
+import { resolveUiLanguage, saveState } from "../core/state.js";
 import {
     ensureShiftCatalogForEdit,
     inferOperationalShiftType,
@@ -19,9 +19,11 @@ import { getActiveLineId, getGroupById } from "../data/groups.js";
 import { closeModal, showModal } from "../ui/modals.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
+import { formatYearMonthDisplay } from "../ui/month-abbr.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { paintPlanHealthBanner } from "./plan-health-banner.js";
 import { persistShift, undoShift } from "./shifts.js";
+import { countMonthlyPlanDayStats, pickCountKey } from "../../shared/monthly-plan-day-stats.mjs";
 import { isOperationalReadOnly } from "../core/access.js";
 import { previewMassDayRange } from "../core/monthly-plan-ops.js";
 import { dispoChangeReasonOptions, recordDemoChangeReason } from "./change-reason.js";
@@ -126,12 +128,13 @@ function ensureMonthlyMonthOptions() {
     const selected = /^\d{4}-\d{2}$/.test(select.value) ? select.value : currentMonthKey();
     const base = new Date();
     base.setDate(1);
-    const language = window.state.language || "en";
-    const formatter = new Intl.DateTimeFormat(language, { month: "long", year: "numeric" });
+    // Deterministic sr/en/de labels via month-abbr — never Intl/browser locale long names.
+    const language = resolveUiLanguage();
     const months = [];
     for (let offset = -2; offset <= 9; offset += 1) {
         const date = new Date(base.getFullYear(), base.getMonth() + offset, 1);
-        months.push({ value: currentMonthKey(date), label: formatter.format(date) });
+        const value = currentMonthKey(date);
+        months.push({ value, label: formatYearMonthDisplay(value, language) });
     }
     select.innerHTML = "";
     for (const month of months) {
@@ -141,6 +144,9 @@ function ensureMonthlyMonthOptions() {
         select.appendChild(option);
     }
     select.value = months.some(month => month.value === selected) ? selected : currentMonthKey();
+    const monthAria = t("monthly_label_month") || "";
+    if (monthAria) select.setAttribute("aria-label", monthAria);
+    select.setAttribute("data-testid", "monthly-month-select");
     return select.value;
 }
 
@@ -244,15 +250,16 @@ function updateMonthlyPlanSummary(ctx) {
     if (!summaryEl || !ctx) return;
 
     const driver = window.state.drivers?.find(d => d.name === ctx.driverName);
-    const planDays = ctx.schedule
-        ? Object.keys(ctx.schedule.parsedShifts || {}).filter(d => {
-            const s = ctx.schedule.parsedShifts[d];
-            return s && s.type !== "off";
-        }).length
-        : 0;
+    // Assigned days include vacation/sick — never label those as "work days".
+    const { assignedDays } = countMonthlyPlanDayStats(ctx.schedule?.parsedShifts);
+    const summaryKey = pickCountKey(
+        assignedDays,
+        "monthly_summary_assigned_one",
+        "monthly_summary_assigned_other"
+    );
 
     summaryEl.innerHTML = `
-        ${t("monthly_summary", { driver: ctx.driverName, month: ctx.month, days: planDays })}
+        ${t(summaryKey, { driver: ctx.driverName, month: ctx.month, days: assignedDays })}
         ${driver?.bus ? ` · ${t("monthly_default_bus")} <strong>${escapeHtml(driver.bus)}</strong>` : ""}`;
 }
 
@@ -1185,7 +1192,7 @@ function exportMonthlyGroupPlanCsv() {
         return;
     }
     const rows = [["driver", "date", "bus", "line_turnus", "type"]];
-    let workDays = 0;
+    let assignedDays = 0;
     for (const driver of drivers) {
         const name = String(driver.name || "").trim();
         if (!name) continue;
@@ -1195,7 +1202,7 @@ function exportMonthlyGroupPlanCsv() {
             const type = shift?.type || "off";
             const code = shift?.routeCode || shift?.name || "";
             const bus = shift?.bus || driver.bus || "";
-            if (type && type !== "off" && type !== "clear") workDays += 1;
+            if (type && type !== "off" && type !== "clear") assignedDays += 1;
             rows.push([name, dateStr, bus, code, type]);
         }
     }
@@ -1209,9 +1216,14 @@ function exportMonthlyGroupPlanCsv() {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+    const exportKey = pickCountKey(
+        assignedDays,
+        "monthly_export_done_assigned_one",
+        "monthly_export_done_assigned_other"
+    );
     showToast(
-        (t("monthly_export_done") || "Izvezen CSV ({days} radnih dana).")
-            .replace("{days}", String(workDays)),
+        t(exportKey, { days: assignedDays })
+            || `CSV exported (${assignedDays} assigned day${assignedDays === 1 ? "" : "s"}).`,
         "success"
     );
 }

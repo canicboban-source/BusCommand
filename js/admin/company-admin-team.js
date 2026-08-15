@@ -4,8 +4,8 @@ import { actionAttr } from "../core/action-delegate.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { runSingleSubmission } from "../core/submit-lock.js";
-import { canRunCompanyAdminAction } from "../core/ui-permissions.js";
-import { escapeHtml, showToast } from "../core/utils.js";
+import { currentUserCanRunCompanyAdminAction } from "../core/ui-permissions.js";
+import { escapeHtml, showToast, refreshIcons } from "../core/utils.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
 import { rowActionsMenuHtml } from "../ui/row-actions-menu.js";
@@ -19,6 +19,7 @@ import {
     validateCompanyDispatcherProfile
 } from "./company-admin-team-model.js";
 import { safeGroupColor } from "./company-admin-groups-model.js";
+import { icon, tx, btnSecondary, btnPrimary } from "../ui/markup.js";
 
 let teamSearch = "";
 let teamStatus = "all";
@@ -82,14 +83,14 @@ function renderCreateGroupPicker(groups) {
     const picker = document.getElementById("ca-disp-groups-picker");
     if (!picker) return;
     if (groups.length === 0) {
-        picker.innerHTML = `<div class="company-team-group-empty"><i data-lucide="layers-3"></i><span>${escapeHtml(t("ca_no_groups_for_disp"))}</span></div>`;
+        picker.innerHTML = `<div class="company-team-group-empty">${icon("layers-3")}<span>${tx("ca_no_groups_for_disp")}</span></div>`;
         return;
     }
     picker.innerHTML = groups.map(group => {
         const color = safeGroupColor(group.color);
         return `<label class="company-team-group-option" style="--team-group-color:${color}">
             <input type="checkbox" class="ca-new-disp-group" value="${escapeHtml(String(group.id))}">
-            <span aria-hidden="true"></span><strong>${escapeHtml(group.name)}</strong><small>${escapeHtml(t("plan_pick_line"))} ${escapeHtml(String(group.id))}</small>
+            <span aria-hidden="true"></span><strong>${escapeHtml(group.name)}</strong><small>${tx("plan_pick_line")} ${escapeHtml(String(group.id))}</small>
         </label>`;
     }).join("");
 }
@@ -111,23 +112,23 @@ function renderTeamSummary(scope) {
 
 function groupChipsHtml(dispatcher, groups) {
     const assigned = normalizeDispatcherGroups(dispatcher.groups || [], groups);
-    if (assigned.length === 0) return `<span class="company-team-no-group"><i data-lucide="triangle-alert"></i>${escapeHtml(t("group_none"))}</span>`;
+    if (assigned.length === 0) return `<span class="company-team-no-group">${icon("triangle-alert")}${tx("group_none")}</span>`;
     return assigned.map(groupId => {
         const group = groups.find(item => String(item.id) === groupId);
         const color = safeGroupColor(group?.color);
-        return `<span class="company-team-group-chip" style="--team-group-color:${color}"><i data-lucide="route"></i>${escapeHtml(group?.name || groupId)} <small>${escapeHtml(groupId)}</small></span>`;
+        return `<span class="company-team-group-chip" style="--team-group-color:${color}">${icon("route")}${escapeHtml(group?.name || groupId)} <small>${escapeHtml(groupId)}</small></span>`;
     }).join("");
 }
 
 function groupEditorHtml(dispatcher, groups) {
-    if (groups.length === 0) return `<p class="company-team-editor-empty">${escapeHtml(t("ca_no_groups_for_disp"))}</p>`;
+    if (groups.length === 0) return `<p class="company-team-editor-empty">${tx("ca_no_groups_for_disp")}</p>`;
     const assigned = new Set(normalizeDispatcherGroups(dispatcher.groups || [], groups));
     return groups.map(group => {
         const groupId = String(group.id);
         const color = safeGroupColor(group.color);
         return `<label class="company-team-group-option" style="--team-group-color:${color}">
             <input type="checkbox" class="ca-disp-grp-chk" data-disp="${escapeHtml(String(dispatcher.id))}" value="${escapeHtml(groupId)}" ${assigned.has(groupId) ? "checked" : ""}>
-            <span aria-hidden="true"></span><strong>${escapeHtml(group.name)}</strong><small>${escapeHtml(t("plan_pick_line"))} ${escapeHtml(groupId)}</small>
+            <span aria-hidden="true"></span><strong>${escapeHtml(group.name)}</strong><small>${tx("plan_pick_line")} ${escapeHtml(groupId)}</small>
         </label>`;
     }).join("");
 }
@@ -140,7 +141,7 @@ function profileFieldHtml(id, field, type, labelKey, value, attrs) {
 function profileEditorHtml(dispatcher) {
     const id = String(dispatcher.id);
     const safeId = escapeHtml(id);
-    return `<div id="ca-disp-profile-edit-${safeId}" class="company-team-editor company-team-profile-editor"><div><strong>${escapeHtml(t("ca_edit_disp_profile"))}</strong><p>${escapeHtml(t("ca_edit_disp_profile_hint"))}</p></div><div class="company-team-profile-grid">${profileFieldHtml(id, "name", "text", "disp_name_label", dispatcher.name, 'maxlength="80" autocomplete="name"')}${profileFieldHtml(id, "email", "email", "email_label", dispatcher.email, 'maxlength="254" autocomplete="email" inputmode="email"')}${profileFieldHtml(id, "phone", "tel", "ca_disp_phone_label", dispatcher.phone, 'maxlength="40" autocomplete="tel" inputmode="tel" placeholder="+43699…"')}</div><div class="company-team-editor-actions"><button type="button" class="btn-secondary" ${actionAttr("toggleCaDispProfileEdit", [id])}><i data-lucide="x"></i><span>${escapeHtml(t("btn_cancel"))}</span></button><button type="button" class="btn-primary" ${actionAttr("saveCompanyDispatcherProfile", [id])}><i data-lucide="save"></i><span>${escapeHtml(t("btn_save_changes"))}</span></button></div></div>`;
+    return `<div id="ca-disp-profile-edit-${safeId}" class="company-team-editor company-team-profile-editor"><div><strong>${tx("ca_edit_disp_profile")}</strong><p>${tx("ca_edit_disp_profile_hint")}</p></div><div class="company-team-profile-grid">${profileFieldHtml(id, "name", "text", "disp_name_label", dispatcher.name, 'maxlength="80" autocomplete="name"')}${profileFieldHtml(id, "email", "email", "email_label", dispatcher.email, 'maxlength="254" autocomplete="email" inputmode="email"')}${profileFieldHtml(id, "phone", "tel", "ca_disp_phone_label", dispatcher.phone, 'maxlength="40" autocomplete="tel" inputmode="tel" placeholder="+43699…"')}</div><div class="company-team-editor-actions">${btnSecondary(actionAttr("toggleCaDispProfileEdit", [id]), `${icon("x")}<span>${tx("btn_cancel")}</span>`)}${btnPrimary(actionAttr("saveCompanyDispatcherProfile", [id]), `${icon("save")}<span>${tx("btn_save_changes")}</span>`)}</div></div>`;
 }
 
 function dispatcherCardHtml(dispatcher, groups) {
@@ -182,30 +183,30 @@ function dispatcherCardHtml(dispatcher, groups) {
             <div>
                 <strong>${escapeHtml(dispatcher.name || t("dispatcher"))}</strong>
                 <a href="mailto:${escapeHtml(dispatcher.email || "")}">${escapeHtml(dispatcher.email || "—")}</a>
-                ${phone ? `<span class="company-team-phone"><i data-lucide="phone"></i><a href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a></span>` : ""}
+                ${phone ? `<span class="company-team-phone">${icon("phone")}<a href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a></span>` : ""}
             </div>
         </div>
         <div class="company-team-state">
             <span class="company-team-status ${stateClass}"><i data-lucide="${stateIcon}"></i>${escapeHtml(stateLabel)}</span>
-            ${active && readiness.missingGroups ? `<span class="company-team-warning"><i data-lucide="triangle-alert"></i>${escapeHtml(t("ca_team_unassigned"))}</span>` : ""}
+            ${active && readiness.missingGroups ? `<span class="company-team-warning">${icon("triangle-alert")}${tx("ca_team_unassigned")}</span>` : ""}
         </div>
         <div class="company-team-groups">${groupChipsHtml(dispatcher, groups)}</div>
         <div class="company-team-actions">
-            <button type="button" class="btn-secondary company-team-edit-groups${editingGroups ? " is-active" : ""}" ${actionAttr("toggleCaDispGroupsEdit", [String(dispatcher.id)])} ${busy ? "disabled" : ""} aria-expanded="${editingGroups ? "true" : "false"}"><i data-lucide="pencil-line"></i><span>${escapeHtml(t("ca_edit_groups"))}</span></button>
-            <button type="button" class="btn-secondary" ${actionAttr("resetCompanyDispatcherPassword", [String(dispatcher.id)])} ${busy || !active ? "disabled" : ""}><i data-lucide="mail-key"></i><span>${escapeHtml(t("ca_send_reset_link"))}</span></button>
-            <button type="button" class="btn-secondary" ${actionAttr("revokeCompanyDispatcherSessions", [String(dispatcher.id)])} ${busy || !active ? "disabled" : ""}><i data-lucide="log-out"></i><span>${escapeHtml(t("ca_revoke_sessions"))}</span></button>
+            <button type="button" class="btn-secondary company-team-edit-groups${editingGroups ? " is-active" : ""}" ${actionAttr("toggleCaDispGroupsEdit", [String(dispatcher.id)])} ${busy ? "disabled" : ""} aria-expanded="${editingGroups ? "true" : "false"}">${icon("pencil-line")}<span>${tx("ca_edit_groups")}</span></button>
+            ${btnSecondary(actionAttr("resetCompanyDispatcherPassword", [String(dispatcher.id)]), `${icon("mail-key")}<span>${tx("ca_send_reset_link")}</span>`, `${busy || !active ? "disabled" : ""}`)}
+            ${btnSecondary(actionAttr("revokeCompanyDispatcherSessions", [String(dispatcher.id)]), `${icon("log-out")}<span>${tx("ca_revoke_sessions")}</span>`, `${busy || !active ? "disabled" : ""}`)}
             <button type="button" class="${active ? "btn-danger-ghost" : "btn-secondary"} company-team-status-toggle" ${actionAttr("toggleCompanyDispatcherStatus", [String(dispatcher.id)])} ${busy ? "disabled" : ""}>
                 <i data-lucide="${toggleIcon}"></i><span>${escapeHtml(toggleLabel)}</span>
             </button>
             ${rowActionsMenuHtml(`ca-disp-${dispatcher.id}`, menuItems)}
         </div>
         <div id="ca-disp-groups-edit-${escapeHtml(String(dispatcher.id))}" class="company-team-editor${editingGroups ? "" : " hidden"}">
-            <div><strong>${escapeHtml(t("ca_assign_groups"))}</strong><p>${escapeHtml(t("ca_assign_groups_hint"))}</p></div>
+            <div><strong>${tx("ca_assign_groups")}</strong><p>${tx("ca_assign_groups_hint")}</p></div>
             <div class="company-team-group-grid">${groupEditorHtml(dispatcher, groups)}</div>
             <span class="field-error" data-dispatcher-group-error="${escapeHtml(String(dispatcher.id))}" aria-live="polite"></span>
             <div class="company-team-editor-actions">
-                <button type="button" class="btn-secondary" ${actionAttr("toggleCaDispGroupsEdit", [String(dispatcher.id)])}><i data-lucide="x"></i><span>${escapeHtml(t("btn_cancel"))}</span></button>
-                <button type="button" class="btn-primary" ${actionAttr("saveCompanyDispatcherGroups", [String(dispatcher.id)])}><i data-lucide="save"></i><span>${escapeHtml(t("btn_save_changes"))}</span></button>
+                ${btnSecondary(actionAttr("toggleCaDispGroupsEdit", [String(dispatcher.id)]), `${icon("x")}<span>${tx("btn_cancel")}</span>`)}
+                ${btnPrimary(actionAttr("saveCompanyDispatcherGroups", [String(dispatcher.id)]), `${icon("save")}<span>${tx("btn_save_changes")}</span>`)}
             </div>
         </div>
         ${editingProfile ? profileEditorHtml(dispatcher) : ""}
@@ -226,7 +227,7 @@ function bindTeamFilters() {
 }
 
 function renderCompanyAdminTeam() {
-    if (!canRunCompanyAdminAction(window.currentUser?.role)) return;
+    if (!currentUserCanRunCompanyAdminAction()) return;
     const list = document.getElementById("ca-dispatchers-manage-list");
     if (!list) return;
     const scope = getScope();
@@ -236,13 +237,13 @@ function renderCompanyAdminTeam() {
 
     const dispatchers = filterCompanyDispatchers(scope.dispatchers, teamSearch, teamStatus);
     if (scope.dispatchers.length === 0) {
-        list.innerHTML = `<div class="company-team-empty"><i data-lucide="users-round"></i><strong>${escapeHtml(t("ca_team_empty_title"))}</strong><p>${escapeHtml(t("ca_no_dispatchers"))}</p><button type="button" class="btn-primary" ${actionAttr("focusCompanyDispatcherForm")}><i data-lucide="user-plus"></i>${escapeHtml(t("ca_add_disp_title"))}</button></div>`;
+        list.innerHTML = `<div class="company-team-empty">${icon("users-round")}<strong>${tx("ca_team_empty_title")}</strong><p>${tx("ca_no_dispatchers")}</p>${btnPrimary(actionAttr("focusCompanyDispatcherForm"), `${icon("user-plus")}${tx("ca_add_disp_title")}`)}</div>`;
     } else if (dispatchers.length === 0) {
-        list.innerHTML = `<div class="company-team-empty is-filtered"><i data-lucide="search-x"></i><strong>${escapeHtml(t("ca_team_no_results"))}</strong><p>${escapeHtml(t("ca_team_no_results_hint"))}</p></div>`;
+        list.innerHTML = `<div class="company-team-empty is-filtered">${icon("search-x")}<strong>${tx("ca_team_no_results")}</strong><p>${tx("ca_team_no_results_hint")}</p></div>`;
     } else {
         list.innerHTML = dispatchers.map(dispatcher => dispatcherCardHtml(dispatcher, scope.groups)).join("");
     }
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 function focusCompanyDispatcherForm() {
@@ -423,7 +424,7 @@ async function persistCompanyDispatcherDraft(input) {
 }
 
 async function addCompanyDispatcher() {
-    if (!canRunCompanyAdminAction(window.currentUser?.role)) {
+    if (!currentUserCanRunCompanyAdminAction()) {
         showToast(t("error_access_denied"), "error");
         return false;
     }

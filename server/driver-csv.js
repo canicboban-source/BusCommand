@@ -5,13 +5,15 @@ const HEADER_ALIASES = {
   full_name: ["ime_prezime", "name", "vozac", "vozač", "full_name", "fullname"],
   phone: ["phone", "telephone", "telefon", "telefonnummer"],
   email: ["email", "e-mail", "e_mail"],
-  // Do not alias pin/login_code — personal login codes are set via staff personal-code API, not CSV.
+  // Legacy column accepted for backward compat but ignored (D24.2.1-A).
+  // Do not alias pin/login_code — personal login codes are set after SMS OTP activation.
   company_code: [
     "company_code", "companycode", "firmencode", "firmen_code", "firmin_kod", "firmin kod", "kod_firme"
   ],
   group: ["grupa", "grupa_csv", "group", "group_id", "groupid", "linie", "line", "linija"]
 };
-const MAX_IMPORT_ROWS = 250;
+/** D24.2: Firestore tx write budget is 500; each driver = 2 writes + 1 guard → max 249. */
+const MAX_IMPORT_ROWS = 249;
 
 function normalizeHeader(value) {
   return String(value || "").replace(/^\uFEFF/, "").trim().toLowerCase();
@@ -68,22 +70,6 @@ function splitFullName(name) {
   };
 }
 
-function uniquifyCompanyCodes(drivers) {
-    const counts = new Map();
-    drivers.forEach((driver) => {
-      const key = String(driver.company_code || "").trim().toLowerCase();
-      if (!key) return;
-      counts.set(key, (counts.get(key) || 0) + 1);
-    });
-    drivers.forEach((driver) => {
-      const key = String(driver.company_code || "").trim().toLowerCase();
-      if (!key) return;
-      if ((counts.get(key) || 0) > 1) {
-        driver.company_code = `${driver.company_code}-${driver.eid}`;
-      }
-  });
-}
-
 function parseDriverCsv(text) {
   if (typeof text !== "string" || !text.trim()) throw new Error("CSV je prazan.");
   const firstLine = text.split(/\r?\n/, 1)[0];
@@ -96,6 +82,7 @@ function parseDriverCsv(text) {
     aliases.forEach((alias) => lookup.set(normalizeHeader(alias), canonical));
   });
   const headers = rows[0].map((header) => lookup.get(normalizeHeader(header)) || null);
+  const legacyCompanyCodeIgnored = headers.includes("company_code");
   const hasNames = headers.includes("first_name") && headers.includes("last_name");
   const hasFullName = headers.includes("full_name");
   const required = ["eid", "phone", "email"];
@@ -117,13 +104,14 @@ function parseDriverCsv(text) {
       lastName = lastName || split.last_name;
     }
 
+    // D24.2.1-A: never retain CSV company_code values (ignored legacy column).
     const driver = {
       eid: raw.eid || "",
       first_name: firstName,
       last_name: lastName,
       phone: raw.phone || "",
       email: raw.email || "",
-      company_code: raw.company_code || "",
+      company_code: "",
       group: raw.group || ""
     };
 
@@ -134,21 +122,19 @@ function parseDriverCsv(text) {
     return driver;
   });
 
-  uniquifyCompanyCodes(drivers);
   assertUniqueDrivers(drivers);
+  drivers.legacyCompanyCodeIgnored = legacyCompanyCodeIgnored;
   return drivers;
 }
 
 function assertUniqueDrivers(drivers) {
-  for (const field of ["eid", "company_code"]) {
-    const seen = new Set();
-    drivers.forEach((driver, index) => {
-      const value = String(driver[field]).trim().toLowerCase();
-      if (!value) return;
-      if (seen.has(value)) throw new Error(`Duplikat ${field} u redu ${index + 2}.`);
-      seen.add(value);
-    });
-  }
+  const seen = new Set();
+  drivers.forEach((driver, index) => {
+    const value = String(driver.eid || "").trim().toLowerCase();
+    if (!value) return;
+    if (seen.has(value)) throw new Error(`Duplikat eid u redu ${index + 2}.`);
+    seen.add(value);
+  });
 }
 
 module.exports = {
@@ -157,5 +143,5 @@ module.exports = {
   assertUniqueDrivers,
   detectDelimiter,
   splitFullName,
-  uniquifyCompanyCodes
+  MAX_IMPORT_ROWS
 };

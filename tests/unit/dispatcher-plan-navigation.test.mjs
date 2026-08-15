@@ -15,4 +15,5 @@ test("daily and monthly group cards register working delegated handlers", () => 
   assert.match(staffActions, /import\s*\{[^}]*openDailyPlanForGroup[^}]*openMonthlyPlanForGroup[^}]*\}\s*from "\.\/dispatcher\/group-hub\.js"/s);
   assert.match(staffActions, /openDailyPlanForGroup,/);
   assert.match(staffActions, /openMonthlyPlanForGroup,/);
+  assert.match(staffActions, /openMonthlyPlanImport,/);
 });

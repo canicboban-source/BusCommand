@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { companyDriverProfileBody } from "../../server/validation.js";
+import { companyDriverProfileBody, companyDriverCreateBody } from "../../server/validation.js";
 import {
   normalizeKnownGroupIds,
   driverKnowsGroup
@@ -48,4 +48,38 @@ test("companyDriverProfileBody accepts editable knownGroupIds without credential
     pin: "12345"
   });
   assert.equal(rejected.success, false);
+});
+
+test("companyDriverProfileBody accepts an optional postalCode", () => {
+  const withCode = companyDriverProfileBody.safeParse({
+    companyId: "acme", firstName: "Ana", lastName: "Test",
+    phone: "+431234567", email: "ana@example.test", groupId: "310",
+    postalCode: "2340"
+  });
+  assert.equal(withCode.success, true);
+  assert.equal(withCode.data.postalCode, "2340");
+
+  const withoutCode = companyDriverProfileBody.safeParse({
+    companyId: "acme", firstName: "Ana", lastName: "Test",
+    phone: "+431234567", email: "ana@example.test", groupId: "310"
+  });
+  assert.equal(withoutCode.success, true);
+  assert.equal(withoutCode.data.postalCode, undefined);
+
+  const tooLong = companyDriverProfileBody.safeParse({
+    companyId: "acme", firstName: "Ana", lastName: "Test",
+    phone: "+431234567", email: "ana@example.test", groupId: "310",
+    postalCode: "12345678901"
+  });
+  assert.equal(tooLong.success, false);
+});
+
+test("companyDriverCreateBody accepts an optional postalCode", () => {
+  const result = companyDriverCreateBody.safeParse({
+    companyId: "acme", eid: "EID-1", firstName: "Ana", lastName: "Test",
+    phone: "+431234567", email: "ana@example.test", groupId: "310",
+    postalCode: "1010", companyCode: "12345"
+  });
+  assert.equal(result.success, true);
+  assert.equal(result.data.postalCode, "1010");
 });

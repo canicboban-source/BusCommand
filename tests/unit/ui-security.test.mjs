@@ -62,10 +62,13 @@ test("security-sensitive production labels have distinct EN, DE and SR translati
 
 test("production company form has i18n labels and no visible PIN field", () => {
   // Staff surface hosts SA/CA forms; index.html is the surface gate only.
-  const html = fs.readFileSync(new URL("../../staff.html", import.meta.url), "utf8");
-  assert.match(html, /data-i18n="add_new_company">Register New Company</);
+  // Prefer source monolith (build may lag); staff.html must stay in sync after npm run build.
+  const html = fs.readFileSync(new URL("../../index.legacy-monolith.html", import.meta.url), "utf8");
+  assert.match(html, /data-i18n="add_new_company"/);
+  assert.match(html, /id="sa-create-company-modal"/);
   assert.match(html, /id="sa-demo-company-pin" class="form-group hidden"/);
-  assert.match(html, /data-i18n="btn_add_admin"/);
+  assert.match(html, /data-i18n="btn_register_company"/);
+  assert.match(html, /data-i18n="sa_new_company_admin"/);
   assert.doesNotMatch(html, /id="company-admin-settings"[\s\S]*?data-i18n="btn_print_schedule"[\s\S]*?<!-- MOBILNA BOTTOM/);
   assert.doesNotMatch(html, /Register New Company \/ Dispatcher/);
 });

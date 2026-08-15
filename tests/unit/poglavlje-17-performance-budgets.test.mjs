@@ -21,7 +21,10 @@ test("driver entry does not import staff dispatcher state-observer setup", () =>
   assert.match(staffSetup, /renderDispatcherDashboard/);
   assert.match(staffSetup, /renderGroupHub/);
   assert.doesNotMatch(i18n, /import \{ populateTemplateSelect \} from/);
-  assert.match(i18n, /import\("\.\.\/dispatcher\/msg-compose\.js"\)/);
+  assert.match(i18n, /msg-compose-loader\.js/);
+  assert.match(i18n, /getMsgComposeIfLoaded/);
+  assert.doesNotMatch(i18n, /loadMsgCompose\s*\(/);
+  assert.doesNotMatch(i18n, /import\("\.\.\/dispatcher\/msg-compose\.js"\)/);
 });
 
 test("Lucide CDN is pinned and office parsers are not eager in monolith head", () => {
@@ -48,7 +51,10 @@ test("bundle budget gate script exports D17 soft-pilot thresholds", () => {
 test("staff confirmation and message compose avoid unbounded driver collection scans for dispatchers", () => {
   const routes = read("server/driver-routes.js");
   assert.match(routes, /function loadDriverDocsForGroups/);
-  assert.match(routes, /knownGroupIds",\s*"array-contains"/);
+  const helperStart = routes.indexOf("async function loadDriverDocsForGroups");
+  const helper = routes.slice(helperStart, helperStart + 600);
+  assert.match(helper, /where\("groupId", "==", groupId\)/);
+  assert.doesNotMatch(helper, /knownGroupIds/);
   const confirmIdx = routes.indexOf('app.get("/api/staff/shift-confirmations"');
   const confirmSlice = routes.slice(confirmIdx, confirmIdx + 4500);
   assert.match(confirmSlice, /where\("date", ">=", from\)/);

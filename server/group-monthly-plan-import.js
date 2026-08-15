@@ -10,13 +10,35 @@ const ABSENCE_TYPES = Object.freeze({
 });
 
 class GroupMonthlyImportError extends Error {
-  constructor(code, details = [], status = 422) {
+  constructor(code, details = [], status = 422, meta = null) {
     super(code);
     this.name = "GroupMonthlyImportError";
     this.code = code;
     this.details = details;
     this.status = status;
+    this.retryable = meta?.retryable === true;
+    this.recoveryRequired = meta?.recoveryRequired === true;
+    this.compensated = meta?.compensated === true;
   }
+}
+
+/**
+ * Safe allowlist for auto-clearing an expired monthly import lock (2R-A.2).
+ * Anything not explicitly safe stays fail-closed.
+ */
+function isSafeToAutoClearImportLock(job) {
+  if (!job || typeof job !== "object") return false;
+  if (job.recoveryRequired === true) return false;
+  if (job.status === "completed") return true;
+  if (job.status === "failed" && job.compensated === true) return true;
+  if (
+    job.status === "prepared"
+    && !job.appliedChunks
+    && job.compensated !== false
+  ) {
+    return true;
+  }
+  return false;
 }
 
 function normalizeEid(value) {
@@ -160,18 +182,161 @@ function lockDocumentId(groupId, month) {
   return crypto.createHash("sha256").update(`${groupId}|${month}`).digest("hex").slice(0, 32);
 }
 
+/**
+ * Pure lock evaluation for use inside a mutation transaction (2R-A.3.1).
+ * Caller supplies already-read lock/job snapshots. Never auto-clears here —
+ * returns clearLock:true so the caller deletes the lock in the same transaction.
+ */
+function evaluateMonthlyImportLockState({ lockData, jobData, now = Date.now() } = {}) {
+  if (!lockData) return { ok: true };
+  const expiresAt = lockData.expiresAt?.toDate
+    ? lockData.expiresAt.toDate()
+    : new Date(lockData.expiresAt || 0);
+  const expired = !(expiresAt instanceof Date) || Number.isNaN(expiresAt.getTime())
+    || expiresAt.getTime() <= now;
+  const importId = lockData.importId ? String(lockData.importId) : null;
+  if (!expired) {
+    return {
+      ok: false,
+      code: "MONTHLY_IMPORT_IN_PROGRESS",
+      importId,
+      retryable: true
+    };
+  }
+  if (!importId) {
+    return {
+      ok: false,
+      code: "MONTHLY_IMPORT_RECOVERY_REQUIRED",
+      importId: null,
+      recoveryRequired: true
+    };
+  }
+  if (!jobData) {
+    return {
+      ok: false,
+      code: "MONTHLY_IMPORT_RECOVERY_REQUIRED",
+      importId,
+      recoveryRequired: true
+    };
+  }
+  if (isSafeToAutoClearImportLock(jobData)) {
+    return { ok: true, clearLock: true, importId };
+  }
+  return {
+    ok: false,
+    code: "MONTHLY_IMPORT_RECOVERY_REQUIRED",
+    importId,
+    recoveryRequired: true
+  };
+}
+
+/**
+ * Read group/month import lock (+ job when present) inside an open transaction.
+ * All reads happen here; caller may delete lock when decision.clearLock === true.
+ */
+async function readMonthlyImportLockInTx(tx, companyRef, groupId, month) {
+  const lockRef = companyRef.collection("monthly_plan_import_locks")
+    .doc(lockDocumentId(groupId, month));
+  const lockSnap = await tx.get(lockRef);
+  let jobSnap = null;
+  const importId = lockSnap.exists ? lockSnap.data()?.importId : null;
+  if (importId) {
+    jobSnap = await tx.get(companyRef.collection("monthly_plan_imports").doc(String(importId)));
+  }
+  const decision = evaluateMonthlyImportLockState({
+    lockData: lockSnap.exists ? (lockSnap.data() || {}) : null,
+    jobData: importId
+      ? (jobSnap && jobSnap.exists ? (jobSnap.data() || {}) : null)
+      : undefined
+  });
+  return { lockRef, lockSnap, jobSnap, decision };
+}
+
+/**
+ * UX-only fast check — not mutation authorization (2R-A.3.1.1).
+ * Safe-expired cleanup re-reads lock/job inside a transaction and deletes only
+ * when still the same safe-expired lock. Never unconditionally deletes after a
+ * standalone get (concurrent claim must win).
+ */
 async function assertNoActiveGroupMonthlyImport({ db, companyId, groupId, month }) {
-  const ref = db.collection("companies").doc(companyId)
-    .collection("monthly_plan_import_locks").doc(lockDocumentId(groupId, month));
-  const snap = await ref.get();
+  const companyRef = db.collection("companies").doc(companyId);
+  const lockRef = companyRef.collection("monthly_plan_import_locks")
+    .doc(lockDocumentId(groupId, month));
+  const snap = await lockRef.get();
   if (!snap.exists) return { ok: true };
   const lock = snap.data() || {};
-  const expiresAt = lock.expiresAt?.toDate ? lock.expiresAt.toDate() : new Date(lock.expiresAt || 0);
-  if (expiresAt.getTime() <= Date.now()) {
-    await ref.delete().catch(() => {});
-    return { ok: true };
+  const observedImportId = lock.importId ? String(lock.importId) : "";
+  let job = null;
+  if (observedImportId) {
+    const jobSnap = await companyRef.collection("monthly_plan_imports").doc(observedImportId).get();
+    job = jobSnap.exists ? (jobSnap.data() || {}) : null;
   }
-  return { ok: false, code: "MONTHLY_IMPORT_IN_PROGRESS", importId: lock.importId || null };
+  const decision = evaluateMonthlyImportLockState({
+    lockData: lock,
+    jobData: observedImportId ? job : undefined
+  });
+  if (decision.ok && !decision.clearLock) return { ok: true };
+  if (!decision.ok) {
+    return {
+      ok: false,
+      code: decision.code,
+      importId: decision.importId || null,
+      retryable: decision.retryable === true,
+      recoveryRequired: decision.recoveryRequired === true
+    };
+  }
+
+  const maxAttempts = 3;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      const outcome = await db.runTransaction(async (tx) => {
+        const liveLockSnap = await tx.get(lockRef);
+        if (!liveLockSnap.exists) return { ok: true };
+        const liveLock = liveLockSnap.data() || {};
+        const liveImportId = liveLock.importId ? String(liveLock.importId) : "";
+        let liveJob = null;
+        if (liveImportId) {
+          const liveJobSnap = await tx.get(
+            companyRef.collection("monthly_plan_imports").doc(liveImportId)
+          );
+          liveJob = liveJobSnap.exists ? (liveJobSnap.data() || {}) : null;
+        }
+        const liveDecision = evaluateMonthlyImportLockState({
+          lockData: liveLock,
+          jobData: liveImportId ? liveJob : undefined
+        });
+        if (!liveDecision.ok) {
+          return {
+            ok: false,
+            code: liveDecision.code,
+            importId: liveDecision.importId || null,
+            retryable: liveDecision.retryable === true,
+            recoveryRequired: liveDecision.recoveryRequired === true
+          };
+        }
+        // Delete only the still-same safe-expired lock — never a fresher claim.
+        if (
+          liveDecision.clearLock
+          && liveImportId
+          && liveImportId === observedImportId
+        ) {
+          tx.delete(lockRef);
+        }
+        return { ok: true };
+      });
+      return outcome;
+    } catch {
+      if (attempt === maxAttempts - 1) {
+        return {
+          ok: false,
+          code: "MONTHLY_IMPORT_IN_PROGRESS",
+          importId: observedImportId || null,
+          retryable: true
+        };
+      }
+    }
+  }
+  return { ok: true };
 }
 
 function buildShiftDocument(row, groupId, actorId, importId, assignedAt, existing = null, { preserveOps = false } = {}) {
@@ -182,7 +347,7 @@ function buildShiftDocument(row, groupId, actorId, importId, assignedAt, existin
     date: row.date,
     type: row.type,
     name: row.name || "",
-    bus: "",
+    bus: row.bus || "",
     routeCode: row.routeCode || "",
     start: row.start || null,
     end: row.end || null,
@@ -413,6 +578,9 @@ module.exports = {
   MAX_IMPORT_ROWS,
   WRITE_CHUNK_SIZE,
   assertNoActiveGroupMonthlyImport,
+  evaluateMonthlyImportLockState,
+  readMonthlyImportLockInTx,
+  isSafeToAutoClearImportLock,
   buildGroupMonthlyPreview,
   buildScheduleEntry,
   buildShiftDocument,

@@ -215,6 +215,21 @@ test("import locks, plan locks and job state stay invisible and untouchable for 
   }
 });
 
+test("B2C-01-R1 company_admin_slot ops doc denies SA/CA/Dispo/driver browser R/W", async () => {
+  const slotPath = ["companies", "alpha", "ops", "company_admin_slot"];
+  const clients = [
+    superAdmin(),
+    auth("ca-1", "company_admin", "alpha"),
+    auth("disp-1", "dispatcher", "alpha"),
+    auth("drv-1", "driver", "alpha")
+  ];
+  for (const db of clients) {
+    await assertFails(getDoc(doc(db, ...slotPath)));
+    await assertFails(setDoc(doc(db, ...slotPath), { uid: "forged", claimedAt: "now" }));
+    await assertFails(deleteDoc(doc(db, ...slotPath)));
+  }
+});
+
 test("support sessions are readable by the tenant owner only and never client-written", async () => {
   const companyAdmin = auth("ca-1", "company_admin", "alpha");
   const dispatcher = auth("disp-1", "dispatcher", "alpha");

@@ -3,8 +3,8 @@ import ApiClient from "../core/api-client.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { runSingleSubmission } from "../core/submit-lock.js";
-import { canRunCompanyAdminAction } from "../core/ui-permissions.js";
-import { showToast } from "../core/utils.js";
+import { currentUserCanRunCompanyAdminAction } from "../core/ui-permissions.js";
+import { showToast, refreshIcons } from "../core/utils.js";
 import { t } from "../ui/i18n.js";
 import {
     companySettingsEqual,
@@ -18,6 +18,8 @@ let settingsCompanyId = null;
 let settingsDirty = false;
 let beforeUnloadBound = false;
 
+const SETTINGS_FIELDS = ["country", "defaultLanguage", "contactEmail", "taxId", "billingEmail", "smsSenderId"];
+
 function currentCompanyId() {
     return window.currentUser?.companyId || null;
 }
@@ -26,34 +28,31 @@ function stateProfileDraft() {
     const profile = window.state.profile || {};
     const demoCountry = USE_LOCAL_STATE ? "AT" : "";
     const country = profile.country || demoCountry;
-    return {
+    const draft = {
         country,
         timezone: profile.timezone || timezoneForCountry(country),
         defaultLanguage: profile.defaultLanguage || (USE_LOCAL_STATE ? window.state.language || "de" : ""),
         contactEmail: profile.contactEmail || (USE_LOCAL_STATE ? window.currentUser?.email || "" : "")
     };
+    for (const field of ["taxId", "billingEmail", "smsSenderId"]) draft[field] = profile[field] || "";
+    return draft;
 }
 
 function settingsFieldId(field) {
-    return {
-        country: "ca-settings-country",
-        timezone: "ca-settings-timezone",
-        defaultLanguage: "ca-settings-language",
-        contactEmail: "ca-settings-contact-email"
-    }[field];
+    if (field === "defaultLanguage") return "ca-settings-language";
+    return "ca-settings-" + field.replace(/[A-Z]/g, (c) => "-" + c.toLowerCase());
 }
 
 function readCompanySettingsDraft() {
-    return {
-        country: document.getElementById("ca-settings-country")?.value || "",
-        timezone: document.getElementById("ca-settings-timezone")?.value || "",
-        defaultLanguage: document.getElementById("ca-settings-language")?.value || "",
-        contactEmail: document.getElementById("ca-settings-contact-email")?.value || ""
-    };
+    const draft = {};
+    for (const field of SETTINGS_FIELDS) {
+        draft[field] = document.getElementById(settingsFieldId(field))?.value || "";
+    }
+    return draft;
 }
 
 function setSettingsFieldErrors(errors = {}) {
-    for (const field of ["country", "defaultLanguage", "contactEmail"]) {
+    for (const field of SETTINGS_FIELDS) {
         const input = document.getElementById(settingsFieldId(field));
         const error = document.querySelector(`[data-company-settings-error="${field}"]`);
         const key = errors[field];
@@ -74,12 +73,12 @@ function renderSettingsSaveState(state = settingsDirty ? "unsaved" : "saved") {
     const [icon, key, className] = map[state] || map.saved;
     element.className = `company-settings-save-state ${className}`;
     element.innerHTML = `<i data-lucide="${icon}"></i><span>${t(key)}</span>`;
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 function writeDraftToForm(draft) {
     const validation = validateCompanySettingsDraft(draft);
-    for (const field of ["country", "defaultLanguage", "contactEmail"]) {
+    for (const field of SETTINGS_FIELDS) {
         const input = document.getElementById(settingsFieldId(field));
         if (input) input.value = validation.value[field] || "";
     }
@@ -142,7 +141,7 @@ function resetCompanySettingsForm() {
 }
 
 async function saveCompanyProfileSettings() {
-    if (!canRunCompanyAdminAction(window.currentUser?.role)) {
+    if (!currentUserCanRunCompanyAdminAction()) {
         showToast(t("error_access_denied"), "error");
         return false;
     }
@@ -190,7 +189,7 @@ function bindBeforeUnload() {
 }
 
 function renderCompanyAdminSettings() {
-    if (!canRunCompanyAdminAction(window.currentUser?.role)) return;
+    if (!currentUserCanRunCompanyAdminAction()) return;
     const companyId = currentCompanyId();
     if (!companyId) return;
     if (settingsCompanyId !== companyId || !savedSettings) {
@@ -205,7 +204,7 @@ function renderCompanyAdminSettings() {
     const demoTools = document.getElementById("ca-settings-demo-tools");
     if (demoTools) demoTools.hidden = !USE_LOCAL_STATE;
     bindBeforeUnload();
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 export {

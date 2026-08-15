@@ -22,7 +22,10 @@ function normalizeCompanyProfileSettings(input = {}) {
     country,
     timezone: timezoneForCompanyCountry(country),
     defaultLanguage: String(input.defaultLanguage || "").trim().toLowerCase(),
-    contactEmail: String(input.contactEmail || "").trim().toLowerCase()
+    contactEmail: String(input.contactEmail || "").trim().toLowerCase(),
+    taxId: String(input.taxId || "").trim(),
+    billingEmail: String(input.billingEmail || "").trim().toLowerCase(),
+    smsSenderId: String(input.smsSenderId || "").trim().toUpperCase()
   };
 }
 

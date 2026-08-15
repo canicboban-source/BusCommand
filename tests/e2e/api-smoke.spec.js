@@ -8,9 +8,8 @@ test.describe("API smoke", () => {
     const res = await request.get(`${BASE}/api/health`);
     expect(res.status()).toBe(200);
     const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.status).toBe("ok");
-    expect(typeof body.uptime).toBe("number");
+    expect(body).toEqual({ ok: true });
+    expect(res.headers()["cache-control"] || "").toMatch(/no-store/i);
   });
 
   test("GET /api/config", async ({ request }) => {

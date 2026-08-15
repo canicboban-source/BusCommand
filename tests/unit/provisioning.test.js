@@ -6,6 +6,7 @@ const {
   deleteCompanyAtomic,
   normalizeFirebaseUid,
   provisionUser,
+  provisionCompanyAdminMissingOnly,
   revokeDispatcherSessions,
   setDispatcherActive,
   updateDispatcherGroups
@@ -36,15 +37,17 @@ function fakeFirestore({ initial = {}, failTransactionSetAt = null } = {}) {
       doc(id) { return ref(`${path}/${id || `generated-${++generated}`}`); },
       where(field, operator, expected) {
         assert.equal(operator, "==");
-        return {
+        const query = {
+          _isQuery: true,
           async get() {
             const prefix = `${path}/`;
             const docs = [...store.entries()]
               .filter(([entryPath, value]) => entryPath.startsWith(prefix) && !entryPath.slice(prefix.length).includes("/") && value[field] === expected)
               .map(([entryPath, value]) => ({ id: entryPath.slice(prefix.length), data: () => value }));
-            return { docs };
+            return { docs, empty: docs.length === 0, size: docs.length };
           }
         };
+        return query;
       }
     };
   }
@@ -56,8 +59,11 @@ function fakeFirestore({ initial = {}, failTransactionSetAt = null } = {}) {
       const staged = [];
       let setCount = 0;
       const transaction = {
-        async get(documentRef) {
-          return { exists: store.has(documentRef.path), data: () => store.get(documentRef.path) };
+        async get(target) {
+          if (target && target._isQuery && typeof target.get === "function") {
+            return target.get();
+          }
+          return { exists: store.has(target.path), data: () => store.get(target.path) };
         },
         set(documentRef, value, options) {
           setCount += 1;
@@ -77,11 +83,12 @@ function fakeFirestore({ initial = {}, failTransactionSetAt = null } = {}) {
   };
 }
 
-function fakeAdmin({ failClaims = false, emailExists = false } = {}) {
+function fakeAdmin({ failClaims = false, emailExists = false, failDelete = false } = {}) {
   const created = [];
   const deleted = [];
   const assignedClaims = [];
   const claimsByUid = new Map();
+  const users = new Map();
   const revoked = [];
   const updated = [];
   const auth = {
@@ -92,20 +99,44 @@ function fakeAdmin({ failClaims = false, emailExists = false } = {}) {
         throw error;
       }
       created.push(data);
-      return { uid: `uid-${created.length}` };
+      const uid = `uid-${created.length}`;
+      users.set(uid, { uid, email: data.email, displayName: data.displayName, disabled: false });
+      return { uid };
     },
     async setCustomUserClaims(uid, claims) {
       if (failClaims) throw new Error("simulated claims failure");
       assignedClaims.push({ uid, claims });
       claimsByUid.set(uid, claims);
     },
-    async deleteUser(uid) { deleted.push(uid); },
-    async getUser(uid) { return { uid, email: "dispatcher@example.test", displayName: "Dispatcher", disabled: false, customClaims: claimsByUid.get(uid) || {} }; },
+    async deleteUser(uid) {
+      if (failDelete) throw new Error("simulated auth delete failure");
+      deleted.push(uid);
+      users.delete(uid);
+    },
+    async getUser(uid) {
+      if (deleted.includes(uid)) {
+        const error = new Error("user-not-found");
+        error.code = "auth/user-not-found";
+        throw error;
+      }
+      if (users.has(uid)) {
+        const base = users.get(uid);
+        return { ...base, customClaims: claimsByUid.get(uid) || {} };
+      }
+      // Pre-seeded Auth identities used by dispatcher lifecycle tests.
+      return {
+        uid,
+        email: "dispatcher@example.test",
+        displayName: "Dispatcher",
+        disabled: false,
+        customClaims: claimsByUid.get(uid) || {}
+      };
+    },
     async updateUser(uid, data) { updated.push({ uid, data }); return { uid, ...data }; },
     async revokeRefreshTokens(uid) { revoked.push(uid); }
   };
   return {
-    created, deleted, assignedClaims, claimsByUid, revoked, updated,
+    created, deleted, assignedClaims, claimsByUid, revoked, updated, users,
     auth: () => auth,
     firestore: {
       FieldValue: { serverTimestamp: () => "timestamp" },
@@ -127,6 +158,35 @@ test("createCompanyAtomic creates parent, configuration and audit together", asy
   ]);
   assert.equal(db.store.get("companies/alpha").companyId, "alpha");
   assert.equal(db.store.get("companies/alpha/profile/main").timezone, "Europe/Vienna");
+});
+
+test("createCompanyAtomic stores legalName/taxId and defaults maxBuses from the package", async () => {
+  const db = fakeFirestore();
+  await createCompanyAtomic({
+    db, admin: fakeAdmin(), companyId: "beta", name: "Beta", licenseType: "pro",
+    legalName: "Beta Transit GmbH", taxId: "ATU99999999", actorId: "root"
+  });
+  const profile = db.store.get("companies/beta/profile/main");
+  assert.equal(profile.legalName, "Beta Transit GmbH");
+  assert.equal(profile.taxId, "ATU99999999");
+  assert.equal(db.store.get("companies/beta/settings/main").maxBuses, 25);
+});
+
+test("createCompanyAtomic stores an explicit maxBuses override", async () => {
+  const db = fakeFirestore();
+  await createCompanyAtomic({
+    db, admin: fakeAdmin(), companyId: "gamma", name: "Gamma", licenseType: "starter",
+    maxBuses: 12, actorId: "root"
+  });
+  assert.equal(db.store.get("companies/gamma/settings/main").maxBuses, 12);
+});
+
+test("createCompanyAtomic resolves enterprise maxBuses default when unset", async () => {
+  const db = fakeFirestore();
+  await createCompanyAtomic({
+    db, admin: fakeAdmin(), companyId: "delta", name: "Delta", licenseType: "enterprise", actorId: "root"
+  });
+  assert.equal(db.store.get("companies/delta/settings/main").maxBuses, 2000);
 });
 
 test("Serbian companies use the headquarters timezone and language", async () => {
@@ -164,22 +224,177 @@ test("createCompanyAtomic rolls back every write on transaction failure", async 
   assert.equal(db.store.size, 0);
 });
 
-for (const role of ["company_admin", "dispatcher"]) {
-  test(`provisionUser creates ${role} claims and company user document`, async () => {
-    const db = fakeFirestore({ initial: { "companies/alpha": { name: "Alpha" } } });
-    const admin = fakeAdmin();
-    const result = await provisionUser({
-      db, admin, email: `${role}@example.test`, password: "unit-test-password",
-      name: "Test User", role, companyId: "alpha", actorId: "root"
-    });
-    assert.deepEqual(result.claims, {
-      role, companyId: "alpha", name: "Test User", mustChangeLoginCode: false,
-      ...(role === "dispatcher" ? { groups: [] } : {})
-    });
-    assert.equal(db.store.has(`companies/alpha/users/${result.uid}`), true);
-    assert.equal(admin.deleted.length, 0);
+test("provisionUser creates dispatcher claims and company user document", async () => {
+  const db = fakeFirestore({ initial: { "companies/alpha": { name: "Alpha" } } });
+  const admin = fakeAdmin();
+  const result = await provisionUser({
+    db, admin, email: "dispatcher@example.test", password: "unit-test-password",
+    name: "Test User", role: "dispatcher", companyId: "alpha", actorId: "root"
   });
-}
+  assert.deepEqual(result.claims, {
+    role: "dispatcher", companyId: "alpha", name: "Test User", mustChangeLoginCode: false, groups: []
+  });
+  assert.equal(db.store.has(`companies/alpha/users/${result.uid}`), true);
+  assert.equal(admin.deleted.length, 0);
+});
+
+test("provisionUser company_admin uses slot guard and writes ops/company_admin_slot", async () => {
+  const db = fakeFirestore({
+    initial: {
+      "companies/alpha": { name: "Alpha" },
+      "companies/alpha/settings/main": { status: "active", licenseType: "pro" }
+    }
+  });
+  const admin = fakeAdmin();
+  const result = await provisionUser({
+    db, admin, email: "company_admin@example.test", password: "unit-test-password",
+    name: "Test User", role: "company_admin", companyId: "alpha", actorId: "root"
+  });
+  assert.deepEqual(result.claims, {
+    role: "company_admin", companyId: "alpha", name: "Test User", mustChangeLoginCode: false
+  });
+  assert.equal(db.store.has(`companies/alpha/users/${result.uid}`), true);
+  assert.equal(db.store.get("companies/alpha/ops/company_admin_slot").uid, result.uid);
+  assert.equal(admin.deleted.length, 0);
+  // Success audit must not include password; email omitted from CA audit details.
+  const audit = [...db.store.values()].find((value) => value.action === "user_created");
+  assert.equal(audit.details.uid, result.uid);
+  assert.equal(Object.prototype.hasOwnProperty.call(audit.details, "password"), false);
+});
+
+test("provisionUser company_admin fails closed when CA already exists (no slot)", async () => {
+  const db = fakeFirestore({
+    initial: {
+      "companies/alpha": { name: "Alpha" },
+      "companies/alpha/settings/main": { status: "active" },
+      "companies/alpha/users/ca-1": {
+        role: "company_admin", companyId: "alpha", email: "old@example.test", active: true
+      }
+    }
+  });
+  const admin = fakeAdmin();
+  await assert.rejects(provisionUser({
+    db, admin, email: "new@example.test", password: "unit-test-password",
+    name: "New", role: "company_admin", companyId: "alpha", actorId: "root"
+  }), (error) => error.code === "ca-exists");
+  assert.equal(admin.created.length, 0);
+});
+
+test("provisionCompanyAdminMissingOnly rejects inactive CA and existing slot", async () => {
+  const inactiveDb = fakeFirestore({
+    initial: {
+      "companies/alpha": { name: "Alpha" },
+      "companies/alpha/settings/main": { status: "active" },
+      "companies/alpha/users/ca-1": {
+        role: "company_admin", companyId: "alpha", email: "old@example.test", active: false
+      }
+    }
+  });
+  await assert.rejects(provisionCompanyAdminMissingOnly({
+    db: inactiveDb, admin: fakeAdmin(), email: "new@example.test", password: "unit-test-password",
+    name: "New", companyId: "alpha", actorId: "root"
+  }), (error) => error.code === "ca-exists");
+
+  const slotDb = fakeFirestore({
+    initial: {
+      "companies/alpha": { name: "Alpha" },
+      "companies/alpha/settings/main": { status: "active" },
+      "companies/alpha/ops/company_admin_slot": { uid: "winner", claimedAt: "timestamp" }
+    }
+  });
+  await assert.rejects(provisionCompanyAdminMissingOnly({
+    db: slotDb, admin: fakeAdmin(), email: "new@example.test", password: "unit-test-password",
+    name: "New", companyId: "alpha", actorId: "root"
+  }), (error) => error.code === "ca-exists");
+});
+
+test("parallel company_admin creates: second loses after slot claim and Auth UID is deleted", async () => {
+  const db = fakeFirestore({
+    initial: {
+      "companies/alpha": { name: "Alpha" },
+      "companies/alpha/settings/main": { status: "active" }
+    }
+  });
+  const winnerAdmin = fakeAdmin();
+  const loserAdmin = fakeAdmin();
+  const winner = await provisionCompanyAdminMissingOnly({
+    db, admin: winnerAdmin, email: "winner@example.test", password: "unit-test-password",
+    name: "Winner", companyId: "alpha", actorId: "sa"
+  });
+  assert.equal(db.store.get("companies/alpha/ops/company_admin_slot").uid, winner.uid);
+
+  await assert.rejects(provisionCompanyAdminMissingOnly({
+    db, admin: loserAdmin, email: "loser@example.test", password: "unit-test-password",
+    name: "Loser", companyId: "alpha", actorId: "sa"
+  }), (error) => error.code === "ca-exists");
+  // Loser never reaches Auth when pre-check sees slot/CA.
+  assert.equal(loserAdmin.created.length, 0);
+
+  // Post-Auth race: peer claims slot between Auth.createUser and transaction commit.
+  const conflictAdmin = fakeAdmin();
+  const companyRefPath = "companies/gamma";
+  const conflictDb = fakeFirestore({
+    initial: {
+      [`${companyRefPath}`]: { name: "Gamma" },
+      [`${companyRefPath}/settings/main`]: { status: "active" }
+    }
+  });
+  const originalRun = conflictDb.runTransaction.bind(conflictDb);
+  let raced = false;
+  conflictDb.runTransaction = async (cb) => {
+    if (!raced) {
+      raced = true;
+      conflictDb.store.set(`${companyRefPath}/ops/company_admin_slot`, { uid: "peer", claimedAt: "timestamp" });
+      conflictDb.store.set(`${companyRefPath}/users/peer`, {
+        role: "company_admin", companyId: "gamma", email: "peer@example.test", active: true
+      });
+    }
+    return originalRun(cb);
+  };
+  await assert.rejects(provisionCompanyAdminMissingOnly({
+    db: conflictDb, admin: conflictAdmin, email: "race@example.test", password: "unit-test-password",
+    name: "Race", companyId: "gamma", actorId: "sa"
+  }), (error) => error.code === "ca-exists");
+  assert.deepEqual(conflictAdmin.deleted, ["uid-1"]);
+  await assert.rejects(
+    () => conflictAdmin.auth().getUser("uid-1"),
+    (error) => error.code === "auth/user-not-found"
+  );
+  assert.equal(conflictDb.store.get(`${companyRefPath}/ops/company_admin_slot`).uid, "peer");
+  assert.equal(conflictDb.store.has(`${companyRefPath}/users/uid-1`), false);
+});
+
+test("provisionCompanyAdminMissingOnly compensation-failed when Auth delete fails", async () => {
+  const db = fakeFirestore({
+    initial: {
+      "companies/alpha": { name: "Alpha" },
+      "companies/alpha/settings/main": { status: "active" }
+    },
+    failTransactionSetAt: 1
+  });
+  const admin = fakeAdmin({ failDelete: true });
+  await assert.rejects(provisionCompanyAdminMissingOnly({
+    db, admin, email: "x@example.test", password: "unit-test-password",
+    name: "X", companyId: "alpha", actorId: "sa"
+  }), (error) => error.code === "compensation-failed");
+  assert.equal(admin.deleted.length, 0);
+  assert.equal(db.store.has("companies/alpha/ops/company_admin_slot"), false);
+});
+
+test("provisionCompanyAdminMissingOnly rejects suspended company before Auth", async () => {
+  const db = fakeFirestore({
+    initial: {
+      "companies/alpha": { name: "Alpha" },
+      "companies/alpha/settings/main": { status: "suspended" }
+    }
+  });
+  const admin = fakeAdmin();
+  await assert.rejects(provisionCompanyAdminMissingOnly({
+    db, admin, email: "x@example.test", password: "unit-test-password",
+    name: "X", companyId: "alpha", actorId: "sa"
+  }), (error) => error.code === "license-suspended");
+  assert.equal(admin.created.length, 0);
+});
 
 test("provisionUser checks company existence before creating Auth user", async () => {
   const db = fakeFirestore();

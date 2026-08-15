@@ -3,19 +3,20 @@ import { handleCompanyAuditFilters, loadMoreCompanyAudit, refreshCompanyAudit, r
 import { applyBrandingSettings, clearCompanyBrandingLogo, handleCompanyBrandingLogoFile } from "./admin/company-admin-branding.js";
 import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriverAddModal, closeCompanyDriverEdit, confirmCompanyDriversImport, handleCompanyDriversFile, handleCompanyDriversFilter, handleCompanyDriversSearch, openCompanyDriverAddModal, openCompanyDriverEdit, saveCompanyDriverEdit, submitCompanyDriverManualAdd, toggleCompanyDriverStatus } from "./admin/company-admin-drivers.js";
 import { cancelCompanyGroupEdit, deleteCompanyGroup, focusCompanyGroupForm, saveCompanyGroup, startEditCompanyGroup } from "./admin/company-admin-groups.js";
-import { caWizardBack, caWizardNext, caWizardSelectColor, caWizardSelectColorFromHex, caWizardSelectColorFromPicker, caWizardHandleLogo, caWizardSkip } from "./admin/company-admin-onboarding.js";
 import { clearCompanyServicePlanPreview, closeCompanyServicePlanDuty, closeCompanyServicePlanHistory, handleCompanyServicePlanFile, handleCompanyServicePlanGroupChange, openCompanyServicePlanDuty, openCompanyServicePlanHistory, publishCompanyServicePlan, activateCompanyServicePlanVersion } from "./admin/company-admin-service-plan.js";
 import { handleCompanySettingsCountry, handleCompanySettingsInput, resetCompanySettingsForm, saveCompanyProfileSettings } from "./admin/company-admin-settings.js";
 import { addCompanyDispatcher, focusCompanyDispatcherForm, removeCompanyDispatcher, resetCompanyDispatcherPassword, revokeCompanyDispatcherSessions, saveCompanyDispatcherGroups, saveCompanyDispatcherProfile, toggleCaDispGroupsEdit, toggleCaDispProfileEdit, toggleCompanyDispatcherStatus } from "./admin/company-admin-team.js";
 import { endCompanySupportSession, openCompanyOpsOverview } from "./admin/company-admin.js";
 import { createDispatcherGroup, enterDispatcherActiveGroup, exitImpersonation, saveNewDispatcherPassword, switchToGroupSetup } from "./admin/dispatcher-setup.js";
-import { superadminCreateCompany, superadminCreateCompanyAdmin, superadminDeleteCompany, superadminCancelDeleteCompanyModal, superadminConfirmDeleteCompany, superadminDeleteCompanyAdmin, superadminFocusCompanies, superadminCopyCompanyId, superadminCopyText, superadminImpersonate, superadminOpenCompany, superadminOpenCompanyDetail, superadminCloseCompanyDetail, superadminSetCompanyAdminStatus, superadminResetCompanyAdminPassword, superadminResetPin, superadminToggleStatus, superadminStartSupport, superadminCancelSupportModal, superadminConfirmSupportStart, superadminEndSupport, superadminSaveCompanySettings, superadminOnPlanChange, superadminSaveDemoCompanyProfile, superadminOpenCreateModal, superadminCloseCreateModal, superadminSubmitCreateModal } from "./admin/superadmin.js";
+import { superadminCreateCompany, superadminCreateCompanyAdmin, superadminDeleteCompany, superadminCancelDeleteCompanyModal, superadminConfirmDeleteCompany, superadminDeleteCompanyAdmin, superadminFocusCompanies, superadminCopyCompanyId, superadminCopyText, superadminImpersonate, superadminOpenCompany, superadminOpenCompanyDetail, superadminCloseCompanyDetail, superadminOpenCreateMissingAdmin, superadminSubmitCreateMissingAdmin, superadminCancelCreateMissingAdmin, superadminSetCompanyAdminStatus, superadminResetCompanyAdminPassword, superadminResetPin, superadminToggleStatus, superadminStartSupport, superadminCancelSupportModal, superadminConfirmSupportStart, superadminEndSupport, superadminSaveCompanySettings, superadminOnPlanChange, superadminSaveDemoCompanyProfile, superadminOpenCreateModal, superadminCloseCreateModal, superadminSubmitCreateModal } from "./admin/superadmin.js";
 import { forgotDispatcherPassword, loginAsDispatcher, logout } from "./auth/login-dispatcher.js";
 import { closeSuperAdminModal, confirmSuperAdminPin, handleLogoClick } from "./auth/superadmin.js";
 import { clickElementById, installActionDelegates, removeElementById } from "./core/action-delegate.js";
 import { exportDriversCSV, exportLostItemsCSV, exportReportsCSV } from "./core/export-csv.js";
-import { getScheduleByKey } from "./core/utils.js";
-import { addBus, deleteBus, deleteRoute, toggleBusEdit, saveBusOpsProfile } from "./data/buses-routes.js";
+import { getScheduleByKey, showToast } from "./core/utils.js";
+import { loadPlanImport, prefetchPlanImport } from "./dispatcher/plan-import-loader.js";
+import { loadMsgCompose } from "./dispatcher/msg-compose-loader.js";
+import { addBus, deleteBus, deleteRoute, toggleBusEdit, saveBusOpsProfile, quickSetBusStatus, changeBusGroup, toggleShowArchivedBuses } from "./data/buses-routes.js";
 import {
     clearBusImportPreview,
     confirmBusImport,
@@ -23,7 +24,7 @@ import {
     handleBusImportFile,
     handleBusImportPaste
 } from "./data/bus-import.js";
-import { addDriver, editDriver, toggleDriverActive } from "./data/drivers.js";
+import { addDriver, editDriver, toggleDriverActive, toggleDriverKG } from "./data/drivers.js";
 import { deleteGroup, setGroupFilter } from "./data/groups.js";
 import { clearScheduleFile, clearScheduleText, deleteScheduleEntry, formatScheduleText, handleScheduleDrop, handleScheduleFileSelect, insertScheduleTable, sendScheduleToDrivers, switchScheduleTab } from "./data/schedules.js";
 import {
@@ -42,15 +43,12 @@ import {
     applyOpsAttentionFix
 } from "./dispatcher/dashboard.js";
 import { removeDispatcher } from "./dispatcher/dispatchers.js";
-import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup, openMonthlyPlanImport, openMonthlyPlansFull, openVehiclesFromPlan, scrollHubSection } from "./dispatcher/group-hub.js";
+import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup as openMonthlyPlanForGroupCore, openMonthlyPlanImport as openMonthlyPlanImportCore, openMonthlyPlansFull as openMonthlyPlansFullCore, openVehiclesFromPlan, scrollHubSection } from "./dispatcher/group-hub.js";
 import { returnLostItem, setLostItemStatus, openLostItemPhoto } from "./dispatcher/lost-items.js";
 import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, deleteMonthlyPlan, exportMonthlyGroupPlanCsv, focusMonthlyDriverPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, openMonthlyDayEditForDriver, previewMonthlyMassAbsence, saveMonthlyDayEdit, selectMonthlyPlanGroup, undoMonthlyDayEdit } from "./dispatcher/monthly-plans.js";
 import { goToOpsPlanProblems } from "./dispatcher/plan-health-banner.js";
 import { openVehiclesForGroup } from "./dispatcher/vehicles-panel.js";
-import { setMessagesPageTab, submitDispatcherMessage } from "./dispatcher/msg-compose.js";
-import { clearPendingPlanImports, confirmBulkPlanImport, handleBulkPlanDrop, handleBulkPlanFileInput, removePendingImport, updatePendingImportDriver, updatePendingImportMonth } from "./dispatcher/plan-import.js";
 import { resolveReport, openReportResolution, closeReportResolution } from "./dispatcher/reports.js";
-import { archiveAllDispatcherMessages, archiveDispatcherMessage } from "./dispatcher/sent-messages.js";
 import { shiftWeekNav } from "./dispatcher/shift-utils.js";
 import { assignShift, openShiftCell, persistShift, removeShift } from "./dispatcher/shifts.js";
 import { dailyPlanAssignDriver, clearDailyShift } from "./dispatcher/daily-plan.js";
@@ -80,6 +78,153 @@ import { canInvokeActionDuringDriverActivation } from "./auth/driver-access-gate
 /** Lazy Dispo Help chunk — keeps D17 staff budget under soft ceiling. */
 function loadDispatcherHelp() {
     return import("./dispatcher/help-support.js");
+}
+
+/** Lazy CA onboarding wizard — not needed for Dispo monthly plan path. */
+function loadCompanyAdminOnboarding() {
+    return import("./admin/company-admin-onboarding.js");
+}
+
+/**
+ * Lazy monthly plan-import chunk (2R-B / D17) — not in staff initial graph.
+ * 2R-B.1 / 2R-B.1.1: rejected loads are not permanently cached; file/drop snapshots
+ * are taken synchronously before awaiting the chunk.
+ */
+async function withPlanImportModule(run) {
+    let mod;
+    try {
+        mod = await loadPlanImport();
+    } catch {
+        showToast(t("plan_import_chunk_load_failed"), "error", 8000);
+        return undefined;
+    }
+    // Errors from an already-loaded module must propagate — they are not chunk-load failures.
+    return run(mod);
+}
+
+async function clearPendingPlanImports(...args) {
+    return withPlanImportModule((mod) => mod.clearPendingPlanImports(...args));
+}
+async function confirmBulkPlanImport(...args) {
+    return withPlanImportModule((mod) => mod.confirmBulkPlanImport(...args));
+}
+async function handleBulkPlanDrop(event) {
+    // Sync before any await: DataTransfer files are not durable across the chunk boundary.
+    if (event && typeof event.preventDefault === "function") event.preventDefault();
+    const zone = document.getElementById("plan-import-dropzone");
+    if (zone) zone.style.borderColor = "var(--panel-border)";
+    const files = Array.from(event?.dataTransfer?.files || []);
+    return withPlanImportModule((mod) => mod.handleBulkPlanFiles(files));
+}
+async function handleBulkPlanFileInput(event) {
+    // Sync snapshot + clear so the same path can be re-chosen after a chunk-load failure.
+    const input = event?.target || null;
+    const files = Array.from(input?.files || []);
+    if (input) input.value = "";
+    return withPlanImportModule((mod) => mod.handleBulkPlanFiles(files));
+}
+async function removePendingImport(...args) {
+    return withPlanImportModule((mod) => mod.removePendingImport(...args));
+}
+async function updatePendingImportDriver(...args) {
+    return withPlanImportModule((mod) => mod.updatePendingImportDriver(...args));
+}
+async function updatePendingImportMonth(...args) {
+    return withPlanImportModule((mod) => mod.updatePendingImportMonth(...args));
+}
+
+/**
+ * Lazy Dispo messages chunk (H1-A / D17) — msg-compose + co-lazy sent-messages.
+ * Rejected loads are not permanently cached; module errors after load must propagate.
+ */
+async function withMsgComposeModule(run) {
+    let mod;
+    try {
+        mod = await loadMsgCompose();
+    } catch {
+        showToast(t("msg_compose_chunk_load_failed"), "error", 8000);
+        return undefined;
+    }
+    try {
+        return await run(mod);
+    } catch (err) {
+        console.error("msg-compose execution failed", err);
+        showToast(t("error_generic"), "error", 8000);
+        return undefined;
+    }
+}
+
+async function withSentMessagesModule(run) {
+    try {
+        await loadMsgCompose();
+    } catch {
+        showToast(t("msg_compose_chunk_load_failed"), "error", 8000);
+        return undefined;
+    }
+    try {
+        const mod = await import("./dispatcher/sent-messages.js");
+        return await run(mod);
+    } catch (err) {
+        console.error("sent-messages execution failed", err);
+        showToast(t("error_generic"), "error", 8000);
+        return undefined;
+    }
+}
+
+async function setMessagesPageTab(...args) {
+    return withMsgComposeModule((mod) => mod.setMessagesPageTab(...args));
+}
+async function submitDispatcherMessage(...args) {
+    return withMsgComposeModule((mod) => mod.submitDispatcherMessage(...args));
+}
+async function archiveDispatcherMessage(...args) {
+    return withSentMessagesModule((mod) => mod.archiveDispatcherMessage(...args));
+}
+async function archiveAllDispatcherMessages(...args) {
+    return withSentMessagesModule((mod) => mod.archiveAllDispatcherMessages(...args));
+}
+
+/** Prefetch plan-import when entering monthly plan so CTA first click is warm. */
+function openMonthlyPlansFull(...args) {
+    prefetchPlanImport();
+    return openMonthlyPlansFullCore(...args);
+}
+function openMonthlyPlanForGroup(...args) {
+    prefetchPlanImport();
+    return openMonthlyPlanForGroupCore(...args);
+}
+function openMonthlyPlanImport(...args) {
+    prefetchPlanImport();
+    return openMonthlyPlanImportCore(...args);
+}
+
+async function caWizardBack(...args) {
+    const mod = await loadCompanyAdminOnboarding();
+    return mod.caWizardBack(...args);
+}
+async function caWizardNext(...args) {
+    const mod = await loadCompanyAdminOnboarding();
+    return mod.caWizardNext(...args);
+}
+async function caWizardSelectColor(...args) {
+    const mod = await loadCompanyAdminOnboarding();
+    return mod.caWizardSelectColor(...args);
+}
+async function caWizardSelectColorFromHex(...args) {
+    const mod = await loadCompanyAdminOnboarding();
+    return mod.caWizardSelectColorFromHex(...args);
+}
+async function caWizardSelectColorFromPicker(...args) {
+    const mod = await loadCompanyAdminOnboarding();
+    return mod.caWizardSelectColorFromPicker(...args);
+}
+async function caWizardHandleLogo(...args) {
+    const mod = await loadCompanyAdminOnboarding();
+    return mod.caWizardHandleLogo(...args);
+}
+async function caWizardSkip(...args) {
+    const mod = await loadCompanyAdminOnboarding();
+    return mod.caWizardSkip(...args);
 }
 
 async function openDispatcherHelp(...args) {
@@ -121,6 +266,9 @@ const HANDLERS = {
     addBus,
     toggleBusEdit,
     saveBusOpsProfile,
+    quickSetBusStatus,
+    changeBusGroup,
+    toggleShowArchivedBuses,
     clearBusImportPreview,
     confirmBusImport,
     handleBusImportDrop,
@@ -321,6 +469,9 @@ const HANDLERS = {
     superadminOpenCompany,
     superadminOpenCompanyDetail,
     superadminCloseCompanyDetail,
+    superadminOpenCreateMissingAdmin,
+    superadminSubmitCreateMissingAdmin,
+    superadminCancelCreateMissingAdmin,
     superadminSetCompanyAdminStatus,
     superadminResetCompanyAdminPassword,
     superadminResetPin,
@@ -343,6 +494,7 @@ const HANDLERS = {
     removeCompanyDispatcher,
     toggleCompanyDriverStatus,
     toggleDriverActive,
+    toggleDriverKG,
     toggleTheme,
     updateDriverBusInline,
     updateDriverShiftInline,

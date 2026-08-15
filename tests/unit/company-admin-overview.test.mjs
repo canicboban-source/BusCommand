@@ -87,7 +87,14 @@ test("production license state never fabricates a trial fallback or reuses anoth
     state: {},
     isDemoMode: false
   });
-  assert.deepEqual(stale, { plan: "unknown", status: "unknown", daysRemaining: null, available: false });
+  assert.deepEqual(stale, {
+    plan: "unknown",
+    status: "unknown",
+    licenseStatus: "unknown",
+    packageLabel: null,
+    daysRemaining: null,
+    available: false
+  });
 
   const current = getCompanyLicenseInfo("alpha", {
     licenseInfo: { companyId: "alpha", plan: "paid", status: "active", daysRemaining: 50 },

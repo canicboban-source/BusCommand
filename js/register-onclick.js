@@ -19,8 +19,8 @@ import { closeSuperAdminModal, confirmSuperAdminPin, handleLogoClick } from "./a
 import { clickElementById, installActionDelegates, removeElementById } from "./core/action-delegate.js";
 import { exportDriversCSV, exportLostItemsCSV, exportReportsCSV } from "./core/export-csv.js";
 import { getScheduleByKey } from "./core/utils.js";
-import { addBus, deleteBus, deleteRoute, toggleBusEdit, saveBusOpsProfile } from "./data/buses-routes.js";
-import { addDriver, editDriver, toggleDriverActive } from "./data/drivers.js";
+import { addBus, deleteBus, deleteRoute, toggleBusEdit, saveBusOpsProfile, quickSetBusStatus, changeBusGroup, toggleShowArchivedBuses } from "./data/buses-routes.js";
+import { addDriver, editDriver, toggleDriverActive, toggleDriverKG } from "./data/drivers.js";
 import { deleteGroup, setGroupFilter } from "./data/groups.js";
 import { clearScheduleFile, clearScheduleText, deleteScheduleEntry, formatScheduleText, handleScheduleDrop, handleScheduleFileSelect, insertScheduleTable, sendScheduleToDrivers, switchScheduleTab } from "./data/schedules.js";
 import { updateDriverBusInline, updateDriverShiftInline } from "./dispatcher/dashboard.js";
@@ -63,6 +63,9 @@ const __ONCLICK_HANDLERS = {
     addBus,
     toggleBusEdit,
     saveBusOpsProfile,
+    quickSetBusStatus,
+    changeBusGroup,
+    toggleShowArchivedBuses,
     addCompanyDispatcher,
     addDriver,
     applyBrandingSettings,
@@ -234,6 +237,7 @@ const __ONCLICK_HANDLERS = {
     toggleCompanyDispatcherStatus,
     toggleCompanyDriverStatus,
     toggleDriverActive,
+    toggleDriverKG,
     toggleRoleDirectly,
     toggleTheme,
     triggerAvatarUpload,

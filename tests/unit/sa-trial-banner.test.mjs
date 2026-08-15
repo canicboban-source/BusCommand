@@ -44,7 +44,16 @@ function loadLicenseHelpers() {
         body: { prepend() {} },
         createElement() { return { style: {}, id: "", textContent: "" }; }
     };
-    const window = { currentUser: null, _licenseInfo: null, t: null };
+    const t = (key) => {
+        const map = {
+            license_status_suspended: "Suspended",
+            sa_status_expired: "Expired",
+            license_badge_trial_days: "Trial: {days} days",
+            license_suspended_banner: "License suspended"
+        };
+        return map[key] || key;
+    };
+    const window = { currentUser: null, _licenseInfo: null, t };
 
     const source = readFileSync(join(root, "js/core/license.js"), "utf8")
         .replace(/^import\s+.+?;\r?\n/gm, "")
@@ -55,6 +64,7 @@ function loadLicenseHelpers() {
     const context = {
         document,
         window,
+        t,
         module: { exports: {} },
         exports: {}
     };
@@ -91,8 +101,10 @@ test("updateTrialBadge shows CA package badge during trial", () => {
     assert.equal(badges.login.classList.contains("hidden"), true);
     assert.equal(badges.app.classList.contains("hidden"), false);
     assert.ok(badges.app.classList.contains("is-trial"));
-    assert.match(badges.app.textContent, /PRO PAKET/);
-    assert.match(badges.app.textContent, /31/);
+    assert.ok(badges.app.classList.contains("license-package-badge"));
+    // Trial = yellow + remaining days (package name is for active licenses).
+    assert.match(badges.app.textContent, /Trial:\s*31\s*days/);
+    assert.doesNotMatch(badges.app.textContent, /PRO/);
 });
 
 test("updateTrialBadge hides chips for Super Admin", () => {

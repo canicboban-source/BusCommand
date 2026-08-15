@@ -12,10 +12,12 @@ import {
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
-test("normalizeBusOpsStatus defaults to ready and rejects unknown", () => {
-  assert.equal(normalizeBusOpsStatus({}), "ready");
+test("normalizeBusOpsStatus defaults to active and rejects unknown", () => {
+  assert.equal(normalizeBusOpsStatus({}), "active");
   assert.equal(normalizeBusOpsStatus({ opsStatus: "breakdown" }), "breakdown");
-  assert.equal(normalizeBusOpsStatus({ opsStatus: "weird" }), "ready");
+  assert.equal(normalizeBusOpsStatus({ opsStatus: "reserve" }), "reserve");
+  assert.equal(normalizeBusOpsStatus({ opsStatus: "other_line" }), "other_line");
+  assert.equal(normalizeBusOpsStatus({ opsStatus: "weird" }), "active");
 });
 
 test("normalizeBusGarage trims and caps length", () => {
@@ -23,12 +25,12 @@ test("normalizeBusGarage trims and caps length", () => {
   assert.equal(normalizeBusGarage({ garage: "x".repeat(50) }).length, 40);
 });
 
-test("busIsAssignable requires active ready status", () => {
-  assert.equal(busIsAssignable({ active: true, opsStatus: "ready" }), true);
-  assert.equal(busIsAssignable({ active: false, opsStatus: "ready" }), false);
+test("busIsAssignable allows active or reserve, blocks breakdown/other_line (D21)", () => {
+  assert.equal(busIsAssignable({ active: true, opsStatus: "active" }), true);
+  assert.equal(busIsAssignable({ active: true, opsStatus: "reserve" }), true);
+  assert.equal(busIsAssignable({ active: false, opsStatus: "active" }), false);
   assert.equal(busIsAssignable({ active: true, opsStatus: "breakdown" }), false);
-  assert.equal(busIsAssignable({ active: true, opsStatus: "technical" }), false);
-  assert.equal(busIsAssignable({ active: true, opsStatus: "out" }), false);
+  assert.equal(busIsAssignable({ active: true, opsStatus: "other_line" }), false);
 });
 
 test("busRevisionOf defaults missing revision to 0", () => {

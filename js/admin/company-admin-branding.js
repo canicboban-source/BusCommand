@@ -1,8 +1,8 @@
 import ApiClient from "../core/api-client.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
-import { canRunCompanyAdminAction } from "../core/ui-permissions.js";
-import { showToast } from "../core/utils.js";
+import { currentUserCanRunCompanyAdminAction } from "../core/ui-permissions.js";
+import { showToast, refreshIcons } from "../core/utils.js";
 import { applyBrandingToUI, t } from "../ui/i18n.js";
 import {
     DEFAULT_BRAND_COLOR,
@@ -12,6 +12,7 @@ import {
     readBrandLogoFile,
     validateBrandingDraft
 } from "./company-admin-branding-model.js";
+import { icon } from "../ui/markup.js";
 
 let savedBranding = null;
 let brandingDirty = false;
@@ -63,9 +64,9 @@ function setBrandingSaveState(state) {
         button.setAttribute("aria-busy", String(saving));
         button.innerHTML = saving
             ? `<span class="spinner" aria-hidden="true"></span><span>${t("ca_branding_saving")}</span>`
-            : `<i data-lucide="save"></i><span>${t("ca_branding_save")}</span>`;
+            : `${icon("save")}<span>${t("ca_branding_save")}</span>`;
     }
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 function updatePreviewLogo(logoUrl) {
@@ -183,7 +184,7 @@ function installBrandingListeners() {
 }
 
 function renderCompanyAdminBranding() {
-    if (!canRunCompanyAdminAction(window.currentUser?.role)) return;
+    if (!currentUserCanRunCompanyAdminAction()) return;
     applyBrandingToUI();
     const branding = window.state.branding || {};
     const color = normalizeBrandColor(branding.primaryColor) || DEFAULT_BRAND_COLOR;
@@ -211,11 +212,11 @@ function renderCompanyAdminBranding() {
 
     const hint = document.getElementById("ca-branding-first-run");
     if (hint) hint.hidden = !companyNeedsBrandingSetup();
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 async function saveCompanyBrandingDraft(draft) {
-    if (!canRunCompanyAdminAction(window.currentUser?.role)) {
+    if (!currentUserCanRunCompanyAdminAction()) {
         return { success: false, error: t("error_access_denied"), errors: {} };
     }
 

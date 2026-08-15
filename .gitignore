@@ -31,6 +31,9 @@ desktop.ini
 .env.*
 !.env.example
 
+# Local toolchains (portable Node, etc.)
+.tools/
+
 # Temp / build
 dist/
 build/
@@ -41,3 +44,14 @@ playwright-report/
 firestore-debug.log
 firebase-debug.log
 .firebase/
+
+# Generated local evidence (keep files on disk; do not commit)
+/reports/**/*.zip
+/reports/**/*-logs/
+/reports/**/*-visual*/
+/reports/**/*.log
+/reports/**/*.patch
+/reports/**/*.tmp
+/reports/**/*-git-status-short.txt
+/reports/**/*-git-diff-stat.txt
+/reports/**/*-source-manifest.txt

@@ -86,8 +86,8 @@ test.describe("Dispatcher cockpit resolution flows", () => {
       }
     ];
     state.buses = [
-      { id: "bus-1", number: "BUS-1", groupId: "101", lineId: "101", groupIds: ["101"], active: true, garage: "Depot A", opsStatus: "ready", revision: 0 },
-      { id: "bus-2", number: "BUS-2", groupId: "101", lineId: "101", groupIds: ["101"], active: true, garage: "Depot A", opsStatus: "ready", revision: 0 }
+      { id: "bus-1", number: "BUS-1", groupId: "101", lineId: "101", groupIds: ["101"], active: true, plate: "MD-101AA", opsStatus: "active", revision: 0 },
+      { id: "bus-2", number: "BUS-2", groupId: "101", lineId: "101", groupIds: ["101"], active: true, plate: "MD-102AA", opsStatus: "active", revision: 0 }
     ];
     state.shifts = [
       ...state.shifts,
@@ -246,7 +246,8 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await loginDispatcher(page);
 
     const resolve = page.locator("#dispatcher-live-alerts .urgent-action").first();
-    await expect(resolve).toContainText(/Resolve now|Reši odmah|Sofort lösen/i);
+    // Report rows use ops_btn_resolve; coverage incidents use ops_attn_solve_now.
+    await expect(resolve).toContainText(/Resolve(?: now| issue)?|Reši(?: odmah| problem)?|Sofort lösen|Lösen|Problem lösen/i);
     await resolve.click();
     await expect(page.locator("#ops-attention-panel")).toBeVisible();
 
@@ -423,7 +424,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await expect(page.locator(".ops-attention-card").filter({ hasText: /Wrong Code Driver/i })).toHaveCount(0);
   });
 
-  test("dispatcher can edit bus garage and ops status; breakdown leaves the free pool", async ({ page }) => {
+  test("dispatcher can edit bus plate and ops status; breakdown leaves the free pool", async ({ page }) => {
     const date = todayIso();
     const state = cockpitState();
     state.buses = [
@@ -434,8 +435,8 @@ test.describe("Dispatcher cockpit resolution flows", () => {
         lineId: "101",
         groupIds: ["101"],
         active: true,
-        garage: "Depot A",
-        opsStatus: "ready",
+        plate: "MD-100AA",
+        opsStatus: "active",
         revision: 0
       }
     ];
@@ -468,17 +469,24 @@ test.describe("Dispatcher cockpit resolution flows", () => {
 
     await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("101"));
     await expect(page.locator("#dispatcher-vehicles")).toBeVisible();
-    await page.locator('.hub-bus-item[data-bus-id="bus-edit"] button.hub-bus-edit-btn').click();
+    await page.locator('.bus-fleet-row[data-bus-id="bus-edit"] button.hub-bus-edit-btn').click();
     const form = page.locator('[data-bus-edit="bus-edit"]');
     await expect(form).toBeVisible();
-    await form.locator('input[name="garage"]').fill("Depot B");
-    await form.locator('select[name="opsStatus"]').selectOption("breakdown");
+    await form.locator('input[name="plate"]').fill("MD-200BB");
     await form.locator('button[type="submit"]').click();
 
     await expect.poll(async () => page.evaluate(() => {
       const bus = window.state.buses.find(item => item.id === "bus-edit");
-      return `${bus?.garage}|${bus?.opsStatus}|${bus?.revision}`;
-    })).toBe("Depot B|breakdown|1");
+      return `${bus?.plate}|${bus?.opsStatus}|${bus?.revision}`;
+    })).toBe("MD-200BB|active|1");
+
+    // Fast 1-click status switch (D21) — no form, just the status pill.
+    await page.locator('.bus-fleet-row[data-bus-id="bus-edit"] .bus-status-breakdown').click();
+
+    await expect.poll(async () => page.evaluate(() => {
+      const bus = window.state.buses.find(item => item.id === "bus-edit");
+      return `${bus?.plate}|${bus?.opsStatus}|${bus?.revision}`;
+    })).toBe("MD-200BB|breakdown|2");
 
     await page.evaluate(() => window.openOpsAttentionPanel());
     const card = page.locator(".ops-attention-card").filter({ hasText: /Needs Bus Driver|nema autobusa|missing bus|kein bus/i }).first();

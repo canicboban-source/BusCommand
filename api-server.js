@@ -7,6 +7,7 @@ require("./server/load-env").loadEnvFile();
 
 const express = require("express");
 const bcrypt  = require("bcrypt");
+const crypto  = require("crypto");
 const path    = require("path");
 const fs      = require("fs");
 const cors    = require("cors");
@@ -24,6 +25,7 @@ const {
   deleteDispatcher,
   deleteCompanyAtomic,
   provisionUser,
+  provisionCompanyAdminMissingOnly,
   revokeDispatcherSessions,
   setDispatcherActive,
   updateDispatcherGroups,
@@ -66,6 +68,7 @@ const {
   createCompanyBody,
   deleteCompanyBody,
   createUserBody,
+  createMissingAdminBody,
   updateUserGroupsBody,
   companyDispatcherBody,
   companyDispatcherStatusBody,
@@ -78,7 +81,8 @@ const {
   companyGroupBody,
   companyGroupUpdateBody,
   companyDriverProfileBody,
-  companyDriverPersonalCodeBody
+  companyDriverPersonalCodeBody,
+  companyDriverCreateBody
 } = require("./server/validation");
 
 const { version: APP_VERSION } = require("./package.json");
@@ -88,56 +92,35 @@ const SERVICE_ACCOUNT_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS
   ? path.resolve(process.env.GOOGLE_APPLICATION_CREDENTIALS)
   : path.join(__dirname, "firebase-admin-key.json");
 const SERVICE_ACCOUNT_JSON = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-// Isolated QA / Playwright local API — never a product demo seed path.
-const QA_HARNESS = String(process.env.BUSCOMMAND_QA_HARNESS || "").trim() === "1";
-const HAS_FIREBASE = !QA_HARNESS && Boolean(SERVICE_ACCOUNT_JSON || fs.existsSync(SERVICE_ACCOUNT_PATH));
 
-const DEFAULT_CORS_ORIGINS = [
-  `http://localhost:${PORT}`,
-  `http://127.0.0.1:${PORT}`,
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  // Always allow live surfaces — Vite marks /assets/* with crossorigin, so the
-  // browser sends Origin even for same-site CSS/JS. Missing ACAO → CSS blocked →
-  // overlays with inline display:flex stay visible (e.g. clear-sos-modal).
-  "https://buscommand.com",
-  "https://www.buscommand.com",
-  "https://buscommand-preview.onrender.com"
-];
+const { evaluateCorsOrigin } = require("./server/cors-policy");
+const { validateRuntimeBeforeListen } = require("./server/runtime-isolation");
 
-function isLocalDevCorsOrigin(origin) {
-  // Vite tags hashed assets with crossorigin; browsers send Origin even for same-host CSS/JS.
-  // Allow any localhost port locally so Playwright/alternate PORT still loads /assets/*.
-  if (process.env.NODE_ENV === "production") return false;
-  try {
-    const url = new URL(origin);
-    return (url.protocol === "http:" || url.protocol === "https:")
-      && (url.hostname === "localhost" || url.hostname === "127.0.0.1");
-  } catch {
-    return false;
-  }
+let runtimeValidation;
+try {
+  runtimeValidation = validateRuntimeBeforeListen(process.env, {
+    keyFileExists: fs.existsSync(SERVICE_ACCOUNT_PATH)
+  });
+} catch (err) {
+  console.error("Runtime configuration invalid:", err.code || "runtime-config-invalid");
+  process.exit(1);
 }
 
-function isBusCommandCorsOrigin(origin) {
-  try {
-    const { protocol, hostname } = new URL(origin);
-    if (protocol !== "https:" && protocol !== "http:") return false;
-    if (hostname === "buscommand.com" || hostname.endsWith(".buscommand.com")) return true;
-    if (hostname === "buscommand-preview.onrender.com") return true;
-    return false;
-  } catch {
-    return false;
-  }
-}
+const corsPolicy = runtimeValidation.corsPolicy;
+const HAS_FIREBASE = runtimeValidation.hasFirebase;
+const allowedOrigins = corsPolicy.configuredOrigins;
 
 let admin = null;
 let db    = null;
 
 if (HAS_FIREBASE) {
   admin = require("firebase-admin");
-  const serviceAccount = SERVICE_ACCOUNT_JSON
-    ? JSON.parse(SERVICE_ACCOUNT_JSON)
-    : JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, "utf8"));
+  let serviceAccount = runtimeValidation.serviceAccount;
+  if (!serviceAccount) {
+    serviceAccount = SERVICE_ACCOUNT_JSON
+      ? JSON.parse(SERVICE_ACCOUNT_JSON)
+      : JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, "utf8"));
+  }
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
   db = admin.firestore();
 }
@@ -146,14 +129,6 @@ const app = express();
 
 app.set("trust proxy", 1);
 
-const allowedOrigins = [...new Set([
-  ...DEFAULT_CORS_ORIGINS,
-  ...(process.env.CORS_ORIGINS || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-])];
-
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false
@@ -161,14 +136,12 @@ app.use(helmet({
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (
-      allowedOrigins.includes(origin)
-      || isLocalDevCorsOrigin(origin)
-      || isBusCommandCorsOrigin(origin)
-    ) {
-      return callback(null, true);
-    }
+    const decision = evaluateCorsOrigin(origin, {
+      runtime: corsPolicy.runtime,
+      configuredOrigins: allowedOrigins,
+      nodeEnv: process.env.NODE_ENV
+    });
+    if (decision.allowed) return callback(null, true);
     callback(new Error("Not allowed by CORS"));
   },
   credentials: true
@@ -236,15 +209,10 @@ const {
 
 // ─── API: Konfiguracija servera ────────────────────────────
 
+// LIVENESS only — process alive. Not a Firebase/DB readiness proof.
 app.get("/api/health", (req, res) => {
-  res.json({
-    success: true,
-    status: "ok",
-    uptime: Math.floor(process.uptime()),
-    mode: HAS_FIREBASE ? "production" : "demo",
-    version: APP_VERSION,
-    firebase: HAS_FIREBASE
-  });
+  res.setHeader("Cache-Control", "no-store");
+  res.status(200).json({ ok: true });
 });
 
 app.get("/api/config", (req, res) => {
@@ -479,6 +447,9 @@ app.post(
         country: body.country,
         contactEmail: body.contactEmail,
         licenseType: body.licenseType || "pro",
+        legalName: body.legalName,
+        taxId: body.taxId,
+        maxBuses: body.maxBuses,
         actorId: req.adminUser.uid
       });
 
@@ -669,6 +640,70 @@ app.post(
 );
 
 app.post(
+  "/api/admin/company/:companyId/create-missing-admin",
+  rateLimit(10, 5 * 60 * 1000),
+  requireSuperAdmin,
+  validateBody(createMissingAdminBody),
+  async (req, res) => {
+    const parsed = parseCompanyParam(req.params.companyId);
+    if (!parsed.ok) {
+      return res.status(400).json({ success: false, error: parsed.error });
+    }
+    const { name, email, password, companyId: bodyCompanyId } = req.validatedBody;
+    if (bodyCompanyId && String(bodyCompanyId).trim() !== parsed.id) {
+      return res.status(400).json({
+        success: false,
+        error: "companyId u telu zahteva mora odgovarati putanji.",
+        code: "COMPANY_ID_MISMATCH"
+      });
+    }
+    try {
+      const result = await provisionCompanyAdminMissingOnly({
+        db,
+        admin,
+        email,
+        password,
+        name,
+        companyId: parsed.id,
+        actorId: req.adminUser.uid
+      });
+      return res.status(201).json({ success: true, uid: result.uid, email: result.email });
+    } catch (err) {
+      // Never log password; keep peer emails out of error payloads.
+      req.log?.error({ err, code: err.code, companyId: parsed.id }, "create-missing-admin greška");
+      if (err instanceof ProvisioningError || err?.code) {
+        if (err.code === "company-not-found") {
+          return res.status(404).json({ success: false, error: err.message, code: "COMPANY_NOT_FOUND" });
+        }
+        if (err.code === "ca-exists") {
+          return res.status(409).json({ success: false, error: err.message, code: "CA_EXISTS" });
+        }
+        if (err.code === "license-suspended") {
+          return res.status(403).json({ success: false, error: err.message, code: "LICENSE_SUSPENDED" });
+        }
+        if (err.code === "license-unavailable") {
+          return res.status(409).json({ success: false, error: err.message, code: "LICENSE_UNAVAILABLE" });
+        }
+        if (err.code === "compensation-failed") {
+          return res.status(500).json({
+            success: false,
+            error: err.message,
+            code: "COMPENSATION_FAILED"
+          });
+        }
+        if (err.code === "auth/email-already-exists") {
+          return res.status(409).json({ success: false, error: "Email već postoji.", code: "EMAIL_EXISTS" });
+        }
+        if (err.code === "company-required") {
+          return res.status(400).json({ success: false, error: err.message });
+        }
+      }
+      return res.status(500).json({ success: false, error: "Greška pri kreiranju company admina." });
+    }
+  }
+);
+
+app.post(
   "/api/admin/create-user",
   rateLimit(20, 5 * 60 * 1000),
   requireUserProvisioner,
@@ -694,6 +729,18 @@ app.post(
       }
       if (["role-not-allowed", "company-required", "superadmin-company-forbidden"].includes(err.code)) {
         return res.status(400).json({ success: false, error: err.message });
+      }
+      if (err.code === "ca-exists") {
+        return res.status(409).json({ success: false, error: err.message, code: "CA_EXISTS" });
+      }
+      if (err.code === "license-suspended") {
+        return res.status(403).json({ success: false, error: err.message, code: "LICENSE_SUSPENDED" });
+      }
+      if (err.code === "license-unavailable") {
+        return res.status(409).json({ success: false, error: err.message, code: "LICENSE_UNAVAILABLE" });
+      }
+      if (err.code === "compensation-failed") {
+        return res.status(500).json({ success: false, error: err.message, code: "COMPENSATION_FAILED" });
       }
       if (err.code === "auth/email-already-exists") {
         return res.status(409).json({ success: false, error: "Email već postoji." });
@@ -767,7 +814,11 @@ app.put(
           actorRole: req.staffUser.role,
           actorName: req.staffUser.name || null,
           source: "server",
-          details: { country: profile.country, timezone: profile.timezone, defaultLanguage: profile.defaultLanguage },
+          details: {
+            country: profile.country, timezone: profile.timezone, defaultLanguage: profile.defaultLanguage,
+            taxId: profile.taxId,
+            billingEmail: profile.billingEmail, smsSenderId: profile.smsSenderId
+          },
           timestamp
         });
       });
@@ -1163,64 +1214,23 @@ app.delete(
   }
 );
 
-app.get(
-  "/api/company-admin/drivers",
-  rateLimit(40, 60 * 1000),
+const { registerCompanyAdminDriverRoutes } = require("./server/register-company-admin-drivers");
+registerCompanyAdminDriverRoutes(app, {
+  rateLimit,
   requireCompanyAdmin,
-  async (req, res) => {
-    const companyId = requireOwnCompany(req, res);
-    if (!companyId) return;
-    try {
-      const companyRef = db.collection("companies").doc(companyId);
-      const [profileSnap, credSnap] = await Promise.all([
-        companyRef.collection("drivers").get(),
-        companyRef.collection("driver_credentials").get()
-      ]);
-      const eidById = new Map(
-        credSnap.docs.map((doc) => [doc.id, String(doc.data()?.eid || "").trim()])
-      );
-      const hasLoginCodeById = new Map(
-        credSnap.docs.map((doc) => [doc.id, Boolean(doc.data()?.loginCodeHash)])
-      );
-      const batch = db.batch();
-      let backfill = 0;
-      const drivers = profileSnap.docs.map((doc) => {
-        const data = doc.data() || {};
-        const eid = String(data.eid || eidById.get(doc.id) || "").trim();
-        if (eid && !data.eid) {
-          batch.update(doc.ref, { eid });
-          backfill += 1;
-        }
-        const homeGroup = data.groupId || data.lineId || "";
-        const known = Array.isArray(data.knownGroupIds)
-          ? data.knownGroupIds.map((id) => String(id || "").trim()).filter(Boolean)
-          : [];
-        if (homeGroup && !known.includes(homeGroup)) known.unshift(homeGroup);
-        return {
-          id: doc.id,
-          firstName: data.firstName || "",
-          lastName: data.lastName || "",
-          name: data.name || `${data.firstName || ""} ${data.lastName || ""}`.trim(),
-          phone: data.phone || "",
-          email: data.email || "",
-          groupId: homeGroup,
-          lineId: data.lineId || data.groupId || "",
-          knownGroupIds: known,
-          companyId,
-          eid,
-          active: data.active !== false,
-          codeActivated: data.codeActivated === true,
-          hasPersonalCode: hasLoginCodeById.get(doc.id) === true || data.codeActivated === true
-        };
-      });
-      if (backfill) await batch.commit().catch(() => {});
-      return res.json({ success: true, drivers });
-    } catch (err) {
-      req.log?.error({ err }, "company-admin drivers list failed");
-      return res.status(500).json({ success: false, error: "Lista vozača nije učitana." });
-    }
-  }
-);
+  requireOwnCompany,
+  validateBody,
+  companyDriverCreateBody,
+  db,
+  // Lazy: QA harness may boot with admin === null (D24.1.1).
+  FieldValue: {
+    serverTimestamp: (...args) => admin.firestore.FieldValue.serverTimestamp(...args),
+    delete: (...args) => admin.firestore.FieldValue.delete(...args)
+  },
+  bcryptHash: (value, rounds) => bcrypt.hash(value, rounds),
+  randomUUID: () => crypto.randomUUID(),
+  logAudit: (...args) => _logAuditEvent(...args)
+});
 
 app.post(
   "/api/company-admin/drivers/:driverId/personal-code",
@@ -1301,7 +1311,7 @@ app.patch(
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(driverId)) {
       return res.status(400).json({ success: false, error: "Nevažeći vozač." });
     }
-    const { firstName, lastName, phone, email, groupId, knownGroupIds: rawKnown = [] } = req.validatedBody;
+    const { firstName, lastName, phone, email, postalCode = "", groupId, knownGroupIds: rawKnown = [] } = req.validatedBody;
     const companyRef = db.collection("companies").doc(companyId);
     const profileRef = companyRef.collection("drivers").doc(driverId);
     try {
@@ -1324,6 +1334,7 @@ app.patch(
         name,
         phone,
         email,
+        postalCode,
         groupId,
         lineId: groupId,
         knownGroupIds,
@@ -1340,7 +1351,7 @@ app.patch(
           groupId: previous.groupId || previous.lineId || null,
           knownGroupIds: Array.isArray(previous.knownGroupIds) ? previous.knownGroupIds : []
         },
-        next: { firstName, lastName, phone, email, groupId, knownGroupIds }
+        next: { firstName, lastName, phone, email, postalCode, groupId, knownGroupIds }
       }, {
         actorRole: req.staffUser.role,
         actorName: req.staffUser.name || null
@@ -1354,6 +1365,7 @@ app.patch(
           name,
           phone,
           email,
+          postalCode,
           groupId,
           lineId: groupId,
           knownGroupIds,
@@ -1728,8 +1740,10 @@ app.listen(PORT, "0.0.0.0", () => {
   logger.info({
     port: PORT,
     mode: startup.mode,
+    runtimeEnv: corsPolicy.runtime,
     frontend: HAS_DIST ? "dist/" : "dev",
-    corsOrigins: allowedOrigins
+    corsOriginCount: allowedOrigins.length,
+    corsFailClosedEmpty: Boolean(corsPolicy.failClosedEmpty)
   }, "BusCommand server started");
 
   startup.lines.forEach((line) => console.log(line));

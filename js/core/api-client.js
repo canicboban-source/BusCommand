@@ -33,7 +33,10 @@ const ApiClient = (() => {
                 conflict: data && data.conflict,
                 lock: data && data.lock,
                 bus: data && data.bus,
-                details: data && (data.details || data.errors)
+                details: data && (data.details || data.errors),
+                recoveryRequired: data && data.recoveryRequired === true,
+                retryable: data && data.retryable === true,
+                compensated: data && data.compensated === true
             };
         }
 
@@ -88,6 +91,17 @@ const ApiClient = (() => {
     }
     async function createUser(data) {
         return apiFetch("/api/admin/create-user", { method: "POST", body: JSON.stringify(data) });
+    }
+    async function createMissingCompanyAdmin(companyId, data) {
+        const id = encodeURIComponent(String(companyId || "").trim());
+        return apiFetch("/api/admin/company/" + id + "/create-missing-admin", {
+            method: "POST",
+            body: JSON.stringify({
+                name: data?.name,
+                email: data?.email,
+                password: data?.password
+            })
+        });
     }
     async function updateUserGroups(uid, companyId, groups) {
         return apiFetch("/api/admin/users/" + encodeURIComponent(uid) + "/groups", {
@@ -189,6 +203,18 @@ const ApiClient = (() => {
             body: JSON.stringify({ companyId, importId, fingerprint })
         });
     }
+    async function previewStaffMonthlyPlanImport(payload) {
+        return apiFetch("/api/staff/monthly-plans/import/preview", {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+    }
+    async function commitStaffMonthlyPlanImport(importId, fingerprint) {
+        return apiFetch("/api/staff/monthly-plans/import/commit", {
+            method: "PUT",
+            body: JSON.stringify({ importId, fingerprint })
+        });
+    }
     async function getActiveServicePlan(companyId, groupId) {
         const query = new URLSearchParams({ companyId, groupId });
         return apiFetch("/api/staff/service-plans/active?" + query.toString());
@@ -258,6 +284,12 @@ const ApiClient = (() => {
             })
         });
     }
+    async function updateStaffDriverKnownGroups(driverId, knownGroupIds) {
+        return apiFetch("/api/staff/drivers/" + encodeURIComponent(driverId) + "/known-groups", {
+            method: "PUT",
+            body: JSON.stringify({ knownGroupIds })
+        });
+    }
     async function detachStaffBusFromLine(busId, groupId, expectedRevision = 0, extras = {}) {
         return apiFetch("/api/staff/buses/" + encodeURIComponent(busId) + "/groups", {
             method: "PUT",
@@ -284,6 +316,12 @@ const ApiClient = (() => {
         return apiFetch("/api/company-admin/drivers/" + encodeURIComponent(driverId) + "/personal-code", {
             method: "POST",
             body: JSON.stringify({ companyId, companyCode })
+        });
+    }
+    async function createCompanyDriver(companyId, payload) {
+        return apiFetch("/api/company-admin/drivers", {
+            method: "POST",
+            body: JSON.stringify({ companyId, ...(payload || {}) })
         });
     }
     async function createDriverReport(report) {
@@ -366,8 +404,18 @@ const ApiClient = (() => {
             body: JSON.stringify({
                 number,
                 groupId,
+                plate: extras.plate || "",
                 garage: extras.garage || "",
-                opsStatus: extras.opsStatus || "ready"
+                opsStatus: extras.opsStatus || "active"
+            })
+        });
+    }
+    async function switchStaffBusGroup(busId, toGroupId, expectedRevision = 0) {
+        return apiFetch("/api/staff/buses/" + encodeURIComponent(busId) + "/switch-group", {
+            method: "PUT",
+            body: JSON.stringify({
+                toGroupId,
+                expectedRevision: Number.isInteger(expectedRevision) ? expectedRevision : 0
             })
         });
     }
@@ -502,19 +550,20 @@ const ApiClient = (() => {
     return {
         fetch: apiFetch, getConfig, getLicense, getCompanies, getCompanyAdmins, getSuperAdminOverview,
         getCompanyDetail, patchCompanySettings, getPlatformHealth, setCompanyAdminStatus, resetCompanyAdminPassword,
-        setCompanyStatus, deleteCompany, createCompany, createUser, updateUserGroups,
+        setCompanyStatus, deleteCompany, createCompany, createUser, createMissingCompanyAdmin, updateUserGroups,
         createCompanyDispatcher, updateCompanyDispatcherGroups,
         setCompanyDispatcherStatus, updateCompanyDispatcherProfile,
         revokeCompanyDispatcherSessions, deleteCompanyDispatcher,
         updateCompanyProfileSettings, downloadCompanyExport,
         previewServicePlan, publishServicePlan, activateServicePlan, previewGroupMonthlyPlanImport, commitGroupMonthlyPlanImport,
+        previewStaffMonthlyPlanImport, commitStaffMonthlyPlanImport,
         getActiveServicePlan, getServicePlanHistory, getServicePlanVersion, getCompanyAudit, updateCompanyBranding,
         createCompanyGroup, updateCompanyGroup, deleteCompanyGroup, reportStateSync, importDriversCsv, setDriverActive,
-        detachStaffDriverFromLine, detachStaffBusFromLine,
-        updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode,
+        detachStaffDriverFromLine, updateStaffDriverKnownGroups, detachStaffBusFromLine,
+        updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode, createCompanyDriver,
         createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage, ackDriverMessage,
         createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, transitionStaffOperationalIncident, resolveStaffOperationalIncident, getStaffOpsActivity, resolveStaffSos,
-        setLostItemStatus, createStaffBus, updateStaffBus, setStaffBusActive, assignStaffShift, undoStaffShift,
+        setLostItemStatus, createStaffBus, updateStaffBus, switchStaffBusGroup, setStaffBusActive, assignStaffShift, undoStaffShift,
         acquirePlanLock, heartbeatPlanLock, releasePlanLock, breakPlanLock, getPlanLock,
         sendStaffMessage, archiveStaffMessage, getDriverWorkSession, postDriverLocation, reportStaffMapAccess, confirmDriverShifts, getStaffShiftConfirmations,
         startSupportSession, getActiveSupportSessionAdmin, endSupportSessionAdmin,

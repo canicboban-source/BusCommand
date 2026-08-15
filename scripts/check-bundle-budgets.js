@@ -18,12 +18,15 @@ const BUDGETS = {
    */
   /** After cutting dispatcher graph from shared i18n (target ~init+driver+shell). */
   driverAppJsBytesExclTranslations: 220 * 1024,
-  /** Staff graph: SA license auto-limits + CA driver modal + Novi Plan (owner hotfix 2026-08-08). */
-  staffAppJsBytesExclTranslations: 580 * 1024,
+  /** Staff graph ceiling (568 KiB). Do not raise — cut dead/eager code or lazy-load instead. */
+  staffAppJsBytesExclTranslations: 568 * 1024,
   /** Soft-pilot ceiling for shared init/firebase chunk on driver (no dispatcher UI). */
   maxSingleDriverChunkBytes: 150 * 1024,
-  /** Shared EN/DE/SR dictionary (license packages + SA table strings). */
-  translationsChunkBytes: 368 * 1024,
+  /**
+   * Shared dictionary chunk. +1 KiB in Phase 0 closeout for monthly_edit_day /
+   * assigned-day plural strings (en/sr/de only — kept out of 16-lang propagate).
+   */
+  translationsChunkBytes: 369 * 1024,
 };
 
 function readHtml(name) {

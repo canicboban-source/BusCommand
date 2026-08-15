@@ -25,6 +25,7 @@ test.describe("Dispatcher bus import smoke", () => {
 
     await expect(page.locator("#dispatcher-vehicles")).toBeVisible();
     await expect(page.locator("#add-bus-form")).toBeVisible();
+    await page.locator(".bus-import-details summary").click();
     await page.locator("#bus-import-paste").fill("91103\n91104\n90001\n");
     await page.locator('[data-action="handleBusImportPaste"]').click();
 
@@ -47,11 +48,12 @@ test.describe("Dispatcher bus import smoke", () => {
     await loginDispatcher(page);
 
     await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("101"));
+    await page.locator(".bus-import-details summary").click();
     await page.locator("#bus-import-paste").fill("   \n  ");
     await page.locator('[data-action="handleBusImportPaste"]').click();
 
     await expect(page.locator("#bus-import-preview")).toBeEmpty();
-    // Toast or no preview — must not create list items from empty input
-    await expect(page.locator("#settings-buses-list li")).toHaveCount(0);
+    // Toast or no preview — must not create bus rows from empty input
+    await expect(page.locator("#settings-buses-list tr[data-bus-id]")).toHaveCount(0);
   });
 });

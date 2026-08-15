@@ -17,3 +17,16 @@ test("dispatcher monthly plan uses a dynamic month selector and has no upload du
   assert.match(module, /for \(let offset = -2; offset <= 9; offset \+= 1\)/);
   assert.doesNotMatch(module, /\|\| "2026-08"/);
 });
+
+test("B2C-04 monthly month options use month-abbr not Intl long names", () => {
+  const module = readFileSync(join(root, "js/dispatcher/monthly-plans.js"), "utf8");
+  assert.match(module, /from ["']\.\.\/ui\/month-abbr\.js["']/);
+  assert.match(module, /formatYearMonthDisplay\(/);
+  assert.match(module, /resolveUiLanguage\(/);
+  // ensureMonthlyMonthOptions must not format month labels via Intl
+  const fn = module.match(/function ensureMonthlyMonthOptions\(\) \{[\s\S]*?\n\}/);
+  assert.ok(fn, "ensureMonthlyMonthOptions body present");
+  assert.doesNotMatch(fn[0], /Intl\.DateTimeFormat/);
+  assert.doesNotMatch(fn[0], /month:\s*["']long["']/);
+  assert.match(fn[0], /formatYearMonthDisplay\(value,\s*language\)/);
+});

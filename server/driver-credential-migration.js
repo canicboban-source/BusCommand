@@ -3,20 +3,37 @@ const CREDENTIAL_FIELDS = Object.freeze([
   "eid", "companyCodeHash", "loginCodeHash", "temporaryCodeHash", "temporaryHash",
   "company_code", "companyCode", "pin", "password", "passwordHash"
 ]);
+const CREDENTIAL_COPY_FIELDS = Object.freeze([
+  "eid", "companyCodeHash", "loginCodeHash", "temporaryCodeHash"
+]);
 
 function assertMigrationTarget(projectId, companyId) {
   if (projectId !== ALLOWED_PROJECT_ID) throw new Error("Migration target project is not allowed.");
   if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(String(companyId || ""))) throw new Error("Explicit company ID is required.");
 }
 
+/** Key ownership — null/undefined values still mark a dirty profile. */
+function profileHasCredentialFieldKey(profile = {}, field) {
+  return Object.prototype.hasOwnProperty.call(profile || {}, field);
+}
+
+function profileHasCredentialFields(profile = {}) {
+  return CREDENTIAL_FIELDS.some((field) => profileHasCredentialFieldKey(profile, field));
+}
+
 function buildMigrationPlan(profile = {}) {
-  const present = CREDENTIAL_FIELDS.filter((field) => profile[field] != null);
+  const present = CREDENTIAL_FIELDS.filter((field) => profileHasCredentialFieldKey(profile, field));
   if (!present.length) return null;
   const credentials = {};
-  for (const field of ["eid", "companyCodeHash", "loginCodeHash", "temporaryCodeHash"]) {
-    if (profile[field] != null) credentials[field] = profile[field];
+  for (const field of CREDENTIAL_COPY_FIELDS) {
+    // Null keys are removed from the profile but never copied into credentials.
+    if (profileHasCredentialFieldKey(profile, field) && profile[field] != null) {
+      credentials[field] = profile[field];
+    }
   }
-  if (profile.createdAt != null) credentials.createdAt = profile.createdAt;
+  if (profileHasCredentialFieldKey(profile, "createdAt") && profile.createdAt != null) {
+    credentials.createdAt = profile.createdAt;
+  }
   return { credentials, removeFields: present };
 }
 
@@ -32,19 +49,32 @@ async function migrateCompany({ db, fieldValue, projectId, companyId, dryRun = t
     candidates += 1;
     if (dryRun) continue;
     const credentialRef = companyRef.collection("driver_credentials").doc(profileDoc.id);
-    await db.runTransaction(async (transaction) => {
+    // Count only after a successful commit; tx callback may retry.
+    const didMigrate = await db.runTransaction(async (transaction) => {
       const latest = await transaction.get(profileDoc.ref);
       const latestPlan = latest.exists ? buildMigrationPlan(latest.data()) : null;
-      if (!latestPlan) return;
-      transaction.set(credentialRef, latestPlan.credentials, { merge: true });
+      if (!latestPlan) return false;
+      if (Object.keys(latestPlan.credentials).length) {
+        transaction.set(credentialRef, latestPlan.credentials, { merge: true });
+      }
       const removals = {};
       latestPlan.removeFields.forEach((field) => { removals[field] = fieldValue.delete(); });
       transaction.update(profileDoc.ref, removals);
-      migrated += 1;
+      return true;
     });
+    if (didMigrate) migrated += 1;
   }
   logger({ event: "driver_credential_migration_summary", companyId, dryRun, candidates, migrated });
   return { dryRun, candidates, migrated };
 }
 
-module.exports = { ALLOWED_PROJECT_ID, CREDENTIAL_FIELDS, assertMigrationTarget, buildMigrationPlan, migrateCompany };
+module.exports = {
+  ALLOWED_PROJECT_ID,
+  CREDENTIAL_FIELDS,
+  CREDENTIAL_COPY_FIELDS,
+  assertMigrationTarget,
+  buildMigrationPlan,
+  migrateCompany,
+  profileHasCredentialFieldKey,
+  profileHasCredentialFields
+};

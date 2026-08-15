@@ -3,7 +3,7 @@ import { loadStateFromFirestore } from "../core/firebase-service.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { saveState } from "../core/state.js";
 import { actionAttr } from "../core/action-delegate.js";
-import { escapeHtml, showToast } from "../core/utils.js";
+import { escapeHtml, showToast, refreshIcons } from "../core/utils.js";
 import {
     normalizeKnownGroupIds,
     readKnownGroupIdsFromDom
@@ -11,9 +11,11 @@ import {
 import { showConfirm } from "../ui/confirm-modal.js";
 import { closeModal, showModal } from "../ui/modals.js";
 import { t, tp } from "../ui/i18n.js";
+import { icon, tx } from "../ui/markup.js";
 
 const MAX_FILE_BYTES = 1_000_000;
-const MAX_IMPORT_ROWS = 250;
+/** Keep in sync with server/driver-csv.js (D24.2 guard tx write budget). */
+const MAX_IMPORT_ROWS = 249;
 const PAGE_SIZE = 25;
 const REQUIRED_CORE = ["eid", "phone", "email"];
 const HEADER_ALIASES = Object.freeze({
@@ -23,7 +25,8 @@ const HEADER_ALIASES = Object.freeze({
     full_name: ["ime_prezime", "name", "vozac", "vozač", "full_name", "fullname"],
     phone: ["phone", "telephone", "telefon", "telefonnummer"],
     email: ["email", "e-mail", "e_mail"],
-    // company_code is legacy hash-only field — NEVER alias pin/login_code here (those are personal login codes set via API).
+    // Legacy CSV company_code column is accepted but ignored (D24.2.1-A).
+    // NEVER alias pin/login_code here — personal login codes are set after SMS OTP.
     company_code: [
         "company_code", "companycode", "firmencode", "firmen_code", "firmin_kod", "firmin kod", "kod_firme"
     ],
@@ -94,22 +97,6 @@ function splitFullName(name) {
     };
 }
 
-function uniquifyCompanyCodes(drivers) {
-    const counts = new Map();
-    drivers.forEach((driver) => {
-        const key = String(driver.company_code || "").trim().toLowerCase();
-        if (!key) return;
-        counts.set(key, (counts.get(key) || 0) + 1);
-    });
-    drivers.forEach((driver) => {
-        const key = String(driver.company_code || "").trim().toLowerCase();
-        if (!key) return;
-        if ((counts.get(key) || 0) > 1) {
-            driver.company_code = `${driver.company_code}-${driver.eid}`;
-        }
-    });
-}
-
 function parseCompanyDriversCsv(text) {
     if (typeof text !== "string" || !text.trim()) throw new Error(t("ca_drivers_error_empty"));
     const delimiter = detectDelimiter(text.split(/\r?\n/, 1)[0]);
@@ -122,6 +109,7 @@ function parseCompanyDriversCsv(text) {
         aliases.forEach((alias) => lookup.set(normalizeHeader(alias), canonical));
     });
     const headers = rows[0].map((header) => lookup.get(normalizeHeader(header)) || null);
+    const legacyCompanyCodeIgnored = headers.includes("company_code");
     const hasNames = headers.includes("first_name") && headers.includes("last_name");
     const hasFullName = headers.includes("full_name");
     const missing = REQUIRED_CORE.filter((key) => !headers.includes(key));
@@ -146,7 +134,7 @@ function parseCompanyDriversCsv(text) {
             last_name: lastName,
             phone: raw.phone || "",
             email: raw.email || "",
-            company_code: raw.company_code || "",
+            company_code: "",
             group: raw.group || ""
         };
         const missingValue = ["eid", "first_name", "last_name", "phone", "email"]
@@ -156,17 +144,14 @@ function parseCompanyDriversCsv(text) {
         return driver;
     });
 
-    uniquifyCompanyCodes(drivers);
-    for (const field of ["eid", "company_code"]) {
-        const seen = new Set();
-        drivers.forEach((driver, index) => {
-            const value = driver[field].toLowerCase();
-            if (!value) return;
-            if (seen.has(value)) throw new Error(t("ca_drivers_error_duplicate", { field, row: index + 2 }));
-            seen.add(value);
-        });
-    }
-    return { drivers, delimiter };
+    const seen = new Set();
+    drivers.forEach((driver, index) => {
+        const value = String(driver.eid || "").toLowerCase();
+        if (!value) return;
+        if (seen.has(value)) throw new Error(t("ca_drivers_error_duplicate", { field: "eid", row: index + 2 }));
+        seen.add(value);
+    });
+    return { drivers, delimiter, legacyCompanyCodeIgnored };
 }
 
 function resolveDriverGroupId(groupValue, fallbackGroupId) {
@@ -249,6 +234,7 @@ function readManualDriverForm() {
         last_name: String(document.getElementById("ca-driver-add-last-name")?.value || "").trim(),
         phone: normalizeE164Phone(document.getElementById("ca-driver-add-phone")?.value || ""),
         email: String(document.getElementById("ca-driver-add-email")?.value || "").trim().toLowerCase(),
+        postalCode: String(document.getElementById("ca-driver-add-postal-code")?.value || "").trim(),
         pin: String(document.getElementById("ca-driver-add-pin")?.value || "").trim(),
         groupId,
         knownGroupIds: normalizeKnownGroupIds({ knownGroupIds: knownFromDom, groupId }, groupId)
@@ -262,6 +248,7 @@ function clearManualDriverForm() {
         "ca-driver-add-last-name",
         "ca-driver-add-phone",
         "ca-driver-add-email",
+        "ca-driver-add-postal-code",
         "ca-driver-add-pin"
     ]) {
         const el = document.getElementById(id);
@@ -349,38 +336,46 @@ async function submitCompanyDriverManualAdd(event) {
             }
         } else {
             const companyId = window.currentUser?.companyId;
-            const result = await ApiClient.importDriversCsv(
-                companyId,
-                draft.groupId,
-                driversToCanonicalCsv([driver])
-            );
+            // Atomic create: profile + credentials + PIN + known groups in one server write.
+            const result = await ApiClient.createCompanyDriver(companyId, {
+                eid: draft.eid,
+                firstName: draft.first_name,
+                lastName: draft.last_name,
+                phone: draft.phone,
+                email: draft.email,
+                postalCode: draft.postalCode,
+                groupId: draft.groupId,
+                knownGroupIds: draft.knownGroupIds,
+                companyCode: draft.pin
+            });
             if (!result.success) {
                 if (result.code === "DRIVER_LIMIT_REACHED") {
                     promptDriverLimitUpgrade(result);
                     return false;
                 }
-                throw new Error(result.error || t("error_generic"));
+                if (result.code === "EID_EXISTS") {
+                    throw new Error(t("ca_drivers_eid_exists"));
+                }
+                throw new Error(result.error || t("ca_drivers_add_failed") || t("error_generic"));
             }
             const refreshed = await loadStateFromFirestore(companyId);
             window.state.drivers = refreshed?.drivers || [];
             await enrichCompanyDriversFromApi();
-            const created = findDriverByEid(draft.eid);
-            if (!created?.id) throw new Error(t("ca_drivers_edit_not_found"));
-            const extras = draft.knownGroupIds.filter((id) => id !== draft.groupId);
-            if (extras.length) {
-                const profileResult = await ApiClient.updateCompanyDriver(companyId, created.id, {
-                    firstName: draft.first_name,
-                    lastName: draft.last_name,
-                    phone: draft.phone,
-                    email: draft.email,
-                    groupId: draft.groupId,
-                    knownGroupIds: draft.knownGroupIds
-                });
-                if (!profileResult.success) throw new Error(profileResult.error || t("ca_drivers_edit_failed"));
+            // Never persist plaintext PIN on the client driver object.
+            if (result.companyCode) {
+                showToast(
+                    `${t("ca_drivers_add_success")} PIN: ${result.companyCode}`,
+                    "success",
+                    10000
+                );
+            } else {
+                showToast(t("ca_drivers_add_success"), "success", 6000);
             }
-            const pinResult = await ApiClient.setCompanyDriverPersonalCode(companyId, created.id, draft.pin);
-            if (!pinResult.success) throw new Error(pinResult.error || t("ca_drivers_edit_failed"));
-            await enrichCompanyDriversFromApi();
+            clearManualDriverForm();
+            closeCompanyDriverAddModal();
+            currentPage = 1;
+            await renderCompanyAdminDrivers();
+            return true;
         }
         clearManualDriverForm();
         closeCompanyDriverAddModal();
@@ -389,7 +384,7 @@ async function submitCompanyDriverManualAdd(event) {
         showToast(t("ca_drivers_add_success"), "success", 6000);
         return true;
     } catch (err) {
-        showToast(err.message || t("error_generic"), "error", 6000);
+        showToast(err.message || t("ca_drivers_add_failed") || t("error_generic"), "error", 6000);
         return false;
     } finally {
         importPending = false;
@@ -426,13 +421,16 @@ function renderImportPreview() {
             <td><strong>${escapeHtml(`${driver.first_name} ${driver.last_name}`)}</strong></td>
             <td>${escapeHtml(driver.email)}</td>
             <td>${escapeHtml(driver.phone)}</td>
-            <td><span class="company-driver-code-ready"><i data-lucide="message-square-lock"></i>${t("ca_drivers_activation_ready")}</span></td>
+            <td><span class="company-driver-code-ready">${icon("message-square-lock")}${t("ca_drivers_activation_ready")}</span></td>
         </tr>`).join("");
     container.innerHTML = `
         <div class="company-drivers-preview-header">
             <div><strong>${escapeHtml(pendingImport.fileName)}</strong><span>${tp("ca_drivers_preview_summary", pendingImport.drivers.length, { count: pendingImport.drivers.length, group: group?.name || pendingImport.groupId })}</span></div>
-            <button type="button" class="btn-icon-nav" ${actionAttr("clearCompanyDriversImport")} aria-label="${escapeHtml(t("ca_drivers_clear_import"))}" title="${escapeHtml(t("ca_drivers_clear_import"))}"><i data-lucide="x"></i></button>
+            <button type="button" class="btn-icon-nav" ${actionAttr("clearCompanyDriversImport")} aria-label="${tx("ca_drivers_clear_import")}" title="${tx("ca_drivers_clear_import")}">${icon("x")}</button>
         </div>
+        ${pendingImport.legacyCompanyCodeIgnored
+        ? `<p class="company-drivers-legacy-notice" role="status">${tx("ca_drivers_legacy_company_code_ignored")}</p>`
+        : ""}
         <div class="company-drivers-table-wrap">
             <table class="company-drivers-table">
                 <thead><tr><th>EID</th><th>${t("ca_drivers_name")}</th><th>Email</th><th>${t("ca_drivers_phone")}</th><th>${t("ca_drivers_activation")}</th></tr></thead>
@@ -444,7 +442,7 @@ function renderImportPreview() {
             <i data-lucide="${importPending ? "loader-circle" : "user-plus"}"></i>
             <span>${importPending ? t("ca_drivers_importing") : tp("ca_drivers_confirm_import", pendingImport.drivers.length, { count: pendingImport.drivers.length })}</span>
         </button>`;
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 function filteredDrivers() {
@@ -472,8 +470,8 @@ function renderDirectory() {
     currentPage = Math.min(currentPage, pageCount);
     const visible = drivers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
     if (!visible.length) {
-        container.innerHTML = `<div class="company-drivers-empty"><i data-lucide="users-round"></i><strong>${t("ca_drivers_empty_title")}</strong><span>${t("ca_drivers_empty_hint")}</span></div>`;
-        if (typeof lucide !== "undefined") lucide.createIcons();
+        container.innerHTML = `<div class="company-drivers-empty">${icon("users-round")}<strong>${t("ca_drivers_empty_title")}</strong><span>${t("ca_drivers_empty_hint")}</span></div>`;
+        refreshIcons();
         return;
     }
     const rows = visible.map((driver) => {
@@ -490,7 +488,7 @@ function renderDirectory() {
             <td data-label="${t("ca_drivers_pin_short")}"><span class="company-driver-pin-status">${driver.hasPersonalCode === false ? "—" : escapeHtml(t("ca_drivers_pin_set") || "Postavljen")}</span></td>
             <td data-label="${t("ca_col_status")}"><span class="company-driver-status ${active ? "is-active" : "is-inactive"}"><i data-lucide="${active ? "circle-check" : "circle-pause"}"></i>${t(active ? "driver_status_active" : "driver_status_inactive")}</span></td>
             <td data-label="${t("table_actions")}"><div class="company-driver-row-actions">
-                <button type="button" class="btn-secondary company-driver-edit-action" ${actionAttr("openCompanyDriverEdit", [driver.id])} ${pending || editSavePending ? "disabled" : ""}><i data-lucide="pencil"></i><span>${escapeHtml(t("btn_edit"))}</span></button>
+                <button type="button" class="btn-secondary company-driver-edit-action" ${actionAttr("openCompanyDriverEdit", [driver.id])} ${pending || editSavePending ? "disabled" : ""}>${icon("pencil")}<span>${tx("btn_edit")}</span></button>
                 <button type="button" class="btn-secondary company-driver-status-action ${active ? "is-danger" : ""}" ${actionAttr("toggleCompanyDriverStatus", [driver.id])} ${pending || editSavePending ? "disabled" : ""}>${pending ? t("ca_drivers_updating") : escapeHtml(action)}</button>
             </div></td>
         </tr>`;
@@ -501,12 +499,12 @@ function renderDirectory() {
             <thead><tr><th>${t("ca_drivers_eid")}</th><th>${t("ca_drivers_name")}</th><th>${t("ca_plan_group")}</th><th>${t("ca_drivers_known_lines")}</th><th>${t("ca_drivers_phone")}</th><th>${t("ca_drivers_pin_short")}</th><th>${t("ca_col_status")}</th><th>${t("table_actions")}</th></tr></thead>
             <tbody>${rows}</tbody>
         </table></div>
-        ${pageCount > 1 ? `<nav class="company-drivers-pagination" aria-label="${escapeHtml(t("ca_drivers_pagination"))}">
-            <button type="button" class="btn-icon-nav" ${actionAttr("changeCompanyDriversPage", [currentPage - 1])} ${currentPage === 1 ? "disabled" : ""} aria-label="${escapeHtml(t("ca_drivers_previous"))}"><i data-lucide="chevron-left"></i></button>
+        ${pageCount > 1 ? `<nav class="company-drivers-pagination" aria-label="${tx("ca_drivers_pagination")}">
+            <button type="button" class="btn-icon-nav" ${actionAttr("changeCompanyDriversPage", [currentPage - 1])} ${currentPage === 1 ? "disabled" : ""} aria-label="${tx("ca_drivers_previous")}">${icon("chevron-left")}</button>
             <span>${t("ca_drivers_page", { page: currentPage, pages: pageCount })}</span>
-            <button type="button" class="btn-icon-nav" ${actionAttr("changeCompanyDriversPage", [currentPage + 1])} ${currentPage === pageCount ? "disabled" : ""} aria-label="${escapeHtml(t("ca_drivers_next"))}"><i data-lucide="chevron-right"></i></button>
+            <button type="button" class="btn-icon-nav" ${actionAttr("changeCompanyDriversPage", [currentPage + 1])} ${currentPage === pageCount ? "disabled" : ""} aria-label="${tx("ca_drivers_next")}">${icon("chevron-right")}</button>
         </nav>` : ""}`;
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
 }
 
 async function handleCompanyDriversFile(event) {
@@ -555,9 +553,9 @@ function applyDemoImport(drivers, groupId) {
 
 function driversToCanonicalCsv(drivers) {
     const escape = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-    const header = "eid,first_name,last_name,phone,email,company_code";
+    const header = "eid,first_name,last_name,phone,email";
     const rows = drivers.map((driver) => [
-        driver.eid, driver.first_name, driver.last_name, driver.phone, driver.email, driver.company_code
+        driver.eid, driver.first_name, driver.last_name, driver.phone, driver.email
     ].map(escape).join(","));
     return [header, ...rows].join("\n");
 }
@@ -605,7 +603,13 @@ async function confirmCompanyDriversImport() {
                         promptDriverLimitUpgrade(result);
                         return;
                     }
+                    if (result.code === "EID_EXISTS") {
+                        throw new Error(t("ca_drivers_import_conflict"));
+                    }
                     throw new Error(result.error || t("error_generic"));
+                }
+                if (result.legacyCompanyCodeIgnored) {
+                    showToast(t("ca_drivers_legacy_company_code_ignored"), "info", 7000);
                 }
             }
             const refreshed = await loadStateFromFirestore(window.currentUser.companyId);
@@ -674,7 +678,7 @@ function openCompanyDriverAddModal() {
     populateGroupControls();
     clearManualDriverForm();
     showModal("ca-driver-add-modal");
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
     document.getElementById("ca-driver-add-eid")?.focus();
 }
 
@@ -691,6 +695,7 @@ function openCompanyDriverEdit(driverId) {
     const lastName = document.getElementById("ca-driver-edit-last-name");
     const phone = document.getElementById("ca-driver-edit-phone");
     const email = document.getElementById("ca-driver-edit-email");
+    const postalCode = document.getElementById("ca-driver-edit-postal-code");
     const group = document.getElementById("ca-driver-edit-group");
     const pin = document.getElementById("ca-driver-edit-pin");
     if (!idInput || !firstName || !lastName || !phone || !email || !group) return;
@@ -707,6 +712,7 @@ function openCompanyDriverEdit(driverId) {
             : "");
     phone.value = String(driver.phone || "");
     email.value = String(driver.email || "");
+    if (postalCode) postalCode.value = String(driver.postalCode || "");
     fillGroupSelect(group, "ca_plan_group_placeholder", driverGroupId(driver));
     paintKnownGroupChecks(driver.knownGroupIds || [], driverGroupId(driver));
     group.onchange = () => {
@@ -714,7 +720,7 @@ function openCompanyDriverEdit(driverId) {
         paintKnownGroupChecks(selected, group.value);
     };
     showModal("ca-driver-edit-modal");
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    refreshIcons();
     firstName.focus();
 }
 
@@ -764,6 +770,7 @@ async function saveCompanyDriverEdit() {
     const lastName = String(document.getElementById("ca-driver-edit-last-name")?.value || "").trim();
     const phone = String(document.getElementById("ca-driver-edit-phone")?.value || "").trim();
     const email = String(document.getElementById("ca-driver-edit-email")?.value || "").trim();
+    const postalCode = String(document.getElementById("ca-driver-edit-postal-code")?.value || "").trim();
     const groupId = String(document.getElementById("ca-driver-edit-group")?.value || "").trim();
     const personalCode = String(document.getElementById("ca-driver-edit-pin")?.value || "").trim();
     const driver = companyDrivers().find((entry) => entry.id === driverId);
@@ -786,7 +793,7 @@ async function saveCompanyDriverEdit() {
 
     const knownFromDom = readKnownGroupIdsFromDom(document.getElementById("ca-driver-edit-known-groups"));
     const knownGroupIds = normalizeKnownGroupIds({ knownGroupIds: knownFromDom, groupId }, groupId);
-    const payload = { firstName, lastName, phone, email, groupId, knownGroupIds };
+    const payload = { firstName, lastName, phone, email, postalCode, groupId, knownGroupIds };
     editSavePending = true;
     const saveBtn = document.getElementById("ca-driver-edit-save");
     if (saveBtn) saveBtn.disabled = true;
@@ -851,6 +858,7 @@ async function enrichCompanyDriversFromApi() {
             name: enriched.name || driver.name,
             phone: enriched.phone || driver.phone,
             email: enriched.email || driver.email,
+            postalCode: enriched.postalCode || driver.postalCode,
             groupId: enriched.groupId || driver.groupId,
             lineId: enriched.lineId || driver.lineId,
             knownGroupIds: Array.isArray(enriched.knownGroupIds)

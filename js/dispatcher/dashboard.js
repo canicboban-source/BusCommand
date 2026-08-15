@@ -17,6 +17,8 @@ import { persistShift } from "./shifts.js";
 import { ApiClient } from "../core/api-client.js";
 import { saveState } from "../core/state.js";
 import { busHasGroup } from "../data/bus-group-membership.js";
+import { busIsAssignable } from "../data/bus-ops.js";
+import { driverKnowsGroup } from "../data/driver-known-groups.js";
 import {
     collectOpsAttentionItems,
     collectAllAttentionItems,
@@ -604,7 +606,7 @@ function coverageDriverCandidates(report) {
     const groupId = String(report?.groupId || report?.lineId || "");
     return getVisibleDrivers().filter(driver => {
         if (driver.active === false || driverUid(driver) === report.driverId) return false;
-        if (String(driver.groupId || driver.lineId || "") !== groupId) return false;
+        if (!driverKnowsGroup(driver, groupId)) return false;
         const duty = getShiftForDriverDate(driver.name, report.date);
         return !duty || AVAILABLE_REPLACEMENT_TYPES.has(String(duty.type || "").toLowerCase());
     });
@@ -623,8 +625,7 @@ function coverageBusCandidates(report) {
     return (window.state.buses || []).filter(bus => {
         const number = String(bus.number || "");
         const keep = number === String(report.bus || "");
-        if (!keep && bus.active === false) return false;
-        if (!keep && String(bus.opsStatus || "ready") !== "ready") return false;
+        if (!keep && !busIsAssignable(bus)) return false;
         return busHasGroup(bus, groupId)
             && (!used.has(number) || keep);
     });
@@ -1003,7 +1004,9 @@ function alignPlanAfterBusIncident(busNumber, reasonCode, today) {
     );
     if (bus) {
         const outOfService = reasonCode === "sold_out";
-        bus.opsStatus = outOfService ? "out" : "breakdown";
+        // D21: no separate "out" status — sold-out buses leave the fleet (active=false)
+        // and both incident outcomes report as Kvar (breakdown).
+        bus.opsStatus = "breakdown";
         if (outOfService) bus.active = false;
         bus.revision = (Number.isInteger(bus.revision) ? bus.revision : 0) + 1;
     }

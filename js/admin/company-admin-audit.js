@@ -1,8 +1,9 @@
 import ApiClient from "../core/api-client.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { actionAttr } from "../core/action-delegate.js";
-import { escapeHtml, showToast } from "../core/utils.js";
+import { escapeHtml, showToast, refreshIcons } from "../core/utils.js";
 import { t } from "../ui/i18n.js";
+import { icon, tx } from "../ui/markup.js";
 
 let events = [];
 let nextCursor = null;
@@ -67,7 +68,7 @@ function actorLabel(event) {
 
 function renderDetails(details) {
     const entries = Object.entries(details || {});
-    if (!entries.length) return `<span class="company-audit-no-details">${escapeHtml(t("ca_audit_no_details"))}</span>`;
+    if (!entries.length) return `<span class="company-audit-no-details">${tx("ca_audit_no_details")}</span>`;
     return entries.map(([key, value]) => {
         const rendered = typeof value === "object" ? JSON.stringify(value) : String(value);
         return `<span><b>${escapeHtml(humanize(key))}</b>${escapeHtml(rendered)}</span>`;
@@ -86,24 +87,24 @@ function renderAuditList() {
     if (!container) return;
     renderSummary();
     if (loading && !events.length) {
-        container.innerHTML = `<div class="company-audit-state"><span class="spinner"></span>${escapeHtml(t("ca_audit_loading"))}</div>`;
+        container.innerHTML = `<div class="company-audit-state"><span class="spinner"></span>${tx("ca_audit_loading")}</div>`;
         return;
     }
     if (!events.length) {
-        container.innerHTML = `<div class="company-audit-state"><i data-lucide="search-x"></i><strong>${escapeHtml(t("ca_audit_empty"))}</strong><span>${escapeHtml(t("ca_audit_empty_hint"))}</span></div>`;
-        if (typeof lucide !== "undefined") lucide.createIcons();
+        container.innerHTML = `<div class="company-audit-state">${icon("search-x")}<strong>${tx("ca_audit_empty")}</strong><span>${tx("ca_audit_empty_hint")}</span></div>`;
+        refreshIcons();
         return;
     }
     const rows = events.map(event => `<tr>
-        <td data-label="${escapeHtml(t("ca_audit_when"))}"><time datetime="${escapeHtml(event.timestamp)}">${escapeHtml(formatTimestamp(event.timestamp))}</time></td>
-        <td data-label="${escapeHtml(t("ca_audit_action"))}"><span class="company-audit-action"><i data-lucide="${event.category === "access" ? "key-round" : event.category === "plans" ? "route" : event.category === "drivers" ? "contact-round" : event.category === "scheduling" ? "calendar-clock" : "settings-2"}"></i>${escapeHtml(actionLabel(event.action))}</span><small>${escapeHtml(t(`ca_audit_category_${event.category}`))}</small></td>
-        <td data-label="${escapeHtml(t("ca_audit_actor"))}"><strong>${escapeHtml(actorLabel(event))}</strong><small>${escapeHtml(roleLabel(event.actorRole))}</small></td>
-        <td data-label="${escapeHtml(t("ca_audit_details"))}"><div class="company-audit-details">${renderDetails(event.details)}</div></td>
-        <td data-label="${escapeHtml(t("ca_audit_source"))}"><span class="company-audit-source ${event.source === "server" ? "is-server" : ""}">${escapeHtml(t(event.source === "server" ? "ca_audit_source_server" : "ca_audit_source_reported"))}</span></td>
+        <td data-label="${tx("ca_audit_when")}"><time datetime="${escapeHtml(event.timestamp)}">${escapeHtml(formatTimestamp(event.timestamp))}</time></td>
+        <td data-label="${tx("ca_audit_action")}"><span class="company-audit-action"><i data-lucide="${event.category === "access" ? "key-round" : event.category === "plans" ? "route" : event.category === "drivers" ? "contact-round" : event.category === "scheduling" ? "calendar-clock" : "settings-2"}"></i>${escapeHtml(actionLabel(event.action))}</span><small>${escapeHtml(t(`ca_audit_category_${event.category}`))}</small></td>
+        <td data-label="${tx("ca_audit_actor")}"><strong>${escapeHtml(actorLabel(event))}</strong><small>${escapeHtml(roleLabel(event.actorRole))}</small></td>
+        <td data-label="${tx("ca_audit_details")}"><div class="company-audit-details">${renderDetails(event.details)}</div></td>
+        <td data-label="${tx("ca_audit_source")}"><span class="company-audit-source ${event.source === "server" ? "is-server" : ""}">${escapeHtml(t(event.source === "server" ? "ca_audit_source_server" : "ca_audit_source_reported"))}</span></td>
     </tr>`).join("");
-    container.innerHTML = `<div class="company-audit-table-wrap"><table class="company-audit-table"><thead><tr><th>${escapeHtml(t("ca_audit_when"))}</th><th>${escapeHtml(t("ca_audit_action"))}</th><th>${escapeHtml(t("ca_audit_actor"))}</th><th>${escapeHtml(t("ca_audit_details"))}</th><th>${escapeHtml(t("ca_audit_source"))}</th></tr></thead><tbody>${rows}</tbody></table></div>
-        ${nextCursor ? `<button type="button" class="btn-secondary company-audit-more" ${actionAttr("loadMoreCompanyAudit")} ${loading ? "disabled" : ""}><i data-lucide="chevrons-down"></i>${escapeHtml(t(loading ? "ca_audit_loading" : "ca_audit_load_more"))}</button>` : ""}`;
-    if (typeof lucide !== "undefined") lucide.createIcons();
+    container.innerHTML = `<div class="company-audit-table-wrap"><table class="company-audit-table"><thead><tr><th>${tx("ca_audit_when")}</th><th>${tx("ca_audit_action")}</th><th>${tx("ca_audit_actor")}</th><th>${tx("ca_audit_details")}</th><th>${tx("ca_audit_source")}</th></tr></thead><tbody>${rows}</tbody></table></div>
+        ${nextCursor ? `<button type="button" class="btn-secondary company-audit-more" ${actionAttr("loadMoreCompanyAudit")} ${loading ? "disabled" : ""}>${icon("chevrons-down")}${escapeHtml(t(loading ? "ca_audit_loading" : "ca_audit_load_more"))}</button>` : ""}`;
+    refreshIcons();
 }
 
 async function loadCompanyAudit({ append = false } = {}) {

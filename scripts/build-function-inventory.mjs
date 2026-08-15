@@ -290,11 +290,12 @@ for (const f of saFields) {
   });
 }
 
-// Explicit critical Open/Inspect/Close
+// Explicit critical Manage account / Support / Close (no dead Open CTA)
 for (const [el, act, exp] of [
-  ["FOOTER Open/Inspect #sa-detail-open-app-btn", "click Open", "QA: Inspect read-only; NE otvara production login tab"],
+  ["TABLE Manage account → company account modal", "click Manage account", "Account-management modal; editable settings; tačan companyId"],
+  ["FOOTER Start audited support #sa-detail-support-btn", "click Start audited support", "Support modal otvoren kada je supportSession omogućen"],
   ["FOOTER Close company detail", "click Close / Escape", "Modal zatvoren; bez side-effect save"],
-  ["CARD Details → company detail", "click Details", "Modal za izabranu firmu; tačan companyId"],
+  ["NO dead Open #sa-detail-open-app-btn", "assert absent", "Production DOM nema mrtvo Open dugme"],
   ["Inspect dispatcher", "click Inspect", "Read-only Dispo; SA modal zatvoren"],
   ["Reset password / PIN", "click Reset", "QA password reset; login i dalje radi"],
   ["Save demo profile email/country", "edit + Save", "Vrednosti sačuvane u state; refresh zadržava"],
@@ -491,7 +492,7 @@ const flows = [
   ["FLOW-AUTH-CA", "auth", "CA login → overview → logout", "ca@qa.local"],
   ["FLOW-AUTH-DISPO", "auth", "Dispo login → ops → logout", "dispo@qa.local"],
   ["FLOW-AUTH-DRIVER", "auth", "Driver select+PIN → pretrip → app", "QA driver"],
-  ["FLOW-V66-LIVE-IMPORT", "dispatcher", "V66 live import mesečnog plana", "V66 — čeka fajl vlasnika"],
+  ["FLOW-V66-LIVE-IMPORT", "dispatcher", "V66 live import mesečnog plana", "BLOCKED spoljašnji — live fajl vlasnika"],
   ["FLOW-SA-OPEN", "superadmin", "Details → Open/Inspect → Exit inspect", "SA"],
   ["FLOW-CA-GROUP", "company-admin", "create group → edit → filter → delete empty", "CA"],
   ["FLOW-CA-DRIVER-IMPORT", "company-admin", "import CSV → list → filter", "CA"],

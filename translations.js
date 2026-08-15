@@ -44,9 +44,20 @@ const TRANSLATIONS = {
         bus_garage_unset: "bez garaže",
         bus_ops_status: "Operativni status",
         bus_ops_ready: "Spreman",
+        bus_ops_active: "Aktivan",
         bus_ops_breakdown: "Kvar",
         bus_ops_technical: "Tehnički",
         bus_ops_out: "Van upotrebe",
+        bus_ops_reserve: "Rezerva",
+        bus_ops_other_line: "Druga linija",
+        bus_other_line_badge: "Na liniji {line}",
+        bus_other_line_prompt: "Na kojoj je liniji ovaj autobus trenutno?",
+        bus_other_line_no_groups: "Nema druge linije za izbor.",
+        bus_import_toggle: "Bulk uvoz (TXT/CSV/XLSX)",
+        bus_show_archived: "Prikaži arhivirana vozila",
+        bus_all_archived_hint: "{count} arhivirano — uključi „Prikaži arhivirana vozila” da vidiš.",
+        table_plate: "Tablice",
+        ph_bus_plate: "npr. MD-101AB",
         bus_edit_saved: "Autobus sačuvan.",
         bus_edit_failed: "Autobus nije sačuvan.",
         bus_conflict_refresh: "Autobus je izmenjen. Osvežite i pokušajte ponovo.",
@@ -807,9 +818,20 @@ const TRANSLATIONS = {
         bus_garage_unset: "no garage",
         bus_ops_status: "Operational status",
         bus_ops_ready: "Ready",
+        bus_ops_active: "Active",
         bus_ops_breakdown: "Breakdown",
         bus_ops_technical: "Technical",
         bus_ops_out: "Out of service",
+        bus_ops_reserve: "Reserve",
+        bus_ops_other_line: "On another line",
+        bus_other_line_badge: "On line {line}",
+        bus_other_line_prompt: "Which line is this bus currently on?",
+        bus_other_line_no_groups: "No other line to pick.",
+        bus_import_toggle: "Bulk import (TXT/CSV/XLSX)",
+        bus_show_archived: "Show archived vehicles",
+        bus_all_archived_hint: "{count} archived — enable \"Show archived vehicles\" to view.",
+        table_plate: "Plate",
+        ph_bus_plate: "e.g. MD-101AB",
         bus_edit_saved: "Bus saved.",
         bus_edit_failed: "Bus could not be saved.",
         bus_conflict_refresh: "Bus was changed. Refresh and try again.",
@@ -1442,9 +1464,20 @@ const TRANSLATIONS = {
         bus_garage_unset: "ohne Garage",
         bus_ops_status: "Betriebsstatus",
         bus_ops_ready: "Bereit",
+        bus_ops_active: "Aktiv",
         bus_ops_breakdown: "Defekt",
         bus_ops_technical: "Technisch",
         bus_ops_out: "Außer Betrieb",
+        bus_ops_reserve: "Reserve",
+        bus_ops_other_line: "Auf anderer Linie",
+        bus_other_line_badge: "Auf Linie {line}",
+        bus_other_line_prompt: "Auf welcher Linie ist dieser Bus gerade?",
+        bus_other_line_no_groups: "Keine andere Linie zur Auswahl.",
+        bus_import_toggle: "Massenimport (TXT/CSV/XLSX)",
+        bus_show_archived: "Archivierte Fahrzeuge anzeigen",
+        bus_all_archived_hint: "{count} archiviert — „Archivierte Fahrzeuge anzeigen” aktivieren, um sie zu sehen.",
+        table_plate: "Kennzeichen",
+        ph_bus_plate: "z. B. MD-101AB",
         bus_edit_saved: "Bus gespeichert.",
         bus_edit_failed: "Bus konnte nicht gespeichert werden.",
         bus_conflict_refresh: "Bus wurde geändert. Aktualisieren und erneut versuchen.",
@@ -2155,583 +2188,24 @@ const TRANSLATIONS = {
 
 
 // ============================================================
-// 🇭🇷  HRVATSKI  (Croatian)
-// ============================================================
-TRANSLATIONS.hr = {
-    login_subtitle: "SaaS platforma za upravljanje gradskim prijevozom",
-    trial_badge_login: "PROBNO RAZDOBLJE: 30 DANA PREOSTALO",
-    driver: "Vozač", dispatcher: "Dispečer / Tvrtka",
-    select_driver: "Odaberite vozača", select_bus: "Odaberite vozilo (Autobus)",
-    enter_pin: "Unesite PIN vozača",
-    login_btn_driver: "Prijava na dužnost", login_btn_disp: "Prijava kao dispečer",
-    email_label: "E-mail adresa tvrtke", pass_label: "Lozinka",
-    next_shift_title: "Sutra smjena", dispatcher_confirm_shifts_title: "Potvrda smjena za sutra",
-    btn_confirm_shift: "Potvrdi smjenu", status_confirmed: "Potvrđeno",
-    status_pending_confirmation: "Nepotvrđeno",
-    trial_indicator_text: "Probno: 29 dana preostalo", role_label: "Aktivna uloga:",
-    nav_daily_plan: "Dnevni plan vožnje", nav_monthly_plan: "Mjesečni plan (Smjene)",
-    nav_report_issue: "Prijava kašnjenja/kvara", nav_vacation: "Godišnji odmor",
-    nav_dashboard: "Upravljačka ploča", nav_live_alerts: "Kvarovi i kašnjenja uživo",
-    nav_lost_found: "Izgubljene stvari", nav_vacation_requests: "Zahtjevi za odmor",
-    nav_settings: "Postavke tvrtke", saas_version: "BusCommand v1.0.10",
-    driver_dashboard_title: "Dnevni plan vožnje", active_route: "Aktivna linija",
-    current_shift: "Trenutna smjena:", vehicle: "Vozilo",
-    next_departure: "Sljedeći polazak", delay_status: "Status kašnjenja",
-    stops_plan: "Plan puta i stanice", stops_subtitle: "Označite dolazak na stanicu klikom na nju",
-    btn_reset_route: "Resetiraj krug", sos_alert_title: "HITNI SOS ALARM AKTIVAN!",
-    btn_clear_sos: "Označeno kao riješeno", driver_sos_active: "SOS ALARM JE POSLAN! POMOĆ JE NA PUTU.",
-    messages_title: "Poruke od dispečera", send_message_title: "Pošalji poruku vozačima",
-    recipient_label: "Primatelj (Vozač)", all_drivers: "Svi vozači",
-    message_text_label: "Tekst poruke", btn_send_message: "Pošalji poruku",
-    no_messages: "Nemate novih poruka.", btn_mark_read: "Označi kao pročitano",
-    msg_from_dispatcher: "Poruka od dispečera", calendar_title: "Mjesečni plan rada",
-    legend_morning: "Prva smjena", legend_afternoon: "Druga smjena",
-    legend_off: "Slobodan dan", legend_vacation: "Odmor",
-    calendar_mon: "Pon", calendar_tue: "Uto", calendar_wed: "Sri",
-    calendar_thu: "Čet", calendar_fri: "Pet", calendar_sat: "Sub", calendar_sun: "Ned",
-    report_issue_title: "Prijavi problem tvrtki", report_delay_title: "Prijavi kašnjenje",
-    delay_time_label: "Kašnjenje (minute)", delay_reason_label: "Razlog kašnjenja",
-    delay_desc_label: "Dodatni opis (opciono)", btn_send_delay: "Pošalji prijavu kašnjenja",
-    min_5: "5 minuta", min_10: "10 minuta", min_15: "15 minuta", min_20: "20 minuta",
-    min_30: "30+ minuta (Zastoj)",
-    reason_traffic: "Prometna gužva", reason_accident: "Nesreća na trasi",
-    reason_roadworks: "Radovi na cesti", reason_weather: "Loši vremenski uvjeti",
-    reason_passengers: "Zadržavanje putnika",
-    report_breakdown_title: "Prijavi kvar na vozilu", breakdown_type_label: "Kategorija kvara",
-    breakdown_severity_label: "Ozbiljnost kvara", breakdown_desc_label: "Opis kvara i lokacija",
-    btn_send_breakdown: "Pošalji hitnu prijavu kvara",
-    bd_engine: "Kvar motora", bd_brakes: "Problem s kočnicama", bd_tyre: "Probušena guma",
-    bd_doors: "Elektrika / Vrata se ne zatvaraju", bd_ac: "Kvar klime / Grijanja", bd_other: "Ostalo",
-    sev_low: "Manji kvar (Mogu nastaviti)", sev_medium: "Srednji kvar (Servis na okretnici)",
-    sev_critical: "Kritičan kvar (Vozilo mora odmah stati)",
-    report_lost_title: "Prijavi izgubljenu stvar", lost_type_label: "Pronađeni predmet",
-    lost_loc_label: "Gdje je predmet pronađen?", lost_desc_label: "Opis predmeta",
-    btn_send_lost: "Prijavi pronađeni predmet",
-    lost_tech: "Telefon / Tehnički uređaj", lost_wallet: "Novčanik / Osobna dokumenta",
-    lost_keys: "Ključevi", lost_bag: "Torba / Ruksak", lost_clothes: "Kišobran / Odjeća", lost_other: "Ostalo",
-    status_in_depot: "U depou", status_returned: "Vraćeno", btn_return_owner: "Vrati vlasniku",
-    js_lost_returned: "Predmet vraćen vlasniku.", ph_lost_loc: "npr. stražnja vrata, sjedalo 12", ph_lost_desc: "npr. Crveni novčanik, Samsung mobitel...",
-    vacation_title: "Zahtjevi za godišnji odmor", new_request_title: "Kreiraj novi zahtjev",
-    start_date_label: "Datum početka", end_date_label: "Datum završetka",
-    leave_type_label: "Vrsta odsutnosti", reason_label: "Obrazloženje (opciono)",
-    btn_send_vacation: "Podnesi zahtjev tvrtki",
-    lt_vacation: "Godišnji odmor", lt_paid: "Plaćeno odsustvo", lt_days: "Slobodni dani",
-    history_title: "Povijest zahtjeva", table_type: "Vrsta", table_period: "Razdoblje",
-    table_days: "Dana", table_status: "Status",
-    disp_dashboard_title: "Upravljačka ploča dispečera",
-    stat_active_buses_lbl: "Aktivnih vozila na trasi",
-    stat_open_reports_lbl: "Aktivnih kvarova i zastoja",
-    stat_pending_vacations_lbl: "Zahtjeva za odmor na čekanju",
-    live_alerts_title: "Najnovije prijave s terena", btn_see_all: "Vidi sve",
-    active_crew_title: "Pregled trenutne posade na dužnosti",
-    table_driver: "Vozač", table_bus: "Autobus", table_route: "Linija", table_last_stop: "Zadnja stanica",
-    dispatcher_reports_title: "Prijave s terena (Kvarovi i kašnjenja)",
-    table_time: "Vrijeme", table_driver_bus: "Vozač / Autobus", table_problem_type: "Vrsta problema",
-    table_details: "Detalji", table_severity: "Ozbiljnost", table_actions: "Akcije",
-    btn_resolve: "Riješi problem", status_resolved: "Riješeno",
-    dispatcher_vacations_title: "Upravljanje zahtjevima za odmor",
-    btn_approve: "Odobri", btn_reject: "Odbij",
-    settings_title: "Postavke tvrtke", branding_title: "Izgled i brendiranje",
-    brand_name_label: "Naziv tvrtke prijevoznika", primary_color_label: "Primarna boja aplikacije",
-    btn_apply_branding: "Primijeni brendiranje",
-    status_no_delay: "Bez kašnjenja", status_delay_fmt: "Kasni: +{min} min",
-    shift_morning: "Prijepodne (06:00 - 14:00)", shift_afternoon: "Poslijepodne (14:00 - 22:00)",
-    shift_off: "Slobodan dan", shift_vacation: "Odmor",
-    js_alert_msg_sent: "Poruka je uspješno poslana!",
-    js_confirm_sos: "PAŽNJA: Želite li aktivirati HITNI SOS alarm?",
-    js_alert_sos_sent: "SOS alarm poslan! Ostanite pribrani.",
-    js_alert_sos_resolved: "SOS alarm poništen i označen kao riješen.",
-    js_alert_sos_cleared: "SOS alarm je poništen.",
-    js_no_alerts: "Nema prijavljenih problema s terena.",
-    js_garage: "Garaža", minutes: "minuta",
-    js_severity_low: "Nizak", js_severity_medium: "Srednji", js_severity_critical: "Kritičan",
-    js_status_pending: "Na čekanju", js_status_approved: "Odobreno", js_status_rejected: "Odbijeno",
-    btn_cancel: "Odustani", btn_delete: "Izbriši", btn_add_driver: "Dodaj vozača",
-    sos_driver_info: "Vozač {driver} (Autobus {bus}) je poslao SOS signal!",
-    nav_shifts: "Raspored smjena", shift_assign_title: "Dodijeli smjenu vozaču",
-    shift_date_label: "Datum", shift_type_label: "Vrsta smjene",
-    shift_name_label: "Oznaka smjene (opciono)", btn_assign_shift: "Dodijeli",
-    shift_morning: "Prijepodne", shift_afternoon: "Poslijepodne", shift_night: "Noćna",
-    shift_vacation_type: "Godišnji odmor", shift_err_required: "Odaberite vozača i datum",
-    shift_removed: "Smjena uklonjena",
-    groups_title: "Upravljanje grupama", group_name_label: "Naziv grupe", btn_add_group: "Dodaj",
-    groups_empty: "Nema grupa.", group_none: "— Bez grupe —",
-    drivers_count: "vozača", driver_added: "vozač dodan",
-    no_drivers_in_group: "Nema vozača u ovoj grupi",
-    shift_confirmed_toast: "Smjena potvrđena!", assigned_by: "Dodijelio",
-    btn_confirm_shift: "Potvrđujem smjenu",
-    broadcast_option: "Svi vozači", broadcast_group_prefix: "Grupa:"
-};
-
-// ============================================================
-// 🇫🇷  FRANÇAIS  (French)
-// ============================================================
-TRANSLATIONS.fr = {
-    login_subtitle: "Plateforme SaaS de gestion de flotte de transport en commun",
-    trial_badge_login: "PÉRIODE D'ESSAI : 30 JOURS RESTANTS",
-    driver: "Conducteur", dispatcher: "Dispatcher / Entreprise",
-    select_driver: "Sélectionner un conducteur", select_bus: "Sélectionner un véhicule (Bus)",
-    enter_pin: "Saisir le PIN du conducteur",
-    login_btn_driver: "Prendre son service", login_btn_disp: "Se connecter comme dispatcher",
-    email_label: "Adresse e-mail de l'entreprise", pass_label: "Mot de passe",
-    next_shift_title: "Prochain service (demain)", dispatcher_confirm_shifts_title: "Confirmer les services pour demain",
-    btn_confirm_shift: "Confirmer le service", status_confirmed: "Confirmé",
-    status_pending_confirmation: "En attente",
-    trial_indicator_text: "Période d'essai : 29 jours restants", role_label: "Rôle actif :",
-    nav_daily_plan: "Plan de conduite journalier", nav_monthly_plan: "Plan mensuel (Services)",
-    nav_report_issue: "Signaler un retard/panne", nav_vacation: "Congés",
-    nav_dashboard: "Tableau de bord", nav_live_alerts: "Pannes/Retards en direct",
-    nav_lost_found: "Objets trouvés", nav_vacation_requests: "Demandes de congés",
-    nav_settings: "Paramètres de l'entreprise", saas_version: "BusCommand v1.0.10",
-    driver_dashboard_title: "Plan de conduite journalier", active_route: "Ligne active",
-    current_shift: "Service actuel :", vehicle: "Véhicule",
-    next_departure: "Prochain départ", delay_status: "État des retards",
-    stops_plan: "Itinéraire et arrêts", stops_subtitle: "Cliquez sur un arrêt pour signaler votre arrivée",
-    btn_reset_route: "Réinitialiser le parcours", sos_alert_title: "ALARME SOS D'URGENCE ACTIVE !",
-    btn_clear_sos: "Marqué comme résolu", driver_sos_active: "ALARME SOS ENVOYÉE ! LES SECOURS ARRIVENT.",
-    messages_title: "Messages du dispatcher", send_message_title: "Envoyer un message aux conducteurs",
-    recipient_label: "Destinataire (Conducteur)", all_drivers: "Tous les conducteurs",
-    message_text_label: "Texte du message", btn_send_message: "Envoyer le message",
-    no_messages: "Aucun nouveau message.", btn_mark_read: "Marquer comme lu",
-    msg_from_dispatcher: "Message du dispatcher", calendar_title: "Plan mensuel de travail",
-    legend_morning: "Premier service", legend_afternoon: "Deuxième service",
-    legend_off: "Jour de repos", legend_vacation: "Congé",
-    calendar_mon: "Lun", calendar_tue: "Mar", calendar_wed: "Mer",
-    calendar_thu: "Jeu", calendar_fri: "Ven", calendar_sat: "Sam", calendar_sun: "Dim",
-    report_issue_title: "Signaler un problème à l'entreprise",
-    report_delay_title: "Signaler un retard", delay_time_label: "Durée du retard (minutes)",
-    delay_reason_label: "Raison du retard", delay_desc_label: "Description supplémentaire (optionnel)",
-    btn_send_delay: "Envoyer le signalement de retard",
-    min_5: "5 minutes", min_10: "10 minutes", min_15: "15 minutes", min_20: "20 minutes",
-    min_30: "30+ minutes (Embouteillage)",
-    reason_traffic: "Embouteillage", reason_accident: "Accident sur le trajet",
-    reason_roadworks: "Travaux routiers", reason_weather: "Mauvaises conditions météo",
-    reason_passengers: "Retenue par les passagers",
-    report_breakdown_title: "Signaler une panne", breakdown_type_label: "Catégorie de panne",
-    breakdown_severity_label: "Gravité de la panne", breakdown_desc_label: "Description et localisation",
-    btn_send_breakdown: "Envoyer le signalement d'urgence",
-    bd_engine: "Panne moteur", bd_brakes: "Problème de freins", bd_tyre: "Pneu crevé",
-    bd_doors: "Électricité / Portes bloquées", bd_ac: "Panne climatisation/chauffage", bd_other: "Autre",
-    sev_low: "Panne mineure (Peut continuer)", sev_medium: "Panne moyenne (Service au terminus)",
-    sev_critical: "Panne critique (Arrêt immédiat)",
-    report_lost_title: "Signaler un objet trouvé", lost_type_label: "Objet trouvé",
-    lost_loc_label: "Où l'objet a-t-il été trouvé ?", lost_desc_label: "Description de l'objet",
-    btn_send_lost: "Signaler l'objet trouvé",
-    lost_tech: "Téléphone / Appareil électronique", lost_wallet: "Portefeuille / Documents",
-    lost_keys: "Clés", lost_bag: "Sac / Sac à dos", lost_clothes: "Parapluie / Vêtement", lost_other: "Autre",
-    status_in_depot: "Au dépôt", status_returned: "Rendu", btn_return_owner: "Rendre au propriétaire",
-    js_lost_returned: "Objet rendu au propriétaire.", ph_lost_loc: "ex. porte arrière, siège 12", ph_lost_desc: "ex. Portefeuille rouge, téléphone Samsung...",
-    vacation_title: "Demandes de congés annuels", new_request_title: "Créer une nouvelle demande",
-    start_date_label: "Date de début", end_date_label: "Date de fin",
-    leave_type_label: "Type d'absence", reason_label: "Motif (optionnel)",
-    btn_send_vacation: "Soumettre la demande",
-    lt_vacation: "Congés annuels", lt_paid: "Congé payé", lt_days: "Jours libres",
-    history_title: "Historique des demandes", table_type: "Type", table_period: "Période",
-    table_days: "Jours", table_status: "Statut",
-    disp_dashboard_title: "Tableau de bord dispatcher",
-    stat_active_buses_lbl: "Véhicules actifs en service",
-    stat_open_reports_lbl: "Pannes et retards actifs",
-    stat_pending_vacations_lbl: "Demandes de congés en attente",
-    live_alerts_title: "Derniers signalements du terrain", btn_see_all: "Voir tout",
-    active_crew_title: "Aperçu de l'équipage en service",
-    table_driver: "Conducteur", table_bus: "Bus", table_route: "Ligne", table_last_stop: "Dernier arrêt",
-    dispatcher_reports_title: "Signalements terrain (Pannes et retards)",
-    table_time: "Heure", table_driver_bus: "Conducteur / Bus", table_problem_type: "Type de problème",
-    table_details: "Détails", table_severity: "Gravité", table_actions: "Actions",
-    btn_resolve: "Résoudre", status_resolved: "Résolu",
-    dispatcher_vacations_title: "Gestion des demandes de congés",
-    btn_approve: "Approuver", btn_reject: "Refuser",
-    settings_title: "Paramètres de l'entreprise", branding_title: "Apparence et identité visuelle",
-    brand_name_label: "Nom de l'entreprise", primary_color_label: "Couleur principale",
-    btn_apply_branding: "Appliquer l'identité",
-    status_no_delay: "Pas de retard", status_delay_fmt: "Retard : +{min} min",
-    shift_morning: "Matin (06h-14h)", shift_afternoon: "Après-midi (14h-22h)",
-    shift_off: "Jour de repos", shift_vacation: "Congé",
-    js_alert_msg_sent: "Message envoyé avec succès !",
-    js_confirm_sos: "ATTENTION : Voulez-vous activer l'alarme SOS d'urgence ?",
-    js_alert_sos_sent: "Alarme SOS envoyée ! Restez calme.",
-    js_alert_sos_resolved: "Alarme SOS annulée et marquée comme résolue.",
-    js_alert_sos_cleared: "Alarme SOS annulée.",
-    js_no_alerts: "Aucun problème signalé du terrain.",
-    js_garage: "Dépôt", minutes: "minutes",
-    js_severity_low: "Faible", js_severity_medium: "Moyen", js_severity_critical: "Critique",
-    js_status_pending: "En attente", js_status_approved: "Approuvé", js_status_rejected: "Refusé",
-    btn_cancel: "Annuler", btn_delete: "Supprimer", btn_add_driver: "Ajouter un conducteur",
-    sos_driver_info: "Le conducteur {driver} (Bus {bus}) a envoyé un signal SOS !",
-    nav_shifts: "Planning des services", shift_assign_title: "Affecter un service",
-    shift_date_label: "Date", shift_type_label: "Type de service",
-    shift_name_label: "Désignation du service (optionnel)", btn_assign_shift: "Affecter",
-    shift_morning: "Matin", shift_afternoon: "Après-midi", shift_night: "Nuit",
-    shift_vacation_type: "Congés annuels", shift_err_required: "Sélectionnez un conducteur et une date",
-    shift_removed: "Service supprimé",
-    groups_title: "Gestion des groupes", group_name_label: "Nom du groupe", btn_add_group: "Ajouter",
-    groups_empty: "Aucun groupe.", group_none: "— Sans groupe —",
-    drivers_count: "conducteurs", driver_added: "conducteur ajouté",
-    no_drivers_in_group: "Aucun conducteur dans ce groupe",
-    shift_confirmed_toast: "Service confirmé !", assigned_by: "Attribué par",
-    btn_confirm_shift: "Je confirme le service",
-    broadcast_option: "Tous les conducteurs", broadcast_group_prefix: "Groupe :"
-};
-
-// ============================================================
-// 🇮🇹  ITALIANO  (Italian)
-// ============================================================
-TRANSLATIONS.it = {
-    login_subtitle: "Piattaforma SaaS per la gestione della flotta di trasporto pubblico",
-    trial_badge_login: "PERIODO DI PROVA: 30 GIORNI RIMANENTI",
-    driver: "Autista", dispatcher: "Dispatcher / Azienda",
-    select_driver: "Seleziona autista", select_bus: "Seleziona veicolo (Bus)",
-    enter_pin: "Inserisci PIN autista",
-    login_btn_driver: "Inizia turno", login_btn_disp: "Accedi come dispatcher",
-    email_label: "Indirizzo e-mail aziendale", pass_label: "Password",
-    next_shift_title: "Prossimo turno (domani)", dispatcher_confirm_shifts_title: "Conferma turni per domani",
-    btn_confirm_shift: "Conferma turno", status_confirmed: "Confermato",
-    status_pending_confirmation: "In attesa",
-    trial_indicator_text: "Periodo di prova: 29 giorni rimanenti", role_label: "Ruolo attivo:",
-    nav_daily_plan: "Piano di guida giornaliero", nav_monthly_plan: "Piano mensile (Turni)",
-    nav_report_issue: "Segnala ritardo/guasto", nav_vacation: "Ferie",
-    nav_dashboard: "Pannello di controllo", nav_live_alerts: "Guasti/Ritardi in diretta",
-    nav_lost_found: "Oggetti smarriti", nav_vacation_requests: "Richieste di ferie",
-    nav_settings: "Impostazioni aziendali", saas_version: "BusCommand v1.0.10",
-    driver_dashboard_title: "Piano di guida giornaliero", active_route: "Linea attiva",
-    current_shift: "Turno attuale:", vehicle: "Veicolo",
-    next_departure: "Prossima partenza", delay_status: "Stato ritardi",
-    stops_plan: "Percorso e fermate", stops_subtitle: "Clicca su una fermata per segnalare l'arrivo",
-    btn_reset_route: "Reimposta percorso", sos_alert_title: "ALLARME SOS DI EMERGENZA ATTIVO!",
-    btn_clear_sos: "Contrassegnato come risolto", driver_sos_active: "ALLARME SOS INVIATO! I SOCCORSI STANNO ARRIVANDO.",
-    messages_title: "Messaggi dal dispatcher", send_message_title: "Invia messaggio agli autisti",
-    recipient_label: "Destinatario (Autista)", all_drivers: "Tutti gli autisti",
-    message_text_label: "Testo del messaggio", btn_send_message: "Invia messaggio",
-    no_messages: "Nessun nuovo messaggio.", btn_mark_read: "Segna come letto",
-    msg_from_dispatcher: "Messaggio dal dispatcher", calendar_title: "Piano mensile di lavoro",
-    legend_morning: "Primo turno", legend_afternoon: "Secondo turno",
-    legend_off: "Giorno libero", legend_vacation: "Ferie",
-    calendar_mon: "Lun", calendar_tue: "Mar", calendar_wed: "Mer",
-    calendar_thu: "Gio", calendar_fri: "Ven", calendar_sat: "Sab", calendar_sun: "Dom",
-    report_issue_title: "Segnala problema all'azienda",
-    report_delay_title: "Segnala ritardo", delay_time_label: "Ritardo (minuti)",
-    delay_reason_label: "Motivo del ritardo", delay_desc_label: "Descrizione aggiuntiva (opzionale)",
-    btn_send_delay: "Invia segnalazione ritardo",
-    min_5: "5 minuti", min_10: "10 minuti", min_15: "15 minuti", min_20: "20 minuti",
-    min_30: "30+ minuti (Blocco)",
-    reason_traffic: "Traffico intenso", reason_accident: "Incidente sul percorso",
-    reason_roadworks: "Lavori stradali", reason_weather: "Condizioni meteo avverse",
-    reason_passengers: "Trattenuto da passeggeri",
-    report_breakdown_title: "Segnala guasto al veicolo", breakdown_type_label: "Categoria guasto",
-    breakdown_severity_label: "Gravità del guasto", breakdown_desc_label: "Descrizione e posizione",
-    btn_send_breakdown: "Invia segnalazione urgente",
-    bd_engine: "Guasto motore", bd_brakes: "Problema freni", bd_tyre: "Pneumatico forato",
-    bd_doors: "Elettronica / Porte bloccate", bd_ac: "Guasto climatizzazione/riscaldamento", bd_other: "Altro",
-    sev_low: "Guasto minore (Posso continuare)", sev_medium: "Guasto medio (Assistenza al capolinea)",
-    sev_critical: "Guasto critico (Stop immediato)",
-    report_lost_title: "Segnala oggetto trovato", lost_type_label: "Oggetto trovato",
-    lost_loc_label: "Dove è stato trovato l'oggetto?", lost_desc_label: "Descrizione dell'oggetto",
-    btn_send_lost: "Segnala oggetto trovato",
-    lost_tech: "Telefono / Dispositivo elettronico", lost_wallet: "Portafoglio / Documenti",
-    lost_keys: "Chiavi", lost_bag: "Borsa / Zaino", lost_clothes: "Ombrello / Indumento", lost_other: "Altro",
-    status_in_depot: "In deposito", status_returned: "Restituito", btn_return_owner: "Restituisci al proprietario",
-    js_lost_returned: "Oggetto restituito al proprietario.", ph_lost_loc: "es. porta posteriore, sedile 12", ph_lost_desc: "es. Portafoglio rosso, telefono Samsung...",
-    vacation_title: "Richieste di ferie annuali", new_request_title: "Crea nuova richiesta",
-    start_date_label: "Data di inizio", end_date_label: "Data di fine",
-    leave_type_label: "Tipo di assenza", reason_label: "Motivazione (opzionale)",
-    btn_send_vacation: "Invia richiesta all'azienda",
-    lt_vacation: "Ferie annuali", lt_paid: "Permesso retribuito", lt_days: "Giorni liberi",
-    history_title: "Storico richieste", table_type: "Tipo", table_period: "Periodo",
-    table_days: "Giorni", table_status: "Stato",
-    disp_dashboard_title: "Pannello dispatcher",
-    stat_active_buses_lbl: "Veicoli attivi in servizio",
-    stat_open_reports_lbl: "Guasti e ritardi attivi",
-    stat_pending_vacations_lbl: "Richieste di ferie in attesa",
-    live_alerts_title: "Ultimi segnali dal campo", btn_see_all: "Vedi tutto",
-    active_crew_title: "Panoramica equipaggio in servizio",
-    table_driver: "Autista", table_bus: "Bus", table_route: "Linea", table_last_stop: "Ultima fermata",
-    dispatcher_reports_title: "Segnalazioni dal campo (Guasti e ritardi)",
-    table_time: "Ora", table_driver_bus: "Autista / Bus", table_problem_type: "Tipo di problema",
-    table_details: "Dettagli", table_severity: "Gravità", table_actions: "Azioni",
-    btn_resolve: "Risolvi", status_resolved: "Risolto",
-    dispatcher_vacations_title: "Gestione richieste ferie",
-    btn_approve: "Approva", btn_reject: "Rifiuta",
-    settings_title: "Impostazioni aziendali", branding_title: "Aspetto e branding",
-    brand_name_label: "Nome dell'azienda di trasporto", primary_color_label: "Colore principale",
-    btn_apply_branding: "Applica branding",
-    status_no_delay: "Nessun ritardo", status_delay_fmt: "Ritardo: +{min} min",
-    shift_morning: "Mattina (06:00 - 14:00)", shift_afternoon: "Pomeriggio (14:00 - 22:00)",
-    shift_off: "Giorno libero", shift_vacation: "Ferie",
-    js_alert_msg_sent: "Messaggio inviato con successo!",
-    js_confirm_sos: "ATTENZIONE: Vuoi attivare l'allarme SOS di emergenza?",
-    js_alert_sos_sent: "Allarme SOS inviato! Mantieni la calma.",
-    js_alert_sos_resolved: "Allarme SOS annullato e contrassegnato come risolto.",
-    js_alert_sos_cleared: "Allarme SOS annullato.",
-    js_no_alerts: "Nessun problema segnalato dal campo.",
-    js_garage: "Deposito", minutes: "minuti",
-    js_severity_low: "Bassa", js_severity_medium: "Media", js_severity_critical: "Critica",
-    js_status_pending: "In attesa", js_status_approved: "Approvato", js_status_rejected: "Rifiutato",
-    btn_cancel: "Annulla", btn_delete: "Elimina", btn_add_driver: "Aggiungi autista",
-    sos_driver_info: "L'autista {driver} (Bus {bus}) ha inviato un segnale SOS!",
-    nav_shifts: "Programmazione turni", shift_assign_title: "Assegna turno",
-    shift_date_label: "Data", shift_type_label: "Tipo turno",
-    shift_name_label: "Designazione turno (opzionale)", btn_assign_shift: "Assegna",
-    shift_morning: "Mattina", shift_afternoon: "Pomeriggio", shift_night: "Notte",
-    shift_vacation_type: "Ferie annuali", shift_err_required: "Seleziona autista e data",
-    shift_removed: "Turno rimosso",
-    groups_title: "Gestione gruppi", group_name_label: "Nome gruppo", btn_add_group: "Aggiungi",
-    groups_empty: "Nessun gruppo.", group_none: "— Senza gruppo —",
-    drivers_count: "autisti", driver_added: "autista aggiunto",
-    no_drivers_in_group: "Nessun autista in questo gruppo",
-    shift_confirmed_toast: "Turno confermato!", assigned_by: "Assegnato da",
-    btn_confirm_shift: "Confermo il turno",
-    broadcast_option: "Tutti gli autisti", broadcast_group_prefix: "Gruppo:"
-};
-
-// ============================================================
-// 🇵🇱  POLSKI  (Polish)
-// ============================================================
-TRANSLATIONS.pl = {
-    login_subtitle: "Platforma SaaS do zarządzania flotą transportu publicznego",
-    trial_badge_login: "OKRES PRÓBNY: 30 DNI POZOSTAŁO",
-    driver: "Kierowca", dispatcher: "Dyspozytor / Firma",
-    select_driver: "Wybierz kierowcę", select_bus: "Wybierz pojazd (Autobus)",
-    enter_pin: "Wprowadź PIN kierowcy",
-    login_btn_driver: "Rozpocznij służbę", login_btn_disp: "Zaloguj jako dyspozytor",
-    email_label: "Adres e-mail firmy", pass_label: "Hasło",
-    next_shift_title: "Następna zmiana (jutro)", dispatcher_confirm_shifts_title: "Potwierdź zmiany na jutro",
-    btn_confirm_shift: "Potwierdź zmianę", status_confirmed: "Potwierdzono",
-    status_pending_confirmation: "Oczekuje",
-    trial_indicator_text: "Okres próbny: 29 dni pozostało", role_label: "Aktywna rola:",
-    nav_daily_plan: "Dzienny plan jazdy", nav_monthly_plan: "Plan miesięczny (Zmiany)",
-    nav_report_issue: "Zgłoś opóźnienie/awarię", nav_vacation: "Urlop",
-    nav_dashboard: "Panel sterowania", nav_live_alerts: "Awarie/Opóźnienia na żywo",
-    nav_lost_found: "Rzeczy znalezione", nav_vacation_requests: "Wnioski urlopowe",
-    nav_settings: "Ustawienia firmy", saas_version: "BusCommand v1.0.10",
-    driver_dashboard_title: "Dzienny plan jazdy", active_route: "Aktywna linia",
-    current_shift: "Bieżąca zmiana:", vehicle: "Pojazd",
-    next_departure: "Następny odjazd", delay_status: "Status opóźnienia",
-    stops_plan: "Trasa i przystanki", stops_subtitle: "Kliknij przystanek, aby potwierdzić przyjazd",
-    btn_reset_route: "Resetuj kurs", sos_alert_title: "AKTYWNY ALARM ALARMOWY SOS!",
-    btn_clear_sos: "Oznaczono jako rozwiązane", driver_sos_active: "WYSŁANO ALARM SOS! POMOC JEST W DRODZE.",
-    messages_title: "Wiadomości od dyspozytora", send_message_title: "Wyślij wiadomość do kierowców",
-    recipient_label: "Odbiorca (Kierowca)", all_drivers: "Wszyscy kierowcy",
-    message_text_label: "Treść wiadomości", btn_send_message: "Wyślij wiadomość",
-    no_messages: "Brak nowych wiadomości.", btn_mark_read: "Oznacz jako przeczytane",
-    msg_from_dispatcher: "Wiadomość od dyspozytora", calendar_title: "Miesięczny plan pracy",
-    legend_morning: "Pierwsza zmiana", legend_afternoon: "Druga zmiana",
-    legend_off: "Dzień wolny", legend_vacation: "Urlop",
-    calendar_mon: "Pon", calendar_tue: "Wt", calendar_wed: "Śr",
-    calendar_thu: "Czw", calendar_fri: "Pt", calendar_sat: "Sob", calendar_sun: "Nd",
-    report_issue_title: "Zgłoś problem do firmy",
-    report_delay_title: "Zgłoś opóźnienie", delay_time_label: "Czas opóźnienia (minuty)",
-    delay_reason_label: "Przyczyna opóźnienia", delay_desc_label: "Dodatkowy opis (opcjonalnie)",
-    btn_send_delay: "Wyślij zgłoszenie opóźnienia",
-    min_5: "5 minut", min_10: "10 minut", min_15: "15 minut", min_20: "20 minut",
-    min_30: "30+ minut (Korek)",
-    reason_traffic: "Korek drogowy", reason_accident: "Wypadek na trasie",
-    reason_roadworks: "Roboty drogowe", reason_weather: "Złe warunki pogodowe",
-    reason_passengers: "Zatrzymanie przez pasażerów",
-    report_breakdown_title: "Zgłoś awarię pojazdu", breakdown_type_label: "Kategoria awarii",
-    breakdown_severity_label: "Powaga awarii", breakdown_desc_label: "Opis awarii i lokalizacja",
-    btn_send_breakdown: "Wyślij pilne zgłoszenie awarii",
-    bd_engine: "Awaria silnika", bd_brakes: "Problem z hamulcami", bd_tyre: "Przebita opona",
-    bd_doors: "Elektryka / Drzwi nie zamykają się", bd_ac: "Awaria klimatyzacji/ogrzewania", bd_other: "Inne",
-    sev_low: "Mała awaria (Mogę kontynuować)", sev_medium: "Średnia awaria (Serwis na pętli)",
-    sev_critical: "Krytyczna awaria (Natychmiastowy stop)",
-    report_lost_title: "Zgłoś znalezioną rzecz", lost_type_label: "Znaleziony przedmiot",
-    lost_loc_label: "Gdzie znaleziono przedmiot?", lost_desc_label: "Opis przedmiotu",
-    btn_send_lost: "Zgłoś znaleziony przedmiot",
-    lost_tech: "Telefon / Urządzenie elektroniczne", lost_wallet: "Portfel / Dokumenty",
-    lost_keys: "Klucze", lost_bag: "Torba / Plecak", lost_clothes: "Parasol / Odzież", lost_other: "Inne",
-    status_in_depot: "W zajezdni", status_returned: "Zwrócono", btn_return_owner: "Zwróć właścicielowi",
-    js_lost_returned: "Przedmiot zwrócony właścicielowi.", ph_lost_loc: "np. tylne drzwi, siedzenie 12", ph_lost_desc: "np. Czerwony portfel, telefon Samsung...",
-    vacation_title: "Wnioski urlopowe", new_request_title: "Utwórz nowy wniosek",
-    start_date_label: "Data rozpoczęcia", end_date_label: "Data zakończenia",
-    leave_type_label: "Rodzaj nieobecności", reason_label: "Uzasadnienie (opcjonalnie)",
-    btn_send_vacation: "Złóż wniosek do firmy",
-    lt_vacation: "Urlop wypoczynkowy", lt_paid: "Urlop płatny", lt_days: "Dni wolne",
-    history_title: "Historia wniosków", table_type: "Typ", table_period: "Okres",
-    table_days: "Dni", table_status: "Status",
-    disp_dashboard_title: "Panel dyspozytora",
-    stat_active_buses_lbl: "Aktywnych pojazdów w trasie",
-    stat_open_reports_lbl: "Aktywnych awarii i opóźnień",
-    stat_pending_vacations_lbl: "Oczekujących wniosków urlopowych",
-    live_alerts_title: "Najnowsze zgłoszenia z terenu", btn_see_all: "Zobacz wszystkie",
-    active_crew_title: "Przegląd załogi na służbie",
-    table_driver: "Kierowca", table_bus: "Autobus", table_route: "Linia", table_last_stop: "Ostatni przystanek",
-    dispatcher_reports_title: "Zgłoszenia z terenu (Awarie i opóźnienia)",
-    table_time: "Czas", table_driver_bus: "Kierowca / Autobus", table_problem_type: "Typ problemu",
-    table_details: "Szczegóły", table_severity: "Powaga", table_actions: "Akcje",
-    btn_resolve: "Rozwiąż", status_resolved: "Rozwiązano",
-    dispatcher_vacations_title: "Zarządzanie wnioskami urlopowymi",
-    btn_approve: "Zatwierdź", btn_reject: "Odrzuć",
-    settings_title: "Ustawienia firmy", branding_title: "Wygląd i identyfikacja wizualna",
-    brand_name_label: "Nazwa firmy przewozowej", primary_color_label: "Główny kolor aplikacji",
-    btn_apply_branding: "Zastosuj identyfikację",
-    status_no_delay: "Bez opóźnienia", status_delay_fmt: "Opóźnienie: +{min} min",
-    shift_morning: "Poranna (06:00 - 14:00)", shift_afternoon: "Popołudniowa (14:00 - 22:00)",
-    shift_off: "Dzień wolny", shift_vacation: "Urlop",
-    js_alert_msg_sent: "Wiadomość wysłana pomyślnie!",
-    js_confirm_sos: "UWAGA: Czy chcesz aktywować alarm SOS?",
-    js_alert_sos_sent: "Alarm SOS wysłany! Zachowaj spokój.",
-    js_alert_sos_resolved: "Alarm SOS anulowany i oznaczony jako rozwiązany.",
-    js_alert_sos_cleared: "Alarm SOS anulowany.",
-    js_no_alerts: "Brak zgłoszonych problemów z terenu.",
-    js_garage: "Zajezdnia", minutes: "minut",
-    js_severity_low: "Niski", js_severity_medium: "Średni", js_severity_critical: "Krytyczny",
-    js_status_pending: "Oczekuje", js_status_approved: "Zatwierdzone", js_status_rejected: "Odrzucone",
-    btn_cancel: "Anuluj", btn_delete: "Usuń", btn_add_driver: "Dodaj kierowcę",
-    sos_driver_info: "Kierowca {driver} (Autobus {bus}) wysłał sygnał SOS!",
-    nav_shifts: "Harmonogram zmian", shift_assign_title: "Przydziel zmianę",
-    shift_date_label: "Data", shift_type_label: "Typ zmiany",
-    shift_name_label: "Oznaczenie zmiany (opcjonalnie)", btn_assign_shift: "Przydziel",
-    shift_morning: "Poranna", shift_afternoon: "Popołudniowa", shift_night: "Nocna",
-    shift_vacation_type: "Urlop wypoczynkowy", shift_err_required: "Wybierz kierowcę i datę",
-    shift_removed: "Zmiana usunięta",
-    groups_title: "Zarządzanie grupami", group_name_label: "Nazwa grupy", btn_add_group: "Dodaj",
-    groups_empty: "Brak grup.", group_none: "— Bez grupy —",
-    drivers_count: "kierowców", driver_added: "kierowca dodany",
-    no_drivers_in_group: "Brak kierowców w tej grupie",
-    shift_confirmed_toast: "Zmiana potwierdzona!", assigned_by: "Przydzielono przez",
-    btn_confirm_shift: "Potwierdzam zmianę",
-    broadcast_option: "Wszyscy kierowcy", broadcast_group_prefix: "Grupa:"
-};
-
-// ============================================================
-// 🇨🇿  ČEŠTINA  (Czech)
-// ============================================================
-TRANSLATIONS.cs = {
-    login_subtitle: "SaaS platforma pro správu flotily veřejné dopravy",
-    trial_badge_login: "ZKUŠEBNÍ DOBA: 30 DNÍ ZBÝVÁ",
-    driver: "Řidič", dispatcher: "Dispečer / Společnost",
-    select_driver: "Vyberte řidiče", select_bus: "Vyberte vozidlo (Autobus)",
-    enter_pin: "Zadejte PIN řidiče",
-    login_btn_driver: "Nastoupit do služby", login_btn_disp: "Přihlásit jako dispečer",
-    email_label: "E-mailová adresa společnosti", pass_label: "Heslo",
-    next_shift_title: "Příští směna (zítra)", dispatcher_confirm_shifts_title: "Potvrdit směny na zítřek",
-    btn_confirm_shift: "Potvrdit směnu", status_confirmed: "Potvrzeno",
-    status_pending_confirmation: "Čeká na potvrzení",
-    trial_indicator_text: "Zkušební doba: 29 dní zbývá", role_label: "Aktivní role:",
-    nav_daily_plan: "Denní plán jízdy", nav_monthly_plan: "Měsíční plán (Směny)",
-    nav_report_issue: "Nahlásit zpoždění/poruchu", nav_vacation: "Dovolená",
-    nav_dashboard: "Řídicí panel", nav_live_alerts: "Poruchy/Zpoždění živě",
-    nav_lost_found: "Ztráty a nálezy", nav_vacation_requests: "Žádosti o dovolenou",
-    nav_settings: "Nastavení společnosti", saas_version: "BusCommand v1.0.10",
-    driver_dashboard_title: "Denní plán jízdy", active_route: "Aktivní linka",
-    current_shift: "Aktuální směna:", vehicle: "Vozidlo",
-    next_departure: "Příští odjezd", delay_status: "Stav zpoždění",
-    stops_plan: "Trasa a zastávky", stops_subtitle: "Klikněte na zastávku pro potvrzení příjezdu",
-    btn_reset_route: "Resetovat okruh", sos_alert_title: "AKTIVNÍ NOUZOVÝ SOS ALARM!",
-    btn_clear_sos: "Označeno jako vyřešeno", driver_sos_active: "SOS ALARM ODESLÁN! POMOC PŘIJÍŽDÍ.",
-    messages_title: "Zprávy od dispečera", send_message_title: "Odeslat zprávu řidičům",
-    recipient_label: "Příjemce (Řidič)", all_drivers: "Všichni řidiči",
-    message_text_label: "Text zprávy", btn_send_message: "Odeslat zprávu",
-    no_messages: "Žádné nové zprávy.", btn_mark_read: "Označit jako přečtené",
-    msg_from_dispatcher: "Zpráva od dispečera", calendar_title: "Měsíční plán práce",
-    legend_morning: "První směna", legend_afternoon: "Druhá směna",
-    legend_off: "Volný den", legend_vacation: "Dovolená",
-    calendar_mon: "Po", calendar_tue: "Út", calendar_wed: "St",
-    calendar_thu: "Čt", calendar_fri: "Pá", calendar_sat: "So", calendar_sun: "Ne",
-    report_issue_title: "Nahlásit problém společnosti",
-    report_delay_title: "Nahlásit zpoždění", delay_time_label: "Doba zpoždění (minuty)",
-    delay_reason_label: "Důvod zpoždění", delay_desc_label: "Další popis (volitelné)",
-    btn_send_delay: "Odeslat hlášení zpoždění",
-    min_5: "5 minut", min_10: "10 minut", min_15: "15 minut", min_20: "20 minut",
-    min_30: "30+ minut (Zácpa)",
-    reason_traffic: "Dopravní zácpa", reason_accident: "Nehoda na trase",
-    reason_roadworks: "Silniční práce", reason_weather: "Nepříznivé povětrnostní podmínky",
-    reason_passengers: "Zdržení cestujícími",
-    report_breakdown_title: "Nahlásit poruchu vozidla", breakdown_type_label: "Kategorie poruchy",
-    breakdown_severity_label: "Závažnost poruchy", breakdown_desc_label: "Popis poruchy a poloha",
-    btn_send_breakdown: "Odeslat urgentní hlášení poruchy",
-    bd_engine: "Porucha motoru", bd_brakes: "Problém s brzdami", bd_tyre: "Propíchnutá pneumatika",
-    bd_doors: "Elektrika / Dveře se nezavírají", bd_ac: "Porucha klimatizace/topení", bd_other: "Ostatní",
-    sev_low: "Drobná porucha (Mohu pokračovat)", sev_medium: "Střední porucha (Servis na konečné)",
-    sev_critical: "Kritická porucha (Okamžité zastavení)",
-    report_lost_title: "Nahlásit nalezený předmět", lost_type_label: "Nalezený předmět",
-    lost_loc_label: "Kde byl předmět nalezen?", lost_desc_label: "Popis předmětu",
-    btn_send_lost: "Nahlásit nalezený předmět",
-    lost_tech: "Telefon / Elektronické zařízení", lost_wallet: "Peněženka / Doklady",
-    lost_keys: "Klíče", lost_bag: "Taška / Batoh", lost_clothes: "Deštník / Oděv", lost_other: "Ostatní",
-    status_in_depot: "V depu", status_returned: "Vráceno", btn_return_owner: "Vrátit vlastníkovi",
-    js_lost_returned: "Předmět vrácen vlastníkovi.", ph_lost_loc: "např. zadní dveře, sedadlo 12", ph_lost_desc: "např. Červená peněženka, telefon Samsung...",
-    vacation_title: "Žádosti o dovolenou", new_request_title: "Vytvořit novou žádost",
-    start_date_label: "Datum zahájení", end_date_label: "Datum ukončení",
-    leave_type_label: "Typ nepřítomnosti", reason_label: "Zdůvodnění (volitelné)",
-    btn_send_vacation: "Podat žádost společnosti",
-    lt_vacation: "Řádná dovolená", lt_paid: "Placená dovolená", lt_days: "Volné dny",
-    history_title: "Historie žádostí", table_type: "Typ", table_period: "Období",
-    table_days: "Dní", table_status: "Stav",
-    disp_dashboard_title: "Řídicí panel dispečera",
-    stat_active_buses_lbl: "Aktivních vozidel na trase",
-    stat_open_reports_lbl: "Aktivních poruch a zpožděnách",
-    stat_pending_vacations_lbl: "Čekajících žádostí o dovolenou",
-    live_alerts_title: "Nejnovější hlášení z terénu", btn_see_all: "Zobrazit vše",
-    active_crew_title: "Přehled posádky ve službě",
-    table_driver: "Řidič", table_bus: "Autobus", table_route: "Linka", table_last_stop: "Poslední zastávka",
-    dispatcher_reports_title: "Hlášení z terénu (Poruchy a zpoždění)",
-    table_time: "Čas", table_driver_bus: "Řidič / Autobus", table_problem_type: "Typ problému",
-    table_details: "Podrobnosti", table_severity: "Závažnost", table_actions: "Akce",
-    btn_resolve: "Vyřešit", status_resolved: "Vyřešeno",
-    dispatcher_vacations_title: "Správa žádostí o dovolenou",
-    btn_approve: "Schválit", btn_reject: "Zamítnout",
-    settings_title: "Nastavení společnosti", branding_title: "Vzhled a branding",
-    brand_name_label: "Název dopravní společnosti", primary_color_label: "Primární barva aplikace",
-    btn_apply_branding: "Použít branding",
-    status_no_delay: "Bez zpoždění", status_delay_fmt: "Zpoždění: +{min} min",
-    shift_morning: "Ranní (06:00 - 14:00)", shift_afternoon: "Odpolední (14:00 - 22:00)",
-    shift_off: "Volný den", shift_vacation: "Dovolená",
-    js_alert_msg_sent: "Zpráva úspěšně odeslána!",
-    js_confirm_sos: "POZOR: Chcete aktivovat nouzový SOS alarm?",
-    js_alert_sos_sent: "SOS alarm odeslán! Zachovejte klid.",
-    js_alert_sos_resolved: "SOS alarm zrušen a označen jako vyřešený.",
-    js_alert_sos_cleared: "SOS alarm zrušen.",
-    js_no_alerts: "Žádné nahlášené problémy z terénu.",
-    js_garage: "Depo", minutes: "minut",
-    js_severity_low: "Nízká", js_severity_medium: "Střední", js_severity_critical: "Kritická",
-    js_status_pending: "Čeká", js_status_approved: "Schváleno", js_status_rejected: "Zamítnuto",
-    btn_cancel: "Zrušit", btn_delete: "Smazat", btn_add_driver: "Přidat řidiče",
-    sos_driver_info: "Řidič {driver} (Autobus {bus}) poslal SOS signál!",
-    nav_shifts: "Rozvrh směn", shift_assign_title: "Přidělit směnu",
-    shift_date_label: "Datum", shift_type_label: "Typ směny",
-    shift_name_label: "Označení směny (volitelné)", btn_assign_shift: "Přidělit",
-    shift_morning: "Ranní", shift_afternoon: "Odpolední", shift_night: "Noční",
-    shift_vacation_type: "Řádná dovolená", shift_err_required: "Vyberte řidiče a datum",
-    shift_removed: "Směna odebrána",
-    groups_title: "Správa skupin", group_name_label: "Název skupiny", btn_add_group: "Přidat",
-    groups_empty: "Žádné skupiny.", group_none: "— Bez skupiny —",
-    drivers_count: "řidičů", driver_added: "řidič přidán",
-    no_drivers_in_group: "V této skupině nejsou žádní řidiči",
-    shift_confirmed_toast: "Směna potvrzena!", assigned_by: "Přiděleno od",
-    btn_confirm_shift: "Potvrzuji směnu",
-    broadcast_option: "Všichni řidiči", broadcast_group_prefix: "Skupina:"
-};
-
-// ============================================================
 // DYNAMIC TRANSLATION ENHANCEMENT FOR NEW KEYS & FALLBACKS
 // ============================================================
 
 // 1. Dodatni prevodi za nove ključeve koji su dodati u aplikaciju
 const NEW_TRANSLATIONS = {
     superadmin_title: {
-        sr: "Super Admin Kontrolna Tabla", en: "Super Admin Dashboard", de: "Super-Admin-Übersicht",
-        hr: "Super Admin Kontrolna Tabla"
-    },
+        sr: "Super Admin Kontrolna Tabla", en: "Super Admin Dashboard", de: "Super-Admin-Übersicht"},
     superadmin_companies: {
-        sr: "Registrovane Firme / Dispečeri", en: "Registered Companies / Dispatchers", de: "Registrierte Firmen / Disponenten",
-        hr: "Registrirane Tvrtke / Dispečeri"
-    },
+        sr: "Registrovane Firme / Dispečeri", en: "Registered Companies / Dispatchers", de: "Registrierte Firmen / Disponenten"},
     superadmin_status: {
         sr: "Status", en: "Status", de: "Status", hr: "Status"
     },
     add_new_company: {
-        sr: "Registruj novu firmu / dispečera", en: "Register New Company / Dispatcher", de: "Neue Firma / Disponenten registrieren",
-        hr: "Registriraj novu tvrtku / dispečera"
-    },
+        sr: "Registruj novu firmu / dispečera", en: "Register New Company / Dispatcher", de: "Neue Firma / Disponenten registrieren"},
     disp_new_password_title: {
-        sr: "Postavite novu lozinku", en: "Set New Password", de: "Neues Passwort festlegen",
-        hr: "Postavite novu lozinku"
-    },
+        sr: "Postavite novu lozinku", en: "Set New Password", de: "Neues Passwort festlegen"},
     disp_new_password_subtitle: {
-        sr: "Izaberite vaš lični pristupni PIN (4-6 cifara)", en: "Choose your personal access PIN (4-6 digits)", de: "Wählen Sie Ihren persönlichen Zugangs-PIN (4-6 Ziffern)",
-        hr: "Odaberite vaš osobni pristupni PIN (4-6 znamenki)"
-    },
+        sr: "Izaberite vaš lični pristupni PIN (4-6 cifara)", en: "Choose your personal access PIN (4-6 digits)", de: "Wählen Sie Ihren persönlichen Zugangs-PIN (4-6 Ziffern)"},
     disp_new_password_label: {
         sr: "Novi PIN kod", en: "New PIN Code", de: "Neuer PIN-Code", hr: "Novi PIN kod"
     },
@@ -2742,24 +2216,16 @@ const NEW_TRANSLATIONS = {
         sr: "Sačuvaj lozinku", en: "Save Password", de: "Passwort speichern", hr: "Spremi lozinku"
     },
     msg_password_saved: {
-        sr: "Lozinka je uspešno sačuvana!", en: "Password successfully saved!", de: "Passwort erfolgreich gespeichert!",
-        hr: "Lozinka je uspješno spremljena!"
-    },
+        sr: "Lozinka je uspešno sačuvana!", en: "Password successfully saved!", de: "Passwort erfolgreich gespeichert!"},
     group_setup_title: {
         sr: "Upravljanje grupama", en: "Group Administration", de: "Gruppenverwaltung", hr: "Upravljanje grupama"
     },
     group_setup_subtitle: {
-        sr: "Kreirajte nove linije/grupe ili izaberite grupu za rad", en: "Create new routes/groups or choose one to manage", de: "Erstellen Sie neue Routen/Gruppen oder wählen Sie eine aus",
-        hr: "Kreirajte nove linije/grupe ili odaberite grupu za rad"
-    },
+        sr: "Kreirajte nove linije/grupe ili izaberite grupu za rad", en: "Create new routes/groups or choose one to manage", de: "Erstellen Sie neue Routen/Gruppen oder wählen Sie eine aus"},
     active_group_label: {
-        sr: "Izaberite grupu za rad", en: "Select Group to Dispatch", de: "Gruppe zum Disponieren auswählen",
-        hr: "Odaberite grupu za rad"
-    },
+        sr: "Izaberite grupu za rad", en: "Select Group to Dispatch", de: "Gruppe zum Disponieren auswählen"},
     active_group_short: {
-        sr: "Aktivna grupa", en: "Active group", de: "Aktive Gruppe",
-        hr: "Aktivna grupa"
-    },
+        sr: "Aktivna grupa", en: "Active group", de: "Aktive Gruppe"},
     label_group_id: {
         sr: "ID Grupe (npr. 105)", en: "Group ID (e.g. 105)", de: "Gruppen-ID (z.B. 105)", hr: "ID Grupe (npr. 105)"
     },
@@ -2770,332 +2236,198 @@ const NEW_TRANSLATIONS = {
         sr: "Kreiraj novu grupu", en: "Create New Group", de: "Neue Gruppe erstellen", hr: "Kreiraj novu grupu"
     },
     change_photo: {
-        sr: "Promeni sliku", en: "Change photo", de: "Foto ändern",
-        hr: "Promijeni sliku", fr: "Changer la photo", it: "Cambia foto",
-        pl: "Zmień zdjęcie", cs: "Změnit fotku"
+        sr: "Promeni sliku", en: "Change photo", de: "Foto ändern", fr: "Changer la photo", it: "Cambia foto", cs: "Změnit fotku"
     },
     msg_new_incoming: {
-        sr: "Nova dolazna poruka", en: "New incoming message", de: "Neue eingehende Nachricht",
-        hr: "Nova dolazna poruka", fr: "Nouveau message entrant", it: "Nuovo messaggio in arrivo",
-        pl: "Nowa wiadomość przychodząca", cs: "Nová příchozí zpráva"
+        sr: "Nova dolazna poruka", en: "New incoming message", de: "Neue eingehende Nachricht", fr: "Nouveau message entrant", it: "Nuovo messaggio in arrivo", cs: "Nová příchozí zpráva"
     },
     clear_read_messages: {
-        sr: "Obriši pročitane", en: "Clear read messages", de: "Gelesene löschen",
-        hr: "Izbriši pročitane", fr: "Effacer les messages lus", it: "Cancella messaggi letti",
-        pl: "Usuń przeczytane", cs: "Vymazat přečtené"
+        sr: "Obriši pročitane", en: "Clear read messages", de: "Gelesene löschen", fr: "Effacer les messages lus", it: "Cancella messaggi letti", cs: "Vymazat přečtené"
     },
     archive_message: {
-        sr: "Arhiviraj", en: "Archive", de: "Archivieren",
-        hr: "Arhiviraj", fr: "Archiver", it: "Archivia",
-        pl: "Archiwizuj", cs: "Archivovat"
+        sr: "Arhiviraj", en: "Archive", de: "Archivieren", fr: "Archiver", it: "Archivia", cs: "Archivovat"
     },
     clear_all_messages: {
-        sr: "Obriši sve", en: "Clear all", de: "Alle löschen",
-        hr: "Izbriši sve", fr: "Tout effacer", it: "Cancella tutto",
-        pl: "Usuń wszystko", cs: "Vymazat vše"
+        sr: "Obriši sve", en: "Clear all", de: "Alle löschen", fr: "Tout effacer", it: "Cancella tutto", cs: "Vymazat vše"
     },
     new_message_toast: {
-        sr: "Nova poruka od dispečera", en: "New message from dispatcher", de: "Neue Nachricht vom Dispatcher",
-        hr: "Nova poruka od dispečera", fr: "Nouveau message du dispatcher", it: "Nuovo messaggio dal dispatcher",
-        pl: "Nowa wiadomość od dyspozytora", cs: "Nová zpráva od dispečera"
+        sr: "Nova poruka od dispečera", en: "New message from dispatcher", de: "Neue Nachricht vom Dispatcher", fr: "Nouveau message du dispatcher", it: "Nuovo messaggio dal dispatcher", cs: "Nová zpráva od dispečera"
     },
     messages_archived: {
-        sr: "Poruke su arhivirane", en: "Messages archived", de: "Nachrichten archiviert",
-        hr: "Poruke su arhivirane", fr: "Messages archivés", it: "Messaggi archiviati",
-        pl: "Wiadomości zarchiwizowane", cs: "Zprávy archivovány"
+        sr: "Poruke su arhivirane", en: "Messages archived", de: "Nachrichten archiviert", fr: "Messages archivés", it: "Messaggi archiviati", cs: "Zprávy archivovány"
     },
     archive_label: {
-        sr: "Arhiv", en: "Archive", de: "Archiv",
-        hr: "Arhiv", fr: "Archive", it: "Archivio",
-        pl: "Archiwum", cs: "Archiv"
+        sr: "Arhiv", en: "Archive", de: "Archiv", fr: "Archive", it: "Archivio", cs: "Archiv"
     },
     label_today: {
-        sr: "Danas", en: "Today", de: "Heute",
-        hr: "Danas", fr: "Aujourd'hui", it: "Oggi",
-        pl: "Dzisiaj", cs: "Dnes"
+        sr: "Danas", en: "Today", de: "Heute", fr: "Aujourd'hui", it: "Oggi", cs: "Dnes"
     },
     label_yesterday: {
-        sr: "Juče", en: "Yesterday", de: "Gestern",
-        hr: "Jučer", fr: "Hier", it: "Ieri",
-        pl: "Wczoraj", cs: "Včera"
+        sr: "Juče", en: "Yesterday", de: "Gestern", fr: "Hier", it: "Ieri", cs: "Včera"
     },
     quick_reports_title: {
-        sr: "Brze prijave", en: "Quick Reports", de: "Schnell-Meldungen",
-        hr: "Brze prijave", fr: "Rapports rapides", it: "Segnalazioni rapide",
-        pl: "Szybkie zgłoszenia", cs: "Rychlá hlášení"
+        sr: "Brze prijave", en: "Quick Reports", de: "Schnell-Meldungen", fr: "Rapports rapides", it: "Segnalazioni rapide", cs: "Rychlá hlášení"
     },
     quick_reports_subtitle: {
         sr: "Kliknite na prijavu za brzi prenos u dispečerski centar",
         en: "Tap a quick report button to instantly send to Leitstelle",
-        de: "Tippen Sie auf eine Meldung zur schnellen Übermittlung an die Leitstelle",
-        hr: "Kliknite na prijavu za brzi prijenos u dispečerski centar",
-        fr: "Appuyez sur un bouton pour envoyer instantanément au centre de contrôle",
-        it: "Tocca un pulsante per inviare istantaneamente alla centrale",
-        pl: "Dotknij przycisku, aby natychmiast wysłać do centrum kontroli",
-        cs: "Klepnutím na tlačítko okamžitě odešlete hlášení na dispečink"
-    },
+        de: "Tippen Sie auf eine Meldung zur schnellen Übermittlung an die Leitstelle"},
     qr_traffic: {
-        sr: "Gužva (+10 min)", en: "Traffic (+10 min)", de: "Stau (+10 Min)",
-        hr: "Gužva (+10 min)", fr: "Embouteillage (+10 min)", it: "Traffico (+10 min)",
-        pl: "Korek (+10 min)", cs: "Zácpa (+10 min)"
+        sr: "Gužva (+10 min)", en: "Traffic (+10 min)", de: "Stau (+10 Min)", fr: "Embouteillage (+10 min)", it: "Traffico (+10 min)", cs: "Zácpa (+10 min)"
     },
     qr_breakdown: {
-        sr: "Kvar (Defekt)", en: "Breakdown (Fault)", de: "Panne (Defekt)",
-        hr: "Kvar (Defekt)", fr: "Panne (Défaut)", it: "Guasto (Panne)",
-        pl: "Awaria", cs: "Porucha (Defekt)"
+        sr: "Kvar (Defekt)", en: "Breakdown (Fault)", de: "Panne (Defekt)", fr: "Panne (Défaut)", it: "Guasto (Panne)", cs: "Porucha (Defekt)"
     },
     qr_full_bus: {
-        sr: "Pun autobus (+5 min)", en: "Bus Full (+5 min)", de: "Bus Voll (+5 M)",
-        hr: "Pun bus (+5 min)", fr: "Bus plein (+5 min)", it: "Autobus pieno (+5 min)",
-        pl: "Autobus pełen (+5 min)", cs: "Plný autobus (+5 min)"
+        sr: "Pun autobus (+5 min)", en: "Bus Full (+5 min)", de: "Bus Voll (+5 M)", fr: "Bus plein (+5 min)", it: "Autobus pieno (+5 min)", cs: "Plný autobus (+5 min)"
     },
     qr_delay: {
-        sr: "Kašnjenje (+5 min)", en: "Delay (+5 min)", de: "Verspätung (+5 M)",
-        hr: "Kašnjenje (+5 min)", fr: "Retard (+5 min)", it: "Ritardo (+5 min)",
-        pl: "Opóźnienie (+5 min)", cs: "Zpoždění (+5 min)"
+        sr: "Kašnjenje (+5 min)", en: "Delay (+5 min)", de: "Verspätung (+5 M)", fr: "Retard (+5 min)", it: "Ritardo (+5 min)", cs: "Zpoždění (+5 min)"
     },
 
     // ── LOGIN: email + password ──────────────────────────────────────────────
     email: {
-        sr: "E-mail adresa", en: "Email", de: "E-Mail-Adresse",
-        hr: "E-mail adresa", fr: "Adresse e-mail", it: "Indirizzo email",
-        pl: "Adres e-mail", cs: "E-mailová adresa", tr: "E-posta", es: "Correo electrónico",
-        pt: "E-mail", nl: "E-mailadres", ro: "Adresă e-mail", hu: "E-mail cím",
-        sk: "E-mailová adresa", bg: "Имейл адрес"
+        sr: "E-mail adresa", en: "Email", de: "E-Mail-Adresse", fr: "Adresse e-mail", it: "Indirizzo email", cs: "E-mailová adresa", tr: "E-posta", es: "Correo electrónico", nl: "E-mailadres", ro: "Adresă e-mail", hu: "E-mail cím", bg: "Имейл адрес"
     },
     password: {
-        sr: "Lozinka", en: "Password", de: "Passwort",
-        hr: "Lozinka", fr: "Mot de passe", it: "Password",
-        pl: "Hasło", cs: "Heslo", tr: "Şifre", es: "Contraseña",
-        pt: "Senha", nl: "Wachtwoord", ro: "Parolă", hu: "Jelszó",
-        sk: "Heslo", bg: "Парола"
+        sr: "Lozinka", en: "Password", de: "Passwort", fr: "Mot de passe", it: "Password", cs: "Heslo", tr: "Şifre", es: "Contraseña", nl: "Wachtwoord", ro: "Parolă", hu: "Jelszó", bg: "Парола"
     },
     email_placeholder: {
-        sr: "dispečer@kompanija.com", en: "dispatcher@company.com", de: "disponent@firma.at",
-        hr: "dispečer@tvrtka.hr", fr: "dispatcher@entreprise.fr", it: "dispatcher@azienda.it",
-        pl: "dyspozytor@firma.pl", cs: "dispečer@firma.cz"
+        sr: "dispečer@kompanija.com", en: "dispatcher@company.com", de: "disponent@firma.at", fr: "dispatcher@entreprise.fr", it: "dispatcher@azienda.it", cs: "dispečer@firma.cz"
     },
     forgot_password: {
-        sr: "Zaboravili ste lozinku?", en: "Forgot password?", de: "Passwort vergessen?",
-        hr: "Zaboravili ste lozinku?", fr: "Mot de passe oublié?", it: "Password dimenticata?",
-        pl: "Zapomniane hasło?", cs: "Zapomněli jste heslo?", tr: "Şifremi unuttum?",
-        es: "¿Olvidó su contraseña?", pt: "Esqueceu a senha?", nl: "Wachtwoord vergeten?"
+        sr: "Zaboravili ste lozinku?", en: "Forgot password?", de: "Passwort vergessen?", fr: "Mot de passe oublié?", it: "Password dimenticata?", cs: "Zapomněli jste heslo?", tr: "Şifremi unuttum?", pt: "Esqueceu a senha?", nl: "Wachtwoord vergeten?"
     },
     dispatcher_desktop_only_title: {
-        sr: "Samo desktop pristup", en: "Desktop access only", de: "Nur Desktop-Zugang",
-        hr: "Samo desktop pristup", fr: "Accès bureau uniquement", it: "Solo accesso desktop",
-        pl: "Tylko dostęp z komputera", cs: "Pouze přístup z počítače", tr: "Yalnızca masaüstü erişimi"
+        sr: "Samo desktop pristup", en: "Desktop access only", de: "Nur Desktop-Zugang", fr: "Accès bureau uniquement", it: "Solo accesso desktop", cs: "Pouze přístup z počítače", tr: "Yalnızca masaüstü erişimi"
     },
     dispatcher_desktop_only: {
         sr: "Prijava dispečera dozvoljena je samo sa odobrenih desktop računara.",
         en: "Dispatcher login is restricted to authorized desktop computers.",
-        de: "Die Disponent-Anmeldung ist nur auf zugelassenen Desktop-PCs erlaubt.",
-        hr: "Prijava dispečera dozvoljena je samo s odobrenih stolnih računala.",
-        fr: "La connexion du dispatcher est réservée aux ordinateurs de bureau autorisés.",
-        it: "L'accesso del dispatcher è riservato ai computer desktop autorizzati.",
-        pl: "Logowanie dyspozytora jest dozwolone tylko na autoryzowanych komputerach.",
-        cs: "Přihlášení dispečera je povoleno pouze na autorizovaných počítačích."
-    },
+        de: "Die Disponent-Anmeldung ist nur auf zugelassenen Desktop-PCs erlaubt."},
 
     // ── LOGIN GREŠKE ─────────────────────────────────────────────────────────
     error_fill_all_fields: {
-        sr: "Unesite e-mail i lozinku.", en: "Please enter email and password.", de: "Bitte E-Mail und Passwort eingeben.",
-        hr: "Unesite e-mail i lozinku.", fr: "Veuillez saisir l'e-mail et le mot de passe.", it: "Inserisci e-mail e password.",
-        pl: "Proszę podać adres e-mail i hasło.", cs: "Zadejte e-mail a heslo."
+        sr: "Unesite e-mail i lozinku.", en: "Please enter email and password.", de: "Bitte E-Mail und Passwort eingeben.", fr: "Veuillez saisir l'e-mail et le mot de passe.", it: "Inserisci e-mail e password.", cs: "Zadejte e-mail a heslo."
     },
     error_user_not_found: {
-        sr: "Nema naloga sa ovom e-mail adresom.", en: "No account found with this email.", de: "Kein Konto mit dieser E-Mail-Adresse gefunden.",
-        hr: "Nema naloga s ovom e-mail adresom.", fr: "Aucun compte trouvé avec cet e-mail.", it: "Nessun account trovato con questa email.",
-        pl: "Nie znaleziono konta z tym adresem e-mail.", cs: "Účet s tímto e-mailem nebyl nalezen."
+        sr: "Nema naloga sa ovom e-mail adresom.", en: "No account found with this email.", de: "Kein Konto mit dieser E-Mail-Adresse gefunden.", fr: "Aucun compte trouvé avec cet e-mail.", it: "Nessun account trovato con questa email.", cs: "Účet s tímto e-mailem nebyl nalezen."
     },
     error_wrong_password: {
-        sr: "Netačna lozinka.", en: "Incorrect password.", de: "Falsches Passwort.",
-        hr: "Netočna lozinka.", fr: "Mot de passe incorrect.", it: "Password errata.",
-        pl: "Nieprawidłowe hasło.", cs: "Nesprávné heslo."
+        sr: "Netačna lozinka.", en: "Incorrect password.", de: "Falsches Passwort.", fr: "Mot de passe incorrect.", it: "Password errata.", cs: "Nesprávné heslo."
     },
     error_too_many_requests: {
         sr: "Previše neuspešnih pokušaja. Pokušajte ponovo kasnije.", en: "Too many failed attempts. Try again later.",
-        de: "Zu viele fehlgeschlagene Versuche. Bitte später versuchen.",
-        hr: "Previše neuspješnih pokušaja. Pokušajte ponovo.", fr: "Trop de tentatives. Réessayez plus tard.",
-        pl: "Zbyt wiele nieudanych prób. Spróbuj później.", cs: "Příliš mnoho neúspěšných pokusů."
+        de: "Zu viele fehlgeschlagene Versuche. Bitte später versuchen.", fr: "Trop de tentatives. Réessayez plus tard.", cs: "Příliš mnoho neúspěšných pokusů."
     },
     error_account_disabled: {
         sr: "Ovaj nalog je deaktiviran. Kontaktirajte administratora.", en: "This account has been disabled.",
-        de: "Dieses Konto wurde deaktiviert.", hr: "Ovaj račun je onemogućen.",
-        fr: "Ce compte a été désactivé.", pl: "To konto zostało wyłączone.", cs: "Tento účet byl deaktivován."
+        de: "Dieses Konto wurde deaktiviert.", hr: "Ovaj račun je onemogućen.", pl: "To konto zostało wyłączone.", cs: "Tento účet byl deaktivován."
     },
     error_network: {
         sr: "Greška mreže. Proverite internet vezu.", en: "Network error. Check your connection.",
-        de: "Netzwerkfehler. Bitte Internetverbindung prüfen.", hr: "Greška mreže. Provjerite vezu.",
-        fr: "Erreur réseau. Vérifiez votre connexion.", pl: "Błąd sieci. Sprawdź połączenie.", cs: "Chyba sítě."
+        de: "Netzwerkfehler. Bitte Internetverbindung prüfen.", hr: "Greška mreže. Provjerite vezu.", pl: "Błąd sieci. Sprawdź połączenie.", cs: "Chyba sítě."
     },
     error_enter_email: {
         sr: "Unesite e-mail adresu za reset lozinke.", en: "Please enter your email address first.",
-        de: "Bitte zuerst die E-Mail-Adresse eingeben.", hr: "Unesite e-mail adresu za reset lozinke.",
-        fr: "Veuillez d'abord saisir votre adresse e-mail.", pl: "Najpierw wpisz adres e-mail.", cs: "Nejprve zadejte e-mailovou adresu."
+        de: "Bitte zuerst die E-Mail-Adresse eingeben.", hr: "Unesite e-mail adresu za reset lozinke.", pl: "Najpierw wpisz adres e-mail.", cs: "Nejprve zadejte e-mailovou adresu."
     },
     password_reset_sent: {
         sr: "E-poruka za resetovanje lozinke je poslata. Proverite poštansko sanduče.", en: "Password reset email sent. Check your inbox.",
-        de: "Passwort-Reset-E-Mail wurde gesendet. Bitte Postfach prüfen.",
-        hr: "E-mail za reset lozinke je poslan.", fr: "E-mail de réinitialisation envoyé.",
-        pl: "E-mail do resetowania hasła wysłany.", cs: "E-mail pro reset hesla byl odeslán."
+        de: "Passwort-Reset-E-Mail wurde gesendet. Bitte Postfach prüfen.", fr: "E-mail de réinitialisation envoyé.", cs: "E-mail pro reset hesla byl odeslán."
     },
     contact_admin: {
         sr: "Kontaktirajte administratora za reset lozinke.", en: "Contact your administrator to reset your password.",
-        de: "Wenden Sie sich an Ihren Administrator.", hr: "Kontaktirajte administratora.",
-        fr: "Contactez votre administrateur.", pl: "Skontaktuj się z administratorem.", cs: "Kontaktujte správce."
+        de: "Wenden Sie sich an Ihren Administrator.", hr: "Kontaktirajte administratora.", pl: "Skontaktuj się z administratorem.", cs: "Kontaktujte správce."
     },
     company_access_blocked: {
         sr: "Pristup firmi je suspendovan.", en: "Company access is suspended.",
-        de: "Firmenzugang ist gesperrt.", hr: "Pristup firmi je suspendiran.",
-        fr: "L'accès à l'entreprise est suspendu.", pl: "Dostęp do firmy został zawieszony.", cs: "Přístup firmy je pozastaven."
+        de: "Firmenzugang ist gesperrt.", hr: "Pristup firmi je suspendiran.", pl: "Dostęp do firmy został zawieszony.", cs: "Přístup firmy je pozastaven."
     },
     error_invalid_credentials: {
         sr: "Pogrešan email ili lozinka.", en: "Wrong email or password.",
-        de: "Falsche E-Mail oder falsches Passwort.",
-        hr: "Pogrešan email ili lozinka.", fr: "E-mail ou mot de passe incorrect.",
-        pl: "Nieprawidłowy e-mail lub hasło.", cs: "Nesprávný e-mail nebo heslo."
+        de: "Falsche E-Mail oder falsches Passwort.", fr: "E-mail ou mot de passe incorrect.", cs: "Nesprávný e-mail nebo heslo."
     },
     password_reset_generic: {
         sr: "Ako nalog postoji, poslata je poruka za reset lozinke.",
         en: "If an account exists, a password reset email has been sent.",
-        de: "Falls ein Konto existiert, wurde eine Passwort-Reset-E-Mail gesendet.",
-        hr: "Ako račun postoji, poslana je poruka za reset lozinke.",
-        fr: "Si un compte existe, un e-mail de réinitialisation a été envoyé.",
-        pl: "Jeśli konto istnieje, wysłano e-mail do resetowania hasła.",
-        cs: "Pokud účet existuje, byl odeslán e-mail pro reset hesla."
-    },
+        de: "Falls ein Konto existiert, wurde eine Passwort-Reset-E-Mail gesendet."},
     // Stable API error codes for driver login / identify (never toast raw server locale).
     api_error_INVALID_DATA: {
-        sr: "Nevažeći podaci.", en: "Invalid data.", de: "Ungültige Daten.",
-        hr: "Nevažeći podaci.", fr: "Données invalides.", pl: "Nieprawidłowe dane.", cs: "Neplatná data."
+        sr: "Nevažeći podaci.", en: "Invalid data.", de: "Ungültige Daten.", fr: "Données invalides.", pl: "Nieprawidłowe dane.", cs: "Neplatná data."
     },
     api_error_INVALID_LOGIN_PAYLOAD: {
-        sr: "Nevažeći podaci za prijavu.", en: "Invalid login details.", de: "Ungültige Anmeldedaten.",
-        hr: "Nevažeći podaci za prijavu.", fr: "Identifiants de connexion invalides.",
-        pl: "Nieprawidłowe dane logowania.", cs: "Neplatné přihlašovací údaje."
+        sr: "Nevažeći podaci za prijavu.", en: "Invalid login details.", de: "Ungültige Anmeldedaten.", fr: "Identifiants de connexion invalides.", cs: "Neplatné přihlašovací údaje."
     },
     api_error_DRIVER_NOT_FOUND: {
-        sr: "Vozač nije pronađen.", en: "Driver not found.", de: "Fahrer nicht gefunden.",
-        hr: "Vozač nije pronađen.", fr: "Conducteur introuvable.", pl: "Nie znaleziono kierowcy.", cs: "Řidič nenalezen."
+        sr: "Vozač nije pronađen.", en: "Driver not found.", de: "Fahrer nicht gefunden.", fr: "Conducteur introuvable.", pl: "Nie znaleziono kierowcy.", cs: "Řidič nenalezen."
     },
     api_error_INVALID_LOGIN: {
         sr: "Pogrešan kod ili vozač nije pronađen.", en: "Wrong code or driver not found.",
-        de: "Falscher Code oder Fahrer nicht gefunden.",
-        hr: "Pogrešan kod ili vozač nije pronađen.", fr: "Code incorrect ou conducteur introuvable.",
-        pl: "Błędny kod lub nie znaleziono kierowcy.", cs: "Špatný kód nebo řidič nenalezen."
+        de: "Falscher Code oder Fahrer nicht gefunden.", fr: "Code incorrect ou conducteur introuvable.", cs: "Špatný kód nebo řidič nenalezen."
     },
     api_error_INVALID_TOKEN: {
-        sr: "Nevažeći token.", en: "Invalid token.", de: "Ungültiges Token.",
-        hr: "Nevažeći token.", fr: "Jeton invalide.", pl: "Nieprawidłowy token.", cs: "Neplatný token."
+        sr: "Nevažeći token.", en: "Invalid token.", de: "Ungültiges Token.", fr: "Jeton invalide.", pl: "Nieprawidłowy token.", cs: "Neplatný token."
     },
     api_error_ACTIVATION_REQUIRED: {
         sr: "Aktivacija naloga je obavezna.", en: "Account activation is required.",
-        de: "Kontoaktivierung ist erforderlich.",
-        hr: "Aktivacija računa je obavezna.", fr: "L'activation du compte est requise.",
-        pl: "Wymagana jest aktywacja konta.", cs: "Je vyžadována aktivace účtu."
+        de: "Kontoaktivierung ist erforderlich.", fr: "L'activation du compte est requise.", cs: "Je vyžadována aktivace účtu."
     },
     api_error_FIREBASE_UNAVAILABLE: {
         sr: "Prijava trenutno nije dostupna.", en: "Sign-in is temporarily unavailable.",
-        de: "Anmeldung ist vorübergehend nicht verfügbar.",
-        hr: "Prijava trenutno nije dostupna.", fr: "La connexion est temporairement indisponible.",
-        pl: "Logowanie jest tymczasowo niedostępne.", cs: "Přihlášení je dočasně nedostupné."
+        de: "Anmeldung ist vorübergehend nicht verfügbar.", fr: "La connexion est temporairement indisponible.", cs: "Přihlášení je dočasně nedostupné."
     },
     api_error_LOGIN_FAILED: {
-        sr: "Prijava nije uspela.", en: "Sign-in failed.", de: "Anmeldung fehlgeschlagen.",
-        hr: "Prijava nije uspjela.", fr: "Échec de la connexion.", pl: "Logowanie nie powiodło się.", cs: "Přihlášení selhalo."
+        sr: "Prijava nije uspela.", en: "Sign-in failed.", de: "Anmeldung fehlgeschlagen.", fr: "Échec de la connexion.", pl: "Logowanie nie powiodło się.", cs: "Přihlášení selhalo."
     },
     api_error_MISSING_FIELDS: {
-        sr: "Popunite sva polja.", en: "Please fill in all fields.", de: "Bitte alle Felder ausfüllen.",
-        hr: "Ispunite sva polja.", fr: "Veuillez remplir tous les champs.",
-        pl: "Wypełnij wszystkie pola.", cs: "Vyplňte všechna pole."
+        sr: "Popunite sva polja.", en: "Please fill in all fields.", de: "Bitte alle Felder ausfüllen.", fr: "Veuillez remplir tous les champs.", cs: "Vyplňte všechna pole."
     },
     api_error_SERVER_ERROR: {
         sr: "Serverska greška. Proverite da li je server pokrenut.",
         en: "Server error. Check that the server is running.",
-        de: "Serverfehler. Prüfen Sie, ob der Server läuft.",
-        hr: "Serverska greška. Provjerite je li server pokrenut.",
-        fr: "Erreur serveur. Vérifiez que le serveur est démarré.",
-        pl: "Błąd serwera. Sprawdź, czy serwer działa.", cs: "Chyba serveru. Zkontrolujte, zda server běží."
+        de: "Serverfehler. Prüfen Sie, ob der Server läuft.", cs: "Chyba serveru. Zkontrolujte, zda server běží."
     },
     api_error_ACCOUNT_LOCKED: {
         sr: "Nalog je privremeno zaključan zbog previše pokušaja. Pokušajte za 15 minuta.",
         en: "The account is temporarily locked after too many attempts. Try again in 15 minutes.",
-        de: "Das Konto ist nach zu vielen Versuchen vorübergehend gesperrt. Versuchen Sie es in 15 Minuten erneut.",
-        hr: "Račun je privremeno zaključan zbog previše pokušaja. Pokušajte za 15 minuta.",
-        fr: "Le compte est temporairement verrouillé après trop de tentatives. Réessayez dans 15 minutes.",
-        pl: "Konto jest tymczasowo zablokowane po zbyt wielu próbach. Spróbuj za 15 minut.",
-        cs: "Účet je po příliš mnoha pokusech dočasně uzamčen. Zkuste to za 15 minut."
-    },
+        de: "Das Konto ist nach zu vielen Versuchen vorübergehend gesperrt. Versuchen Sie es in 15 Minuten erneut."},
     api_error_COMPANY_SUSPENDED: {
         sr: "Pristup firmi je suspendovan. Obratite se podršci.",
         en: "Company access is suspended. Contact support.",
-        de: "Der Firmenzugang ist gesperrt. Wenden Sie sich an den Support.",
-        hr: "Pristup tvrtki je suspendiran. Obratite se podršci.",
-        fr: "L'accès de l'entreprise est suspendu. Contactez le support.",
-        pl: "Dostęp firmy jest zawieszony. Skontaktuj się ze wsparciem.",
-        cs: "Přístup firmy je pozastaven. Kontaktujte podporu."
-    },
+        de: "Der Firmenzugang ist gesperrt. Wenden Sie sich an den Support."},
     api_error_DRIVER_IDENTIFY_DISABLED: {
         sr: "Prijavite se u jednom koraku: firma, EID i kod.",
         en: "Sign in in one step: company, EID and code.",
-        de: "Melden Sie sich in einem Schritt an: Firma, EID und Code.",
-        hr: "Prijavite se u jednom koraku: tvrtka, EID i kod.",
-        fr: "Connectez-vous en une étape : entreprise, EID et code.",
-        pl: "Zaloguj się w jednym kroku: firma, EID i kod.",
-        cs: "Přihlaste se v jednom kroku: firma, EID a kód."
-    },
+        de: "Melden Sie sich in einem Schritt an: Firma, EID und Code."},
     api_error_SESSION_SUPERSEDED: {
         sr: "Sesija je poništena. Prijavite se ponovo.",
         en: "The session was invalidated. Please sign in again.",
-        de: "Die Sitzung wurde ungültig. Bitte erneut anmelden.",
-        hr: "Sesija je poništena. Prijavite se ponovno.",
-        fr: "La session a été invalidée. Reconnectez-vous.",
-        pl: "Sesja została unieważniona. Zaloguj się ponownie.",
-        cs: "Relace byla zneplatněna. Přihlaste se znovu."
-    },
+        de: "Die Sitzung wurde ungültig. Bitte erneut anmelden."},
     session_invalidated_toast: {
         sr: "Sesija je istekla ili je prijava aktivna na drugom tabu.",
         en: "The session expired, or a sign-in is active in another tab.",
-        de: "Die Sitzung ist abgelaufen oder eine Anmeldung ist in einem anderen Tab aktiv.",
-        hr: "Sesija je istekla ili je prijava aktivna u drugoj kartici.",
-        fr: "La session a expiré ou une connexion est active dans un autre onglet.",
-        pl: "Sesja wygasła lub logowanie jest aktywne w innej karcie.",
-        cs: "Relace vypršela nebo je přihlášení aktivní na jiné kartě."
-    },
+        de: "Die Sitzung ist abgelaufen oder eine Anmeldung ist in einem anderen Tab aktiv."},
     auth_config_error: {
         sr: "Prijava trenutno nije dostupna. Obratite se podršci.",
         en: "Sign-in is currently unavailable. Please contact support.",
-        de: "Die Anmeldung ist derzeit nicht verfügbar. Bitte wenden Sie sich an den Support.",
-        hr: "Prijava trenutno nije dostupna. Obratite se podršci.",
-        fr: "La connexion est actuellement indisponible. Contactez le support.",
-        pl: "Logowanie jest obecnie niedostępne. Skontaktuj się ze wsparciem.",
-        cs: "Přihlášení je momentálně nedostupné. Kontaktujte podporu."
-    },
+        de: "Die Anmeldung ist derzeit nicht verfügbar. Bitte wenden Sie sich an den Support."},
     error_invalid_email: {
         sr: "Neispravna e-mail adresa.", en: "Invalid email address.",
-        de: "Ungültige E-Mail-Adresse.", hr: "Neispravna e-mail adresa.",
-        fr: "Adresse e-mail invalide.", pl: "Nieprawidłowy adres e-mail.", cs: "Neplatná e-mailová adresa."
+        de: "Ungültige E-Mail-Adresse.", hr: "Neispravna e-mail adresa.", pl: "Nieprawidłowy adres e-mail.", cs: "Neplatná e-mailová adresa."
     },
     error_sa_forbidden: {
         sr: "Nemate Super Admin pristup.", en: "You do not have Super Admin access.",
-        de: "Kein Super-Admin-Zugriff.", hr: "Nemate Super Admin pristup.",
-        fr: "Vous n'avez pas d'accès Super Admin.", pl: "Brak dostępu Super Admin.", cs: "Nemáte přístup Super Admin."
+        de: "Kein Super-Admin-Zugriff.", hr: "Nemate Super Admin pristup.", pl: "Brak dostępu Super Admin.", cs: "Nemáte přístup Super Admin."
     },
     error_login_generic: {
         sr: "Greška pri prijavi.", en: "Login error.",
-        de: "Anmeldefehler.", hr: "Greška pri prijavi.",
-        fr: "Erreur de connexion.", pl: "Błąd logowania.", cs: "Chyba přihlášení."
+        de: "Anmeldefehler.", hr: "Greška pri prijavi.", pl: "Błąd logowania.", cs: "Chyba přihlášení."
     },
     ca_reset_pwd_prod_hint: {
         sr: "U produkciji koristite „Zaboravljena lozinka“ na ekranu za prijavu.",
         en: "In production use Forgot password on the login screen.",
-        de: "In Produktion „Passwort vergessen“ auf dem Login-Bildschirm verwenden.",
-        hr: "U produkciji koristite „Zaboravljena lozinka“ na login ekranu.",
-        fr: "En production, utilisez Mot de passe oublié sur l'écran de connexion.",
-        pl: "W produkcji użyj „Zapomniałem hasła” na ekranie logowania.",
-        cs: "V produkci použijte Zapomenuté heslo na přihlašovací obrazovce."
-    }
+        de: "In Produktion „Passwort vergessen“ auf dem Login-Bildschirm verwenden."}
 };
 
 // Ubaci nove prevode u TRANSLATIONS
@@ -3124,6 +2456,66 @@ const PREVIEW_SECURITY_TRANSLATIONS = {
     company_name_required: { en: "Enter a company name.", de: "Firmennamen eingeben.", sr: "Unesite naziv firme." },
     company_created: { en: "Company {name} created (ID: {companyId}).", de: "Unternehmen {name} erstellt (ID: {companyId}).", sr: "Firma {name} je kreirana (ID: {companyId})." },
     admin_created: { en: "Company admin {name} created.", de: "Firmen-Admin {name} erstellt.", sr: "Administrator firme {name} je kreiran." },
+    sa_create_retry_ca: {
+        en: "Retry company admin",
+        de: "Firmenadmin erneut versuchen",
+        sr: "Ponovi kreiranje administratora"
+    },
+    sa_create_partial_company_ok_ca_fail: {
+        en: "Company created (ID: {companyId}), but the company admin was not created. Fix the admin fields and retry only the admin step.",
+        de: "Unternehmen erstellt (ID: {companyId}), aber der Firmenadmin wurde nicht erstellt. Adminfelder korrigieren und nur den Adminschritt wiederholen.",
+        sr: "Firma je kreirana (ID: {companyId}), ali administrator nije. Ispravite podatke administratora i ponovite samo taj korak."
+    },
+    sa_create_close_partial_confirm: {
+        en: "The company already exists, but the company admin was not created. Leave without finishing the admin step?",
+        de: "Das Unternehmen existiert bereits, aber der Firmenadmin wurde nicht erstellt. Ohne Adminschritt verlassen?",
+        sr: "Firma već postoji, ali administrator nije kreiran. Napustiti bez završetka admin koraka?"
+    },
+    sa_create_close_unknown_confirm: {
+        en: "Company create result is not confirmed. Check the company list / Manage account. Company-admin retry is not allowed. Leaving does not mean the company was confirmed created. Leave anyway?",
+        de: "Ergebnis der Firmenerstellung ist nicht bestätigt. Firmenliste / Konto verwalten prüfen. Firmenadmin-Wiederholung ist nicht erlaubt. Verlassen bedeutet nicht, dass die Firma bestätigt erstellt wurde. Trotzdem verlassen?",
+        sr: "Ishod kreiranja firme nije potvrđen. Proverite listu firmi / Upravljaj nalogom. Ponavljanje administratora nije dozvoljeno. Napuštanje ne znači da je firma potvrđeno kreirana. Ipak napustiti?"
+    },
+    sa_create_leave_partial: {
+        en: "Leave incomplete",
+        de: "Unvollständig verlassen",
+        sr: "Napusti nepotpuno"
+    },
+    sa_create_partial_abandoned_hint: {
+        en: "Company remains created. Reopen New company / Admin in this session to retry the admin step.",
+        de: "Unternehmen bleibt erstellt. In dieser Sitzung erneut „Neue Firma / Admin“ öffnen, um den Adminschritt zu wiederholen.",
+        sr: "Firma ostaje kreirana. Ponovo otvorite Nova firma / Admin u ovoj sesiji da ponovite admin korak."
+    },
+    sa_create_unknown_abandoned_hint: {
+        en: "Create result stays unconfirmed. Check the company list / Manage account before trying again.",
+        de: "Ergebnis bleibt unbestätigt. Firmenliste / Konto verwalten prüfen, bevor erneut versucht wird.",
+        sr: "Ishod ostaje nepotvrđen. Proverite listu firmi / Upravljaj nalogom pre ponovnog pokušaja."
+    },
+    sa_create_unknown_check_company: {
+        en: "Company create result is unclear. Check the company list / Manage account before trying again.",
+        de: "Ergebnis der Firmenerstellung ist unklar. Firmenliste / Konto verwalten prüfen, bevor erneut versucht wird.",
+        sr: "Ishod kreiranja firme nije jasan. Proverite listu firmi / Upravljaj nalogom pre ponovnog pokušaja."
+    },
+    sa_create_busy_wait: {
+        en: "Please wait — create is still in progress.",
+        de: "Bitte warten — Erstellung läuft noch.",
+        sr: "Sačekajte — kreiranje je još u toku."
+    },
+    sa_create_ca_requires_pending: {
+        en: "Company admin retry is available only after a confirmed company create in this session.",
+        de: "Firmenadmin-Wiederholung ist nur nach bestätigter Firmenerstellung in dieser Sitzung möglich.",
+        sr: "Ponavljanje administratora dostupno je samo posle potvrđenog kreiranja firme u ovoj sesiji."
+    },
+    sa_create_chunk_load_failed: {
+        en: "Create-company module could not be loaded. Check your connection, then try again.",
+        de: "Modul zur Firmenerstellung konnte nicht geladen werden. Verbindung prüfen, dann erneut versuchen.",
+        sr: "Modul za kreiranje firme nije učitan. Proverite vezu, zatim pokušajte ponovo."
+    },
+    sa_create_company_exists: {
+        en: "A company with this ID already exists.",
+        de: "Ein Unternehmen mit dieser ID existiert bereits.",
+        sr: "Firma sa ovim ID-jem već postoji."
+    },
     export_downloaded: { en: "{filename} downloaded.", de: "{filename} heruntergeladen.", sr: "{filename} je preuzet." },
     group_id_label: { en: "Group ID", de: "Gruppen-ID", sr: "ID grupe" },
     location_label: { en: "Location", de: "Ort", sr: "Lokacija" },
@@ -3150,9 +2542,9 @@ const PREVIEW_SECURITY_TRANSLATIONS = {
     },
     sa_companies_panel_title: { en: "Companies", de: "Unternehmen", sr: "Firme" },
     sa_companies_panel_hint: {
-        en: "Open, suspend, support or permanently delete each company.",
-        de: "Öffnen, sperren, Support starten oder Firma dauerhaft löschen.",
-        sr: "Otvori, suspenduj, podrška ili trajno obriši svaku firmu."
+        en: "Manage account settings, suspend, start audited support, or permanently delete each company.",
+        de: "Kontoeinstellungen verwalten, sperren, geprüften Support starten oder Firma dauerhaft löschen.",
+        sr: "Upravljaj nalogom, suspenduj, pokreni auditovanu podršku ili trajno obriši svaku firmu."
     },
     sa_companies_empty: {
         en: "No companies yet. Register one above.",
@@ -3161,8 +2553,18 @@ const PREVIEW_SECURITY_TRANSLATIONS = {
     },
     sa_copy_company_id: { en: "Copy ID", de: "ID kopieren", sr: "Kopiraj ID" },
     sa_company_id_copied: { en: "Company ID copied: {id}", de: "Firmen-ID kopiert: {id}", sr: "Company ID kopiran: {id}" },
-    sa_detail_title: { en: "Company details", de: "Firmendetails", sr: "Detalji firme" },
-    sa_detail_open: { en: "Details", de: "Details", sr: "Detalji" },
+    sa_detail_title: { en: "Manage company account", de: "Firmenkonto verwalten", sr: "Upravljanje nalogom firme" },
+    sa_detail_open: { en: "Manage account", de: "Konto verwalten", sr: "Upravljaj nalogom" },
+    sa_support_start_audited: {
+        en: "Start audited support",
+        de: "Geprüften Support starten",
+        sr: "Pokreni auditovanu podršku"
+    },
+    plan_import_choose_files: {
+        en: "Choose files",
+        de: "Dateien auswählen",
+        sr: "Izaberi fajlove"
+    },
     sa_detail_trial: { en: "Trial ends", de: "Test endet", sr: "Trial ističe" },
     sa_detail_support: { en: "Support", de: "Support", sr: "Support" },
     sa_detail_support_active: { en: "Active now", de: "Jetzt aktiv", sr: "Trenutno aktivno" },
@@ -3170,6 +2572,36 @@ const PREVIEW_SECURITY_TRANSLATIONS = {
     sa_detail_support_off: { en: "Off", de: "Aus", sr: "Isključeno" },
     sa_detail_admins_title: { en: "Company admins", de: "Firmen-Admins", sr: "Administratori firme" },
     sa_detail_no_admins: { en: "No company admins yet.", de: "Noch keine Firmen-Admins.", sr: "Još nema administratora firme." },
+    sa_detail_create_company_admin: {
+        en: "Create company admin",
+        de: "Firmenadmin erstellen",
+        sr: "Kreiraj administratora firme"
+    },
+    sa_detail_create_missing_title: {
+        en: "New company admin",
+        de: "Neuer Firmenadmin",
+        sr: "Novi administrator firme"
+    },
+    sa_detail_create_missing_name: { en: "Admin name", de: "Admin-Name", sr: "Ime administratora" },
+    sa_detail_create_missing_email: { en: "Email", de: "E-Mail", sr: "Email" },
+    sa_detail_create_missing_password: { en: "Password", de: "Passwort", sr: "Lozinka" },
+    sa_detail_create_missing_save: { en: "Create", de: "Erstellen", sr: "Kreiraj" },
+    sa_detail_create_missing_cancel: { en: "Cancel", de: "Abbrechen", sr: "Otkaži" },
+    sa_detail_create_missing_success: {
+        en: "Company admin created.",
+        de: "Firmenadmin erstellt.",
+        sr: "Administrator firme je kreiran."
+    },
+    sa_detail_create_missing_busy: {
+        en: "Create already in progress. Please wait.",
+        de: "Erstellung läuft bereits. Bitte warten.",
+        sr: "Kreiranje je već u toku. Sačekajte."
+    },
+    sa_detail_ca_slot_orphan: {
+        en: "Company admin slot is claimed but no admin profile exists. Contact ops — create is blocked.",
+        de: "Firmenadmin-Slot ist belegt, aber kein Admin-Profil vorhanden. Ops kontaktieren — Erstellen gesperrt.",
+        sr: "Slot administratora firme je zauzet, ali profil ne postoji. Kontaktirajte ops — kreiranje je blokirano."
+    },
     sa_detail_admin_active: { en: "Active", de: "Aktiv", sr: "Aktivan" },
     sa_detail_admin_inactive: { en: "Disabled", de: "Deaktiviert", sr: "Onemogućen" },
     sa_detail_reset_password: { en: "Reset password", de: "Passwort zurücksetzen", sr: "Reset lozinke" },
@@ -3241,29 +2673,9 @@ for (const [key, values] of Object.entries(PREVIEW_SECURITY_TRANSLATIONS)) {
     for (const lang of ["en", "de", "sr"]) TRANSLATIONS[lang][key] = values[lang];
 }
 
-// 2. HR (Hrvatski) pametni fallback — preuzima sve nedostajuće ključeve iz srpskog (sr) i prilagođava ih
-if (TRANSLATIONS.hr && TRANSLATIONS.sr) {
-    for (const key in TRANSLATIONS.sr) {
-        if (!TRANSLATIONS.hr[key]) {
-            let val = TRANSLATIONS.sr[key];
-            val = val.replace(/prevoz/g, "prijevoz")
-                     .replace(/Prevoz/g, "Prijevoz")
-                     .replace(/smena/g, "smjena")
-                     .replace(/Smena/g, "Smjena")
-                     .replace(/rešeno/g, "riješeno")
-                     .replace(/Rešeno/g, "Riješeno")
-                     .replace(/saopšteno/g, "priopćeno")
-                     .replace(/podešavanja/g, "postavke")
-                     .replace(/Podešavanja/g, "Postavke")
-                     .replace(/obriši/g, "izbriši")
-                     .replace(/Obriši/g, "Izbriši");
-            TRANSLATIONS.hr[key] = val;
-        }
-    }
-}
 
 // 3. Opšti EN (English) fallback — za sve preostale ključeve u svim jezicima
-for (const lang of ["sr", "hr", "de", "es", "fr", "it", "tr", "pl", "pt", "nl", "ro", "hu", "cs", "sk", "bg"]) {
+for (const lang of ["sr", "de"]) {
     if (!TRANSLATIONS[lang]) TRANSLATIONS[lang] = {};
     for (const key in TRANSLATIONS.en) {
         if (!TRANSLATIONS[lang][key]) {
@@ -3758,7 +3170,7 @@ const MISSING_EN = {
     hub_import_monthly_need_group: "Open a group first.",
     daily_filled_from_monthly: "Daily plan is filled from the imported/edited monthly Dienstplan.",
     monthly_export_csv: "Export CSV",
-    monthly_export_done: "CSV exported ({days} work days).",
+    monthly_export_done: "CSV exported ({days} days).",
     monthly_no_empty_plan: "Empty plans are not supported. Import a Dienstplan or edit individual days.",
     license_badge_trial_days: "Trial: {days} days",
     hub_edit_drivers:     "View drivers",
@@ -3797,7 +3209,7 @@ const MISSING_EN = {
     monthly_col_edit:     "Edit",
     monthly_btn_edit:     "Edit",
     monthly_btn_edit_pick:"Edit day (pick)",
-    monthly_summary:      "{driver} · {month} · {days} work days in plan",
+    monthly_summary:      "{driver} · {month} · {days} days",
     monthly_default_bus:  "default bus",
     hub_monthly_no_drivers:"No drivers. Import CSV or add drivers.",
     hub_monthly_stats:    "{count} drivers · {plans} plans · {withPlans} with data",
@@ -4334,6 +3746,29 @@ const MISSING_EN = {
     plan_import_days: "Parsed days", plan_import_status: "Status", plan_import_ok: "OK",
     plan_import_review: "Review manually", btn_remove: "Remove",
     plan_import_save_all: "Save all plans", plan_import_clear: "Clear preview",
+    plan_import_server_preview: "Server preview",
+    plan_import_server_preview_title: "Server preview",
+    plan_import_server_preview_ready: "Server preview ready — confirm to commit.",
+    plan_import_previewing: "Validating on server…",
+    plan_import_confirm_commit: "Confirm import",
+    plan_import_committing: "Committing…",
+    plan_import_validation_failed: "Import validation failed — nothing was saved.",
+    plan_import_commit_failed: "Import was not committed. Partial changes were rolled back.",
+    plan_import_commit_failed_no_rollback: "Import was not committed.",
+    plan_import_server_required: "Monthly import requires a live server preview and commit. Local mode cannot fake success.",
+    plan_import_rows: "rows",
+    plan_import_multi_month_blocked: "Import one calendar month at a time. Remove other months before server preview.",
+    plan_import_driver_ambiguous: "Multiple drivers share this name — select the correct one.",
+    plan_import_driver_ambiguous_hint: "Same display name — pick the correct ID.",
+    plan_import_pick_driver: "Select driver",
+    plan_import_recovery_required: "Import recovery required — do not treat the plan as clean. Clear preview does not clear server lock or data.",
+    plan_import_preview_transport_failed: "Server preview could not be reached. Pending files are kept — retry preview.",
+    plan_import_commit_unknown: "Commit outcome is not confirmed (network interrupted). Same import is retained — retry the idempotent commit.",
+    plan_import_commit_in_progress: "Import is still processing — try again shortly.",
+    plan_import_retry_commit: "Retry commit",
+    plan_import_idempotent_success: "Import already applied — plan reloaded.",
+    plan_import_chunk_load_failed: "Monthly import module could not be loaded. Check your connection, then choose the file again.",
+    msg_compose_chunk_load_failed: "Messages module could not be loaded. Check your connection, then try again.",
     shift_type_bereitschaft: "x2 on-call duty",
     daily_bereitschaft_hint: "Position 1 is always x2 on-call duty (Mon–Fri) — one driver.",
     on_call_label: "x2 on-call duty",
@@ -4771,7 +4206,7 @@ const MISSING_SR = {
     hub_import_monthly_need_group: "Prvo otvorite grupu.",
     daily_filled_from_monthly: "Dnevni plan se puni iz uvezenog/uređenog mesečnog Dienstplana.",
     monthly_export_csv: "Izvezi CSV",
-    monthly_export_done: "Izvezen CSV ({days} radnih dana).",
+    monthly_export_done: "Izvezen CSV ({days} dana).",
     monthly_no_empty_plan: "Prazan plan nije podržan. Uvezite Dienstplan ili uredite pojedinačne dane.",
     license_badge_trial_days: "Probni: {days} dana",
     hub_edit_drivers:     "Prikaži vozače",
@@ -4810,7 +4245,7 @@ const MISSING_SR = {
     monthly_col_edit:     "Uredi",
     monthly_btn_edit:     "Uredi",
     monthly_btn_edit_pick:"Uredi dan (izbor)",
-    monthly_summary:      "{driver} · {month} · {days} radnih dana u planu",
+    monthly_summary:      "{driver} · {month} · {days} dana",
     monthly_default_bus:  "podrazumevani autobus",
     hub_monthly_no_drivers:"Nema vozača. Uvezite CSV ili dodajte vozače.",
     hub_monthly_stats:    "{count} vozača · {plans} planova · {withPlans} sa podacima",
@@ -5347,6 +4782,29 @@ const MISSING_SR = {
     plan_import_days: "Parsiranih dana", plan_import_status: "Status", plan_import_ok: "U redu",
     plan_import_review: "Proverite ručno", btn_remove: "Ukloni",
     plan_import_save_all: "Snimi sve planove", plan_import_clear: "Obriši pregled",
+    plan_import_server_preview: "Serverski pregled",
+    plan_import_server_preview_title: "Serverski pregled",
+    plan_import_server_preview_ready: "Serverski pregled spreman — potvrdite uvoz.",
+    plan_import_previewing: "Provera na serveru…",
+    plan_import_confirm_commit: "Potvrdi uvoz",
+    plan_import_committing: "Upis u toku…",
+    plan_import_validation_failed: "Validacija uvoza nije uspela — ništa nije sačuvano.",
+    plan_import_commit_failed: "Uvoz nije potvrđen. Delimične izmene su poništene.",
+    plan_import_commit_failed_no_rollback: "Uvoz nije potvrđen.",
+    plan_import_server_required: "Mesečni uvoz zahteva serverski pregled i potvrdu. Lokalni režim ne može da lažira uspeh.",
+    plan_import_rows: "redova",
+    plan_import_multi_month_blocked: "Uvozite jedan kalendarski mesec odjednom. Uklonite druge mesece pre serverskog pregleda.",
+    plan_import_driver_ambiguous: "Više vozača ima isto ime — izaberite tačnog.",
+    plan_import_driver_ambiguous_hint: "Isto prikazano ime — izaberite tačan ID.",
+    plan_import_pick_driver: "Izaberite vozača",
+    plan_import_recovery_required: "Potreban je oporavak uvoza — ne smatrajte plan čistim. Brisanje pregleda ne čisti serverski lock ni podatke.",
+    plan_import_preview_transport_failed: "Serverski pregled nije dostupan. Fajlovi ostaju — pokušajte pregled ponovo.",
+    plan_import_commit_unknown: "Ishod potvrde nije potvrđen (prekid mreže). Isti uvoz je zadržan — ponovite idempotentni commit.",
+    plan_import_commit_in_progress: "Uvoz se još obrađuje — pokušajte ponovo uskoro.",
+    plan_import_retry_commit: "Ponovi potvrdu",
+    plan_import_idempotent_success: "Uvoz je već primenjen — plan je ponovo učitan.",
+    plan_import_chunk_load_failed: "Modul za mesečni uvoz nije učitan. Proverite vezu, zatim ponovo izaberite fajl.",
+    msg_compose_chunk_load_failed: "Modul za poruke nije učitan. Proverite vezu, zatim pokušajte ponovo.",
     shift_type_bereitschaft: "x2 dežurstvo",
     daily_bereitschaft_hint: "Pozicija 1 je uvek x2 dežurstvo (pon–pet) — jedan vozač.",
     on_call_label: "x2 dežurstvo",
@@ -5634,7 +5092,7 @@ const MISSING_DE = {
     hub_import_monthly_need_group: "Zuerst eine Gruppe öffnen.",
     daily_filled_from_monthly: "Der Tagesplan wird aus dem importierten/bearbeiteten Monats-Dienstplan gefüllt.",
     monthly_export_csv: "CSV exportieren",
-    monthly_export_done: "CSV exportiert ({days} Arbeitstage).",
+    monthly_export_done: "CSV exportiert ({days} Tage).",
     monthly_no_empty_plan: "Leere Pläne werden nicht unterstützt. Dienstplan importieren oder einzelne Tage bearbeiten.",
     license_badge_trial_days: "Testphase: {days} Tage",
     hub_edit_drivers:     "Fahrer anzeigen",
@@ -5673,7 +5131,7 @@ const MISSING_DE = {
     monthly_col_edit:     "Bearbeiten",
     monthly_btn_edit:     "Bearbeiten",
     monthly_btn_edit_pick:"Tag bearbeiten (Auswahl)",
-    monthly_summary:      "{driver} · {month} · {days} Arbeitstage im Plan",
+    monthly_summary:      "{driver} · {month} · {days} Tage",
     monthly_default_bus:  "Standard-Bus",
     hub_monthly_no_drivers:"Keine Fahrer. CSV importieren oder Fahrer hinzufügen.",
     hub_monthly_stats:    "{count} Fahrer · {plans} Pläne · {withPlans} mit Daten",
@@ -6210,6 +5668,29 @@ const MISSING_DE = {
     plan_import_days: "Gelesene Tage", plan_import_status: "Status", plan_import_ok: "OK",
     plan_import_review: "Manuell prüfen", btn_remove: "Entfernen",
     plan_import_save_all: "Alle Pläne speichern", plan_import_clear: "Vorschau löschen",
+    plan_import_server_preview: "Server-Vorschau",
+    plan_import_server_preview_title: "Server-Vorschau",
+    plan_import_server_preview_ready: "Server-Vorschau bereit — Import bestätigen.",
+    plan_import_previewing: "Server prüft…",
+    plan_import_confirm_commit: "Import bestätigen",
+    plan_import_committing: "Wird gespeichert…",
+    plan_import_validation_failed: "Import-Validierung fehlgeschlagen — nichts gespeichert.",
+    plan_import_commit_failed: "Import nicht bestätigt. Teiländerungen wurden zurückgenommen.",
+    plan_import_commit_failed_no_rollback: "Import nicht bestätigt.",
+    plan_import_server_required: "Monatsimport braucht Server-Vorschau und Commit. Lokaler Modus darf keinen Erfolg vortäuschen.",
+    plan_import_rows: "Zeilen",
+    plan_import_multi_month_blocked: "Importieren Sie jeweils einen Kalendermonat. Entfernen Sie andere Monate vor der Server-Vorschau.",
+    plan_import_driver_ambiguous: "Mehrere Fahrer haben denselben Namen — bitte auswählen.",
+    plan_import_driver_ambiguous_hint: "Gleicher Anzeigename — korrekte ID wählen.",
+    plan_import_pick_driver: "Fahrer wählen",
+    plan_import_recovery_required: "Import-Wiederherstellung nötig — Plan nicht als sauber annehmen. Vorschau löschen entfernt weder Server-Lock noch Daten.",
+    plan_import_preview_transport_failed: "Server-Vorschau nicht erreichbar. Dateien bleiben — Vorschau erneut versuchen.",
+    plan_import_commit_unknown: "Commit-Ergebnis unbestätigt (Netzwerk unterbrochen). Derselbe Import bleibt — idempotenten Commit wiederholen.",
+    plan_import_commit_in_progress: "Import wird noch verarbeitet — bitte bald erneut versuchen.",
+    plan_import_retry_commit: "Commit wiederholen",
+    plan_import_idempotent_success: "Import bereits angewendet — Plan neu geladen.",
+    plan_import_chunk_load_failed: "Monatsimport-Modul konnte nicht geladen werden. Verbindung prüfen, dann Datei erneut auswählen.",
+    msg_compose_chunk_load_failed: "Nachrichten-Modul konnte nicht geladen werden. Verbindung prüfen, dann erneut versuchen.",
     shift_type_bereitschaft: "x2 Bereitschaftsdienst",
     daily_bereitschaft_hint: "Position 1 ist immer x2 Bereitschaftsdienst (Mo–Fr) — ein Fahrer.",
     on_call_label: "x2 Bereitschaftsdienst",
@@ -6229,7 +5710,7 @@ Object.assign(TRANSLATIONS.en, {
     ca_drivers_subtitle: "Import, review and control driver access. Shift scheduling remains the dispatcher's responsibility.",
     ca_drivers_download_template: "Download CSV template", ca_drivers_total: "Total", ca_drivers_groups_covered: "Groups with drivers",
     ca_drivers_import_kicker: "NEW ACCOUNTS", ca_drivers_import_title: "Import drivers into the selected group",
-    ca_drivers_import_hint: "Accepts blank BusCommand CSV: eid, first_name, last_name, phone, email, company_code. Select a fallback group; buses are entered manually per group (no bus CSV).",
+    ca_drivers_import_hint: "Accepts blank BusCommand CSV: eid, first_name, last_name, phone, email. Select a fallback group; buses are entered manually per group (no bus CSV). Activation uses SMS OTP.",
     ca_drivers_choose_file: "Choose CSV file", ca_drivers_file_rules: "UTF-8 CSV · max 1 MB · up to 250 drivers",
     ca_drivers_security_note: "The system generates a one-time six-digit activation code and sends it by SMS. The driver then chooses a personal code.",
     ca_drivers_directory_kicker: "DIRECTORY", ca_drivers_directory_title: "Company drivers",
@@ -6267,10 +5748,14 @@ Object.assign(TRANSLATIONS.en, {
     ca_drivers_add_extra_groups_hint: "All Dispos of selected groups see this driver.",
     ca_drivers_add_phone_e164: "Phone must be E.164 (e.g. +436991234567).",
     ca_drivers_add_pin_invalid: "PIN must be 5–12 digits.",
-    ca_drivers_add_success: "Driver added. SMS sent; login PIN set.",
+    ca_drivers_add_success: "Driver added. Login PIN set (shown once).",
     ca_drivers_add_hint: "Order: EID, first, last, email, phone, PIN, group(s).",
-    ca_drivers_add_sms_note: "SMS activation to the phone; entered PIN becomes login code.",
-    ca_drivers_add_submit: "Add driver and send SMS", ca_drivers_add_title: "Add driver manually",
+    ca_drivers_add_sms_note: "PIN becomes the login code immediately. No OTP is stored in profile or audit.",
+    ca_drivers_add_submit: "Add driver", ca_drivers_add_title: "Add driver manually",
+    ca_drivers_add_failed: "Driver could not be created. Nothing was left half-finished.",
+    ca_drivers_eid_exists: "A driver with this employee ID already exists.",
+    ca_drivers_legacy_company_code_ignored: "Legacy company_code column was ignored. Drivers activate with an SMS code, then set a personal PIN.",
+    ca_drivers_import_conflict: "Import blocked: a driver identity already exists.",
     ca_drivers_add_open: "Add driver",
     ca_drivers_add_kicker: "ONE DRIVER",
     ca_drivers_edit_email_invalid: "Email address is invalid.",
@@ -6293,7 +5778,7 @@ Object.assign(TRANSLATIONS.sr, {
     ca_drivers_subtitle: "Uvoz, pregled i kontrola pristupa vozača. Raspored smena ostaje u nadležnosti dispečera.",
     ca_drivers_download_template: "Preuzmi CSV šablon", ca_drivers_total: "Ukupno", ca_drivers_groups_covered: "Grupe sa vozačima",
     ca_drivers_import_kicker: "NOVI NALOZI", ca_drivers_import_title: "Uvezite vozače u izabranu grupu",
-    ca_drivers_import_hint: "Prihvata prazan BusCommand CSV: eid, first_name, last_name, phone, email, company_code. Izaberite grupu; buseve unosite ručno po grupi (nema CSV za buseve).",
+    ca_drivers_import_hint: "Prihvata prazan BusCommand CSV: eid, first_name, last_name, phone, email. Izaberite grupu; buseve unosite ručno po grupi (nema CSV za buseve). Aktivacija ide SMS OTP-om.",
     ca_drivers_choose_file: "Izaberi CSV fajl", ca_drivers_file_rules: "UTF-8 CSV · najviše 1 MB · do 250 vozača",
     ca_drivers_security_note: "Sistem generiše jednokratni šestocifreni aktivacioni kod i šalje ga SMS-om. Vozač zatim bira lični kod.",
     ca_drivers_directory_kicker: "EVIDENCIJA", ca_drivers_directory_title: "Vozači firme",
@@ -6331,10 +5816,14 @@ Object.assign(TRANSLATIONS.sr, {
     ca_drivers_add_extra_groups_hint: "Disponenti označenih grupa vide ovog vozača.",
     ca_drivers_add_phone_e164: "Telefon mora biti E.164 (npr. +436991234567).",
     ca_drivers_add_pin_invalid: "PIN mora imati 5–12 cifara.",
-    ca_drivers_add_success: "Vozač dodat. SMS poslat; prijavni PIN postavljen.",
+    ca_drivers_add_success: "Vozač dodat. Prijavni PIN postavljen (prikaz jednom).",
     ca_drivers_add_hint: "Redosled: EID, ime, prezime, email, telefon, PIN, grupa(e).",
-    ca_drivers_add_sms_note: "SMS aktivacija na telefon; uneti PIN postaje prijavni kod.",
-    ca_drivers_add_submit: "Dodaj vozača i pošalji SMS", ca_drivers_add_title: "Dodaj vozača ručno",
+    ca_drivers_add_sms_note: "PIN odmah postaje prijavni kod. OTP se ne čuva u profilu ni auditu.",
+    ca_drivers_add_submit: "Dodaj vozača", ca_drivers_add_title: "Dodaj vozača ručno",
+    ca_drivers_add_failed: "Vozač nije kreiran. Ništa nije ostalo polovično.",
+    ca_drivers_eid_exists: "Vozač sa ovim EID-om već postoji.",
+    ca_drivers_legacy_company_code_ignored: "Zastarela kolona company_code je ignorisana. Vozači se aktiviraju SMS kodom, zatim postavljaju lični PIN.",
+    ca_drivers_import_conflict: "Uvoz blokiran: identitet vozača već postoji.",
     ca_drivers_add_open: "+ Dodaj vozača",
     ca_drivers_add_kicker: "JEDAN VOZAČ",
     ca_drivers_edit_email_invalid: "Email adresa nije ispravna.",
@@ -6357,7 +5846,7 @@ Object.assign(TRANSLATIONS.de, {
     ca_drivers_subtitle: "Fahrerzugänge importieren, prüfen und steuern. Die Dienstplanung bleibt Aufgabe der Disposition.",
     ca_drivers_download_template: "CSV-Vorlage herunterladen", ca_drivers_total: "Gesamt", ca_drivers_groups_covered: "Gruppen mit Fahrern",
     ca_drivers_import_kicker: "NEUE KONTEN", ca_drivers_import_title: "Fahrer in die gewählte Gruppe importieren",
-    ca_drivers_import_hint: "Akzeptiert leere BusCommand-CSV: eid, first_name, last_name, phone, email, company_code. Gruppe wählen; Busse werden manuell pro Gruppe erfasst (kein Bus-CSV).",
+    ca_drivers_import_hint: "Akzeptiert leere BusCommand-CSV: eid, first_name, last_name, phone, email. Gruppe wählen; Busse werden manuell pro Gruppe erfasst (kein Bus-CSV). Aktivierung per SMS-OTP.",
     ca_drivers_choose_file: "CSV-Datei auswählen", ca_drivers_file_rules: "UTF-8 CSV · maximal 1 MB · bis 250 Fahrer",
     ca_drivers_security_note: "Das System erzeugt einen einmaligen sechsstelligen Aktivierungscode und sendet ihn per SMS. Danach wählt der Fahrer einen persönlichen Code.",
     ca_drivers_directory_kicker: "VERZEICHNIS", ca_drivers_directory_title: "Fahrer der Firma",
@@ -6395,10 +5884,14 @@ Object.assign(TRANSLATIONS.de, {
     ca_drivers_add_extra_groups_hint: "Disponenten der gewählten Gruppen sehen diesen Fahrer.",
     ca_drivers_add_phone_e164: "Telefon muss E.164 sein (z. B. +436991234567).",
     ca_drivers_add_pin_invalid: "PIN muss 5–12 Ziffern haben.",
-    ca_drivers_add_success: "Fahrer angelegt. SMS gesendet; Login-PIN gesetzt.",
+    ca_drivers_add_success: "Fahrer angelegt. Login-PIN gesetzt (einmal angezeigt).",
     ca_drivers_add_hint: "Reihenfolge: EID, Vorname, Nachname, E-Mail, Telefon, PIN, Gruppe(n).",
-    ca_drivers_add_sms_note: "SMS-Aktivierung an Telefon; PIN wird zum Login-Code.",
-    ca_drivers_add_submit: "Fahrer hinzufügen und SMS senden", ca_drivers_add_title: "Fahrer manuell hinzufügen",
+    ca_drivers_add_sms_note: "PIN wird sofort zum Login-Code. OTP wird nicht in Profil oder Audit gespeichert.",
+    ca_drivers_add_submit: "Fahrer hinzufügen", ca_drivers_add_title: "Fahrer manuell hinzufügen",
+    ca_drivers_add_failed: "Fahrer konnte nicht angelegt werden. Nichts blieb halb fertig.",
+    ca_drivers_eid_exists: "Ein Fahrer mit dieser Mitarbeiter-ID existiert bereits.",
+    ca_drivers_legacy_company_code_ignored: "Die veraltete Spalte company_code wurde ignoriert. Fahrer aktivieren sich per SMS-Code und setzen danach eine persönliche PIN.",
+    ca_drivers_import_conflict: "Import blockiert: eine Fahreridentität existiert bereits.",
     ca_drivers_add_open: "+ Fahrer hinzufügen",
     ca_drivers_add_kicker: "EIN FAHRER",
     ca_drivers_edit_email_invalid: "E-Mail-Adresse ist ungültig.",
@@ -6875,7 +6368,19 @@ Object.assign(TRANSLATIONS.en, {
     plan_lock_break_confirm: "Force-release this plan lock? This is audited.",
     plan_lock_broken: "Lock broken.",
     plan_lock_break_failed: "Break failed.",
-    ops_bus_cross_group_warn: "Bus {bus} is already on an active shift in group {group} ({driver}). Assignment saved — check coverage.",
+    ops_bus_cross_group_warn: "Bus {bus} is already on an active shift in group {group} ({driver}). Assignment blocked.",
+    ops_bus_conflict_blocked: "Bus {bus} is already on an active shift in group {group} ({driver}). Assignment blocked.",
+    ops_bus_not_found: "Bus not found in the company fleet.",
+    ops_bus_inactive: "Bus is inactive and cannot be assigned.",
+    ops_bus_not_ready: "Bus is not ready for assignment (ops status).",
+    ops_bus_outside_group: "Bus is outside the allowed pool for this group.",
+    ops_duty_catalog_missing: "No active duty catalog for this group.",
+    ops_duty_not_in_catalog: "Duty code is not in the active catalog.",
+    ops_duty_time_mismatch: "Duty times do not match the active catalog.",
+    ops_staff_session_invalid: "Dispatcher session is no longer valid. Sign in again.",
+    ops_driver_scope_changed: "Driver group changed. Refresh the plan and reacquire the lock.",
+    ops_driver_scope_denied: "Driver is outside your assigned groups.",
+    ops_driver_inactive: "Driver is inactive and cannot receive a new assignment.",
     shift_today_needs_incident: "For today's covered duty, open a problem in the ops centre first, then run the guided replacement.",
     ops_readonly_blocked: "Operational changes are dispatcher-only.",
     ops_readonly_hint: "View only",
@@ -6903,7 +6408,19 @@ Object.assign(TRANSLATIONS.de, {
     plan_lock_break_confirm: "Diese Plansperre erzwingen freigeben? Wird auditiert.",
     plan_lock_broken: "Sperre aufgehoben.",
     plan_lock_break_failed: "Aufheben fehlgeschlagen.",
-    ops_bus_cross_group_warn: "Bus {bus} ist bereits in Gruppe {group} aktiv ({driver}). Zuweisung gespeichert — Einsatz prüfen.",
+    ops_bus_cross_group_warn: "Bus {bus} ist bereits in Gruppe {group} aktiv ({driver}). Zuweisung blockiert.",
+    ops_bus_conflict_blocked: "Bus {bus} ist bereits in Gruppe {group} aktiv ({driver}). Zuweisung blockiert.",
+    ops_bus_not_found: "Bus nicht in der Firmenflotte gefunden.",
+    ops_bus_inactive: "Bus ist inaktiv und kann nicht zugewiesen werden.",
+    ops_bus_not_ready: "Bus ist nicht bereit für die Zuweisung (Ops-Status).",
+    ops_bus_outside_group: "Bus ist außerhalb des erlaubten Pools für diese Gruppe.",
+    ops_duty_catalog_missing: "Kein aktiver Dienstkatalog für diese Gruppe.",
+    ops_duty_not_in_catalog: "Dienstcode ist nicht im aktiven Katalog.",
+    ops_duty_time_mismatch: "Dienstzeiten stimmen nicht mit dem aktiven Katalog überein.",
+    ops_staff_session_invalid: "Disponenten-Sitzung ist nicht mehr gültig. Bitte erneut anmelden.",
+    ops_driver_scope_changed: "Fahrergruppe wurde geändert. Plan aktualisieren und Sperre erneut beanspruchen.",
+    ops_driver_scope_denied: "Fahrer liegt außerhalb Ihrer zugewiesenen Gruppen.",
+    ops_driver_inactive: "Fahrer ist inaktiv und kann keine neue Zuweisung erhalten.",
     shift_today_needs_incident: "Für den heutigen besetzten Dienst zuerst ein Problem im Ops-Center öffnen und dann die geführte Ersetzung nutzen.",
     ops_readonly_blocked: "Operative Änderungen nur für Disponenten.",
     ops_readonly_hint: "Nur Ansicht",
@@ -6931,7 +6448,19 @@ Object.assign(TRANSLATIONS.sr, {
     plan_lock_break_confirm: "Forsirano skinuti lock? Akcija se auditira.",
     plan_lock_broken: "Lock skinut.",
     plan_lock_break_failed: "Skidanje nije uspelo.",
-    ops_bus_cross_group_warn: "Autobus {bus} je već na aktivnoj smeni u grupi {group} ({driver}). Dodela sačuvana — proverite pokrivenost.",
+    ops_bus_cross_group_warn: "Autobus {bus} je već na aktivnoj smeni u grupi {group} ({driver}). Dodela blokirana.",
+    ops_bus_conflict_blocked: "Autobus {bus} je već na aktivnoj smeni u grupi {group} ({driver}). Dodela blokirana.",
+    ops_bus_not_found: "Autobus nije pronađen u voznom parku firme.",
+    ops_bus_inactive: "Autobus nije aktivan i ne može se dodeliti.",
+    ops_bus_not_ready: "Autobus nije spreman za dodelu (ops status).",
+    ops_bus_outside_group: "Autobus nije u dozvoljenom poolu za ovu grupu.",
+    ops_duty_catalog_missing: "Nema aktivnog kataloga smena za ovu grupu.",
+    ops_duty_not_in_catalog: "Kod smene nije u aktivnom katalogu.",
+    ops_duty_time_mismatch: "Vreme smene ne odgovara aktivnom katalogu.",
+    ops_staff_session_invalid: "Sesija disponenta više nije važeća. Prijavite se ponovo.",
+    ops_driver_scope_changed: "Grupa vozača je promenjena. Osvežite plan i ponovo preuzmite zaključavanje.",
+    ops_driver_scope_denied: "Vozač je van vaših dodeljenih grupa.",
+    ops_driver_inactive: "Vozač nije aktivan i ne može primiti novu dodelu.",
     shift_today_needs_incident: "Za današnju pokrivenu smenu prvo otvorite problem u operativnom centru, pa vodite zamenu.",
     ops_readonly_blocked: "Operativne izmene su samo za dispečera.",
     ops_readonly_hint: "Samo pregled",
@@ -7087,4 +6616,108 @@ for (const lang of Object.keys(TRANSLATIONS)) {
     }
 }
 
+// D23 closeout: staff UI languages only (en/sr/de).
+Object.assign(TRANSLATIONS.en, {
+    monthly_edit_day: "Edit day",
+    monthly_summary_assigned_one: "{driver} · {month} · {days} assigned day",
+    monthly_summary_assigned_other: "{driver} · {month} · {days} assigned days",
+    monthly_export_done_assigned_one: "Exported ({days} assigned day).",
+    monthly_export_done_assigned_other: "Exported ({days} assigned days).",
+    monthly_below_entry_hint: "Click a day or open day 1.",
+    monthly_below_empty_days: "days without duty",
+    monthly_below_no_problems: "No gaps this month."
+});
+Object.assign(TRANSLATIONS.sr, {
+    monthly_edit_day: "Uredi dan",
+    monthly_summary_assigned_one: "{driver} · {month} · {days} dodeljen dan",
+    monthly_summary_assigned_other: "{driver} · {month} · {days} dodeljenih dana",
+    monthly_export_done_assigned_one: "Izvezen ({days} dodeljen dan).",
+    monthly_export_done_assigned_other: "Izvezen ({days} dodeljenih dana).",
+    monthly_below_entry_hint: "Kliknite dan ili otvorite dan 1.",
+    monthly_below_empty_days: "dana bez smene",
+    monthly_below_no_problems: "Nema rupa ovog meseca."
+});
+Object.assign(TRANSLATIONS.de, {
+    monthly_edit_day: "Tag bearbeiten",
+    monthly_summary_assigned_one: "{driver} · {month} · {days} zugewiesener Tag",
+    monthly_summary_assigned_other: "{driver} · {month} · {days} zugewiesene Tage",
+    monthly_export_done_assigned_one: "Exportiert ({days} zugewiesener Tag).",
+    monthly_export_done_assigned_other: "Exportiert ({days} zugewiesene Tage).",
+    monthly_below_entry_hint: "Tag wählen oder Tag 1 öffnen.",
+    monthly_below_empty_days: "Tage ohne Dienst",
+    monthly_below_no_problems: "Keine Lücken diesen Monat."
+});
+
+// SA company-creation legal/limit fields + CA "Company Profile & Legal" section.
+Object.assign(TRANSLATIONS.en, {
+    sa_legal_name_label: "Legal Company Name",
+    sa_tax_id_label: "Tax ID / VAT Number",
+    sa_max_buses_label: "Bus / Line Limit",
+    ca_settings_legal_title: "Company Profile & Legal",
+    ca_settings_legal_kicker: "LEGAL DETAILS",
+    ca_settings_tax_id: "Tax ID / VAT number",
+    ca_settings_billing_email: "Billing email",
+    ca_settings_sms_sender_id: "SMS sender ID",
+    ca_settings_error_tax_id_invalid: "Tax ID is too long.",
+    ca_settings_error_billing_email_invalid: "Enter a valid billing email.",
+    ca_settings_error_sms_sender_id_invalid: "1-11 uppercase letters/digits only."
+});
+Object.assign(TRANSLATIONS.sr, {
+    sa_legal_name_label: "Pravni naziv firme",
+    sa_tax_id_label: "PIB / VAT broj",
+    sa_max_buses_label: "Limit autobusa / linija",
+    ca_settings_legal_title: "Profil firme i pravni podaci",
+    ca_settings_legal_kicker: "PRAVNI PODACI",
+    ca_settings_tax_id: "PIB / VAT broj",
+    ca_settings_billing_email: "Email za fakturisanje",
+    ca_settings_sms_sender_id: "SMS pošiljalac (ID)",
+    ca_settings_error_tax_id_invalid: "PIB/VAT broj je predugačak.",
+    ca_settings_error_billing_email_invalid: "Unesite validan email za fakturisanje.",
+    ca_settings_error_sms_sender_id_invalid: "1-11 velikih slova/cifara."
+});
+Object.assign(TRANSLATIONS.de, {
+    sa_legal_name_label: "Rechtlicher Firmenname",
+    sa_tax_id_label: "Steuernummer / USt-IdNr.",
+    sa_max_buses_label: "Bus-/Linienlimit",
+    ca_settings_legal_title: "Firmenprofil & rechtliche Angaben",
+    ca_settings_legal_kicker: "RECHTLICHE ANGABEN",
+    ca_settings_tax_id: "Steuernummer / USt-IdNr.",
+    ca_settings_billing_email: "Rechnungs-E-Mail",
+    ca_settings_sms_sender_id: "SMS-Absender-ID",
+    ca_settings_error_tax_id_invalid: "Steuernummer ist zu lang.",
+    ca_settings_error_billing_email_invalid: "Bitte gültige Rechnungs-E-Mail eingeben.",
+    ca_settings_error_sms_sender_id_invalid: "1-11 Großbuchstaben/Ziffern."
+});
+
+// Dispatcher known-lines (Streckenkenntnis) toggle + driver postal code.
+Object.assign(TRANSLATIONS.en, {
+    dispo_kl: "Known lines",
+    dispo_kl_failed: "Known lines could not be saved.",
+    ca_drivers_postal_code: "Postal code"
+});
+Object.assign(TRANSLATIONS.sr, {
+    dispo_kl: "Poznate linije",
+    dispo_kl_failed: "Poznate linije nisu sačuvane.",
+    ca_drivers_postal_code: "Poštanski broj"
+});
+Object.assign(TRANSLATIONS.de, {
+    dispo_kl: "Bekannte Linien",
+    dispo_kl_failed: "Bekannte Linien konnten nicht gespeichert werden.",
+    ca_drivers_postal_code: "Postleitzahl"
+});
+
+
+// D23 — product UI languages only (en/de/sr). Unsupported keys are dropped.
+for (const lang of Object.keys(TRANSLATIONS)) {
+    if (lang !== "en" && lang !== "de" && lang !== "sr") {
+        delete TRANSLATIONS[lang];
+    }
+}
+// EN fallback for any missing DE/SR key (never invent other dictionaries).
+for (const lang of ["de", "sr"]) {
+    if (!TRANSLATIONS[lang]) TRANSLATIONS[lang] = {};
+    for (const key in TRANSLATIONS.en) {
+        if (!TRANSLATIONS[lang][key]) TRANSLATIONS[lang][key] = TRANSLATIONS.en[key];
+    }
+}
 window.TRANSLATIONS = TRANSLATIONS;

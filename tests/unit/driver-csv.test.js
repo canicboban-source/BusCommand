@@ -39,11 +39,12 @@ test("accepts the secure activation format without a plaintext personal/company 
   assert.equal(drivers[1].company_code, "");
 });
 
-test("rejects duplicate EID; shared company codes are uniquified instead of rejected", () => {
+test("rejects duplicate EID; legacy company_code values are ignored (not uniquified)", () => {
   assert.throws(() => parseDriverCsv("eid,first_name,last_name,phone,email,company_code\nE1,A,A,1,a@a.com,C1\nE1,B,B,2,b@b.com,C2"), /Duplikat eid/);
   const shared = parseDriverCsv("eid,first_name,last_name,phone,email,company_code\nE1,A,A,1,a@a.com,C1\nE2,B,B,2,b@b.com,c1");
-  assert.equal(shared[0].company_code, "C1-E1");
-  assert.equal(shared[1].company_code, "c1-E2");
+  assert.equal(shared.legacyCompanyCodeIgnored, true);
+  assert.equal(shared[0].company_code, "");
+  assert.equal(shared[1].company_code, "");
 });
 
 test("rejects missing fields and malformed quotes", () => {
@@ -52,7 +53,8 @@ test("rejects missing fields and malformed quotes", () => {
 });
 
 test("rejects imports larger than the bounded company batch", () => {
-  const header = "eid,first_name,last_name,phone,email,company_code";
-  const rows = Array.from({ length: 251 }, (_, index) => `${index},A,B,+1,a${index}@example.com,CODE-${index}`);
-  assert.throws(() => parseDriverCsv([header, ...rows].join("\n")), /250/);
+  const header = "eid,first_name,last_name,phone,email";
+  // D24.2: max 249 (Firestore tx write budget with identity guard).
+  const rows = Array.from({ length: 250 }, (_, index) => `${index},A,B,+1,a${index}@example.com`);
+  assert.throws(() => parseDriverCsv([header, ...rows].join("\n")), /249/);
 });

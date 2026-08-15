@@ -1,15 +1,17 @@
 // BusCommand ESM v9.5
 import { initializeLoginSelects } from "../auth/login-ui.js";
 import { saveState } from "../core/state.js";
-import { escapeHtml, getVisibleDrivers, showToast } from "../core/utils.js";
+import { escapeHtml, getVisibleDrivers, showToast, refreshIcons } from "../core/utils.js";
 import { getGroupById, renderGroupsList } from "./groups.js";
 import { assignDriverToLine, getDriversForLineGroup } from "./group-membership.js";
 import { getActiveLineId } from "./groups.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t, tp } from "../ui/i18n.js";
-import { actionAttr } from "../core/action-delegate.js";
+import { actionAttr, changeAttr } from "../core/action-delegate.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import ApiClient from "../core/api-client.js";
+import { normalizeKnownGroupIds } from "./driver-known-groups.js";
+import { icon, tx } from "../ui/markup.js";
 
 window.editingDriverId = null;
 
@@ -36,36 +38,45 @@ function renderDriversList() {
         const active = d.active !== false;
         const statusLabel = t(active ? "driver_status_active" : "driver_status_inactive");
         const statusAction = t(active ? "driver_deactivate" : "driver_activate");
-        li.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); border-left: 3px solid " + groupColor + "; border-radius: var(--radius-md); margin-bottom: 8px;";
+        li.className = "drv-row";
+        li.style.borderLeft = `3px solid ${groupColor}`;
         const idBadge = isDispatcher
             ? ""
-            : `<span style="color: var(--primary-color); font-size: 12px; font-weight: normal; margin-left: 8px;">(${escapeHtml(t("label_company_id") || "ID")}: ${escapeHtml(d.companyId || "N/A")})</span>`;
+            : `<span class="drv-id">(${escapeHtml(t("label_company_id") || "ID")}: ${escapeHtml(d.companyId || "N/A")})</span>`;
         const detachBtn = canDetachFromLine && detachGroupId && d.id
-            ? `<button type="button" class="btn-secondary" ${actionAttr("detachDriverFromLine", [d.id, detachGroupId])} title="${escapeHtml(t("dispo_remove_from_line_hint") || "")}" style="padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;white-space:nowrap;">
-                ${escapeHtml(t("dispo_remove_from_line") || "Remove from line")}
-            </button>`
+            ? `<button type="button" class="btn-secondary drv-btn" ${actionAttr("detachDriverFromLine", [d.id, detachGroupId])} title="${escapeHtml(t("dispo_remove_from_line_hint") || "")}">${escapeHtml(t("dispo_remove_from_line") || "Remove from line")}</button>`
             : "";
-        li.innerHTML = `
-            <div style="display: flex; flex-direction: column; gap: 4px; text-align: left;">
-                <span style="font-weight: 600; color: var(--text-main);">${escapeHtml(driverName)}
-                    ${idBadge}
-                    ${grp ? `<span style="background:${groupColor}22;border:1px solid ${groupColor}55;color:${groupColor};font-size:10px;font-weight:700;padding:1px 8px;border-radius:12px;margin-left:6px;">${escapeHtml(grp.name)}</span>` : ""}
-                    <span style="font-size:10px;font-weight:700;margin-left:6px;color:${active ? "var(--success-color, #16a34a)" : "var(--text-muted)"};">${escapeHtml(statusLabel)}</span>
-                </span>
-                <span style="font-size: 12px; color: var(--text-muted);">${escapeHtml(d.phone || t("no_phone"))} | ${escapeHtml(d.email || t("no_email"))}</span>
-            </div>
-            <div style="display:flex; gap:6px;">
-                ${USE_LOCAL_STATE ? `<button class="btn-edit-item" ${actionAttr("editDriver", [d.id])} style="background:rgba(59,130,246,0.08);color:#3b82f6;border:1px solid rgba(59,130,246,0.2);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;white-space:nowrap;">
-                    ${t("btn_edit")}
-                </button>` : ""}
-                ${detachBtn}
-                ${canDeleteDrivers ? `<button class="btn-delete-item" ${actionAttr("toggleDriverActive", [d.id])} aria-label="${escapeHtml(statusAction)}" title="${escapeHtml(statusAction)}" style="background:rgba(239,68,68,0.08);color:${active ? "#ef4444" : "#16a34a"};border:1px solid currentColor;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;white-space:nowrap;">
-                    ${escapeHtml(statusAction)}
-                </button>` : ""}
-            </div>
-        `;
+        const knownGroupsDetails = (isDispatcher || USE_LOCAL_STATE) && d.id
+            ? knownGroupsDetailsHtml(d)
+            : "";
+        li.innerHTML = `<div class="drv-body"><span class="drv-name">${escapeHtml(driverName)}${idBadge}${grp ? `<span class="drv-grp" style="background:${groupColor}22;border:1px solid ${groupColor}55;color:${groupColor};">${escapeHtml(grp.name)}</span>` : ""}<span class="drv-status ${active ? "is-active" : "is-inactive"}">${escapeHtml(statusLabel)}</span></span><span class="drv-ct">${escapeHtml(d.phone || t("no_phone"))} | ${escapeHtml(d.email || t("no_email"))}</span>${knownGroupsDetails}</div><div class="drv-actions">${USE_LOCAL_STATE ? `<button class="btn-edit-item drv-btn drv-edit" ${actionAttr("editDriver", [d.id])}>${t("btn_edit")}</button>` : ""}${detachBtn}${canDeleteDrivers ? `<button class="btn-delete-item drv-btn drv-del ${active ? "is-active" : "is-inactive"}" ${actionAttr("toggleDriverActive", [d.id])} aria-label="${escapeHtml(statusAction)}" title="${escapeHtml(statusAction)}">${escapeHtml(statusAction)}</button>` : ""}</div>`;
         list.appendChild(li);
     });
+}
+
+function knownGroupsDetailsHtml(d) {
+    const known = normalizeKnownGroupIds(d);
+    const rows = (window.state.groups || []).map(g => `<label class="drv-kl-opt"><input type="checkbox" ${known.includes(String(g.id)) ? "checked" : ""} ${changeAttr("toggleDriverKG", [d.id, g.id], "element")}><span>${escapeHtml(g.name || g.id)}</span></label>`).join("");
+    return `<details class="drv-kl"><summary>${tx("dispo_kl")} ▾</summary><div class="drv-kl-list">${rows}</div></details>`;
+}
+
+async function toggleDriverKG(driverId, groupId, el) {
+    const driver = window.state.drivers?.find(d => d.id === driverId);
+    if (!driver) return;
+    const current = normalizeKnownGroupIds(driver);
+    const next = el.checked
+        ? [...new Set([...current, String(groupId)])]
+        : current.filter(g => g !== String(groupId));
+    if (!USE_LOCAL_STATE) {
+        const result = await ApiClient.updateStaffDriverKnownGroups(driverId, next);
+        if (!result.success) {
+            el.checked = !el.checked;
+            showToast(result.error || t("dispo_kl_failed"), "error");
+            return;
+        }
+    }
+    driver.knownGroupIds = next;
+    if (USE_LOCAL_STATE) saveState();
 }
 
 function editDriver(id) {
@@ -93,8 +104,8 @@ function editDriver(id) {
     // Promeni dugme forme da piše "Sačuvaj izmene"
     const submitBtn = document.querySelector("#add-driver-form button[type='submit']");
     if (submitBtn) {
-        submitBtn.innerHTML = `<i data-lucide="check"></i> <span>${t("btn_save_changes")}</span>`;
-        if (typeof lucide !== "undefined") lucide.createIcons();
+        submitBtn.innerHTML = `${icon("check")} <span>${t("btn_save_changes")}</span>`;
+        refreshIcons();
     }
 
     showToast(t("driver_loaded_to_form"), "info");
@@ -144,13 +155,13 @@ function addDriver(event) {
             
             const submitBtn = document.querySelector("#add-driver-form button[type='submit']");
             if (submitBtn) {
-                submitBtn.innerHTML = `<i data-lucide="plus"></i> <span>${t("btn_add_driver")}</span>`;
+                submitBtn.innerHTML = `${icon("plus")} <span>${t("btn_add_driver")}</span>`;
             }
             
             renderDriversList();
             initializeLoginSelects();
             showToast(t("driver_changes_saved"), "success");
-            lucide.createIcons();
+            refreshIcons();
         }
         return;
     }
@@ -182,7 +193,7 @@ function addDriver(event) {
             renderDriversList();
             initializeLoginSelects();
             showToast(name + " — " + (t("driver_added") || "vozač dodan"), "success");
-            lucide.createIcons();
+            refreshIcons();
         },
         { danger: false, title: t("btn_add_driver") || "Dodaj vozača", confirmText: t("btn_yes") || "Da" }
     );
@@ -207,7 +218,7 @@ function toggleDriverActive(id) {
         renderDriversList();
         initializeLoginSelects();
         showToast(t(nextActive ? "driver_activated" : "driver_deactivated"), "success");
-        if (typeof lucide !== "undefined") lucide.createIcons();
+        refreshIcons();
     }, { danger: !nextActive });
 }
 
@@ -325,6 +336,7 @@ export {
     renderDriversList,
     addDriver,
     toggleDriverActive,
+    toggleDriverKG,
     editDriver,
     importDriversExcel,
     importDriversBulk,
