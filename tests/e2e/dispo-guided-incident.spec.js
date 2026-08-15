@@ -44,7 +44,7 @@ function guidedState() {
         lineId: "101",
         groupIds: ["101"],
         active: true,
-        opsStatus: "ready",
+        opsStatus: "active",
         revision: 0
       },
       {
@@ -54,7 +54,7 @@ function guidedState() {
         lineId: "101",
         groupIds: ["101"],
         active: true,
-        opsStatus: "ready",
+        opsStatus: "active",
         revision: 0
       }
     ],

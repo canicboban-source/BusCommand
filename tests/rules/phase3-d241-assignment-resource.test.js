@@ -89,16 +89,16 @@ async function seedBase() {
     active: true, groupId: GROUP_B, firstName: "Bob", lastName: "B", name: "Bob B"
   });
   await companyRef.collection("buses").doc("bus-ready").set({
-    number: "101", active: true, opsStatus: "ready", groupId: GROUP_ID, groupIds: [GROUP_ID]
+    number: "101", active: true, opsStatus: "active", groupId: GROUP_ID, groupIds: [GROUP_ID]
   });
   await companyRef.collection("buses").doc("bus-inactive").set({
-    number: "102", active: false, opsStatus: "ready", groupId: GROUP_ID, groupIds: [GROUP_ID]
+    number: "102", active: false, opsStatus: "active", groupId: GROUP_ID, groupIds: [GROUP_ID]
   });
   await companyRef.collection("buses").doc("bus-out").set({
     number: "103", active: true, opsStatus: "out", groupId: GROUP_ID, groupIds: [GROUP_ID]
   });
   await companyRef.collection("buses").doc("bus-foreign").set({
-    number: "202", active: true, opsStatus: "ready", groupId: GROUP_B, groupIds: [GROUP_B]
+    number: "202", active: true, opsStatus: "active", groupId: GROUP_B, groupIds: [GROUP_B]
   });
   await companyRef.collection("users").doc(ACTOR).set({
     role: "dispatcher", active: true, groups: [GROUP_ID, GROUP_B]
@@ -223,7 +223,7 @@ test("D24.1 HTTP: outside group → BUS_OUTSIDE_GROUP, zero writes", { skip: !EM
 test("D24.1 HTTP: overlapping same/cross-group → BUS_DOUBLE_BOOKED, zero writes", { skip: !EMULATOR }, async () => {
   const companyRef = await seedBase();
   await companyRef.collection("buses").doc("bus-shared").set({
-    number: "555", active: true, opsStatus: "ready", groupId: GROUP_ID, groupIds: [GROUP_ID, GROUP_B]
+    number: "555", active: true, opsStatus: "active", groupId: GROUP_ID, groupIds: [GROUP_ID, GROUP_B]
   });
   await companyRef.collection("shifts").doc(shiftDocumentId(DRIVER_B, DATE)).set({
     driverId: DRIVER_B,

@@ -1,17 +1,18 @@
 // BusCommand ESM v9.5
 import { getBusesForLineGroup } from "./group-membership.js";
-import { busHasGroup, withAttachedGroup, buildNewBusGroups } from "./bus-group-membership.js";
+import { busHasGroup, withAttachedGroup, withDetachedGroup, buildNewBusGroups } from "./bus-group-membership.js";
 import {
     BUS_OPS_STATUSES,
     busRevisionOf,
-    normalizeBusGarage,
-    normalizeBusOpsStatus
+    normalizeBusOpsStatus,
+    normalizeBusPlate
 } from "./bus-ops.js";
+import { getGroupById } from "./groups.js";
 import { saveState } from "../core/state.js";
 import { escapeHtml, showToast } from "../core/utils.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { t } from "../ui/i18n.js";
-import { actionAttr } from "../core/action-delegate.js";
+import { actionAttr, changeAttr } from "../core/action-delegate.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import ApiClient from "../core/api-client.js";
 import { isOperationalReadOnly } from "../core/access.js";
@@ -46,62 +47,113 @@ function opsStatusOptions(selected) {
     ).join("");
 }
 
+function primaryGroupId(bus) {
+    if (Array.isArray(bus?.groupIds) && bus.groupIds.length) return String(bus.groupIds[0]);
+    return String(bus?.groupId || bus?.lineId || "").trim();
+}
+
+function busGroupLabel(bus) {
+    const gid = primaryGroupId(bus);
+    if (!gid) return "—";
+    return getGroupById(gid)?.name || gid;
+}
+
+function groupSwitchOptionsHtml(selectedGroupId) {
+    const groups = window.state.groups || [];
+    return groups.map((g) =>
+        `<option value="${escapeHtml(g.id)}" ${String(g.id) === String(selectedGroupId) ? "selected" : ""}>${escapeHtml(g.name || g.id)}</option>`
+    ).join("");
+}
+
+function statusPillsHtml(busId, current, readOnly) {
+    return BUS_OPS_STATUSES.map((status) => {
+        const isCurrent = status === current;
+        const attrs = isCurrent || readOnly
+            ? "disabled"
+            : actionAttr("quickSetBusStatus", [busId, status]);
+        return `<button type="button" class="bus-status-pill bus-status-${status}${isCurrent ? " is-current" : ""}" ${attrs}>${escapeHtml(opsStatusLabel(status))}</button>`;
+    }).join("");
+}
+
+function renderAddBusFormOptions(activeGrp) {
+    const groupSelect = document.getElementById("new-bus-group");
+    if (groupSelect) groupSelect.innerHTML = groupSwitchOptionsHtml(activeGrp);
+    const statusSelect = document.getElementById("new-bus-status");
+    if (statusSelect && !statusSelect.options.length) statusSelect.innerHTML = opsStatusOptions("active");
+}
+
 function renderBusesList() {
-    const list = document.getElementById("settings-buses-list");
-    if (!list) return;
-    list.innerHTML = "";
+    const tbody = document.getElementById("settings-buses-list");
+    if (!tbody) return;
+    tbody.innerHTML = "";
     const hubId = window.state.activeGroupHubId;
     const activeGrp = hubId || (window.currentUser && window.currentUser.activeGroupId);
+    renderAddBusFormOptions(activeGrp);
     const myBuses = activeGrp ? getBusesForLineGroup(activeGrp) : (window.state.buses || []);
     const readOnly = isOperationalReadOnly();
+    if (!myBuses.length) {
+        const row = tbody.insertRow();
+        const cell = row.insertCell();
+        cell.colSpan = 5;
+        cell.style.textAlign = "center";
+        cell.style.color = "var(--text-muted)";
+        cell.textContent = t("ca_buses_empty") || "No buses in this company yet.";
+        return;
+    }
     myBuses.forEach((b) => {
-        const li = document.createElement("li");
-        li.className = "hub-bus-item";
-        li.dataset.busId = String(b.id);
         const active = b.active !== false;
-        const garage = normalizeBusGarage(b);
+        const plate = normalizeBusPlate(b);
         const ops = normalizeBusOpsStatus(b);
-        const meta = [
-            opsStatusLabel(ops),
-            garage || (t("bus_garage_unset") || "bez garaže")
-        ].join(" · ");
+        const row = document.createElement("tr");
+        row.className = "hub-bus-row";
+        row.dataset.busId = String(b.id);
+
+        const numberCell = row.insertCell();
+        numberCell.innerHTML = `<strong>${escapeHtml(b.number)}</strong>${active ? "" : ` <small>· ${escapeHtml(t("driver_status_inactive"))}</small>`}`;
+
+        const plateCell = row.insertCell();
+        plateCell.dataset.busPlateCell = "1";
+        plateCell.textContent = plate || "—";
+
+        const groupCell = row.insertCell();
+        groupCell.innerHTML = readOnly
+            ? escapeHtml(busGroupLabel(b))
+            : `<select class="bus-group-switch" ${changeAttr("changeBusGroup", [b.id], "args-value")}>${groupSwitchOptionsHtml(primaryGroupId(b))}</select>`;
+
+        const statusCell = row.insertCell();
+        statusCell.className = "bus-status-cell";
+        statusCell.innerHTML = statusPillsHtml(b.id, ops, readOnly);
+
+        const actionsCell = row.insertCell();
+        const editBtn = readOnly
+            ? ""
+            : `<button type="button" class="btn-secondary hub-bus-edit-btn" ${actionAttr("toggleBusEdit", [b.id])}>${escapeHtml(t("btn_edit"))}</button>`;
         const deleteBtn = readOnly
             ? ""
             : `<button type="button" class="hub-bus-toggle ${active ? "is-active" : "is-inactive"}" ${actionAttr("deleteBus", [b.id])} title="${escapeHtml(active ? (t("dispo_bus_deactivate_hint") || "") : (t("btn_activate") || ""))}">
                 ${active ? (t("dispo_bus_deactivate") || t("btn_deactivate")) : t("btn_activate")}
             </button>`;
-        const detachBtn = readOnly || !activeGrp
-            ? ""
-            : `<button type="button" class="btn-secondary hub-bus-detach-btn" ${actionAttr("detachBusFromLine", [b.id, activeGrp])}>
-                ${escapeHtml(t("dispo_bus_remove_from_line") || "Remove from this line")}
-            </button>`;
-        const editBtn = readOnly
-            ? ""
-            : `<button type="button" class="btn-secondary hub-bus-edit-btn" ${actionAttr("toggleBusEdit", [b.id])}>${escapeHtml(t("btn_edit"))}</button>`;
-        li.innerHTML = `
-            <div class="hub-bus-row">
-                <div class="hub-bus-identity">
-                    <strong>${escapeHtml(t("vehicle"))} ${escapeHtml(b.number)}</strong>
-                    <small>${escapeHtml(meta)}${active ? "" : ` · ${escapeHtml(t("driver_status_inactive"))}`}</small>
-                </div>
-                <div class="hub-bus-actions">${editBtn}${detachBtn}${deleteBtn}</div>
-            </div>
-            <form class="hub-bus-edit-form hidden" data-bus-edit="${escapeHtml(b.id)}" data-submit-action="saveBusOpsProfile">
-                <label>
-                    <span>${escapeHtml(t("bus_garage"))}</span>
-                    <input type="text" name="garage" maxlength="40" value="${escapeHtml(garage)}" data-i18n-placeholder="bus_garage_placeholder">
-                </label>
-                <label>
-                    <span>${escapeHtml(t("bus_ops_status"))}</span>
-                    <select name="opsStatus">${opsStatusOptions(ops)}</select>
-                </label>
-                <div class="hub-bus-edit-actions">
-                    <button type="button" class="btn-secondary" ${actionAttr("toggleBusEdit", [b.id])}>${escapeHtml(t("btn_cancel"))}</button>
-                    <button type="submit" class="btn-primary">${escapeHtml(t("btn_save_changes"))}</button>
-                </div>
-            </form>
+        actionsCell.innerHTML = `${editBtn}${deleteBtn}`;
+
+        const editRow = document.createElement("tr");
+        editRow.className = "hub-bus-edit-row hidden";
+        editRow.innerHTML = `
+            <td colspan="5">
+                <form class="hub-bus-edit-form" data-bus-edit="${escapeHtml(b.id)}" data-submit-action="saveBusOpsProfile">
+                    <label>
+                        <span>${escapeHtml(t("table_plate") || "Tablice")}</span>
+                        <input type="text" name="plate" maxlength="20" value="${escapeHtml(plate)}" data-i18n-placeholder="ph_bus_plate">
+                    </label>
+                    <div class="hub-bus-edit-actions">
+                        <button type="button" class="btn-secondary" ${actionAttr("toggleBusEdit", [b.id])}>${escapeHtml(t("btn_cancel"))}</button>
+                        <button type="submit" class="btn-primary">${escapeHtml(t("btn_save_changes"))}</button>
+                    </div>
+                </form>
+            </td>
         `;
-        list.appendChild(li);
+
+        tbody.appendChild(row);
+        tbody.appendChild(editRow);
     });
 }
 
@@ -111,11 +163,35 @@ function toggleBusEdit(busId) {
         return;
     }
     const form = document.querySelector(`[data-bus-edit="${CSS.escape(String(busId))}"]`);
-    if (!form) return;
-    form.classList.toggle("hidden");
-    if (!form.classList.contains("hidden")) {
-        form.querySelector("input[name='garage']")?.focus();
+    const row = form?.closest("tr");
+    if (!row) return;
+    row.classList.toggle("hidden");
+    if (!row.classList.contains("hidden")) {
+        form.querySelector("input[name='plate']")?.focus();
     }
+}
+
+/** Shared PUT /buses/:id path for both the plate edit form and the quick status pills. */
+async function applyBusProfileUpdate(bus, { plate, opsStatus }) {
+    const expectedRevision = busRevisionOf(bus);
+    if (!USE_LOCAL_STATE) {
+        const result = await ApiClient.updateStaffBus(bus.id, { plate, garage: "", opsStatus, expectedRevision });
+        if (!result?.success) {
+            if (result?.status === 409 || result?.code === "REVISION_CONFLICT" || result?.code === "GARAGE_BUSY") {
+                toastBusWriteConflict(result);
+            } else {
+                showToast(result?.error || t("bus_edit_failed"), "error");
+            }
+            renderBusesList();
+            if (typeof lucide !== "undefined") lucide.createIcons();
+            return false;
+        }
+        upsertLocalBusFromApi(result.bus || { id: bus.id, plate, opsStatus, revision: expectedRevision + 1 });
+    } else {
+        Object.assign(bus, { plate, opsStatus, revision: expectedRevision + 1 });
+        saveState();
+    }
+    return true;
 }
 
 async function saveBusOpsProfile(event) {
@@ -128,28 +204,52 @@ async function saveBusOpsProfile(event) {
     const busId = String(form?.dataset?.busEdit || "").trim();
     const bus = (window.state.buses || []).find((item) => item.id === busId);
     if (!bus || !form) return;
-    const garage = normalizeBusGarage(form.querySelector("input[name='garage']")?.value || "");
-    const opsStatus = normalizeBusOpsStatus(form.querySelector("select[name='opsStatus']")?.value || "ready");
+    const plate = normalizeBusPlate(form.querySelector("input[name='plate']")?.value || "");
+    if (!await applyBusProfileUpdate(bus, { plate, opsStatus: normalizeBusOpsStatus(bus) })) return;
+    showToast(t("bus_edit_saved"), "success");
+    renderBusesList();
+    if (typeof lucide !== "undefined") lucide.createIcons();
+}
+
+async function quickSetBusStatus(busId, opsStatus) {
+    if (isOperationalReadOnly()) {
+        showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+        return;
+    }
+    const bus = (window.state.buses || []).find((item) => item.id === busId);
+    if (!bus) return;
+    if (!await applyBusProfileUpdate(bus, { plate: normalizeBusPlate(bus), opsStatus: normalizeBusOpsStatus(opsStatus) })) return;
+    renderBusesList();
+    if (typeof lucide !== "undefined") lucide.createIcons();
+}
+
+async function changeBusGroup(busId, toGroupId) {
+    if (isOperationalReadOnly()) {
+        showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+        return;
+    }
+    const bus = (window.state.buses || []).find((item) => item.id === busId);
+    const gid = String(toGroupId || "").trim();
+    if (!bus || !gid) return;
+    if (primaryGroupId(bus) === gid) return;
     const expectedRevision = busRevisionOf(bus);
     if (!USE_LOCAL_STATE) {
-        const result = await ApiClient.updateStaffBus(busId, { garage, opsStatus, expectedRevision });
+        const result = await ApiClient.switchStaffBusGroup(busId, gid, expectedRevision);
         if (!result?.success) {
-            if (result?.status === 409 || result?.code === "REVISION_CONFLICT" || result?.code === "GARAGE_BUSY") {
-                toastBusWriteConflict(result);
-            } else {
-                showToast(result?.error || t("bus_edit_failed"), "error");
-                return;
-            }
+            if (result?.status === 409 || result?.code === "REVISION_CONFLICT") toastBusWriteConflict(result);
+            else showToast(result?.error || t("bus_status_failed"), "error");
             renderBusesList();
             if (typeof lucide !== "undefined") lucide.createIcons();
             return;
         }
-        upsertLocalBusFromApi(result.bus || { id: busId, garage, opsStatus, revision: expectedRevision + 1 });
+        upsertLocalBusFromApi(result.bus);
     } else {
-        Object.assign(bus, { garage, opsStatus, revision: expectedRevision + 1 });
+        Object.assign(bus, withDetachedGroup(bus, primaryGroupId(bus)));
+        Object.assign(bus, withAttachedGroup(bus, gid));
+        bus.revision = expectedRevision + 1;
         saveState();
     }
-    showToast(t("bus_edit_saved"), "success");
+    showToast(t("bus_attached_to_group") || "Bus linked to this group", "success");
     renderBusesList();
     if (typeof lucide !== "undefined") lucide.createIcons();
 }
@@ -161,13 +261,17 @@ async function addBus(event) {
         return;
     }
     const input = document.getElementById("new-bus-num");
-    const garageInput = document.getElementById("new-bus-garage");
+    const plateInput = document.getElementById("new-bus-plate");
+    const groupSelect = document.getElementById("new-bus-group");
+    const statusSelect = document.getElementById("new-bus-status");
     const number = input.value.trim();
-    const garage = normalizeBusGarage(garageInput?.value || "");
+    const plate = normalizeBusPlate(plateInput?.value || "");
+    const opsStatus = normalizeBusOpsStatus(statusSelect?.value || "active");
     if (!number) return;
 
     const hubId = window.state.activeGroupHubId;
-    const activeGrp = hubId || (window.currentUser && window.currentUser.activeGroupId);
+    const selectedGrp = String(groupSelect?.value || "").trim();
+    const activeGrp = selectedGrp || hubId || (window.currentUser && window.currentUser.activeGroupId);
     if (!activeGrp) {
         showToast(t("bus_import_need_group"), "error");
         return;
@@ -177,7 +281,7 @@ async function addBus(event) {
         (t("confirm_add_bus") || "Add bus") + ': "' + number + '"?',
         async function() {
             if (!USE_LOCAL_STATE) {
-                const result = await ApiClient.createStaffBus(number, activeGrp, { garage, opsStatus: "ready" });
+                const result = await ApiClient.createStaffBus(number, activeGrp, { plate, opsStatus });
                 if (!result?.success) {
                     const detail = String(result?.error || "").trim();
                     showToast(
@@ -189,7 +293,7 @@ async function addBus(event) {
                 if (!Array.isArray(window.state.buses)) window.state.buses = [];
                 upsertLocalBusFromApi(result.bus);
                 input.value = "";
-                if (garageInput) garageInput.value = "";
+                if (plateInput) plateInput.value = "";
                 renderBusesList();
                 if (typeof lucide !== "undefined") lucide.createIcons();
                 const msg = result.attached
@@ -210,10 +314,10 @@ async function addBus(event) {
                     return;
                 }
                 Object.assign(existing, withAttachedGroup(existing, activeGrp));
-                if (garage && !normalizeBusGarage(existing)) existing.garage = garage;
+                if (plate && !normalizeBusPlate(existing)) existing.plate = plate;
                 saveState();
                 input.value = "";
-                if (garageInput) garageInput.value = "";
+                if (plateInput) plateInput.value = "";
                 renderBusesList();
                 lucide.createIcons();
                 showToast(t("bus_attached_to_group") || "Bus linked to this group", "success");
@@ -225,14 +329,14 @@ async function addBus(event) {
                 id: `bus-${Date.now()}`,
                 number,
                 active: true,
-                garage,
-                opsStatus: "ready",
+                plate,
+                opsStatus,
                 revision: 0,
                 ...groups
             });
             saveState();
             input.value = "";
-            if (garageInput) garageInput.value = "";
+            if (plateInput) plateInput.value = "";
             renderBusesList();
             lucide.createIcons();
             showToast(number + " — " + (t("bus_added") || "vozilo dodano"), "success");
@@ -375,6 +479,8 @@ export {
     deleteBus,
     toggleBusEdit,
     saveBusOpsProfile,
+    quickSetBusStatus,
+    changeBusGroup,
     renderRoutesList,
     addRoute,
     deleteRoute,

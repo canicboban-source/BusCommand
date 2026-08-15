@@ -49,7 +49,7 @@ async function seedDriverAndBus() {
   await companyRef.collection("buses").doc("bus-101").set({
     number: "101",
     active: true,
-    opsStatus: "ready",
+    opsStatus: "active",
     groupId: GROUP_ID
   });
 }

@@ -40,7 +40,7 @@ function createDb() {
       }
     },
     buses: {
-      "bus-101": { number: "101", active: true, opsStatus: "ready", groupId: GROUP_ID }
+      "bus-101": { number: "101", active: true, opsStatus: "active", groupId: GROUP_ID }
     }
   };
 

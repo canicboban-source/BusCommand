@@ -563,7 +563,7 @@ test.describe("UI smoke", () => {
         groupIds: ["101"],
         lineId: "101",
         active: true,
-        opsStatus: "ready",
+        opsStatus: "active",
         companyId: "qa-local"
       }];
       window.state.shiftCatalogs = window.state.shiftCatalogs || {};

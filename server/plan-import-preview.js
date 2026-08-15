@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { ASSIGNABLE_BUS_STATUSES } = require("./assignment-resource-guard");
 
 const ABSENCE_OR_CLEAR = new Set(["off", "vacation", "sick", "clear", "bereitschaft"]);
 
@@ -136,7 +137,7 @@ function buildPlanImportPreview({
           date: row.date,
           bus: busNumber
         });
-      } else if (bus.opsStatus && bus.opsStatus !== "ready") {
+      } else if (bus.opsStatus && !ASSIGNABLE_BUS_STATUSES.has(bus.opsStatus)) {
         errors.push({
           row: rowNumber,
           code: "BUS_NOT_AVAILABLE",

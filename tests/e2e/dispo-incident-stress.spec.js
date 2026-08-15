@@ -36,7 +36,7 @@ function buildFleetState(driverCount, busCount) {
       groupIds: ["101"],
       active: true,
       garage: i % 3 === 0 ? "Depot B" : "Depot A",
-      opsStatus: i === busCount ? "maintenance" : "ready",
+      opsStatus: i === busCount ? "maintenance" : "active",
       revision: 0
     });
   }

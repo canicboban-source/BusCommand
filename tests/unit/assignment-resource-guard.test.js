@@ -8,7 +8,7 @@ const {
   assignmentResourceErrorMessage
 } = require("../../server/assignment-resource-guard");
 
-test("bus missing / inactive / not ready / outside pool", () => {
+test("bus missing / inactive / not available / outside pool", () => {
   assert.equal(evaluateBusResource({
     bus: null, busNumber: "91504", groupId: "310"
   }).code, "BUS_NOT_FOUND");
@@ -23,15 +23,29 @@ test("bus missing / inactive / not ready / outside pool", () => {
     groupId: "310"
   }).code, "BUS_NOT_AVAILABLE");
   assert.equal(evaluateBusResource({
-    bus: { number: "91504", active: true, opsStatus: "ready", groupIds: ["320"] },
+    bus: { number: "91504", active: true, opsStatus: "other_line", groupIds: ["310"] },
+    busNumber: "91504",
+    groupId: "310"
+  }).code, "BUS_NOT_AVAILABLE");
+  assert.equal(evaluateBusResource({
+    bus: { number: "91504", active: true, opsStatus: "active", groupIds: ["320"] },
     busNumber: "91504",
     groupId: "310"
   }).code, "BUS_OUTSIDE_GROUP");
 });
 
-test("keep-current allows non-ready bus already on this shift", () => {
+test("reserve bus is assignable like active (D21)", () => {
   const result = evaluateBusResource({
-    bus: { number: "91504", active: true, opsStatus: "technical", groupIds: ["310"] },
+    bus: { number: "91504", active: true, opsStatus: "reserve", groupIds: ["310"] },
+    busNumber: "91504",
+    groupId: "310"
+  });
+  assert.equal(result.ok, true);
+});
+
+test("keep-current allows non-available bus already on this shift", () => {
+  const result = evaluateBusResource({
+    bus: { number: "91504", active: true, opsStatus: "breakdown", groupIds: ["310"] },
     busNumber: "91504",
     groupId: "310",
     existingBusNumber: "91504"
@@ -40,9 +54,9 @@ test("keep-current allows non-ready bus already on this shift", () => {
   assert.equal(result.keepCurrent, true);
 });
 
-test("ready bus in pool passes", () => {
+test("active bus in pool passes", () => {
   const result = evaluateBusResource({
-    bus: { number: "91504", active: true, opsStatus: "ready", groupIds: ["310", "320"] },
+    bus: { number: "91504", active: true, opsStatus: "active", groupIds: ["310", "320"] },
     busNumber: "91504",
     groupId: "320"
   });

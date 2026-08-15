@@ -26,7 +26,7 @@ function monthlyState(lang = "sr") {
     groupId: "101",
     lineId: "101",
     active: true,
-    opsStatus: "ready",
+    opsStatus: "active",
     companyId: "qa-local"
   }];
   fixture.state.shiftCatalogs = {

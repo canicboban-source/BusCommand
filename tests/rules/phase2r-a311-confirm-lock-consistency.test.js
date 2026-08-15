@@ -75,10 +75,10 @@ async function seedBase() {
     active: true, groupId: GROUP_A, firstName: "Confirm", lastName: "Driver", name: "Confirm Driver"
   });
   await companyRef.collection("buses").doc("bus-101").set({
-    number: "101", active: true, opsStatus: "ready", groupId: GROUP_A
+    number: "101", active: true, opsStatus: "active", groupId: GROUP_A
   });
   await companyRef.collection("buses").doc("bus-202").set({
-    number: "202", active: true, opsStatus: "ready", groupId: GROUP_B
+    number: "202", active: true, opsStatus: "active", groupId: GROUP_B
   });
   await companyRef.collection("users").doc(ACTOR).set({
     role: "dispatcher", active: true, groups: [GROUP_A, GROUP_B]

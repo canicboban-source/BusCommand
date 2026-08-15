@@ -35,7 +35,7 @@ function softRemoveState() {
         lineId: "101",
         groupIds: ["101"],
         active: true,
-        opsStatus: "ready",
+        opsStatus: "active",
         revision: 0
       },
       {
@@ -45,7 +45,7 @@ function softRemoveState() {
         lineId: "101",
         groupIds: ["101"],
         active: true,
-        opsStatus: "ready",
+        opsStatus: "active",
         revision: 0
       }
     ],

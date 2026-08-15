@@ -6,6 +6,8 @@
 const { busHasGroup } = require("./bus-group-membership");
 
 const ACTIVE_DUTY_TYPES = new Set(["morning", "afternoon", "night", "bereitschaft"]);
+/** Assignable opsStatus values (D21) — Aktivan and Rezerva both count as available. */
+const ASSIGNABLE_BUS_STATUSES = new Set(["active", "reserve"]);
 
 function normalizeBusNumber(bus) {
   return String(bus || "").trim().toLowerCase();
@@ -68,8 +70,8 @@ function evaluateBusResource({ bus, busNumber, groupId, existingBusNumber = null
 
   const keepCurrent = normalizeBusNumber(existingBusNumber) === normalizeBusNumber(number)
     && normalizeBusNumber(number) !== "";
-  const opsStatus = String(bus.opsStatus || "ready").trim().toLowerCase() || "ready";
-  if (opsStatus !== "ready" && !keepCurrent) {
+  const opsStatus = String(bus.opsStatus || "active").trim().toLowerCase() || "active";
+  if (!ASSIGNABLE_BUS_STATUSES.has(opsStatus) && !keepCurrent) {
     return {
       ok: false,
       code: "BUS_NOT_AVAILABLE",
@@ -206,6 +208,7 @@ function assignmentResourceErrorMessage(code) {
 
 module.exports = {
   ACTIVE_DUTY_TYPES,
+  ASSIGNABLE_BUS_STATUSES,
   normalizeBusNumber,
   parseHmToMinutes,
   timeRangesOverlap,

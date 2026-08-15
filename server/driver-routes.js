@@ -130,13 +130,15 @@ const importSchema = z.object({ companyId: companySchema, groupId: groupIdSchema
 const driverIdSchema = z.string().uuid();
 const driverStatusSchema = z.object({ active: z.boolean() });
 const busIdSchema = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/);
-const busOpsStatusSchema = z.enum(["ready", "breakdown", "technical", "out"]);
+const busOpsStatusSchema = z.enum(["active", "breakdown", "reserve", "other_line"]);
 const busGarageSchema = z.string().trim().max(40).optional().default("");
+const busPlateSchema = z.string().trim().max(20).regex(/^[A-Za-z0-9 -]*$/).optional().default("");
 const busCreateSchema = z.object({
   number: z.string().trim().min(1).max(32).regex(/^[\p{L}\p{N} ._/-]+$/u),
   groupId: groupIdSchema,
+  plate: busPlateSchema,
   garage: busGarageSchema,
-  opsStatus: busOpsStatusSchema.optional().default("ready")
+  opsStatus: busOpsStatusSchema.optional().default("active")
 });
 const busStatusSchema = z.object({
   active: z.boolean(),
@@ -145,6 +147,7 @@ const busStatusSchema = z.object({
   note: z.string().trim().max(120).optional()
 });
 const busProfileSchema = z.object({
+  plate: busPlateSchema,
   garage: busGarageSchema,
   opsStatus: busOpsStatusSchema,
   expectedRevision: z.number().int().min(0)
@@ -164,6 +167,10 @@ const busGroupDetachSchema = z.object({
   reason: changeReasonSchema,
   note: changeNoteSchema
 });
+const busGroupSwitchSchema = z.object({
+  toGroupId: groupIdSchema,
+  expectedRevision: z.number().int().min(0)
+});
 
 function busRevisionOf(data = {}) {
   const revision = Number(data.revision);
@@ -179,10 +186,11 @@ function publicBusPayload(id, data = {}) {
     lineId: data.lineId || data.groupId || null,
     groupIds: normalizeGroupIds(data),
     active: data.active !== false,
+    plate: String(data.plate || "").trim().slice(0, 20),
     garage: String(data.garage || "").trim().slice(0, 40),
-    opsStatus: ["ready", "breakdown", "technical", "out"].includes(String(data.opsStatus || ""))
+    opsStatus: busOpsStatusSchema.options.includes(String(data.opsStatus || ""))
       ? String(data.opsStatus)
-      : "ready",
+      : "active",
     revision: busRevisionOf(data),
     createdAt: null
   };
@@ -2081,8 +2089,9 @@ function registerDriverRoutes(app, deps) {
         ...groups,
         companyId: req.staff.companyId,
         active: true,
+        plate: String(parsed.data.plate || "").trim().slice(0, 20),
         garage: String(parsed.data.garage || "").trim().slice(0, 40),
-        opsStatus: parsed.data.opsStatus || "ready",
+        opsStatus: parsed.data.opsStatus || "active",
         revision: 0,
         createdAt: admin().firestore.FieldValue.serverTimestamp(),
         createdBy: req.staff.uid
@@ -2110,6 +2119,7 @@ function registerDriverRoutes(app, deps) {
     try {
       const companyRef = db().collection("companies").doc(req.staff.companyId);
       const busRef = companyRef.collection("buses").doc(busId.data);
+      const plate = String(profile.data.plate || "").trim().slice(0, 20);
       const garage = String(profile.data.garage || "").trim().slice(0, 40);
       const opsStatus = profile.data.opsStatus;
       const expectedRevision = profile.data.expectedRevision;
@@ -2137,6 +2147,7 @@ function registerDriverRoutes(app, deps) {
           throw err;
         }
         const nextRevision = currentRevision + 1;
+        const prevPlate = String(bus.plate || "").trim().slice(0, 20);
         const prevGarage = String(bus.garage || "").trim().slice(0, 40);
         // Soft mutex per garage label: second dispatcher cannot save into a garage
         // another dispatcher is actively writing (2 min). Same dispatcher can continue.
@@ -2162,6 +2173,7 @@ function registerDriverRoutes(app, deps) {
           }, { merge: true });
         }
         tx.update(busRef, {
+          plate,
           garage,
           opsStatus,
           revision: nextRevision,
@@ -2169,10 +2181,10 @@ function registerDriverRoutes(app, deps) {
           profileUpdatedBy: req.staff.uid
         });
         return {
-          previous: { garage: prevGarage, opsStatus: bus.opsStatus || "ready", revision: currentRevision },
-          next: { garage, opsStatus, revision: nextRevision },
+          previous: { plate: prevPlate, garage: prevGarage, opsStatus: bus.opsStatus || "active", revision: currentRevision },
+          next: { plate, garage, opsStatus, revision: nextRevision },
           groupIds,
-          bus: { ...bus, garage, opsStatus, revision: nextRevision, groupIds }
+          bus: { ...bus, plate, garage, opsStatus, revision: nextRevision, groupIds }
         };
       });
       await logAudit(req.staff.companyId, req.staff.uid, "bus_profile_updated", {
@@ -2390,6 +2402,103 @@ function registerDriverRoutes(app, deps) {
       }
       req.log?.error?.({ err: error }, "Skidanje autobusa sa linije nije uspelo");
       return res.status(500).json({ success: false, error: "Autobus nije mogao biti skinut sa linije." });
+    }
+  });
+
+  /** Reassign a bus's primary line in one transaction — detach current group(s), attach the new one. */
+  app.put("/api/staff/buses/:busId/switch-group", requireStaff, async (req, res) => {
+    if (req.staff.role !== "dispatcher") {
+      return res.status(403).json({ success: false, error: "Samo disponent može menjati liniju autobusa." });
+    }
+    const busId = busIdSchema.safeParse(req.params.busId);
+    const body = busGroupSwitchSchema.safeParse(req.body);
+    if (!busId.success || !body.success) {
+      return res.status(400).json({ success: false, error: "Nevažeći zahtev za promenu linije." });
+    }
+    const toGroupId = body.data.toGroupId;
+    if (!dispatcherCanAccessGroup(req.staff.groups, toGroupId)) {
+      return res.status(403).json({ success: false, error: "Linija nije u dodeljenim grupama." });
+    }
+    try {
+      const companyRef = db().collection("companies").doc(req.staff.companyId);
+      const busRef = companyRef.collection("buses").doc(busId.data);
+      const { normalizeGroupIds, withDetachedGroup, buildNewBusGroups, busHasGroup } = require("./bus-group-membership");
+      const result = await db().runTransaction(async (tx) => {
+        const snapshot = await tx.get(busRef);
+        if (!snapshot.exists) {
+          const err = new Error("not_found");
+          err.code = "not_found";
+          throw err;
+        }
+        const bus = snapshot.data() || {};
+        const beforeIds = normalizeGroupIds(bus);
+        const canAccess = beforeIds.some((gid) => dispatcherCanAccessGroup(req.staff.groups, gid));
+        if (beforeIds.length && !canAccess) {
+          const err = new Error("forbidden");
+          err.code = "forbidden";
+          throw err;
+        }
+        const currentRevision = busRevisionOf(bus);
+        if (currentRevision !== body.data.expectedRevision) {
+          const err = new Error("revision_conflict");
+          err.code = "revision_conflict";
+          err.bus = publicBusPayload(busId.data, bus);
+          throw err;
+        }
+        if (busHasGroup(bus, toGroupId) && beforeIds.length === 1) {
+          const err = new Error("already_on_line");
+          err.code = "already_on_line";
+          throw err;
+        }
+        const nextRevision = currentRevision + 1;
+        const detached = withDetachedGroup(bus, beforeIds);
+        const attachedGroups = buildNewBusGroups(toGroupId);
+        const next = { ...detached, ...attachedGroups };
+        tx.update(busRef, {
+          groupIds: next.groupIds,
+          groupId: next.groupId,
+          lineId: next.lineId,
+          revision: nextRevision,
+          lineSwitchedAt: admin().firestore.FieldValue.serverTimestamp(),
+          lineSwitchedBy: req.staff.uid
+        });
+        return {
+          revision: nextRevision,
+          previousGroupIds: beforeIds,
+          bus: { ...bus, ...next, revision: nextRevision }
+        };
+      });
+      await logAudit(req.staff.companyId, req.staff.uid, "bus_group_switched", {
+        busId: busId.data,
+        toGroupId,
+        previousGroupIds: result.previousGroupIds,
+        groupIds: result.bus.groupIds,
+        revision: result.revision
+      });
+      return res.json({
+        success: true,
+        bus: publicBusPayload(busId.data, result.bus)
+      });
+    } catch (error) {
+      if (error.code === "not_found") {
+        return res.status(404).json({ success: false, error: "Autobus nije pronađen." });
+      }
+      if (error.code === "forbidden") {
+        return res.status(403).json({ success: false, error: "Autobus nije u dodeljenoj grupi." });
+      }
+      if (error.code === "already_on_line") {
+        return res.status(409).json({ success: false, error: "Autobus je već na toj liniji." });
+      }
+      if (error.code === "revision_conflict") {
+        return res.status(409).json({
+          success: false,
+          code: "REVISION_CONFLICT",
+          error: "Autobus je izmenjen. Osvežite i pokušajte ponovo.",
+          bus: error.bus || null
+        });
+      }
+      req.log?.error?.({ err: error }, "Promena linije autobusa nije uspela");
+      return res.status(500).json({ success: false, error: "Linija autobusa nije mogla biti promenjena." });
     }
   });
 

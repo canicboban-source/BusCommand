@@ -44,7 +44,7 @@ function seedDispatcherLine() {
         lineId: "101",
         groupIds: ["101"],
         active: true,
-        opsStatus: "ready"
+        opsStatus: "active"
       }
     ],
     dispatchers: [{ id: "disp-1", groups: ["101"], companyId: "demo" }]
@@ -66,7 +66,7 @@ test("withDetachedGroup removes line membership and keeps company bus", () => {
     lineId: "101",
     groupIds: ["101", "320"],
     active: true,
-    opsStatus: "ready"
+    opsStatus: "active"
   };
   const next = withDetachedGroup(bus, "101");
   assert.equal(busHasGroup(next, "101"), false);
@@ -76,8 +76,8 @@ test("withDetachedGroup removes line membership and keeps company bus", () => {
 });
 
 test("inactive bus is not assignable", () => {
-  assert.equal(busIsAssignable({ active: false, opsStatus: "ready" }), false);
-  assert.equal(busIsAssignable({ active: true, opsStatus: "ready" }), true);
+  assert.equal(busIsAssignable({ active: false, opsStatus: "active" }), false);
+  assert.equal(busIsAssignable({ active: true, opsStatus: "active" }), true);
 });
 
 test("clearDriverLineMembership removes line visibility for dispatcher", () => {

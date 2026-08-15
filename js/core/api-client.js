@@ -398,8 +398,18 @@ const ApiClient = (() => {
             body: JSON.stringify({
                 number,
                 groupId,
+                plate: extras.plate || "",
                 garage: extras.garage || "",
-                opsStatus: extras.opsStatus || "ready"
+                opsStatus: extras.opsStatus || "active"
+            })
+        });
+    }
+    async function switchStaffBusGroup(busId, toGroupId, expectedRevision = 0) {
+        return apiFetch("/api/staff/buses/" + encodeURIComponent(busId) + "/switch-group", {
+            method: "PUT",
+            body: JSON.stringify({
+                toGroupId,
+                expectedRevision: Number.isInteger(expectedRevision) ? expectedRevision : 0
             })
         });
     }
@@ -547,7 +557,7 @@ const ApiClient = (() => {
         updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode, createCompanyDriver,
         createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage, ackDriverMessage,
         createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, transitionStaffOperationalIncident, resolveStaffOperationalIncident, getStaffOpsActivity, resolveStaffSos,
-        setLostItemStatus, createStaffBus, updateStaffBus, setStaffBusActive, assignStaffShift, undoStaffShift,
+        setLostItemStatus, createStaffBus, updateStaffBus, switchStaffBusGroup, setStaffBusActive, assignStaffShift, undoStaffShift,
         acquirePlanLock, heartbeatPlanLock, releasePlanLock, breakPlanLock, getPlanLock,
         sendStaffMessage, archiveStaffMessage, getDriverWorkSession, postDriverLocation, reportStaffMapAccess, confirmDriverShifts, getStaffShiftConfirmations,
         startSupportSession, getActiveSupportSessionAdmin, endSupportSessionAdmin,

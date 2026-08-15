@@ -19,7 +19,7 @@ import { closeSuperAdminModal, confirmSuperAdminPin, handleLogoClick } from "./a
 import { clickElementById, installActionDelegates, removeElementById } from "./core/action-delegate.js";
 import { exportDriversCSV, exportLostItemsCSV, exportReportsCSV } from "./core/export-csv.js";
 import { getScheduleByKey } from "./core/utils.js";
-import { addBus, deleteBus, deleteRoute, toggleBusEdit, saveBusOpsProfile } from "./data/buses-routes.js";
+import { addBus, deleteBus, deleteRoute, toggleBusEdit, saveBusOpsProfile, quickSetBusStatus, changeBusGroup } from "./data/buses-routes.js";
 import { addDriver, editDriver, toggleDriverActive } from "./data/drivers.js";
 import { deleteGroup, setGroupFilter } from "./data/groups.js";
 import { clearScheduleFile, clearScheduleText, deleteScheduleEntry, formatScheduleText, handleScheduleDrop, handleScheduleFileSelect, insertScheduleTable, sendScheduleToDrivers, switchScheduleTab } from "./data/schedules.js";
@@ -63,6 +63,8 @@ const __ONCLICK_HANDLERS = {
     addBus,
     toggleBusEdit,
     saveBusOpsProfile,
+    quickSetBusStatus,
+    changeBusGroup,
     addCompanyDispatcher,
     addDriver,
     applyBrandingSettings,

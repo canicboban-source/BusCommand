@@ -3,6 +3,7 @@
  * Canonical shift contract: server/shift-assignment.js (SoT = shifts; schedules = mirror).
  */
 const crypto = require("crypto");
+const { ASSIGNABLE_BUS_STATUSES } = require("./assignment-resource-guard");
 const {
   assertNoActiveGroupMonthlyImport,
   lockDocumentId,
@@ -514,7 +515,7 @@ async function revalidateCommitRows({
         errors.push({
           row: rowNumber, code: "BUS_INACTIVE", driverId: row.driverId, date: row.date, bus: busNumber
         });
-      } else if (bus.opsStatus && bus.opsStatus !== "ready") {
+      } else if (bus.opsStatus && !ASSIGNABLE_BUS_STATUSES.has(bus.opsStatus)) {
         errors.push({
           row: rowNumber,
           code: "BUS_NOT_AVAILABLE",

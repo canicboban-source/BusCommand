@@ -2014,8 +2014,10 @@
 
                     <div class="card vehicles-panel-card">
                         <form id="add-bus-form" data-submit-action="addBus" class="crud-form hub-bus-form" style="margin-bottom:10px;">
-                            <input type="text" id="new-bus-num" required placeholder="e.g. 91504" aria-label="Bus number" data-i18n-aria-label="hub_add_bus_label" data-i18n-placeholder="hub_add_bus_placeholder">
-                            <input type="text" id="new-bus-garage" maxlength="40" placeholder="Depot A" aria-label="Garage" data-i18n-aria-label="bus_garage" data-i18n-placeholder="bus_garage_placeholder">
+                            <input type="text" id="new-bus-num" required maxlength="32" autocomplete="off" autocorrect="off" placeholder="e.g. 3101" aria-label="Bus number" data-i18n-aria-label="hub_add_bus_label" data-i18n-placeholder="hub_add_bus_placeholder">
+                            <input type="text" id="new-bus-plate" maxlength="20" autocomplete="off" autocorrect="off" placeholder="MD-101AB" aria-label="License plate" data-i18n-aria-label="table_plate" data-i18n-placeholder="ph_bus_plate">
+                            <select id="new-bus-group" aria-label="Group / line" data-i18n-aria-label="ca_col_groups"></select>
+                            <select id="new-bus-status" aria-label="Status" data-i18n-aria-label="bus_ops_status"></select>
                             <button type="submit" class="btn-primary hub-add-bus-btn" data-i18n="hub_add_bus_btn" aria-label="Add bus" data-i18n-aria-label="hub_add_bus_aria">Add bus</button>
                         </form>
                         <div class="vehicles-bus-import hub-bus-import" style="margin-bottom:12px;">
@@ -2030,7 +2032,20 @@
                             </div>
                             <div id="bus-import-preview"></div>
                         </div>
-                        <ul class="crud-list" id="settings-buses-list" style="max-height:420px;overflow-y:auto;"></ul>
+                        <div class="table-container" style="max-height:420px;overflow-y:auto;">
+                            <table class="app-table">
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="hub_add_bus_label">Interni broj</th>
+                                        <th data-i18n="table_plate">Tablice</th>
+                                        <th data-i18n="ca_col_groups">Grupa</th>
+                                        <th data-i18n="bus_ops_status">Status</th>
+                                        <th data-i18n="table_actions">Akcije</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="settings-buses-list"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
 
@@ -2316,9 +2331,9 @@
                                 <thead>
                                     <tr>
                                         <th data-i18n="table_bus">Autobus</th>
+                                        <th data-i18n="table_plate">Tablice</th>
                                         <th data-i18n="ca_col_groups">Grupe</th>
                                         <th data-i18n="table_status">Status</th>
-                                        <th>ID</th>
                                     </tr>
                                 </thead>
                                 <tbody id="ca-buses-table-body"></tbody>

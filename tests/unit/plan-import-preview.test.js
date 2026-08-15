@@ -131,7 +131,7 @@ test("rejects missing inactive and unavailable buses when bus map provided", () 
   });
 
   const inactive = validInput({
-    busesByNumber: new Map([["101", { number: "101", active: false, groupId: "31099", opsStatus: "ready" }]])
+    busesByNumber: new Map([["101", { number: "101", active: false, groupId: "31099", opsStatus: "active" }]])
   });
   assert.throws(() => buildPlanImportPreview(inactive), (error) => {
     assert.ok(error.errors.some((item) => item.code === "BUS_INACTIVE"));
@@ -150,7 +150,7 @@ test("rejects missing inactive and unavailable buses when bus map provided", () 
 test("preview rows include previous snapshot for compensation", () => {
   const preview = buildPlanImportPreview(validInput({
     dutiesByCode: new Map([["310.S01", { code: "310.S01" }]]),
-    busesByNumber: new Map([["101", { number: "101", active: true, groupId: "31099", opsStatus: "ready" }]]),
+    busesByNumber: new Map([["101", { number: "101", active: true, groupId: "31099", opsStatus: "active" }]]),
     shiftsById: new Map([[`${DRIVER_ID}|2026-08-03`, {
       revision: 2,
       type: "morning",

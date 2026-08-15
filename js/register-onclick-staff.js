@@ -16,7 +16,7 @@ import { exportDriversCSV, exportLostItemsCSV, exportReportsCSV } from "./core/e
 import { getScheduleByKey, showToast } from "./core/utils.js";
 import { loadPlanImport, prefetchPlanImport } from "./dispatcher/plan-import-loader.js";
 import { loadMsgCompose } from "./dispatcher/msg-compose-loader.js";
-import { addBus, deleteBus, deleteRoute, toggleBusEdit, saveBusOpsProfile } from "./data/buses-routes.js";
+import { addBus, deleteBus, deleteRoute, toggleBusEdit, saveBusOpsProfile, quickSetBusStatus, changeBusGroup } from "./data/buses-routes.js";
 import {
     clearBusImportPreview,
     confirmBusImport,
@@ -266,6 +266,8 @@ const HANDLERS = {
     addBus,
     toggleBusEdit,
     saveBusOpsProfile,
+    quickSetBusStatus,
+    changeBusGroup,
     clearBusImportPreview,
     confirmBusImport,
     handleBusImportDrop,

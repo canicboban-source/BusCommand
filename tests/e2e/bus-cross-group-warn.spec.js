@@ -50,7 +50,7 @@ test.describe("Bus overlap hard block", () => {
           groupId: "310",
           groupIds: ["310", "320"],
           active: true,
-          opsStatus: "ready"
+          opsStatus: "active"
         }
       ],
       shifts: [
@@ -123,7 +123,7 @@ test.describe("Bus overlap hard block", () => {
         groupId: "320",
         groupIds: ["320"],
         active: true,
-        opsStatus: "ready"
+        opsStatus: "active"
       }],
       shifts: []
     };
@@ -175,7 +175,7 @@ test.describe("Bus overlap hard block", () => {
         groupId: "320",
         groupIds: ["320"],
         active: false,
-        opsStatus: "ready"
+        opsStatus: "active"
       }],
       shifts: []
     };

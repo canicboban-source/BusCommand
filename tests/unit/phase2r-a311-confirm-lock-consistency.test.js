@@ -364,7 +364,7 @@ test("A.3.1.1: completion missing lock groupId/month → RECOVERY, never complet
       previous: null
     }]
   };
-  bags.buses["bus-101"] = { number: "101", active: true, opsStatus: "ready", groupId: GROUP_A };
+  bags.buses["bus-101"] = { number: "101", active: true, opsStatus: "active", groupId: GROUP_A };
   const prepared = await prepareStaffMonthlyImport({
     db, admin, companyId: COMPANY_ID, actorId: ACTOR, preview
   });
