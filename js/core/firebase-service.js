@@ -148,7 +148,7 @@ function _docsToList(docs, companyId = null) {
 
 const DISPATCHER_DRIVER_SENSITIVE = Object.freeze([
     "eid", "pin", "password", "passwordHash", "companyId", "company_code", "companyCode",
-    "personalCode", "loginCode", "activationCode", "otp"
+    "personalCode", "loginCode", "activationCode", "otp", "plz", "postalCode"
 ]);
 
 /** Dispatcher may only keep contact + assignment fields — never EID/PIN. */
@@ -170,7 +170,8 @@ function sanitizeDriverRecordForClient(driver, role) {
         groupId: raw.groupId || raw.lineId || "",
         lineId: raw.lineId || raw.groupId || "",
         bus: raw.bus || "",
-        active: raw.active !== false
+        active: raw.active !== false,
+        status: raw.status || (raw.active !== false ? "Active" : "Inactive")
     };
 }
 

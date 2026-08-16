@@ -1,0 +1,11 @@
+# BusCommand Monthly Schedule Template (for Dispatcher)
+# Instructions:
+# 1. Fill in the required columns below with monthly schedule data
+# 2. Date: Shift date in DD.MM.YYYY format (e.g., 01.09.2026)
+# 3. Driver_Full_Name: Full name of the driver (First Last or Last First)
+# 4. Shift_Name_Free_Text: Shift name or free text description (100% flexible)
+# 5. Notes: Optional notes about the shift (training, vacation, sick, etc.)
+# 6. Remove this header section (lines starting with #) before importing
+# 7. Import via BusCommand Dispo Cockpit: Monthly Plans → Import Schedule
+# Example row: 01.09.2026,Max Mustermann,Morning Shift F05,Regular duty
+Date (DD.MM.YYYY),Driver_Full_Name,Shift_Name_Free_Text,Notes

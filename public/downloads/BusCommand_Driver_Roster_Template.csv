@@ -1,0 +1,15 @@
+# BusCommand Driver Roster Template (for Company Admin)
+# Instructions:
+# 1. Fill in the required columns below with driver information
+# 2. EID: Unique employee identifier (required)
+# 3. Last_Name: Driver's last name (required)
+# 4. First_Name: Driver's first name (required)
+# 5. Email: Driver's email address (required)
+# 6. Phone: Driver's phone number (required)
+# 7. PLZ: Postal code (optional)
+# 8. Initial_PIN: Initial 4-6 digit PIN (optional, system generates if empty)
+# 9. Line_Group: Route group assignment (e.g., 310, 320)
+# 10. Remove this header section (lines starting with #) before importing
+# 11. Import via BusCommand Company Admin: Drivers → Import Roster
+# Example row: EMP001,Mustermann,Max,max.mustermann@email.com,+436991234567,1010,1234,310
+EID,Last_Name,First_Name,Email,Phone,PLZ,Initial_PIN,Line_Group
