@@ -3,27 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BusCommand</title>
-  <meta name="description" content="BusCommand — fleet operations for bus companies: dispatch, monthly plans, driver confirmations.">
+  <title>BusCommand — Enterprise Fleet Operations Platform</title>
+  <meta name="description" content="BusCommand — enterprise fleet operations for bus companies: dispatch, monthly plans, driver confirmations, DSGVO-compliant infrastructure.">
   <link rel="icon" type="image/png" href="/brand/logo-hero.png">
   <link rel="apple-touch-icon" href="/brand/logo-hero.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: dark;
-      --bg: #0A1019;
-      --panel: rgba(20, 29, 46, 0.92);
-      --panel-solid: #141D2E;
-      --text: #F1F5F9;
+      --bg: #020617;                 /* slate-950 */
+      --surface-900: #0f172a;        /* slate-900 */
+      --surface-950: #172554;        /* blue-950 */
+      --glass: rgba(15, 23, 42, 0.55);
+      --glass-strong: rgba(23, 37, 84, 0.45);
+      --text: #F8FAFC;
       --muted: #94A3B8;
-      --blue: #2563EB;
-      --blue-soft: rgba(37, 99, 235, 0.16);
-      --line: rgba(148, 163, 184, 0.16);
+      --blue: #3B82F6;
+      --blue-bright: #60A5FA;
+      --blue-deep: #1D4ED8;
+      --line: rgba(148, 163, 184, 0.14);
+      --line-bright: rgba(96, 165, 250, 0.35);
       --ok: #34D399;
       --warn: #F59E0B;
-      --max: 1120px;
+      --danger: #F87171;
+      --max: 1152px;
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
@@ -31,23 +36,36 @@
       margin: 0;
       font-family: Outfit, system-ui, sans-serif;
       background:
-        radial-gradient(ellipse at 12% 0%, rgba(37, 99, 235, 0.22), transparent 42%),
-        radial-gradient(ellipse at 88% 18%, rgba(30, 64, 175, 0.16), transparent 38%),
-        var(--bg);
+        radial-gradient(ellipse 60% 40% at 15% -5%, rgba(37, 99, 235, 0.25), transparent 55%),
+        radial-gradient(ellipse 50% 35% at 90% 10%, rgba(30, 64, 175, 0.22), transparent 50%),
+        linear-gradient(180deg, #020617 0%, #0b1220 60%, #020617 100%);
       color: var(--text);
-      line-height: 1.5;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background-image:
+        linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 30%, transparent 75%);
     }
     a { color: inherit; }
-    .wrap {
-      width: min(var(--max), calc(100% - 2rem));
-      margin-inline: auto;
-    }
+    .wrap { width: min(var(--max), calc(100% - 2.5rem)); margin-inline: auto; }
+    .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+    /* ── Header ─────────────────────────────────────────── */
     .site-header {
       position: sticky;
       top: 0;
-      z-index: 20;
-      backdrop-filter: blur(14px);
-      background: rgba(10, 16, 25, 0.78);
+      z-index: 30;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(2, 6, 23, 0.72);
       border-bottom: 1px solid var(--line);
     }
     .site-header .inner {
@@ -55,35 +73,31 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      padding: 14px 0;
+      padding: 13px 0;
     }
     .brand-lockup {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
+      gap: 11px;
       text-decoration: none;
       font-weight: 800;
+      font-size: 1.12rem;
       letter-spacing: -0.02em;
     }
     .brand-lockup img {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      object-fit: contain;
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
+      object-fit: cover;
+      box-shadow: 0 4px 18px rgba(37, 99, 235, 0.35);
     }
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
+    .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
     .lang-switch {
       display: inline-flex;
       border: 1px solid var(--line);
       border-radius: 999px;
       overflow: hidden;
-      background: rgba(20, 29, 46, 0.7);
+      background: rgba(15, 23, 42, 0.65);
     }
     .lang-switch button {
       appearance: none;
@@ -92,220 +106,352 @@
       color: var(--muted);
       font: inherit;
       font-weight: 700;
-      font-size: 0.78rem;
-      letter-spacing: 0.04em;
-      padding: 8px 11px;
+      font-size: 0.76rem;
+      letter-spacing: 0.05em;
+      padding: 8px 12px;
       cursor: pointer;
+      transition: color .15s ease, background .15s ease;
     }
+    .lang-switch button:hover { color: var(--text); }
     .lang-switch button[aria-pressed="true"] {
-      background: var(--blue);
+      background: linear-gradient(135deg, var(--blue-deep), var(--blue));
       color: #fff;
     }
+
+    /* ── Buttons ────────────────────────────────────────── */
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      min-height: 44px;
-      padding: 0 18px;
+      min-height: 46px;
+      padding: 0 20px;
       border-radius: 12px;
       font-weight: 700;
+      font-size: 0.95rem;
       text-decoration: none;
       border: 1px solid transparent;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
     }
-    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary {
+      background: linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%);
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.38), inset 0 1px 0 rgba(255,255,255,0.18);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(37, 99, 235, 0.5); }
     .btn-secondary {
-      background: transparent;
-      border-color: rgba(148, 163, 184, 0.35);
+      background: rgba(15, 23, 42, 0.6);
+      border-color: rgba(148, 163, 184, 0.32);
       color: var(--text);
+      backdrop-filter: blur(8px);
     }
+    .btn-secondary:hover { border-color: var(--line-bright); transform: translateY(-1px); }
     .btn-ghost {
-      background: var(--blue-soft);
+      background: rgba(37, 99, 235, 0.14);
       color: #BFDBFE;
-      border-color: rgba(37, 99, 235, 0.35);
+      border-color: rgba(96, 165, 250, 0.38);
     }
-    .hero {
-      padding: clamp(48px, 10vw, 96px) 0 clamp(40px, 7vw, 72px);
-    }
-    .hero-grid {
-      display: grid;
-      gap: 28px;
-      align-items: end;
-    }
-    .hero h1 {
-      margin: 0 0 14px;
-      font-size: clamp(2.4rem, 6vw, 4rem);
-      line-height: 1.05;
-      letter-spacing: -0.04em;
-      font-weight: 800;
-    }
-    .hero .lead {
-      margin: 0 0 28px;
-      max-width: 38rem;
-      color: var(--muted);
-      font-size: clamp(1.05rem, 2.2vw, 1.25rem);
-    }
-    .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+    .btn-ghost:hover { background: rgba(37, 99, 235, 0.22); }
+
+    /* ── Hero ───────────────────────────────────────────── */
+    .hero { padding: clamp(56px, 9vw, 104px) 0 clamp(44px, 7vw, 80px); position: relative; }
+    .hero-grid { display: grid; gap: 30px; }
     .eyebrow {
-      display: inline-block;
-      margin-bottom: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(96, 165, 250, 0.35);
+      background: rgba(37, 99, 235, 0.12);
       color: #93C5FD;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.09em;
       text-transform: uppercase;
     }
-    section { padding: clamp(48px, 8vw, 88px) 0; }
-    section + section { border-top: 1px solid var(--line); }
-    .section-head {
+    .eyebrow::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 10px rgba(52, 211, 153, 0.9);
+    }
+    .hero h1 {
+      margin: 0 0 16px;
+      font-size: clamp(2.5rem, 6vw, 4.1rem);
+      line-height: 1.04;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+      background: linear-gradient(115deg, #F8FAFC 30%, #93C5FD 75%, #60A5FA);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .hero .lead {
+      margin: 0 0 30px;
       max-width: 40rem;
-      margin-bottom: 28px;
+      color: var(--muted);
+      font-size: clamp(1.06rem, 2.2vw, 1.28rem);
+    }
+    .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-top: 42px;
+    }
+    .stat-card {
+      padding: 18px 20px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .stat-card .num {
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--blue-bright);
+    }
+    .stat-card .lbl { color: var(--muted); font-size: 0.86rem; }
+
+    /* ── Sections ───────────────────────────────────────── */
+    section { padding: clamp(52px, 8vw, 92px) 0; position: relative; }
+    section + section { border-top: 1px solid var(--line); }
+    .section-head { max-width: 44rem; margin-bottom: 32px; }
+    .section-head .kicker {
+      color: var(--blue-bright);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
     }
     .section-head h2 {
       margin: 0 0 10px;
-      font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+      font-size: clamp(1.7rem, 3.5vw, 2.35rem);
       letter-spacing: -0.03em;
+      font-weight: 800;
     }
-    .section-head p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 1.05rem;
-    }
-    .compare {
-      display: grid;
-      gap: 16px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .compare-card {
+    .section-head p { margin: 0; color: var(--muted); font-size: 1.06rem; }
+
+    /* Glass card base */
+    .glass {
       border: 1px solid var(--line);
       border-radius: 18px;
-      background: var(--panel);
-      padding: 22px;
+      background: linear-gradient(160deg, var(--glass-strong), var(--glass));
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 10px 36px rgba(2, 6, 23, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
-    .compare-card h3 {
-      margin: 0 0 14px;
+
+    /* ── Compare ────────────────────────────────────────── */
+    .compare { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .compare-card { padding: 26px; }
+    .compare-card .card-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+    .compare-card .card-tag.bad { color: #FCA5A5; background: rgba(248, 113, 113, 0.12); border: 1px solid rgba(248, 113, 113, 0.3); }
+    .compare-card.good-card .card-tag { color: #6EE7B7; background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.3); }
+    .compare-card h3 { margin: 0 0 16px; font-size: 1.2rem; font-weight: 700; }
+    .compare-card ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+    .compare-card li {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 10px;
+      align-items: start;
+      color: #C7D2E1;
+      font-size: 0.99rem;
+    }
+    .compare-card li::before {
+      content: "✕";
+      color: var(--danger);
+      font-weight: 800;
+      font-size: 0.8rem;
+      margin-top: 3px;
+    }
+    .compare-card.good-card li { color: #D8FAEB; }
+    .compare-card.good-card li::before {
+      content: "✓";
+      color: var(--ok);
+      font-weight: 800;
+    }
+
+    /* ── Downloads ──────────────────────────────────────── */
+    .downloads { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+    .download-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 24px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(160deg, rgba(23, 37, 84, 0.5), rgba(15, 23, 42, 0.55));
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      text-decoration: none;
+      overflow: hidden;
+      transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+    }
+    .download-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(59, 130, 246, 0.18), transparent 70%);
+      pointer-events: none;
+    }
+    .download-card:hover {
+      border-color: rgba(96, 165, 250, 0.6);
+      transform: translateY(-3px);
+      box-shadow: 0 16px 40px rgba(2, 6, 23, 0.6);
+    }
+    .dl-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
       font-size: 1.15rem;
+      font-weight: 800;
+      color: #BFDBFE;
+      background: rgba(37, 99, 235, 0.16);
+      border: 1px solid rgba(96, 165, 250, 0.3);
     }
-    .compare-card ul {
+    .download-card strong { font-size: 1.08rem; letter-spacing: -0.01em; }
+    .download-card span.desc { color: var(--muted); font-size: 0.92rem; flex: 1; }
+    .download-card .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+    }
+    .download-card .tag {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #93C5FD;
+      background: rgba(37, 99, 235, 0.16);
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      border-radius: 999px;
+      padding: 4px 11px;
+    }
+    .download-card .get {
+      color: var(--blue-bright);
+      font-weight: 700;
+      font-size: 0.86rem;
+    }
+    .downloads-all {
+      margin-top: 18px;
+      padding: 14px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 22px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .downloads-all a { color: #93C5FD; text-decoration: none; border-bottom: 1px dotted rgba(147, 197, 253, 0.5); }
+    .downloads-all a:hover { color: #BFDBFE; }
+
+    /* ── Pricing ────────────────────────────────────────── */
+    .pricing { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(252px, 1fr)); align-items: stretch; }
+    .price-card {
+      position: relative;
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 100%;
+    }
+    .price-card .plan-badge {
+      position: absolute;
+      top: -13px;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 999px;
+    }
+    .plan-badge.badge-popular {
+      color: #0B1220;
+      background: linear-gradient(135deg, #60A5FA, #34D399);
+      box-shadow: 0 6px 20px rgba(52, 211, 153, 0.35);
+    }
+    .plan-badge.badge-contract { color: #FDE68A; background: rgba(146, 64, 14, 0.95); border: 1px solid rgba(245, 158, 11, 0.5); }
+    .plan-badge.badge-free { color: #BFDBFE; background: rgba(30, 64, 175, 0.9); border: 1px solid rgba(96, 165, 250, 0.4); }
+    .price-card h3 { margin: 6px 0 0; font-size: 1.22rem; font-weight: 800; letter-spacing: -0.01em; }
+    .price-card .plan-sub { color: var(--muted); font-size: 0.86rem; margin-top: -8px; }
+    .price {
+      font-size: 2.15rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+    .price small {
+      display: block;
+      margin-top: 2px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0;
+    }
+    .price-card ul {
       margin: 0;
       padding: 0;
       list-style: none;
       display: grid;
-      gap: 10px;
+      gap: 9px;
+      flex: 1;
+      color: #C7D2E1;
+      font-size: 0.93rem;
     }
-    .compare-card li {
-      display: grid;
-      grid-template-columns: 18px 1fr;
-      gap: 10px;
-      color: var(--muted);
-      font-size: 0.98rem;
-    }
-    .compare-card li::before {
-      content: "";
-      width: 8px;
-      height: 8px;
-      margin-top: 7px;
-      border-radius: 50%;
-      background: var(--warn);
-    }
-    .compare-card.good li::before { background: var(--ok); }
-    .downloads {
-      display: grid;
-      gap: 14px;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    }
-    .download-card {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding: 20px;
-      border-radius: 16px;
-      border: 1px solid var(--line);
-      background: var(--panel-solid);
-      text-decoration: none;
-      transition: border-color .2s ease, transform .2s ease;
-    }
-    .download-card:hover {
-      border-color: rgba(37, 99, 235, 0.55);
-      transform: translateY(-2px);
-    }
-    .download-card strong { font-size: 1.05rem; }
-    .download-card span { color: var(--muted); font-size: 0.92rem; }
-    .download-card .tag {
-      align-self: flex-start;
-      font-size: 0.72rem;
+    .price-card ul li { display: grid; grid-template-columns: 20px 1fr; gap: 8px; align-items: start; }
+    .price-card ul li::before {
+      content: "✓";
+      color: var(--ok);
       font-weight: 800;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: #BFDBFE;
-      background: var(--blue-soft);
-      border-radius: 999px;
-      padding: 5px 10px;
-    }
-    .pricing {
-      display: grid;
-      gap: 14px;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    }
-    .price-card {
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: var(--panel);
-      padding: 22px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      min-height: 100%;
+      font-size: 0.82rem;
+      margin-top: 2px;
     }
     .price-card.featured {
-      border-color: rgba(37, 99, 235, 0.55);
-      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+      border-color: rgba(96, 165, 250, 0.55);
+      background: linear-gradient(165deg, rgba(30, 64, 175, 0.4), rgba(15, 23, 42, 0.6));
+      box-shadow: 0 18px 48px rgba(37, 99, 235, 0.22), inset 0 1px 0 rgba(255,255,255,0.07);
     }
-    .price-card h3 { margin: 0; font-size: 1.2rem; }
-    .price {
-      font-size: 2rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-    }
-    .price small {
-      display: block;
-      margin-top: 4px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--muted);
-    }
-    .price-card ul {
-      margin: 0;
-      padding-left: 1.1rem;
-      color: var(--muted);
-      display: grid;
-      gap: 8px;
-      flex: 1;
-    }
-    .final-cta {
-      text-align: center;
-      padding-bottom: 72px;
-    }
-    .final-cta .actions {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 22px;
-    }
-    .site-footer {
-      border-top: 1px solid var(--line);
-      padding: 28px 0 40px;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-    .site-footer .inner {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    @media (max-width: 760px) {
+    .price-card .btn { min-height: 42px; font-size: 0.88rem; }
+
+    /* ── Final CTA / footer ─────────────────────────────── */
+    .final-cta { text-align: center; padding-bottom: 84px; }
+    .final-cta h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); letter-spacing: -0.03em; margin: 0 0 12px; }
+    .final-cta .lead { margin: 0 auto; max-width: 38rem; color: var(--muted); font-size: 1.06rem; }
+    .final-cta .actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+    .site-footer { border-top: 1px solid var(--line); padding: 30px 0 44px; color: var(--muted); font-size: 0.92rem; }
+    .site-footer .inner { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+    @media (max-width: 780px) {
       .compare { grid-template-columns: 1fr; }
       .header-actions .btn { display: none; }
     }
@@ -315,7 +461,7 @@
   <header class="site-header">
     <div class="wrap inner">
       <a class="brand-lockup" href="/">
-        <img src="/brand/logo-hero.png" width="40" height="40" alt="BusCommand">
+        <img src="/brand/logo-hero.png" width="42" height="42" alt="BusCommand">
         <span>BusCommand</span>
       </a>
       <div class="header-actions">
@@ -334,14 +480,20 @@
     <section class="hero" id="top">
       <div class="wrap hero-grid">
         <div>
-          <p class="eyebrow" data-i18n="eyebrow">Fleet operations for bus companies</p>
+          <p class="eyebrow" data-i18n="eyebrow">Enterprise fleet operations</p>
           <h1 data-i18n="heroTitle">Plan. People. Action.</h1>
-          <p class="lead" data-i18n="heroLead">Replace spreadsheet chaos with one operational truth — monthly plans, live dispatch, and driver confirmations in a multi-tenant system built for real depot rhythm.</p>
+          <p class="lead" data-i18n="heroLead">Replace spreadsheet chaos with one operational truth — monthly plans, live dispatch, and driver confirmations in a multi-tenant system built for real depot rhythm and DSGVO-grade isolation.</p>
           <div class="hero-cta">
             <a class="btn btn-primary" href="/staff" data-i18n="ctaStaff">Open staff login</a>
             <a class="btn btn-secondary" href="/driver" data-i18n="ctaDriver">Open driver app</a>
             <a class="btn btn-ghost" href="#downloads" data-i18n="ctaTemplates">Download templates</a>
           </div>
+        </div>
+        <div class="hero-stats">
+          <div class="stat-card"><div class="num mono">3</div><div class="lbl" data-i18n="statRoles">Roles · CA / Dispo / Driver</div></div>
+          <div class="stat-card"><div class="num mono">DE·SR·EN</div><div class="lbl" data-i18n="statLangs">Full trilingual product</div></div>
+          <div class="stat-card"><div class="num mono">EU</div><div class="lbl" data-i18n="statEu">EU hosting · DSGVO ready</div></div>
+          <div class="stat-card"><div class="num mono">24/7</div><div class="lbl" data-i18n="statUptime">Live dispatch radar</div></div>
         </div>
       </div>
     </section>
@@ -349,11 +501,13 @@
     <section id="compare" aria-labelledby="compare-title">
       <div class="wrap">
         <div class="section-head">
+          <p class="kicker" data-i18n="compareKicker">Why switch</p>
           <h2 id="compare-title" data-i18n="compareTitle">Excel sheets vs BusCommand</h2>
           <p data-i18n="compareLead">Spreadsheets move files. BusCommand moves the shift — with roles, confirmations, and one plan the whole company trusts.</p>
         </div>
         <div class="compare">
-          <article class="compare-card">
+          <article class="compare-card glass">
+            <span class="card-tag bad" data-i18n="excelTag">The old way</span>
             <h3 data-i18n="excelTitle">With Excel / shared folders</h3>
             <ul>
               <li data-i18n="excel1">Version chaos — “final_v7_REAL.xlsx”</li>
@@ -362,7 +516,8 @@
               <li data-i18n="excel4">Incidents and SOS stay in chat threads</li>
             </ul>
           </article>
-          <article class="compare-card good">
+          <article class="compare-card good-card glass">
+            <span class="card-tag" data-i18n="bcTag">BusCommand</span>
             <h3 data-i18n="bcTitle">With BusCommand</h3>
             <ul>
               <li data-i18n="bc1">One published monthly plan per group</li>
@@ -378,35 +533,42 @@
     <section id="downloads" aria-labelledby="downloads-title">
       <div class="wrap">
         <div class="section-head">
-          <h2 id="downloads-title" data-i18n="downloadsTitle">Download import templates</h2>
-          <p data-i18n="downloadsLead">Start from official blanks. Import accepts CSV / Excel / PDF in the product — download the blank packs here.</p>
+          <p class="kicker" data-i18n="downloadsKicker">Download hub</p>
+          <h2 id="downloads-title" data-i18n="downloadsTitle">Official templates & documents</h2>
+          <p data-i18n="downloadsLead">Start from official blanks — audit checklist, monthly plan, fleet roster and the DPA/AVV contract template.</p>
         </div>
         <div class="downloads">
-          <a class="download-card" href="/templates/BusCommand_Drivers_Import_v1.csv" download>
-            <span class="tag">CSV</span>
-            <strong data-i18n="dlDrivers">Drivers import</strong>
-            <span data-i18n="dlDriversHint">Blank CSV for company driver roster import.</span>
-          </a>
-          <a class="download-card" href="/templates/BusCommand_Dienstplan_Blank_v1.csv" download>
-            <span class="tag">CSV</span>
-            <strong data-i18n="dlDienstCsv">Duty / Dienstplan blank</strong>
-            <span data-i18n="dlDienstCsvHint">CSV blank for structured shift catalog work.</span>
-          </a>
-          <a class="download-card" href="/templates/BusCommand_Dienstplan_Blank_v1.xlsx" download>
-            <span class="tag">XLSX</span>
-            <strong data-i18n="dlDienstXlsx">Duty / Dienstplan Excel</strong>
-            <span data-i18n="dlDienstXlsxHint">Excel blank — same structure, spreadsheet-ready.</span>
+          <a class="download-card" href="/templates/BusCommand_Fleet_Audit_Checklist_v1.pdf" download>
+            <span class="dl-icon">PDF</span>
+            <strong data-i18n="dlAudit">Fleet audit checklist</strong>
+            <span class="desc" data-i18n="dlAuditHint">Structured PDF audit: vehicles, duty coverage, confirmations, compliance.</span>
+            <span class="meta-row"><span class="tag">PDF</span><span class="get" data-i18n="dlGet">Download ↓</span></span>
           </a>
           <a class="download-card" href="/templates/BusCommand_Monthly_Group_Plan_Blank_v1.csv" download>
-            <span class="tag">CSV</span>
+            <span class="dl-icon">CSV</span>
             <strong data-i18n="dlMonthCsv">Monthly group plan</strong>
-            <span data-i18n="dlMonthCsvHint">CSV blank for monthly driver assignments.</span>
+            <span class="desc" data-i18n="dlMonthCsvHint">CSV blank for monthly driver assignments — ready for product import.</span>
+            <span class="meta-row"><span class="tag">CSV</span><span class="get" data-i18n="dlGet">Download ↓</span></span>
           </a>
-          <a class="download-card" href="/templates/BusCommand_Monthly_Group_Plan_Blank_v1.xlsx" download>
-            <span class="tag">XLSX / PDF*</span>
-            <strong data-i18n="dlMonthXlsx">Monthly plan Excel</strong>
-            <span data-i18n="dlMonthXlsxHint">Excel blank. PDF plans are imported inside the dispatcher app.</span>
+          <a class="download-card" href="/templates/BusCommand_Fleet_Import_v1.csv" download>
+            <span class="dl-icon">CSV</span>
+            <strong data-i18n="dlFleet">Fleet import (Flota)</strong>
+            <span class="desc" data-i18n="dlFleetHint">Vehicle roster CSV — bus numbers and plates for the depot.</span>
+            <span class="meta-row"><span class="tag">CSV</span><span class="get" data-i18n="dlGet">Download ↓</span></span>
           </a>
+          <a class="download-card" href="/templates/BusCommand_DPA_AVV_v1.pdf" download>
+            <span class="dl-icon">DPA</span>
+            <strong data-i18n="dlDpa">DPA / AVV GDPR contract</strong>
+            <span class="desc" data-i18n="dlDpaHint">Art. 28 DSGVO data-processing agreement template, DE/EN.</span>
+            <span class="meta-row"><span class="tag">PDF</span><span class="get" data-i18n="dlGet">Download ↓</span></span>
+          </a>
+        </div>
+        <div class="downloads-all glass">
+          <span data-i18n="allTemplates">Also in the hub:</span>
+          <a href="/templates/BusCommand_Drivers_Import_v1.csv" download data-i18n="allDrivers">Drivers import CSV</a>
+          <a href="/templates/BusCommand_Dienstplan_Blank_v1.xlsx" download data-i18n="allDienst">Dienstplan Excel</a>
+          <a href="/templates/BusCommand_Dienstplan_Blank_v1.csv" download>Dienstplan CSV</a>
+          <a href="/templates/BusCommand_Monthly_Group_Plan_Blank_v1.xlsx" download data-i18n="allMonthXlsx">Monthly plan Excel</a>
         </div>
       </div>
     </section>
@@ -414,50 +576,57 @@
     <section id="pricing" aria-labelledby="pricing-title">
       <div class="wrap">
         <div class="section-head">
-          <h2 id="pricing-title" data-i18n="pricingTitle">Pricing</h2>
-          <p data-i18n="pricingLead">Clear monthly packages for depot scale. Enterprise is scoped by contract.</p>
+          <p class="kicker" data-i18n="pricingKicker">Pricing</p>
+          <h2 id="pricing-title" data-i18n="pricingTitle">Clear packages for depot scale</h2>
+          <p data-i18n="pricingLead">Monthly packages sized for real fleets. Enterprise is scoped by contract.</p>
         </div>
         <div class="pricing">
-          <article class="price-card">
-            <h3 data-i18n="planTrial">Trial</h3>
-            <div class="price">0 €<small data-i18n="perMonth">/ month</small></div>
-            <ul>
-              <li data-i18n="trial1">10 drivers · 2 dispatchers</li>
-              <li data-i18n="trial2">30 days · core ops</li>
-            </ul>
-          </article>
-          <article class="price-card">
+          <article class="price-card glass">
             <h3 data-i18n="planStarter">Starter</h3>
+            <p class="plan-sub" data-i18n="starterSub">For small depots going digital</p>
             <div class="price">49 €<small data-i18n="perMonth">/ month</small></div>
             <ul>
               <li data-i18n="starter1">50 drivers · 5 dispatchers</li>
               <li data-i18n="starter2">Core planning & confirmations</li>
+              <li data-i18n="starter3">CSV & Excel import</li>
             </ul>
+            <a class="btn btn-secondary" href="/staff" data-i18n="ctaStaff">Open staff login</a>
           </article>
-          <article class="price-card featured">
-            <h3 data-i18n="planPro">Pro</h3>
+          <article class="price-card featured glass">
+            <span class="plan-badge badge-popular" data-i18n="badgePopular">Most popular</span>
+            <h3 data-i18n="planPro">Fleet Pro</h3>
+            <p class="plan-sub" data-i18n="proSub">For growing operations</p>
             <div class="price">149 €<small data-i18n="perMonth">/ month</small></div>
             <ul>
               <li data-i18n="pro1">200 drivers · 15 dispatchers</li>
               <li data-i18n="pro2">PDF + Excel import depth</li>
+              <li data-i18n="pro3">Live radar & SOS escalation</li>
             </ul>
+            <a class="btn btn-primary" href="/staff" data-i18n="ctaStaff">Open staff login</a>
           </article>
-          <article class="price-card">
+          <article class="price-card glass">
+            <span class="plan-badge badge-contract" data-i18n="badgeContract">By contract</span>
             <h3 data-i18n="planEnterprise">Enterprise</h3>
-            <div class="price"><span data-i18n="enterprisePrice">Custom</span><small data-i18n="byContract">by contract</small></div>
+            <p class="plan-sub" data-i18n="entSub">For groups & holdings</p>
+            <div class="price"><span data-i18n="enterprisePrice">Custom</span><small data-i18n="byContract">scoped individually</small></div>
             <ul>
-              <li data-i18n="ent1">Unlimited seats</li>
+              <li data-i18n="ent1">Unlimited seats & groups</li>
               <li data-i18n="ent2">Custom domain + SLA</li>
+              <li data-i18n="ent3">DPA/AVV & EU hosting included</li>
             </ul>
+            <a class="btn btn-ghost" href="/staff" data-i18n="ctaStaff">Open staff login</a>
           </article>
         </div>
+        <p class="downloads-all glass" style="margin-top:18px">
+          <span data-i18n="trialNote">Free trial: 10 drivers · 2 dispatchers · 30 days — no card required.</span>
+        </p>
       </div>
     </section>
 
     <section class="final-cta" aria-labelledby="final-title">
       <div class="wrap">
         <h2 id="final-title" data-i18n="finalTitle">Ready for the next shift?</h2>
-        <p class="lead" style="margin:0 auto;max-width:36rem;color:var(--muted)" data-i18n="finalLead">Staff runs the company. Drivers stay on the phone surface. Same product, clear doors.</p>
+        <p class="lead" data-i18n="finalLead">Staff runs the company. Drivers stay on the phone surface. Same product, clear doors.</p>
         <div class="actions">
           <a class="btn btn-primary" href="/staff" data-i18n="ctaStaff">Open staff login</a>
           <a class="btn btn-secondary" href="/driver" data-i18n="ctaDriver">Open driver app</a>
@@ -469,7 +638,7 @@
   <footer class="site-footer">
     <div class="wrap inner">
       <span>© BusCommand</span>
-      <span data-i18n="footerNote">Multi-tenant ops for bus companies · DE / SR / EN</span>
+      <span data-i18n="footerNote">Multi-tenant ops for bus companies · DE / SR / EN · EU</span>
     </div>
   </footer>
 
@@ -479,14 +648,21 @@
         en: {
           navStaff: "Staff login",
           navDriver: "Driver app",
-          eyebrow: "Fleet operations for bus companies",
+          eyebrow: "Enterprise fleet operations",
           heroTitle: "Plan. People. Action.",
-          heroLead: "Replace spreadsheet chaos with one operational truth — monthly plans, live dispatch, and driver confirmations in a multi-tenant system built for real depot rhythm.",
+          heroLead: "Replace spreadsheet chaos with one operational truth — monthly plans, live dispatch, and driver confirmations in a multi-tenant system built for real depot rhythm and DSGVO-grade isolation.",
           ctaStaff: "Open staff login",
           ctaDriver: "Open driver app",
           ctaTemplates: "Download templates",
+          statRoles: "Roles · CA / Dispo / Driver",
+          statLangs: "Full trilingual product",
+          statEu: "EU hosting · DSGVO ready",
+          statUptime: "Live dispatch radar",
+          compareKicker: "Why switch",
           compareTitle: "Excel sheets vs BusCommand",
           compareLead: "Spreadsheets move files. BusCommand moves the shift — with roles, confirmations, and one plan the whole company trusts.",
+          excelTag: "The old way",
+          bcTag: "BusCommand",
           excelTitle: "With Excel / shared folders",
           excel1: "Version chaos — “final_v7_REAL.xlsx”",
           excel2: "No live driver confirmation",
@@ -497,50 +673,68 @@
           bc2: "Drivers confirm shifts from the phone",
           bc3: "CA / Dispo / Driver roles with server RBAC",
           bc4: "Ops attention, messages, and SOS in one cockpit",
-          downloadsTitle: "Download import templates",
-          downloadsLead: "Start from official blanks. Import accepts CSV / Excel / PDF in the product — download the blank packs here.",
-          dlDrivers: "Drivers import",
-          dlDriversHint: "Blank CSV for company driver roster import.",
-          dlDienstCsv: "Duty / Dienstplan blank",
-          dlDienstCsvHint: "CSV blank for structured shift catalog work.",
-          dlDienstXlsx: "Duty / Dienstplan Excel",
-          dlDienstXlsxHint: "Excel blank — same structure, spreadsheet-ready.",
+          downloadsKicker: "Download hub",
+          downloadsTitle: "Official templates & documents",
+          downloadsLead: "Start from official blanks — audit checklist, monthly plan, fleet roster and the DPA/AVV contract template.",
+          dlAudit: "Fleet audit checklist",
+          dlAuditHint: "Structured PDF audit: vehicles, duty coverage, confirmations, compliance.",
           dlMonthCsv: "Monthly group plan",
-          dlMonthCsvHint: "CSV blank for monthly driver assignments.",
-          dlMonthXlsx: "Monthly plan Excel",
-          dlMonthXlsxHint: "Excel blank. PDF plans are imported inside the dispatcher app.",
-          pricingTitle: "Pricing",
-          pricingLead: "Clear monthly packages for depot scale. Enterprise is scoped by contract.",
-          planTrial: "Trial",
+          dlMonthCsvHint: "CSV blank for monthly driver assignments — ready for product import.",
+          dlFleet: "Fleet import (Flota)",
+          dlFleetHint: "Vehicle roster CSV — bus numbers and plates for the depot.",
+          dlDpa: "DPA / AVV GDPR contract",
+          dlDpaHint: "Art. 28 DSGVO data-processing agreement template, DE/EN.",
+          dlGet: "Download ↓",
+          allTemplates: "Also in the hub:",
+          allDrivers: "Drivers import CSV",
+          allDienst: "Dienstplan Excel",
+          allMonthXlsx: "Monthly plan Excel",
+          pricingKicker: "Pricing",
+          pricingTitle: "Clear packages for depot scale",
+          pricingLead: "Monthly packages sized for real fleets. Enterprise is scoped by contract.",
+          badgePopular: "Most popular",
+          badgeContract: "By contract",
           planStarter: "Starter",
-          planPro: "Pro",
+          starterSub: "For small depots going digital",
+          planPro: "Fleet Pro",
+          proSub: "For growing operations",
           planEnterprise: "Enterprise",
+          entSub: "For groups & holdings",
           perMonth: "/ month",
-          trial1: "10 drivers · 2 dispatchers",
-          trial2: "30 days · core ops",
           starter1: "50 drivers · 5 dispatchers",
           starter2: "Core planning & confirmations",
+          starter3: "CSV & Excel import",
           pro1: "200 drivers · 15 dispatchers",
           pro2: "PDF + Excel import depth",
+          pro3: "Live radar & SOS escalation",
           enterprisePrice: "Custom",
-          byContract: "by contract",
-          ent1: "Unlimited seats",
+          byContract: "scoped individually",
+          ent1: "Unlimited seats & groups",
           ent2: "Custom domain + SLA",
+          ent3: "DPA/AVV & EU hosting included",
+          trialNote: "Free trial: 10 drivers · 2 dispatchers · 30 days — no card required.",
           finalTitle: "Ready for the next shift?",
           finalLead: "Staff runs the company. Drivers stay on the phone surface. Same product, clear doors.",
-          footerNote: "Multi-tenant ops for bus companies · DE / SR / EN"
+          footerNote: "Multi-tenant ops for bus companies · DE / SR / EN · EU"
         },
         de: {
           navStaff: "Staff-Login",
           navDriver: "Fahrer-App",
           eyebrow: "Betrieb für Busunternehmen",
           heroTitle: "Plan. Menschen. Aktion.",
-          heroLead: "Ersetzen Sie Tabellenchaos durch eine operative Wahrheit — Monatspläne, Live-Disposition und Fahrerbestätigungen in einem Multi-Tenant-System für den Depot-Alltag.",
+          heroLead: "Ersetzen Sie Tabellenchaos durch eine operative Wahrheit — Monatspläne, Live-Disposition und Fahrerbestätigungen in einem Multi-Tenant-System für den Depot-Alltag mit DSGVO-gerechter Isolation.",
           ctaStaff: "Staff-Login öffnen",
           ctaDriver: "Fahrer-App öffnen",
           ctaTemplates: "Vorlagen laden",
+          statRoles: "Rollen · CA / Dispo / Fahrer",
+          statLangs: "Vollständig dreisprachig",
+          statEu: "EU-Hosting · DSGVO-ready",
+          statUptime: "Live-Dispositionsradar",
+          compareKicker: "Warum wechseln",
           compareTitle: "Excel gegen BusCommand",
           compareLead: "Tabellen bewegen Dateien. BusCommand bewegt die Schicht — mit Rollen, Bestätigungen und einem Plan für die ganze Firma.",
+          excelTag: "Der alte Weg",
+          bcTag: "BusCommand",
           excelTitle: "Mit Excel / Freigaben",
           excel1: "Versionschaos — „final_v7_ECHT.xlsx“",
           excel2: "Keine Live-Fahrerbestätigung",
@@ -551,50 +745,68 @@
           bc2: "Fahrer bestätigen Schichten am Telefon",
           bc3: "CA / Dispo / Fahrer mit Server-RBAC",
           bc4: "Aufmerksamkeit, Nachrichten und SOS in einem Cockpit",
-          downloadsTitle: "Import-Vorlagen laden",
-          downloadsLead: "Offizielle Leer-Vorlagen. Der Import akzeptiert CSV / Excel / PDF — hier die Blank-Pakete.",
-          dlDrivers: "Fahrer-Import",
-          dlDriversHint: "Leeres CSV für den Fahrerstamm.",
-          dlDienstCsv: "Dienstplan-Vorlage",
-          dlDienstCsvHint: "CSV-Leervorlage für den Schichtkatalog.",
-          dlDienstXlsx: "Dienstplan Excel",
-          dlDienstXlsxHint: "Excel-Leervorlage — tabellenfertig.",
+          downloadsKicker: "Download-Hub",
+          downloadsTitle: "Offizielle Vorlagen & Dokumente",
+          downloadsLead: "Starten Sie mit offiziellen Leer-Vorlagen — Audit-Checkliste, Monatsplan, Flottenliste und der DPA/AVV-Vertragsentwurf.",
+          dlAudit: "Flotten-Audit-Checkliste",
+          dlAuditHint: "Strukturierter PDF-Audit: Fahrzeuge, Dienstplanabdeckung, Bestätigungen, Compliance.",
           dlMonthCsv: "Monatsplan Gruppe",
-          dlMonthCsvHint: "CSV-Leervorlage für Monatszuweisungen.",
-          dlMonthXlsx: "Monatsplan Excel",
-          dlMonthXlsxHint: "Excel-Leervorlage. PDF-Pläne werden in der Dispo-App importiert.",
-          pricingTitle: "Preise",
-          pricingLead: "Klare Monatspakete nach Depotgröße. Enterprise nach Vertrag.",
-          planTrial: "Trial",
+          dlMonthCsvHint: "CSV-Leervorlage für Monatszuweisungen — importfertig.",
+          dlFleet: "Flotten-Import",
+          dlFleetHint: "Fahrzeugliste als CSV — Busnummern und Kennzeichen für den Betrieb.",
+          dlDpa: "DPA / AVV-Datenschutzvertrag",
+          dlDpaHint: "AVV-Muster nach Art. 28 DSGVO, DE/EN.",
+          dlGet: "Herunterladen ↓",
+          allTemplates: "Ebenfalls im Hub:",
+          allDrivers: "Fahrer-Import CSV",
+          allDienst: "Dienstplan Excel",
+          allMonthXlsx: "Monatsplan Excel",
+          pricingKicker: "Preise",
+          pricingTitle: "Klare Pakete für Depotgrößen",
+          pricingLead: "Monatspakete für echte Flotten. Enterprise wird vertraglich ausgehandelt.",
+          badgePopular: "Am beliebtesten",
+          badgeContract: "Nach Vertrag",
           planStarter: "Starter",
-          planPro: "Pro",
+          starterSub: "Für kleine Betriebe",
+          planPro: "Fleet Pro",
+          proSub: "Für wachsende Operationen",
           planEnterprise: "Enterprise",
+          entSub: "Für Gruppen & Holdings",
           perMonth: "/ Monat",
-          trial1: "10 Fahrer · 2 Disponenten",
-          trial2: "30 Tage · Kernfunktionen",
           starter1: "50 Fahrer · 5 Disponenten",
           starter2: "Planung & Bestätigungen",
+          starter3: "CSV- & Excel-Import",
           pro1: "200 Fahrer · 15 Disponenten",
           pro2: "PDF- + Excel-Importtiefe",
+          pro3: "Live-Radar & SOS-Eskalation",
           enterprisePrice: "Individuell",
-          byContract: "nach Vertrag",
-          ent1: "Unbegrenzte Sitze",
+          byContract: "vertragsabhängig",
+          ent1: "Unbegrenzte Sitze & Gruppen",
           ent2: "Eigene Domain + SLA",
+          ent3: "DPA/AVV & EU-Hosting inklusive",
+          trialNote: "Kostenlos testen: 10 Fahrer · 2 Disponenten · 30 Tage — ohne Karte.",
           finalTitle: "Bereit für die nächste Schicht?",
           finalLead: "Staff führt die Firma. Fahrer bleiben auf dem Telefon. Ein Produkt, klare Eingänge.",
-          footerNote: "Multi-Tenant-Betrieb für Busunternehmen · DE / SR / EN"
+          footerNote: "Multi-Tenant-Betrieb für Busunternehmen · DE / SR / EN · EU"
         },
         sr: {
           navStaff: "Staff prijava",
           navDriver: "Vozačka aplikacija",
-          eyebrow: "Operacije za autobuske firme",
+          eyebrow: "Enterprise operacije flote",
           heroTitle: "Plan. Ljudi. Akcija.",
-          heroLead: "Zamenite haos tabela jednom operativnom istinom — mesečni planovi, živi dispečing i potvrde vozača u multi-tenant sistemu za ritam depoa.",
+          heroLead: "Zamenite haos tabela jednom operativnom istinom — mesečni planovi, živi dispečing i potvrde vozača u multi-tenant sistemu za ritam depoa, sa DSGVO nivoom izolacije.",
           ctaStaff: "Otvori staff prijavu",
           ctaDriver: "Otvori vozačku app",
           ctaTemplates: "Preuzmi šablone",
+          statRoles: "Uloge · CA / Dispo / Vozač",
+          statLangs: "Potpuno trojezičan proizvod",
+          statEu: "EU hosting · DSGVO spreman",
+          statUptime: "Živi dispečerski radar",
+          compareKicker: "Zašto preći",
           compareTitle: "Excel tabele vs BusCommand",
           compareLead: "Tabele pomeraju fajlove. BusCommand pomera smenu — sa ulogama, potvrdama i jednim planom kome cela firma veruje.",
+          excelTag: "Stari put",
+          bcTag: "BusCommand",
           excelTitle: "Sa Excelom / deljenim folderima",
           excel1: "Haos verzija — „final_v7_PRAVI.xlsx“",
           excel2: "Nema žive potvrde vozača",
@@ -605,38 +817,49 @@
           bc2: "Vozači potvrđuju smene sa telefona",
           bc3: "CA / Dispo / Vozač sa serverskim RBAC",
           bc4: "Pažnja, poruke i SOS u jednom kokpitu",
-          downloadsTitle: "Preuzmite šablone za uvoz",
-          downloadsLead: "Zvanični prazni šabloni. Uvoz prihvata CSV / Excel / PDF — ovde su blank paketi.",
-          dlDrivers: "Uvoz vozača",
-          dlDriversHint: "Prazan CSV za spisak vozača firme.",
-          dlDienstCsv: "Katalog smena (Dienstplan)",
-          dlDienstCsvHint: "Prazan CSV za strukturisani katalog smena.",
-          dlDienstXlsx: "Dienstplan Excel",
-          dlDienstXlsxHint: "Prazan Excel — spreman za tabelu.",
+          downloadsKicker: "Download hub",
+          downloadsTitle: "Zvanični šabloni i dokumenti",
+          downloadsLead: "Krenite od zvaničnih praznih obrazaca — audit checklist, mesečni plan, lista flote i DPA/AVV nacrt ugovora.",
+          dlAudit: "Audit checklist flote",
+          dlAuditHint: "Strukturirani PDF audit: vozila, pokrivenost smena, potvrde, usklađenost.",
           dlMonthCsv: "Mesečni plan grupe",
-          dlMonthCsvHint: "Prazan CSV za mesečne dodele vozača.",
-          dlMonthXlsx: "Mesečni plan Excel",
-          dlMonthXlsxHint: "Prazan Excel. PDF planovi se uvoze u dispečerskoj app.",
-          pricingTitle: "Cenovnik",
-          pricingLead: "Jasni mesečni paketi po veličini depoa. Enterprise po ugovoru.",
-          planTrial: "Trial",
+          dlMonthCsvHint: "Prazan CSV za mesečne dodele vozača — spreman za uvoz.",
+          dlFleet: "Uvoz flote",
+          dlFleetHint: "CSV spisak vozila — brojevi autobusa i tablice za depo.",
+          dlDpa: "DPA / AVV GDPR ugovor",
+          dlDpaHint: "Nacrt ugovora o obradi po čl. 28 DSGVO, DE/EN.",
+          dlGet: "Preuzmi ↓",
+          allTemplates: "Još u hub-u:",
+          allDrivers: "CSV uvoz vozača",
+          allDienst: "Dienstplan Excel",
+          allMonthXlsx: "Mesečni plan Excel",
+          pricingKicker: "Cenovnik",
+          pricingTitle: "Jasni paketi po veličini depoa",
+          pricingLead: "Mesečni paketi za prave flote. Enterprise se dogovara ugovorom.",
+          badgePopular: "Najpopularniji",
+          badgeContract: "Po ugovoru",
           planStarter: "Starter",
-          planPro: "Pro",
+          starterSub: "Za male depoe",
+          planPro: "Fleet Pro",
+          proSub: "Za rastuće operacije",
           planEnterprise: "Enterprise",
+          entSub: "Za grupe i holdinge",
           perMonth: "/ mesec",
-          trial1: "10 vozača · 2 dispečera",
-          trial2: "30 dana · osnovne ops",
           starter1: "50 vozača · 5 dispečera",
           starter2: "Planiranje i potvrde",
+          starter3: "CSV i Excel uvoz",
           pro1: "200 vozača · 15 dispečera",
           pro2: "PDF + Excel dubina uvoza",
+          pro3: "Živi radar i SOS eskalacija",
           enterprisePrice: "Po dogovoru",
-          byContract: "po ugovoru",
-          ent1: "Neograničena mesta",
+          byContract: "individualno određeno",
+          ent1: "Neograničena mesta i grupe",
           ent2: "Custom domen + SLA",
+          ent3: "DPA/AVV i EU hosting uključeni",
+          trialNote: "Besplatan probni period: 10 vozača · 2 dispečera · 30 dana — bez kartice.",
           finalTitle: "Spremni za sledeću smenu?",
           finalLead: "Staff vodi firmu. Vozači ostaju na telefonskoj površini. Isti proizvod, jasna vrata.",
-          footerNote: "Multi-tenant ops za autobuske firme · DE / SR / EN"
+          footerNote: "Multi-tenant ops za autobuske firme · DE / SR / EN · EU"
         }
       };
 

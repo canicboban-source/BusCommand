@@ -165,7 +165,9 @@ function renderBusesList() {
 
         const statusCell = row.insertCell();
         statusCell.className = "bus-status-cell";
-        statusCell.innerHTML = statusCellHtml(b, ops, readOnly);
+        // Flex on the inner div only: display:flex on a <td> drops the
+        // table-cell layout and pushes ACTIONS onto a second line.
+        statusCell.innerHTML = `<div class="bus-status-pills">${statusCellHtml(b, ops, readOnly)}</div>`;
 
         const actionsCell = row.insertCell();
         actionsCell.className = "bus-fleet-actions";
@@ -177,7 +179,7 @@ function renderBusesList() {
             : `<button type="button" class="hub-bus-toggle ${active ? "is-active" : "is-inactive"}" ${actionAttr("deleteBus", [b.id])} title="${escapeHtml(active ? (t("dispo_bus_deactivate_hint") || "") : (t("btn_activate") || ""))}">
                 ${active ? (t("dispo_bus_deactivate") || t("btn_deactivate")) : t("btn_activate")}
             </button>`;
-        actionsCell.innerHTML = `${editBtn}${deleteBtn}`;
+        actionsCell.innerHTML = `<div class="bus-fleet-actions-inner">${editBtn}${deleteBtn}</div>`;
 
         const editRow = document.createElement("tr");
         editRow.className = "hub-bus-edit-row hidden";

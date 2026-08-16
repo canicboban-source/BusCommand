@@ -1,0 +1,160 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R /F2 4 0 R >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Length 2330 >>
+stream
+BT
+/F2 20 Tf
+60 780 Td
+(BusCommand DPA / AVV - Art. 28 DSGVO Template v1) Tj
+ET
+BT
+/F1 11 Tf
+60 745 Td
+(1. Vertragsparteien / Parties) Tj
+ET
+BT
+/F1 10 Tf
+60 728 Td
+(Verantwortlicher / Controller: [Firma, Anschrift]) Tj
+ET
+BT
+/F1 10 Tf
+60 712 Td
+(Auftragsverarbeiter / Processor: [Firma, Anschrift]) Tj
+ET
+BT
+/F1 11 Tf
+60 696 Td
+(2. Gegenstand und Dauer / Subject and duration) Tj
+ET
+BT
+/F1 10 Tf
+60 679 Td
+(Gegenstand: SaaS Fleet-Operations-Plattform BusCommand \(Planung, Disposition, Fahrerbestaetigungen\).) Tj
+ET
+BT
+/F1 10 Tf
+60 663 Td
+(Dauer: [Startdatum] bis [Enddatum/Kuendigung].) Tj
+ET
+BT
+/F1 11 Tf
+60 647 Td
+(3. Art und Zweck / Nature and purpose) Tj
+ET
+BT
+/F1 10 Tf
+60 630 Td
+(Verarbeitung von Stamm- und Planungsdaten auf Basis der Weisung des Verantwortlichen.) Tj
+ET
+BT
+/F1 11 Tf
+60 614 Td
+(4. Pflichten des Auftragsverarbeiters / Processor obligations) Tj
+ET
+BT
+/F1 10 Tf
+60 597 Td
+(4.1 Verarbeitung nur auf dokumentierte Weisung \(Art. 28 Abs. 3a DSGVO\).) Tj
+ET
+BT
+/F1 10 Tf
+60 581 Td
+(4.2 Vertraulichkeit: alle Personen zur Verschwiegenheit verpflichtet.) Tj
+ET
+BT
+/F1 10 Tf
+60 565 Td
+(4.3 TOM: Ver- und Entschluesselung, Zugangssteuerung, Logging, Backup \(Art. 32 DSGVO\).) Tj
+ET
+BT
+/F1 10 Tf
+60 549 Td
+(4.4 Unterauftragsverarbeiter nur mit vorheriger schriftlicher Genehmigung.) Tj
+ET
+BT
+/F1 10 Tf
+60 533 Td
+(4.5 Unterstuetzung bei Auskunfts- und Loeschanfragen der Betroffenen.) Tj
+ET
+BT
+/F1 11 Tf
+60 517 Td
+(5. Kontrollrechte / Audit rights) Tj
+ET
+BT
+/F1 10 Tf
+60 500 Td
+(Der Verantwortliche darf die Einhaltung der TOM jederzeit pruefen oder pruefen lassen.) Tj
+ET
+BT
+/F1 11 Tf
+60 484 Td
+(6. Ort der Verarbeitung / Place of processing) Tj
+ET
+BT
+/F1 10 Tf
+60 467 Td
+(Rechenzentren in der EU. Keine Uebermittlung in Drittlaender ohne Genehmigung.) Tj
+ET
+BT
+/F1 11 Tf
+60 451 Td
+(7. Rueckgabe und Loeschung / Return and deletion) Tj
+ET
+BT
+/F1 10 Tf
+60 434 Td
+(Nach Ende: Loeschung aller Daten binnen 30 Tagen, soweit keine gesetzlichen Pflichten bestehen.) Tj
+ET
+BT
+/F1 11 Tf
+60 418 Td
+(8. Signaturen / Signatures) Tj
+ET
+BT
+/F1 10 Tf
+60 401 Td
+(Verantwortlicher: ____________________  Datum: ____________) Tj
+ET
+BT
+/F1 10 Tf
+60 385 Td
+(Auftragsverarbeiter: __________________  Datum: ____________) Tj
+ET
+BT
+/F2 10 Tf
+60 369 Td
+(BusCommand - DPA/AVV Template \(nicht unterzeichnete Vorlage\) - v1 - 2026) Tj
+ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000000326 00000 n 
+0000000396 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+2777
+%%EOF

@@ -4265,7 +4265,8 @@ html[data-app-surface="staff"] .bus-fleet-table-wrap {
 html[data-app-surface="staff"] .bus-fleet-table-wrap .bus-fleet-table {
   table-layout: auto;
   width: 100%;
-  min-width: 920px;
+  /* 5 columns incl. pill cluster + Edit/Deactivate must fit without wrapping */
+  min-width: 1020px;
 }
 
 html[data-app-surface="staff"] .bus-fleet-table tr.bus-fleet-row,
@@ -4303,7 +4304,18 @@ html[data-app-surface="staff"] details[open] > .bus-import-summary::after {
   transform: rotate(180deg);
 }
 
-html[data-app-surface="staff"] .bus-status-cell {
+/* Status and ACTIONS stay separate table cells on ONE horizontal line.
+   display:flex must never land on these <td>s — it destroys table-cell
+   layout and wraps the action buttons onto a second row. Flex belongs
+   to the inner .bus-status-pills / .bus-fleet-actions-inner wrappers. */
+html[data-app-surface="staff"] .bus-fleet-table td.bus-status-cell,
+html[data-app-surface="staff"] .bus-fleet-table td.bus-fleet-actions {
+  display: table-cell;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+html[data-app-surface="staff"] .bus-status-pills {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
@@ -4312,12 +4324,13 @@ html[data-app-surface="staff"] .bus-status-cell {
   white-space: nowrap;
 }
 
-html[data-app-surface="staff"] .bus-fleet-actions {
+html[data-app-surface="staff"] .bus-fleet-actions-inner {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   gap: 8px;
   align-items: center;
+  justify-content: flex-end;
   white-space: nowrap;
 }
 

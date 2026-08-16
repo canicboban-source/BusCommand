@@ -1,0 +1,120 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R /F2 4 0 R >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Length 1728 >>
+stream
+BT
+/F2 20 Tf
+60 780 Td
+(BusCommand Fleet Audit Checklist v1) Tj
+ET
+BT
+/F1 11 Tf
+60 745 Td
+(Fahrzeugdaten / Vehicle data) Tj
+ET
+BT
+/F1 10 Tf
+60 728 Td
+(1.1  Kennzeichen und Busnummern vollstaendig erfasst                     [ ] Ja  [ ] Nein) Tj
+ET
+BT
+/F1 10 Tf
+60 712 Td
+(1.2  Betriebsstatus \(Aktiv / Reserve / Ausfall\) aktuell                  [ ] Ja  [ ] Nein) Tj
+ET
+BT
+/F1 10 Tf
+60 696 Td
+(1.3  Gruppen- und Linienzuordnung geprueft                              [ ] Ja  [ ] Nein) Tj
+ET
+BT
+/F1 11 Tf
+60 680 Td
+(Dienstplan / Duty plan) Tj
+ET
+BT
+/F1 10 Tf
+60 663 Td
+(2.1  Monatsplan je Gruppe veroeffentlicht                               [ ] Ja  [ ] Nein) Tj
+ET
+BT
+/F1 10 Tf
+60 647 Td
+(2.2  Alle Schichten mit Fahrern abgedeckt                               [ ] Ja  [ ] Nein) Tj
+ET
+BT
+/F1 10 Tf
+60 631 Td
+(2.3  Ferien- und Ausfalltage geplant                                    [ ] Ja  [ ] Nein) Tj
+ET
+BT
+/F1 11 Tf
+60 615 Td
+(Fahrerbestaetigungen / Driver confirmations) Tj
+ET
+BT
+/F1 10 Tf
+60 598 Td
+(3.1  Offene Bestaetigungen unter 5 Prozent                              [ ] Ja  [ ] Nein) Tj
+ET
+BT
+/F1 10 Tf
+60 582 Td
+(3.2  Erinnerungen aktiviert                                             [ ] Ja  [ ] Nein) Tj
+ET
+BT
+/F1 11 Tf
+60 566 Td
+(Compliance & Dokumente / Compliance) Tj
+ET
+BT
+/F1 10 Tf
+60 549 Td
+(4.1  DPA/AVV mit allen Dienstleistern abgeschlossen                     [ ] Ja  [ ] Nein) Tj
+ET
+BT
+/F1 10 Tf
+60 533 Td
+(4.2  Rollen und Rechte \(CA/Dispo/Fahrer\) geprueft                        [ ] Ja  [ ] Nein) Tj
+ET
+BT
+/F1 10 Tf
+60 517 Td
+(4.3  Loeschfristen und Datenaufbewahrung dokumentiert                    [ ] Ja  [ ] Nein) Tj
+ET
+BT
+/F2 10 Tf
+60 501 Td
+(BusCommand - Fleet Audit Template - v1 - 2026) Tj
+ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000000326 00000 n 
+0000000396 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+2175
+%%EOF
