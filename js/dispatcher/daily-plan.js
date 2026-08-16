@@ -12,6 +12,9 @@ import { isActiveReport } from "./report-model.js";
 import { paintPlanHealthBanner } from "./plan-health-banner.js";
 import { collectAllAttentionItems } from "./ops-attention.js";
 
+/** DnD state — tracks the driver being dragged between pool and slots. */
+let draggedDriverName = null;
+
 function getActiveHubGroupId() {
     return window.state.activeGroupHubId || null;
 }
@@ -65,6 +68,93 @@ function busOptions(selectedBus) {
     return `<option value="">—</option>${options}`;
 }
 
+/** Return driver names already assigned to a slot in the current plan. */
+function assignedDriverNames(slots) {
+    const names = new Set();
+    for (const slot of slots) {
+        if (slot.driverName) names.add(slot.driverName);
+    }
+    return names;
+}
+
+/** Render the draggable driver pool — unassigned drivers for the current day. */
+function buildDriverPoolHtml(slots, _dateStr) {
+    if (isOperationalReadOnly()) return "";
+    const assigned = assignedDriverNames(slots);
+    const available = getVisibleDrivers().filter(driver => {
+        if (driver.active === false) return false;
+        return !assigned.has(driver.name);
+    });
+    if (!available.length) return "";
+    const chips = available.map(driver => {
+        const initials = String(driver.name || "").split(/\s+/).map(p => p[0]).join("").slice(0, 2).toUpperCase();
+        return `<span class="dnd-driver-chip" draggable="true"
+            data-driver-name="${escapeHtml(driver.name)}"
+            data-driver-id="${escapeHtml(driver.id || driver.uid || "")}"
+            title="${escapeHtml(driver.name)}">${escapeHtml(initials)} ${escapeHtml(driver.name)}</span>`;
+    }).join("");
+    return `<div class="dnd-driver-pool" role="region" aria-label="${escapeHtml(t("dnd_pool_label") || "Available drivers")}">
+        <div class="dnd-driver-pool-header"><i data-lucide="users-round"></i> <span>${escapeHtml(t("dnd_pool_hint") || "Drag a driver onto a slot")}</span></div>
+        <div class="dnd-driver-pool-chips">${chips}</div>
+    </div>`;
+}
+
+/** Wire DnD events on the driver pool and slot cells after render. */
+function bindDragAndDrop(container, _slots, dateStr) {
+    if (isOperationalReadOnly() || !container) return;
+
+    // Pool chips — dragstart sets the driver payload.
+    container.querySelectorAll(".dnd-driver-chip").forEach(chip => {
+        chip.addEventListener("dragstart", (event) => {
+            draggedDriverName = chip.dataset.driverName || "";
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", draggedDriverName);
+            chip.classList.add("is-dragging");
+        });
+        chip.addEventListener("dragend", () => {
+            chip.classList.remove("is-dragging");
+            draggedDriverName = null;
+        });
+    });
+
+    // Slot drop targets — the driver <td> cell.
+    container.querySelectorAll("[data-slot-drop]").forEach(cell => {
+        cell.addEventListener("dragover", (event) => {
+            if (!draggedDriverName) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+            cell.classList.add("is-drop-target");
+        });
+        cell.addEventListener("dragleave", () => {
+            cell.classList.remove("is-drop-target");
+        });
+        cell.addEventListener("drop", (event) => {
+            event.preventDefault();
+            cell.classList.remove("is-drop-target");
+            const slotType = cell.dataset.slotType || "morning";
+            const slotCode = cell.dataset.slotCode || "";
+            const driverName = draggedDriverName || event.dataTransfer.getData("text/plain") || "";
+            if (!driverName) return;
+            // Reuse the existing server-authoritative assignment path.
+            dailyPlanAssignDriver(dateStr, slotType, slotCode, driverName);
+        });
+    });
+
+    // Assigned driver chips in slots — draggable to move between slots.
+    container.querySelectorAll("[data-assigned-driver]").forEach(chip => {
+        chip.addEventListener("dragstart", (event) => {
+            draggedDriverName = chip.dataset.driverName || "";
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", draggedDriverName);
+            chip.classList.add("is-dragging");
+        });
+        chip.addEventListener("dragend", () => {
+            chip.classList.remove("is-dragging");
+            draggedDriverName = null;
+        });
+    });
+}
+
 function buildDailyPlanTable(slots, { compact = false, editable = false, dateStr = "" } = {}) {
     if (!slots.length) return "";
 
@@ -105,8 +195,11 @@ function buildDailyPlanTable(slots, { compact = false, editable = false, dateStr
                     return `<tr class="${rowClass}">
                         <td class="daily-plan-col-pos${isBr ? " is-standby" : ""}">${escapeHtml(String(slot.position ?? ""))}</td>
                         <td>${escapeHtml(codeLabel || "")}</td>
-                        <td>
-                            <select class="ops-edit-select" ${changeAttr("dailyPlanAssignDriver", [date, slot.type || "morning", slot.code || ""], "args-value")} aria-label="${escapeHtml(t("daily_col_driver") || "Vozač")}">
+                        <td data-slot-drop data-slot-type="${escapeHtml(slot.type || "morning")}" data-slot-code="${escapeHtml(slot.code || "")}" class="daily-plan-slot-cell">
+                            ${driverName
+                                ? `<span class="dnd-assigned-driver" draggable="true" data-assigned-driver data-driver-name="${escapeHtml(driverName)}" data-driver-id="${escapeHtml(driverId)}">${escapeHtml(driverName)}</span>`
+                                : `<span class="dnd-slot-empty">${escapeHtml(t("dnd_drop_here") || "Drop driver here")}</span>`}
+                            <select class="ops-edit-select dnd-fallback-select" ${changeAttr("dailyPlanAssignDriver", [date, slot.type || "morning", slot.code || ""], "args-value")} aria-label="${escapeHtml(t("daily_col_driver") || "Vozač")}">
                                 <option value="">—</option>
                                 ${driverOptions(driverName, driverId)}
                             </select>
@@ -179,8 +272,11 @@ function renderDailyPlanPanel(dateStr) {
     const plan = getDailyPlanForDate(date);
     renderDailyPlanMeta(plan, metaEl);
     if (!plan.slots.length) return renderEmptyState(container, t("daily_no_shifts", { date }), { showNewPlan: true });
-    container.innerHTML = buildDailyPlanTable(plan.slots, { editable: !isOperationalReadOnly(), dateStr: date });
+    const editable = !isOperationalReadOnly();
+    const poolHtml = editable ? buildDriverPoolHtml(plan.slots, date) : "";
+    container.innerHTML = `${poolHtml}${buildDailyPlanTable(plan.slots, { editable, dateStr: date })}`;
     if (typeof lucide !== "undefined") lucide.createIcons();
+    if (editable) bindDragAndDrop(container, plan.slots, date);
 }
 
 function renderDailyPlanFullPage() {
@@ -212,8 +308,11 @@ function renderDailyPlanFullPage() {
         void refreshPlanLockBanner();
         return;
     }
-    container.innerHTML = buildDailyPlanTable(plan.slots, { editable: !isOperationalReadOnly(), dateStr: date });
+    const editable = !isOperationalReadOnly();
+    const poolHtml = editable ? buildDriverPoolHtml(plan.slots, date) : "";
+    container.innerHTML = `${poolHtml}${buildDailyPlanTable(plan.slots, { editable, dateStr: date })}`;
     if (typeof lucide !== "undefined") lucide.createIcons();
+    if (editable) bindDragAndDrop(container, plan.slots, date);
     void refreshPlanLockBanner();
 }
 

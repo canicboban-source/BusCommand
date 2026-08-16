@@ -45,3 +45,35 @@ test("daily replacement guidance exists in EN SR and DE", async () => {
   const translations = await read("../../translations.js");
   assert.equal((translations.match(/shift_future_monthly_only:/g) || []).length, 3);
 });
+
+test("drag-and-drop driver pool and slot drop targets are wired", async () => {
+  const [source, translations] = await Promise.all([
+    read("../../js/dispatcher/daily-plan.js"),
+    read("../../translations.js")
+  ]);
+  // Driver pool render
+  assert.match(source, /function buildDriverPoolHtml/);
+  assert.match(source, /dnd-driver-chip/);
+  assert.match(source, /draggable="true"/);
+  // Slot drop targets
+  assert.match(source, /data-slot-drop/);
+  assert.match(source, /data-slot-type/);
+  assert.match(source, /data-slot-code/);
+  // DnD bind function
+  assert.match(source, /function bindDragAndDrop/);
+  assert.match(source, /dragstart/);
+  assert.match(source, /dragover/);
+  assert.match(source, /drop.*event/);
+  // Reuses existing server-authoritative assignment path
+  assert.match(source, /dailyPlanAssignDriver\(dateStr, slotType, slotCode, driverName\)/);
+  // Read-only guard
+  assert.match(source, /isOperationalReadOnly\(\)/);
+  // Assigned drivers are also draggable between slots
+  assert.match(source, /dnd-assigned-driver/);
+  assert.match(source, /data-assigned-driver/);
+  // Translations exist in all 3 languages
+  for (const key of ["dnd_pool_label", "dnd_pool_hint", "dnd_drop_here"]) {
+    assert.equal((translations.match(new RegExp(`${key}:`, "g")) || []).length, 3,
+      `${key} must appear in all 3 languages`);
+  }
+});

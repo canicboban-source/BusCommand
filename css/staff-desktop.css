@@ -2766,6 +2766,64 @@ html[data-app-surface="staff"] #dispatcher-daily-plan-full .daily-plan-table .bt
     font-weight: 700;
 }
 
+/* ── Drag-and-drop driver pool + slot targets ── */
+html[data-app-surface="staff"] .dnd-driver-pool {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--staff-panel) 92%, #0f1419);
+    border: 1px dashed rgba(var(--primary-rgb), 0.3);
+    border-radius: 10px;
+}
+html[data-app-surface="staff"] .dnd-driver-pool-header {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.72rem; color: var(--text-muted);
+    margin-bottom: 8px;
+}
+html[data-app-surface="staff"] .dnd-driver-pool-header i { width: 14px; height: 14px; }
+html[data-app-surface="staff"] .dnd-driver-pool-chips {
+    display: flex; flex-wrap: wrap; gap: 6px;
+}
+html[data-app-surface="staff"] .dnd-driver-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 0.75rem; font-weight: 600;
+    background: color-mix(in srgb, var(--primary-color) 12%, var(--staff-panel));
+    border: 1px solid rgba(var(--primary-rgb), 0.25);
+    color: var(--text-primary);
+    cursor: grab; user-select: none;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+html[data-app-surface="staff"] .dnd-driver-chip:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transform: translateY(-1px);
+}
+html[data-app-surface="staff"] .dnd-driver-chip.is-dragging {
+    opacity: 0.4; cursor: grabbing;
+}
+html[data-app-surface="staff"] .dnd-assigned-driver {
+    display: inline-block;
+    padding: 2px 8px; border-radius: 6px;
+    font-size: 0.78rem; font-weight: 600;
+    background: color-mix(in srgb, var(--primary-color) 15%, transparent);
+    border: 1px solid rgba(var(--primary-rgb), 0.2);
+    cursor: grab; user-select: none;
+    margin-right: 4px;
+}
+html[data-app-surface="staff"] .dnd-assigned-driver.is-dragging {
+    opacity: 0.4; cursor: grabbing;
+}
+html[data-app-surface="staff"] .dnd-slot-empty {
+    font-size: 0.72rem; color: var(--text-muted);
+    font-style: italic; display: block; margin-bottom: 2px;
+}
+html[data-app-surface="staff"] .daily-plan-slot-cell.is-drop-target {
+    background: color-mix(in srgb, var(--primary-color) 20%, transparent);
+    border: 2px dashed var(--primary-color);
+    border-radius: 6px;
+}
+html[data-app-surface="staff"] .dnd-fallback-select {
+    margin-top: 2px;
+}
 /* ── Monthly day edit modal ── */
 html[data-app-surface="staff"] .monthly-day-edit-panel {
     background: linear-gradient(160deg, color-mix(in srgb, var(--staff-panel) 88%, #0f1419) 0%, var(--staff-panel-2) 100%);

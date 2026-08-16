@@ -6745,22 +6745,30 @@ Object.assign(TRANSLATIONS.de, {
     ca_drivers_expiry_soon: "Läuft bald ab"
 });
 
-
 // D25 — driver quick reports reduced to two operational buttons; ops fleet ⋮ menu label.
 Object.assign(TRANSLATIONS.en, {
     qr_delay_stop: "Delay / Traffic +15m",
     qr_vehicle_fault: "Vehicle Breakdown",
-    dispo_bus_edit_data: "Edit vehicle details"
+    dispo_bus_edit_data: "Edit vehicle details",
+    dnd_pool_label: "Available drivers",
+    dnd_pool_hint: "Drag a driver onto a slot",
+    dnd_drop_here: "Drop driver here"
 });
 Object.assign(TRANSLATIONS.sr, {
     qr_delay_stop: "Kašnjenje / Zastoj (+15 min)",
     qr_vehicle_fault: "Kvar na vozilu",
-    dispo_bus_edit_data: "Izmeni podatke"
+    dispo_bus_edit_data: "Izmeni podatke",
+    dnd_pool_label: "Dostupni vozači",
+    dnd_pool_hint: "Prevuci vozača na slot",
+    dnd_drop_here: "Prevuci vozača ovde"
 });
 Object.assign(TRANSLATIONS.de, {
     qr_delay_stop: "Verspätung / Stau +15m",
     qr_vehicle_fault: "Fahrzeugdefekt / Panne",
-    dispo_bus_edit_data: "Fahrzeugdaten bearbeiten"
+    dispo_bus_edit_data: "Fahrzeugdaten bearbeiten",
+    dnd_pool_label: "Verfügbare Fahrer",
+    dnd_pool_hint: "Fahrer auf Slot ziehen",
+    dnd_drop_here: "Fahrer hier ablegen"
 });
 
 // D26 — direct 2s anti-panic SOS + separate GSM call to the official dispatch line.
