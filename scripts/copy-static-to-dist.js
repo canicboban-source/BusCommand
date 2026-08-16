@@ -12,6 +12,11 @@ const FILES = [
   "manifest-driver.webmanifest",
   "favicon.ico",
   "favicon.svg",
+  "downloads/BusCommand_Technical_Security_Audit.html",
+  "downloads/BusCommand_Monthly_Shift_Plan_Template.csv",
+  "downloads/BusCommand_Monthly_Shift_Plan_Template.xlsx",
+  "downloads/BusCommand_Fleet_Vehicles_Template.csv",
+  "downloads/BusCommand_DPA_GDPR_Article_28.html",
   "templates/BusCommand_Drivers_Import_v1.csv",
   "templates/BusCommand_Dienstplan_Blank_v1.csv",
   "templates/BusCommand_Dienstplan_Blank_v1.xlsx",
@@ -26,6 +31,7 @@ const FILES = [
 const DIRS = [
   "icons",
   "brand",
+  "downloads",
 ];
 
 if (!fs.existsSync(DIST)) {

@@ -1,0 +1,12 @@
+# BusCommand Monthly Shift Plan Template
+# Instructions:
+# 1. Fill in the required columns below with your shift schedule data
+# 2. Date format must be DD.MM.YYYY (e.g., 01.09.2026 for September 1st, 2026)
+# 3. Line_Group: The route group or line number (e.g., 310, 320)
+# 4. Shift_Code: The duty code or shift identifier (e.g., F05, S01, M02)
+# 5. Driver_Name: Full name of the assigned driver
+# 6. Notes: Optional notes about the shift (e.g., Morning Shift, Late Shift, Training)
+# 7. Remove this header section (lines starting with #) before importing
+# 8. Import via BusCommand Dispo Cockpit: Staff → Import Monthly Plan
+# Example row: 01.09.2026;310;F05;Max Mustermann;Morning Shift
+Date;Line_Group;Shift_Code;Driver_Name;Notes

@@ -18,8 +18,10 @@ test("official landing source is the rich presentation, not a two-button card", 
     'data-lang="de"',
     'data-lang="sr"',
     'data-lang="en"',
-    "/templates/BusCommand_Drivers_Import_v1.csv",
-    "/templates/BusCommand_Dienstplan_Blank_v1.xlsx",
+    "/downloads/BusCommand_Technical_Security_Audit.html",
+    "/downloads/BusCommand_Monthly_Shift_Plan_Template.csv",
+    "/downloads/BusCommand_Fleet_Vehicles_Template.csv",
+    "/downloads/BusCommand_DPA_GDPR_Article_28.html",
     'href="/staff"',
     'href="/driver"',
     "Excel",
@@ -42,7 +44,7 @@ test("generated index.html serves the official landing presentation", () => {
   assert.match(html, /data-lang="de"/);
   assert.match(html, /data-lang="sr"/);
   assert.match(html, /data-lang="en"/);
-  assert.match(html, /\/templates\/BusCommand_/);
+  assert.match(html, /\/downloads\/BusCommand_Technical_Security_Audit.html/);
   assert.doesNotMatch(html, /<main class="card">[\s\S]*Staff login[\s\S]*Driver app[\s\S]*<\/main>/);
 });
 

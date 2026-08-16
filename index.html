@@ -300,11 +300,11 @@
         <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
           <div class="space-y-2">
             <div class="w-9 h-9 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center border border-blue-500/30 font-bold">PDF</div>
-            <h3 id="dl-audit-title" class="font-bold text-white text-sm">1. Tehnički Izveštaj & Audit (PDF)</h3>
-            <p id="dl-audit-desc" class="text-xs text-slate-400">Zvanični elaborat za IT direktore i revizore: arhitektura, izolacija, DSGVO.</p>
+            <h3 id="dl-audit-title" class="font-bold text-white text-sm">1. Technical Report & Security Audit (HTML)</h3>
+            <p id="dl-audit-desc" class="text-xs text-slate-400">Official technical documentation for IT directors and auditors: architecture, isolation, GDPR.</p>
           </div>
           <button onclick="downloadDoc('audit')" id="dl-btn-audit" class="w-full py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
-            Preuzmi PDF
+            Download HTML
           </button>
         </div>
 
@@ -312,11 +312,11 @@
         <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
           <div class="space-y-2">
             <div class="w-9 h-9 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 font-bold">CSV</div>
-            <h3 id="dl-monthly-title" class="font-bold text-white text-sm">2. Mesečni Plan Šablon (CSV/XLSX)</h3>
-            <p id="dl-monthly-desc" class="text-xs text-slate-400">Zvanični šablon za uvoz smena vozača sa All-or-Nothing validacijom.</p>
+            <h3 id="dl-monthly-title" class="font-bold text-white text-sm">2. Monthly Shift Plan Template (CSV/XLSX)</h3>
+            <p id="dl-monthly-desc" class="text-xs text-slate-400">Official template for driver shift import with All-or-Nothing validation.</p>
           </div>
           <button onclick="downloadDoc('monthly')" id="dl-btn-monthly" class="w-full py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
-            Preuzmi CSV
+            Download CSV
           </button>
         </div>
 
@@ -324,11 +324,11 @@
         <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
           <div class="space-y-2">
             <div class="w-9 h-9 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 font-bold">CSV</div>
-            <h3 id="dl-fleet-title" class="font-bold text-white text-sm">3. Flota Vozila Šablon (CSV)</h3>
-            <p id="dl-fleet-desc" class="text-xs text-slate-400">Broj autobusa, registarska oznaka, grupa i operativni status.</p>
+            <h3 id="dl-fleet-title" class="font-bold text-white text-sm">3. Fleet Vehicles Template (CSV)</h3>
+            <p id="dl-fleet-desc" class="text-xs text-slate-400">Bus number, license plate, group, and operational status.</p>
           </div>
           <button onclick="downloadDoc('fleet')" id="dl-btn-fleet" class="w-full py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
-            Preuzmi Šablon
+            Download Template
           </button>
         </div>
 
@@ -336,23 +336,20 @@
         <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
           <div class="space-y-2">
             <div class="w-9 h-9 rounded-lg bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30 font-bold">DPA</div>
-            <h3 id="dl-dpa-title" class="font-bold text-white text-sm">4. GDPR & DPA Ugovor Član 28</h3>
-            <p id="dl-dpa-desc" class="text-xs text-slate-400">Pravna specifikacija obrade podataka i Frankfurt Cloud certifikacija.</p>
+            <h3 id="dl-dpa-title" class="font-bold text-white text-sm">4. GDPR & DPA Agreement Article 28</h3>
+            <p id="dl-dpa-desc" class="text-xs text-slate-400">Legal data processing specification and Frankfurt Cloud certification.</p>
           </div>
           <button onclick="downloadDoc('dpa')" id="dl-btn-dpa" class="w-full py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
-            Preuzmi DPA
+            Download DPA
           </button>
         </div>
 
       </div>
 
       <div class="text-xs text-slate-500 border-t border-slate-800 pt-4 flex flex-wrap gap-x-6 gap-y-2 items-center">
-        <span id="downloads-all">Dodatni zvanični šabloni:</span>
-        <a href="/templates/BusCommand_Drivers_Import_v1.csv" download class="text-blue-400 hover:text-blue-300 underline decoration-dotted">BusCommand_Drivers_Import_v1.csv</a>
-        <a href="/templates/BusCommand_Dienstplan_Blank_v1.xlsx" download class="text-blue-400 hover:text-blue-300 underline decoration-dotted">BusCommand_Dienstplan_Blank_v1.xlsx</a>
-        <a href="/templates/BusCommand_Monthly_Group_Plan_Blank_v1.csv" download class="text-blue-400 hover:text-blue-300 underline decoration-dotted">BusCommand_Monthly_Group_Plan_Blank_v1.csv</a>
-        <a href="/templates/BusCommand_Fleet_Import_v1.csv" download class="text-blue-400 hover:text-blue-300 underline decoration-dotted">BusCommand_Fleet_Import_v1.csv</a>
-        <a href="/templates/BusCommand_DPA_AVV_v1.pdf" download class="text-blue-400 hover:text-blue-300 underline decoration-dotted">BusCommand_DPA_AVV_v1.pdf</a>
+        <span id="downloads-all">Additional official templates:</span>
+        <a href="/downloads/BusCommand_Monthly_Shift_Plan_Template.xlsx" download class="text-blue-400 hover:text-blue-300 underline decoration-dotted">BusCommand_Monthly_Shift_Plan_Template.xlsx</a>
+        <a href="/downloads/BusCommand_Fleet_Vehicles_Template.csv" download class="text-blue-400 hover:text-blue-300 underline decoration-dotted">BusCommand_Fleet_Vehicles_Template.csv</a>
       </div>
     </section>
 
@@ -508,19 +505,19 @@
         dlKicker: "DOKUMENTI & ŠABLONI",
         dlTitle: "Zvanični dokumenti i šabloni za preuzimanje",
         dlSub: "Sve što je potrebno dispečeru i IT službi prevoznika za 24h onboarding.",
-        dlAudit: "1. Tehnički Izveštaj & Audit (PDF)",
-        dlAuditHint: "Zvanični elaborat za IT direktore i revizore: arhitektura, izolacija, DSGVO.",
-        dlMonthly: "2. Mesečni Plan Šablon (CSV/XLSX)",
-        dlMonthlyHint: "Zvanični šablon za uvoz smena vozača sa All-or-Nothing validacijom.",
-        dlFleet: "3. Flota Vozila Šablon (CSV)",
-        dlFleetHint: "Broj autobusa, registarska oznaka, grupa i operativni status.",
-        dlDpa: "4. GDPR & DPA Ugovor Član 28",
-        dlDpaHint: "Pravna specifikacija obrade podataka i Frankfurt Cloud certifikacija.",
+        dlAudit: "1. Technical Report & Security Audit (HTML)",
+        dlAuditHint: "Official technical documentation for IT directors and auditors: architecture, isolation, GDPR.",
+        dlMonthly: "2. Monthly Shift Plan Template (CSV/XLSX)",
+        dlMonthlyHint: "Official template for driver shift import with All-or-Nothing validation.",
+        dlFleet: "3. Fleet Vehicles Template (CSV)",
+        dlFleetHint: "Bus number, license plate, group, and operational status.",
+        dlDpa: "4. GDPR & DPA Agreement Article 28",
+        dlDpaHint: "Legal data processing specification and Frankfurt Cloud certification.",
         dlAll: "Dodatni zvanični šabloni:",
-        dlBtnPdf: "Preuzmi PDF",
-        dlBtnCsv: "Preuzmi CSV",
-        dlBtnTpl: "Preuzmi Šablon",
-        dlBtnDpa: "Preuzmi DPA",
+        dlBtnPdf: "Download HTML",
+        dlBtnCsv: "Download CSV",
+        dlBtnTpl: "Download Template",
+        dlBtnDpa: "Download DPA",
         pricingTitle: "Cenovnik",
         pricingDesc: "Bez skrivenih troškova. Prilagođeno veličini vašeg voznog parka.",
         pricePer: "/ mesečno / po firmi",
@@ -595,16 +592,16 @@
         dlKicker: "DOKUMENTE & VORLAGEN",
         dlTitle: "Offizielle Dokumente und Vorlagen zum Herunterladen",
         dlSub: "Alles, was Disponent und IT-Abteilung für 24h-Onboarding brauchen.",
-        dlAudit: "1. Technisches Gutachten & Audit (PDF)",
+        dlAudit: "1. Technical Report & Security Audit (HTML)",
         dlAuditHint: "Offizielles Gutachten für IT-Leiter und Prüfer: Architektur, Isolierung, DSGVO.",
-        dlMonthly: "2. Monatsplan-Vorlage (CSV/XLSX)",
+        dlMonthly: "2. Monthly Shift Plan Template (CSV/XLSX)",
         dlMonthlyHint: "Offizielle Vorlage für den Schichtimport mit All-or-Nothing-Validierung.",
-        dlFleet: "3. Flotten-Vorlage (CSV)",
+        dlFleet: "3. Fleet Vehicles Template (CSV)",
         dlFleetHint: "Busnummer, Kennzeichen, Gruppe und Betriebsstatus.",
-        dlDpa: "4. GDPR & DPA Vertrag Art. 28",
+        dlDpa: "4. GDPR & DPA Agreement Article 28",
         dlDpaHint: "Rechtliche Spezifikation der Datenverarbeitung und Frankfurt-Cloud-Zertifizierung.",
         dlAll: "Weitere offizielle Vorlagen:",
-        dlBtnPdf: "PDF herunterladen",
+        dlBtnPdf: "HTML herunterladen",
         dlBtnCsv: "CSV herunterladen",
         dlBtnTpl: "Vorlage herunterladen",
         dlBtnDpa: "DPA herunterladen",
@@ -682,16 +679,16 @@
         dlKicker: "DOCUMENTS & TEMPLATES",
         dlTitle: "Official documents and templates for download",
         dlSub: "Everything a dispatcher and carrier IT department needs for 24h onboarding.",
-        dlAudit: "1. Technical Report & Audit (PDF)",
+        dlAudit: "1. Technical Report & Security Audit (HTML)",
         dlAuditHint: "Official report for IT directors and auditors: architecture, isolation, GDPR.",
-        dlMonthly: "2. Monthly Plan Template (CSV/XLSX)",
+        dlMonthly: "2. Monthly Shift Plan Template (CSV/XLSX)",
         dlMonthlyHint: "Official driver shift import template with All-or-Nothing validation.",
-        dlFleet: "3. Fleet Vehicle Template (CSV)",
-        dlFleetHint: "Bus number, plate, group and operational status.",
+        dlFleet: "3. Fleet Vehicles Template (CSV)",
+        dlFleetHint: "Bus number, license plate, group and operational status.",
         dlDpa: "4. GDPR & DPA Agreement Article 28",
         dlDpaHint: "Legal data-processing specification and Frankfurt cloud certification.",
         dlAll: "Additional official templates:",
-        dlBtnPdf: "Download PDF",
+        dlBtnPdf: "Download HTML",
         dlBtnCsv: "Download CSV",
         dlBtnTpl: "Download Template",
         dlBtnDpa: "Download DPA",
@@ -836,30 +833,22 @@
     }
 
     function downloadDoc(type) {
-      if (type === 'monthly') {
-        const csv = 'Vozac,Grupa,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31\nMile Ilic,Leobersdorf,L101,L101,L101,L101,L101,OFF,OFF,L102,L102,L102,L102,L102,OFF,OFF,L101,L101,L101,L101,L101,OFF,OFF,L103,L103,L103,L103,L103,OFF,OFF,L101';
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
+      const downloadUrls = {
+        'audit': '/downloads/BusCommand_Technical_Security_Audit.html',
+        'monthly': '/downloads/BusCommand_Monthly_Shift_Plan_Template.csv',
+        'fleet': '/downloads/BusCommand_Fleet_Vehicles_Template.csv',
+        'dpa': '/downloads/BusCommand_DPA_GDPR_Article_28.html'
+      };
+      
+      const url = downloadUrls[type];
+      if (url) {
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'buscommand-mesecni-plan-sablon.csv';
+        a.download = url.split('/').pop();
+        a.target = '_blank';
+        document.body.appendChild(a);
         a.click();
-      } else if (type === 'fleet') {
-        const csv = 'Busnummer,Kennzeichen,Gruppe,Status\n91501,W-6501-LO,Leobersdorf,Aktiv\n91502,W-6502-LO,Leobersdorf,Aktiv\n91503,W-6503-LO,Leobersdorf,Reserve\n91504,W-5065-LO,Leobersdorf,Aktiv';
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'buscommand-flota-sablon.csv';
-        a.click();
-      } else {
-        const txt = 'BUSCOMMAND ENTERPRISE DOKUMENTACIJA & SPECIFIKACIJA\nVerzija: 2.3\nFrankfurt DC (europe-west3)\nAudit: Stroga izolacija tenanta i zero-credential leak garancija.';
-        const blob = new Blob([txt], { type: 'text/plain;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = type === 'audit' ? 'buscommand-tehnicki-audit.txt' : 'buscommand-gdpr-dpa.txt';
-        a.click();
+        document.body.removeChild(a);
       }
     }
 

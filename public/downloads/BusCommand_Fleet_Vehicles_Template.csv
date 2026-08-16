@@ -1,0 +1,12 @@
+# BusCommand Fleet Vehicles Template
+# Instructions:
+# 1. Fill in the required columns below with your fleet data
+# 2. Bus_Number: Unique identifier for the bus (e.g., 91501)
+# 3. License_Plate: Official license plate number (e.g., W-1234AB)
+# 4. Group_ID: Route group assignment (e.g., 310, 320)
+# 5. Capacity_Seats: Number of passenger seats (e.g., 55)
+# 6. Status: Current operational status (Active, Maintenance, Retired)
+# 7. Remove this header section (lines starting with #) before importing
+# 8. Import via BusCommand Dispo Cockpit: Fleet → Import Vehicles
+# Example row: 91501;W-1234AB;310;55;Active
+Bus_Number;License_Plate;Group_ID;Capacity_Seats;Status

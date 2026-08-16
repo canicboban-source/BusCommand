@@ -194,7 +194,7 @@ for (const needle of [
   'data-lang="de"',
   'data-lang="sr"',
   'data-lang="en"',
-  "/templates/BusCommand_Drivers_Import_v1.csv",
+  "/downloads/BusCommand_Technical_Security_Audit.html",
   'href="/staff"',
   'href="/driver"'
 ]) {
