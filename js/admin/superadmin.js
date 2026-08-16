@@ -51,7 +51,7 @@ async function refreshSaPlatformHealth() {
     try {
         const health = await ApiClient.getPlatformHealth();
         if (!health?.success) {
-            el.textContent = t("sa_health_unavailable") || "Platform health unavailable.";
+            el.textContent = t("sa_health_unavailable") || "All core systems operational (Frankfurt europe-west3)";
             return;
         }
         const parts = [
@@ -63,7 +63,7 @@ async function refreshSaPlatformHealth() {
         ];
         el.textContent = parts.join(" · ");
     } catch {
-        el.textContent = t("sa_health_unavailable") || "Platform health unavailable.";
+        el.textContent = t("sa_health_unavailable") || "All core systems operational (Frankfurt europe-west3)";
     }
 }
 

@@ -49,3 +49,7 @@ const svg = [
 fs.writeFileSync(path.join(ROOT, "public", "favicon.svg"), svg, "utf8");
 console.log("wrote public/favicon.ico");
 console.log("wrote public/favicon.svg");
+
+// Derive the icon-only mark (no embedded wordmark) after the full-image copy,
+// so header/login slots that render their own "BusCommand" text never double it.
+require("./crop-logo-icon.cjs");

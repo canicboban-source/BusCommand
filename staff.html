@@ -50,7 +50,7 @@
             <!-- Logo / Header -->
             <div class="login-header">
                 <div class="logo bc-brand" id="login-logo" data-action="handleLogoClick" style="cursor:default;user-select:none;">
-                    <img class="bc-brand-mark bc-brand-mark--hero" src="/brand/logo-hero.png" width="80" height="80" alt="BusCommand">
+                    <img class="bc-brand-mark bc-brand-mark--hero" src="/brand/logo-mark.png" width="80" height="80" alt="BusCommand">
                     <span class="bc-brand-text">BusCommand</span>
                 </div>
                 <p data-i18n="login_subtitle">Fleet Management Platform</p>
@@ -88,13 +88,14 @@
                     </div>
                     <div class="form-group">
                         <label for="login-driver-eid">EID</label>
-                        <input type="text" id="login-driver-eid" maxlength="128" autocomplete="off" placeholder="EID (optional)">
+                        <input type="text" id="login-driver-eid" maxlength="128" value="" autocomplete="off" placeholder="EID (optional)">
                     </div>
                     <div class="form-group">
                         <label for="login-driver-pin" data-i18n="driver_login_code_label">Login code</label>
                         <div class="input-icon-wrapper">
                             <i data-lucide="lock"></i>
                             <input type="password" id="login-driver-pin"
+                                value=""
                                 placeholder="•••••" minlength="5" maxlength="12" inputmode="numeric"
                                 autocomplete="off"
                                 onkeydown="if(event.key==='Enter') loginAsDriver()">
@@ -123,8 +124,8 @@
                             <div class="input-icon-wrapper">
                                 <i data-lucide="mail"></i>
                                 <input type="email" id="login-dispatcher-email"
-                                    data-i18n-placeholder="email_placeholder"
-                                    placeholder="dispatcher@company.com"
+                                    value=""
+                                    placeholder="dispo@company.com"
                                     autocomplete="off">
                             </div>
                         </div>
@@ -133,6 +134,7 @@
                             <div class="input-icon-wrapper">
                                 <i data-lucide="lock"></i>
                                 <input type="password" id="login-dispatcher-password"
+                                    value=""
                                     placeholder="••••••••"
                                     autocomplete="new-password"
                                     data-enter-action="loginAsDispatcher">

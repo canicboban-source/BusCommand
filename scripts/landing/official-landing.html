@@ -44,12 +44,10 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <a href="#top" class="flex items-center gap-3">
-          <img src="/brand/logo-hero.png" alt="BusCommand" class="w-10 h-10 rounded-xl object-contain shadow-lg border border-blue-500/30">
-          <div>
-            <span class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-              BusCommand <span class="text-[10px] uppercase font-mono px-2 py-0.5 bg-blue-900/60 text-blue-300 border border-blue-700/50 rounded-full">Enterprise</span>
-            </span>
-          </div>
+          <img src="/brand/logo-mark.png" alt="BusCommand" class="w-10 h-10 rounded-xl object-contain shadow-lg shadow-blue-950/60" width="40" height="40">
+          <span class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            BusCommand <span class="text-[10px] uppercase font-mono px-2 py-0.5 bg-blue-900/60 text-blue-300 border border-blue-700/50 rounded-full">Enterprise</span>
+          </span>
         </a>
       </div>
 
@@ -60,10 +58,10 @@
           <button onclick="setLang('sr')" id="btn-sr" data-lang="sr" class="px-2.5 py-1 rounded bg-blue-600 text-white">SR</button>
           <button onclick="setLang('en')" id="btn-en" data-lang="en" class="px-2.5 py-1 rounded transition-colors text-slate-400 hover:text-white">EN</button>
         </div>
-        <a href="/staff" class="hidden sm:inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-lg shadow-blue-600/30 transition-all">
+        <a href="/staff" id="nav-staff-btn" class="hidden sm:inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-lg shadow-blue-600/30 transition-all">
           Staff Login
         </a>
-        <a href="/driver" class="inline-flex items-center justify-center px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg transition-all">
+        <a href="/driver" id="nav-driver-btn" class="inline-flex items-center justify-center px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg transition-all">
           Driver App
         </a>
       </div>
@@ -157,10 +155,10 @@
         <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
           <div class="space-y-2">
             <div class="w-9 h-9 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center border border-blue-500/30 font-bold">PDF</div>
-            <h3 id="dl-audit-title" class="font-bold text-white text-sm">1. Tehnički Izveštaj (PDF)</h3>
-            <p class="text-xs text-slate-400">Kompletan inženjerski ugovor, D17 headroom i bezbednosni audit.</p>
+            <h3 id="dl-audit-title" class="font-bold text-white text-sm">1. Tehnički i Bezbednosni Audit (PDF)</h3>
+            <p id="dl-audit-desc" class="text-xs text-slate-400">Zvanični elaborat za IT direktore i revizore: arhitektura, izolacija, DSGVO.</p>
           </div>
-          <button onclick="downloadDoc('audit')" class="w-full py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
+          <button onclick="downloadDoc('audit')" id="dl-btn-audit" class="w-full py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
             Preuzmi PDF
           </button>
         </div>
@@ -170,9 +168,9 @@
           <div class="space-y-2">
             <div class="w-9 h-9 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 font-bold">CSV</div>
             <h3 id="dl-monthly-title" class="font-bold text-white text-sm">2. Mesečni Plan Šablon</h3>
-            <p class="text-xs text-slate-400">Zvanični šablon za uvoz smena vozača sa All-or-Nothing validacijom.</p>
+            <p id="dl-monthly-desc" class="text-xs text-slate-400">Zvanični šablon za uvoz smena vozača sa All-or-Nothing validacijom.</p>
           </div>
-          <button onclick="downloadDoc('monthly')" class="w-full py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
+          <button onclick="downloadDoc('monthly')" id="dl-btn-monthly" class="w-full py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
             Preuzmi CSV
           </button>
         </div>
@@ -182,9 +180,9 @@
           <div class="space-y-2">
             <div class="w-9 h-9 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 font-bold">CSV</div>
             <h3 id="dl-fleet-title" class="font-bold text-white text-sm">3. Flota Vozila Šablon</h3>
-            <p class="text-xs text-slate-400">Broj autobusa, registarska oznaka, grupa i operativni status.</p>
+            <p id="dl-fleet-desc" class="text-xs text-slate-400">Broj autobusa, registarska oznaka, grupa i operativni status.</p>
           </div>
-          <button onclick="downloadDoc('fleet')" class="w-full py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
+          <button onclick="downloadDoc('fleet')" id="dl-btn-fleet" class="w-full py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
             Preuzmi Šablon
           </button>
         </div>
@@ -194,9 +192,9 @@
           <div class="space-y-2">
             <div class="w-9 h-9 rounded-lg bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30 font-bold">DPA</div>
             <h3 id="dl-dpa-title" class="font-bold text-white text-sm">4. GDPR & DPA Član 28</h3>
-            <p class="text-xs text-slate-400">Pravna specifikacija obrade podataka i Frankfurt Cloud certifikacija.</p>
+            <p id="dl-dpa-desc" class="text-xs text-slate-400">Pravna specifikacija obrade podataka i Frankfurt Cloud certifikacija.</p>
           </div>
-          <button onclick="downloadDoc('dpa')" class="w-full py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
+          <button onclick="downloadDoc('dpa')" id="dl-btn-dpa" class="w-full py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
             Preuzmi DPA
           </button>
         </div>
@@ -311,58 +309,6 @@
       </div>
     </section>
 
-    <!-- Official Technical & Operational Report -->
-    <section id="report" class="space-y-8">
-      <div class="text-center max-w-2xl mx-auto space-y-2">
-        <span id="report-kicker" class="text-xs font-bold uppercase tracking-wider text-blue-400 block">Inženjerski elaborat</span>
-        <h2 id="report-title" class="text-2xl sm:text-3xl font-bold text-white">Zvanični tehnički i operativni izveštaj</h2>
-        <span class="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-3 py-1.5 rounded-lg">v1.0.10 (Stabilno produkcijsko izdanje)</span>
-        <p id="report-desc" class="text-slate-400 text-sm">Trostruki nezavisni audit, dnevnik izmena i dokazani rezultati — javno dostupni standard transparentnosti.</p>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="glass-card p-6 rounded-2xl space-y-3">
-          <span class="text-[10px] font-mono font-bold text-blue-400 bg-blue-950/60 border border-blue-800/50 px-2.5 py-1 rounded-full">PROLAZ 1</span>
-          <h3 id="pass1-title" class="font-bold text-white">Type-safety i build</h3>
-          <p class="text-xs text-slate-400 leading-relaxed">910/910 unit testova, 0 fail. D17 budžeti za staff i driver bundle se proveravaju u svakom build-u. Svaki produkcijski build završava sa izlaznim kodom 0 — bez izuzetaka.</p>
-        </div>
-        <div class="glass-card p-6 rounded-2xl space-y-3">
-          <span class="text-[10px] font-mono font-bold text-blue-400 bg-blue-950/60 border border-blue-800/50 px-2.5 py-1 rounded-full">PROLAZ 2</span>
-          <h3 id="pass2-title" class="font-bold text-white">Tenant izolacija i D21</h3>
-          <p class="text-xs text-slate-400 leading-relaxed">check-no-secrets i check-firebase-isolation izvršavaju se u svakom build-u. Dispečer nikada ne vidi EID, PIN niti tokene vozača. Append-only audit trag za svaku izmenu plana.</p>
-        </div>
-        <div class="glass-card p-6 rounded-2xl space-y-3">
-          <span class="text-[10px] font-mono font-bold text-blue-400 bg-blue-950/60 border border-blue-800/50 px-2.5 py-1 rounded-full">PROLAZ 3</span>
-          <h3 id="pass3-title" class="font-bold text-white">Cockpit i PWA</h3>
-          <p class="text-xs text-slate-400 leading-relaxed">Dispečerski radar sa live statusima, 1-klik potvrde vozača iz PWA aplikacije bez instalacije, SOS okidač za 2 sekunde. Trojezični interfejs DE/SR/EN.</p>
-        </div>
-      </div>
-
-      <div class="glass-card p-6 rounded-2xl space-y-3">
-        <h3 id="results-title" class="font-bold text-white">Dokazani inženjerski rezultati</h3>
-        <div id="report-results" class="flex flex-wrap gap-2">
-          <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Atomski uvoz (All-or-Nothing)</span>
-          <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Plan Lock</span>
-          <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Bcrypt heširanje</span>
-          <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">RBAC (CA/Dispo/Driver)</span>
-          <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Remote CI</span>
-          <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Lazy loading</span>
-          <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">i18n DE/SR/EN</span>
-        </div>
-      </div>
-
-      <div class="glass-card p-6 rounded-2xl space-y-4">
-        <h3 id="phases-title" class="font-bold text-white">5 faza do produkcijskog release-a</h3>
-        <ol id="report-phases" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs text-slate-300">
-          <li class="glass-card p-4 rounded-xl"><span class="text-blue-400 font-bold block mb-1">FAZA 1</span>Prijava i ugovaranje pilota (30 dana, zero-risk).</li>
-          <li class="glass-card p-4 rounded-xl"><span class="text-blue-400 font-bold block mb-1">FAZA 2</span>Uvoz kataloga smena, vozača i flote u sistem.</li>
-          <li class="glass-card p-4 rounded-xl"><span class="text-blue-400 font-bold block mb-1">FAZA 3</span>Obuka dispečera i paralelni rad sa starim sistemom.</li>
-          <li class="glass-card p-4 rounded-xl"><span class="text-blue-400 font-bold block mb-1">FAZA 4</span>Produkcijski go-live sa Plan Lock i audit tragom.</li>
-          <li class="glass-card p-4 rounded-xl"><span class="text-blue-400 font-bold block mb-1">FAZA 5</span>Nadzor, SLA i razvoj novih modula po ugovoru.</li>
-        </ol>
-      </div>
-    </section>
-
   </main>
 
   <footer class="border-t border-slate-800/80 py-8 text-center text-xs text-slate-500">
@@ -380,7 +326,7 @@
         dlKicker: "DOKUMENTI & ŠABLONI",
         dlTitle: "Spremni materijali za uvoz i tehnički audit",
         dlSub: "Sve što je potrebno dispečeru i IT službi prevoznika za 24h onboarding.",
-        dlAudit: "1. Tehnički Izveštaj (PDF)",
+        dlAudit: "1. Tehnički i Bezbednosni Audit (PDF)",
         dlMonthly: "2. Mesečni Plan Šablon",
         dlFleet: "3. Flota Vozila Šablon",
         dlDpa: "4. GDPR & DPA Član 28",
@@ -404,17 +350,26 @@
         lblName: "Naziv firme",
         lblEmail: "Email",
         lblBuses: "Broj autobusa",
+        phName: "npr. Busunternehmen GmbH",
+        phEmail: "office@firma.at",
+        phBuses: "25",
         pilotSubmit: "Prijavi firmu na pilot",
         pilotNote: "Odgovaramo u roku od 24h. Podaci se koriste isključivo za kontakt.",
         guaranteesTitle: "5 garancija pilot programa",
-        reportKicker: "Inženjerski elaborat",
-        reportTitle: "Zvanični tehnički i operativni izveštaj",
-        reportDesc: "Trostruki nezavisni audit i dokazani rezultati — javno dostupni standard transparentnosti.",
-        pass1Title: "Type-safety i build",
-        pass2Title: "Tenant izolacija i D21",
-        pass3Title: "Cockpit i PWA",
-        resultsTitle: "Dokazani inženjerski rezultati",
-        phasesTitle: "5 faza do produkcijskog release-a"
+        guarantees: "<li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>1.</span><span>Uvoz postojećeg kataloga smena i vozača od strane našeg tima.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>2.</span><span>45-minutna obuka dispečera, uživo, za celog tima.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>3.</span><span>NDA i DPA Član 28 potpisani pre starta pilota.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>4.</span><span>Bez kreditne kartice — otkaz bilo kada u 30 dana.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>5.</span><span>Potpuni izvoz svih podataka na kraju pilota.</span></li>",
+        navStaff: "Staff prijava",
+        navDriver: "Vozačka app",
+        heroCtaStaff: "Otvori Staff Cockpit",
+        heroCtaDriver: "Otvori Driver PWA",
+        heroCtaDl: "Preuzmi Šablone & Ugovore",
+        dlAuditHint: "Zvanični elaborat za IT direktore i revizore: arhitektura, izolacija, DSGVO.",
+        dlMonthlyHint: "Zvanični šablon za uvoz smena vozača sa All-or-Nothing validacijom.",
+        dlFleetHint: "Broj autobusa, registarska oznaka, grupa i operativni status.",
+        dlDpaHint: "Pravna specifikacija obrade podataka i Frankfurt Cloud certifikacija.",
+        dlBtnPdf: "Preuzmi PDF",
+        dlBtnCsv: "Preuzmi CSV",
+        dlBtnTpl: "Preuzmi Šablon",
+        dlBtnDpa: "Preuzmi DPA"
       },
       de: {
         badge: "Betriebssystem für Busdisposition & Flottenmanagement",
@@ -425,7 +380,7 @@
         dlKicker: "DOKUMENTE & VORLAGEN",
         dlTitle: "Fertige Materialien für Import und technisches Audit",
         dlSub: "Alles, was Disponent und IT-Abteilung eines Verkehrsbetriebs für 24h-Onboarding brauchen.",
-        dlAudit: "1. Technisches Gutachten (PDF)",
+        dlAudit: "1. Technisches & Sicherheits-Audit (PDF)",
         dlMonthly: "2. Monatsplan-Vorlage",
         dlFleet: "3. Flotten-Vorlage",
         dlDpa: "4. GDPR & DPA Art. 28",
@@ -452,14 +407,23 @@
         pilotSubmit: "Firma zum Pilot anmelden",
         pilotNote: "Antwort innerhalb von 24h. Daten werden ausschließlich für den Kontakt verwendet.",
         guaranteesTitle: "5 Garantien des Pilotprogramms",
-        reportKicker: "Technisches Gutachten",
-        reportTitle: "Offizieller technischer und operativer Bericht",
-        reportDesc: "Dreifaches unabhängiges Audit und belegte Ergebnisse — öffentlicher Transparenzstandard.",
-        pass1Title: "Type-Sicherheit und Build",
-        pass2Title: "Tenant-Isolierung und D21",
-        pass3Title: "Cockpit und PWA",
-        resultsTitle: "Belegte technische Ergebnisse",
-        phasesTitle: "5 Phasen bis zum Produktiv-Release"
+        guarantees: "<li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>1.</span><span>Import des bestehenden Dienst- und Fahrerkatalogs durch unser Team.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>2.</span><span>45-minütige Live-Schulung für das gesamte Dispo-Team.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>3.</span><span>NDA und DPA Art. 28 werden vor Pilotstart unterzeichnet.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>4.</span><span>Keine Kreditkarte — jederzeit innerhalb von 30 Tagen kündbar.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>5.</span><span>Vollständiger Export aller Daten am Ende des Pilotprogramms.</span></li>",
+        phName: "z. B. Busunternehmen GmbH",
+        phEmail: "office@firma.at",
+        phBuses: "25",
+        navStaff: "Staff-Login",
+        navDriver: "Fahrer-App",
+        heroCtaStaff: "Staff Cockpit öffnen",
+        heroCtaDriver: "Driver PWA öffnen",
+        heroCtaDl: "Vorlagen & Verträge herunterladen",
+        dlAuditHint: "Offizielles Gutachten für IT-Leiter und Prüfer: Architektur, Isolierung, DSGVO.",
+        dlMonthlyHint: "Offizielle Vorlage für den Schichtimport mit All-or-Nothing-Validierung.",
+        dlFleetHint: "Busnummer, Kennzeichen, Gruppe und Betriebsstatus.",
+        dlDpaHint: "Rechtliche Spezifikation der Datenverarbeitung und Frankfurt-Cloud-Zertifizierung.",
+        dlBtnPdf: "PDF herunterladen",
+        dlBtnCsv: "CSV herunterladen",
+        dlBtnTpl: "Vorlage herunterladen",
+        dlBtnDpa: "DPA herunterladen"
       },
       en: {
         badge: "Operating System for Transit Dispatchers & Fleets",
@@ -470,7 +434,7 @@
         dlKicker: "DOCUMENTS & TEMPLATES",
         dlTitle: "Ready materials for import and technical audit",
         dlSub: "Everything a dispatcher and carrier IT department needs for 24h onboarding.",
-        dlAudit: "1. Technical Report (PDF)",
+        dlAudit: "1. Technical & Security Audit (PDF)",
         dlMonthly: "2. Monthly Plan Template",
         dlFleet: "3. Fleet Vehicle Template",
         dlDpa: "4. GDPR & DPA Article 28",
@@ -497,14 +461,23 @@
         pilotSubmit: "Apply for the pilot",
         pilotNote: "We reply within 24h. Data is used for contact only.",
         guaranteesTitle: "5 pilot program guarantees",
-        reportKicker: "Engineering report",
-        reportTitle: "Official technical & operational report",
-        reportDesc: "Triple independent audit and proven results — a public transparency standard.",
-        pass1Title: "Type-safety & build",
-        pass2Title: "Tenant isolation & D21",
-        pass3Title: "Cockpit & PWA",
-        resultsTitle: "Proven engineering results",
-        phasesTitle: "5 phases to production release"
+        guarantees: "<li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>1.</span><span>We import your existing duty and driver catalog.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>2.</span><span>Live 45-minute training for the entire dispatcher team.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>3.</span><span>NDA and DPA Article 28 signed before the pilot starts.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>4.</span><span>No credit card — cancel any time within 30 days.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>5.</span><span>Full export of all data at the end of the pilot.</span></li>",
+        phName: "e.g. Busunternehmen GmbH",
+        phEmail: "office@firma.at",
+        phBuses: "25",
+        navStaff: "Staff Login",
+        navDriver: "Driver App",
+        heroCtaStaff: "Open Staff Cockpit",
+        heroCtaDriver: "Open Driver PWA",
+        heroCtaDl: "Download Templates & Contracts",
+        dlAuditHint: "Official report for IT directors and auditors: architecture, isolation, GDPR.",
+        dlMonthlyHint: "Official driver shift import template with All-or-Nothing validation.",
+        dlFleetHint: "Bus number, plate, group and operational status.",
+        dlDpaHint: "Legal data-processing specification and Frankfurt cloud certification.",
+        dlBtnPdf: "Download PDF",
+        dlBtnCsv: "Download CSV",
+        dlBtnTpl: "Download Template",
+        dlBtnDpa: "Download DPA"
       }
     };
 
@@ -552,14 +525,23 @@
       document.getElementById('pilot-submit').textContent = pack.pilotSubmit;
       document.getElementById('pilot-note').textContent = pack.pilotNote;
       document.getElementById('pilot-guarantees-title').textContent = pack.guaranteesTitle;
-      document.getElementById('report-kicker').textContent = pack.reportKicker;
-      document.getElementById('report-title').textContent = pack.reportTitle;
-      document.getElementById('report-desc').textContent = pack.reportDesc;
-      document.getElementById('pass1-title').textContent = pack.pass1Title;
-      document.getElementById('pass2-title').textContent = pack.pass2Title;
-      document.getElementById('pass3-title').textContent = pack.pass3Title;
-      document.getElementById('results-title').textContent = pack.resultsTitle;
-      document.getElementById('phases-title').textContent = pack.phasesTitle;
+      document.getElementById('pilot-guarantees').innerHTML = pack.guarantees;
+      document.getElementById('pilot-company').placeholder = pack.phName;
+      document.getElementById('pilot-email').placeholder = pack.phEmail;
+      document.getElementById('pilot-buses').placeholder = pack.phBuses;
+      document.getElementById('nav-staff-btn').textContent = pack.navStaff;
+      document.getElementById('nav-driver-btn').textContent = pack.navDriver;
+      document.getElementById('hero-cta-staff').textContent = pack.heroCtaStaff;
+      document.getElementById('hero-cta-driver').textContent = pack.heroCtaDriver;
+      document.getElementById('hero-cta-dl').textContent = pack.heroCtaDl;
+      document.getElementById('dl-audit-desc').textContent = pack.dlAuditHint;
+      document.getElementById('dl-monthly-desc').textContent = pack.dlMonthlyHint;
+      document.getElementById('dl-fleet-desc').textContent = pack.dlFleetHint;
+      document.getElementById('dl-dpa-desc').textContent = pack.dlDpaHint;
+      document.getElementById('dl-btn-audit').textContent = pack.dlBtnPdf;
+      document.getElementById('dl-btn-monthly').textContent = pack.dlBtnCsv;
+      document.getElementById('dl-btn-fleet').textContent = pack.dlBtnTpl;
+      document.getElementById('dl-btn-dpa').textContent = pack.dlBtnDpa;
     }
 
     function submitPilot(event) {
