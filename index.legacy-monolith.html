@@ -494,6 +494,11 @@
                             <span class="bc-brand-text">BusCommand</span>
                         </div>
                         <div class="driver-pwa-userchip">
+                            <!-- Plain GSM call to the official dispatch line. One tap, no modal,
+                                 no SOS. Hidden until the Company Admin sets a dispatch number. -->
+                            <button type="button" id="driver-call-dispatcher" class="driver-pwa-callbtn hidden" data-action="callDispatcher" aria-label="Pozovi dispečera" data-i18n-aria-label="driver_call_dispatcher" data-i18n-title="driver_call_dispatcher">
+                                <i data-lucide="phone"></i>
+                            </button>
                             <button type="button" class="driver-pwa-avatar" data-action="triggerAvatarUpload" aria-label="Profile" data-i18n-aria-label="driver_profile_aria">
                                 <img id="driver-dashboard-avatar-img" src="" class="hidden" alt="">
                                 <span id="driver-dashboard-avatar-placeholder" class="driver-pwa-avatar-fallback">V</span>
@@ -2405,6 +2410,7 @@
                                 <label for="ca-settings-tax-id"><span data-i18n="ca_settings_tax_id">PIB / VAT broj</span><input id="ca-settings-tax-id" type="text" maxlength="32" data-input-action="handleCompanySettingsInput"><span class="field-error" data-company-settings-error="taxId" aria-live="polite"></span></label>
                                 <label for="ca-settings-billing-email"><span data-i18n="ca_settings_billing_email">Email za fakturisanje</span><input id="ca-settings-billing-email" type="email" maxlength="254" autocomplete="email" data-input-action="handleCompanySettingsInput"><span class="field-error" data-company-settings-error="billingEmail" aria-live="polite"></span></label>
                                 <label for="ca-settings-sms-sender-id"><span data-i18n="ca_settings_sms_sender_id">SMS pošiljalac (ID)</span><input id="ca-settings-sms-sender-id" type="text" maxlength="11" placeholder="ALPENBUS" style="text-transform:uppercase" data-input-action="handleCompanySettingsInput"><span class="field-error" data-company-settings-error="smsSenderId" aria-live="polite"></span></label>
+                                <label for="ca-settings-dispatch-phone"><span data-i18n="ca_settings_dispatch_phone">Službeni dežurni broj (vozači ga vide)</span><input id="ca-settings-dispatch-phone" type="tel" maxlength="20" inputmode="tel" autocomplete="off" placeholder="+436991234567" data-input-action="handleCompanySettingsInput"><small class="company-settings-field-hint" data-i18n="ca_settings_dispatch_phone_hint">Upišite službeni broj firme, nikada privatni mobilni dispečera. Ostavite prazno da sakrijete dugme za poziv u vozačkoj aplikaciji.</small><span class="field-error" data-company-settings-error="dispatchPhone" aria-live="polite"></span></label>
                             </div>
                             <div class="company-settings-form-actions"><button type="button" class="btn-secondary" data-action="resetCompanySettingsForm" data-i18n="btn_cancel">Otkaži</button><button id="ca-settings-save" type="submit" class="btn-primary"><i data-lucide="save"></i><span data-i18n="ca_settings_save">Sačuvaj podešavanja</span></button></div>
                         </form>
@@ -2451,8 +2457,10 @@
                     <i data-lucide="calendar"></i>
                     <span data-i18n="nav_monthly_plan_short">Smene</span>
                 </button>
-                <button type="button" class="mob-nav-btn mob-nav-sos" id="mobnav-sos" aria-label="SOS" data-i18n-aria-label="sos_button_aria" data-sos-hold="true">
-                    <i data-lucide="phone-call"></i>
+                <!-- Anti-panic SOS: hold 2s, no confirmation modal. Releasing early aborts.
+                     Deliberately NOT a phone icon — a plain call lives in the driver topbar. -->
+                <button type="button" class="mob-nav-btn mob-nav-sos" id="mobnav-sos" aria-label="SOS (Zadrži 2s)" data-i18n-aria-label="sos_hold_aria" data-i18n-title="sos_hold_label" data-sos-hold="true" data-sos-hold-ms="2000">
+                    <i data-lucide="siren"></i>
                     <span data-i18n="nav_sos">SOS</span>
                     <span class="mob-nav-sos-progress" aria-hidden="true"></span>
                 </button>
@@ -2554,21 +2562,6 @@
             <div id="msg-alert-more" class="hidden" style="
                 margin-top: 12px; font-size: 0.78rem;
                 color: rgba(255,255,255,0.4);">
-            </div>
-        </div>
-    </div>
-
-    <!-- SOS TRIGGER MODAL (driver activates SOS) -->
-    <div id="sos-trigger-modal" class="modal-backdrop bc-overlay-modal hidden" role="dialog" aria-modal="true" aria-labelledby="sos-trigger-title" data-action="closeSosTriggerModal" data-action-self="true" aria-hidden="true" style="position:fixed;inset:0;z-index:19000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);">
-        <div style="background:#0f0f19;border:2px solid rgba(239,68,68,0.7);border-radius:20px;padding:32px 28px;width:92%;max-width:380px;text-align:center;animation:sosModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;box-shadow:0 0 60px rgba(239,68,68,0.25);">
-            <div style="width:72px;height:72px;border-radius:50%;background:rgba(239,68,68,0.15);border:2px solid rgba(239,68,68,0.5);margin:0 auto 20px;display:flex;align-items:center;justify-content:center;animation:sosPulse 0.8s ease-in-out infinite;">
-                <i data-lucide="phone-call" style="width:34px;height:34px;color:#ef4444;"></i>
-            </div>
-            <h3 id="sos-trigger-title" style="font-size:1.3rem;font-weight:800;color:#ef4444;margin-bottom:10px;" data-i18n="sos_trigger_title">SOS ALARM</h3>
-            <p style="font-size:0.9rem;color:rgba(255,255,255,0.7);margin-bottom:24px;line-height:1.6;" data-i18n="js_confirm_sos">Möchten Sie wirklich den NOTFALL SOS-ALARM aktivieren?</p>
-            <div style="display:flex;gap:12px;">
-                <button data-action="closeSosTriggerModal" style="flex:1;padding:13px;border-radius:10px;font-size:0.9rem;font-weight:600;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);cursor:pointer;" data-i18n="btn_cancel">Cancel</button>
-                <button data-action="confirmSOSTrigger" style="flex:1;padding:13px;border-radius:10px;font-size:0.9rem;font-weight:800;background:linear-gradient(135deg,#dc2626,#b91c1c);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 16px rgba(239,68,68,0.4);" data-i18n="sos_trigger_btn">🚨 SEND SOS</button>
             </div>
         </div>
     </div>

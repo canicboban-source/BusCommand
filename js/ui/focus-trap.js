@@ -29,7 +29,7 @@ function attachFocusTrap(modal, { initialFocus = null } = {}) {
         window[closeAction]();
         return;
       }
-      const cancel = modal.querySelector('[data-action="closeModal"], [data-action="closeSosConfirmModal"], [data-action="closeSosTriggerModal"], [data-action="closeConfirmModal"]');
+      const cancel = modal.querySelector('[data-action="closeModal"], [data-action="closeSosConfirmModal"], [data-action="closeConfirmModal"]');
       if (cancel) {
         event.preventDefault();
         event.stopPropagation();

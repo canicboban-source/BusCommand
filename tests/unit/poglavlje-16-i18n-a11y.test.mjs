@@ -62,32 +62,39 @@ test("SOS modals expose dialog semantics on staff/driver/monolith", () => {
     assert.match(html, /id="sos-confirm-modal"[^>]*aria-modal="true"/);
     assert.match(html, /id="sos-confirm-title"/);
   }
+  // D26: the driver-side "are you sure?" SOS modal is gone. The anti-panic control
+  // is a 2s hold on the SOS button; releasing early aborts (WCAG 2.5.2 up-reversal).
   const driver = readFileSync(join(root, "driver.html"), "utf8");
-  assert.match(driver, /id="sos-trigger-modal"[^>]*role="dialog"/);
-  assert.match(driver, /id="sos-trigger-title"/);
+  assert.doesNotMatch(driver, /id="sos-trigger-modal"/);
+  assert.match(driver, /id="mobnav-sos"[^>]*data-sos-hold="true"/);
+  assert.match(driver, /id="mobnav-sos"[^>]*data-sos-hold-ms="2000"/);
+  assert.match(driver, /id="mobnav-sos"[^>]*data-i18n-aria-label="sos_hold_aria"/);
   assert.match(driver, /data-i18n="nav_sos"/);
 
   const monolith = readFileSync(join(root, "index.legacy-monolith.html"), "utf8");
-  assert.match(monolith, /id="sos-trigger-modal"[^>]*role="dialog"/);
+  assert.doesNotMatch(monolith, /id="sos-trigger-modal"/);
   assert.match(monolith, /id="clear-sos-modal"[^>]*role="dialog"/);
   assert.match(monolith, /data-i18n="nav_sos"/);
 });
 
-test("shared focus trap module is wired into modals and SOS trigger", () => {
+test("shared focus trap module is wired into every module that owns a modal", () => {
   const trap = readFileSync(join(root, "js/ui/focus-trap.js"), "utf8");
   assert.match(trap, /function attachFocusTrap/);
   assert.match(trap, /event\.key === "Escape"/);
   assert.match(trap, /event\.key !== "Tab"/);
 
+  // D26: js/driver/dashboard.js dropped off this list because its only modal
+  // (the SOS "are you sure?" dialog) was replaced by the 2s hold control.
   for (const file of [
     "js/ui/modals.js",
     "js/ui/confirm-modal.js",
-    "js/driver/dashboard.js",
   ]) {
     const src = readFileSync(join(root, file), "utf8");
     assert.match(src, /attachFocusTrap/);
     assert.match(src, /focus-trap\.js/);
   }
+  const driverDashboard = readFileSync(join(root, "js/driver/dashboard.js"), "utf8");
+  assert.doesNotMatch(driverDashboard, /attachFocusTrap/);
 });
 
 test("ops status rails use design tokens not raw status hex", () => {

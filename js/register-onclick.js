@@ -38,7 +38,7 @@ import { handleVacation } from "./dispatcher/vacations.js";
 import { handleAvatarUpload, triggerAvatarUpload } from "./driver/avatar.js";
 import { confirmTomorrowShift } from "./driver/calendar.js";
 import { resolveSOS } from "./maps/sos-siren.js";
-import { closeSosTriggerModal, confirmSOSTrigger, triggerSOSAlert } from "./driver/dashboard.js";
+import { callDispatcher, sendDriverSosNow } from "./driver/dashboard.js";
 import { archiveMessage, archiveReadMessages, confirmMessageRead } from "./driver/message-alerts.js";
 import { markMessageAsRead } from "./driver/messages-inbox.js";
 import { sendQuickReport } from "./driver/quick-reports.js";
@@ -100,7 +100,7 @@ const __ONCLICK_HANDLERS = {
     closeModal,
     closeMonthlyDayEditModal,
     closeSosConfirmModal,
-    closeSosTriggerModal,
+    callDispatcher,
     closeSuperAdminModal,
     confirmBulkPlanImport,
     confirmClearSOS,
@@ -110,7 +110,7 @@ const __ONCLICK_HANDLERS = {
     confirmModalYes,
     confirmPackageImport,
     confirmResolveSOS,
-    confirmSOSTrigger,
+    sendDriverSosNow,
     confirmSuperAdminPin,
     confirmTomorrowShift,
     createDispatcherGroup,
@@ -241,7 +241,6 @@ const __ONCLICK_HANDLERS = {
     toggleRoleDirectly,
     toggleTheme,
     triggerAvatarUpload,
-    triggerSOSAlert,
     updateDriverBusInline,
     updateDriverShiftInline,
     updatePendingImportDriver,

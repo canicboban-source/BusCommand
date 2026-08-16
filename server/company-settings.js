@@ -25,7 +25,10 @@ function normalizeCompanyProfileSettings(input = {}) {
     contactEmail: String(input.contactEmail || "").trim().toLowerCase(),
     taxId: String(input.taxId || "").trim(),
     billingEmail: String(input.billingEmail || "").trim().toLowerCase(),
-    smsSenderId: String(input.smsSenderId || "").trim().toUpperCase()
+    smsSenderId: String(input.smsSenderId || "").trim().toUpperCase(),
+    // Official on-duty dispatch line. Readable by every driver of this tenant,
+    // so it must be a company line — never a dispatcher's private mobile.
+    dispatchPhone: String(input.dispatchPhone || "").replace(/[\s\-()]/g, "").trim()
   };
 }
 

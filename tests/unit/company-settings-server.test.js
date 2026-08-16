@@ -9,7 +9,7 @@ test("server derives the same headquarters timezone and normalizes profile setti
     country: " rs ", defaultLanguage: "SR", contactEmail: " OFFICE@EXAMPLE.RS "
   }), {
     country: "RS", timezone: "Europe/Belgrade", defaultLanguage: "sr", contactEmail: "office@example.rs",
-    taxId: "", billingEmail: "", smsSenderId: ""
+    taxId: "", billingEmail: "", smsSenderId: "", dispatchPhone: ""
   });
   assert.throws(() => timezoneForCompanyCountry("US"), error => error.code === "country-not-supported");
 });
@@ -33,4 +33,15 @@ test("normalizeCompanyProfileSettings defaults new legal fields to empty string 
   assert.equal(result.taxId, "");
   assert.equal(result.billingEmail, "");
   assert.equal(result.smsSenderId, "");
+});
+
+test("normalizeCompanyProfileSettings strips cosmetic separators from the dispatch phone", () => {
+  const result = normalizeCompanyProfileSettings({
+    country: "AT", defaultLanguage: "de", contactEmail: "office@example.at",
+    dispatchPhone: " +43 (699) 123-4567 "
+  });
+  assert.equal(result.dispatchPhone, "+436991234567");
+  assert.equal(normalizeCompanyProfileSettings({
+    country: "AT", defaultLanguage: "de", contactEmail: "office@example.at"
+  }).dispatchPhone, "");
 });

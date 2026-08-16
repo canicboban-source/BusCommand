@@ -9,7 +9,6 @@ import { t } from "../ui/i18n.js";
 import ApiClient from "../core/api-client.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { driverWorkPolicy } from "./work-session.js";
-import { attachFocusTrap, detachFocusTrap } from "../ui/focus-trap.js";
 
 let sosSubmissionPending = false;
 
@@ -127,6 +126,7 @@ function renderDriverDashboard() {
     renderDriverMessages();
     checkSOSStatus();
     bindSosHoldControl();
+    renderCallDispatcherButton();
     if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
@@ -243,36 +243,42 @@ function checkInAtStop(index) {
     }
 }
 
-function triggerSOSAlert() {
-    const modal = document.getElementById("sos-trigger-modal");
-    if (!modal) return;
-    const titleEl = modal.querySelector("[data-i18n='sos_trigger_title']");
-    const bodyEl = modal.querySelector("[data-i18n='js_confirm_sos']");
-    const btnEl = modal.querySelector("[data-i18n='sos_trigger_btn']");
-    if (titleEl) titleEl.textContent = t("sos_trigger_title") || "SOS ALARM";
-    if (bodyEl) bodyEl.textContent = t("js_confirm_sos");
-    if (btnEl) btnEl.textContent = t("sos_trigger_btn") || "SEND SOS";
-    modal.classList.remove("hidden");
-    modal.style.display = "flex";
-    modal.setAttribute("role", "dialog");
-    modal.setAttribute("aria-modal", "true");
-    modal.setAttribute("aria-hidden", "false");
-    if (typeof lucide !== "undefined") lucide.createIcons();
-    attachFocusTrap(modal);
-}
-
-const SOS_HOLD_MS = 700;
+/**
+ * Anti-panic SOS: press and hold for 2s, no confirmation dialog.
+ * A driver in an emergency must not be asked "are you sure?" — the abort is
+ * releasing the button before the ring fills (WCAG 2.5.2 up-reversal).
+ */
+const SOS_HOLD_MS = 2000;
+const SOS_HOLD_TICK_MS = 40;
 let sosHoldTimer = null;
 let sosHoldBound = false;
+let sosHoldActive = false;
+
+function sosHoldDurationMs(btn) {
+    const raw = Number(btn?.getAttribute("data-sos-hold-ms"));
+    return Number.isFinite(raw) && raw >= 500 ? raw : SOS_HOLD_MS;
+}
 
 function clearSosHold(btn) {
     if (sosHoldTimer) {
         clearTimeout(sosHoldTimer);
         sosHoldTimer = null;
     }
+    sosHoldActive = false;
     btn?.classList.remove("is-holding");
     const progress = btn?.querySelector(".mob-nav-sos-progress");
-    if (progress) progress.style.width = "0%";
+    if (progress) progress.style.setProperty("--sos-hold-ratio", "0");
+}
+
+/** Short haptic burst so the driver feels the alarm leave without looking. */
+function sosHapticFeedback() {
+    try {
+        if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+            navigator.vibrate([100, 50, 100]);
+        }
+    } catch {
+        // Vibration is a nice-to-have; never let it block the alarm.
+    }
 }
 
 function bindSosHoldControl() {
@@ -281,24 +287,32 @@ function bindSosHoldControl() {
     if (!btn || btn.getAttribute("data-sos-hold") !== "true") return;
     sosHoldBound = true;
 
+    const beginHold = () => {
+        clearSosHold(btn);
+        sosHoldActive = true;
+        btn.classList.add("is-holding");
+        const progress = btn.querySelector(".mob-nav-sos-progress");
+        const holdMs = sosHoldDurationMs(btn);
+        const started = Date.now();
+        const tick = () => {
+            if (!sosHoldActive) return;
+            const ratio = Math.min(1, (Date.now() - started) / holdMs);
+            if (progress) progress.style.setProperty("--sos-hold-ratio", String(ratio));
+            if (ratio >= 1) {
+                clearSosHold(btn);
+                sosHapticFeedback();
+                sendDriverSosNow();
+                return;
+            }
+            sosHoldTimer = setTimeout(tick, SOS_HOLD_TICK_MS);
+        };
+        tick();
+    };
+
     const startHold = (event) => {
         if (event.type === "mousedown" && event.button !== 0) return;
         event.preventDefault();
-        clearSosHold(btn);
-        btn.classList.add("is-holding");
-        const progress = btn.querySelector(".mob-nav-sos-progress");
-        const started = Date.now();
-        const tick = () => {
-            const ratio = Math.min(1, (Date.now() - started) / SOS_HOLD_MS);
-            if (progress) progress.style.width = `${Math.round(ratio * 100)}%`;
-            if (ratio >= 1) {
-                clearSosHold(btn);
-                triggerSOSAlert();
-                return;
-            }
-            sosHoldTimer = setTimeout(tick, 40);
-        };
-        tick();
+        beginHold();
     };
 
     const endHold = () => clearSosHold(btn);
@@ -306,12 +320,17 @@ function bindSosHoldControl() {
     btn.addEventListener("pointerup", endHold);
     btn.addEventListener("pointerleave", endHold);
     btn.addEventListener("pointercancel", endHold);
+    // Keyboard mirrors the hold: holding Enter/Space arms it, releasing aborts.
     btn.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            triggerSOSAlert();
-        }
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        if (event.repeat || sosHoldActive) return;
+        beginHold();
     });
+    btn.addEventListener("keyup", (event) => {
+        if (event.key === "Enter" || event.key === " ") clearSosHold(btn);
+    });
+    btn.addEventListener("blur", endHold);
 }
 
 function openDriverMessagesNav() {
@@ -328,16 +347,11 @@ function openDriverMessagesNav() {
     });
 }
 
-function closeSosTriggerModal() {
-    const modal = document.getElementById("sos-trigger-modal");
-    if (!modal) return;
-    modal.classList.add("hidden");
-    modal.style.display = "none";
-    modal.setAttribute("aria-hidden", "true");
-    detachFocusTrap(modal);
-}
-
-async function confirmSOSTrigger() {
+/**
+ * Sends the SOS immediately. Reached only after a completed 2s hold, so there is
+ * deliberately no confirmation step between the driver and the dispatcher.
+ */
+async function sendDriverSosNow() {
     if (sosSubmissionPending || !window.currentUser || window.currentUser.role !== "driver") return;
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
         showToast(t("driver_critical_needs_network"), "error");
@@ -352,16 +366,38 @@ async function confirmSOSTrigger() {
                 return;
             }
         }
-        closeSosTriggerModal();
         window.state.sosActive = true;
         window.state.sosDriver = window.currentUser.name;
         window.state.sosBus = window.currentUser.bus;
         if (USE_LOCAL_STATE) saveState();
         checkSOSStatus();
-        showToast(t("js_alert_sos_sent") || "SOS alarm sent!", "error");
+        showToast(t("js_alert_sos_sent"), "error");
     } finally {
         sosSubmissionPending = false;
     }
+}
+
+/** Official on-duty dispatch line, set by the Company Admin. Empty = feature off. */
+function dispatchPhoneNumber() {
+    const raw = String(window.state?.profile?.dispatchPhone || "").replace(/[\s\-()]/g, "").trim();
+    return /^\+[1-9]\d{6,14}$/.test(raw) ? raw : "";
+}
+
+/** Plain GSM call — one tap, no modal, no SOS side effects, no extra cost. */
+function callDispatcher() {
+    if (!window.currentUser || window.currentUser.role !== "driver") return;
+    const phone = dispatchPhoneNumber();
+    if (!phone) {
+        showToast(t("driver_call_no_number"), "error");
+        return;
+    }
+    window.location.href = `tel:${phone}`;
+}
+
+function renderCallDispatcherButton() {
+    const btn = document.getElementById("driver-call-dispatcher");
+    if (!btn) return;
+    btn.classList.toggle("hidden", !dispatchPhoneNumber());
 }
 
 export {
@@ -369,9 +405,10 @@ export {
     renderStopsTimeline,
     checkInAtStop,
     driverCheckIn,
-    triggerSOSAlert,
-    closeSosTriggerModal,
-    confirmSOSTrigger,
+    sendDriverSosNow,
+    callDispatcher,
+    dispatchPhoneNumber,
+    renderCallDispatcherButton,
     checkSOSStatus,
     resolveSOS,
     bindSosHoldControl,

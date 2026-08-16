@@ -879,7 +879,10 @@ app.put(
           details: {
             country: profile.country, timezone: profile.timezone, defaultLanguage: profile.defaultLanguage,
             taxId: profile.taxId,
-            billingEmail: profile.billingEmail, smsSenderId: profile.smsSenderId
+            billingEmail: profile.billingEmail, smsSenderId: profile.smsSenderId,
+            // Audit records only whether the driver-visible dispatch line was set
+            // or cleared — the number itself stays out of the append-only log.
+            dispatchPhoneSet: Boolean(profile.dispatchPhone)
           },
           timestamp
         });

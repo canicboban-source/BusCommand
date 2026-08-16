@@ -28,7 +28,6 @@ function showLoginScreen(preferDispatcherTab = false) {
         "factory-reset-modal",
         "monthly-day-edit-modal",
         "sos-confirm-modal",
-        "sos-trigger-modal",
         "global-confirm-modal"
     ];
     const overlayIds = new Set([
@@ -41,7 +40,6 @@ function showLoginScreen(preferDispatcherTab = false) {
         "factory-reset-modal",
         "monthly-day-edit-modal",
         "sos-confirm-modal",
-        "sos-trigger-modal",
         "global-confirm-modal"
     ]);
     hideIds.forEach(id => {

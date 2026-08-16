@@ -397,7 +397,7 @@ html[data-app-surface="driver"] .mobile-bottom-nav .mob-nav-badge {
     margin-top: 12px;
 }
 
-html[data-app-surface="driver"] .mob-nav-sos {
+html[data-app-surface="driver"] .mobile-bottom-nav .mob-nav-sos {
     position: relative;
     z-index: 2;
     overflow: hidden;
@@ -416,13 +416,13 @@ html[data-app-surface="driver"] .mob-nav-sos {
     gap: 0 !important;
 }
 
-html[data-app-surface="driver"] .mob-nav-sos i,
-html[data-app-surface="driver"] .mob-nav-sos svg {
+html[data-app-surface="driver"] .mobile-bottom-nav .mob-nav-sos i,
+html[data-app-surface="driver"] .mobile-bottom-nav .mob-nav-sos svg {
     width: 26px !important;
     height: 26px !important;
 }
 
-html[data-app-surface="driver"] .mob-nav-sos > span[data-i18n="nav_sos"] {
+html[data-app-surface="driver"] .mobile-bottom-nav .mob-nav-sos > span[data-i18n="nav_sos"] {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -434,19 +434,64 @@ html[data-app-surface="driver"] .mob-nav-sos > span[data-i18n="nav_sos"] {
     border: 0;
 }
 
-html[data-app-surface="driver"] .mob-nav-sos .mob-nav-sos-progress {
+/* D26: 2s anti-panic hold. The ring fills clockwise while the driver holds;
+   releasing early resets it to 0 and no alarm is sent. */
+html[data-app-surface="driver"] .mobile-bottom-nav .mob-nav-sos .mob-nav-sos-progress {
+    --sos-hold-ratio: 0;
     position: absolute;
-    left: 0;
-    bottom: 0;
-    height: 4px;
-    width: 0%;
-    background: #fff;
-    opacity: 0.85;
-    transition: width 40ms linear;
+    inset: 0;
+    border-radius: 50%;
+    pointer-events: none;
+    background: conic-gradient(
+        #fff calc(var(--sos-hold-ratio) * 360deg),
+        rgba(255, 255, 255, 0) 0
+    );
+    /* closest-side: 100% must be the element radius, not the farthest corner,
+       otherwise the ring is painted outside the circle and never shows. */
+    -webkit-mask: radial-gradient(circle closest-side, transparent 0 76%, #000 78% 100%);
+    mask: radial-gradient(circle closest-side, transparent 0 76%, #000 78% 100%);
+    opacity: 0.95;
 }
 
-html[data-app-surface="driver"] .mob-nav-sos.is-holding {
-    filter: brightness(1.08);
+html[data-app-surface="driver"] .mobile-bottom-nav .mob-nav-sos.is-holding {
+    filter: brightness(1.12);
+    transform: translateY(-16px) scale(1.04);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html[data-app-surface="driver"] .mobile-bottom-nav .mob-nav-sos.is-holding {
+        transform: translateY(-16px);
+    }
+}
+
+/* Plain GSM call to the official dispatch line — neutral, never SOS red. */
+html[data-app-surface="driver"] .driver-pwa-callbtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    margin-right: 10px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    cursor: pointer;
+}
+
+html[data-app-surface="driver"] .driver-pwa-callbtn:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+html[data-app-surface="driver"] .driver-pwa-callbtn.hidden {
+    display: none;
+}
+
+html[data-app-surface="driver"] .driver-pwa-callbtn i,
+html[data-app-surface="driver"] .driver-pwa-callbtn svg {
+    width: 22px;
+    height: 22px;
 }
 
 /* Network / sync status (Ch13) */

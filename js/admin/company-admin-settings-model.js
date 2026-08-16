@@ -10,6 +10,9 @@ function timezoneForCountry(country) {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const badEmail = (v) => v.length > 254 || !EMAIL_PATTERN.test(v);
+/** Official on-duty dispatch line (E.164) that drivers may call. Never a private mobile. */
+const DISPATCH_PHONE_PATTERN = /^\+[1-9]\d{6,14}$/;
+const normalizeDispatchPhone = (v) => String(v || "").replace(/[\s\-()]/g, "").trim();
 
 function validateCompanySettingsDraft(input = {}) {
     const country = String(input.country || "").trim().toUpperCase();
@@ -19,6 +22,7 @@ function validateCompanySettingsDraft(input = {}) {
     const taxId = String(input.taxId || "").trim();
     const billingEmail = String(input.billingEmail || "").trim().toLowerCase();
     const smsSenderId = String(input.smsSenderId || "").trim().toUpperCase();
+    const dispatchPhone = normalizeDispatchPhone(input.dispatchPhone);
     const errors = {};
     if (!timezone) errors.country = "country_invalid";
     if (!COMPANY_LANGUAGES.has(defaultLanguage)) errors.defaultLanguage = "language_invalid";
@@ -26,10 +30,11 @@ function validateCompanySettingsDraft(input = {}) {
     if (taxId.length > 32) errors.taxId = "tax_id_invalid";
     if (billingEmail && badEmail(billingEmail)) errors.billingEmail = "billing_email_invalid";
     if (smsSenderId && !/^[A-Z0-9]{1,11}$/.test(smsSenderId)) errors.smsSenderId = "sms_sender_id_invalid";
+    if (dispatchPhone && !DISPATCH_PHONE_PATTERN.test(dispatchPhone)) errors.dispatchPhone = "dispatch_phone_invalid";
     return {
         valid: Object.keys(errors).length === 0,
         errors,
-        value: { country, timezone, defaultLanguage, contactEmail, taxId, billingEmail, smsSenderId }
+        value: { country, timezone, defaultLanguage, contactEmail, taxId, billingEmail, smsSenderId, dispatchPhone }
     };
 }
 
@@ -42,7 +47,9 @@ function companySettingsEqual(left = {}, right = {}) {
 export {
     COMPANY_LANGUAGES,
     COMPANY_TIMEZONES,
+    DISPATCH_PHONE_PATTERN,
     companySettingsEqual,
+    normalizeDispatchPhone,
     timezoneForCountry,
     validateCompanySettingsDraft
 };

@@ -542,9 +542,13 @@ test.describe("UI smoke", () => {
         closeConfirmModal();
       }
     });
-    await page.evaluate(() => triggerSOSAlert());
-    await expect(page.locator("#sos-trigger-modal")).toBeVisible();
-    await page.evaluate(() => confirmSOSTrigger());
+    // D26: no confirmation modal — hold the SOS button for the full 2s.
+    const sosBtn = page.locator("#mobnav-sos");
+    const box = await sosBtn.boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(2400);
+    await page.mouse.up();
     await expect(page.locator("#driver-sos-banner")).toBeVisible();
     await page.evaluate(() => {
       if (window.state) {

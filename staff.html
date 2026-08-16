@@ -2024,6 +2024,7 @@
                                 <label for="ca-settings-tax-id"><span data-i18n="ca_settings_tax_id">PIB / VAT broj</span><input id="ca-settings-tax-id" type="text" maxlength="32" data-input-action="handleCompanySettingsInput"><span class="field-error" data-company-settings-error="taxId" aria-live="polite"></span></label>
                                 <label for="ca-settings-billing-email"><span data-i18n="ca_settings_billing_email">Email za fakturisanje</span><input id="ca-settings-billing-email" type="email" maxlength="254" autocomplete="email" data-input-action="handleCompanySettingsInput"><span class="field-error" data-company-settings-error="billingEmail" aria-live="polite"></span></label>
                                 <label for="ca-settings-sms-sender-id"><span data-i18n="ca_settings_sms_sender_id">SMS pošiljalac (ID)</span><input id="ca-settings-sms-sender-id" type="text" maxlength="11" placeholder="ALPENBUS" style="text-transform:uppercase" data-input-action="handleCompanySettingsInput"><span class="field-error" data-company-settings-error="smsSenderId" aria-live="polite"></span></label>
+                                <label for="ca-settings-dispatch-phone"><span data-i18n="ca_settings_dispatch_phone">Službeni dežurni broj (vozači ga vide)</span><input id="ca-settings-dispatch-phone" type="tel" maxlength="20" inputmode="tel" autocomplete="off" placeholder="+436991234567" data-input-action="handleCompanySettingsInput"><small class="company-settings-field-hint" data-i18n="ca_settings_dispatch_phone_hint">Upišite službeni broj firme, nikada privatni mobilni dispečera. Ostavite prazno da sakrijete dugme za poziv u vozačkoj aplikaciji.</small><span class="field-error" data-company-settings-error="dispatchPhone" aria-live="polite"></span></label>
                             </div>
                             <div class="company-settings-form-actions"><button type="button" class="btn-secondary" data-action="resetCompanySettingsForm" data-i18n="btn_cancel">Otkaži</button><button id="ca-settings-save" type="submit" class="btn-primary"><i data-lucide="save"></i><span data-i18n="ca_settings_save">Sačuvaj podešavanja</span></button></div>
                         </form>
@@ -2066,9 +2067,6 @@
     </div>
 
     <!-- FULL-SCREEN PORUKA OD DISPEČERA -->
-    
-
-    <!-- SOS TRIGGER MODAL (driver activates SOS) -->
     
 
     <!-- SOS CONFIRM MODAL -->

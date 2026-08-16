@@ -109,6 +109,8 @@ const companyAdminStatusBody = z.object({
 });
 
 const smsSenderIdPattern = /^[A-Z0-9]{1,11}$/;
+/** Official on-duty dispatch line shown to drivers (E.164). Never a private mobile. */
+const dispatchPhonePattern = /^\+[1-9]\d{6,14}$/;
 
 const companyProfileSettingsBody = z.object({
   companyId: z.string().trim().min(1).max(64),
@@ -118,7 +120,9 @@ const companyProfileSettingsBody = z.object({
   taxId: z.string().trim().max(32).optional(),
   billingEmail: z.string().trim().toLowerCase().email().max(254).optional(),
   smsSenderId: z.string().trim().toUpperCase().max(11).optional()
-    .refine((value) => !value || smsSenderIdPattern.test(value), "SMS Sender ID mora imati 1-11 velikih slova/cifara.")
+    .refine((value) => !value || smsSenderIdPattern.test(value), "SMS Sender ID mora imati 1-11 velikih slova/cifara."),
+  dispatchPhone: z.string().trim().max(20).optional()
+    .refine((value) => !value || dispatchPhonePattern.test(value), "Dezurni broj mora biti u E.164 formatu (npr. +436991234567).")
 });
 
 const httpsLogoUrl = z.string().trim().max(350000).superRefine((value, ctx) => {

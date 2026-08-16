@@ -18,7 +18,7 @@ let settingsCompanyId = null;
 let settingsDirty = false;
 let beforeUnloadBound = false;
 
-const SETTINGS_FIELDS = ["country", "defaultLanguage", "contactEmail", "taxId", "billingEmail", "smsSenderId"];
+const SETTINGS_FIELDS = ["country", "defaultLanguage", "contactEmail", "taxId", "billingEmail", "smsSenderId", "dispatchPhone"];
 
 function currentCompanyId() {
     return window.currentUser?.companyId || null;
@@ -34,7 +34,7 @@ function stateProfileDraft() {
         defaultLanguage: profile.defaultLanguage || (USE_LOCAL_STATE ? window.state.language || "de" : ""),
         contactEmail: profile.contactEmail || (USE_LOCAL_STATE ? window.currentUser?.email || "" : "")
     };
-    for (const field of ["taxId", "billingEmail", "smsSenderId"]) draft[field] = profile[field] || "";
+    for (const field of ["taxId", "billingEmail", "smsSenderId", "dispatchPhone"]) draft[field] = profile[field] || "";
     return draft;
 }
 

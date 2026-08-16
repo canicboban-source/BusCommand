@@ -534,8 +534,7 @@ const TRANSLATIONS = {
         js_trial_remaining_login: "PROBNI PERIOD: {days} DANA PREOSTALO",
         js_vacation_marked: "Zahtev za odmor je označen kao: ",
         js_alert_msg_sent: "Poruka je uspešno poslata!",
-        js_confirm_sos: "PAŽNJA: Da li stvarno želite da aktivirate HITAN SOS alarm? Dispečerski centar će biti odmah obavešten!",
-        js_alert_sos_sent: "SOS alarm uspešno poslat dispečerskom centru! Ostanite pribrani.",
+        js_alert_sos_sent: "SOS alarm poslat dispečeru!",
         js_alert_lost_sent: "Pronađeni predmet je uspešno evidentiran!",
         js_lost_returned: "Predmet označen kao vraćen vlasniku!",
         js_alert_sos_resolved: "SOS alarm uspešno poništen i obeležen kao rešen.",
@@ -745,8 +744,6 @@ const TRANSLATIONS = {
         messages_archived: "Poruke su arhivirane",
         archive_message: "Arhiviraj",
         archive_label: "Arhiv",
-        sos_trigger_title: "SOS ALARM",
-        sos_trigger_btn: "🚨 POŠALJI SOS",
         confirm_add_group: "Dodati grupu",
         confirm_delete_group: "Obrisati grupu",
         confirm_apply_branding: "Primeniti promene brendiranja",
@@ -1308,8 +1305,7 @@ const TRANSLATIONS = {
         js_trial_remaining_login: "TRIAL PERIOD: {days} DAYS REMAINING",
         js_vacation_marked: "Vacation request marked as: ",
         js_alert_msg_sent: "Message sent successfully!",
-        js_confirm_sos: "WARNING: Do you really want to trigger EMERGENCY SOS alarm? Dispatch center will be notified immediately!",
-        js_alert_sos_sent: "SOS alarm successfully sent! Please stay calm.",
+        js_alert_sos_sent: "SOS alarm sent to dispatcher!",
         js_alert_lost_sent: "Lost item successfully logged!",
         js_lost_returned: "Item marked as returned to owner!",
         js_alert_sos_resolved: "SOS alarm successfully resolved and closed.",
@@ -1386,8 +1382,6 @@ const TRANSLATIONS = {
         trip_type_school: "School trip",
         trip_type_regular: "Regular",
         active: "Active",
-        sos_trigger_title: "SOS ALARM",
-        sos_trigger_btn: "🚨 SEND SOS",
         confirm_add_group: "Add group",
         confirm_delete_group: "Delete group",
         confirm_apply_branding: "Apply branding changes",
@@ -1954,8 +1948,7 @@ const TRANSLATIONS = {
         js_trial_remaining_login: "TESTZEITRAUM: {days} TAGE VERBLEIBEND",
         js_vacation_marked: "Urlaubsantrag markiert als: ",
         js_alert_msg_sent: "Nachricht erfolgreich gesendet!",
-        js_confirm_sos: "WARNUNG: Möchten Sie wirklich den NOTFALL SOS-ALARM aktivieren? Die Zentrale wird sofort benachrichtigt!",
-        js_alert_sos_sent: "SOS-Notruf erfolgreich an Leitstelle gesendet! Bitte bewahren Sie Ruhe.",
+        js_alert_sos_sent: "SOS-Alarm an Leitstelle gesendet!",
         js_alert_lost_sent: "Fundsache erfolgreich protokolliert!",
         js_lost_returned: "Gegenstand als an Besitzer übergeben markiert!",
         js_alert_sos_resolved: "SOS-Alarm erfolgreich zurückgesetzt.",
@@ -2157,8 +2150,6 @@ const TRANSLATIONS = {
         label_today: "Heute",
         label_yesterday: "Gestern",
         shift_vacation: "Urlaub",
-        sos_trigger_title: "SOS NOTFALL",
-        sos_trigger_btn: "🚨 SOS SENDEN",
         confirm_add_group: "Gruppe hinzufügen",
         confirm_delete_group: "Gruppe löschen",
         confirm_apply_branding: "Branding-Änderungen übernehmen",
@@ -6746,6 +6737,35 @@ Object.assign(TRANSLATIONS.de, {
     qr_delay_stop: "Verspätung / Stau +15m",
     qr_vehicle_fault: "Fahrzeugdefekt / Panne",
     dispo_bus_edit_data: "Fahrzeugdaten bearbeiten"
+});
+
+// D26 — direct 2s anti-panic SOS + separate GSM call to the official dispatch line.
+Object.assign(TRANSLATIONS.en, {
+    sos_hold_label: "SOS (Hold 2s)",
+    sos_hold_aria: "SOS emergency alarm. Press and hold for 2 seconds. Release earlier to cancel.",
+    driver_call_dispatcher: "Call Dispatcher",
+    driver_call_no_number: "No dispatch number is set for this company.",
+    ca_settings_dispatch_phone: "Official dispatch line (visible to drivers)",
+    ca_settings_dispatch_phone_hint: "Enter the company's official on-duty line, never a dispatcher's private mobile. Leave empty to hide the call button in the driver app.",
+    ca_settings_error_dispatch_phone_invalid: "Enter the number in E.164 format (e.g. +436991234567)."
+});
+Object.assign(TRANSLATIONS.sr, {
+    sos_hold_label: "SOS (Zadrži 2s)",
+    sos_hold_aria: "SOS alarm za hitne slučajeve. Pritisnite i zadržite 2 sekunde. Pustite ranije da otkažete.",
+    driver_call_dispatcher: "Pozovi dispečera",
+    driver_call_no_number: "Za ovu firmu nije unet dežurni broj.",
+    ca_settings_dispatch_phone: "Službeni dežurni broj (vozači ga vide)",
+    ca_settings_dispatch_phone_hint: "Upišite službeni broj firme, nikada privatni mobilni dispečera. Ostavite prazno da sakrijete dugme za poziv u vozačkoj aplikaciji.",
+    ca_settings_error_dispatch_phone_invalid: "Unesite broj u E.164 formatu (npr. +436991234567)."
+});
+Object.assign(TRANSLATIONS.de, {
+    sos_hold_label: "SOS (2s halten)",
+    sos_hold_aria: "SOS-Notfallalarm. 2 Sekunden gedrückt halten. Früher loslassen bricht ab.",
+    driver_call_dispatcher: "Dispo anrufen",
+    driver_call_no_number: "Für diese Firma ist keine Dienstnummer hinterlegt.",
+    ca_settings_dispatch_phone: "Offizielle Dispo-Nummer (für Fahrer sichtbar)",
+    ca_settings_dispatch_phone_hint: "Tragen Sie die offizielle Dienstnummer der Firma ein, niemals das private Mobiltelefon eines Disponenten. Leer lassen, um die Anruftaste in der Fahrer-App auszublenden.",
+    ca_settings_error_dispatch_phone_invalid: "Nummer im E.164-Format eingeben (z. B. +436991234567)."
 });
 
 // D23 — product UI languages only (en/de/sr). Unsupported keys are dropped.
