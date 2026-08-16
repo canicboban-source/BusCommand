@@ -180,98 +180,33 @@ fs.writeFileSync(path.join(ROOT, "staff.html"), staffHtml);
 
 // Preview / production marketing entry for www + apex hosts.
 // Staff and driver shells are opened via app./d. subdomains (or /staff /driver paths).
-const landing = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BusCommand</title>
-  <link rel="icon" type="image/png" href="/brand/logo-hero.png">
-  <link rel="apple-touch-icon" href="/brand/logo-hero.png">
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="stylesheet" href="/css/brand.css">
-  <style>
-    :root { color-scheme: dark; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background:
-        radial-gradient(ellipse at 20% 10%, rgba(37, 99, 235, 0.18), transparent 45%),
-        radial-gradient(ellipse at 80% 90%, rgba(30, 64, 175, 0.14), transparent 40%),
-        #0A1019;
-      color: #F1F5F9;
-      display: grid;
-      place-items: center;
-      padding: 32px 16px;
-    }
-    .card {
-      width: min(560px, 100%);
-      text-align: center;
-      padding: 40px 28px;
-      border-radius: 22px;
-      border: 1px solid rgba(148, 163, 184, 0.16);
-      background: linear-gradient(160deg, rgba(26, 36, 56, 0.92), rgba(20, 29, 46, 0.88));
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
-    }
-    .card img {
-      width: 88px;
-      height: 88px;
-      border-radius: 18px;
-      object-fit: contain;
-      margin-bottom: 18px;
-    }
-    h1 {
-      margin: 0 0 10px;
-      font-size: clamp(1.8rem, 4vw, 2.4rem);
-      letter-spacing: -0.03em;
-    }
-    p {
-      margin: 0 auto 28px;
-      max-width: 38ch;
-      color: #94A3B8;
-      line-height: 1.5;
-      font-size: 1rem;
-    }
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      justify-content: center;
-    }
-    a.cta {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 140px;
-      padding: 12px 18px;
-      border-radius: 12px;
-      font-weight: 700;
-      text-decoration: none;
-      color: #fff;
-      background: #2563EB;
-    }
-    a.cta.secondary {
-      background: transparent;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      color: #E2E8F0;
-    }
-  </style>
-</head>
-<body>
-  <main class="card">
-    <img src="/brand/logo-hero.png" width="88" height="88" alt="BusCommand">
-    <h1>BusCommand</h1>
-    <p>Fleet operations for bus companies — dispatch, monthly plans, and driver confirmations in one place.</p>
-    <div class="actions">
-      <a class="cta" href="/staff">Staff login</a>
-      <a class="cta secondary" href="/driver">Driver app</a>
-    </div>
-  </main>
-</body>
-</html>
-`;
+const landingSourcePath = path.join(__dirname, "landing", "official-landing.html");
+if (!fs.existsSync(landingSourcePath)) {
+  console.error("Missing official landing source:", landingSourcePath);
+  process.exit(1);
+}
+const landing = fs.readFileSync(landingSourcePath, "utf8");
+for (const needle of [
+  'id="top"',
+  'id="compare"',
+  'id="downloads"',
+  'id="pricing"',
+  'data-lang="de"',
+  'data-lang="sr"',
+  'data-lang="en"',
+  "/templates/BusCommand_Drivers_Import_v1.csv",
+  'href="/staff"',
+  'href="/driver"'
+]) {
+  if (!landing.includes(needle)) {
+    console.error("Official landing missing required marker:", needle);
+    process.exit(1);
+  }
+}
+if (landing.includes('class="card"') && !landing.includes("compare-card")) {
+  console.error("Official landing looks like the minimal two-button card; refusing to write.");
+  process.exit(1);
+}
 
 if (!fs.existsSync(legacyPath) && path.basename(srcPath) === "index.html" && src.includes("login-screen")) {
   fs.copyFileSync(srcPath, legacyPath);
