@@ -316,6 +316,7 @@
       <div class="text-center max-w-2xl mx-auto space-y-2">
         <span id="report-kicker" class="text-xs font-bold uppercase tracking-wider text-blue-400 block">Inženjerski elaborat</span>
         <h2 id="report-title" class="text-2xl sm:text-3xl font-bold text-white">Zvanični tehnički i operativni izveštaj</h2>
+        <span class="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-3 py-1.5 rounded-lg">v1.0.10 (Stabilno produkcijsko izdanje)</span>
         <p id="report-desc" class="text-slate-400 text-sm">Trostruki nezavisni audit, dnevnik izmena i dokazani rezultati — javno dostupni standard transparentnosti.</p>
       </div>
 
@@ -337,27 +338,16 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="glass-card p-6 rounded-2xl space-y-3">
-          <h3 id="changelog-title" class="font-bold text-white">Dnevnik izmena</h3>
-          <ul class="space-y-2 text-xs font-mono text-slate-400">
-            <li><span class="text-blue-400">9df4454</span> — uklonjen privremeni test bedž iz Download Hub-a</li>
-            <li><span class="text-blue-400">4772d5b</span> — enterprise Tailwind dizajn sa DE/SR/EN prevodom</li>
-            <li><span class="text-blue-400">4d09cad</span> — enterprise redesign, jednoređena tabela vozila, finalni logo</li>
-            <li><span class="text-blue-400">1d7f287</span> — puna zvanična landing prezentacija na www i apex domenu</li>
-          </ul>
-        </div>
-        <div class="glass-card p-6 rounded-2xl space-y-3">
-          <h3 id="results-title" class="font-bold text-white">Dokazani inženjerski rezultati</h3>
-          <div id="report-results" class="flex flex-wrap gap-2">
-            <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Atomski uvoz (All-or-Nothing)</span>
-            <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Plan Lock</span>
-            <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Bcrypt heširanje</span>
-            <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">RBAC (CA/Dispo/Driver)</span>
-            <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Remote CI</span>
-            <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Lazy loading</span>
-            <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">i18n DE/SR/EN</span>
-          </div>
+      <div class="glass-card p-6 rounded-2xl space-y-3">
+        <h3 id="results-title" class="font-bold text-white">Dokazani inženjerski rezultati</h3>
+        <div id="report-results" class="flex flex-wrap gap-2">
+          <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Atomski uvoz (All-or-Nothing)</span>
+          <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Plan Lock</span>
+          <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Bcrypt heširanje</span>
+          <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">RBAC (CA/Dispo/Driver)</span>
+          <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Remote CI</span>
+          <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Lazy loading</span>
+          <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">i18n DE/SR/EN</span>
         </div>
       </div>
 
@@ -419,11 +409,10 @@
         guaranteesTitle: "5 garancija pilot programa",
         reportKicker: "Inženjerski elaborat",
         reportTitle: "Zvanični tehnički i operativni izveštaj",
-        reportDesc: "Trostruki nezavisni audit, dnevnik izmena i dokazani rezultati — javno dostupni standard transparentnosti.",
+        reportDesc: "Trostruki nezavisni audit i dokazani rezultati — javno dostupni standard transparentnosti.",
         pass1Title: "Type-safety i build",
         pass2Title: "Tenant izolacija i D21",
         pass3Title: "Cockpit i PWA",
-        changelogTitle: "Dnevnik izmena",
         resultsTitle: "Dokazani inženjerski rezultati",
         phasesTitle: "5 faza do produkcijskog release-a"
       },
@@ -465,11 +454,10 @@
         guaranteesTitle: "5 Garantien des Pilotprogramms",
         reportKicker: "Technisches Gutachten",
         reportTitle: "Offizieller technischer und operativer Bericht",
-        reportDesc: "Dreifaches unabhängiges Audit, Änderungsprotokoll und belegte Ergebnisse — öffentlicher Transparenzstandard.",
+        reportDesc: "Dreifaches unabhängiges Audit und belegte Ergebnisse — öffentlicher Transparenzstandard.",
         pass1Title: "Type-Sicherheit und Build",
         pass2Title: "Tenant-Isolierung und D21",
         pass3Title: "Cockpit und PWA",
-        changelogTitle: "Änderungsprotokoll",
         resultsTitle: "Belegte technische Ergebnisse",
         phasesTitle: "5 Phasen bis zum Produktiv-Release"
       },
@@ -511,11 +499,10 @@
         guaranteesTitle: "5 pilot program guarantees",
         reportKicker: "Engineering report",
         reportTitle: "Official technical & operational report",
-        reportDesc: "Triple independent audit, change log and proven results — a public transparency standard.",
+        reportDesc: "Triple independent audit and proven results — a public transparency standard.",
         pass1Title: "Type-safety & build",
         pass2Title: "Tenant isolation & D21",
         pass3Title: "Cockpit & PWA",
-        changelogTitle: "Change log",
         resultsTitle: "Proven engineering results",
         phasesTitle: "5 phases to production release"
       }
@@ -571,7 +558,6 @@
       document.getElementById('pass1-title').textContent = pack.pass1Title;
       document.getElementById('pass2-title').textContent = pack.pass2Title;
       document.getElementById('pass3-title').textContent = pack.pass3Title;
-      document.getElementById('changelog-title').textContent = pack.changelogTitle;
       document.getElementById('results-title').textContent = pack.resultsTitle;
       document.getElementById('phases-title').textContent = pack.phasesTitle;
     }
