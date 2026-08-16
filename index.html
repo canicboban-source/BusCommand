@@ -89,6 +89,38 @@
       border-color: rgba(99, 102, 241, 0.4);
       box-shadow: 0 0 30px rgba(99, 102, 241, 0.08);
     }
+
+    /* ── App Preview tab system ── */
+    .preview-tab { cursor:pointer; padding:0.5rem 1.25rem; border-radius:0.5rem; font-size:0.75rem; font-weight:700; transition:all .2s; border:1px solid transparent; }
+    .preview-tab.active { background:#4f46e5; color:#fff; border-color:#6366f1; box-shadow:0 0 20px rgba(99,102,241,.25); }
+    .preview-tab:not(.active) { background:rgba(15,23,42,.6); color:#94a3b8; border-color:#334155; }
+    .preview-tab:not(.active):hover { color:#e2e8f0; border-color:#475569; }
+    .preview-panel { display:none; }
+    .preview-panel.active { display:block; }
+
+    /* ── Mockup table ── */
+    .mock-table { width:100%; border-collapse:collapse; font-size:0.75rem; }
+    .mock-table th { text-align:left; padding:0.625rem 0.75rem; color:#94a3b8; font-weight:600; border-bottom:1px solid #1e293b; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.05em; }
+    .mock-table td { padding:0.625rem 0.75rem; border-bottom:1px solid rgba(30,41,59,.5); color:#e2e8f0; }
+    .mock-table tr:hover td { background:rgba(99,102,241,.04); }
+
+    /* ── Status pills ── */
+    .pill { display:inline-flex; align-items:center; gap:0.375rem; padding:0.2rem 0.625rem; border-radius:9999px; font-size:0.65rem; font-weight:600; }
+    .pill-green { background:rgba(16,185,129,.15); color:#34d399; border:1px solid rgba(16,185,129,.3); }
+    .pill-amber { background:rgba(245,158,11,.15); color:#fbbf24; border:1px solid rgba(245,158,11,.3); }
+    .pill-red   { background:rgba(239,68,68,.15); color:#f87171; border:1px solid rgba(239,68,68,.3); }
+    .pill-gray  { background:rgba(100,116,139,.15); color:#94a3b8; border:1px solid rgba(100,116,139,.3); }
+    .pill-blue  { background:rgba(59,130,246,.15); color:#60a5fa; border:1px solid rgba(59,130,246,.3); }
+
+    /* ── Phone mockup frame ── */
+    .phone-frame { width:280px; margin:0 auto; border:3px solid #334155; border-radius:2rem; padding:1rem; background:#0f172a; box-shadow:0 25px 50px rgba(0,0,0,.4); position:relative; }
+    .phone-frame::before { content:''; display:block; width:80px; height:4px; background:#334155; border-radius:2px; margin:0 auto 1rem; }
+    @media(min-width:640px){ .phone-frame { width:320px; } }
+
+    /* ── Stat card ── */
+    .stat-card { text-align:center; padding:1rem; border-radius:0.75rem; background:rgba(15,23,42,.7); border:1px solid #1e293b; }
+    .stat-card .stat-num { font-size:1.5rem; font-weight:800; }
+    .stat-card .stat-lbl { font-size:0.65rem; color:#94a3b8; margin-top:0.25rem; }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-600 selection:text-white">
@@ -174,6 +206,281 @@
           Driver App
         </a>
       </div>
+    </section>
+
+    <!-- 1b. INTERACTIVE APP PREVIEW -->
+    <section id="app-preview" class="space-y-6 w-full">
+      <div class="text-center max-w-2xl mx-auto">
+        <span id="preview-kicker" class="text-[10px] font-mono font-bold text-indigo-300 bg-indigo-950/70 border border-indigo-800/50 px-2.5 py-1 rounded-full uppercase tracking-wider">Interactive Preview</span>
+        <h2 id="preview-title" class="text-2xl sm:text-3xl font-bold text-white mt-3">See the platform in action</h2>
+        <p id="preview-sub" class="text-slate-400 text-sm mt-2">Explore each role — dispatcher cockpit, driver mobile app, and company admin dashboard.</p>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="flex flex-wrap justify-center gap-2" role="tablist">
+        <button onclick="showPreviewTab('dispo')" id="ptab-dispo" class="preview-tab active" role="tab" aria-selected="true">
+          <span class="hidden sm:inline">&#9881; </span><span id="ptab-dispo-label">Dispo Cockpit</span>
+        </button>
+        <button onclick="showPreviewTab('driver')" id="ptab-driver" class="preview-tab" role="tab" aria-selected="false">
+          <span class="hidden sm:inline">&#128241; </span><span id="ptab-driver-label">Driver PWA</span>
+        </button>
+        <button onclick="showPreviewTab('admin')" id="ptab-admin" class="preview-tab" role="tab" aria-selected="false">
+          <span class="hidden sm:inline">&#128274; </span><span id="ptab-admin-label">Company Admin</span>
+        </button>
+      </div>
+
+      <!-- ═══ TAB 1: Dispo Cockpit ═══ -->
+      <div id="panel-dispo" class="preview-panel active glass-card rounded-2xl p-4 sm:p-6 space-y-5" role="tabpanel">
+        <!-- Stat badges -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="stat-card"><div class="stat-num text-indigo-400">4</div><div class="stat-lbl" id="ds-buses">Buses</div></div>
+          <div class="stat-card"><div class="stat-num text-emerald-400">5</div><div class="stat-lbl" id="ds-drivers">Drivers</div></div>
+          <div class="stat-card"><div class="stat-num text-cyan-300">127</div><div class="stat-lbl" id="ds-shifts">Monthly Shifts</div></div>
+          <div class="stat-card"><div class="stat-num text-purple-400">100%</div><div class="stat-lbl" id="ds-uptime">Plan Coverage</div></div>
+        </div>
+
+        <!-- Needs Attention alert -->
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-amber-950/30 border border-amber-700/40">
+          <span class="text-amber-400 text-lg">&#9888;</span>
+          <div>
+            <p id="alert-title" class="text-xs font-bold text-amber-300">Needs Attention</p>
+            <p id="alert-desc" class="text-xs text-amber-200/80">Position 4 (Bereitschaft) — no standby driver assigned for tomorrow.</p>
+          </div>
+          <button class="ml-auto px-3 py-1.5 text-[10px] font-bold bg-amber-600/20 text-amber-300 border border-amber-500/40 rounded-lg hover:bg-amber-600/30 transition-colors" id="alert-btn">Assign Now</button>
+        </div>
+
+        <!-- Daily Plan table -->
+        <div>
+          <h3 id="dp-title" class="text-sm font-bold text-white mb-3">Daily Plan — Monday, 16 June 2026</h3>
+          <div class="overflow-x-auto rounded-xl border border-slate-800">
+            <table class="mock-table">
+              <thead class="bg-slate-900/80">
+                <tr>
+                  <th id="dp-h-pos">Pos</th>
+                  <th id="dp-h-shift">Shift</th>
+                  <th id="dp-h-driver">Driver</th>
+                  <th id="dp-h-bus">Bus</th>
+                  <th id="dp-h-time">Time</th>
+                  <th id="dp-h-status">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="font-mono text-indigo-300">1</td>
+                  <td>Route 310 AM</td>
+                  <td>John Smith</td>
+                  <td><span class="font-mono text-cyan-300">401</span></td>
+                  <td class="text-slate-400">05:30 – 13:00</td>
+                  <td><span class="pill pill-green">&#9679; Confirmed</span></td>
+                </tr>
+                <tr>
+                  <td class="font-mono text-indigo-300">2</td>
+                  <td>Route 310 PM</td>
+                  <td>Maria Weber</td>
+                  <td><span class="font-mono text-cyan-300">402</span></td>
+                  <td class="text-slate-400">13:00 – 21:00</td>
+                  <td><span class="pill pill-green">&#9679; Confirmed</span></td>
+                </tr>
+                <tr>
+                  <td class="font-mono text-indigo-300">3</td>
+                  <td>Route 22 AM</td>
+                  <td>Luka Novak</td>
+                  <td><span class="font-mono text-cyan-300">403</span></td>
+                  <td class="text-slate-400">06:00 – 14:00</td>
+                  <td><span class="pill pill-blue">&#9679; Read</span></td>
+                </tr>
+                <tr class="bg-amber-950/10">
+                  <td class="font-mono text-amber-400">4</td>
+                  <td class="text-amber-300">Bereitschaft</td>
+                  <td class="text-slate-500 italic" id="dp-unassigned">— unassigned —</td>
+                  <td class="text-slate-500">—</td>
+                  <td class="text-slate-500">—</td>
+                  <td><span class="pill pill-amber">&#9888; Open</span></td>
+                </tr>
+                <tr>
+                  <td class="font-mono text-indigo-300">5</td>
+                  <td>Route 22 PM</td>
+                  <td>Thomas Berg</td>
+                  <td><span class="font-mono text-cyan-300">404</span></td>
+                  <td class="text-slate-400">13:30 – 21:30</td>
+                  <td><span class="pill pill-green">&#9679; Confirmed</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Available drivers -->
+        <div class="flex flex-wrap items-center gap-3">
+          <span id="dp-avail" class="text-xs font-bold text-slate-400">Available for assignment:</span>
+          <span class="pill pill-green">Elena Fischer</span>
+          <span class="text-[10px] text-slate-500" id="dp-avail-note">(1 driver available — Group B)</span>
+        </div>
+      </div>
+
+      <!-- ═══ TAB 2: Driver PWA ═══ -->
+      <div id="panel-driver" class="preview-panel" role="tabpanel">
+        <div class="flex flex-col lg:flex-row items-center gap-8">
+          <!-- Phone mockup -->
+          <div class="phone-frame">
+            <div class="space-y-4">
+              <!-- Today's shift card -->
+              <div class="bg-indigo-950/60 border border-indigo-500/30 rounded-xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                  <span id="drv-today" class="text-[10px] font-bold uppercase tracking-wider text-indigo-300">Today's Shift</span>
+                  <span class="pill pill-green text-[10px]">Confirmed</span>
+                </div>
+                <div class="text-lg font-extrabold text-white">Route 310 AM</div>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                  <div><div class="text-xs text-slate-400" id="drv-bus-lbl">Bus</div><div class="font-bold text-cyan-300">401</div></div>
+                  <div><div class="text-xs text-slate-400" id="drv-start-lbl">Start</div><div class="font-bold text-white">05:30</div></div>
+                  <div><div class="text-xs text-slate-400" id="drv-end-lbl">End</div><div class="font-bold text-white">13:00</div></div>
+                </div>
+              </div>
+
+              <!-- Action buttons -->
+              <button class="w-full py-3 bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 rounded-xl text-xs font-bold" id="drv-confirm-btn">&#10003; Confirm Shift</button>
+
+              <div class="grid grid-cols-2 gap-2">
+                <button class="py-2.5 bg-red-950/40 text-red-400 border border-red-800/40 rounded-xl text-[10px] font-bold" id="drv-sos-btn">&#9888; SOS</button>
+                <button class="py-2.5 bg-slate-800/60 text-slate-300 border border-slate-700/40 rounded-xl text-[10px] font-bold" id="drv-report-btn">Report Issue</button>
+              </div>
+
+              <!-- Next shift -->
+              <div class="border-t border-slate-800 pt-3 space-y-1">
+                <span id="drv-next" class="text-[10px] font-bold text-slate-400 uppercase">Next Shift</span>
+                <div class="flex items-center justify-between">
+                  <span class="text-xs text-white font-semibold">Route 310 AM</span>
+                  <span class="text-xs text-slate-400">Tomorrow, 05:30</span>
+                </div>
+              </div>
+
+              <!-- Messages -->
+              <div class="border-t border-slate-800 pt-3 space-y-2">
+                <span id="drv-msg" class="text-[10px] font-bold text-slate-400 uppercase">Dispatcher Messages</span>
+                <div class="bg-slate-900/80 rounded-lg p-2.5 border border-slate-800">
+                  <p class="text-[10px] text-slate-300" id="drv-msg-text">Bus 404 goes to maintenance tomorrow. Bus 401 confirmed for your route.</p>
+                  <p class="text-[9px] text-slate-500 mt-1">Today, 08:15</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Feature highlights next to phone -->
+          <div class="flex-1 space-y-4 max-w-md">
+            <h3 id="drv-feat-title" class="text-lg font-bold text-white">Driver PWA — Zero Install, Full Control</h3>
+            <ul class="space-y-3">
+              <li class="flex items-start gap-3">
+                <span class="text-emerald-400 font-bold text-sm mt-0.5">&#10003;</span>
+                <div>
+                  <p id="drv-f1-title" class="text-sm font-semibold text-white">1-Click Shift Confirmation</p>
+                  <p id="drv-f1-desc" class="text-xs text-slate-400">Acknowledge your shift with a single tap. Dispatcher sees the read-receipt instantly.</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-red-400 font-bold text-sm mt-0.5">&#9888;</span>
+                <div>
+                  <p id="drv-f2-title" class="text-sm font-semibold text-white">2-Second SOS</p>
+                  <p id="drv-f2-desc" class="text-xs text-slate-400">Emergency alert reaches the dispatcher in under 2 seconds. No phone calls while driving.</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-cyan-300 font-bold text-sm mt-0.5">&#128241;</span>
+                <div>
+                  <p id="drv-f3-title" class="text-sm font-semibold text-white">Works on Any Phone</p>
+                  <p id="drv-f3-desc" class="text-xs text-slate-400">Progressive Web App — no app store, no updates. Open the link and start.</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-purple-400 font-bold text-sm mt-0.5">&#128197;</span>
+                <div>
+                  <p id="drv-f4-title" class="text-sm font-semibold text-white">Monthly Calendar View</p>
+                  <p id="drv-f4-desc" class="text-xs text-slate-400">Color-coded shift calendar with morning, afternoon, off, and vacation days at a glance.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ TAB 3: Company Admin ═══ -->
+      <div id="panel-admin" class="preview-panel glass-card rounded-2xl p-4 sm:p-6 space-y-5" role="tabpanel">
+        <!-- Admin stat badges -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="stat-card"><div class="stat-num text-indigo-400">2</div><div class="stat-lbl" id="adm-groups">Groups / Lines</div></div>
+          <div class="stat-card"><div class="stat-num text-emerald-400">5</div><div class="stat-lbl" id="adm-drivers">Drivers</div></div>
+          <div class="stat-card"><div class="stat-num text-cyan-300">4</div><div class="stat-lbl" id="adm-buses">Buses</div></div>
+          <div class="stat-card"><div class="stat-num text-purple-400">2</div><div class="stat-lbl" id="adm-disps">Dispatchers</div></div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <!-- Driver directory -->
+          <div class="space-y-3">
+            <h3 id="adm-drv-title" class="text-sm font-bold text-white">Driver Directory</h3>
+            <div class="overflow-x-auto rounded-xl border border-slate-800">
+              <table class="mock-table">
+                <thead class="bg-slate-900/80">
+                  <tr>
+                    <th id="adm-h-name">Name</th>
+                    <th id="adm-h-group">Group</th>
+                    <th id="adm-h-email">Email</th>
+                    <th id="adm-h-status">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>John Smith</td><td class="text-slate-400">Group A</td><td class="text-slate-400">j.smith@example.com</td><td><span class="pill pill-green">Active</span></td></tr>
+                  <tr><td>Maria Weber</td><td class="text-slate-400">Group A</td><td class="text-slate-400">m.weber@example.com</td><td><span class="pill pill-green">Active</span></td></tr>
+                  <tr><td>Luka Novak</td><td class="text-slate-400">Group B</td><td class="text-slate-400">l.novak@example.com</td><td><span class="pill pill-green">Active</span></td></tr>
+                  <tr><td>Elena Fischer</td><td class="text-slate-400">Group B</td><td class="text-slate-400">e.fischer@example.com</td><td><span class="pill pill-amber">On Leave</span></td></tr>
+                  <tr><td>Thomas Berg</td><td class="text-slate-400">Group A</td><td class="text-slate-400">t.berg@example.com</td><td><span class="pill pill-green">Active</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Fleet overview -->
+          <div class="space-y-3">
+            <h3 id="adm-bus-title" class="text-sm font-bold text-white">Fleet Overview</h3>
+            <div class="overflow-x-auto rounded-xl border border-slate-800">
+              <table class="mock-table">
+                <thead class="bg-slate-900/80">
+                  <tr>
+                    <th id="adm-h-bus">Bus</th>
+                    <th id="adm-h-plate">Plate</th>
+                    <th id="adm-h-bgroup">Group</th>
+                    <th id="adm-h-bstatus">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td class="font-mono text-cyan-300">401</td><td class="text-slate-400">MT-BC 401</td><td class="text-slate-400">Group A</td><td><span class="pill pill-green">Active</span></td></tr>
+                  <tr><td class="font-mono text-cyan-300">402</td><td class="text-slate-400">MT-BC 402</td><td class="text-slate-400">Group A</td><td><span class="pill pill-green">Active</span></td></tr>
+                  <tr><td class="font-mono text-cyan-300">403</td><td class="text-slate-400">MT-BC 403</td><td class="text-slate-400">Group B</td><td><span class="pill pill-green">Active</span></td></tr>
+                  <tr><td class="font-mono text-cyan-300">404</td><td class="text-slate-400">MT-BC 404</td><td class="text-slate-400">Group B</td><td><span class="pill pill-red">Maintenance</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin feature cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="glass-card p-4 rounded-xl space-y-1.5">
+            <p id="adm-f1-title" class="text-xs font-bold text-white">D21 Role Matrix</p>
+            <p id="adm-f1-desc" class="text-[10px] text-slate-400">Super Admin, Company Admin, Dispatcher, Driver — each role sees only what they need.</p>
+          </div>
+          <div class="glass-card p-4 rounded-xl space-y-1.5">
+            <p id="adm-f2-title" class="text-xs font-bold text-white">Tenant Isolation</p>
+            <p id="adm-f2-desc" class="text-[10px] text-slate-400">Company A never sees Company B. Data, queries, and audit logs are fully separated.</p>
+          </div>
+          <div class="glass-card p-4 rounded-xl space-y-1.5">
+            <p id="adm-f3-title" class="text-xs font-bold text-white">Append-Only Audit</p>
+            <p id="adm-f3-desc" class="text-[10px] text-slate-400">24-month immutable log. Every change — who, what, when — for GDPR and internal review.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <p id="preview-disclaimer" class="text-center text-[10px] text-slate-500 italic">Illustrative demo data — all names, plates, and company references are fictional.</p>
     </section>
 
     <!-- 2. KAKO REŠAVAMO TEŽAK RADNI DAN -->
@@ -508,6 +815,44 @@
         heroCtaPilot: "Zatražite besplatan pilot (30 dana)",
         heroCtaStaff: "Staff Login",
         heroCtaDriver: "Driver App",
+        // ── App Preview ──
+        prevKicker: "Interaktivni pregled",
+        prevTitle: "Pogledajte platformu uživo",
+        prevSub: "Istražite svaku ulogu — dispečerski kokpit, mobilna vozačka aplikacija i admin panel.",
+        ptabDispo: "Dispo kokpit",
+        ptabDriver: "Vozačka PWA",
+        ptabAdmin: "Admin firme",
+        dsBuses: "Autobusi", dsDrivers: "Vozači", dsShifts: "Mesečne smene", dsUptime: "Pokrivenost plana",
+        alertTitle: "Potrebna pažnja",
+        alertDesc: "Pozicija 4 (Bereitschaft) — nema dodeljenog rezervnog vozača za sutra.",
+        alertBtn: "Dodeli sada",
+        dpTitle: "Dnevni plan — Ponedeljak, 16. jun 2026.",
+        dpHPos: "Poz", dpHShift: "Smena", dpHDriver: "Vozač", dpHBus: "Autobus", dpHTime: "Vreme", dpHStatus: "Status",
+        dpUnassigned: "— nedodeljeno —",
+        dpAvail: "Dostupni za dodelu:",
+        dpAvailNote: "(1 vozač dostupan — Grupa B)",
+        drvToday: "Današnja smena",
+        drvBusLbl: "Autobus", drvStartLbl: "Početak", drvEndLbl: "Kraj",
+        drvConfirmBtn: "✓ Potvrdi smenu",
+        drvSosBtn: "⚠ SOS",
+        drvReportBtn: "Prijavi problem",
+        drvNext: "Sledeća smena",
+        drvMsg: "Poruke dispečera",
+        drvMsgText: "Autobus 404 ide na servis sutra. Autobus 401 potvrđen za vašu liniju.",
+        drvFeatTitle: "Vozačka PWA — Bez instalacije, puna kontrola",
+        drvF1Title: "Potvrda smene jednim klikom", drvF1Desc: "Potvrdite smenu jednim dodirom. Dispečer odmah vidi potvrdu čitanja.",
+        drvF2Title: "SOS za 2 sekunde", drvF2Desc: "Hitno obaveštenje stiže dispečeru za manje od 2 sekunde. Bez telefonskih poziva u vožnji.",
+        drvF3Title: "Radi na svakom telefonu", drvF3Desc: "Progressive Web App — bez app store-a, bez ažuriranja. Otvorite link i krenite.",
+        drvF4Title: "Mesečni kalendar", drvF4Desc: "Smene u boji — jutarnje, popodnevne, slobodni dani i odmori na prvi pogled.",
+        admGroups: "Grupe / Linije", admDrivers: "Vozači", admBuses: "Autobusi", admDisps: "Dispečeri",
+        admDrvTitle: "Evidencija vozača",
+        admHName: "Ime", admHGroup: "Grupa", admHEmail: "Email", admHStatus: "Status",
+        admBusTitle: "Pregled flote",
+        admHBus: "Autobus", admHPlate: "Tablice", admHBGroup: "Grupa", admHBStatus: "Status",
+        admF1Title: "D21 Matrica uloga", admF1Desc: "Super Admin, Admin firme, Dispečer, Vozač — svaka uloga vidi samo ono što joj treba.",
+        admF2Title: "Izolacija stanara", admF2Desc: "Firma A nikada ne vidi Firmu B. Podaci, upiti i audit logovi su potpuno razdvojeni.",
+        admF3Title: "Append-Only audit", admF3Desc: "24-mesečni neizmenjiv log. Svaka promena — ko, šta, kada — za GDPR i internu reviziju.",
+        prevDisclaimer: "Ilustrativni demo podaci — sva imena, tablice i nazivi firmi su izmišljeni.",
         howTitle: "Kako rešavamo težak radni dan",
         howSub: "Četiri koraka od haosa do mirne smene — svaki korak serverski verifikovan.",
         stepBadge: "✓ Serverski verifikovano",
@@ -596,6 +941,44 @@
         heroCtaPilot: "Kostenlosen Pilot anfordern (30 Tage)",
         heroCtaStaff: "Staff Login",
         heroCtaDriver: "Driver App",
+        // ── App Preview ──
+        prevKicker: "Interaktive Vorschau",
+        prevTitle: "Erleben Sie die Plattform live",
+        prevSub: "Entdecken Sie jede Rolle — Disponenten-Cockpit, Fahrer-App und Firmen-Admin-Dashboard.",
+        ptabDispo: "Dispo-Cockpit",
+        ptabDriver: "Fahrer-PWA",
+        ptabAdmin: "Firmen-Admin",
+        dsBuses: "Busse", dsDrivers: "Fahrer", dsShifts: "Monatsschichten", dsUptime: "Planabdeckung",
+        alertTitle: "Handlungsbedarf",
+        alertDesc: "Position 4 (Bereitschaft) — kein Reservefahrer für morgen zugewiesen.",
+        alertBtn: "Jetzt zuweisen",
+        dpTitle: "Tagesplan — Montag, 16. Juni 2026",
+        dpHPos: "Pos", dpHShift: "Schicht", dpHDriver: "Fahrer", dpHBus: "Bus", dpHTime: "Zeit", dpHStatus: "Status",
+        dpUnassigned: "— nicht zugewiesen —",
+        dpAvail: "Für Zuweisung verfügbar:",
+        dpAvailNote: "(1 Fahrer verfügbar — Gruppe B)",
+        drvToday: "Heutige Schicht",
+        drvBusLbl: "Bus", drvStartLbl: "Beginn", drvEndLbl: "Ende",
+        drvConfirmBtn: "✓ Schicht bestätigen",
+        drvSosBtn: "⚠ SOS",
+        drvReportBtn: "Problem melden",
+        drvNext: "Nächste Schicht",
+        drvMsg: "Disponenten-Nachrichten",
+        drvMsgText: "Bus 404 geht morgen in die Werkstatt. Bus 401 für Ihre Route bestätigt.",
+        drvFeatTitle: "Fahrer-PWA — Keine Installation, volle Kontrolle",
+        drvF1Title: "1-Klick Schichtbestätigung", drvF1Desc: "Bestätigen Sie Ihre Schicht mit einem Tipp. Der Disponent sieht die Lesebestätigung sofort.",
+        drvF2Title: "SOS in 2 Sekunden", drvF2Desc: "Notfallalarm erreicht den Disponenten in unter 2 Sekunden. Keine Anrufe während der Fahrt.",
+        drvF3Title: "Funktioniert auf jedem Handy", drvF3Desc: "Progressive Web App — kein App Store, keine Updates. Link öffnen und loslegen.",
+        drvF4Title: "Monatskalender-Ansicht", drvF4Desc: "Farbcodierter Schichtkalender mit Früh-, Spät-, Frei- und Urlaubstagen auf einen Blick.",
+        admGroups: "Gruppen / Linien", admDrivers: "Fahrer", admBuses: "Busse", admDisps: "Disponenten",
+        admDrvTitle: "Fahrerverzeichnis",
+        admHName: "Name", admHGroup: "Gruppe", admHEmail: "E-Mail", admHStatus: "Status",
+        admBusTitle: "Fuhrparkübersicht",
+        admHBus: "Bus", admHPlate: "Kennzeichen", admHBGroup: "Gruppe", admHBStatus: "Status",
+        admF1Title: "D21 Rollenmatrix", admF1Desc: "Super Admin, Firmen-Admin, Disponent, Fahrer — jede Rolle sieht nur das Nötige.",
+        admF2Title: "Mandanten-Isolierung", admF2Desc: "Firma A sieht nie Firma B. Daten, Abfragen und Audit-Logs sind vollständig getrennt.",
+        admF3Title: "Append-Only-Audit", admF3Desc: "24-monatiges unveränderliches Log. Jede Änderung — wer, was, wann — für DSGVO und interne Prüfung.",
+        prevDisclaimer: "Illustrative Demodaten — alle Namen, Kennzeichen und Firmenbezeichnungen sind fiktiv.",
         howTitle: "So lösen wir den harten Arbeitstag",
         howSub: "Vier Schritte vom Chaos zur ruhigen Schicht — jeder Schritt serverseitig verifiziert.",
         stepBadge: "✓ Server-verifiziert",
@@ -684,6 +1067,44 @@
         heroCtaPilot: "Request a free pilot (30 days)",
         heroCtaStaff: "Staff Login",
         heroCtaDriver: "Driver App",
+        // ── App Preview ──
+        prevKicker: "Interactive Preview",
+        prevTitle: "See the platform in action",
+        prevSub: "Explore each role — dispatcher cockpit, driver mobile app, and company admin dashboard.",
+        ptabDispo: "Dispo Cockpit",
+        ptabDriver: "Driver PWA",
+        ptabAdmin: "Company Admin",
+        dsBuses: "Buses", dsDrivers: "Drivers", dsShifts: "Monthly Shifts", dsUptime: "Plan Coverage",
+        alertTitle: "Needs Attention",
+        alertDesc: "Position 4 (Bereitschaft) — no standby driver assigned for tomorrow.",
+        alertBtn: "Assign Now",
+        dpTitle: "Daily Plan — Monday, 16 June 2026",
+        dpHPos: "Pos", dpHShift: "Shift", dpHDriver: "Driver", dpHBus: "Bus", dpHTime: "Time", dpHStatus: "Status",
+        dpUnassigned: "— unassigned —",
+        dpAvail: "Available for assignment:",
+        dpAvailNote: "(1 driver available — Group B)",
+        drvToday: "Today's Shift",
+        drvBusLbl: "Bus", drvStartLbl: "Start", drvEndLbl: "End",
+        drvConfirmBtn: "✓ Confirm Shift",
+        drvSosBtn: "⚠ SOS",
+        drvReportBtn: "Report Issue",
+        drvNext: "Next Shift",
+        drvMsg: "Dispatcher Messages",
+        drvMsgText: "Bus 404 goes to maintenance tomorrow. Bus 401 confirmed for your route.",
+        drvFeatTitle: "Driver PWA — Zero Install, Full Control",
+        drvF1Title: "1-Click Shift Confirmation", drvF1Desc: "Acknowledge your shift with a single tap. Dispatcher sees the read-receipt instantly.",
+        drvF2Title: "2-Second SOS", drvF2Desc: "Emergency alert reaches the dispatcher in under 2 seconds. No phone calls while driving.",
+        drvF3Title: "Works on Any Phone", drvF3Desc: "Progressive Web App — no app store, no updates. Open the link and start.",
+        drvF4Title: "Monthly Calendar View", drvF4Desc: "Color-coded shift calendar with morning, afternoon, off, and vacation days at a glance.",
+        admGroups: "Groups / Lines", admDrivers: "Drivers", admBuses: "Buses", admDisps: "Dispatchers",
+        admDrvTitle: "Driver Directory",
+        admHName: "Name", admHGroup: "Group", admHEmail: "Email", admHStatus: "Status",
+        admBusTitle: "Fleet Overview",
+        admHBus: "Bus", admHPlate: "Plate", admHBGroup: "Group", admHBStatus: "Status",
+        admF1Title: "D21 Role Matrix", admF1Desc: "Super Admin, Company Admin, Dispatcher, Driver — each role sees only what they need.",
+        admF2Title: "Tenant Isolation", admF2Desc: "Company A never sees Company B. Data, queries, and audit logs are fully separated.",
+        admF3Title: "Append-Only Audit", admF3Desc: "24-month immutable log. Every change — who, what, when — for GDPR and internal review.",
+        prevDisclaimer: "Illustrative demo data — all names, plates, and company references are fictional.",
         howTitle: "How we solve the hard working day",
         howSub: "Four steps from chaos to a calm shift — every step server-verified.",
         stepBadge: "✓ Server Verified",
@@ -764,6 +1185,15 @@
       }
     };
 
+    /* ── Preview tab switcher ── */
+    function showPreviewTab(tab) {
+      ['dispo','driver','admin'].forEach(function(t) {
+        document.getElementById('panel-' + t).classList.toggle('active', t === tab);
+        document.getElementById('ptab-' + t).classList.toggle('active', t === tab);
+        document.getElementById('ptab-' + t).setAttribute('aria-selected', t === tab ? 'true' : 'false');
+      });
+    }
+
     function setLang(lang) {
       document.getElementById('btn-de').className = lang === 'de' ? 'lang-active' : '';
       document.getElementById('btn-sr').className = lang === 'sr' ? 'lang-active' : '';
@@ -786,6 +1216,72 @@
       document.getElementById('nav-staff-btn').textContent = pack.navStaff;
       document.getElementById('nav-driver-btn').textContent = pack.navDriver;
       document.getElementById('nav-download-hub').textContent = pack.navDownloadHub;
+
+      // ── App Preview translations ──
+      document.getElementById('preview-kicker').textContent = pack.prevKicker;
+      document.getElementById('preview-title').textContent = pack.prevTitle;
+      document.getElementById('preview-sub').textContent = pack.prevSub;
+      document.getElementById('ptab-dispo-label').textContent = pack.ptabDispo;
+      document.getElementById('ptab-driver-label').textContent = pack.ptabDriver;
+      document.getElementById('ptab-admin-label').textContent = pack.ptabAdmin;
+      document.getElementById('ds-buses').textContent = pack.dsBuses;
+      document.getElementById('ds-drivers').textContent = pack.dsDrivers;
+      document.getElementById('ds-shifts').textContent = pack.dsShifts;
+      document.getElementById('ds-uptime').textContent = pack.dsUptime;
+      document.getElementById('alert-title').textContent = pack.alertTitle;
+      document.getElementById('alert-desc').textContent = pack.alertDesc;
+      document.getElementById('alert-btn').textContent = pack.alertBtn;
+      document.getElementById('dp-title').textContent = pack.dpTitle;
+      document.getElementById('dp-h-pos').textContent = pack.dpHPos;
+      document.getElementById('dp-h-shift').textContent = pack.dpHShift;
+      document.getElementById('dp-h-driver').textContent = pack.dpHDriver;
+      document.getElementById('dp-h-bus').textContent = pack.dpHBus;
+      document.getElementById('dp-h-time').textContent = pack.dpHTime;
+      document.getElementById('dp-h-status').textContent = pack.dpHStatus;
+      document.getElementById('dp-unassigned').textContent = pack.dpUnassigned;
+      document.getElementById('dp-avail').textContent = pack.dpAvail;
+      document.getElementById('dp-avail-note').textContent = pack.dpAvailNote;
+      document.getElementById('drv-today').textContent = pack.drvToday;
+      document.getElementById('drv-bus-lbl').textContent = pack.drvBusLbl;
+      document.getElementById('drv-start-lbl').textContent = pack.drvStartLbl;
+      document.getElementById('drv-end-lbl').textContent = pack.drvEndLbl;
+      document.getElementById('drv-confirm-btn').textContent = pack.drvConfirmBtn;
+      document.getElementById('drv-sos-btn').textContent = pack.drvSosBtn;
+      document.getElementById('drv-report-btn').textContent = pack.drvReportBtn;
+      document.getElementById('drv-next').textContent = pack.drvNext;
+      document.getElementById('drv-msg').textContent = pack.drvMsg;
+      document.getElementById('drv-msg-text').textContent = pack.drvMsgText;
+      document.getElementById('drv-feat-title').textContent = pack.drvFeatTitle;
+      document.getElementById('drv-f1-title').textContent = pack.drvF1Title;
+      document.getElementById('drv-f1-desc').textContent = pack.drvF1Desc;
+      document.getElementById('drv-f2-title').textContent = pack.drvF2Title;
+      document.getElementById('drv-f2-desc').textContent = pack.drvF2Desc;
+      document.getElementById('drv-f3-title').textContent = pack.drvF3Title;
+      document.getElementById('drv-f3-desc').textContent = pack.drvF3Desc;
+      document.getElementById('drv-f4-title').textContent = pack.drvF4Title;
+      document.getElementById('drv-f4-desc').textContent = pack.drvF4Desc;
+      document.getElementById('adm-groups').textContent = pack.admGroups;
+      document.getElementById('adm-drivers').textContent = pack.admDrivers;
+      document.getElementById('adm-buses').textContent = pack.admBuses;
+      document.getElementById('adm-disps').textContent = pack.admDisps;
+      document.getElementById('adm-drv-title').textContent = pack.admDrvTitle;
+      document.getElementById('adm-h-name').textContent = pack.admHName;
+      document.getElementById('adm-h-group').textContent = pack.admHGroup;
+      document.getElementById('adm-h-email').textContent = pack.admHEmail;
+      document.getElementById('adm-h-status').textContent = pack.admHStatus;
+      document.getElementById('adm-bus-title').textContent = pack.admBusTitle;
+      document.getElementById('adm-h-bus').textContent = pack.admHBus;
+      document.getElementById('adm-h-plate').textContent = pack.admHPlate;
+      document.getElementById('adm-h-bgroup').textContent = pack.admHBGroup;
+      document.getElementById('adm-h-bstatus').textContent = pack.admHBStatus;
+      document.getElementById('adm-f1-title').textContent = pack.admF1Title;
+      document.getElementById('adm-f1-desc').textContent = pack.admF1Desc;
+      document.getElementById('adm-f2-title').textContent = pack.admF2Title;
+      document.getElementById('adm-f2-desc').textContent = pack.admF2Desc;
+      document.getElementById('adm-f3-title').textContent = pack.admF3Title;
+      document.getElementById('adm-f3-desc').textContent = pack.admF3Desc;
+      document.getElementById('preview-disclaimer').textContent = pack.prevDisclaimer;
+
       document.getElementById('how-title').textContent = pack.howTitle;
       document.getElementById('how-sub').textContent = pack.howSub;
       for (const n of ['1', '2', '3', '4']) {
