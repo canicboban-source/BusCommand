@@ -82,7 +82,8 @@ const {
   companyGroupUpdateBody,
   companyDriverProfileBody,
   companyDriverPersonalCodeBody,
-  companyDriverCreateBody
+  companyDriverCreateBody,
+  companyDriverDeleteBody
 } = require("./server/validation");
 
 const { version: APP_VERSION } = require("./package.json");
@@ -1366,7 +1367,7 @@ app.patch(
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(driverId)) {
       return res.status(400).json({ success: false, error: "Nevažeći vozač." });
     }
-    const { firstName, lastName, phone, email, postalCode = "", groupId, knownGroupIds: rawKnown = [] } = req.validatedBody;
+    const { firstName, lastName, phone, email, postalCode = "", groupId, knownGroupIds: rawKnown = [], active } = req.validatedBody;
     const companyRef = db.collection("companies").doc(companyId);
     const profileRef = companyRef.collection("drivers").doc(driverId);
     try {
@@ -1383,7 +1384,7 @@ app.patch(
       }
       const previous = profileSnap.data() || {};
       const name = `${firstName} ${lastName}`.trim();
-      await profileRef.update({
+      const profileUpdate = {
         firstName,
         lastName,
         name,
@@ -1395,7 +1396,18 @@ app.patch(
         knownGroupIds,
         profileUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
         profileUpdatedBy: req.staffUser.uid
-      });
+      };
+      if (typeof active === "boolean" && previous.active !== active) {
+        Object.assign(profileUpdate, {
+          active,
+          statusChangedAt: admin.firestore.FieldValue.serverTimestamp(),
+          statusChangedBy: req.staffUser.uid
+        });
+        if (active === false) {
+          try { await admin().auth().revokeRefreshTokens(driverId); } catch { /* driver may have no auth user */ }
+        }
+      }
+      await profileRef.update(profileUpdate);
       await _logAuditEvent(companyId, req.staffUser.uid, "driver_profile_updated", {
         driverId,
         previous: {
@@ -1406,7 +1418,7 @@ app.patch(
           groupId: previous.groupId || previous.lineId || null,
           knownGroupIds: Array.isArray(previous.knownGroupIds) ? previous.knownGroupIds : []
         },
-        next: { firstName, lastName, phone, email, postalCode, groupId, knownGroupIds }
+        next: { firstName, lastName, phone, email, postalCode, groupId, knownGroupIds, active: typeof active === "boolean" ? active : (previous.active !== false) }
       }, {
         actorRole: req.staffUser.role,
         actorName: req.staffUser.name || null
@@ -1433,6 +1445,56 @@ app.patch(
       }
       req.log?.error({ err }, "Company driver profile update failed");
       return res.status(500).json({ success: false, error: "Profil vozača nije sačuvan." });
+    }
+  }
+);
+
+/** CA-only: permanently removes a driver from the tenant. D21: the append-only
+ *  audit entry below is the lasting legal record — the profile and credential
+ *  documents themselves are deleted from the active tenant database. */
+app.delete(
+  "/api/company-admin/drivers/:driverId",
+  rateLimit(8, 5 * 60 * 1000),
+  requireCompanyAdmin,
+  validateBody(companyDriverDeleteBody),
+  async (req, res) => {
+    const companyId = requireOwnCompany(req, res);
+    if (!companyId) return;
+    const driverId = String(req.params.driverId || "").trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(driverId)) {
+      return res.status(400).json({ success: false, error: "Nevažeći vozač." });
+    }
+    const companyRef = db.collection("companies").doc(companyId);
+    const profileRef = companyRef.collection("drivers").doc(driverId);
+    const credentialRef = companyRef.collection("driver_credentials").doc(driverId);
+    try {
+      const profileSnap = await profileRef.get();
+      if (!profileSnap.exists) {
+        return res.status(404).json({ success: false, error: "Vozač nije pronađen." });
+      }
+      const previous = profileSnap.data() || {};
+      await profileRef.delete();
+      const credentialSnap = await credentialRef.get();
+      if (credentialSnap.exists) await credentialRef.delete();
+      try { await admin().auth().revokeRefreshTokens(driverId); } catch { /* driver may have no auth user */ }
+      await _logAuditEvent(companyId, req.staffUser.uid, "driver_deleted", {
+        driverId,
+        previous: {
+          firstName: previous.firstName || null,
+          lastName: previous.lastName || null,
+          name: previous.name || null,
+          eid: previous.eid || null,
+          groupId: previous.groupId || previous.lineId || null,
+          active: previous.active !== false
+        }
+      }, {
+        actorRole: req.staffUser.role,
+        actorName: req.staffUser.name || null
+      });
+      return res.json({ success: true, driverId });
+    } catch (err) {
+      req.log?.error({ err }, "Company driver delete failed");
+      return res.status(500).json({ success: false, error: "Vozač nije obrisan." });
     }
   }
 );

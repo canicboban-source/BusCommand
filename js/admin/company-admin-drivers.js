@@ -490,6 +490,7 @@ function renderDirectory() {
             <td data-label="${t("table_actions")}"><div class="company-driver-row-actions">
                 <button type="button" class="btn-secondary company-driver-edit-action" ${actionAttr("openCompanyDriverEdit", [driver.id])} ${pending || editSavePending ? "disabled" : ""}>${icon("pencil")}<span>${tx("btn_edit")}</span></button>
                 <button type="button" class="btn-secondary company-driver-status-action ${active ? "is-danger" : ""}" ${actionAttr("toggleCompanyDriverStatus", [driver.id])} ${pending || editSavePending ? "disabled" : ""}>${pending ? t("ca_drivers_updating") : escapeHtml(action)}</button>
+                <button type="button" class="company-driver-delete-action" ${actionAttr("deleteCompanyDriver", [driver.id])} ${pending || editSavePending ? "disabled" : ""}>${icon("trash-2")}<span>${t("ca_drivers_delete") || "Obriši"}</span></button>
             </div></td>
         </tr>`;
     }).join("");
@@ -674,6 +675,33 @@ function toggleCompanyDriverStatus(driverId) {
     }, { danger: !nextActive });
 }
 
+/** D21: removes the driver from the tenant database — the append-only
+ *  audit log entry written server-side remains the permanent record. */
+function deleteCompanyDriver(driverId) {
+    const driver = companyDrivers().find((entry) => entry.id === driverId);
+    if (!driver || statusPending.has(driverId)) return;
+    showConfirm(t("ca_drivers_delete_confirm_msg", { name: driverName(driver) }), async () => {
+        statusPending.add(driverId);
+        renderDirectory();
+        try {
+            if (!USE_LOCAL_STATE) {
+                const result = await ApiClient.deleteCompanyDriver(window.currentUser?.companyId, driverId);
+                if (!result.success) throw new Error(result.error || t("ca_drivers_delete_failed"));
+            }
+            window.state.drivers = (window.state.drivers || []).filter((entry) => entry.id !== driverId);
+            if (USE_LOCAL_STATE) saveState();
+            renderSummary();
+            renderDirectory();
+            showToast(t("ca_drivers_deleted_toast", { name: driverName(driver) }), "success");
+        } catch (error) {
+            showToast(error.message || t("ca_drivers_delete_failed"), "error");
+        } finally {
+            statusPending.delete(driverId);
+            renderDirectory();
+        }
+    }, { danger: true, title: t("ca_drivers_delete_confirm_title"), confirmText: t("ca_drivers_delete") || "Obriši" });
+}
+
 function openCompanyDriverAddModal() {
     populateGroupControls();
     clearManualDriverForm();
@@ -698,11 +726,13 @@ function openCompanyDriverEdit(driverId) {
     const postalCode = document.getElementById("ca-driver-edit-postal-code");
     const group = document.getElementById("ca-driver-edit-group");
     const pin = document.getElementById("ca-driver-edit-pin");
+    const status = document.getElementById("ca-driver-edit-status");
     if (!idInput || !firstName || !lastName || !phone || !email || !group) return;
 
     idInput.value = String(driver.id);
     if (eidInput) eidInput.value = String(driver.eid || "—");
     if (pin) pin.value = "";
+    if (status) status.value = driver.active === false ? "inactive" : "active";
     firstName.value = String(driver.firstName || "").trim()
         || String(driverName(driver)).trim().split(/\s+/).slice(0, -1).join(" ")
         || String(driverName(driver)).trim();
@@ -793,7 +823,9 @@ async function saveCompanyDriverEdit() {
 
     const knownFromDom = readKnownGroupIdsFromDom(document.getElementById("ca-driver-edit-known-groups"));
     const knownGroupIds = normalizeKnownGroupIds({ knownGroupIds: knownFromDom, groupId }, groupId);
-    const payload = { firstName, lastName, phone, email, postalCode, groupId, knownGroupIds };
+    const statusValue = String(document.getElementById("ca-driver-edit-status")?.value || "active");
+    const active = statusValue !== "inactive";
+    const payload = { firstName, lastName, phone, email, postalCode, groupId, knownGroupIds, active };
     editSavePending = true;
     const saveBtn = document.getElementById("ca-driver-edit-save");
     if (saveBtn) saveBtn.disabled = true;
@@ -804,6 +836,7 @@ async function saveCompanyDriverEdit() {
                 name: `${firstName} ${lastName}`.trim(),
                 lineId: groupId,
                 knownGroupIds,
+                active,
                 ...(personalCode ? { pin: personalCode, company_code: personalCode, hasPersonalCode: true, codeActivated: true } : {})
             });
             saveState();
@@ -896,6 +929,7 @@ export {
     handleCompanyDriversSearch,
     changeCompanyDriversPage,
     toggleCompanyDriverStatus,
+    deleteCompanyDriver,
     openCompanyDriverAddModal,
     closeCompanyDriverAddModal,
     openCompanyDriverEdit,

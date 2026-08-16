@@ -4915,6 +4915,17 @@ html[data-app-surface="staff"] .company-drivers-directory-table td {
   white-space: nowrap;
 }
 
+/* STATUS and ACTIONS columns render in full — pills and the
+   Izmeni/Deaktiviraj/Obriši button row must never clip. */
+html[data-app-surface="staff"] .company-drivers-directory-table th:nth-child(7),
+html[data-app-surface="staff"] .company-drivers-directory-table td:nth-child(7),
+html[data-app-surface="staff"] .company-drivers-directory-table th:nth-child(8),
+html[data-app-surface="staff"] .company-drivers-directory-table td:nth-child(8) {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
 html[data-app-surface="staff"] .company-drivers-table-wrap,
 html[data-app-surface="staff"] .company-drivers-directory-card,
 html[data-app-surface="staff"] .company-groups-list-card,

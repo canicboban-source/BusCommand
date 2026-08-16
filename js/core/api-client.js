@@ -312,6 +312,12 @@ const ApiClient = (() => {
         const query = companyId ? ("?companyId=" + encodeURIComponent(companyId)) : "";
         return apiFetch("/api/company-admin/drivers" + query);
     }
+    async function deleteCompanyDriver(companyId, driverId) {
+        const query = new URLSearchParams({ companyId });
+        return apiFetch("/api/company-admin/drivers/" + encodeURIComponent(driverId) + "?" + query.toString(), {
+            method: "DELETE"
+        });
+    }
     async function setCompanyDriverPersonalCode(companyId, driverId, companyCode) {
         return apiFetch("/api/company-admin/drivers/" + encodeURIComponent(driverId) + "/personal-code", {
             method: "POST",
@@ -560,7 +566,7 @@ const ApiClient = (() => {
         getActiveServicePlan, getServicePlanHistory, getServicePlanVersion, getCompanyAudit, updateCompanyBranding,
         createCompanyGroup, updateCompanyGroup, deleteCompanyGroup, reportStateSync, importDriversCsv, setDriverActive,
         detachStaffDriverFromLine, updateStaffDriverKnownGroups, detachStaffBusFromLine,
-        updateCompanyDriver, listCompanyDrivers, setCompanyDriverPersonalCode, createCompanyDriver,
+        updateCompanyDriver, listCompanyDrivers, deleteCompanyDriver, setCompanyDriverPersonalCode, createCompanyDriver,
         createDriverReport, createDriverSos, markDriverMessageRead, archiveDriverMessage, ackDriverMessage,
         createDriverLostItem, createDriverVacation, setVacationStatus, resolveStaffReport, createStaffOperationalIncident, transitionStaffOperationalIncident, resolveStaffOperationalIncident, getStaffOpsActivity, resolveStaffSos,
         setLostItemStatus, createStaffBus, updateStaffBus, switchStaffBusGroup, setStaffBusActive, assignStaffShift, undoStaffShift,

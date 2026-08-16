@@ -186,7 +186,14 @@ const companyDriverProfileBody = z.object({
   groupId: driverGroupIdSchema,
   postalCode: driverPostalCodeSchema,
   /** Extra lines the driver can operate (home groupId is always stored too). */
-  knownGroupIds: z.array(driverGroupIdSchema).max(40).optional().default([])
+  knownGroupIds: z.array(driverGroupIdSchema).max(40).optional().default([]),
+  /** Operational status from the CA edit modal (absent = keep current). */
+  active: z.boolean().optional()
+}).strict();
+
+/** CA-only: delete a driver — companyId is required for requireOwnCompany. */
+const companyDriverDeleteBody = z.object({
+  companyId: z.string().trim().min(1).max(64)
 }).strict();
 
 /** CA-only: set a new personal login code (PIN) — plaintext returned once. Must match driver login rules. */
@@ -265,5 +272,6 @@ module.exports = {
   companyGroupUpdateBody,
   companyDriverProfileBody,
   companyDriverPersonalCodeBody,
-  companyDriverCreateBody
+  companyDriverCreateBody,
+  companyDriverDeleteBody
 };

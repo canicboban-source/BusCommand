@@ -3515,22 +3515,31 @@ input:focus, select:focus, textarea:focus {
     display: table;
 }
 
+/* Column widths: STATUS (7) and ACTIONS (8) must never truncate — the
+   action column now holds Izmeni + Deaktiviraj/Aktiviraj + Obriši. */
 .company-drivers-directory-table th:nth-child(1),
-.company-drivers-directory-table td:nth-child(1) { width: 9%; }
+.company-drivers-directory-table td:nth-child(1) { width: 8%; }
 .company-drivers-directory-table th:nth-child(2),
-.company-drivers-directory-table td:nth-child(2) { width: 22%; }
+.company-drivers-directory-table td:nth-child(2) { width: 20%; }
 .company-drivers-directory-table th:nth-child(3),
-.company-drivers-directory-table td:nth-child(3) { width: 14%; }
+.company-drivers-directory-table td:nth-child(3) { width: 12%; }
 .company-drivers-directory-table th:nth-child(4),
-.company-drivers-directory-table td:nth-child(4) { width: 10%; }
+.company-drivers-directory-table td:nth-child(4) { width: 8%; }
 .company-drivers-directory-table th:nth-child(5),
-.company-drivers-directory-table td:nth-child(5) { width: 13%; }
+.company-drivers-directory-table td:nth-child(5) { width: 11%; }
 .company-drivers-directory-table th:nth-child(6),
-.company-drivers-directory-table td:nth-child(6) { width: 8%; }
+.company-drivers-directory-table td:nth-child(6) { width: 7%; }
 .company-drivers-directory-table th:nth-child(7),
-.company-drivers-directory-table td:nth-child(7) { width: 9%; }
+.company-drivers-directory-table td:nth-child(7) { width: 11%; }
 .company-drivers-directory-table th:nth-child(8),
-.company-drivers-directory-table td:nth-child(8) { width: 15%; }
+.company-drivers-directory-table td:nth-child(8) { width: 23%; }
+
+.company-drivers-table td:nth-child(7),
+.company-drivers-table td:nth-child(8) {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+}
 
 .company-drivers-table th {
     padding: 8px 6px;
@@ -3611,21 +3620,32 @@ input:focus, select:focus, textarea:focus {
 .company-driver-row-actions {
     display: flex;
     flex-wrap: nowrap;
-    gap: 5px;
+    align-items: center;
+    gap: 8px;
     justify-content: flex-end;
     min-width: 0;
 }
 .company-driver-edit-action,
-.company-driver-status-action {
+.company-driver-status-action,
+.company-driver-delete-action {
     min-width: 0;
     height: 32px;
-    padding: 5px 8px;
-    font-size: 0.68rem;
+    padding: 6px 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
     display: inline-flex;
     align-items: center;
     gap: 4px;
 }
-.company-driver-edit-action i { width: 14px; height: 14px; }
+.company-driver-edit-action i,
+.company-driver-delete-action i { width: 14px; height: 14px; }
+.company-driver-delete-action {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fee2e2;
+}
+.company-driver-delete-action:hover { background: #ef4444; border-color: #ef4444; color: #fff; }
 .company-driver-edit-panel {
     background: linear-gradient(135deg, #0f1419, #1a2332);
     border: 1px solid rgba(61, 126, 245, 0.45);
