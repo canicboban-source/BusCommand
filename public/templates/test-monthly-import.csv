@@ -1,0 +1,36 @@
+datum;dan;linija;dienst;bus;ime_prezime;deo_dana
+01.09.2026;Dienstag;310;310.F05;91501;Nikola Jovanović;pre podne
+02.09.2026;Mittwoch;310;310.F05;91501;Nikola Jovanović;pre podne
+03.09.2026;Donnerstag;310;310.F07;91502;Nikola Jovanović;popodne
+04.09.2026;Freitag;310;310.S06;91501;Nikola Jovanović;pre podne
+05.09.2026;Samstag;310;OFF;;Nikola Jovanović;
+06.09.2026;Sonntag;310;OFF;;Nikola Jovanović;
+07.09.2026;Montag;310;310.X2;;Nikola Jovanović;pre podne
+01.09.2026;Dienstag;310;310.F07;91502;Nemanja Savić;popodne
+02.09.2026;Mittwoch;310;310.S06;91502;Nemanja Savić;pre podne
+03.09.2026;Donnerstag;310;310.S06;91503;Nemanja Savić;pre podne
+04.09.2026;Freitag;310;310.F05;91502;Nemanja Savić;pre podne
+05.09.2026;Samstag;310;OFF;;Nemanja Savić;
+06.09.2026;Sonntag;310;OFF;;Nemanja Savić;
+07.09.2026;Montag;310;310.F05;91502;Nemanja Savić;pre podne
+01.09.2026;Dienstag;310;310.S06;91503;Stefan Ilić;pre podne
+02.09.2026;Mittwoch;310;310.F07;91503;Stefan Ilić;popodne
+03.09.2026;Donnerstag;310;310.F05;91503;Stefan Ilić;pre podne
+04.09.2026;Freitag;310;310.F07;91504;Stefan Ilić;popodne
+05.09.2026;Samstag;310;OFF;;Stefan Ilić;
+06.09.2026;Sonntag;310;OFF;;Stefan Ilić;
+07.09.2026;Montag;310;URLAUB;;Stefan Ilić;
+01.09.2026;Dienstag;310;310.X2;;Ivan Đorđević;pre podne
+02.09.2026;Mittwoch;310;OFF;;Ivan Đorđević;
+03.09.2026;Donnerstag;310;OFF;;Ivan Đorđević;
+04.09.2026;Freitag;310;310.F05;91504;Ivan Đorđević;pre podne
+05.09.2026;Samstag;310;OFF;;Ivan Đorđević;
+06.09.2026;Sonntag;310;OFF;;Ivan Đorđević;
+07.09.2026;Montag;310;310.S06;91504;Ivan Đorđević;pre podne
+01.09.2026;Dienstag;310;OFF;;Mile Ilić;
+02.09.2026;Mittwoch;310;OFF;;Mile Ilić;
+03.09.2026;Donnerstag;310;310.X2;;Mile Ilić;pre podne
+04.09.2026;Freitag;310;310.S06;91505;Mile Ilić;pre podne
+05.09.2026;Samstag;310;OFF;;Mile Ilić;
+06.09.2026;Sonntag;310;OFF;;Mile Ilić;
+07.09.2026;Montag;310;310.F07;91505;Mile Ilić;popodne

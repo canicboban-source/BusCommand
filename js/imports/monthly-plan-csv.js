@@ -1,4 +1,20 @@
-import { excelValueToDateStr, normalizeShiftCode } from "./import-parse-utils.js";
+import { excelValueToDateStr, foldDiacritics, normalizeShiftCode } from "./import-parse-utils.js";
+
+/** Header key: lowercase + diacritics folded + spaces/dashes collapsed to "_",
+ *  so "Ime i prezime", "ime_prezime", "Ime Prezime" and "Ime-Prezime" all resolve. */
+function normalizeHeaderKey(value) {
+    return foldDiacritics(String(value || "").trim().toLowerCase()).replace(/[\s\-.]+/g, "_");
+}
+
+function column(headers, aliases) {
+    const foldedAliases = aliases.map((alias) => normalizeHeaderKey(alias));
+    return headers.findIndex((header) => foldedAliases.includes(normalizeHeaderKey(header)));
+}
+
+function isMonthlyPlanCsv(text) {
+    const header = foldDiacritics(String(text || "").split(/\r?\n/, 1)[0].toLowerCase()).replace(/[\s\-.]+/g, "_");
+    return /(datum|date)/.test(header) && /(dienst|smena|shift)/.test(header) && /(ime_prezime|ime_i_prezime|vozac|driver|name)/.test(header);
+}
 
 function detectDelimiter(line) {
     return [";", ",", "\t"].sort((left, right) => line.split(right).length - line.split(left).length)[0];
@@ -33,15 +49,6 @@ function parseRows(text, delimiter) {
     return rows;
 }
 
-function column(headers, aliases) {
-    return headers.findIndex((header) => aliases.includes(header));
-}
-
-function isMonthlyPlanCsv(text) {
-    const header = String(text || "").split(/\r?\n/, 1)[0].toLowerCase();
-    return /datum/.test(header) && /(dienst|smena)/.test(header) && /(ime_prezime|vozac|vozač|driver)/.test(header);
-}
-
 function parseMonthlyPlanCsv(text, lineId) {
     if (!isMonthlyPlanCsv(text)) throw new Error("CSV nije mesečni plan u long formatu.");
     const rows = parseRows(text, detectDelimiter(text.split(/\r?\n/, 1)[0]));
@@ -49,9 +56,9 @@ function parseMonthlyPlanCsv(text, lineId) {
     const indexes = {
         date: column(headers, ["datum", "date"]),
         line: column(headers, ["linija", "line"]),
-        shift: column(headers, ["dienst", "smena", "shift"]),
+        shift: column(headers, ["dienst", "smena", "shift", "shift_code"]),
         bus: column(headers, ["bus", "autobus"]),
-        driver: column(headers, ["ime_prezime", "vozac", "vozač", "driver", "name"]),
+        driver: column(headers, ["ime_prezime", "ime i prezime", "vozac", "vozač", "driver", "driver name", "driver_name", "name", "ime"]),
         dayPart: column(headers, ["deo_dana", "deo dana", "day_part"])
     };
     if (indexes.date < 0 || indexes.shift < 0 || indexes.driver < 0) {
@@ -63,7 +70,7 @@ function parseMonthlyPlanCsv(text, lineId) {
     let rowCount = 0;
     rows.slice(1).forEach((row, index) => {
         const date = excelValueToDateStr(row[indexes.date]);
-        const driverName = String(row[indexes.driver] || "").trim();
+        const driverName = String(row[indexes.driver] || "").trim().replace(/\s+/g, " ");
         const rowLine = indexes.line >= 0 ? String(row[indexes.line] || "").trim() : "";
         if (!date || !driverName) throw new Error(`Red ${index + 2}: datum i vozač su obavezni.`);
         if (lineId && rowLine && String(lineId) !== rowLine) {

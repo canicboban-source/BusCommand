@@ -136,8 +136,24 @@ function sheetToRows(sheet) {
     return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
 }
 
+/**
+ * Folds Serbian/German diacritics so "Jovanovic" matches "Jovanović" and
+ * "Djordjevic" matches "Đorđević" during CSV driver matching and header
+ * alias resolution. Case- and whitespace-insensitive by contract.
+ */
+function foldDiacritics(value) {
+    return String(value || "")
+        .replace(/đ/g, "dj").replace(/Đ/g, "Dj")
+        .replace(/č|ć/g, "c").replace(/Č|Ć/g, "C")
+        .replace(/š/g, "s").replace(/Š/g, "S")
+        .replace(/ž/g, "z").replace(/Ž/g, "Z")
+        .replace(/ä/g, "a").replace(/ö/g, "o").replace(/ü/g, "u")
+        .replace(/ß/g, "ss");
+}
+
 export {
     excelValueToDateStr,
+    foldDiacritics,
     normalizeShiftCode,
     inferShiftTypeFromCode,
     enrichShiftFromRow,

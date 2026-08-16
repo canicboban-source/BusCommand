@@ -13,7 +13,7 @@ import { getActiveLineId } from "../data/groups.js";
 import { driverBelongsToLine } from "../data/group-membership.js";
 import { parseMonthlyPlanWorkbook, readExcelWorkbook, parseDienstplanSheet } from "../imports/monthly-plan-excel.js";
 import { isMonthlyPlanCsv, parseMonthlyPlanCsv } from "../imports/monthly-plan-csv.js";
-import { sheetToRows } from "../imports/import-parse-utils.js";
+import { sheetToRows, foldDiacritics } from "../imports/import-parse-utils.js";
 import ApiClient from "../core/api-client.js";
 
 function usesLocalState() {
@@ -45,14 +45,21 @@ function shortOpaqueDriverId(id) {
     return raw ? raw.slice(0, 8) : "";
 }
 
+/** Folded comparison key: trim + lowercase + collapse spaces + fold č/ć/š/ž/đ,
+ *  so a CSV name without diacritics ("Nikola Jovanovic") still matches the
+ *  driver record ("Nikola Jovanović") instead of failing as unrecognized. */
+function foldNameKey(value) {
+    return foldDiacritics(String(value || "").trim().toLowerCase()).replace(/\s+/g, " ");
+}
+
 function matchDriversByName(name, drivers) {
-    const needle = String(name || "").trim().toLowerCase();
+    const needle = foldNameKey(name);
     if (!needle) return { matches: [], ambiguous: false };
-    const exact = (drivers || []).filter((d) => String(d?.name || "").trim().toLowerCase() === needle);
+    const exact = (drivers || []).filter((d) => foldNameKey(d?.name) === needle);
     if (exact.length === 1) return { matches: exact, ambiguous: false };
     if (exact.length > 1) return { matches: exact, ambiguous: true };
     const partial = (drivers || []).filter((d) => {
-        const dn = String(d?.name || "").trim().toLowerCase();
+        const dn = foldNameKey(d?.name);
         return dn && (dn.includes(needle) || needle.includes(dn));
     });
     if (partial.length === 1) return { matches: partial, ambiguous: false };

@@ -20,6 +20,7 @@ const FILES = [
   "templates/BusCommand_Fleet_Import_v1.csv",
   "templates/BusCommand_Fleet_Audit_Checklist_v1.pdf",
   "templates/BusCommand_DPA_AVV_v1.pdf",
+  "templates/test-monthly-import.csv",
 ];
 
 const DIRS = [
