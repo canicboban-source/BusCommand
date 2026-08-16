@@ -53,3 +53,25 @@ test("build-surface-html reads official landing source instead of inline minimal
   assert.match(build, /official-landing\.html/);
   assert.doesNotMatch(build, /Fleet operations for bus companies — dispatch, monthly plans/);
 });
+
+test("landing pricing section includes Micro package in all languages", () => {
+  const src = fs.readFileSync(LANDING_SRC, "utf8");
+  // HTML card
+  assert.match(src, /id="cta-micro"/);
+  assert.match(src, /id="p-sub-micro"/);
+  assert.match(src, /id="feat-micro"/);
+  assert.match(src, /id="price-per-micro"/);
+  // SR pack
+  assert.match(src, /pSubMicro: "Do 5 vozila i 8 vozača\."/);
+  assert.match(src, /ctaMicro: "Izaberi Micro"/);
+  // DE pack
+  assert.match(src, /pSubMicro: "Bis 5 Fahrzeuge und 8 Fahrer\."/);
+  assert.match(src, /ctaMicro: "Micro wählen"/);
+  // EN pack
+  assert.match(src, /pSubMicro: "Up to 5 vehicles and 8 drivers\."/);
+  assert.match(src, /ctaMicro: "Choose Micro"/);
+  // setLang wires it
+  assert.match(src, /getElementById\('cta-micro'\)/);
+  assert.match(src, /getElementById\('p-sub-micro'\)/);
+  assert.match(src, /getElementById\('feat-micro'\)/);
+});

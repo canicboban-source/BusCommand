@@ -1,12 +1,13 @@
 /**
  * BusCommand license packages (Ultimate v3.1 Phase 2).
- * STARTER 15 · PRO 50 · FLEET MASTER 200 · ENTERPRISE unlimited
+ * MICRO 8 · STARTER 15 · PRO 50 · FLEET MASTER 200 · ENTERPRISE unlimited
  */
 "use strict";
 
-const LICENSE_TYPES = Object.freeze(["starter", "pro", "fleet_master", "enterprise"]);
+const LICENSE_TYPES = Object.freeze(["micro", "starter", "pro", "fleet_master", "enterprise"]);
 
 const PACKAGES = Object.freeze({
+  micro: { licenseType: "micro", maxDrivers: 8, maxDispatchers: 1, maxBuses: 5, label: "MICRO" },
   starter: { licenseType: "starter", maxDrivers: 15, maxDispatchers: 2, maxBuses: 8, label: "STARTER" },
   pro: { licenseType: "pro", maxDrivers: 50, maxDispatchers: 5, maxBuses: 25, label: "PRO" },
   fleet_master: { licenseType: "fleet_master", maxDrivers: 200, maxDispatchers: 15, maxBuses: 100, label: "FLEET MASTER" },

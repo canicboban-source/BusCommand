@@ -704,9 +704,25 @@
         <p id="pricing-desc" class="text-slate-400 text-sm">Bez skrivenih troškova. Prilagođeno veličini vašeg voznog parka.</p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 w-full">
+        <!-- MICRO -->
+        <div class="glass-card p-5 rounded-2xl space-y-4 flex flex-col justify-between">
+          <div class="space-y-3">
+            <h3 class="font-bold text-white text-lg">MICRO</h3>
+            <div class="text-3xl font-extrabold text-white">€89 <span id="price-per-micro" class="text-xs text-slate-400 font-normal">/ mesečno / po firmi</span></div>
+            <p id="p-sub-micro" class="text-xs text-slate-400">Do 5 vozila i 8 vozača.</p>
+            <ul id="feat-micro" class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-3">
+              <li>✓ 1 Dispo + 1 CA nalog</li>
+              <li>✓ Driver PWA aplikacija</li>
+              <li>✓ Dnevni plan i potvrde smena</li>
+              <li>✓ Email podrška</li>
+            </ul>
+          </div>
+          <a href="#pilot" id="cta-micro" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-center text-xs block">Izaberi Micro</a>
+        </div>
+
         <!-- STARTER -->
-        <div class="glass-card p-6 rounded-2xl space-y-4 flex flex-col justify-between">
+        <div class="glass-card p-5 rounded-2xl space-y-4 flex flex-col justify-between">
           <div class="space-y-3">
             <h3 class="font-bold text-white text-lg">STARTER</h3>
             <div class="text-3xl font-extrabold text-white">€190 <span id="price-per-starter" class="text-xs text-slate-400 font-normal">/ mesečno / po firmi</span></div>
@@ -903,13 +919,16 @@
         pricingTitle: "Cenovnik",
         pricingDesc: "Bez skrivenih troškova. Prilagođeno veličini vašeg voznog parka.",
         pricePer: "/ mesečno / po firmi",
+        pSubMicro: "Do 5 vozila i 8 vozača.",
         pSubStarter: "Do 15 vozila i 20 vozača.",
         pSubPro: "Do 45 vozila i 60 vozača.",
         pSubFleet: "Neograničeno vozila, vozača i dispečera.",
+        featMicro: "<li>✓ 1 Dispo + 1 CA nalog</li><li>✓ Driver PWA aplikacija</li><li>✓ Dnevni plan i potvrde smena</li><li>✓ Email podrška</li>",
         featStarter: "<li>✓ 1 Dispo + 1 CA nalog</li><li>✓ 3-dnevni dispečerski radar</li><li>✓ Driver PWA aplikacija</li><li>✓ Email podrška &lt; 4h</li>",
         featPro: "<li>✓ Do 4 Dispo naloga sa grupnom izolacijom</li><li>✓ Plan Lock — zaključavanje objavljenog plana</li><li>✓ Read-Receipt potvrde čitanja smena</li><li>✓ 24-mesečni append-only audit trag</li><li>✓ 24/7 telefonska podrška</li>",
         featFleet: "<li>✓ Više depoa i lokacija</li><li>✓ DPA Član 28 ugovor</li><li>✓ PITR oporavak baze (point-in-time)</li><li>✓ Namenske integracije po ugovoru</li>",
         badgePopular: "Najpopularniji",
+        ctaMicro: "Izaberi Micro",
         ctaStarter: "Izaberi Starter",
         ctaPro: "Izaberi Pro",
         ctaFleet: "Kontaktirajte nas",
@@ -1029,13 +1048,16 @@
         pricingTitle: "Preise",
         pricingDesc: "Keine versteckten Kosten. Angepasst an die Größe Ihres Fuhrparks.",
         pricePer: "/ Monat / pro Firma",
+        pSubMicro: "Bis 5 Fahrzeuge und 8 Fahrer.",
         pSubStarter: "Bis 15 Fahrzeuge und 20 Fahrer.",
         pSubPro: "Bis 45 Fahrzeuge und 60 Fahrer.",
         pSubFleet: "Unbegrenzte Fahrzeuge, Fahrer und Disponenten.",
+        featMicro: "<li>✓ 1 Dispo- + 1 CA-Konto</li><li>✓ Driver PWA App</li><li>✓ Tagesplan und Schichtbestätigungen</li><li>✓ E-Mail-Support</li>",
         featStarter: "<li>✓ 1 Dispo- + 1 CA-Konto</li><li>✓ 3-Tage-Dispo-Radar</li><li>✓ Driver PWA App</li><li>✓ E-Mail-Support &lt; 4h</li>",
         featPro: "<li>✓ Bis 4 Dispo-Konten mit Gruppenisolierung</li><li>✓ Plan Lock — Sperre veröffentlichter Pläne</li><li>✓ Read-Receipt Lesebestätigungen</li><li>✓ 24 Monate append-only Audit-Trail</li><li>✓ 24/7 Telefon-Support</li>",
         featFleet: "<li>✓ Mehrere Depots und Standorte</li><li>✓ DPA Art. 28 Vertrag</li><li>✓ PITR-Datenbankwiederherstellung</li><li>✓ Individuelle Integrationen nach Vertrag</li>",
         badgePopular: "Am beliebtesten",
+        ctaMicro: "Micro wählen",
         ctaStarter: "Starter wählen",
         ctaPro: "Pro wählen",
         ctaFleet: "Kontaktieren Sie uns",
@@ -1155,13 +1177,16 @@
         pricingTitle: "Pricing",
         pricingDesc: "No hidden costs. Sized to your fleet.",
         pricePer: "/ month / per company",
+        pSubMicro: "Up to 5 vehicles and 8 drivers.",
         pSubStarter: "Up to 15 vehicles and 20 drivers.",
         pSubPro: "Up to 45 vehicles and 60 drivers.",
         pSubFleet: "Unlimited vehicles, drivers and dispatchers.",
+        featMicro: "<li>✓ 1 Dispo + 1 CA account</li><li>✓ Driver PWA app</li><li>✓ Daily plan and shift confirmations</li><li>✓ Email support</li>",
         featStarter: "<li>✓ 1 Dispo + 1 CA account</li><li>✓ 3-day dispatcher radar</li><li>✓ Driver PWA app</li><li>✓ Email support &lt; 4h</li>",
         featPro: "<li>✓ Up to 4 Dispo accounts with group isolation</li><li>✓ Plan Lock — published plan freezing</li><li>✓ Read-Receipt shift confirmations</li><li>✓ 24-month append-only audit trail</li><li>✓ 24/7 phone support</li>",
         featFleet: "<li>✓ Multiple depots and locations</li><li>✓ DPA Article 28 agreement</li><li>✓ PITR point-in-time database recovery</li><li>✓ Custom integrations by contract</li>",
         badgePopular: "Most popular",
+        ctaMicro: "Choose Micro",
         ctaStarter: "Choose Starter",
         ctaPro: "Choose Pro",
         ctaFleet: "Contact us",
@@ -1326,16 +1351,20 @@
       document.getElementById('downloads-all').textContent = pack.dlAll;
       document.getElementById('pricing-title').textContent = pack.pricingTitle;
       document.getElementById('pricing-desc').textContent = pack.pricingDesc;
+      document.getElementById('price-per-micro').textContent = pack.pricePer;
       document.getElementById('price-per-starter').textContent = pack.pricePer;
       document.getElementById('price-per-pro').textContent = pack.pricePer;
       document.getElementById('price-per-fleet').textContent = pack.pricePer;
+      document.getElementById('p-sub-micro').textContent = pack.pSubMicro;
       document.getElementById('p-sub-starter').textContent = pack.pSubStarter;
       document.getElementById('p-sub-pro').textContent = pack.pSubPro;
       document.getElementById('p-sub-fleet').textContent = pack.pSubFleet;
+      document.getElementById('feat-micro').innerHTML = pack.featMicro;
       document.getElementById('feat-starter').innerHTML = pack.featStarter;
       document.getElementById('feat-pro').innerHTML = pack.featPro;
       document.getElementById('feat-fleet').innerHTML = pack.featFleet;
       document.getElementById('badge-popular').textContent = pack.badgePopular;
+      document.getElementById('cta-micro').textContent = pack.ctaMicro;
       document.getElementById('cta-starter').textContent = pack.ctaStarter;
       document.getElementById('cta-pro').textContent = pack.ctaPro;
       document.getElementById('cta-fleet').textContent = pack.ctaFleet;

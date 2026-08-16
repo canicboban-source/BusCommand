@@ -8,6 +8,9 @@ const {
 } = require("../../server/license-packages");
 
 test("package caps match Phase 2 model", () => {
+  assert.equal(PACKAGES.micro.maxDrivers, 8);
+  assert.equal(PACKAGES.micro.maxDispatchers, 1);
+  assert.equal(PACKAGES.micro.maxBuses, 5);
   assert.equal(PACKAGES.starter.maxDrivers, 15);
   assert.equal(PACKAGES.starter.maxDispatchers, 2);
   assert.equal(PACKAGES.pro.maxDrivers, 50);
@@ -16,6 +19,12 @@ test("package caps match Phase 2 model", () => {
   assert.equal(PACKAGES.fleet_master.maxDispatchers, 15);
   assert.equal(PACKAGES.enterprise.maxDrivers, null);
   assert.equal(PACKAGES.enterprise.maxDispatchers, 50);
+});
+
+test("micro package is in LICENSE_TYPES and resolves correctly", () => {
+  assert.equal(normalizeLicenseType("micro"), "micro");
+  assert.equal(maxDriversForType("micro"), 8);
+  assert.equal(PACKAGES.micro.label, "MICRO");
 });
 
 test("legacy plan values normalize to package types", () => {
