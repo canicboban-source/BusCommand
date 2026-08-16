@@ -6,6 +6,8 @@
   <title>BusCommand — Enterprise Fleet Management Platform</title>
   <link rel="icon" type="image/png" href="/brand/logo-hero.png">
   <link rel="apple-touch-icon" href="/brand/logo-hero.png">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#030712">
   <meta name="description" content="BusCommand — operativni sistem za dispečere autobuskih prevoznika: mesečni planovi, dispečerski radar, potvrde vozača. DE/SR/EN.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -28,6 +30,47 @@
     }
   </script>
   <style>
+    /* ── Mobile overflow lock: no horizontal panning on 360–412px ── */
+    html, body {
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100vw;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* ── Absolute dark theme: system Light Mode must never bleed in ── */
+    .site-header {
+      background-color: #030712 !important;
+      border-bottom: 1px solid #1e293b !important;
+    }
+    .lang-switch {
+      background-color: #0f172a !important;
+      border: 1px solid #334155 !important;
+    }
+    .lang-switch button {
+      appearance: none;
+      border: 0;
+      padding: 0.25rem 0.625rem;
+      border-radius: 0.25rem;
+      background-color: transparent;
+      color: #94a3b8 !important;
+      transition: color .15s ease;
+    }
+    .lang-switch button:hover { color: #f8fafc !important; }
+    .lang-switch button.lang-active {
+      background-color: #2563eb !important;
+      color: #ffffff !important;
+    }
+
+    /* Long template filenames must wrap, not push the viewport wide. */
+    .downloads-all a {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      max-width: 100%;
+    }
+
     .glass-card {
       background: rgba(15, 23, 42, 0.75);
       backdrop-filter: blur(12px);
@@ -55,9 +98,9 @@
       <!-- Lang & CTA -->
       <div class="flex items-center gap-3">
         <div class="lang-switch flex bg-slate-900 border border-slate-800 rounded-lg p-1 text-xs font-semibold" role="group" aria-label="Language">
-          <button onclick="setLang('de')" id="btn-de" data-lang="de" class="px-2.5 py-1 rounded transition-colors text-slate-400 hover:text-white">DE</button>
-          <button onclick="setLang('sr')" id="btn-sr" data-lang="sr" class="px-2.5 py-1 rounded bg-blue-600 text-white">SR</button>
-          <button onclick="setLang('en')" id="btn-en" data-lang="en" class="px-2.5 py-1 rounded transition-colors text-slate-400 hover:text-white">EN</button>
+          <button onclick="setLang('de')" id="btn-de" data-lang="de">DE</button>
+          <button onclick="setLang('sr')" id="btn-sr" data-lang="sr" class="lang-active">SR</button>
+          <button onclick="setLang('en')" id="btn-en" data-lang="en">EN</button>
         </div>
         <a href="/staff" id="nav-staff-btn" class="hidden sm:inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-lg shadow-blue-600/30 transition-all">
           Staff Login
@@ -103,13 +146,13 @@
     </section>
 
     <!-- Excel vs BusCommand Matrix -->
-    <section id="compare" class="space-y-6">
+    <section id="compare" class="space-y-6 w-full overflow-hidden">
       <div class="text-center max-w-2xl mx-auto">
         <h2 id="matrix-title" class="text-2xl sm:text-3xl font-bold text-white">Excel tabele vs. BusCommand standard</h2>
         <p id="matrix-desc" class="text-slate-400 text-sm mt-2">Zašto vodeći prevoznici prelaze na digitalnu operativnu platformu.</p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
         <!-- Excel -->
         <div class="glass-card p-6 sm:p-8 rounded-2xl border-red-900/30 space-y-4">
           <div class="flex items-center gap-3 text-red-400 font-bold text-lg border-b border-slate-800 pb-4">
@@ -141,7 +184,7 @@
     </section>
 
     <!-- 4 Direct Download Cards -->
-    <section id="downloads" class="bg-gradient-to-br from-slate-900 via-blue-950/40 to-slate-900 border border-blue-500/40 rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl">
+    <section id="downloads" class="bg-gradient-to-br from-slate-900 via-blue-950/40 to-slate-900 border border-blue-500/40 rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl w-full max-w-full overflow-hidden">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
         <div>
           <span id="downloads-kicker" class="text-xs font-bold uppercase tracking-wider text-blue-400 block">DOKUMENTI & ŠABLONI</span>
@@ -150,7 +193,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
 
         <!-- Card 1 -->
         <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
@@ -483,9 +526,9 @@
     };
 
     function setLang(lang) {
-      document.getElementById('btn-de').className = lang === 'de' ? 'px-2.5 py-1 rounded bg-blue-600 text-white' : 'px-2.5 py-1 rounded transition-colors text-slate-400 hover:text-white';
-      document.getElementById('btn-sr').className = lang === 'sr' ? 'px-2.5 py-1 rounded bg-blue-600 text-white' : 'px-2.5 py-1 rounded transition-colors text-slate-400 hover:text-white';
-      document.getElementById('btn-en').className = lang === 'en' ? 'px-2.5 py-1 rounded bg-blue-600 text-white' : 'px-2.5 py-1 rounded transition-colors text-slate-400 hover:text-white';
+      document.getElementById('btn-de').className = lang === 'de' ? 'lang-active' : '';
+      document.getElementById('btn-sr').className = lang === 'sr' ? 'lang-active' : '';
+      document.getElementById('btn-en').className = lang === 'en' ? 'lang-active' : '';
 
       const pack = translations[lang] || translations.sr;
       document.documentElement.lang = lang;
