@@ -221,53 +221,155 @@
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Starter -->
+        <!-- STARTER -->
         <div class="glass-card p-6 rounded-2xl space-y-4 flex flex-col justify-between">
           <div class="space-y-3">
-            <h3 class="font-bold text-white text-lg">Starter</h3>
-            <div class="text-3xl font-extrabold text-white">49 € <span class="text-xs text-slate-400 font-normal">/ mesečno</span></div>
-            <p class="text-xs text-slate-400">Do 10 autobusa i 1 dispečerska grupa.</p>
-            <ul class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-3">
+            <h3 class="font-bold text-white text-lg">STARTER</h3>
+            <div class="text-3xl font-extrabold text-white">€190 <span id="price-per-starter" class="text-xs text-slate-400 font-normal">/ mesečno / po firmi</span></div>
+            <p id="p-sub-starter" class="text-xs text-slate-400">Do 15 vozila i 20 vozača.</p>
+            <ul id="feat-starter" class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-3">
+              <li>✓ 1 Dispo + 1 CA nalog</li>
+              <li>✓ 3-dnevni dispečerski radar</li>
+              <li>✓ Driver PWA: 4 tastera + 2s SOS</li>
               <li>✓ Mesečni i dnevni plan</li>
-              <li>✓ Driver PWA potvrda</li>
-              <li>✓ Audit trag</li>
             </ul>
           </div>
-          <a href="/staff" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-center text-xs block">Izaberi Starter</a>
+          <a href="#pilot" id="cta-starter" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-center text-xs block">Izaberi Starter</a>
         </div>
 
-        <!-- Fleet Pro -->
+        <!-- PRO -->
         <div class="glass-card p-6 rounded-2xl border-blue-500 space-y-4 flex flex-col justify-between relative bg-blue-950/20 shadow-2xl">
-          <span class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">Najpopularniji</span>
+          <span id="badge-popular" class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">Najpopularniji</span>
           <div class="space-y-3">
-            <h3 class="font-bold text-white text-lg">Fleet Pro</h3>
-            <div class="text-3xl font-extrabold text-white">149 € <span class="text-xs text-slate-400 font-normal">/ mesečno</span></div>
-            <p class="text-xs text-slate-400">Do 50 autobusa i neograničene grupe linija.</p>
-            <ul class="space-y-2 text-xs text-slate-200 border-t border-slate-800 pt-3">
-              <li>✓ Sve iz Starter paketa</li>
-              <li>✓ Dispo radar incidenata</li>
-              <li>✓ CSV/XLSX masovni uvoz smena</li>
-              <li>✓ Prioritetna podrška</li>
+            <h3 class="font-bold text-white text-lg">PRO</h3>
+            <div class="text-3xl font-extrabold text-white">€390 <span id="price-per-pro" class="text-xs text-slate-400 font-normal">/ mesečno / po firmi</span></div>
+            <p id="p-sub-pro" class="text-xs text-slate-400">Do 45 vozila i 60 vozača.</p>
+            <ul id="feat-pro" class="space-y-2 text-xs text-slate-200 border-t border-slate-800 pt-3">
+              <li>✓ Do 4 Dispo naloga sa grupnom izolacijom</li>
+              <li>✓ Plan Lock — zaključavanje objavljenog plana</li>
+              <li>✓ Read-Receipt potvrde čitanja smena</li>
+              <li>✓ 24-mesečni append-only audit trag</li>
             </ul>
           </div>
-          <a href="/staff" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-center text-xs block shadow-lg shadow-blue-600/30">Izaberi Fleet Pro</a>
+          <a href="#pilot" id="cta-pro" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-center text-xs block shadow-lg shadow-blue-600/30">Izaberi Pro</a>
         </div>
 
-        <!-- Enterprise -->
+        <!-- FLEET MASTER -->
         <div class="glass-card p-6 rounded-2xl space-y-4 flex flex-col justify-between">
           <div class="space-y-3">
-            <h3 class="font-bold text-white text-lg">Enterprise</h3>
-            <div class="text-3xl font-extrabold text-white">Po ugovoru</div>
-            <p class="text-xs text-slate-400">Preko 50 autobusa i namenske integracije.</p>
-            <ul class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-3">
-              <li>✓ Sve iz Fleet Pro</li>
-              <li>✓ SLA garancija odziva 99.9%</li>
-              <li>✓ Namenski DPA ugovor</li>
-              <li>✓ Obuka dispečerskog tima</li>
+            <h3 class="font-bold text-white text-lg">FLEET MASTER</h3>
+            <div class="text-3xl font-extrabold text-white">€690 <span id="price-per-fleet" class="text-xs text-slate-400 font-normal">/ mesečno / po firmi</span></div>
+            <p id="p-sub-fleet" class="text-xs text-slate-400">Neograničeno vozila, vozača i dispečera.</p>
+            <ul id="feat-fleet" class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-3">
+              <li>✓ Više depoa i lokacija</li>
+              <li>✓ DPA Član 28 ugovor</li>
+              <li>✓ PITR oporavak baze (point-in-time)</li>
+              <li>✓ Namenske integracije po ugovoru</li>
             </ul>
           </div>
-          <a href="mailto:office@buscommand.com" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-center text-xs block">Kontaktirajte nas</a>
+          <a href="mailto:office@buscommand.com" id="cta-fleet" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-center text-xs block">Kontaktirajte nas</a>
         </div>
+      </div>
+    </section>
+
+    <!-- 30-Day Guided Pilot -->
+    <section id="pilot" class="bg-gradient-to-br from-slate-900 via-blue-950/40 to-slate-900 border border-blue-500/40 rounded-2xl p-6 sm:p-8 space-y-8 shadow-2xl">
+      <div class="text-center max-w-2xl mx-auto space-y-2">
+        <span id="pilot-kicker" class="text-xs font-bold uppercase tracking-wider text-blue-400 block">Zero-Risk Pilot</span>
+        <h2 id="pilot-title" class="text-2xl sm:text-3xl font-bold text-white">Vođeni pilot program od 30 dana</h2>
+        <p id="pilot-desc" class="text-slate-400 text-sm">Prijavite firmu, uvezemo katalog i obučimo dispečere — bez rizika, bez kartice, uz potpunu kontrolu.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <form onsubmit="submitPilot(event)" class="glass-card p-6 rounded-2xl space-y-4">
+          <div class="space-y-1.5">
+            <label for="pilot-company" id="pilot-label-name" class="text-xs font-bold text-slate-300 block">Naziv firme</label>
+            <input type="text" id="pilot-company" required class="w-full px-3 py-2.5 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-white focus:border-blue-500 focus:outline-none" placeholder="Busunternehmen GmbH">
+          </div>
+          <div class="space-y-1.5">
+            <label for="pilot-email" id="pilot-label-email" class="text-xs font-bold text-slate-300 block">Email</label>
+            <input type="email" id="pilot-email" required class="w-full px-3 py-2.5 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-white focus:border-blue-500 focus:outline-none" placeholder="office@firma.at">
+          </div>
+          <div class="space-y-1.5">
+            <label for="pilot-buses" id="pilot-label-buses" class="text-xs font-bold text-slate-300 block">Broj autobusa</label>
+            <input type="number" id="pilot-buses" min="1" required class="w-full px-3 py-2.5 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-white focus:border-blue-500 focus:outline-none" placeholder="25">
+          </div>
+          <button type="submit" id="pilot-submit" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-600/30 transition-all">Prijavi firmu na pilot</button>
+          <p id="pilot-note" class="text-[11px] text-slate-500 text-center">Odgovaramo u roku od 24h. Podaci se koriste isključivo za kontakt.</p>
+        </form>
+
+        <div class="space-y-4">
+          <h3 id="pilot-guarantees-title" class="text-lg font-bold text-white">5 garancija pilot programa</h3>
+          <ul id="pilot-guarantees" class="space-y-3 text-sm text-slate-300">
+            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">1.</span><span>Uvoz postojećeg kataloga smena i vozača od strane našeg tima.</span></li>
+            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">2.</span><span>45-minutna obuka dispečera, uživo, za celog tima.</span></li>
+            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">3.</span><span>NDA i DPA Član 28 potpisani pre starta pilota.</span></li>
+            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">4.</span><span>Bez kreditne kartice — otkaz bilo kada u 30 dana.</span></li>
+            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">5.</span><span>Potpuni izvoz svih podataka na kraju pilota.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Official Technical & Operational Report -->
+    <section id="report" class="space-y-8">
+      <div class="text-center max-w-2xl mx-auto space-y-2">
+        <span id="report-kicker" class="text-xs font-bold uppercase tracking-wider text-blue-400 block">Inženjerski elaborat</span>
+        <h2 id="report-title" class="text-2xl sm:text-3xl font-bold text-white">Zvanični tehnički i operativni izveštaj</h2>
+        <p id="report-desc" class="text-slate-400 text-sm">Trostruki nezavisni audit, dnevnik izmena i dokazani rezultati — javno dostupni standard transparentnosti.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="glass-card p-6 rounded-2xl space-y-3">
+          <span class="text-[10px] font-mono font-bold text-blue-400 bg-blue-950/60 border border-blue-800/50 px-2.5 py-1 rounded-full">PROLAZ 1</span>
+          <h3 id="pass1-title" class="font-bold text-white">Type-safety i build</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">910/910 unit testova, 0 fail. D17 budžeti za staff i driver bundle se proveravaju u svakom build-u. Svaki produkcijski build završava sa izlaznim kodom 0 — bez izuzetaka.</p>
+        </div>
+        <div class="glass-card p-6 rounded-2xl space-y-3">
+          <span class="text-[10px] font-mono font-bold text-blue-400 bg-blue-950/60 border border-blue-800/50 px-2.5 py-1 rounded-full">PROLAZ 2</span>
+          <h3 id="pass2-title" class="font-bold text-white">Tenant izolacija i D21</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">check-no-secrets i check-firebase-isolation izvršavaju se u svakom build-u. Dispečer nikada ne vidi EID, PIN niti tokene vozača. Append-only audit trag za svaku izmenu plana.</p>
+        </div>
+        <div class="glass-card p-6 rounded-2xl space-y-3">
+          <span class="text-[10px] font-mono font-bold text-blue-400 bg-blue-950/60 border border-blue-800/50 px-2.5 py-1 rounded-full">PROLAZ 3</span>
+          <h3 id="pass3-title" class="font-bold text-white">Cockpit i PWA</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">Dispečerski radar sa live statusima, 1-klik potvrde vozača iz PWA aplikacije bez instalacije, SOS okidač za 2 sekunde. Trojezični interfejs DE/SR/EN.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass-card p-6 rounded-2xl space-y-3">
+          <h3 id="changelog-title" class="font-bold text-white">Dnevnik izmena</h3>
+          <ul class="space-y-2 text-xs font-mono text-slate-400">
+            <li><span class="text-blue-400">9df4454</span> — uklonjen privremeni test bedž iz Download Hub-a</li>
+            <li><span class="text-blue-400">4772d5b</span> — enterprise Tailwind dizajn sa DE/SR/EN prevodom</li>
+            <li><span class="text-blue-400">4d09cad</span> — enterprise redesign, jednoređena tabela vozila, finalni logo</li>
+            <li><span class="text-blue-400">1d7f287</span> — puna zvanična landing prezentacija na www i apex domenu</li>
+          </ul>
+        </div>
+        <div class="glass-card p-6 rounded-2xl space-y-3">
+          <h3 id="results-title" class="font-bold text-white">Dokazani inženjerski rezultati</h3>
+          <div id="report-results" class="flex flex-wrap gap-2">
+            <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Atomski uvoz (All-or-Nothing)</span>
+            <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Plan Lock</span>
+            <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Bcrypt heširanje</span>
+            <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">RBAC (CA/Dispo/Driver)</span>
+            <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Remote CI</span>
+            <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">Lazy loading</span>
+            <span class="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg">i18n DE/SR/EN</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card p-6 rounded-2xl space-y-4">
+        <h3 id="phases-title" class="font-bold text-white">5 faza do produkcijskog release-a</h3>
+        <ol id="report-phases" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs text-slate-300">
+          <li class="glass-card p-4 rounded-xl"><span class="text-blue-400 font-bold block mb-1">FAZA 1</span>Prijava i ugovaranje pilota (30 dana, zero-risk).</li>
+          <li class="glass-card p-4 rounded-xl"><span class="text-blue-400 font-bold block mb-1">FAZA 2</span>Uvoz kataloga smena, vozača i flote u sistem.</li>
+          <li class="glass-card p-4 rounded-xl"><span class="text-blue-400 font-bold block mb-1">FAZA 3</span>Obuka dispečera i paralelni rad sa starim sistemom.</li>
+          <li class="glass-card p-4 rounded-xl"><span class="text-blue-400 font-bold block mb-1">FAZA 4</span>Produkcijski go-live sa Plan Lock i audit tragom.</li>
+          <li class="glass-card p-4 rounded-xl"><span class="text-blue-400 font-bold block mb-1">FAZA 5</span>Nadzor, SLA i razvoj novih modula po ugovoru.</li>
+        </ol>
       </div>
     </section>
 
@@ -294,7 +396,36 @@
         dlDpa: "4. GDPR & DPA Član 28",
         dlAll: "Dodatni zvanični šabloni:",
         pricingTitle: "Cenovnik",
-        pricingDesc: "Bez skrivenih troškova. Prilagođeno veličini vašeg voznog parka."
+        pricingDesc: "Bez skrivenih troškova. Prilagođeno veličini vašeg voznog parka.",
+        pricePer: "/ mesečno / po firmi",
+        pSubStarter: "Do 15 vozila i 20 vozača.",
+        pSubPro: "Do 45 vozila i 60 vozača.",
+        pSubFleet: "Neograničeno vozila, vozača i dispečera.",
+        featStarter: "<li>✓ 1 Dispo + 1 CA nalog</li><li>✓ 3-dnevni dispečerski radar</li><li>✓ Driver PWA: 4 tastera + 2s SOS</li><li>✓ Mesečni i dnevni plan</li>",
+        featPro: "<li>✓ Do 4 Dispo naloga sa grupnom izolacijom</li><li>✓ Plan Lock — zaključavanje objavljenog plana</li><li>✓ Read-Receipt potvrde čitanja smena</li><li>✓ 24-mesečni append-only audit trag</li>",
+        featFleet: "<li>✓ Više depoa i lokacija</li><li>✓ DPA Član 28 ugovor</li><li>✓ PITR oporavak baze (point-in-time)</li><li>✓ Namenske integracije po ugovoru</li>",
+        badgePopular: "Najpopularniji",
+        ctaStarter: "Izaberi Starter",
+        ctaPro: "Izaberi Pro",
+        ctaFleet: "Kontaktirajte nas",
+        pilotKicker: "Zero-Risk Pilot",
+        pilotTitle: "Vođeni pilot program od 30 dana",
+        pilotDesc: "Prijavite firmu, uvezemo katalog i obučimo dispečere — bez rizika, bez kartice, uz potpunu kontrolu.",
+        lblName: "Naziv firme",
+        lblEmail: "Email",
+        lblBuses: "Broj autobusa",
+        pilotSubmit: "Prijavi firmu na pilot",
+        pilotNote: "Odgovaramo u roku od 24h. Podaci se koriste isključivo za kontakt.",
+        guaranteesTitle: "5 garancija pilot programa",
+        reportKicker: "Inženjerski elaborat",
+        reportTitle: "Zvanični tehnički i operativni izveštaj",
+        reportDesc: "Trostruki nezavisni audit, dnevnik izmena i dokazani rezultati — javno dostupni standard transparentnosti.",
+        pass1Title: "Type-safety i build",
+        pass2Title: "Tenant izolacija i D21",
+        pass3Title: "Cockpit i PWA",
+        changelogTitle: "Dnevnik izmena",
+        resultsTitle: "Dokazani inženjerski rezultati",
+        phasesTitle: "5 faza do produkcijskog release-a"
       },
       de: {
         badge: "Betriebssystem für Busdisposition & Flottenmanagement",
@@ -311,7 +442,36 @@
         dlDpa: "4. GDPR & DPA Art. 28",
         dlAll: "Weitere offizielle Vorlagen:",
         pricingTitle: "Preise",
-        pricingDesc: "Keine versteckten Kosten. Angepasst an die Größe Ihres Fuhrparks."
+        pricingDesc: "Keine versteckten Kosten. Angepasst an die Größe Ihres Fuhrparks.",
+        pricePer: "/ Monat / pro Firma",
+        pSubStarter: "Bis 15 Fahrzeuge und 20 Fahrer.",
+        pSubPro: "Bis 45 Fahrzeuge und 60 Fahrer.",
+        pSubFleet: "Unbegrenzte Fahrzeuge, Fahrer und Disponenten.",
+        featStarter: "<li>✓ 1 Dispo- + 1 CA-Konto</li><li>✓ 3-Tage-Dispo-Radar</li><li>✓ Driver PWA: 4 Buttons + 2s SOS</li><li>✓ Monats- und Tagesplan</li>",
+        featPro: "<li>✓ Bis 4 Dispo-Konten mit Gruppenisolierung</li><li>✓ Plan Lock — Sperre veröffentlichter Pläne</li><li>✓ Read-Receipt Lesebestätigungen</li><li>✓ 24 Monate append-only Audit-Trail</li>",
+        featFleet: "<li>✓ Mehrere Depots und Standorte</li><li>✓ DPA Art. 28 Vertrag</li><li>✓ PITR-Datenbankwiederherstellung</li><li>✓ Individuelle Integrationen nach Vertrag</li>",
+        badgePopular: "Am beliebtesten",
+        ctaStarter: "Starter wählen",
+        ctaPro: "Pro wählen",
+        ctaFleet: "Kontaktieren Sie uns",
+        pilotKicker: "Zero-Risk Pilot",
+        pilotTitle: "Begleitetes 30-Tage-Pilotprogramm",
+        pilotDesc: "Melden Sie Ihre Firma an — wir importieren den Katalog und schulen die Disponenten. Ohne Risiko, ohne Karte, mit voller Kontrolle.",
+        lblName: "Firmenname",
+        lblEmail: "E-Mail",
+        lblBuses: "Anzahl der Busse",
+        pilotSubmit: "Firma zum Pilot anmelden",
+        pilotNote: "Antwort innerhalb von 24h. Daten werden ausschließlich für den Kontakt verwendet.",
+        guaranteesTitle: "5 Garantien des Pilotprogramms",
+        reportKicker: "Technisches Gutachten",
+        reportTitle: "Offizieller technischer und operativer Bericht",
+        reportDesc: "Dreifaches unabhängiges Audit, Änderungsprotokoll und belegte Ergebnisse — öffentlicher Transparenzstandard.",
+        pass1Title: "Type-Sicherheit und Build",
+        pass2Title: "Tenant-Isolierung und D21",
+        pass3Title: "Cockpit und PWA",
+        changelogTitle: "Änderungsprotokoll",
+        resultsTitle: "Belegte technische Ergebnisse",
+        phasesTitle: "5 Phasen bis zum Produktiv-Release"
       },
       en: {
         badge: "Operating System for Transit Dispatchers & Fleets",
@@ -328,7 +488,36 @@
         dlDpa: "4. GDPR & DPA Article 28",
         dlAll: "Additional official templates:",
         pricingTitle: "Pricing",
-        pricingDesc: "No hidden costs. Sized to your fleet."
+        pricingDesc: "No hidden costs. Sized to your fleet.",
+        pricePer: "/ month / per company",
+        pSubStarter: "Up to 15 vehicles and 20 drivers.",
+        pSubPro: "Up to 45 vehicles and 60 drivers.",
+        pSubFleet: "Unlimited vehicles, drivers and dispatchers.",
+        featStarter: "<li>✓ 1 Dispo + 1 CA account</li><li>✓ 3-day dispatcher radar</li><li>✓ Driver PWA: 4 buttons + 2s SOS</li><li>✓ Monthly and daily plans</li>",
+        featPro: "<li>✓ Up to 4 Dispo accounts with group isolation</li><li>✓ Plan Lock — published plan freezing</li><li>✓ Read-Receipt shift confirmations</li><li>✓ 24-month append-only audit trail</li>",
+        featFleet: "<li>✓ Multiple depots and locations</li><li>✓ DPA Article 28 agreement</li><li>✓ PITR point-in-time database recovery</li><li>✓ Custom integrations by contract</li>",
+        badgePopular: "Most popular",
+        ctaStarter: "Choose Starter",
+        ctaPro: "Choose Pro",
+        ctaFleet: "Contact us",
+        pilotKicker: "Zero-Risk Pilot",
+        pilotTitle: "Guided 30-day pilot program",
+        pilotDesc: "Sign your company up — we import the catalog and train your dispatchers. No risk, no card, full control.",
+        lblName: "Company name",
+        lblEmail: "Email",
+        lblBuses: "Number of buses",
+        pilotSubmit: "Apply for the pilot",
+        pilotNote: "We reply within 24h. Data is used for contact only.",
+        guaranteesTitle: "5 pilot program guarantees",
+        reportKicker: "Engineering report",
+        reportTitle: "Official technical & operational report",
+        reportDesc: "Triple independent audit, change log and proven results — a public transparency standard.",
+        pass1Title: "Type-safety & build",
+        pass2Title: "Tenant isolation & D21",
+        pass3Title: "Cockpit & PWA",
+        changelogTitle: "Change log",
+        resultsTitle: "Proven engineering results",
+        phasesTitle: "5 phases to production release"
       }
     };
 
@@ -354,6 +543,52 @@
       document.getElementById('downloads-all').textContent = pack.dlAll;
       document.getElementById('pricing-title').textContent = pack.pricingTitle;
       document.getElementById('pricing-desc').textContent = pack.pricingDesc;
+      document.getElementById('price-per-starter').textContent = pack.pricePer;
+      document.getElementById('price-per-pro').textContent = pack.pricePer;
+      document.getElementById('price-per-fleet').textContent = pack.pricePer;
+      document.getElementById('p-sub-starter').textContent = pack.pSubStarter;
+      document.getElementById('p-sub-pro').textContent = pack.pSubPro;
+      document.getElementById('p-sub-fleet').textContent = pack.pSubFleet;
+      document.getElementById('feat-starter').innerHTML = pack.featStarter;
+      document.getElementById('feat-pro').innerHTML = pack.featPro;
+      document.getElementById('feat-fleet').innerHTML = pack.featFleet;
+      document.getElementById('badge-popular').textContent = pack.badgePopular;
+      document.getElementById('cta-starter').textContent = pack.ctaStarter;
+      document.getElementById('cta-pro').textContent = pack.ctaPro;
+      document.getElementById('cta-fleet').textContent = pack.ctaFleet;
+      document.getElementById('pilot-kicker').textContent = pack.pilotKicker;
+      document.getElementById('pilot-title').textContent = pack.pilotTitle;
+      document.getElementById('pilot-desc').textContent = pack.pilotDesc;
+      document.getElementById('pilot-label-name').textContent = pack.lblName;
+      document.getElementById('pilot-label-email').textContent = pack.lblEmail;
+      document.getElementById('pilot-label-buses').textContent = pack.lblBuses;
+      document.getElementById('pilot-submit').textContent = pack.pilotSubmit;
+      document.getElementById('pilot-note').textContent = pack.pilotNote;
+      document.getElementById('pilot-guarantees-title').textContent = pack.guaranteesTitle;
+      document.getElementById('report-kicker').textContent = pack.reportKicker;
+      document.getElementById('report-title').textContent = pack.reportTitle;
+      document.getElementById('report-desc').textContent = pack.reportDesc;
+      document.getElementById('pass1-title').textContent = pack.pass1Title;
+      document.getElementById('pass2-title').textContent = pack.pass2Title;
+      document.getElementById('pass3-title').textContent = pack.pass3Title;
+      document.getElementById('changelog-title').textContent = pack.changelogTitle;
+      document.getElementById('results-title').textContent = pack.resultsTitle;
+      document.getElementById('phases-title').textContent = pack.phasesTitle;
+    }
+
+    function submitPilot(event) {
+      event.preventDefault();
+      const company = document.getElementById('pilot-company').value.trim();
+      const email = document.getElementById('pilot-email').value.trim();
+      const buses = document.getElementById('pilot-buses').value.trim();
+      const subject = encodeURIComponent('Pilot prijava (30 dana) — ' + company);
+      const body = encodeURIComponent(
+        'Naziv firme: ' + company + '\n' +
+        'Email: ' + email + '\n' +
+        'Broj autobusa: ' + buses + '\n\n' +
+        'Molim za plan pilot onboardinga (5 garancija, DPA Član 28, obuka dispečera).'
+      );
+      window.location.href = 'mailto:office@buscommand.com?subject=' + subject + '&body=' + body;
     }
 
     function downloadDoc(type) {
