@@ -6731,6 +6731,23 @@ Object.assign(TRANSLATIONS.de, {
 });
 
 
+// D25 — driver quick reports reduced to two operational buttons; ops fleet ⋮ menu label.
+Object.assign(TRANSLATIONS.en, {
+    qr_delay_stop: "Delay / Traffic +15m",
+    qr_vehicle_fault: "Vehicle Breakdown",
+    dispo_bus_edit_data: "Edit vehicle details"
+});
+Object.assign(TRANSLATIONS.sr, {
+    qr_delay_stop: "Kašnjenje / Zastoj (+15 min)",
+    qr_vehicle_fault: "Kvar na vozilu",
+    dispo_bus_edit_data: "Izmeni podatke"
+});
+Object.assign(TRANSLATIONS.de, {
+    qr_delay_stop: "Verspätung / Stau +15m",
+    qr_vehicle_fault: "Fahrzeugdefekt / Panne",
+    dispo_bus_edit_data: "Fahrzeugdaten bearbeiten"
+});
+
 // D23 — product UI languages only (en/de/sr). Unsupported keys are dropped.
 for (const lang of Object.keys(TRANSLATIONS)) {
     if (lang !== "en" && lang !== "de" && lang !== "sr") {

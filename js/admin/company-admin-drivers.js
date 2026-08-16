@@ -12,6 +12,7 @@ import { showConfirm } from "../ui/confirm-modal.js";
 import { closeModal, showModal } from "../ui/modals.js";
 import { t, tp } from "../ui/i18n.js";
 import { icon, tx } from "../ui/markup.js";
+import { rowActionsMenuHtml } from "../ui/row-actions-menu.js";
 
 const MAX_FILE_BYTES = 1_000_000;
 /** Keep in sync with server/driver-csv.js (D24.2 guard tx write budget). */
@@ -488,9 +489,34 @@ function renderDirectory() {
             <td data-label="${t("ca_drivers_pin_short")}"><span class="company-driver-pin-status">${driver.hasPersonalCode === false ? "—" : escapeHtml(t("ca_drivers_pin_set") || "Postavljen")}</span></td>
             <td data-label="${t("ca_col_status")}"><span class="company-driver-status ${active ? "is-active" : "is-inactive"}"><i data-lucide="${active ? "circle-check" : "circle-pause"}"></i>${t(active ? "driver_status_active" : "driver_status_inactive")}</span></td>
             <td data-label="${t("table_actions")}"><div class="company-driver-row-actions">
-                <button type="button" class="btn-secondary company-driver-edit-action" ${actionAttr("openCompanyDriverEdit", [driver.id])} ${pending || editSavePending ? "disabled" : ""}>${icon("pencil")}<span>${tx("btn_edit")}</span></button>
-                <button type="button" class="btn-secondary company-driver-status-action ${active ? "is-danger" : ""}" ${actionAttr("toggleCompanyDriverStatus", [driver.id])} ${pending || editSavePending ? "disabled" : ""}>${pending ? t("ca_drivers_updating") : escapeHtml(action)}</button>
-                <button type="button" class="company-driver-delete-action" ${actionAttr("deleteCompanyDriver", [driver.id])} ${pending || editSavePending ? "disabled" : ""}>${icon("trash-2")}<span>${t("ca_drivers_delete") || "Obriši"}</span></button>
+                ${rowActionsMenuHtml(`ca-drv-${driver.id}`, [
+        {
+            action: "openCompanyDriverEdit",
+            args: [driver.id],
+            label: t("btn_edit"),
+            icon: "pencil",
+            className: "company-driver-edit-action",
+            disabled: pending || editSavePending
+        },
+        {
+            action: "toggleCompanyDriverStatus",
+            args: [driver.id],
+            label: pending ? t("ca_drivers_updating") : action,
+            icon: active ? "circle-pause" : "circle-check",
+            className: "company-driver-status-action",
+            danger: active,
+            disabled: pending || editSavePending
+        },
+        {
+            action: "deleteCompanyDriver",
+            args: [driver.id],
+            label: t("ca_drivers_delete") || "Obriši",
+            icon: "trash-2",
+            className: "company-driver-delete-action",
+            danger: true,
+            disabled: pending || editSavePending
+        }
+    ])}
             </div></td>
         </tr>`;
     }).join("");

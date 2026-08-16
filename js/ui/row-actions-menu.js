@@ -11,7 +11,13 @@ let _portedMenu = null;
 /** @type {HTMLElement | null} */
 let _portedHost = null;
 
-/** @param {string} menuId @param {Array<{ action: string, args?: unknown[], label: string, icon?: string, danger?: boolean, disabled?: boolean, title?: string }>} items */
+/** Extra per-item class kept stable so CSS/tests can still target a known action. */
+function extraClass(item) {
+    const raw = String(item.className || "").trim().replace(/[^a-zA-Z0-9 _-]/g, "");
+    return raw ? ` ${raw}` : "";
+}
+
+/** @param {string} menuId @param {Array<{ action: string, args?: unknown[], label: string, icon?: string, danger?: boolean, disabled?: boolean, title?: string, className?: string }>} items */
 function rowActionsMenuHtml(menuId, items) {
     const id = String(menuId || "").replace(/[^a-zA-Z0-9_-]/g, "_");
     const list = (items || []).filter((item) => item && item.action && item.label);
@@ -25,7 +31,7 @@ function rowActionsMenuHtml(menuId, items) {
         const icon = item.icon || "circle";
         const args = Array.isArray(item.args) ? item.args : [];
         const invoke = item.disabled ? "" : actionAttr(item.action, args);
-        return `<button type="button" class="row-actions-direct${danger}" ${invoke}${disabled}${title}>
+        return `<button type="button" class="row-actions-direct${danger}${extraClass(item)}" ${invoke}${disabled}${title}>
             <i data-lucide="${escapeHtml(icon)}" aria-hidden="true"></i>
             <span>${escapeHtml(item.label)}</span>
         </button>`;
@@ -38,7 +44,7 @@ function rowActionsMenuHtml(menuId, items) {
         const icon = item.icon || "circle";
         const args = Array.isArray(item.args) ? item.args : [];
         const invoke = item.disabled ? "" : actionAttr(item.action, args);
-        return `<button type="button" role="menuitem" class="row-actions-item${danger}" ${invoke}${disabled}${title}>
+        return `<button type="button" role="menuitem" class="row-actions-item${danger}${extraClass(item)}" ${invoke}${disabled}${title}>
                 <i data-lucide="${escapeHtml(icon)}" aria-hidden="true"></i>
                 <span>${escapeHtml(item.label)}</span>
             </button>`;
@@ -141,6 +147,8 @@ function toggleRowActionsMenu(menuId) {
 }
 
 function installRowActionsOutsideClose() {
+    // Module is imported by DOM-free unit tests (node --test); bind only in a browser.
+    if (typeof document === "undefined" || typeof window === "undefined") return;
     if (window.__BUSCOMMAND_ROW_ACTIONS_OUTSIDE__) return;
     window.__BUSCOMMAND_ROW_ACTIONS_OUTSIDE__ = true;
     document.addEventListener("click", (event) => {

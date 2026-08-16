@@ -37,7 +37,9 @@ test("staff and driver surfaces prefer design tokens over hard brand hex", () =>
   assert.doesNotMatch(staff, /--staff-accent:\s*#2563EB/);
   assert.match(driver, /var\(--success-strong\)/);
   assert.match(driver, /var\(--warning-strong\)/);
-  assert.match(driver, /var\(--info-violet\)/);
+  // D25: driver quick reports are amber (delay/hold) + red (vehicle fault).
+  // The violet accent left the driver surface with the removed 3rd/4th button.
+  assert.match(driver, /var\(--danger-strong\)/);
   assert.match(tokens, /--success-strong:/);
   assert.match(tokens, /--info-violet:/);
 });

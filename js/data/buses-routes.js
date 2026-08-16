@@ -18,6 +18,7 @@ import ApiClient from "../core/api-client.js";
 import { isOperationalReadOnly } from "../core/access.js";
 import { dispoChangeReasonOptions, recordDemoChangeReason } from "../dispatcher/change-reason.js";
 import { tx, btnSecondary } from "../ui/markup.js";
+import { rowActionsMenuHtml } from "../ui/row-actions-menu.js";
 
 function blockedIfReadOnly() {
     if (!isOperationalReadOnly()) return false;
@@ -171,15 +172,28 @@ function renderBusesList() {
 
         const actionsCell = row.insertCell();
         actionsCell.className = "bus-fleet-actions";
-        const editBtn = readOnly
-            ? ""
-            : `<button type="button" class="btn-secondary hub-bus-edit-btn" ${actionAttr("toggleBusEdit", [b.id])}>${tx("btn_edit")}</button>`;
-        const deleteBtn = readOnly
-            ? ""
-            : `<button type="button" class="hub-bus-toggle ${active ? "is-active" : "is-inactive"}" ${actionAttr("deleteBus", [b.id])} title="${escapeHtml(active ? (t("dispo_bus_deactivate_hint") || "") : (t("btn_activate") || ""))}">
-                ${active ? (t("dispo_bus_deactivate") || t("btn_deactivate")) : t("btn_activate")}
-            </button>`;
-        actionsCell.innerHTML = `<div class="bus-fleet-actions-inner">${editBtn}${deleteBtn}</div>`;
+        // Single ⋮ menu replaces the inline edit/deactivate button row (D25 UI unification).
+        const busMenuItems = readOnly
+            ? []
+            : [
+                {
+                    action: "toggleBusEdit",
+                    args: [b.id],
+                    label: t("dispo_bus_edit_data"),
+                    icon: "pencil",
+                    className: "hub-bus-edit-btn"
+                },
+                {
+                    action: "deleteBus",
+                    args: [b.id],
+                    label: active ? (t("dispo_bus_deactivate") || t("btn_deactivate")) : t("btn_activate"),
+                    icon: active ? "circle-pause" : "circle-check",
+                    className: `hub-bus-toggle ${active ? "is-active" : "is-inactive"}`,
+                    danger: active,
+                    title: active ? (t("dispo_bus_deactivate_hint") || "") : (t("btn_activate") || "")
+                }
+            ];
+        actionsCell.innerHTML = `<div class="bus-fleet-actions-inner">${rowActionsMenuHtml(`ops-bus-${b.id}`, busMenuItems)}</div>`;
 
         const editRow = document.createElement("tr");
         editRow.className = "hub-bus-edit-row hidden";

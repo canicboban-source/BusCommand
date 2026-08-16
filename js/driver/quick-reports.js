@@ -20,11 +20,11 @@ async function sendQuickReport(type) {
     if (quickReportPending || invokedAt - lastQuickReportAt < 750
         || !window.currentUser || window.currentUser.role !== "driver") return;
 
+    // D25: exactly two driver quick reports. "Stau" = delay/traffic hold (+15 min),
+    // "Panne" = vehicle breakdown. Everything else stays on SOS or the full report form.
     const definitions = {
-        Stau: { type: "delay:10", reason: t("reason_traffic"), severity: "sev_low" },
-        Panne: { type: "breakdown:bd_engine", reason: t("qr_breakdown"), severity: "sev_critical" },
-        "Bus Voll": { type: "delay:5", reason: t("reason_passengers"), severity: "sev_low" },
-        Verspatung: { type: "delay:5", reason: t("reason_traffic"), severity: "sev_low" }
+        Stau: { type: "delay:15", reason: t("reason_traffic"), severity: "sev_low" },
+        Panne: { type: "breakdown:bd_engine", reason: t("qr_breakdown"), severity: "sev_critical" }
     };
     const definition = definitions[type];
     if (!definition) {

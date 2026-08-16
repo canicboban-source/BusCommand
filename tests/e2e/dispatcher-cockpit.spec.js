@@ -469,7 +469,8 @@ test.describe("Dispatcher cockpit resolution flows", () => {
 
     await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("101"));
     await expect(page.locator("#dispatcher-vehicles")).toBeVisible();
-    await page.locator('.bus-fleet-row[data-bus-id="bus-edit"] button.hub-bus-edit-btn').click();
+    await page.locator('.bus-fleet-row[data-bus-id="bus-edit"] .row-actions-trigger').click();
+    await page.locator("body > .row-actions-menu .hub-bus-edit-btn:visible").click();
     const form = page.locator('[data-bus-edit="bus-edit"]');
     await expect(form).toBeVisible();
     await form.locator('input[name="plate"]').fill("MD-200BB");

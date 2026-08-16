@@ -373,7 +373,8 @@ test.describe("UI smoke", () => {
     });
     await page.locator("#ca-drivers-status-filter").selectOption("inactive");
     await expect(page.locator("#ca-drivers-directory tbody tr")).toHaveCount(1);
-    await page.locator("#ca-drivers-directory .company-driver-status-action").click();
+    await page.locator("#ca-drivers-directory .row-actions-trigger").click();
+    await page.locator("body > .row-actions-menu .company-driver-status-action:visible").click();
     await page.locator("#global-confirm-yes").click();
     await expect(page.locator("#ca-drivers-stat-active")).toHaveText("3");
     await expect(page.locator("#ca-drivers-directory tbody tr")).toHaveCount(0);
@@ -464,7 +465,8 @@ test.describe("UI smoke", () => {
     const ana = page.locator(".company-team-card").filter({ hasText: "ana@example.test" });
     await expect(ana).toContainText("Line 101");
 
-    await ana.getByRole("button", { name: /Groups/i }).click();
+    await ana.locator(".row-actions-trigger").click();
+    await page.locator("body > .row-actions-menu .company-team-edit-groups:visible").click();
     await ana.locator(".company-team-group-option").filter({ has: page.locator(".ca-disp-grp-chk[value='102']") }).click();
     await ana.getByRole("button", { name: /Save changes/i }).click();
     await expect(page.locator(".company-team-card").filter({ hasText: "ana@example.test" })).toContainText("Line 102");
@@ -473,13 +475,15 @@ test.describe("UI smoke", () => {
     await expect(page.locator(".company-team-card")).toHaveCount(1);
     await page.locator("#ca-team-search").fill("");
     const updatedAna = page.locator(".company-team-card").filter({ hasText: "ana@example.test" });
-    // Active dispatchers expose a single profile action as .row-actions-direct (not ⋯ menu).
-    await updatedAna.locator('[data-action="toggleCaDispProfileEdit"]').click();
+    // D25: every dispatcher row action lives behind the ⋮ menu (portalled to body).
+    await updatedAna.locator(".row-actions-trigger").click();
+    await page.locator('body > .row-actions-menu [data-action="toggleCaDispProfileEdit"]:visible').click();
     await updatedAna.locator('input[id^="ca-disp-edit-phone-"]').fill("+4369912345678");
     await updatedAna.getByRole("button", { name: /Save changes/i }).click();
     await expect(page.locator(".company-team-card").filter({ hasText: "ana@example.test" })).toContainText("+4369912345678");
 
-    await updatedAna.locator(".company-team-status-toggle").click();
+    await updatedAna.locator(".row-actions-trigger").click();
+    await page.locator("body > .row-actions-menu .company-team-status-toggle:visible").click();
     await page.locator("#global-confirm-yes").click();
     await expect(page.locator(".company-team-card").filter({ hasText: "ana@example.test" })).toContainText("Deactivated");
     await page.locator("#ca-team-status-filter").selectOption("inactive");
@@ -621,7 +625,7 @@ test.describe("UI smoke", () => {
     await expect(reportButton).toHaveCount(1);
     await reportButton.dblclick();
     await expect.poll(() => page.evaluate(() =>
-      (window.state.reports || []).filter(report => report.type === "delay:10").length
+      (window.state.reports || []).filter(report => report.type === "delay:15").length
     )).toBe(1);
   });
 

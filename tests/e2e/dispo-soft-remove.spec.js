@@ -100,7 +100,9 @@ test.describe("Dispo soft-remove (list, not company)", () => {
     await page.evaluate(() => (window.openVehiclesForGroup || window.openGroupHub)("101"));
     await expect(page.locator("#settings-buses-list")).toContainText("91103");
 
-    await page.locator('#settings-buses-list tr[data-bus-id="bus-soft-1"] [data-action="deleteBus"]').click();
+    // D25: fleet row actions live behind the ⋮ menu (portalled to body when open).
+    await page.locator('#settings-buses-list tr[data-bus-id="bus-soft-1"] .row-actions-trigger').click();
+    await page.locator('body > .row-actions-menu [data-action="deleteBus"]:visible').click();
     await confirmModal(page);
 
     const stillInCompany = await page.evaluate(() => {

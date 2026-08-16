@@ -1939,23 +1939,8 @@ html[data-app-surface="staff"] .company-team-card.is-editing-profile {
     box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.12);
 }
 
-html[data-app-surface="staff"] .company-team-edit-groups {
-    border-color: rgba(var(--primary-rgb), 0.38);
-    background: rgba(var(--primary-rgb), 0.1);
-    color: var(--text-main);
-    font-weight: 700;
-}
-
-html[data-app-surface="staff"] .company-team-edit-groups:hover:not(:disabled) {
-    border-color: rgba(var(--primary-rgb), 0.55);
-    background: rgba(var(--primary-rgb), 0.16);
-}
-
-html[data-app-surface="staff"] .company-team-edit-groups.is-active {
-    border-color: var(--primary-color);
-    background: rgba(var(--primary-rgb), 0.2);
-    box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.18);
-}
+/* D25: "Edit groups" moved into the ⋮ menu — the open card keeps the accent,
+   the menu item itself inherits neutral .row-actions-item styling. */
 
 html[data-app-surface="staff"] .company-team-actions .btn-secondary:disabled,
 html[data-app-surface="staff"] .company-team-actions .btn-danger-ghost:disabled {
@@ -1975,7 +1960,7 @@ html[data-app-surface="staff"] .company-team-editor-actions .btn-primary {
     min-width: 132px;
 }
 
-html[data-app-surface="staff"] .company-team-card.is-inactive .company-team-actions .btn-secondary:not(.company-team-edit-groups):disabled {
+html[data-app-surface="staff"] .company-team-card.is-inactive .company-team-actions .btn-secondary:disabled {
     opacity: 0.38;
 }
 
@@ -4915,8 +4900,8 @@ html[data-app-surface="staff"] .company-drivers-directory-table td {
   white-space: nowrap;
 }
 
-/* STATUS and ACTIONS columns render in full — pills and the
-   Izmeni/Deaktiviraj/Obriši button row must never clip. */
+/* STATUS and ACTIONS columns render in full — status pills and the
+   ⋮ row-actions trigger must never clip. */
 html[data-app-surface="staff"] .company-drivers-directory-table th:nth-child(7),
 html[data-app-surface="staff"] .company-drivers-directory-table td:nth-child(7),
 html[data-app-surface="staff"] .company-drivers-directory-table th:nth-child(8),

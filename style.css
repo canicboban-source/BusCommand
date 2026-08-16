@@ -3515,24 +3515,24 @@ input:focus, select:focus, textarea:focus {
     display: table;
 }
 
-/* Column widths: STATUS (7) and ACTIONS (8) must never truncate — the
-   action column now holds Izmeni + Deaktiviraj/Aktiviraj + Obriši. */
+/* Column widths: STATUS (7) must never truncate. ACTIONS (8) is a single ⋮
+   trigger since D25, so the reclaimed width goes back to name/lines/phone. */
 .company-drivers-directory-table th:nth-child(1),
-.company-drivers-directory-table td:nth-child(1) { width: 8%; }
+.company-drivers-directory-table td:nth-child(1) { width: 9%; }
 .company-drivers-directory-table th:nth-child(2),
-.company-drivers-directory-table td:nth-child(2) { width: 20%; }
+.company-drivers-directory-table td:nth-child(2) { width: 24%; }
 .company-drivers-directory-table th:nth-child(3),
-.company-drivers-directory-table td:nth-child(3) { width: 12%; }
+.company-drivers-directory-table td:nth-child(3) { width: 14%; }
 .company-drivers-directory-table th:nth-child(4),
-.company-drivers-directory-table td:nth-child(4) { width: 8%; }
+.company-drivers-directory-table td:nth-child(4) { width: 12%; }
 .company-drivers-directory-table th:nth-child(5),
-.company-drivers-directory-table td:nth-child(5) { width: 11%; }
+.company-drivers-directory-table td:nth-child(5) { width: 14%; }
 .company-drivers-directory-table th:nth-child(6),
-.company-drivers-directory-table td:nth-child(6) { width: 7%; }
+.company-drivers-directory-table td:nth-child(6) { width: 8%; }
 .company-drivers-directory-table th:nth-child(7),
-.company-drivers-directory-table td:nth-child(7) { width: 11%; }
+.company-drivers-directory-table td:nth-child(7) { width: 12%; }
 .company-drivers-directory-table th:nth-child(8),
-.company-drivers-directory-table td:nth-child(8) { width: 23%; }
+.company-drivers-directory-table td:nth-child(8) { width: 7%; }
 
 .company-drivers-table td:nth-child(7),
 .company-drivers-table td:nth-child(8) {
@@ -3616,36 +3616,13 @@ input:focus, select:focus, textarea:focus {
 .company-driver-unassigned { color: #fbbf24; }
 .company-driver-status.is-active { color: #34d399; }
 .company-driver-status.is-inactive { color: var(--text-muted); }
-.company-driver-status-action.is-danger { color: #f87171; border-color: rgba(248,113,113,0.35); }
+/* D25: the row holds a single ⋮ trigger; item styling comes from .row-actions-*. */
 .company-driver-row-actions {
     display: flex;
-    flex-wrap: nowrap;
     align-items: center;
-    gap: 8px;
     justify-content: flex-end;
     min-width: 0;
 }
-.company-driver-edit-action,
-.company-driver-status-action,
-.company-driver-delete-action {
-    min-width: 0;
-    height: 32px;
-    padding: 6px 12px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    white-space: nowrap;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-.company-driver-edit-action i,
-.company-driver-delete-action i { width: 14px; height: 14px; }
-.company-driver-delete-action {
-    background: #dc2626;
-    border-color: #dc2626;
-    color: #fee2e2;
-}
-.company-driver-delete-action:hover { background: #ef4444; border-color: #ef4444; color: #fff; }
 
 /* PIN input with eye toggle — the mask must never block typing. */
 .company-pin-input-wrap {
@@ -4167,7 +4144,7 @@ body.light-theme .company-team-avatar { color:#1d4ed8; }
     .company-team-filters select { width:100%; }
     .company-team-card { grid-template-columns:1fr; }
     .company-team-state, .company-team-actions { justify-content:flex-start; }
-    .company-team-actions button { flex:1 1 calc(50% - 6px); justify-content:center; }
+    .company-team-actions .row-actions-trigger { flex:0 0 auto; justify-content:center; }
     .company-team-editor { grid-template-columns:1fr; }
     .company-team-editor > .field-error, .company-team-editor-actions { grid-column:1; }
     .company-team-group-grid { grid-template-columns:1fr; }

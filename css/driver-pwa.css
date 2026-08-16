@@ -353,10 +353,12 @@ html[data-app-surface="driver"] .mobile-bottom-nav .mob-nav-badge {
 .driver-pwa-quick-grid .btn-quick-report {
     border: 1px solid transparent;
     border-radius: var(--radius-md);
-    min-height: 88px;
+    min-height: 104px;
     color: #fff;
     font-weight: 750;
-    font-size: 0.82rem;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -373,11 +375,15 @@ html[data-app-surface="driver"] .mobile-bottom-nav .mob-nav-badge {
     filter: brightness(1.05);
 }
 
-.driver-pwa-quick-grid .btn-quick-report i {
-    width: 26px;
-    height: 26px;
+/* lucide.createIcons() swaps the <i> for an <svg>, so size both. */
+.driver-pwa-quick-grid .btn-quick-report i,
+.driver-pwa-quick-grid .btn-quick-report svg {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
 }
 
+/* D25: exactly two quick reports — delay/hold (amber) and vehicle fault (red). */
 .driver-pwa-quick-grid .qr-traffic {
     background: var(--warning-strong);
     border-color: rgba(251, 191, 36, 0.35);
@@ -385,14 +391,6 @@ html[data-app-surface="driver"] .mobile-bottom-nav .mob-nav-badge {
 .driver-pwa-quick-grid .qr-break {
     background: var(--danger-strong);
     border-color: rgba(248, 113, 113, 0.35);
-}
-.driver-pwa-quick-grid .qr-full {
-    background: var(--primary-color);
-    border-color: rgba(var(--primary-rgb), 0.4);
-}
-.driver-pwa-quick-grid .qr-delay {
-    background: var(--info-violet);
-    border-color: rgba(var(--primary-rgb), 0.45);
 }
 
 .driver-pwa-archive-btn {

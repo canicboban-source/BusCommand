@@ -158,12 +158,44 @@ function dispatcherCardHtml(dispatcher, groups) {
 
     const editingGroups = openGroupEditors.has(String(dispatcher.id));
     const editingProfile = openProfileEditors.has(String(dispatcher.id));
+    // D25: every row action lives in one ⋮ menu — no inline button strip.
     const menuItems = [
+        {
+            action: "toggleCaDispGroupsEdit",
+            args: [String(dispatcher.id)],
+            label: t("ca_edit_groups"),
+            icon: "pencil-line",
+            className: "company-team-edit-groups",
+            disabled: busy
+        },
         {
             action: "toggleCaDispProfileEdit",
             args: [String(dispatcher.id)],
             label: t("ca_edit_disp_profile"),
             icon: "user-pen",
+            disabled: busy
+        },
+        {
+            action: "resetCompanyDispatcherPassword",
+            args: [String(dispatcher.id)],
+            label: t("ca_send_reset_link"),
+            icon: "mail-key",
+            disabled: busy || !active
+        },
+        {
+            action: "revokeCompanyDispatcherSessions",
+            args: [String(dispatcher.id)],
+            label: t("ca_revoke_sessions"),
+            icon: "log-out",
+            disabled: busy || !active
+        },
+        {
+            action: "toggleCompanyDispatcherStatus",
+            args: [String(dispatcher.id)],
+            label: toggleLabel,
+            icon: toggleIcon,
+            className: "company-team-status-toggle",
+            danger: active,
             disabled: busy
         },
         ...(active
@@ -192,12 +224,6 @@ function dispatcherCardHtml(dispatcher, groups) {
         </div>
         <div class="company-team-groups">${groupChipsHtml(dispatcher, groups)}</div>
         <div class="company-team-actions">
-            <button type="button" class="btn-secondary company-team-edit-groups${editingGroups ? " is-active" : ""}" ${actionAttr("toggleCaDispGroupsEdit", [String(dispatcher.id)])} ${busy ? "disabled" : ""} aria-expanded="${editingGroups ? "true" : "false"}">${icon("pencil-line")}<span>${tx("ca_edit_groups")}</span></button>
-            ${btnSecondary(actionAttr("resetCompanyDispatcherPassword", [String(dispatcher.id)]), `${icon("mail-key")}<span>${tx("ca_send_reset_link")}</span>`, `${busy || !active ? "disabled" : ""}`)}
-            ${btnSecondary(actionAttr("revokeCompanyDispatcherSessions", [String(dispatcher.id)]), `${icon("log-out")}<span>${tx("ca_revoke_sessions")}</span>`, `${busy || !active ? "disabled" : ""}`)}
-            <button type="button" class="${active ? "btn-danger-ghost" : "btn-secondary"} company-team-status-toggle" ${actionAttr("toggleCompanyDispatcherStatus", [String(dispatcher.id)])} ${busy ? "disabled" : ""}>
-                <i data-lucide="${toggleIcon}"></i><span>${escapeHtml(toggleLabel)}</span>
-            </button>
             ${rowActionsMenuHtml(`ca-disp-${dispatcher.id}`, menuItems)}
         </div>
         <div id="ca-disp-groups-edit-${escapeHtml(String(dispatcher.id))}" class="company-team-editor${editingGroups ? "" : " hidden"}">
