@@ -71,12 +71,22 @@
     }
 
     .glass-card {
-      background: rgba(15, 23, 42, 0.75);
+      background: rgba(15, 23, 42, 0.90);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(59, 130, 246, 0.2);
+      border: 1px solid #1e293b;
     }
     .glass-card:hover {
-      border-color: rgba(59, 130, 246, 0.5);
+      border-color: rgba(99, 102, 241, 0.5);
+    }
+    .bento-card {
+      background: rgba(15, 23, 42, 0.90);
+      backdrop-filter: blur(16px);
+      border: 1px solid #1e293b;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .bento-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      box-shadow: 0 0 30px rgba(99, 102, 241, 0.08);
     }
   </style>
 </head>
@@ -89,9 +99,14 @@
         <a href="#top" class="flex items-center gap-3">
           <img src="/brand/logo-mark.png" alt="BusCommand" class="w-10 h-10 rounded-xl object-contain shadow-lg shadow-blue-950/60" width="40" height="40">
           <span class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-            BusCommand <span class="text-[10px] uppercase font-mono px-2 py-0.5 bg-blue-900/60 text-blue-300 border border-blue-700/50 rounded-full">Enterprise</span>
+            BusCommand
+            <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 bg-indigo-900/60 text-indigo-300 border border-indigo-700/50 rounded-full">v1.0.10</span>
           </span>
         </a>
+        <span class="hidden md:inline-flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 bg-emerald-950/50 border border-emerald-800/40 px-2.5 py-1 rounded-full">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          Frankfurt europe-west3
+        </span>
       </div>
 
       <!-- Lang & CTA -->
@@ -101,7 +116,10 @@
           <button onclick="setLang('sr')" id="btn-sr" data-lang="sr" class="lang-active">SR</button>
           <button onclick="setLang('en')" id="btn-en" data-lang="en">EN</button>
         </div>
-        <a href="/staff" id="nav-staff-btn" class="hidden sm:inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-lg shadow-blue-600/30 transition-all">
+        <a href="#downloads" id="nav-download-hub" class="hidden sm:inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-emerald-300 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 rounded-lg transition-all">
+          Download Hub
+        </a>
+        <a href="/staff" id="nav-staff-btn" class="hidden sm:inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg shadow-lg shadow-indigo-600/30 transition-all">
           Staff Login
         </a>
         <a href="/driver" id="nav-driver-btn" class="inline-flex items-center justify-center px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg transition-all">
@@ -116,13 +134,13 @@
 
     <!-- 1. HERO -->
     <section id="top" class="text-center max-w-3xl mx-auto space-y-6 w-full">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/80 border border-blue-500/30 text-blue-300 text-[11px] font-bold uppercase tracking-wider">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-950/80 border border-indigo-500/30 text-indigo-300 text-[11px] font-bold uppercase tracking-wider">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
         <span id="hero-kicker">Specijalizovani dispo komandni centar za autobuske operatere</span>
       </div>
 
       <h1 id="hero-title" class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
-        Operativni sistem napravljen posebno za <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-400">autobuske firme</span>
+        Operativni sistem napravljen posebno za <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-cyan-300 to-emerald-400">autobuske firme</span>
       </h1>
 
       <p id="hero-desc" class="text-slate-400 text-base sm:text-lg leading-relaxed">
@@ -131,7 +149,7 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 w-full">
         <div class="glass-card p-5 rounded-2xl">
-          <div id="m1-num" class="text-2xl font-extrabold text-blue-400 mono">≤ 3s</div>
+          <div id="m1-num" class="text-2xl font-extrabold text-indigo-400 mono">≤ 3s</div>
           <div id="m1-lbl" class="text-xs text-slate-400 mt-1">Vreme zamene vozača/busa uz Plan-Lock</div>
         </div>
         <div class="glass-card p-5 rounded-2xl">
@@ -145,13 +163,13 @@
       </div>
 
       <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 w-full">
-        <a href="#pilot" id="hero-cta-pilot" class="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-xl shadow-blue-600/25 transition-all text-sm">
+        <a href="#pilot" id="hero-cta-pilot" class="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-xl shadow-indigo-600/25 transition-all text-sm">
           Zatražite besplatan pilot (30 dana)
         </a>
         <a href="/staff" id="hero-cta-staff" class="w-full sm:w-auto px-6 py-3 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-bold rounded-xl transition-all text-sm">
           Staff Login
         </a>
-        <a href="/driver" id="hero-cta-driver" class="w-full sm:w-auto px-6 py-3 bg-slate-900 hover:bg-slate-800 text-blue-400 border border-blue-500/30 font-bold rounded-xl transition-all text-sm">
+        <a href="/driver" id="hero-cta-driver" class="w-full sm:w-auto px-6 py-3 bg-slate-900 hover:bg-slate-800 text-indigo-400 border border-indigo-500/30 font-bold rounded-xl transition-all text-sm">
           Driver App
         </a>
       </div>
@@ -192,7 +210,7 @@
       </div>
     </section>
 
-    <!-- 3. NAMENSKA ARHITEKTURA -->
+    <!-- 3. BENTO GRID — TRI STUBA -->
     <section id="architecture" class="space-y-6 w-full">
       <div class="text-center max-w-2xl mx-auto">
         <h2 id="arch-title" class="text-2xl sm:text-3xl font-bold text-white">Namenska arhitektura</h2>
@@ -200,40 +218,40 @@
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
-        <div class="glass-card p-6 sm:p-8 rounded-2xl space-y-4">
-          <span id="arch-card1-kicker" class="text-[10px] font-mono font-bold text-blue-300 bg-blue-950/70 border border-blue-800/50 px-2.5 py-1 rounded-full">Za disponente i šefove saobraćaja</span>
-          <h3 id="arch-card1-title" class="font-bold text-white text-lg">Dispo operativni kokpit</h3>
+        <div class="bento-card p-6 sm:p-8 rounded-2xl space-y-4">
+          <span id="arch-card1-kicker" class="text-[10px] font-mono font-bold text-indigo-300 bg-indigo-950/70 border border-indigo-800/50 px-2.5 py-1 rounded-full">Za disponente i šefove saobraćaja</span>
+          <h3 id="arch-card1-title" class="font-bold text-white text-lg">Dispo Operativni Cockpit</h3>
           <div class="space-y-1.5">
             <p id="arch-card1-prob-title" class="text-[10px] font-bold uppercase tracking-wider text-red-400">Dosadašnji problem:</p>
-            <p id="arch-card1-prob-desc" class="text-xs text-slate-400 leading-relaxed">Planovi u Excelu i Viber grupama — niko ujutru ne zna pouzdano ko vozi.</p>
+            <p id="arch-card1-prob-desc" class="text-xs text-slate-400 leading-relaxed">Haos sa tabelama i pozivima vozača u vožnji — niko ne zna ko vozi i gde je zamena.</p>
           </div>
           <div class="space-y-1.5">
             <p id="arch-card1-sol-title" class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">BusCommand rešenje:</p>
-            <p id="arch-card1-sol-desc" class="text-xs text-slate-300 leading-relaxed">3-dnevni lookahead radar, 4-stepeni protokol za zastoje i bolovanja, Plan-Lock.</p>
+            <p id="arch-card1-sol-desc" class="text-xs text-slate-300 leading-relaxed">3-dnevni lookahead radar, zamena vozača/busa za 3s, Plan-Lock zaštita objavljenog plana.</p>
           </div>
         </div>
-        <div class="glass-card p-6 sm:p-8 rounded-2xl space-y-4">
+        <div class="bento-card p-6 sm:p-8 rounded-2xl space-y-4">
           <span id="arch-card2-kicker" class="text-[10px] font-mono font-bold text-emerald-300 bg-emerald-950/70 border border-emerald-800/50 px-2.5 py-1 rounded-full">Za linijske vozače</span>
-          <h3 id="arch-card2-title" class="font-bold text-white text-lg">Driver PWA (pristupačna mobilna aplikacija)</h3>
+          <h3 id="arch-card2-title" class="font-bold text-white text-lg">Driver PWA</h3>
           <div class="space-y-1.5">
             <p id="arch-card2-prob-title" class="text-[10px] font-bold uppercase tracking-wider text-red-400">Dosadašnji problem:</p>
-            <p id="arch-card2-prob-desc" class="text-xs text-slate-400 leading-relaxed">Vozač na liniji nema pouzdan kanal — zastoj, kvar ili udes ide preko poziva u vožnji.</p>
+            <p id="arch-card2-prob-desc" class="text-xs text-slate-400 leading-relaxed">Papirni rasporedi i Viber grupe — zastoj, kvar ili udes ide preko poziva u vožnji.</p>
           </div>
           <div class="space-y-1.5">
             <p id="arch-card2-sol-title" class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">BusCommand rešenje:</p>
-            <p id="arch-card2-sol-desc" class="text-xs text-slate-300 leading-relaxed">2 brza operativna tastera (Zastoj +15m, Kvar) + 2s anti-panic SOS taster i digitalni potpis smene.</p>
+            <p id="arch-card2-sol-desc" class="text-xs text-slate-300 leading-relaxed">2s anti-panic SOS, 4 operativna tastera, 1-klik potvrda preuzimanja smene sa telefona.</p>
           </div>
         </div>
-        <div class="glass-card p-6 sm:p-8 rounded-2xl space-y-4">
+        <div class="bento-card p-6 sm:p-8 rounded-2xl space-y-4">
           <span id="arch-card3-kicker" class="text-[10px] font-mono font-bold text-purple-300 bg-purple-950/70 border border-purple-800/50 px-2.5 py-1 rounded-full">Za vlasnike, direktore i Betriebsleiter-e</span>
-          <h3 id="arch-card3-title" class="font-bold text-white text-lg">Tenant &amp; Credential Zid (Bezbednost &amp; Legal)</h3>
+          <h3 id="arch-card3-title" class="font-bold text-white text-lg">Tenant &amp; Credential Zid</h3>
           <div class="space-y-1.5">
             <p id="arch-card3-prob-title" class="text-[10px] font-bold uppercase tracking-wider text-red-400">Dosadašnji problem:</p>
-            <p id="arch-card3-prob-desc" class="text-xs text-slate-400 leading-relaxed">Lični podaci i pristupi u deljenim fajlovima — GDPR rizik bez kontrole ko je šta menjao.</p>
+            <p id="arch-card3-prob-desc" class="text-xs text-slate-400 leading-relaxed">Curenje podataka i GDPR kazne — lični podaci vozača u deljenim fajlovima bez kontrole.</p>
           </div>
           <div class="space-y-1.5">
             <p id="arch-card3-sol-title" class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">BusCommand rešenje:</p>
-            <p id="arch-card3-sol-desc" class="text-xs text-slate-300 leading-relaxed">Tenant izolacija, GDPR čl. 6 &amp; 88, Frankfurt europe-west3 hosting i append-only log.</p>
+            <p id="arch-card3-sol-desc" class="text-xs text-slate-300 leading-relaxed">D21 Zero-Credential policy, EU data rezidencija (Frankfurt), 24-mesečni append-only audit log.</p>
           </div>
         </div>
       </div>
@@ -269,86 +287,106 @@
           </ul>
         </div>
 
-        <div class="glass-card p-6 rounded-2xl border-blue-500/40 bg-blue-950/20 space-y-4 relative shadow-2xl shadow-blue-950/50">
-          <span id="cmp-badge" class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider whitespace-nowrap">Preporučeno</span>
+        <div class="glass-card p-6 rounded-2xl border-indigo-500/40 bg-indigo-950/20 space-y-4 relative shadow-2xl shadow-indigo-950/50">
+          <span id="cmp-badge" class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-indigo-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider whitespace-nowrap">Preporučeno</span>
           <h3 id="cmp-b-title" class="font-bold text-emerald-400 text-base border-b border-slate-800 pb-3">BusCommand specijalizovani SaaS</h3>
           <ul id="cmp-b-list" class="space-y-3 text-xs text-slate-200">
-            <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Jedan objavljen plan — Plan Lock čuva istinu.</span></li>
-            <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Potvrde sa telefona, jednim klikom.</span></li>
             <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Zamena vozača/busa za ≤ 3 sekunde.</span></li>
+            <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>PWA bez instalacije — radi na svakom telefonu.</span></li>
+            <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Fiksna mesečna pretplata, bez skrivenih troškova.</span></li>
             <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Append-only audit: svaka izmena zapisana.</span></li>
-            <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>DSGVO iznutra: tenant izolacija, EU hosting.</span></li>
+            <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>30 dana besplatnog pilota sa punom podrškom.</span></li>
           </ul>
         </div>
       </div>
     </section>
 
-    <!-- 5. PREUZIMANJE ZVANIČNIH DOKUMENATA & ŠABLONA -->
-    <section id="downloads" class="bg-gradient-to-br from-slate-900 via-blue-950/40 to-slate-900 border border-blue-500/40 rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl w-full max-w-full overflow-hidden">
+    <!-- 5. DOWNLOAD HUB ZA ENTERPRISE MATERIJALE -->
+    <section id="downloads" class="bg-gradient-to-br from-slate-900 via-indigo-950/30 to-slate-900 border border-indigo-500/40 rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl w-full max-w-full overflow-hidden">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
         <div>
-          <span id="downloads-kicker" class="text-xs font-bold uppercase tracking-wider text-blue-400 block">DOKUMENTI & ŠABLONI</span>
+          <span id="downloads-kicker" class="text-xs font-bold uppercase tracking-wider text-indigo-400 block">ENTERPRISE DOWNLOAD HUB</span>
           <h2 id="downloads-title" class="text-xl sm:text-2xl font-bold text-white mt-1">Zvanični dokumenti i šabloni za preuzimanje</h2>
-          <p id="downloads-sub" class="text-xs text-slate-400 mt-1">Sve što je potrebno dispečeru i IT službi prevoznika za 24h onboarding.</p>
+          <p id="downloads-sub" class="text-xs text-slate-400 mt-1">A4 šabloni, sigurnosna dokumentacija i GDPR ugovori — sve za 24h onboarding.</p>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
 
-        <!-- Card 1 -->
+        <!-- Driver Roster Template -->
         <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
           <div class="space-y-2">
-            <div class="w-9 h-9 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center border border-blue-500/30 font-bold">PDF</div>
-            <h3 id="dl-audit-title" class="font-bold text-white text-sm">1. Technical Report & Security Audit (HTML)</h3>
-            <p id="dl-audit-desc" class="text-xs text-slate-400">Official technical documentation for IT directors and auditors: architecture, isolation, GDPR.</p>
+            <div class="w-9 h-9 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 font-bold text-xs">XLS</div>
+            <h3 id="dl-roster-title" class="font-bold text-white text-sm">Driver Roster Template</h3>
+            <p id="dl-roster-desc" class="text-xs text-slate-400">EID, name, email, phone, PLZ, initial PIN, line group. For Company Admin import.</p>
+          </div>
+          <div class="flex gap-2">
+            <a href="/downloads/BusCommand_Driver_Roster_Template.xlsx" download class="flex-1 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold rounded-lg transition-colors text-center">XLSX</a>
+            <a href="/downloads/BusCommand_Driver_Roster_Template.csv" download class="flex-1 py-2 bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 border border-slate-700/40 text-xs font-bold rounded-lg transition-colors text-center">CSV</a>
+          </div>
+        </div>
+
+        <!-- Monthly Schedule Template -->
+        <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
+          <div class="space-y-2">
+            <div class="w-9 h-9 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 font-bold text-xs">XLS</div>
+            <h3 id="dl-monthly-title" class="font-bold text-white text-sm">Monthly Schedule Template</h3>
+            <p id="dl-monthly-desc" class="text-xs text-slate-400">Date, driver name, free-text shift name, notes. For dispatcher monthly plan import.</p>
+          </div>
+          <div class="flex gap-2">
+            <a href="/downloads/BusCommand_Monthly_Schedule_Template.xlsx" download class="flex-1 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-lg transition-colors text-center">XLSX</a>
+            <a href="/downloads/BusCommand_Monthly_Schedule_Template.csv" download class="flex-1 py-2 bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 border border-slate-700/40 text-xs font-bold rounded-lg transition-colors text-center">CSV</a>
+          </div>
+        </div>
+
+        <!-- Fleet Template -->
+        <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
+          <div class="space-y-2">
+            <div class="w-9 h-9 rounded-lg bg-cyan-600/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30 font-bold text-xs">XLS</div>
+            <h3 id="dl-fleet-title" class="font-bold text-white text-sm">Fleet Template</h3>
+            <p id="dl-fleet-desc" class="text-xs text-slate-400">Bus number, license plate, group ID, status. No seat count.</p>
+          </div>
+          <div class="flex gap-2">
+            <a href="/downloads/BusCommand_Fleet_Template.xlsx" download class="flex-1 py-2 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold rounded-lg transition-colors text-center">XLSX</a>
+            <a href="/downloads/BusCommand_Fleet_Template.csv" download class="flex-1 py-2 bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 border border-slate-700/40 text-xs font-bold rounded-lg transition-colors text-center">CSV</a>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+        <!-- Technical Security Audit -->
+        <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
+          <div class="space-y-2">
+            <div class="w-9 h-9 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center border border-blue-500/30 font-bold text-xs">DOC</div>
+            <h3 id="dl-audit-title" class="font-bold text-white text-sm">Technical Security Audit</h3>
+            <p id="dl-audit-desc" class="text-xs text-slate-400">Architecture, tenant isolation, D21 Zero-Credential policy, GDPR compliance report.</p>
           </div>
           <button onclick="downloadDoc('audit')" id="dl-btn-audit" class="w-full py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
             Download HTML
           </button>
         </div>
 
-        <!-- Card 2 -->
+        <!-- GDPR DPA -->
         <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
           <div class="space-y-2">
-            <div class="w-9 h-9 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 font-bold">CSV</div>
-            <h3 id="dl-monthly-title" class="font-bold text-white text-sm">2. Monthly Shift Plan Template (CSV/XLSX)</h3>
-            <p id="dl-monthly-desc" class="text-xs text-slate-400">Official template for driver shift import with All-or-Nothing validation.</p>
-          </div>
-          <button onclick="downloadDoc('monthly')" id="dl-btn-monthly" class="w-full py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
-            Download CSV
-          </button>
-        </div>
-
-        <!-- Card 3 -->
-        <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
-          <div class="space-y-2">
-            <div class="w-9 h-9 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 font-bold">CSV</div>
-            <h3 id="dl-fleet-title" class="font-bold text-white text-sm">3. Fleet Vehicles Template (CSV)</h3>
-            <p id="dl-fleet-desc" class="text-xs text-slate-400">Bus number, license plate, group, and operational status.</p>
-          </div>
-          <button onclick="downloadDoc('fleet')" id="dl-btn-fleet" class="w-full py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
-            Download Template
-          </button>
-        </div>
-
-        <!-- Card 4 -->
-        <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
-          <div class="space-y-2">
-            <div class="w-9 h-9 rounded-lg bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30 font-bold">DPA</div>
-            <h3 id="dl-dpa-title" class="font-bold text-white text-sm">4. GDPR & DPA Agreement Article 28</h3>
-            <p id="dl-dpa-desc" class="text-xs text-slate-400">Legal data processing specification and Frankfurt Cloud certification.</p>
+            <div class="w-9 h-9 rounded-lg bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30 font-bold text-xs">DPA</div>
+            <h3 id="dl-dpa-title" class="font-bold text-white text-sm">GDPR Article 28 DPA</h3>
+            <p id="dl-dpa-desc" class="text-xs text-slate-400">Data processing agreement, Frankfurt Cloud certification, EU data residency.</p>
           </div>
           <button onclick="downloadDoc('dpa')" id="dl-btn-dpa" class="w-full py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
             Download DPA
           </button>
         </div>
-
       </div>
 
-      <div class="text-xs text-slate-500 border-t border-slate-800 pt-4 flex flex-wrap gap-x-6 gap-y-2 items-center">
+      <div class="downloads-all text-xs text-slate-500 border-t border-slate-800 pt-4 flex flex-wrap gap-x-6 gap-y-2 items-center">
         <span id="downloads-all">Additional official templates:</span>
-        <a href="/downloads/BusCommand_Monthly_Shift_Plan_Template.xlsx" download class="text-blue-400 hover:text-blue-300 underline decoration-dotted">BusCommand_Monthly_Shift_Plan_Template.xlsx</a>
-        <a href="/downloads/BusCommand_Fleet_Vehicles_Template.csv" download class="text-blue-400 hover:text-blue-300 underline decoration-dotted">BusCommand_Fleet_Vehicles_Template.csv</a>
+        <a href="/downloads/BusCommand_Monthly_Shift_Plan_Template.xlsx" download class="text-indigo-400 hover:text-indigo-300 underline decoration-dotted">BusCommand_Monthly_Shift_Plan_Template.xlsx</a>
+        <a href="/downloads/BusCommand_Monthly_Shift_Plan_Template.csv" download class="text-indigo-400 hover:text-indigo-300 underline decoration-dotted">BusCommand_Monthly_Shift_Plan_Template.csv</a>
+        <a href="/downloads/BusCommand_Fleet_Vehicles_Template.csv" download class="text-indigo-400 hover:text-indigo-300 underline decoration-dotted">BusCommand_Fleet_Vehicles_Template.csv</a>
+        <a href="/downloads/BusCommand_Technical_Security_Audit.html" download class="text-indigo-400 hover:text-indigo-300 underline decoration-dotted">BusCommand_Technical_Security_Audit.html</a>
+        <a href="/downloads/BusCommand_DPA_GDPR_Article_28.html" download class="text-indigo-400 hover:text-indigo-300 underline decoration-dotted">BusCommand_DPA_GDPR_Article_28.html</a>
       </div>
     </section>
 
@@ -377,8 +415,8 @@
         </div>
 
         <!-- PRO -->
-        <div class="glass-card p-6 rounded-2xl border-blue-500 space-y-4 flex flex-col justify-between relative bg-blue-950/20 shadow-2xl">
-          <span id="badge-popular" class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">Najpopularniji</span>
+        <div class="glass-card p-6 rounded-2xl border-indigo-500 space-y-4 flex flex-col justify-between relative bg-indigo-950/20 shadow-2xl">
+          <span id="badge-popular" class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-indigo-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">Najpopularniji</span>
           <div class="space-y-3">
             <h3 class="font-bold text-white text-lg">PRO</h3>
             <div class="text-3xl font-extrabold text-white">€390 <span id="price-per-pro" class="text-xs text-slate-400 font-normal">/ mesečno / po firmi</span></div>
@@ -391,7 +429,7 @@
               <li>✓ 24/7 telefonska podrška</li>
             </ul>
           </div>
-          <a href="#pilot" id="cta-pro" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-center text-xs block shadow-lg shadow-blue-600/30">Izaberi Pro</a>
+          <a href="#pilot" id="cta-pro" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-center text-xs block shadow-lg shadow-indigo-600/30">Izaberi Pro</a>
         </div>
 
         <!-- FLEET MASTER -->
@@ -413,9 +451,9 @@
     </section>
 
     <!-- 7. VOĐENI PILOT PROGRAM OD 30 DANA -->
-    <section id="pilot" class="bg-gradient-to-br from-slate-900 via-blue-950/40 to-slate-900 border border-blue-500/40 rounded-2xl p-6 sm:p-8 space-y-8 shadow-2xl w-full max-w-full overflow-hidden">
+    <section id="pilot" class="bg-gradient-to-br from-slate-900 via-indigo-950/30 to-slate-900 border border-indigo-500/40 rounded-2xl p-6 sm:p-8 space-y-8 shadow-2xl w-full max-w-full overflow-hidden">
       <div class="text-center max-w-2xl mx-auto space-y-2">
-        <span id="pilot-kicker" class="text-xs font-bold uppercase tracking-wider text-blue-400 block">Zero-Risk Pilot</span>
+        <span id="pilot-kicker" class="text-xs font-bold uppercase tracking-wider text-indigo-400 block">Zero-Risk Pilot</span>
         <h2 id="pilot-title" class="text-2xl sm:text-3xl font-bold text-white">Vođeni pilot program od 30 dana</h2>
         <p id="pilot-desc" class="text-slate-400 text-sm">Prijavite firmu, uvezemo katalog i obučimo dispečere — bez rizika, bez kartice, uz potpunu kontrolu.</p>
       </div>
@@ -434,7 +472,7 @@
             <label for="pilot-buses" id="pilot-label-buses" class="text-xs font-bold text-slate-300 block">Broj autobusa</label>
             <input type="number" id="pilot-buses" min="1" required class="w-full px-3 py-2.5 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-white focus:border-blue-500 focus:outline-none" placeholder="25">
           </div>
-          <button type="submit" id="pilot-submit" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-600/30 transition-all">Prijavi firmu na pilot</button>
+          <button type="submit" id="pilot-submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-indigo-600/30 transition-all">Prijavi firmu na pilot</button>
           <p id="pilot-note" class="text-[11px] text-slate-500 text-center">Odgovaramo u roku od 24h. Podaci se koriste isključivo za kontakt.</p>
         </form>
 
@@ -461,7 +499,7 @@
     const translations = {
       sr: {
         heroKicker: "Specijalizovani dispo komandni centar za autobuske operatere",
-        heroTitle: "Operativni sistem napravljen posebno za <span class='text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-400'>autobuske firme</span>",
+        heroTitle: "Operativni sistem napravljen posebno za <span class='text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-cyan-300 to-emerald-400'>autobuske firme</span>",
         heroDesc: "Od mesečnog plana do zamene vozača ili autobusa u roku od 3 sekunde. Sve na jednom ekranu — bez rasutih Excel tabela, telefonskih prekida u vožnji i nagađanja ko vozi.",
         m1num: "≤ 3s", m1lbl: "Vreme zamene vozača/busa uz Plan-Lock",
         m2num: "100%", m2lbl: "Pravna pokrivenost D21 & EU 561/2006",
@@ -481,17 +519,17 @@
         archProbT: "Dosadašnji problem:",
         archSolT: "BusCommand rešenje:",
         archC1Kicker: "Za disponente i šefove saobraćaja",
-        archC1Title: "Dispo operativni kokpit",
-        archC1Prob: "Planovi u Excelu i Viber grupama — niko ujutru ne zna pouzdano ko vozi.",
-        archC1Sol: "3-dnevni lookahead radar, 4-stepeni protokol za zastoje i bolovanja, Plan-Lock.",
+        archC1Title: "Dispo Operativni Cockpit",
+        archC1Prob: "Haos sa tabelama i pozivima vozača u vožnji — niko ne zna ko vozi i gde je zamena.",
+        archC1Sol: "3-dnevni lookahead radar, zamena vozača/busa za 3s, Plan-Lock zaštita objavljenog plana.",
         archC2Kicker: "Za linijske vozače",
-        archC2Title: "Driver PWA (pristupačna mobilna aplikacija)",
-        archC2Prob: "Vozač na liniji nema pouzdan kanal — zastoj, kvar ili udes ide preko poziva u vožnji.",
-        archC2Sol: "2 brza operativna tastera (Zastoj +15m, Kvar) + 2s anti-panic SOS taster i digitalni potpis smene.",
+        archC2Title: "Driver PWA",
+        archC2Prob: "Papirni rasporedi i Viber grupe — zastoj, kvar ili udes ide preko poziva u vožnji.",
+        archC2Sol: "2s anti-panic SOS, 4 operativna tastera, 1-klik potvrda preuzimanja smene sa telefona.",
         archC3Kicker: "Za vlasnike, direktore i Betriebsleiter-e",
-        archC3Title: "Tenant & Credential Zid (Bezbednost & Legal)",
-        archC3Prob: "Lični podaci i pristupi u deljenim fajlovima — GDPR rizik bez kontrole ko je šta menjao.",
-        archC3Sol: "Tenant izolacija, GDPR čl. 6 & 88, Frankfurt europe-west3 hosting i append-only log.",
+        archC3Title: "Tenant & Credential Zid",
+        archC3Prob: "Curenje podataka i GDPR kazne — lični podaci vozača u deljenim fajlovima bez kontrole.",
+        archC3Sol: "D21 Zero-Credential policy, EU data rezidencija (Frankfurt), 24-mesečni append-only audit log.",
         matrixTitle: "Excel vs. Generički ERP vs. BusCommand",
         matrixDesc: "Direktno poređenje tri načina vođenja autobuske firme.",
         cmpXTitle: "Excel tabele & Viber grupe",
@@ -500,22 +538,22 @@
         cmpGList: "<li class='flex items-start gap-2'><span class='text-yellow-400 font-bold'>⚠</span><span>Napravljen za logistiku, ne za autoprevoz.</span></li><li class='flex items-start gap-2'><span class='text-yellow-400 font-bold'>⚠</span><span>Skupi moduli koje niko ne koristi.</span></li><li class='flex items-start gap-2'><span class='text-yellow-400 font-bold'>⚠</span><span>GPS pokazuje kamion, ne smenu.</span></li><li class='flex items-start gap-2'><span class='text-yellow-400 font-bold'>⚠</span><span>Meseci implementacije po satnici konsultanata.</span></li><li class='flex items-start gap-2'><span class='text-yellow-400 font-bold'>⚠</span><span>Podrška koja ne zna šta je dienst po liniji.</span></li>",
         cmpBTitle: "BusCommand specijalizovani SaaS",
         cmpBadge: "Preporučeno",
-        cmpBList: "<li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Jedan objavljen plan — Plan Lock čuva istinu.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Potvrde sa telefona, jednim klikom.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Zamena vozača/busa za ≤ 3 sekunde.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Append-only audit: svaka izmena zapisana.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>DSGVO iznutra: tenant izolacija, EU hosting.</span></li>",
-        dlKicker: "DOKUMENTI & ŠABLONI",
+        cmpBList: "<li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Zamena vozača/busa za ≤ 3 sekunde.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>PWA bez instalacije — radi na svakom telefonu.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Fiksna mesečna pretplata, bez skrivenih troškova.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Append-only audit: svaka izmena zapisana.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>30 dana besplatnog pilota sa punom podrškom.</span></li>",
+        dlKicker: "ENTERPRISE DOWNLOAD HUB",
         dlTitle: "Zvanični dokumenti i šabloni za preuzimanje",
-        dlSub: "Sve što je potrebno dispečeru i IT službi prevoznika za 24h onboarding.",
-        dlAudit: "1. Technical Report & Security Audit (HTML)",
-        dlAuditHint: "Official technical documentation for IT directors and auditors: architecture, isolation, GDPR.",
-        dlMonthly: "2. Monthly Shift Plan Template (CSV/XLSX)",
-        dlMonthlyHint: "Official template for driver shift import with All-or-Nothing validation.",
-        dlFleet: "3. Fleet Vehicles Template (CSV)",
-        dlFleetHint: "Bus number, license plate, group, and operational status.",
-        dlDpa: "4. GDPR & DPA Agreement Article 28",
-        dlDpaHint: "Legal data processing specification and Frankfurt Cloud certification.",
+        dlSub: "A4 šabloni, sigurnosna dokumentacija i GDPR ugovori — sve za 24h onboarding.",
+        dlRoster: "Driver Roster Template",
+        dlRosterHint: "EID, ime, email, telefon, PLZ, inicijalni PIN, grupa. Za Company Admin uvoz.",
+        dlAudit: "Technical Security Audit",
+        dlAuditHint: "Arhitektura, tenant izolacija, D21 Zero-Credential, GDPR izveštaj.",
+        dlMonthly: "Monthly Schedule Template",
+        dlMonthlyHint: "Datum, ime vozača, slobodan tekst smene, napomene. Za dispečerski mesečni plan.",
+        dlFleet: "Fleet Template",
+        dlFleetHint: "Broj autobusa, registracija, grupa, status. Bez broja sedišta.",
+        dlDpa: "GDPR Article 28 DPA",
+        dlDpaHint: "Ugovor o obradi podataka i Frankfurt Cloud sertifikacija.",
         dlAll: "Dodatni zvanični šabloni:",
         dlBtnPdf: "Download HTML",
-        dlBtnCsv: "Download CSV",
-        dlBtnTpl: "Download Template",
         dlBtnDpa: "Download DPA",
         pricingTitle: "Cenovnik",
         pricingDesc: "Bez skrivenih troškova. Prilagođeno veličini vašeg voznog parka.",
@@ -548,7 +586,7 @@
       },
       de: {
         heroKicker: "Spezialisiertes Dispo-Kommandozentrum für Busbetriebe",
-        heroTitle: "Das Betriebssystem speziell für <span class='text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-400'>Busunternehmen</span>",
+        heroTitle: "Das Betriebssystem speziell für <span class='text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-cyan-300 to-emerald-400'>Busunternehmen</span>",
         heroDesc: "Vom Monatsplan bis zum Fahrer- oder Buswechsel in 3 Sekunden. Alles auf einem Bildschirm — ohne verstreute Excel-Tabellen, Anrufe während der Fahrt und Rätselraten, wer heute fährt.",
         m1num: "≤ 3s", m1lbl: "Zeit für Fahrer-/Buswechsel mit Plan-Lock",
         m2num: "100%", m2lbl: "Rechtliche Abdeckung D21 & EU 561/2006",
@@ -568,17 +606,17 @@
         archProbT: "Bisheriges Problem:",
         archSolT: "BusCommand Lösung:",
         archC1Kicker: "Für Disponenten & Betriebsleiter",
-        archC1Title: "Live Dispo-Cockpit",
-        archC1Prob: "Pläne verstreut in Excel und Viber-Gruppen — niemand weiß morgen früh verlässlich, wer fährt.",
-        archC1Sol: "3-Tage-Lookahead-Radar, 4-stufiges Störungs- und Krankmeldungsprotokoll, Plan-Lock.",
+        archC1Title: "Dispo Operatives Cockpit",
+        archC1Prob: "Chaos mit Tabellen und Anrufen an Fahrer während der Fahrt — niemand weiß, wer fährt und wo der Ersatz ist.",
+        archC1Sol: "3-Tage-Lookahead-Radar, Fahrer-/Buswechsel in 3s, Plan-Lock schützt veröffentlichten Plan.",
         archC2Kicker: "Für Linienfahrer",
-        archC2Title: "Fahrer-PWA (Mobile Web-App)",
-        archC2Prob: "Der Fahrer auf der Linie hat keinen zuverlässigen Kanal — Stau, Panne oder Unfall läuft über Anrufe während der Fahrt.",
-        archC2Sol: "2 schnelle Betriebstasten (Stau +15m, Panne) + 2s Anti-Panik-SOS-Taste und digitale Schichtsignatur.",
+        archC2Title: "Driver PWA",
+        archC2Prob: "Papierpläne und Viber-Gruppen — Stau, Panne oder Unfall läuft über Anrufe während der Fahrt.",
+        archC2Sol: "2s Anti-Panik-SOS, 4 Betriebstasten, 1-Klick-Schichtbestätigung vom Handy.",
         archC3Kicker: "Für Geschäftsführer & Fuhrparkleiter",
-        archC3Title: "Mandanten- & Sicherheitsgrenze",
-        archC3Prob: "Personendaten und Zugänge in geteilten Dateien — DSGVO-Risiko ohne Kontrolle, wer was geändert hat.",
-        archC3Sol: "Mandanten-Isolierung, DSGVO Art. 6 & 88, Frankfurt europe-west3 Hosting und Append-only-Log.",
+        archC3Title: "Mandanten- & Credential-Grenze",
+        archC3Prob: "Datenlecks und DSGVO-Strafen — Fahrerdaten in geteilten Dateien ohne Kontrolle.",
+        archC3Sol: "D21 Zero-Credential Policy, EU-Datenresidenz (Frankfurt), 24-monatiger Append-only-Audit-Log.",
         matrixTitle: "Excel vs. generisches ERP vs. BusCommand",
         matrixDesc: "Direkter Vergleich dreier Wege, einen Busbetrieb zu führen.",
         cmpXTitle: "Excel-Tabellen & Viber-Gruppen",
@@ -587,22 +625,22 @@
         cmpGList: "<li class='flex items-start gap-2'><span class='text-yellow-400 font-bold'>⚠</span><span>Gebaut für Logistik, nicht für den Busverkehr.</span></li><li class='flex items-start gap-2'><span class='text-yellow-400 font-bold'>⚠</span><span>Teure Module, die niemand nutzt.</span></li><li class='flex items-start gap-2'><span class='text-yellow-400 font-bold'>⚠</span><span>GPS zeigt den LKW, nicht die Schicht.</span></li><li class='flex items-start gap-2'><span class='text-yellow-400 font-bold'>⚠</span><span>Monate langer Implementierung zum Beraterstundensatz.</span></li><li class='flex items-start gap-2'><span class='text-yellow-400 font-bold'>⚠</span><span>Support, der nicht weiß, was ein Dienst pro Linie ist.</span></li>",
         cmpBTitle: "BusCommand spezialisierte SaaS",
         cmpBadge: "Empfohlen",
-        cmpBList: "<li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Ein veröffentlichter Plan — Plan Lock schützt die Wahrheit.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Bestätigungen vom Handy mit einem Klick.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Fahrer-/Buswechsel in ≤ 3 Sekunden.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Append-only-Audit: jede Änderung dokumentiert.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>DSGVO von innen: Tenant-Isolierung, EU-Hosting.</span></li>",
-        dlKicker: "DOKUMENTE & VORLAGEN",
+        cmpBList: "<li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Fahrer-/Buswechsel in ≤ 3 Sekunden.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>PWA ohne Installation — funktioniert auf jedem Handy.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Fixe Monatsgebühr, keine versteckten Kosten.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Append-only-Audit: jede Änderung dokumentiert.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>30 Tage kostenloser Pilot mit vollem Support.</span></li>",
+        dlKicker: "ENTERPRISE DOWNLOAD HUB",
         dlTitle: "Offizielle Dokumente und Vorlagen zum Herunterladen",
-        dlSub: "Alles, was Disponent und IT-Abteilung für 24h-Onboarding brauchen.",
-        dlAudit: "1. Technical Report & Security Audit (HTML)",
-        dlAuditHint: "Offizielles Gutachten für IT-Leiter und Prüfer: Architektur, Isolierung, DSGVO.",
-        dlMonthly: "2. Monthly Shift Plan Template (CSV/XLSX)",
-        dlMonthlyHint: "Offizielle Vorlage für den Schichtimport mit All-or-Nothing-Validierung.",
-        dlFleet: "3. Fleet Vehicles Template (CSV)",
-        dlFleetHint: "Busnummer, Kennzeichen, Gruppe und Betriebsstatus.",
-        dlDpa: "4. GDPR & DPA Agreement Article 28",
-        dlDpaHint: "Rechtliche Spezifikation der Datenverarbeitung und Frankfurt-Cloud-Zertifizierung.",
+        dlSub: "A4-Vorlagen, Sicherheitsdokumentation und DSGVO-Verträge — alles für 24h-Onboarding.",
+        dlRoster: "Fahrer-Stammdaten-Vorlage",
+        dlRosterHint: "EID, Name, E-Mail, Telefon, PLZ, Initial-PIN, Gruppe. Für Company Admin Import.",
+        dlAudit: "Technical Security Audit",
+        dlAuditHint: "Architektur, Mandanten-Isolierung, D21 Zero-Credential, DSGVO-Bericht.",
+        dlMonthly: "Monatsplan-Vorlage",
+        dlMonthlyHint: "Datum, Fahrername, freier Schichttext, Notizen. Für Disponenten-Monatsplan.",
+        dlFleet: "Fuhrpark-Vorlage",
+        dlFleetHint: "Busnummer, Kennzeichen, Gruppen-ID, Status. Ohne Sitzplatzanzahl.",
+        dlDpa: "DSGVO Art. 28 DPA",
+        dlDpaHint: "Auftragsverarbeitungsvertrag und Frankfurt-Cloud-Zertifizierung.",
         dlAll: "Weitere offizielle Vorlagen:",
         dlBtnPdf: "HTML herunterladen",
-        dlBtnCsv: "CSV herunterladen",
-        dlBtnTpl: "Vorlage herunterladen",
         dlBtnDpa: "DPA herunterladen",
         pricingTitle: "Preise",
         pricingDesc: "Keine versteckten Kosten. Angepasst an die Größe Ihres Fuhrparks.",
@@ -635,7 +673,7 @@
       },
       en: {
         heroKicker: "Specialized dispatch command center for bus operators",
-        heroTitle: "The operating system built specifically for <span class='text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-400'>bus companies</span>",
+        heroTitle: "The operating system built specifically for <span class='text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-cyan-300 to-emerald-400'>bus companies</span>",
         heroDesc: "From the monthly plan to a driver or bus swap within 3 seconds. All on one screen — no scattered Excel sheets, no phone calls mid-drive, no guessing who is driving.",
         m1num: "≤ 3s", m1lbl: "Driver/bus swap time with Plan-Lock",
         m2num: "100%", m2lbl: "Legal coverage D21 & EU 561/2006",
@@ -655,17 +693,17 @@
         archProbT: "Traditional Problem:",
         archSolT: "BusCommand Solution:",
         archC1Kicker: "For Dispatchers & Traffic Managers",
-        archC1Title: "Live Dispatcher Cockpit",
-        archC1Prob: "Plans scattered across Excel and Viber groups — nobody reliably knows who drives tomorrow morning.",
-        archC1Sol: "3-day lookahead radar, 4-stage delay & sick-leave protocol, Plan-Lock.",
+        archC1Title: "Dispo Operational Cockpit",
+        archC1Prob: "Chaos with spreadsheets and phone calls to drivers mid-route — nobody knows who drives or where the replacement is.",
+        archC1Sol: "3-day lookahead radar, driver/bus swap in 3s, Plan-Lock protects published plans.",
         archC2Kicker: "For Route Drivers",
-        archC2Title: "Driver PWA (Mobile Web App)",
-        archC2Prob: "The driver on the line has no reliable channel — delays, breakdowns and accidents go through phone calls mid-drive.",
-        archC2Sol: "2 fast operational buttons (Delay +15m, Breakdown) + 2s anti-panic SOS button and a digital shift signature.",
+        archC2Title: "Driver PWA",
+        archC2Prob: "Paper schedules and Viber groups — delays, breakdowns and accidents go through phone calls mid-drive.",
+        archC2Sol: "2s anti-panic SOS, 4 operational buttons, 1-click shift acknowledgment from the phone.",
         archC3Kicker: "For Fleet Owners, Directors & Operations Heads",
-        archC3Title: "Tenant & Credential Boundary (Security & Legal)",
-        archC3Prob: "Personal data and credentials living in shared files — a GDPR risk with no control over who changed what.",
-        archC3Sol: "Tenant isolation, GDPR Art. 6 & 88, Frankfurt europe-west3 hosting and an append-only log.",
+        archC3Title: "Tenant & Credential Boundary",
+        archC3Prob: "Data leaks and GDPR fines — driver personal data in shared files without control.",
+        archC3Sol: "D21 Zero-Credential policy, EU data residency (Frankfurt), 24-month append-only audit log.",
         matrixTitle: "Excel vs. generic ERP vs. BusCommand",
         matrixDesc: "A direct comparison of three ways to run a bus company.",
         cmpXTitle: "Excel sheets & Viber groups",
@@ -674,22 +712,22 @@
         cmpGList: "<li class='flex items-start gap-2'><span class='text-yellow-400 font-bold'>⚠</span><span>Built for logistics, not for bus transit.</span></li><li class='flex items-start gap-2'><span class='text-yellow-400 font-bold'>⚠</span><span>Expensive modules nobody uses.</span></li><li class='flex items-start gap-2'><span class='text-yellow-400 font-bold'>⚠</span><span>GPS shows the truck, not the shift.</span></li><li class='flex items-start gap-2'><span class='text-yellow-400 font-bold'>⚠</span><span>Months of implementation at consultant rates.</span></li><li class='flex items-start gap-2'><span class='text-yellow-400 font-bold'>⚠</span><span>Support that doesn't know what a duty per line is.</span></li>",
         cmpBTitle: "BusCommand specialized SaaS",
         cmpBadge: "Recommended",
-        cmpBList: "<li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>One published plan — Plan Lock guards the truth.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Confirmations from the phone, one click.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Driver/bus swap in ≤ 3 seconds.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Append-only audit: every change recorded.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>GDPR inside out: tenant isolation, EU hosting.</span></li>",
-        dlKicker: "DOCUMENTS & TEMPLATES",
+        cmpBList: "<li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Driver/bus swap in ≤ 3 seconds.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>PWA without installation — works on any phone.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Fixed monthly subscription, no hidden costs.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>Append-only audit: every change recorded.</span></li><li class='flex items-start gap-2'><span class='text-emerald-400 font-bold'>✓</span><span>30-day free pilot with full support.</span></li>",
+        dlKicker: "ENTERPRISE DOWNLOAD HUB",
         dlTitle: "Official documents and templates for download",
-        dlSub: "Everything a dispatcher and carrier IT department needs for 24h onboarding.",
-        dlAudit: "1. Technical Report & Security Audit (HTML)",
-        dlAuditHint: "Official report for IT directors and auditors: architecture, isolation, GDPR.",
-        dlMonthly: "2. Monthly Shift Plan Template (CSV/XLSX)",
-        dlMonthlyHint: "Official driver shift import template with All-or-Nothing validation.",
-        dlFleet: "3. Fleet Vehicles Template (CSV)",
-        dlFleetHint: "Bus number, license plate, group and operational status.",
-        dlDpa: "4. GDPR & DPA Agreement Article 28",
-        dlDpaHint: "Legal data-processing specification and Frankfurt cloud certification.",
+        dlSub: "A4 templates, security documentation and GDPR agreements — everything for 24h onboarding.",
+        dlRoster: "Driver Roster Template",
+        dlRosterHint: "EID, name, email, phone, PLZ, initial PIN, line group. For Company Admin import.",
+        dlAudit: "Technical Security Audit",
+        dlAuditHint: "Architecture, tenant isolation, D21 Zero-Credential policy, GDPR compliance report.",
+        dlMonthly: "Monthly Schedule Template",
+        dlMonthlyHint: "Date, driver name, free-text shift name, notes. For dispatcher monthly plan import.",
+        dlFleet: "Fleet Template",
+        dlFleetHint: "Bus number, license plate, group ID, status. No seat count.",
+        dlDpa: "GDPR Article 28 DPA",
+        dlDpaHint: "Data processing agreement, Frankfurt Cloud certification, EU data residency.",
         dlAll: "Additional official templates:",
         dlBtnPdf: "Download HTML",
-        dlBtnCsv: "Download CSV",
-        dlBtnTpl: "Download Template",
         dlBtnDpa: "Download DPA",
         pricingTitle: "Pricing",
         pricingDesc: "No hidden costs. Sized to your fleet.",
@@ -773,6 +811,8 @@
       document.getElementById('downloads-kicker').textContent = pack.dlKicker;
       document.getElementById('downloads-title').textContent = pack.dlTitle;
       document.getElementById('downloads-sub').textContent = pack.dlSub;
+      document.getElementById('dl-roster-title').textContent = pack.dlRoster || 'Driver Roster Template';
+      document.getElementById('dl-roster-desc').textContent = pack.dlRosterHint || '';
       document.getElementById('dl-audit-title').textContent = pack.dlAudit;
       document.getElementById('dl-audit-desc').textContent = pack.dlAuditHint;
       document.getElementById('dl-monthly-title').textContent = pack.dlMonthly;
@@ -782,8 +822,6 @@
       document.getElementById('dl-dpa-title').textContent = pack.dlDpa;
       document.getElementById('dl-dpa-desc').textContent = pack.dlDpaHint;
       document.getElementById('dl-btn-audit').textContent = pack.dlBtnPdf;
-      document.getElementById('dl-btn-monthly').textContent = pack.dlBtnCsv;
-      document.getElementById('dl-btn-fleet').textContent = pack.dlBtnTpl;
       document.getElementById('dl-btn-dpa').textContent = pack.dlBtnDpa;
       document.getElementById('downloads-all').textContent = pack.dlAll;
       document.getElementById('pricing-title').textContent = pack.pricingTitle;
@@ -834,8 +872,8 @@
     function downloadDoc(type) {
       const downloadUrls = {
         'audit': '/downloads/BusCommand_Technical_Security_Audit.html',
-        'monthly': '/downloads/BusCommand_Monthly_Shift_Plan_Template.csv',
-        'fleet': '/downloads/BusCommand_Fleet_Vehicles_Template.csv',
+        'monthly': '/downloads/BusCommand_Monthly_Schedule_Template.csv',
+        'fleet': '/downloads/BusCommand_Fleet_Template.csv',
         'dpa': '/downloads/BusCommand_DPA_GDPR_Article_28.html'
       };
       
