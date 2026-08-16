@@ -378,7 +378,9 @@ button {
 
 .btn-primary {
     background: var(--primary-color);
-    color: var(--text-main);
+    /* D27: on-accent, not body text. In light theme --text-main is #0F172A and the
+       primary CTA fell to 2.7:1 against the blue fill. */
+    color: var(--text-on-accent);
     border: none;
     padding: 14px 20px;
     font-size: 16px;
@@ -1985,7 +1987,7 @@ body {
 
 /* ── 7. KARTICE ─────────────────────────────────────────────────── */
 .card {
-    background: #111127;
+    background: var(--card-bg);
     border: 1px solid var(--panel-border);
     border-radius: var(--radius-md);
     backdrop-filter: none;
@@ -2042,7 +2044,7 @@ input:focus, select:focus, textarea:focus {
 
 /* ── 9. PANELI (DISPATCHER SETTINGS, ETC.) ─────────────────────── */
 .panel {
-    background: #111127;
+    background: var(--panel-bg-solid);
     border: 1px solid var(--panel-border);
     border-radius: var(--radius-md);
 }
@@ -2056,7 +2058,7 @@ input:focus, select:focus, textarea:focus {
 
 /* ── 11. TOAST ──────────────────────────────────────────────────── */
 .toast {
-    background: #1a1a30;
+    background: var(--panel-bg-solid);
     border: 1px solid var(--panel-border);
     border-radius: var(--radius-md);
     box-shadow: 0 8px 32px rgba(0,0,0,0.5);
@@ -2117,7 +2119,7 @@ input:focus, select:focus, textarea:focus {
 }
 #global-confirm-modal .modal-content,
 #global-confirm-modal > div > div {
-    background: #111127 !important;
+    background: var(--panel-bg-solid) !important;
     border: 1px solid var(--panel-border) !important;
     border-radius: var(--radius-lg) !important;
 }
@@ -2268,7 +2270,7 @@ input:focus, select:focus, textarea:focus {
         margin-bottom: 16px;
     }
     .v9-action-btn {
-        background: #111127;
+        background: var(--card-bg);
         border: 1px solid var(--panel-border);
         border-radius: 12px;
         padding: 16px 8px;
@@ -2285,7 +2287,7 @@ input:focus, select:focus, textarea:focus {
         transition: background 0.15s, border-color 0.15s;
     }
     .v9-action-btn:hover, .v9-action-btn:active {
-        background: #1a1a35;
+        background: var(--panel-bg);
         border-color: var(--panel-border-hover);
     }
     .v9-action-btn .v9-action-icon { font-size: 24px; }
@@ -2302,7 +2304,7 @@ input:focus, select:focus, textarea:focus {
 @media (min-width: 641px) {
     /* Stat kartice dispečera — čišći izgled */
     .dispatcher-stat-card {
-        background: #111127;
+        background: var(--card-bg);
         border: 1px solid var(--panel-border);
         border-radius: var(--radius-md);
         padding: 14px 16px;
@@ -3289,7 +3291,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .company-driver-add-panel {
-    background: linear-gradient(135deg, #0f1419, #1a2332);
+    background: var(--panel-bg-solid);
     border: 1px solid rgba(61, 126, 245, 0.45);
     border-radius: 16px;
     padding: 24px 28px;
@@ -3647,7 +3649,7 @@ input:focus, select:focus, textarea:focus {
 .company-pin-toggle:hover { color: var(--text-main); border-color: rgba(148,163,184,0.4); }
 .company-pin-toggle i { width: 16px; height: 16px; }
 .company-driver-edit-panel {
-    background: linear-gradient(135deg, #0f1419, #1a2332);
+    background: var(--panel-bg-solid);
     border: 1px solid rgba(61, 126, 245, 0.45);
     border-radius: 16px;
     padding: 24px;
@@ -4045,7 +4047,7 @@ button.company-overview-stat:focus-visible {
 .company-team-form-hint { margin:0 0 15px; color:var(--text-muted); font-size:.73rem; line-height:1.5; }
 .company-team-form-grid { display:grid; gap:11px; }
 .company-team-form-grid > label { display:grid; gap:5px; color:var(--text-secondary); font-size:.69rem; font-weight:650; }
-.company-team-form-grid input { width:100%; min-height:40px; padding:9px 11px; border:1px solid var(--panel-border); border-radius:8px; background:rgba(5,16,32,.42); color:var(--text-primary); font:inherit; font-weight:500; }
+.company-team-form-grid input { width:100%; min-height:40px; padding:9px 11px; border:1px solid var(--panel-border); border-radius:8px; background:var(--input-bg); color:var(--text-primary); font:inherit; font-weight:500; }
 .company-team-form-grid input:focus, .company-team-filters input:focus, .company-team-filters select:focus { outline:none; border-color:var(--primary-color); box-shadow:0 0 0 3px rgba(59,130,246,.12); }
 .company-team-form-grid input[aria-invalid="true"], .company-team-group-fieldset[aria-invalid="true"], #ca-disp-groups-picker[aria-invalid="true"] { border-color:var(--danger-color); box-shadow:0 0 0 3px rgba(239,68,68,.08); }
 .company-team-form-grid small { color:var(--text-muted); font-size:.6rem; line-height:1.4; font-weight:450; }
@@ -4070,7 +4072,7 @@ button.company-overview-stat:focus-visible {
 .company-team-catalog-heading { align-items:flex-end; margin-bottom:13px; }
 .company-team-filters { display:flex; align-items:center; gap:8px; }
 .company-team-filters .company-search-field { min-width:190px; }
-.company-team-filters input, .company-team-filters select { min-height:36px; border:1px solid var(--panel-border); border-radius:8px; background:rgba(5,16,32,.45); color:var(--text-primary); font-size:.7rem; }
+.company-team-filters input, .company-team-filters select { min-height:36px; border:1px solid var(--panel-border); border-radius:8px; background:var(--input-bg); color:var(--text-primary); font-size:.7rem; }
 .company-team-filters input { width:100%; padding:7px 9px 7px 31px; }
 .company-team-filters select { padding:7px 28px 7px 9px; }
 .company-team-list { display:grid; gap:9px; }
@@ -4166,7 +4168,7 @@ body.light-theme .company-team-avatar { color:#1d4ed8; }
 .company-settings-hint { margin:0 0 14px; color:var(--text-muted); font-size:.69rem; line-height:1.5; }
 .company-settings-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; }
 .company-settings-form-grid label { display:grid; gap:5px; color:var(--text-secondary); font-size:.67rem; font-weight:700; }
-.company-settings-form-grid input, .company-settings-form-grid select { width:100%; min-height:40px; padding:8px 10px; border:1px solid var(--panel-border); border-radius:8px; background:rgba(5,16,32,.4); color:var(--text-primary); font:inherit; font-weight:500; }
+.company-settings-form-grid input, .company-settings-form-grid select { width:100%; min-height:40px; padding:8px 10px; border:1px solid var(--panel-border); border-radius:8px; background:var(--input-bg); color:var(--text-primary); font:inherit; font-weight:500; }
 .company-settings-form-grid input[readonly] { cursor:not-allowed; color:var(--text-muted); }
 .company-settings-form-grid input:focus, .company-settings-form-grid select:focus { outline:none; border-color:var(--primary-color); box-shadow:0 0 0 3px rgba(var(--primary-rgb),.12); }
 .company-settings-form-grid input[aria-invalid="true"], .company-settings-form-grid select[aria-invalid="true"] { border-color:var(--danger-color); box-shadow:0 0 0 3px rgba(239,68,68,.08); }

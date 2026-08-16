@@ -15,7 +15,10 @@ test.describe("CA operational read-only (chapter 2)", () => {
     await page.goto("/staff.html");
     await loginDispatcher(page, "ca@qa.local", "Qa-test-ok-9");
 
-    await page.locator('[data-action="openCompanyOpsOverview"]').click();
+    // D27: the duplicated "Operational view" nav tab was removed from the CA menu.
+    // The read-only guard it exercised is unchanged, so drive the same entry point
+    // directly — this test exists to prove a CA cannot mutate the fleet.
+    await page.evaluate(() => window.openCompanyOpsOverview());
     await expect(page.locator("#dispatcher-group-hub")).not.toHaveClass(/hidden/);
     await expect(page.locator("#ops-readonly-banner")).toBeVisible();
 

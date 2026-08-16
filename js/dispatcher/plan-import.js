@@ -112,12 +112,20 @@ function clearServerImport() {
     _serverImport = null;
 }
 
-function pushPendingFromParsed({ file, fileData, driverName, month, parsedShifts, format, drivers }) {
+/**
+ * @param {object} args
+ * @param {boolean} [args.aggregate] True when this row came from a multi-driver file
+ *   (long-format CSV / Excel `byDriver`). Such a file carries the driver name in a
+ *   COLUMN, so the file name says nothing about who the row belongs to. Guessing from
+ *   the file name — or from "the group has only one driver" — would silently write one
+ *   driver's month onto somebody else. Both fallbacks stay off for aggregates.
+ */
+function pushPendingFromParsed({ file, fileData, driverName, month, parsedShifts, format, drivers, aggregate = false }) {
     const dayCount = Object.keys(parsedShifts || {}).length;
     const named = matchDriversByName(driverName, drivers);
     let driver = named.matches.length === 1 ? named.matches[0] : null;
     let ambiguous = named.ambiguous === true;
-    if (!driver && !ambiguous) {
+    if (!driver && !ambiguous && !aggregate) {
         const fromFile = detectDriverFromFilename(file.name, drivers);
         if (fromFile) {
             const fileMatch = matchDriversByName(fromFile.name, drivers);
@@ -125,14 +133,24 @@ function pushPendingFromParsed({ file, fileData, driverName, month, parsedShifts
             driver = fileMatch.matches.length === 1 ? fileMatch.matches[0] : null;
         }
     }
-    if (!driver && !ambiguous && drivers.length === 1) driver = drivers[0];
+    if (!driver && !ambiguous && !aggregate && drivers.length === 1) driver = drivers[0];
 
     let resolvedMonth = month || detectMonthFromFilename(file.name);
     if (!resolvedMonth) {
         const now = new Date();
         resolvedMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     }
-    if (!driver && !ambiguous) {
+    if (!driver && !ambiguous && aggregate) {
+        // Keep the row: the preview offers a driver picker, and commit stays fail-closed
+        // (buildServerRowsForMonth raises DRIVER_NOT_FOUND while driverId is empty).
+        // Name the DRIVER from the CSV column — naming the file here is what made the
+        // old message read as if the parser had used the file name as the driver.
+        showToast(
+            t("plan_import_driver_unmatched", { driver: String(driverName || "").trim() }),
+            "error",
+            7000
+        );
+    } else if (!driver && !ambiguous) {
         showToast(t("plan_import_driver_unknown", { file: file.name }), "error");
         return 0;
     }
@@ -769,7 +787,9 @@ async function parseBulkPlanFile(file, drivers) {
             const structured = await parseStructuredExcel(file, lineId);
             if (structured?.byDriver) {
                 let added = 0;
-                for (const [driverName, payload] of Object.entries(structured.byDriver)) {
+                const names = Object.keys(structured.byDriver);
+                for (const driverName of names) {
+                    const payload = structured.byDriver[driverName];
                     added += pushPendingFromParsed({
                         file,
                         fileData,
@@ -777,7 +797,8 @@ async function parseBulkPlanFile(file, drivers) {
                         month: structured.month,
                         parsedShifts: payload.parsedShifts || {},
                         format: structured.format || "monthly-excel",
-                        drivers
+                        drivers,
+                        aggregate: names.length > 1
                     });
                 }
                 if (added > 0) return added;
@@ -788,7 +809,16 @@ async function parseBulkPlanFile(file, drivers) {
     }
 
     if (name.endsWith(".csv") && isMonthlyPlanCsv(text)) {
-        const structured = parseMonthlyPlanCsv(text, lineId);
+        // Long-format CSV: one file, every driver of the month, driver name in a column.
+        let structured;
+        try {
+            structured = parseMonthlyPlanCsv(text, lineId);
+        } catch (err) {
+            // The parser reports the offending row ("Red 14: ..."). Losing that to a
+            // generic file-level error leaves the dispatcher with nothing to act on.
+            showToast(t("plan_import_csv_row_error", { reason: err?.message || "" }), "error", 9000);
+            return 0;
+        }
         let added = 0;
         for (const [driverName, payload] of Object.entries(structured.byDriver || {})) {
             added += pushPendingFromParsed({
@@ -798,7 +828,8 @@ async function parseBulkPlanFile(file, drivers) {
                 month: structured.month,
                 parsedShifts: payload.parsedShifts || {},
                 format: structured.format || "monthly-plan-csv",
-                drivers
+                drivers,
+                aggregate: true
             });
         }
         if (added > 0) return added;

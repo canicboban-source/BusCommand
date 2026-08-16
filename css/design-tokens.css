@@ -224,5 +224,27 @@ body.light-theme {
     --urgent-action-border:     #F59E0B;
     --urgent-action-border-hover: #FBBF24;
     --urgent-action-rgb:        217, 119, 6;
+
+    /* D27: the semantic status family was missing here, so every token-driven pill,
+       chip and row tint kept its dark-tuned value on a white panel (#4ADE80 on #FFF
+       is 1.74:1 — invisible). These are the AA-safe light counterparts; the SEMANTIC
+       MEANING is unchanged (green = ok, amber = warning, red = critical, blue = info),
+       only the luminance is. Tints are raised to 14% so they still read as a surface. */
+    --success-color:        #15803D;
+    --success-bg:           rgba(21, 128, 61, 0.14);
+    --warning-color:        #B45309;
+    --warning-bg:           rgba(180, 83, 9, 0.14);
+    --danger-color:         #B91C1C;
+    --danger-bg:            rgba(185, 28, 28, 0.14);
+    --blue-color:           #1D4ED8;
+    --blue-bg:              rgba(29, 78, 216, 0.12);
+    --success-strong:       #15803D;
+    --success-strong-hover: #166534;
+    --warning-strong:       #B45309;
+    --danger-strong:        #B91C1C;
+    --info-violet:          #6D28D9;
+    --accent-color:         #1D4ED8;
+    --accent-rgb:           29, 78, 216;
+
     color-scheme: light;
 }

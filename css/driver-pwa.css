@@ -518,3 +518,22 @@ html[data-app-surface="driver"] .driver-pwa-callbtn svg {
 .driver-network-status.hidden {
   display: none;
 }
+
+
+/* D27 — driver PWA light theme: the status strip hardcodes pale text that
+   composites to near-white on a light background. Track the tokens instead. */
+body.light-theme .driver-network-status {
+    color: var(--text-main);
+    border-color: var(--warning-color);
+    background: var(--warning-bg);
+}
+body.light-theme .driver-network-status[data-state="offline"] {
+    color: var(--text-main);
+    border-color: var(--danger-color);
+    background: var(--danger-bg);
+}
+body.light-theme .driver-network-status[data-state="syncing"] {
+    color: var(--text-main);
+    border-color: var(--blue-color);
+    background: var(--blue-bg);
+}

@@ -377,11 +377,6 @@
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="nav-item" data-action="openCompanyOpsOverview">
-                                <i data-lucide="eye"></i> <span data-i18n="ca_nav_ops_view">Operational view</span>
-                            </a>
-                        </li>
-                        <li>
                             <a href="#" class="nav-item" data-action="switchSection" data-action-args='["company-admin-branding"]'>
                                 <i data-lucide="palette"></i> <span data-i18n="ca_nav_branding">Brending firme</span>
                             </a>
@@ -2400,7 +2395,7 @@
                             <div class="company-panel-heading"><div><span data-i18n="ca_settings_hq_kicker">SEDIŠTE FIRME</span><h3 data-i18n="ca_settings_hq_title">Vreme i poslovni kontakt</h3></div><i data-lucide="building-2"></i></div>
                             <p class="company-settings-hint" data-i18n="ca_settings_hq_hint">Vremenska zona sedišta upravlja radnim prozorom vozača, potvrdama smena i automatskom odjavom.</p>
                             <div class="company-settings-form-grid">
-                                <label for="ca-settings-country"><span data-i18n="ca_settings_country">Država sedišta</span><select id="ca-settings-country" data-change-action="handleCompanySettingsCountry"><option value="AT" data-i18n="country_at">Austrija</option><option value="RS" data-i18n="country_rs">Srbija</option></select><span class="field-error" data-company-settings-error="country" aria-live="polite"></span></label>
+                                <label for="ca-settings-country"><span data-i18n="ca_settings_country">Država sedišta</span><select id="ca-settings-country" data-change-action="handleCompanySettingsCountry"><!-- options filled by renderCompanyCountryOptions(): names come from Intl.DisplayNames in the active UI language, so no country name is hardcoded --></select><span class="field-error" data-company-settings-error="country" aria-live="polite"></span></label>
                                 <label for="ca-settings-timezone"><span data-i18n="ca_settings_timezone">Vremenska zona</span><input id="ca-settings-timezone" type="text" readonly aria-readonly="true"><small data-i18n="ca_settings_timezone_locked">Automatski se vezuje za državu sedišta.</small></label>
                                 <label for="ca-settings-language"><span data-i18n="ca_settings_language">Podrazumevani jezik firme</span><select id="ca-settings-language" data-change-action="handleCompanySettingsInput"><option value="en">English</option><option value="de">Deutsch</option><option value="sr">Srpski</option></select><span class="field-error" data-company-settings-error="defaultLanguage" aria-live="polite"></span></label>
                                 <label for="ca-settings-contact-email"><span data-i18n="ca_settings_contact_email">Poslovni kontakt email</span><input id="ca-settings-contact-email" type="email" maxlength="254" autocomplete="email" inputmode="email" data-input-action="handleCompanySettingsInput" placeholder="office@firma.at" required><span class="field-error" data-company-settings-error="contactEmail" aria-live="polite"></span></label>

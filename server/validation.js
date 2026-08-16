@@ -108,13 +108,16 @@ const companyAdminStatusBody = z.object({
   active: z.boolean()
 });
 
+/** Single source of truth for the allowed set — mirrors the timezone map exactly. */
+const SUPPORTED_COUNTRY_CODES = Object.keys(require("./company-settings").COMPANY_COUNTRY_TIMEZONE);
+
 const smsSenderIdPattern = /^[A-Z0-9]{1,11}$/;
 /** Official on-duty dispatch line shown to drivers (E.164). Never a private mobile. */
 const dispatchPhonePattern = /^\+[1-9]\d{6,14}$/;
 
 const companyProfileSettingsBody = z.object({
   companyId: z.string().trim().min(1).max(64),
-  country: z.enum(["AT", "RS"]),
+  country: z.string().trim().toUpperCase().refine((value) => SUPPORTED_COUNTRY_CODES.includes(value), "Drzava sedista nije podrzana."),
   defaultLanguage: z.enum(["de", "sr", "en"]),
   contactEmail: z.string().trim().toLowerCase().email().max(254),
   taxId: z.string().trim().max(32).optional(),

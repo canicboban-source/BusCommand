@@ -1,6 +1,11 @@
 /* Staff desktop surface — CA / dispatcher / SA (mockup-aligned) */
 
-html[data-app-surface="staff"] {
+/* D27: these MUST be declared on <body>, not on <html>. `body.light-theme` redefines
+   --bg-darker / --panel-bg on the BODY element; a var() read on the html element
+   resolves against :root and freezes the DARK value, which then cascades down as a
+   literal colour. That is why the staff sidebar and cards stayed dark in light mode
+   while the header (which reads --bg-dark directly on a body descendant) flipped. */
+html[data-app-surface="staff"] body {
     --staff-accent: var(--primary-color);
     --staff-accent-soft: rgba(var(--primary-rgb), 0.16);
     --staff-sidebar: var(--bg-darker);
@@ -1143,7 +1148,9 @@ html[data-app-surface="staff"] .app-table thead th {
     position: sticky;
     top: 0;
     z-index: 1;
-    background: rgba(10, 16, 25, 0.92);
+    /* D27: sticky headers need an opaque fill; a hardcoded near-black one stayed
+       dark on every white table in light mode. */
+    background: var(--panel-bg-solid);
     backdrop-filter: blur(8px);
     padding: 11px 14px;
     font-size: 0.7rem;
@@ -1603,13 +1610,13 @@ html[data-app-surface="staff"] .sa-company-card-actions .btn-secondary {
 }
 
 html[data-app-surface="staff"] .sa-company-btn-suspend {
-    background: #ff4d4d !important;
+    background: var(--danger-strong) !important;
     color: #fff !important;
     border: none !important;
 }
 
 html[data-app-surface="staff"] .sa-company-btn-activate {
-    background: #10b981 !important;
+    background: var(--success-strong) !important;
     color: #fff !important;
     border: none !important;
 }
@@ -4923,9 +4930,11 @@ html[data-app-surface="staff"] #ca-groups-manage-list {
 html[data-app-surface="staff"] .company-drivers-legacy-notice {
   margin: 0 0 12px;
   padding: 10px 12px;
-  border-left: 3px solid var(--bc-accent, #3d7ef5);
-  background: color-mix(in srgb, var(--bc-accent, #3d7ef5) 10%, transparent);
-  color: var(--bc-text, #1a1a1a);
+  border-left: 3px solid var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  /* D27: --bc-text/--bc-accent are declared nowhere, so the #1a1a1a fallback always
+     applied — near-black text on a dark panel in the DEFAULT theme (~1.2:1). */
+  color: var(--text-main);
   font-size: 0.92rem;
   line-height: 1.4;
 }
@@ -4954,3 +4963,123 @@ html[data-app-surface="staff"] .company-drivers-directory-table {
   }
 }
 
+
+
+/* ══════════════════════════════════════════════════════════════════
+   D27 — LIGHT THEME OVERRIDES FOR STAFF SURFACE
+   This file is dark-first: every colour above is a literal tuned for the
+   dark panel, and `body.light-theme` only swaps the token layer. Anything
+   that hardcodes a light grey (#94A3B8, #CBD5E1, #F1F5F9 …) therefore
+   survived onto the white panel at 1–3:1. The rules below remap the
+   high-traffic surfaces onto tokens so they follow the theme.
+   Semantics are unchanged — only luminance.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Body text that was near-white */
+body.light-theme #dispatcher-dashboard .ops-msg-item p,
+body.light-theme .daily-plan-table .ops-edit-select,
+body.light-theme .ops-attention-nav-item,
+body.light-theme .ops-attention-label {
+    color: var(--text-main);
+}
+
+/* Secondary / summary text */
+body.light-theme .ops-attention-summary,
+body.light-theme .ops-attention-nav-item span,
+body.light-theme .ops-resolution-intro,
+body.light-theme .ops-incident-heading p,
+body.light-theme .ops-incident-heading label,
+body.light-theme #dispatcher-dashboard .ops-status-pill,
+body.light-theme .sa-col-tenant code {
+    color: var(--text-secondary);
+}
+
+/* Muted meta / headers */
+body.light-theme #dispatcher-dashboard .ops-daily-table th,
+body.light-theme .ops-msg-meta,
+body.light-theme .ops-plan-hint,
+body.light-theme .service-plan-empty,
+body.light-theme .ops-crew-meta,
+body.light-theme .ops-crew-card.is-off .ops-crew-status,
+body.light-theme .monthly-matrix-cell.is-weekend,
+body.light-theme .ops-attention-subtitle,
+body.light-theme .ops-attention-sev,
+body.light-theme .ops-attention-soft,
+body.light-theme .ops-attention-empty {
+    color: var(--text-muted);
+}
+
+/* Accent-tinted text */
+body.light-theme .ops-crew-avatar,
+body.light-theme .service-plan-preview-strip strong,
+body.light-theme .sa-pkg-chip,
+body.light-theme .sa-platform-health,
+body.light-theme .drv-edit {
+    color: var(--primary-color);
+}
+
+/* Status text — token-driven so it tracks the theme */
+body.light-theme .ops-health,
+body.light-theme .ops-health span,
+body.light-theme .msg-status-chip.is-ok,
+body.light-theme .header-connection-status,
+body.light-theme .drv-del.is-inactive,
+body.light-theme .hub-bus-toggle.is-inactive {
+    color: var(--success-color);
+}
+
+body.light-theme .ops-attention-kicker,
+body.light-theme .ops-attention-solution-label,
+body.light-theme .ops-attention-status,
+body.light-theme .ops-resolution-status,
+body.light-theme .ops-incident-warning,
+body.light-theme .ops-lifecycle-chip,
+body.light-theme .ops-incident-icon.is-amber,
+body.light-theme .daily-plan-issues-pill,
+body.light-theme .daily-plan-row--standby .daily-plan-col-pos,
+body.light-theme .msg-status-chip.is-pending,
+body.light-theme .dispatcher-help-btn,
+body.light-theme .dispatcher-help-kicker,
+body.light-theme .dispatcher-help-contact-missing,
+body.light-theme .plan-import-driver-ambiguous {
+    color: var(--warning-color);
+}
+
+body.light-theme .msg-status-chip.is-critical,
+body.light-theme .row-actions-item.is-danger,
+body.light-theme .header-connection-status[data-state="offline"],
+body.light-theme .company-branding-clear-logo,
+body.light-theme .drv-del.is-active,
+body.light-theme .hub-bus-toggle.is-active,
+body.light-theme .hub-ov-detach-btn:hover,
+body.light-theme .monthly-plan-delete-btn:hover {
+    color: var(--danger-color);
+}
+
+body.light-theme .msg-status-chip {
+    color: var(--text-secondary);
+}
+
+body.light-theme .bus-status-pill.bus-status-other_line {
+    color: var(--info-violet);
+}
+
+/* Native select popup workaround must not invert in light mode */
+body.light-theme select optgroup {
+    color: var(--text-main) !important;
+    background-color: var(--panel-bg-solid) !important;
+}
+
+
+/* D27 — light theme: sticky table chrome + hairlines that were tuned for the dark panel. */
+body.light-theme .data-table thead th,
+body.light-theme .app-table thead th {
+    background: var(--bg-dark);
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--panel-border);
+}
+
+body.light-theme .daily-plan-table thead tr,
+body.light-theme .bus-fleet-table thead tr {
+    border-bottom-color: var(--panel-border);
+}

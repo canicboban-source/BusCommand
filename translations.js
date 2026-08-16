@@ -6768,6 +6768,23 @@ Object.assign(TRANSLATIONS.de, {
     ca_settings_error_dispatch_phone_invalid: "Nummer im E.164-Format eingeben (z. B. +436991234567)."
 });
 
+// D27 — long-format monthly CSV: driver identity comes from the column, not the file name.
+Object.assign(TRANSLATIONS.en, {
+    plan_import_driver_unmatched: "Driver \"{driver}\" from the plan file is not in this group — pick the matching driver in the preview.",
+    plan_import_csv_row_error: "Plan CSV could not be read: {reason}",
+    ca_settings_country_placeholder: "Select the country of the registered office"
+});
+Object.assign(TRANSLATIONS.sr, {
+    plan_import_driver_unmatched: "Vozač \"{driver}\" iz plana nije u ovoj grupi — izaberite odgovarajućeg vozača u pregledu.",
+    plan_import_csv_row_error: "Plan CSV nije mogao da se pročita: {reason}",
+    ca_settings_country_placeholder: "Izaberite državu sedišta"
+});
+Object.assign(TRANSLATIONS.de, {
+    plan_import_driver_unmatched: "Fahrer \"{driver}\" aus der Plandatei ist nicht in dieser Gruppe — bitte in der Vorschau den passenden Fahrer wählen.",
+    plan_import_csv_row_error: "Plan-CSV konnte nicht gelesen werden: {reason}",
+    ca_settings_country_placeholder: "Land des Firmensitzes wählen"
+});
+
 // D23 — product UI languages only (en/de/sr). Unsupported keys are dropped.
 for (const lang of Object.keys(TRANSLATIONS)) {
     if (lang !== "en" && lang !== "de" && lang !== "sr") {

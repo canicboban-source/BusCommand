@@ -5,8 +5,10 @@ import { saveState } from "../core/state.js";
 import { runSingleSubmission } from "../core/submit-lock.js";
 import { currentUserCanRunCompanyAdminAction } from "../core/ui-permissions.js";
 import { showToast, refreshIcons } from "../core/utils.js";
+import { resolveUiLanguage } from "../core/state.js";
 import { t } from "../ui/i18n.js";
 import {
+    COMPANY_TIMEZONES,
     companySettingsEqual,
     timezoneForCountry,
     validateCompanySettingsDraft
@@ -120,6 +122,48 @@ function syncSettingsDirtyState() {
     renderSettingsSaveState();
 }
 
+/**
+ * Fills the country select from COMPANY_TIMEZONES. Labels come from Intl.DisplayNames
+ * in the active UI language, so adding a country needs no new translation keys and the
+ * list can never show a country the timezone map cannot resolve.
+ */
+function renderCompanyCountryOptions(selected = "") {
+    const select = document.getElementById("ca-settings-country");
+    if (!select) return;
+    const lang = resolveUiLanguage();
+    let names = null;
+    try {
+        names = new Intl.DisplayNames([lang], { type: "region" });
+    } catch {
+        names = null;
+    }
+    const options = Object.keys(COMPANY_TIMEZONES)
+        .map((code) => {
+            let label = code;
+            try {
+                label = names?.of(code) || code;
+            } catch {
+                label = code;
+            }
+            return { code, label };
+        })
+        .sort((left, right) => left.label.localeCompare(right.label, lang, { sensitivity: "base" }));
+
+    const current = String(selected || select.value || "");
+    select.replaceChildren();
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = t("ca_settings_country_placeholder");
+    select.appendChild(placeholder);
+    for (const option of options) {
+        const el = document.createElement("option");
+        el.value = option.code;
+        el.textContent = option.label;
+        select.appendChild(el);
+    }
+    select.value = current && COMPANY_TIMEZONES[current] ? current : "";
+}
+
 function handleCompanySettingsCountry() {
     const country = document.getElementById("ca-settings-country")?.value || "";
     const timezone = document.getElementById("ca-settings-timezone");
@@ -197,6 +241,7 @@ function renderCompanyAdminSettings() {
         savedSettings = validateCompanySettingsDraft(stateProfileDraft()).value;
         settingsDirty = false;
     }
+    renderCompanyCountryOptions(savedSettings?.country);
     if (!settingsDirty) writeDraftToForm(savedSettings);
     renderLicenseFacts();
     renderSettingsSaveState();
@@ -208,6 +253,7 @@ function renderCompanyAdminSettings() {
 }
 
 export {
+    renderCompanyCountryOptions,
     handleCompanySettingsCountry,
     handleCompanySettingsInput,
     readCompanySettingsDraft,
