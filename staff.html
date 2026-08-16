@@ -2056,6 +2056,22 @@
                         </aside>
                     </div>
 
+                    <section class="card company-settings-email" aria-labelledby="ca-settings-email-title">
+                        <div class="company-panel-heading"><div><span data-i18n="ca_settings_email_kicker">NOTIFIKACIJE</span><h3 id="ca-settings-email-title" data-i18n="ca_settings_email_title">Email notifikacije (SMTP)</h3></div><i data-lucide="mail-check"></i></div>
+                        <p class="company-settings-hint" data-i18n="ca_settings_email_hint">Povežite sopstveni mail server. BusCommand šalje potvrde smena i istek licenci preko vašeg servera — bez troška za vas.</p>
+                        <form id="ca-email-smtp-form" data-submit-action="saveEmailSmtpSettings" novalidate>
+                            <div class="company-settings-form-grid">
+                                <label for="ca-smtp-host"><span data-i18n="ca_smtp_host">SMTP server</span><input id="ca-smtp-host" type="text" maxlength="255" autocomplete="off" placeholder="mail.njihovafirma.com" data-input-action="handleEmailSmtpInput"></label>
+                                <label for="ca-smtp-port"><span data-i18n="ca_smtp_port">Port</span><input id="ca-smtp-port" type="number" min="1" max="65535" value="587" autocomplete="off" data-input-action="handleEmailSmtpInput"></label>
+                                <label for="ca-smtp-user"><span data-i18n="ca_smtp_user">Korisničko ime</span><input id="ca-smtp-user" type="text" maxlength="255" autocomplete="off" placeholder="office@njihovafirma.com" data-input-action="handleEmailSmtpInput"></label>
+                                <label for="ca-smtp-pass"><span data-i18n="ca_smtp_pass">Lozinka</span><input id="ca-smtp-pass" type="password" maxlength="255" autocomplete="new-password" data-i18n-placeholder="ca_smtp_pass_placeholder" placeholder="Unesite lozinku" data-input-action="handleEmailSmtpInput"></label>
+                                <label for="ca-smtp-from"><span data-i18n="ca_smtp_from">"From" adresa</span><input id="ca-smtp-from" type="email" maxlength="254" autocomplete="email" placeholder="office@njihovafirma.com" data-input-action="handleEmailSmtpInput"></label>
+                                <label for="ca-smtp-enabled"><span data-i18n="ca_smtp_enabled">Aktivno</span><select id="ca-smtp-enabled"><option value="false" data-i18n="ca_smtp_disabled">Isključeno</option><option value="true" data-i18n="ca_smtp_active">Uključeno</option></select></label>
+                            </div>
+                            <div class="company-settings-form-actions"><button type="button" class="btn-secondary" data-action="resetEmailSmtpForm" data-i18n="btn_cancel">Otkaži</button><button id="ca-smtp-save" type="submit" class="btn-primary"><i data-lucide="save"></i><span data-i18n="ca_smtp_save">Sačuvaj SMTP</span></button></div>
+                        </form>
+                    </section>
+
                     <section class="card company-settings-privacy" aria-labelledby="ca-settings-privacy-title">
                         <div class="company-panel-heading"><div><span data-i18n="ca_settings_privacy_kicker">FIKSNA POLITIKA</span><h3 id="ca-settings-privacy-title" data-i18n="ca_settings_privacy_title">Privatnost van radnog vremena</h3></div><i data-lucide="shield-check"></i></div>
                         <div class="company-settings-policy-grid"><article><i data-lucide="map-pin-off"></i><div><strong data-i18n="ca_settings_no_gps">Nema GPS praćenja</strong><p data-i18n="ca_settings_no_gps_hint">Lokacija se ne prati posle odjave ili van aktivnog radnog prozora.</p></div></article><article><i data-lucide="bell-off"></i><div><strong data-i18n="ca_settings_no_push">Nema push poruka</strong><p data-i18n="ca_settings_no_push_hint">Aplikacija miruje do sledeće prijave vozača.</p></div></article><article><i data-lucide="clock-3"></i><div><strong data-i18n="ca_settings_auto_logout">Automatska odjava</strong><p data-i18n="ca_settings_auto_logout_hint">Sesija se zatvara najkasnije 30 minuta posle završetka smene.</p></div></article></div>

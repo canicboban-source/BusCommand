@@ -50,3 +50,18 @@ services:
         sync: false
       - key: CONFIRMATION_DISPATCH_URL
         value: https://buscommand.com/api/internal/jobs/confirmation-dispatch
+
+  - type: cron
+    name: buscommand-expiry-notifications
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    schedule: "0 8 * * *"
+    buildCommand: npm ci --omit=dev
+    startCommand: node scripts/run-expiry-notifications.js
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false

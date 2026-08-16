@@ -89,7 +89,8 @@ const {
   companyDriverPersonalCodeBody,
   companyDriverCreateBody,
   companyDriverDeleteBody,
-  companyDriverEidBody
+  companyDriverEidBody,
+  companyEmailSmtpBody
 } = require("./server/validation");
 
 const { version: APP_VERSION } = require("./package.json");
@@ -1149,6 +1150,65 @@ app.put(
     } catch (err) {
       req.log?.error({ err }, "Company branding update failed");
       return res.status(500).json({ success: false, error: "Brending firme nije sacuvan." });
+    }
+  }
+);
+
+/** CA-only: save per-tenant SMTP settings for email notifications.
+ *  Password is stored in Firestore and never returned to the client on GET. */
+app.post(
+  "/api/company-admin/email-smtp",
+  rateLimit(10, 5 * 60 * 1000),
+  requireCompanyAdmin,
+  validateBody(companyEmailSmtpBody),
+  async (req, res) => {
+    const companyId = requireOwnCompany(req, res);
+    if (!companyId) return;
+    const { host, port, user, pass, from, enabled } = req.validatedBody;
+    try {
+      await db.collection("companies").doc(companyId)
+        .collection("settings").doc("email_smtp")
+        .set({
+          host, port, user, pass, from, enabled,
+          updatedAt: new Date().toISOString(),
+          updatedBy: req.staffUser.uid
+        });
+      await _logAuditEvent(companyId, req.staffUser.uid, "email_smtp_updated", {
+        host, port, from, enabled,
+        hasPassword: Boolean(pass)
+      }, {
+        actorRole: req.staffUser.role,
+        actorName: req.staffUser.name || null
+      });
+      return res.json({ success: true, smtp: { host, port, user, from, enabled } });
+    } catch (err) {
+      req.log?.error({ err }, "Email SMTP settings save failed");
+      return res.status(500).json({ success: false, error: "SMTP podešavanja nisu sačuvana." });
+    }
+  }
+);
+
+/** CA-only: get per-tenant SMTP settings — password is never returned. */
+app.get(
+  "/api/company-admin/email-smtp",
+  rateLimit(30, 5 * 60 * 1000),
+  requireCompanyAdmin,
+  async (req, res) => {
+    const companyId = requireOwnCompany(req, res);
+    if (!companyId) return;
+    try {
+      const snap = await db.collection("companies").doc(companyId)
+        .collection("settings").doc("email_smtp").get();
+      if (!snap.exists) {
+        return res.json({ success: true, smtp: null });
+      }
+      const data = snap.data();
+      // Never return the password to the client
+      const { pass: _pass, ...safe } = data;
+      return res.json({ success: true, smtp: safe });
+    } catch (err) {
+      req.log?.error({ err }, "Email SMTP settings load failed");
+      return res.status(500).json({ success: false, error: "SMTP podešavanja nisu učitana." });
     }
   }
 );

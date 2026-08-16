@@ -7,7 +7,7 @@ import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriver
 import { cancelCompanyGroupEdit, deleteCompanyGroup, focusCompanyGroupForm, saveCompanyGroup, startEditCompanyGroup } from "./admin/company-admin-groups.js";
 import { caWizardBack, caWizardNext, caWizardSelectColor, caWizardSkip } from "./admin/company-admin-onboarding.js";
 import { clearCompanyServicePlanPreview, closeCompanyServicePlanDuty, closeCompanyServicePlanHistory, handleCompanyServicePlanFile, handleCompanyServicePlanGroupChange, openCompanyServicePlanDuty, openCompanyServicePlanHistory, publishCompanyServicePlan, activateCompanyServicePlanVersion } from "./admin/company-admin-service-plan.js";
-import { handleCompanySettingsCountry, handleCompanySettingsInput, resetCompanySettingsForm, saveCompanyProfileSettings } from "./admin/company-admin-settings.js";
+import { handleCompanySettingsCountry, handleCompanySettingsInput, resetCompanySettingsForm, saveCompanyProfileSettings, handleEmailSmtpInput, resetEmailSmtpForm, saveEmailSmtpSettings } from "./admin/company-admin-settings.js";
 import { addCompanyDispatcher, focusCompanyDispatcherForm, resetCompanyDispatcherPassword, revokeCompanyDispatcherSessions, saveCompanyDispatcherGroups, toggleCaDispGroupsEdit, toggleCompanyDispatcherStatus } from "./admin/company-admin-team.js";
 import { createDispatcherGroup, enterDispatcherActiveGroup, exitImpersonation, saveNewDispatcherPassword, switchToGroupSetup } from "./admin/dispatcher-setup.js";
 import { superadminCreateCompany, superadminCreateCompanyAdmin, superadminDeleteCompany, superadminCancelDeleteCompanyModal, superadminConfirmDeleteCompany, superadminDeleteCompanyAdmin, superadminFocusCompanies, superadminCopyCompanyId, superadminCopyText, superadminImpersonate, superadminOpenCompany, superadminOpenCompanyDetail, superadminCloseCompanyDetail, superadminSetCompanyAdminStatus, superadminResetCompanyAdminPassword, superadminResetPin, superadminToggleStatus } from "./admin/superadmin.js";
@@ -143,6 +143,7 @@ const __ONCLICK_HANDLERS = {
     handleCompanyServicePlanGroupChange,
     handleCompanySettingsCountry,
     handleCompanySettingsInput,
+    handleEmailSmtpInput,
     handleLogoClick,
     handlePackageImportDrop,
     handlePackageImportInput,
@@ -182,6 +183,7 @@ const __ONCLICK_HANDLERS = {
     resetCompanyAuditFilters,
     resetCompanyDispatcherPassword,
     resetCompanySettingsForm,
+    resetEmailSmtpForm,
     resolveReport,
     resolveSOS,
     returnLostItem,
@@ -192,6 +194,7 @@ const __ONCLICK_HANDLERS = {
     saveCompanyDriverEdit,
     saveCompanyGroup,
     saveCompanyProfileSettings,
+    saveEmailSmtpSettings,
     saveMonthlyDayEdit,
     undoMonthlyDayEdit,
     saveNewDispatcherPassword,

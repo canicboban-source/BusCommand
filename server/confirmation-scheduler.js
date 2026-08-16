@@ -13,6 +13,7 @@ const {
   shouldRetry
 } = require("./confirmation-outbox");
 const { createSmsProvider } = require("./sms-provider");
+const { sendEmail, buildShiftConfirmationEmail } = require("./email-provider");
 
 function isSchedulerEnabled(settingsMain) {
   return settingsMain?.features?.shiftConfirmationScheduler === true;
@@ -182,14 +183,48 @@ function createConfirmationScheduler({
         label: data.label
       });
     }
+    // Email channel — sends via tenant's SMTP if configured and driver has email
+    let emailResult = null;
+    if (data.email) {
+      try {
+        const companyRef = db().collection("companies").doc(data.companyId);
+        const smtpSnap = await companyRef.collection("settings").doc("email_smtp").get();
+        const smtpCfg = smtpSnap.exists ? smtpSnap.data() : null;
+        if (smtpCfg?.enabled && smtpCfg?.host && smtpCfg?.pass) {
+          const driverName = data.driverName || data.label || "";
+          const lang = String(data.lang || "en");
+          const mail = buildShiftConfirmationEmail({
+            driverName,
+            targetDate: data.targetDate,
+            shiftLabel: data.label || "",
+            startTime: data.start || null,
+            endTime: data.end || null,
+            busNumber: data.bus || "",
+            companyName: data.companyName || ""
+          }, lang);
+          emailResult = await sendEmail({
+            smtp: smtpCfg,
+            to: data.email,
+            subject: mail.subject,
+            text: mail.text,
+            html: mail.html
+          });
+        }
+      } catch { /* email failure must not block in-app delivery */ }
+    }
+    const channels = [channel];
+    if (smsResult?.status === "stub_queued") channels.push("sms_stub");
+    if (emailResult?.status === "sent") channels.push("email");
+    if (emailResult?.status === "stub_sent") channels.push("email_stub");
     const ok = true; // in-app delivery = outbox visible on next work-session
     const patch = planDispatchAttempt(data, {
       ok,
-      channel: smsResult?.status === "stub_queued" ? "in_app+sms_stub" : channel
+      channel: channels.join("+")
     }, now);
     await doc.ref.set({
       ...patch,
       smsStatus: smsResult?.status || null,
+      emailStatus: emailResult?.status || null,
       updatedAtServer: admin().firestore.FieldValue.serverTimestamp()
     }, { merge: true });
     return patch;

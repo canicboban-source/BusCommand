@@ -250,6 +250,8 @@ function renderCompanyAdminSettings() {
     if (demoTools) demoTools.hidden = !USE_LOCAL_STATE;
     bindBeforeUnload();
     refreshIcons();
+    // Load SMTP settings async — does not block render
+    loadEmailSmtpSettings();
 }
 
 export {
@@ -259,5 +261,92 @@ export {
     readCompanySettingsDraft,
     renderCompanyAdminSettings,
     resetCompanySettingsForm,
-    saveCompanyProfileSettings
+    saveCompanyProfileSettings,
+    handleEmailSmtpInput,
+    resetEmailSmtpForm,
+    saveEmailSmtpSettings,
+    loadEmailSmtpSettings
 };
+
+// ── Email SMTP settings (CA-only) ──
+
+function readEmailSmtpDraft() {
+    return {
+        host: String(document.getElementById("ca-smtp-host")?.value || "").trim(),
+        port: Number(document.getElementById("ca-smtp-port")?.value) || 587,
+        user: String(document.getElementById("ca-smtp-user")?.value || "").trim(),
+        pass: String(document.getElementById("ca-smtp-pass")?.value || ""),
+        from: String(document.getElementById("ca-smtp-from")?.value || "").trim().toLowerCase(),
+        enabled: String(document.getElementById("ca-smtp-enabled")?.value || "false") === "true"
+    };
+}
+
+function writeEmailSmtpToForm(smtp) {
+    if (!smtp) {
+        document.getElementById("ca-smtp-host").value = "";
+        document.getElementById("ca-smtp-port").value = "587";
+        document.getElementById("ca-smtp-user").value = "";
+        document.getElementById("ca-smtp-pass").value = "";
+        document.getElementById("ca-smtp-from").value = "";
+        document.getElementById("ca-smtp-enabled").value = "false";
+        return;
+    }
+    document.getElementById("ca-smtp-host").value = smtp.host || "";
+    document.getElementById("ca-smtp-port").value = String(smtp.port || 587);
+    document.getElementById("ca-smtp-user").value = smtp.user || "";
+    document.getElementById("ca-smtp-pass").value = ""; // never prefill password
+    document.getElementById("ca-smtp-from").value = smtp.from || "";
+    document.getElementById("ca-smtp-enabled").value = String(smtp.enabled || false);
+}
+
+function handleEmailSmtpInput() {
+    // No-op for now — could add live validation later
+}
+
+function resetEmailSmtpForm() {
+    loadEmailSmtpSettings();
+}
+
+async function loadEmailSmtpSettings() {
+    if (!currentUserCanRunCompanyAdminAction()) return;
+    const companyId = window.currentUser?.companyId;
+    if (!companyId) return;
+    try {
+        const result = await ApiClient.getEmailSmtpSettings(companyId);
+        if (result.success) {
+            writeEmailSmtpToForm(result.smtp);
+        }
+    } catch {
+        // silent — form stays empty
+    }
+}
+
+async function saveEmailSmtpSettings() {
+    if (!currentUserCanRunCompanyAdminAction()) {
+        showToast(t("error_access_denied"), "error");
+        return;
+    }
+    const companyId = window.currentUser?.companyId;
+    if (!companyId) return;
+    const draft = readEmailSmtpDraft();
+    if (!draft.host || !draft.user || !draft.pass || !draft.from) {
+        showToast(t("ca_smtp_fill_all") || "Popunite sva polja.", "error");
+        return;
+    }
+    const btn = document.getElementById("ca-smtp-save");
+    if (btn) btn.disabled = true;
+    try {
+        const result = await ApiClient.saveEmailSmtpSettings(companyId, draft);
+        if (result.success) {
+            showToast(t("ca_smtp_saved") || "SMTP podešavanja sačuvana.", "success");
+            document.getElementById("ca-smtp-pass").value = ""; // clear password field after save
+            if (result.smtp) writeEmailSmtpToForm(result.smtp);
+        } else {
+            showToast(result.error || t("ca_smtp_save_failed") || "Greška pri čuvanju.", "error");
+        }
+    } catch (err) {
+        showToast(String(err?.message || err) || "Greška pri čuvanju.", "error");
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}

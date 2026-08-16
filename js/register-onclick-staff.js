@@ -4,7 +4,7 @@ import { applyBrandingSettings, clearCompanyBrandingLogo, handleCompanyBrandingL
 import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriverAddModal, closeCompanyDriverEdit, confirmCompanyDriversImport, deleteCompanyDriver, toggleDriverPinVisibility, handleCompanyDriversFile, handleCompanyDriversFilter, handleCompanyDriversSearch, openCompanyDriverAddModal, openCompanyDriverEdit, saveCompanyDriverEdit, submitCompanyDriverManualAdd, toggleCompanyDriverStatus } from "./admin/company-admin-drivers.js";
 import { cancelCompanyGroupEdit, deleteCompanyGroup, focusCompanyGroupForm, saveCompanyGroup, startEditCompanyGroup } from "./admin/company-admin-groups.js";
 import { clearCompanyServicePlanPreview, closeCompanyServicePlanDuty, closeCompanyServicePlanHistory, handleCompanyServicePlanFile, handleCompanyServicePlanGroupChange, openCompanyServicePlanDuty, openCompanyServicePlanHistory, publishCompanyServicePlan, activateCompanyServicePlanVersion } from "./admin/company-admin-service-plan.js";
-import { handleCompanySettingsCountry, handleCompanySettingsInput, resetCompanySettingsForm, saveCompanyProfileSettings } from "./admin/company-admin-settings.js";
+import { handleCompanySettingsCountry, handleCompanySettingsInput, resetCompanySettingsForm, saveCompanyProfileSettings, handleEmailSmtpInput, resetEmailSmtpForm, saveEmailSmtpSettings } from "./admin/company-admin-settings.js";
 import { addCompanyDispatcher, focusCompanyDispatcherForm, removeCompanyDispatcher, resetCompanyDispatcherPassword, revokeCompanyDispatcherSessions, saveCompanyDispatcherGroups, saveCompanyDispatcherProfile, toggleCaDispGroupsEdit, toggleCaDispProfileEdit, toggleCompanyDispatcherStatus } from "./admin/company-admin-team.js";
 import { endCompanySupportSession, openCompanyOpsOverview } from "./admin/company-admin.js";
 import { createDispatcherGroup, enterDispatcherActiveGroup, exitImpersonation, saveNewDispatcherPassword, switchToGroupSetup } from "./admin/dispatcher-setup.js";
@@ -421,6 +421,7 @@ const HANDLERS = {
     handleCompanyServicePlanGroupChange,
     handleCompanySettingsCountry,
     handleCompanySettingsInput,
+    handleEmailSmtpInput,
     handleLogoClick,
     handlePackageImportDrop,
     handlePackageImportInput,
@@ -481,6 +482,7 @@ const HANDLERS = {
     resetCompanyAuditFilters,
     resetCompanyDispatcherPassword,
     resetCompanySettingsForm,
+    resetEmailSmtpForm,
     resolveReport,
     resolveSOS,
     returnLostItem,
@@ -492,6 +494,7 @@ const HANDLERS = {
     saveCompanyDriverEdit,
     saveCompanyGroup,
     saveCompanyProfileSettings,
+    saveEmailSmtpSettings,
     saveMonthlyDayEdit,
     undoMonthlyDayEdit,
     saveNewDispatcherPassword,

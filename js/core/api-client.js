@@ -240,6 +240,16 @@ const ApiClient = (() => {
             body: JSON.stringify({ companyId, ...branding })
         });
     }
+    async function saveEmailSmtpSettings(companyId, smtp) {
+        return apiFetch("/api/company-admin/email-smtp", {
+            method: "POST",
+            body: JSON.stringify({ companyId, ...smtp })
+        });
+    }
+    async function getEmailSmtpSettings(companyId) {
+        const query = new URLSearchParams({ companyId });
+        return apiFetch("/api/company-admin/email-smtp?" + query.toString());
+    }
     async function createCompanyGroup(companyId, group) {
         return apiFetch("/api/company-admin/groups", {
             method: "POST",
@@ -570,6 +580,7 @@ const ApiClient = (() => {
         previewServicePlan, publishServicePlan, activateServicePlan, previewGroupMonthlyPlanImport, commitGroupMonthlyPlanImport,
         previewStaffMonthlyPlanImport, commitStaffMonthlyPlanImport,
         getActiveServicePlan, getServicePlanHistory, getServicePlanVersion, getCompanyAudit, updateCompanyBranding,
+        saveEmailSmtpSettings, getEmailSmtpSettings,
         createCompanyGroup, updateCompanyGroup, deleteCompanyGroup, reportStateSync, importDriversCsv, setDriverActive,
         detachStaffDriverFromLine, updateStaffDriverKnownGroups, detachStaffBusFromLine,
         updateCompanyDriver, listCompanyDrivers, deleteCompanyDriver, setCompanyDriverPersonalCode, setCompanyDriverEid, createCompanyDriver,

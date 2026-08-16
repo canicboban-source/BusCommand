@@ -128,6 +128,18 @@ const companyProfileSettingsBody = z.object({
     .refine((value) => !value || dispatchPhonePattern.test(value), "Dezurni broj mora biti u E.164 formatu (npr. +436991234567).")
 });
 
+/** CA-only: per-tenant SMTP settings for email notifications.
+ *  Credentials are stored in Firestore and never sent to the client after save. */
+const companyEmailSmtpBody = z.object({
+  companyId: z.string().trim().min(1).max(64),
+  host: z.string().trim().min(3).max(255),
+  port: z.number().int().min(1).max(65535).default(587),
+  user: z.string().trim().min(1).max(255),
+  pass: z.string().min(1).max(255),
+  from: z.string().trim().toLowerCase().email().max(254),
+  enabled: z.boolean().default(false)
+}).strict();
+
 const httpsLogoUrl = z.string().trim().max(350000).superRefine((value, ctx) => {
   if (!value) return;
   if (value.startsWith("data:")) {
@@ -299,5 +311,6 @@ module.exports = {
   companyDriverPersonalCodeBody,
   companyDriverCreateBody,
   companyDriverDeleteBody,
-  companyDriverEidBody
+  companyDriverEidBody,
+  companyEmailSmtpBody
 };
