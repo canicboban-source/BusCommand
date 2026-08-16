@@ -156,7 +156,12 @@ function clearLocalSosState() {
     window.state.sosId = null;
 }
 
-async function resolveSOS() {
+/**
+ * @param {string} [note] Optional dispatcher note. Empty is fine — the server records
+ *   a default so the audit still has a reason. Clearing a live alarm must never be
+ *   blocked by a form field.
+ */
+async function resolveSOS(note = "") {
     if (sosResolvePending) return false;
     if (window.currentUser?.role && window.currentUser.role !== "dispatcher" && !USE_LOCAL_STATE) {
         showToast(t("sos_resolve_denied") || "Samo disponent može rešiti SOS.", "error");
@@ -168,10 +173,13 @@ async function resolveSOS() {
     }
 
     sosResolvePending = true;
+    // Silence immediately on confirm; if the server rejects, checkSOSStatus() in the
+    // finally block restarts the siren because sosActive is still true.
+    stopSOSSiren();
     checkSOSStatus();
     try {
         if (!USE_LOCAL_STATE) {
-            const result = await ApiClient.resolveStaffSos();
+            const result = await ApiClient.resolveStaffSos(note);
             if (!result.success) {
                 showToast(result.error || t("sos_resolve_failed") || "SOS nije mogao biti rešen.", "error");
                 return false;

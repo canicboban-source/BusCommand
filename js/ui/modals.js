@@ -37,6 +37,26 @@ function confirmFactoryReset() {
     return true;
 }
 
+/**
+ * #sos-confirm-driver-info was never written to by anything, so the dialog showed an
+ * unlabelled empty tinted box. Fill it with who raised the alarm, or hide it.
+ */
+function renderSosConfirmContext() {
+    const info = document.getElementById("sos-confirm-driver-info");
+    if (info) {
+        const driver = String(window.state?.sosDriver || "").trim();
+        const bus = String(window.state?.sosBus || "").trim();
+        const parts = [];
+        if (driver) parts.push(`${t("driver")}: ${driver}`);
+        if (bus) parts.push(`${t("vehicle")} ${bus}`);
+        info.textContent = parts.join(" · ");
+        info.hidden = parts.length === 0;
+        info.style.display = parts.length === 0 ? "none" : "";
+    }
+    const note = document.getElementById("sos-resolve-note");
+    if (note) note.value = "";
+}
+
 function showModal(id) {
     if (id === "factory-reset-modal" && !canRunFactoryReset(window.currentUser?.role, USE_LOCAL_STATE)) {
         showToast(t("error_access_denied"), "error");
@@ -51,6 +71,7 @@ function showModal(id) {
     if (id === "clear-sos-modal" && document.getElementById("sos-confirm-modal")) {
         id = "sos-confirm-modal";
     }
+    if (id === "sos-confirm-modal") renderSosConfirmContext();
     const el = document.getElementById(id);
     if (el) {
         el.classList.remove("hidden");
@@ -78,19 +99,30 @@ function closeSosConfirmModal() {
     closeModal("clear-sos-modal");
 }
 
+/** Optional note; empty falls back to a default on the server so audit keeps a reason. */
+function readSosResolutionNote() {
+    const field = document.getElementById("sos-resolve-note");
+    const note = String(field?.value || "").trim();
+    if (field) field.value = "";
+    return note;
+}
+
 function confirmResolveSOS() {
+    const note = readSosResolutionNote();
     closeSosConfirmModal();
-    resolveSOS();
+    return resolveSOS(note);
 }
 
 function confirmClearSOS() {
+    const note = readSosResolutionNote();
     closeModal("clear-sos-modal");
     closeModal("sos-confirm-modal");
-    resolveSOS();
+    return resolveSOS(note);
 }
 
 export {
     confirmFactoryReset,
+    renderSosConfirmContext,
     showModal,
     closeModal,
     closeSosConfirmModal,

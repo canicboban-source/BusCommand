@@ -6785,6 +6785,26 @@ Object.assign(TRANSLATIONS.de, {
     ca_settings_country_placeholder: "Land des Firmensitzes wählen"
 });
 
+// D28 — driver language switcher + one-click SOS dismiss with optional note.
+Object.assign(TRANSLATIONS.en, {
+    sos_resolve_note_label: "Resolution note (optional)",
+    sos_resolve_note_placeholder: "e.g. driver contacted, situation safe.",
+    sos_resolve_note_hint: "Leave empty — the audit records a default reason.",
+    sos_resolve_default_note: "Resolved by dispatcher"
+});
+Object.assign(TRANSLATIONS.sr, {
+    sos_resolve_note_label: "Beleška o rešenju (opciono)",
+    sos_resolve_note_placeholder: "Npr. vozač kontaktiran, situacija bezbedna.",
+    sos_resolve_note_hint: "Ostavite prazno — audit će zabeležiti podrazumevani razlog.",
+    sos_resolve_default_note: "Rešeno od strane dispečera"
+});
+Object.assign(TRANSLATIONS.de, {
+    sos_resolve_note_label: "Lösungsnotiz (optional)",
+    sos_resolve_note_placeholder: "z. B. Fahrer kontaktiert, Lage sicher.",
+    sos_resolve_note_hint: "Leer lassen — das Audit vermerkt einen Standardgrund.",
+    sos_resolve_default_note: "Von der Leitstelle gelöst"
+});
+
 // D23 — product UI languages only (en/de/sr). Unsupported keys are dropped.
 for (const lang of Object.keys(TRANSLATIONS)) {
     if (lang !== "en" && lang !== "de" && lang !== "sr") {

@@ -220,6 +220,11 @@ const quickReportSchema = z.object({
   clientCreatedAt: z.string().trim().min(10).max(40).optional()
 });
 const sosSchema = z.object({ bus: z.string().trim().max(32).optional().default("") });
+/** Dispatcher resolution note is OPTIONAL — an operator clearing a live alarm must
+ *  never be blocked by a form field. An empty note falls back to a default so the
+ *  append-only audit still records a reason (master prompt §8). */
+const sosResolveSchema = z.object({ note: z.string().trim().max(500).optional().default("") });
+const SOS_DEFAULT_RESOLUTION_NOTE = "Reseno od strane dispecera";
 const messageIdSchema = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/);
 const lostItemIdSchema = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/);
 const lostItemStatusSchema = z.object({
@@ -1878,6 +1883,11 @@ function registerDriverRoutes(app, deps) {
     if (req.staff.role !== "dispatcher") {
       return res.status(403).json({ success: false, error: "Samo disponent može rešiti SOS alarm." });
     }
+    const parsedBody = sosResolveSchema.safeParse(req.body || {});
+    if (!parsedBody.success) {
+      return res.status(400).json({ success: false, error: "Beleska o resenju je predugacka." });
+    }
+    const resolutionNote = parsedBody.data.note || SOS_DEFAULT_RESOLUTION_NOTE;
     // Enumeration-safe: no SOS and foreign-group SOS share the same public response.
     const sosUnavailable = () => res.status(409).json({
       success: false,
@@ -1900,7 +1910,13 @@ function registerDriverRoutes(app, deps) {
           groupId = driverSnap.data().groupId || driverSnap.data().lineId || null;
         }
       }
-      if (!dispatcherCanAccessGroup(req.staff.groups, groupId)) {
+      // A driver with no group raises an SOS with groupId=null, and
+      // dispatcherCanAccessGroup(groups, null) returns false — which left the alarm
+      // unclearable by ANY dispatcher: banner and siren stuck until a redeploy.
+      // An ungrouped alarm stays tenant-scoped (requireStaff + same companyId) and is
+      // resolvable by any dispatcher of that tenant; group scoping still applies when
+      // the SOS actually carries a group.
+      if (groupId && !dispatcherCanAccessGroup(req.staff.groups, groupId)) {
         return sosUnavailable();
       }
       const resolvedAt = admin().firestore.FieldValue.serverTimestamp();
@@ -1912,7 +1928,8 @@ function registerDriverRoutes(app, deps) {
           batch.update(sosRef, {
             status: "resolved",
             resolvedAt,
-            resolvedBy: req.staff.uid
+            resolvedBy: req.staff.uid,
+            resolutionNote
           });
         }
       }
@@ -1930,7 +1947,9 @@ function registerDriverRoutes(app, deps) {
       await logAudit(req.staff.companyId, req.staff.uid, "staff_sos_resolved", {
         sosId,
         driverId: settings.sosDriverId || null,
-        groupId: groupId || null
+        groupId: groupId || null,
+        groupScope: groupId ? "group" : "unassigned",
+        resolutionNote
       });
       return res.json({
         success: true,

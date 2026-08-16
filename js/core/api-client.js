@@ -392,10 +392,10 @@ const ApiClient = (() => {
             body: JSON.stringify({ status })
         });
     }
-    async function resolveStaffSos() {
+    async function resolveStaffSos(note = "") {
         return apiFetch("/api/staff/sos/resolve", {
             method: "PUT",
-            body: JSON.stringify({})
+            body: JSON.stringify({ note: String(note || "").trim().slice(0, 500) })
         });
     }
     async function setLostItemStatus(itemId, status) {

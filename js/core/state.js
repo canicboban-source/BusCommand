@@ -61,6 +61,12 @@ function applyUiLanguagePreference(preferred) {
         const headerSel = document.getElementById("header-lang-select");
         if (loginSel) loginSel.value = lang;
         if (headerSel) headerSel.value = lang;
+        // D28: driver PWA uses one-tap buttons instead of a select — mark the active one.
+        document.querySelectorAll(".driver-pwa-lang").forEach((btn) => {
+            const active = btn.getAttribute("data-lang") === lang;
+            btn.classList.toggle("is-active", active);
+            btn.setAttribute("aria-pressed", active ? "true" : "false");
+        });
     }
     return lang;
 }

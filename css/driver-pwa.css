@@ -537,3 +537,79 @@ body.light-theme .driver-network-status[data-state="syncing"] {
     border-color: var(--blue-color);
     background: var(--blue-bg);
 }
+
+
+/* D28 — driver language switcher: compact DE | SR | EN segmented control. */
+html[data-app-surface="driver"] .driver-pwa-langswitch {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-right: 8px;
+    padding: 2px;
+    border-radius: 999px;
+    border: 1px solid var(--panel-border);
+    background: var(--input-bg);
+}
+
+html[data-app-surface="driver"] .driver-pwa-lang {
+    min-width: 38px;
+    min-height: 36px;
+    padding: 0 8px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html[data-app-surface="driver"] .driver-pwa-lang.is-active {
+    background: var(--primary-color);
+    color: var(--text-on-accent);
+}
+
+html[data-app-surface="driver"] .driver-pwa-lang:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* The switcher adds ~122px to an already full row. On phones drop the redundant
+   name/status text (the driver knows their own name; duty status is repeated in the
+   plan card) so the call button and avatar are not silently clipped off-screen. */
+@media (max-width: 430px) {
+    html[data-app-surface="driver"] .driver-pwa-userchip-text {
+        display: none;
+    }
+    html[data-app-surface="driver"] .driver-pwa-langswitch {
+        margin-right: 6px;
+    }
+    html[data-app-surface="driver"] .driver-pwa-lang {
+        min-width: 34px;
+        padding: 0 6px;
+    }
+    html[data-app-surface="driver"] .driver-pwa-brand .bc-brand-text {
+        font-size: 0.95rem;
+    }
+    html[data-app-surface="driver"] .driver-pwa-topbar {
+        gap: 8px;
+    }
+    html[data-app-surface="driver"] .driver-pwa-userchip {
+        gap: 6px;
+    }
+}
+
+/* Very narrow phones: keep the permanent BusCommand mark (§18) but drop the wordmark
+   so the switcher, call button and avatar all stay on screen. */
+@media (max-width: 380px) {
+    html[data-app-surface="driver"] .driver-pwa-brand .bc-brand-text {
+        display: none;
+    }
+    html[data-app-surface="driver"] .driver-pwa-avatar {
+        width: 36px;
+        height: 36px;
+    }
+}

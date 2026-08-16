@@ -311,6 +311,14 @@
                             <span class="bc-brand-text">BusCommand</span>
                         </div>
                         <div class="driver-pwa-userchip">
+                            <!-- D28: the driver surface has no app header, so the login-screen
+                                 language select was unreachable once signed in. Three explicit
+                                 one-tap buttons instead of a select — usable with gloves. -->
+                            <div class="driver-pwa-langswitch" role="group" aria-label="Language" data-i18n-aria-label="language_select_aria">
+                                <button type="button" class="driver-pwa-lang" data-lang="de" data-action="changeLanguage" data-action-args='["de"]' lang="de">DE</button>
+                                <button type="button" class="driver-pwa-lang" data-lang="sr" data-action="changeLanguage" data-action-args='["sr"]' lang="sr">SR</button>
+                                <button type="button" class="driver-pwa-lang" data-lang="en" data-action="changeLanguage" data-action-args='["en"]' lang="en">EN</button>
+                            </div>
                             <!-- Plain GSM call to the official dispatch line. One tap, no modal,
                                  no SOS. Hidden until the Company Admin sets a dispatch number. -->
                             <button type="button" id="driver-call-dispatcher" class="driver-pwa-callbtn hidden" data-action="callDispatcher" aria-label="Pozovi dispečera" data-i18n-aria-label="driver_call_dispatcher" data-i18n-title="driver_call_dispatcher">
@@ -906,11 +914,25 @@
             <p style="font-size:0.875rem; color:rgba(255,255,255,0.6); margin-bottom:8px; line-height:1.5;"
                data-i18n="sos_confirm_body">Da li ste kontaktirali vozača i proverili situaciju?</p>
 
-            <div id="sos-confirm-driver-info" style="
+            <div id="sos-confirm-driver-info" hidden style="
                 background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2);
                 border-radius:10px; padding:12px 16px; margin:16px 0; font-size:0.85rem;
-                color:rgba(255,255,255,0.85); font-weight:500;">
+                color:rgba(255,255,255,0.85); font-weight:500; display:none;">
             </div>
+
+            <!-- D28: OPTIONAL note. Never blocks the dismiss — an empty value becomes the
+                 default audit reason on the server. -->
+            <label for="sos-resolve-note" style="display:block; text-align:left; margin:14px 0 6px;
+                   font-size:0.76rem; font-weight:700; color:rgba(255,255,255,0.75);"
+                   data-i18n="sos_resolve_note_label">Beleška o rešenju (opciono)</label>
+            <textarea id="sos-resolve-note" rows="2" maxlength="500"
+                      data-i18n-placeholder="sos_resolve_note_placeholder"
+                      placeholder="Npr. vozač kontaktiran, situacija bezbedna."
+                      style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:10px;
+                             border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05);
+                             color:#fff; font:inherit; font-size:0.85rem; resize:vertical;"></textarea>
+            <p style="text-align:left; margin:6px 0 0; font-size:0.7rem; color:rgba(255,255,255,0.45);"
+               data-i18n="sos_resolve_note_hint">Ostavite prazno — audit će zabeležiti podrazumevani razlog.</p>
 
             <div style="display:flex; gap:12px; margin-top:8px;">
                 <button data-action="closeSosConfirmModal" style="

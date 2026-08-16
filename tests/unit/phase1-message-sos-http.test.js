@@ -196,13 +196,14 @@ function response() {
   };
 }
 
-async function invoke(routes, methodPath, { token, params = {} } = {}) {
+async function invoke(routes, methodPath, { token, params = {}, body } = {}) {
   const handler = routes.get(methodPath);
   assert.ok(handler, `missing route ${methodPath}`);
   const res = response();
   await handler({
     headers: { authorization: `Bearer ${token}` },
     params,
+    body,
     staff: undefined,
     log: { error() {} }
   }, res);
@@ -289,4 +290,84 @@ test("SOS resolve: foreign active SOS matches empty SOS envelope and does not mu
   assert.equal(world.state.companies.alpha.settings.sos.sosActive, true);
   assert.equal(world.state.companies.alpha.settings.sos.groupId, "105");
   assert.equal(world.state.companies.alpha.sos["sos-105"].status, "active");
+});
+
+test("D28: an SOS from a driver with no group is still resolvable", async () => {
+  // Regression: dispatcherCanAccessGroup(groups, null) is false, so a group-less SOS
+  // could not be cleared by ANY dispatcher — banner and siren stuck permanently.
+  const world = createWorld();
+  world.state.companies.alpha.drivers["drv-nogroup"] = {
+    groupId: null, lineId: null, firstName: "No", lastName: "Group", active: true
+  };
+  world.state.companies.alpha.sos["sos-nogroup"] = { driverId: "drv-nogroup", groupId: null, status: "active" };
+  world.state.companies.alpha.settings.sos = {
+    sosActive: true,
+    sosDriverId: "drv-nogroup",
+    sosDriver: "No Group",
+    sosBus: "B999",
+    sosId: "sos-nogroup",
+    groupId: null
+  };
+  const routes = registerRoutes(world);
+  const res = await invoke(routes, "PUT /api/staff/sos/resolve", { token: "disp-310" });
+  assert.equal(res.statusCode, 200, "an ungrouped alarm must be clearable");
+  assert.equal(world.state.companies.alpha.settings.sos.sosActive, false);
+  assert.equal(world.state.companies.alpha.sos["sos-nogroup"].status, "resolved");
+  const entry = world.state.audit.find((row) => row.action === "staff_sos_resolved");
+  assert.equal(entry.details.groupScope, "unassigned");
+});
+
+test("D28: an empty note still records a default audit reason", async () => {
+  const world = createWorld();
+  world.state.companies.alpha.settings.sos = {
+    sosActive: true, sosDriverId: "drv-310", sosDriver: "Home D",
+    sosBus: "B310", sosId: "sos-310", groupId: "310"
+  };
+  const routes = registerRoutes(world);
+  const res = await invoke(routes, "PUT /api/staff/sos/resolve", { token: "disp-310", body: { note: "   " } });
+  assert.equal(res.statusCode, 200);
+  const entry = world.state.audit.find((row) => row.action === "staff_sos_resolved");
+  assert.equal(entry.details.resolutionNote, "Reseno od strane dispecera");
+  assert.equal(world.state.companies.alpha.sos["sos-310"].resolutionNote, "Reseno od strane dispecera");
+});
+
+test("D28: a dispatcher note is recorded verbatim in the SOS record and audit", async () => {
+  const world = createWorld();
+  world.state.companies.alpha.settings.sos = {
+    sosActive: true, sosDriverId: "drv-310", sosDriver: "Home D",
+    sosBus: "B310", sosId: "sos-310", groupId: "310"
+  };
+  const routes = registerRoutes(world);
+  const res = await invoke(routes, "PUT /api/staff/sos/resolve", {
+    token: "disp-310", body: { note: "Vozac kontaktiran, situacija bezbedna." }
+  });
+  assert.equal(res.statusCode, 200);
+  const entry = world.state.audit.find((row) => row.action === "staff_sos_resolved");
+  assert.equal(entry.details.resolutionNote, "Vozac kontaktiran, situacija bezbedna.");
+  assert.equal(entry.details.groupScope, "group");
+});
+
+test("D28: an over-long note is rejected without touching the alarm", async () => {
+  const world = createWorld();
+  world.state.companies.alpha.settings.sos = {
+    sosActive: true, sosDriverId: "drv-310", sosDriver: "Home D",
+    sosBus: "B310", sosId: "sos-310", groupId: "310"
+  };
+  const routes = registerRoutes(world);
+  const res = await invoke(routes, "PUT /api/staff/sos/resolve", { token: "disp-310", body: { note: "x".repeat(501) } });
+  assert.equal(res.statusCode, 400);
+  assert.equal(world.state.companies.alpha.settings.sos.sosActive, true);
+});
+
+test("D28: group scoping still blocks a foreign SOS after the ungrouped fix", async () => {
+  const world = createWorld();
+  world.state.companies.alpha.settings.sos = {
+    sosActive: true, sosDriverId: "drv-105", sosDriver: "Foreign D",
+    sosBus: "B105", sosId: "sos-105", groupId: "105"
+  };
+  const routes = registerRoutes(world);
+  const res = await invoke(routes, "PUT /api/staff/sos/resolve", { token: "disp-310" });
+  assert.equal(res.statusCode, 409);
+  assert.equal(res.body.code, "SOS_UNAVAILABLE");
+  assert.equal(world.state.companies.alpha.settings.sos.sosActive, true);
 });
