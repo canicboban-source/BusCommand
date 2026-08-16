@@ -3270,6 +3270,19 @@ input:focus, select:focus, textarea:focus {
 
 .company-driver-stat-active strong { color: #34d399; }
 
+.company-driver-stat-expiry strong { color: #f59e0b; }
+
+.compliance-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600;
+    white-space: nowrap; line-height: 1.4;
+}
+.compliance-pill i { width: 12px; height: 12px; }
+.compliance-pill.is-expired { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+.compliance-pill.is-soon { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+.compliance-pill.is-ok { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.3); }
+.compliance-pill.is-empty { color: var(--text-muted); }
+
 .company-drivers-create-stack {
     display: flex;
     flex-direction: column;

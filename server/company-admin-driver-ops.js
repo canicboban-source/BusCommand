@@ -120,6 +120,9 @@ async function createManualCompanyDriver({
       companyId,
       active: true,
       codeActivated: true,
+      licenseExpiry: body.licenseExpiry || "",
+      cpcExpiry: body.cpcExpiry || "",
+      medicalExpiry: body.medicalExpiry || "",
       createdAt: nowTs,
       personalCodeSetAt: nowTs,
       personalCodeSetBy: actorUid
@@ -155,7 +158,10 @@ async function createManualCompanyDriver({
       companyId,
       active: true,
       codeActivated: true,
-      hasPersonalCode: true
+      hasPersonalCode: true,
+      licenseExpiry: body.licenseExpiry || "",
+      cpcExpiry: body.cpcExpiry || "",
+      medicalExpiry: body.medicalExpiry || ""
     }
   };
 }
@@ -286,6 +292,9 @@ async function listCompanyDriversForAdmin({ db, companyId }) {
       active: data.active !== false,
       codeActivated: data.codeActivated === true,
       hasPersonalCode: hasLoginCodeById.get(doc.id) === true || data.codeActivated === true,
+      licenseExpiry: data.licenseExpiry || "",
+      cpcExpiry: data.cpcExpiry || "",
+      medicalExpiry: data.medicalExpiry || "",
       _profileHasCredentialFields: profileHasCredentialFields(data)
     };
   });

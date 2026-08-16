@@ -122,3 +122,67 @@ test("driver account translations are complete in pilot languages", async () => 
     }
   }
 });
+
+test("driver compliance expiry fields are validated and wired in all layers", async () => {
+  const [validation, ops, server, client, html, translations] = await Promise.all([
+    read("../../server/validation.js"),
+    read("../../server/company-admin-driver-ops.js"),
+    read("../../api-server.js"),
+    read("../../js/admin/company-admin-drivers.js"),
+    read("../../staff.html"),
+    read("../../translations.js")
+  ]);
+  // Schema accepts ISO dates and empty strings
+  assert.match(validation, /driverExpiryDateSchema/);
+  assert.match(validation, /licenseExpiry: driverExpiryDateSchema/);
+  assert.match(validation, /cpcExpiry: driverExpiryDateSchema/);
+  assert.match(validation, /medicalExpiry: driverExpiryDateSchema/);
+  // Both create and profile schemas include the fields
+  const createBlock = validation.match(/const companyDriverCreateBody = z\.object\(\{[\s\S]*?\}\)\.strict\(\);/)?.[0] || "";
+  const profileBlock = validation.match(/const companyDriverProfileBody = z\.object\(\{[\s\S]*?\}\)\.strict\(\);/)?.[0] || "";
+  assert.match(createBlock, /licenseExpiry/);
+  assert.match(createBlock, /cpcExpiry/);
+  assert.match(createBlock, /medicalExpiry/);
+  assert.match(profileBlock, /licenseExpiry/);
+  assert.match(profileBlock, /cpcExpiry/);
+  assert.match(profileBlock, /medicalExpiry/);
+  // Server ops writes the fields to Firestore profile
+  assert.match(ops, /licenseExpiry: body\.licenseExpiry/);
+  assert.match(ops, /cpcExpiry: body\.cpcExpiry/);
+  assert.match(ops, /medicalExpiry: body\.medicalExpiry/);
+  // List returns the fields
+  assert.match(ops, /licenseExpiry: data\.licenseExpiry/);
+  // PATCH handler destructures and writes them
+  assert.match(server, /licenseExpiry = ""/);
+  assert.match(server, /cpcExpiry = ""/);
+  assert.match(server, /medicalExpiry = ""/);
+  // Client form reads the fields
+  assert.match(client, /ca-driver-add-license-expiry/);
+  assert.match(client, /ca-driver-add-cpc-expiry/);
+  assert.match(client, /ca-driver-add-medical-expiry/);
+  assert.match(client, /ca-driver-edit-license-expiry/);
+  assert.match(client, /ca-driver-edit-cpc-expiry/);
+  assert.match(client, /ca-driver-edit-medical-expiry/);
+  // HTML has the form inputs
+  assert.match(html, /id="ca-driver-add-license-expiry"/);
+  assert.match(html, /id="ca-driver-add-cpc-expiry"/);
+  assert.match(html, /id="ca-driver-add-medical-expiry"/);
+  assert.match(html, /id="ca-driver-edit-license-expiry"/);
+  assert.match(html, /id="ca-driver-edit-cpc-expiry"/);
+  assert.match(html, /id="ca-driver-edit-medical-expiry"/);
+  // Compliance pill helper exists
+  assert.match(client, /compliancePillHtml/);
+  // Translations exist in all 3 languages
+  const context = { window: {} };
+  const vm = await import("node:vm");
+  vm.runInNewContext(translations, context);
+  for (const lang of ["en", "de", "sr"]) {
+    for (const key of [
+      "ca_drivers_license_expiry", "ca_drivers_cpc_expiry", "ca_drivers_medical_expiry",
+      "ca_drivers_license_short", "ca_drivers_cpc_short", "ca_drivers_medical_short",
+      "ca_drivers_compliance", "ca_drivers_expiry_soon"
+    ]) {
+      assert.ok(context.window.TRANSLATIONS[lang][key], `${lang}.${key} missing`);
+    }
+  }
+});

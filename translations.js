@@ -6708,17 +6708,41 @@ Object.assign(TRANSLATIONS.de, {
 Object.assign(TRANSLATIONS.en, {
     dispo_kl: "Known lines",
     dispo_kl_failed: "Known lines could not be saved.",
-    ca_drivers_postal_code: "Postal code"
+    ca_drivers_postal_code: "Postal code",
+    ca_drivers_license_expiry: "Driving licence expiry",
+    ca_drivers_cpc_expiry: "CPC certificate expiry",
+    ca_drivers_medical_expiry: "Medical check expiry",
+    ca_drivers_license_short: "Licence",
+    ca_drivers_cpc_short: "CPC",
+    ca_drivers_medical_short: "Medical",
+    ca_drivers_compliance: "Compliance",
+    ca_drivers_expiry_soon: "Expiring soon"
 });
 Object.assign(TRANSLATIONS.sr, {
     dispo_kl: "Poznate linije",
     dispo_kl_failed: "Poznate linije nisu sačuvane.",
-    ca_drivers_postal_code: "Poštanski broj"
+    ca_drivers_postal_code: "Poštanski broj",
+    ca_drivers_license_expiry: "Istek vozačke dozvole",
+    ca_drivers_cpc_expiry: "Istek CPC sertifikata",
+    ca_drivers_medical_expiry: "Istek medicinskog pregleda",
+    ca_drivers_license_short: "Dozvola",
+    ca_drivers_cpc_short: "CPC",
+    ca_drivers_medical_short: "Pregled",
+    ca_drivers_compliance: "Usklađenost",
+    ca_drivers_expiry_soon: "Ističe uskoro"
 });
 Object.assign(TRANSLATIONS.de, {
     dispo_kl: "Bekannte Linien",
     dispo_kl_failed: "Bekannte Linien konnten nicht gespeichert werden.",
-    ca_drivers_postal_code: "Postleitzahl"
+    ca_drivers_postal_code: "Postleitzahl",
+    ca_drivers_license_expiry: "Führerscheinablauf",
+    ca_drivers_cpc_expiry: "CPC-Zertifikatsablauf",
+    ca_drivers_medical_expiry: "Ablauf der ärztlichen Untersuchung",
+    ca_drivers_license_short: "Führerschein",
+    ca_drivers_cpc_short: "CPC",
+    ca_drivers_medical_short: "Untersuchung",
+    ca_drivers_compliance: "Compliance",
+    ca_drivers_expiry_soon: "Läuft bald ab"
 });
 
 

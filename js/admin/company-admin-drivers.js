@@ -236,6 +236,9 @@ function readManualDriverForm() {
         phone: normalizeE164Phone(document.getElementById("ca-driver-add-phone")?.value || ""),
         email: String(document.getElementById("ca-driver-add-email")?.value || "").trim().toLowerCase(),
         postalCode: String(document.getElementById("ca-driver-add-postal-code")?.value || "").trim(),
+        licenseExpiry: String(document.getElementById("ca-driver-add-license-expiry")?.value || "").trim(),
+        cpcExpiry: String(document.getElementById("ca-driver-add-cpc-expiry")?.value || "").trim(),
+        medicalExpiry: String(document.getElementById("ca-driver-add-medical-expiry")?.value || "").trim(),
         pin: String(document.getElementById("ca-driver-add-pin")?.value || "").trim(),
         groupId,
         knownGroupIds: normalizeKnownGroupIds({ knownGroupIds: knownFromDom, groupId }, groupId)
@@ -250,6 +253,9 @@ function clearManualDriverForm() {
         "ca-driver-add-phone",
         "ca-driver-add-email",
         "ca-driver-add-postal-code",
+        "ca-driver-add-license-expiry",
+        "ca-driver-add-cpc-expiry",
+        "ca-driver-add-medical-expiry",
         "ca-driver-add-pin"
     ]) {
         const el = document.getElementById(id);
@@ -345,6 +351,9 @@ async function submitCompanyDriverManualAdd(event) {
                 phone: draft.phone,
                 email: draft.email,
                 postalCode: draft.postalCode,
+                licenseExpiry: draft.licenseExpiry,
+                cpcExpiry: draft.cpcExpiry,
+                medicalExpiry: draft.medicalExpiry,
                 groupId: draft.groupId,
                 knownGroupIds: draft.knownGroupIds,
                 companyCode: draft.pin
@@ -396,11 +405,24 @@ async function submitCompanyDriverManualAdd(event) {
 function renderSummary() {
     const drivers = companyDrivers();
     const active = drivers.filter((driver) => driver.active !== false).length;
+    const now = new Date();
+    const soon = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const expirySoon = drivers.filter((driver) => {
+        const active = driver.active !== false;
+        if (!active) return false;
+        return ["licenseExpiry", "cpcExpiry", "medicalExpiry"].some((field) => {
+            const value = String(driver[field] || "").trim();
+            if (!value) return false;
+            const date = new Date(value + "T23:59:59");
+            return !isNaN(date.getTime()) && date <= soon;
+        });
+    }).length;
     const values = {
         "ca-drivers-stat-total": drivers.length,
         "ca-drivers-stat-active": active,
         "ca-drivers-stat-inactive": drivers.length - active,
-        "ca-drivers-stat-groups": new Set(drivers.map(driverGroupId).filter(Boolean)).size
+        "ca-drivers-stat-groups": new Set(drivers.map(driverGroupId).filter(Boolean)).size,
+        "ca-drivers-stat-expiry-soon": expirySoon
     };
     Object.entries(values).forEach(([id, value]) => {
         const element = document.getElementById(id);
@@ -462,6 +484,34 @@ function filteredDrivers() {
     }).sort((left, right) => driverName(left).localeCompare(driverName(right), undefined, { sensitivity: "base" }));
 }
 
+function compliancePillHtml(driver) {
+    const now = new Date();
+    const soon = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const fields = [
+        { key: "licenseExpiry", label: t("ca_drivers_license_short") },
+        { key: "cpcExpiry", label: t("ca_drivers_cpc_short") },
+        { key: "medicalExpiry", label: t("ca_drivers_medical_short") }
+    ];
+    const pills = [];
+    for (const { key, label } of fields) {
+        const value = String(driver[key] || "").trim();
+        if (!value) continue;
+        const date = new Date(value + "T23:59:59");
+        if (isNaN(date.getTime())) continue;
+        if (date < now) {
+            pills.push(`<span class="compliance-pill is-expired" title="${escapeHtml(label)}: ${escapeHtml(value)}">${escapeHtml(label)} <i data-lucide="alert-circle"></i></span>`);
+        } else if (date <= soon) {
+            pills.push(`<span class="compliance-pill is-soon" title="${escapeHtml(label)}: ${escapeHtml(value)}">${escapeHtml(label)} <i data-lucide="clock"></i></span>`);
+        }
+    }
+    if (!pills.length) {
+        const hasAny = fields.some(({ key }) => String(driver[key] || "").trim());
+        if (hasAny) return `<span class="compliance-pill is-ok"><i data-lucide="shield-check"></i></span>`;
+        return `<span class="compliance-pill is-empty">—</span>`;
+    }
+    return pills.join(" ");
+}
+
 function renderDirectory() {
     const container = document.getElementById("ca-drivers-directory");
     if (!container) return;
@@ -487,6 +537,7 @@ function renderDirectory() {
             <td data-label="${t("ca_drivers_known_lines")}">${escapeHtml(knownLinesLabel(driver))}</td>
             <td data-label="${t("ca_drivers_phone")}">${escapeHtml(driver.phone || "—")}</td>
             <td data-label="${t("ca_drivers_pin_short")}"><span class="company-driver-pin-status">${driver.hasPersonalCode === false ? "—" : escapeHtml(t("ca_drivers_pin_set") || "Postavljen")}</span></td>
+            <td data-label="${t("ca_drivers_compliance")}">${compliancePillHtml(driver)}</td>
             <td data-label="${t("ca_col_status")}"><span class="company-driver-status ${active ? "is-active" : "is-inactive"}"><i data-lucide="${active ? "circle-check" : "circle-pause"}"></i>${t(active ? "driver_status_active" : "driver_status_inactive")}</span></td>
             <td data-label="${t("table_actions")}"><div class="company-driver-row-actions">
                 ${rowActionsMenuHtml(`ca-drv-${driver.id}`, [
@@ -523,7 +574,7 @@ function renderDirectory() {
     container.innerHTML = `
         <div class="company-drivers-results-count">${tp("ca_drivers_results", drivers.length, { count: drivers.length })}</div>
         <div class="company-drivers-table-wrap"><table class="company-drivers-table company-drivers-directory-table">
-            <thead><tr><th>${t("ca_drivers_eid")}</th><th>${t("ca_drivers_name")}</th><th>${t("ca_plan_group")}</th><th>${t("ca_drivers_known_lines")}</th><th>${t("ca_drivers_phone")}</th><th>${t("ca_drivers_pin_short")}</th><th>${t("ca_col_status")}</th><th>${t("table_actions")}</th></tr></thead>
+            <thead><tr><th>${t("ca_drivers_eid")}</th><th>${t("ca_drivers_name")}</th><th>${t("ca_plan_group")}</th><th>${t("ca_drivers_known_lines")}</th><th>${t("ca_drivers_phone")}</th><th>${t("ca_drivers_pin_short")}</th><th>${t("ca_drivers_compliance")}</th><th>${t("ca_col_status")}</th><th>${t("table_actions")}</th></tr></thead>
             <tbody>${rows}</tbody>
         </table></div>
         ${pageCount > 1 ? `<nav class="company-drivers-pagination" aria-label="${tx("ca_drivers_pagination")}">
@@ -782,6 +833,12 @@ function openCompanyDriverEdit(driverId) {
     phone.value = String(driver.phone || "");
     email.value = String(driver.email || "");
     if (postalCode) postalCode.value = String(driver.postalCode || "");
+    const licenseExpiry = document.getElementById("ca-driver-edit-license-expiry");
+    if (licenseExpiry) licenseExpiry.value = String(driver.licenseExpiry || "");
+    const cpcExpiry = document.getElementById("ca-driver-edit-cpc-expiry");
+    if (cpcExpiry) cpcExpiry.value = String(driver.cpcExpiry || "");
+    const medicalExpiry = document.getElementById("ca-driver-edit-medical-expiry");
+    if (medicalExpiry) medicalExpiry.value = String(driver.medicalExpiry || "");
     fillGroupSelect(group, "ca_plan_group_placeholder", driverGroupId(driver));
     paintKnownGroupChecks(driver.knownGroupIds || [], driverGroupId(driver));
     group.onchange = () => {
@@ -840,6 +897,9 @@ async function saveCompanyDriverEdit() {
     const phone = String(document.getElementById("ca-driver-edit-phone")?.value || "").trim();
     const email = String(document.getElementById("ca-driver-edit-email")?.value || "").trim();
     const postalCode = String(document.getElementById("ca-driver-edit-postal-code")?.value || "").trim();
+    const licenseExpiry = String(document.getElementById("ca-driver-edit-license-expiry")?.value || "").trim();
+    const cpcExpiry = String(document.getElementById("ca-driver-edit-cpc-expiry")?.value || "").trim();
+    const medicalExpiry = String(document.getElementById("ca-driver-edit-medical-expiry")?.value || "").trim();
     const groupId = String(document.getElementById("ca-driver-edit-group")?.value || "").trim();
     const personalCode = String(document.getElementById("ca-driver-edit-pin")?.value || "").trim();
     const driver = companyDrivers().find((entry) => entry.id === driverId);
@@ -864,7 +924,7 @@ async function saveCompanyDriverEdit() {
     const knownGroupIds = normalizeKnownGroupIds({ knownGroupIds: knownFromDom, groupId }, groupId);
     const statusValue = String(document.getElementById("ca-driver-edit-status")?.value || "active");
     const active = statusValue !== "inactive";
-    const payload = { firstName, lastName, phone, email, postalCode, groupId, knownGroupIds, active };
+    const payload = { firstName, lastName, phone, email, postalCode, licenseExpiry, cpcExpiry, medicalExpiry, groupId, knownGroupIds, active };
     // EID is editable — changes go through the dedicated identity-guard route.
     const eidInput = document.getElementById("ca-driver-edit-eid");
     const eidValue = eidInput ? String(eidInput.value || "").trim() : "";
@@ -940,6 +1000,9 @@ async function enrichCompanyDriversFromApi() {
             phone: enriched.phone || driver.phone,
             email: enriched.email || driver.email,
             postalCode: enriched.postalCode || driver.postalCode,
+            licenseExpiry: enriched.licenseExpiry || driver.licenseExpiry || "",
+            cpcExpiry: enriched.cpcExpiry || driver.cpcExpiry || "",
+            medicalExpiry: enriched.medicalExpiry || driver.medicalExpiry || "",
             groupId: enriched.groupId || driver.groupId,
             lineId: enriched.lineId || driver.lineId,
             knownGroupIds: Array.isArray(enriched.knownGroupIds)

@@ -934,6 +934,7 @@
                         <div class="card company-driver-stat company-driver-stat-active"><span data-i18n="driver_status_active">Aktivni</span><strong id="ca-drivers-stat-active">0</strong></div>
                         <div class="card company-driver-stat"><span data-i18n="driver_status_inactive">Neaktivni</span><strong id="ca-drivers-stat-inactive">0</strong></div>
                         <div class="card company-driver-stat"><span data-i18n="ca_drivers_groups_covered">Grupe sa vozačima</span><strong id="ca-drivers-stat-groups">0</strong></div>
+                        <div class="card company-driver-stat company-driver-stat-expiry"><span data-i18n="ca_drivers_expiry_soon">Ističe uskoro</span><strong id="ca-drivers-stat-expiry-soon">0</strong></div>
                     </div>
 
                     <div class="company-drivers-layout">
@@ -1045,6 +1046,18 @@
                                         <span data-i18n="ca_drivers_postal_code">Poštanski broj</span>
                                         <input type="text" id="ca-driver-add-postal-code" maxlength="10" autocomplete="postal-code">
                                     </label>
+                                    <label class="form-group" for="ca-driver-add-license-expiry">
+                                        <span data-i18n="ca_drivers_license_expiry">Istek vozačke dozvole</span>
+                                        <input type="date" id="ca-driver-add-license-expiry" autocomplete="off">
+                                    </label>
+                                    <label class="form-group" for="ca-driver-add-cpc-expiry">
+                                        <span data-i18n="ca_drivers_cpc_expiry">Istek CPC sertifikata</span>
+                                        <input type="date" id="ca-driver-add-cpc-expiry" autocomplete="off">
+                                    </label>
+                                    <label class="form-group" for="ca-driver-add-medical-expiry">
+                                        <span data-i18n="ca_drivers_medical_expiry">Istek medicinskog pregleda</span>
+                                        <input type="date" id="ca-driver-add-medical-expiry" autocomplete="off">
+                                    </label>
                                     <label class="form-group" for="ca-driver-add-pin">
                                         <span data-i18n="ca_drivers_add_pin">PIN (5–12 cifara)</span>
                                         <span class="company-pin-input-wrap">
@@ -1111,6 +1124,18 @@
                                 <label class="form-group" for="ca-driver-edit-postal-code">
                                     <span data-i18n="ca_drivers_postal_code">Poštanski broj</span>
                                     <input type="text" id="ca-driver-edit-postal-code" maxlength="10" autocomplete="postal-code">
+                                </label>
+                                <label class="form-group" for="ca-driver-edit-license-expiry">
+                                    <span data-i18n="ca_drivers_license_expiry">Istek vozačke dozvole</span>
+                                    <input type="date" id="ca-driver-edit-license-expiry" autocomplete="off">
+                                </label>
+                                <label class="form-group" for="ca-driver-edit-cpc-expiry">
+                                    <span data-i18n="ca_drivers_cpc_expiry">Istek CPC sertifikata</span>
+                                    <input type="date" id="ca-driver-edit-cpc-expiry" autocomplete="off">
+                                </label>
+                                <label class="form-group" for="ca-driver-edit-medical-expiry">
+                                    <span data-i18n="ca_drivers_medical_expiry">Istek medicinskog pregleda</span>
+                                    <input type="date" id="ca-driver-edit-medical-expiry" autocomplete="off">
                                 </label>
                                 <label class="form-group company-driver-edit-group" for="ca-driver-edit-group">
                                     <span data-i18n="ca_plan_group">Grupa / linija</span>

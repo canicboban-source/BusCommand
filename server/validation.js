@@ -183,6 +183,9 @@ const companyGroupUpdateBody = z.object({
 const driverGroupIdSchema = z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/);
 const driverPostalCodeSchema = z.string().trim().max(10).optional();
 
+/** ISO date (YYYY-MM-DD) or empty — optional compliance expiry fields. */
+const driverExpiryDateSchema = z.string().trim().regex(/^(\d{4}-\d{2}-\d{2})?$/).optional();
+
 /** Profile-only driver update — never accepts eid/pin/company_code/credentials. */
 const companyDriverProfileBody = z.object({
   companyId: z.string().trim().min(1).max(64),
@@ -195,7 +198,11 @@ const companyDriverProfileBody = z.object({
   /** Extra lines the driver can operate (home groupId is always stored too). */
   knownGroupIds: z.array(driverGroupIdSchema).max(40).optional().default([]),
   /** Operational status from the CA edit modal (absent = keep current). */
-  active: z.boolean().optional()
+  active: z.boolean().optional(),
+  /** Compliance expiry dates (ISO YYYY-MM-DD or empty). CA-only, optional. */
+  licenseExpiry: driverExpiryDateSchema,
+  cpcExpiry: driverExpiryDateSchema,
+  medicalExpiry: driverExpiryDateSchema
 }).strict();
 
 /** CA-only: rewrite the internal service number (EID) — credential data,
@@ -230,7 +237,11 @@ const companyDriverCreateBody = z.object({
   groupId: driverGroupIdSchema,
   postalCode: driverPostalCodeSchema,
   knownGroupIds: z.array(driverGroupIdSchema).max(40).optional().default([]),
-  companyCode: z.string().trim().regex(/^\d{5,12}$/, "Lični kod mora imati 5–12 cifara.")
+  companyCode: z.string().trim().regex(/^\d{5,12}$/, "Lični kod mora imati 5–12 cifara."),
+  /** Compliance expiry dates (ISO YYYY-MM-DD or empty). CA-only, optional. */
+  licenseExpiry: driverExpiryDateSchema,
+  cpcExpiry: driverExpiryDateSchema,
+  medicalExpiry: driverExpiryDateSchema
 }).strict();
 
 function validateBody(schema) {
