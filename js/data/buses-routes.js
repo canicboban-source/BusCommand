@@ -351,6 +351,7 @@ async function addBus(event) {
                 input.value = "";
                 if (plateInput) plateInput.value = "";
                 refreshBusesUi();
+                saveState();
                 const msg = result.attached
                     ? t("bus_attached_to_group") || "Bus linked to this group"
                     : (result.alreadyInGroup

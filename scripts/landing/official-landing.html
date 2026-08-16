@@ -16,12 +16,12 @@
         extend: {
           colors: {
             brand: {
-              50: '#eff6ff',
-              500: '#3b82f6',
-              600: '#2563eb',
-              700: '#1d4ed8',
-              900: '#1e3a8a',
-              950: '#030712'
+              50: '#eef2ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+              950: '#1e1b4b'
             }
           }
         }
@@ -59,7 +59,7 @@
     }
     .lang-switch button:hover { color: #f8fafc !important; }
     .lang-switch button.lang-active {
-      background-color: #2563eb !important;
+      background-color: #4f46e5 !important;
       color: #ffffff !important;
     }
 
@@ -90,14 +90,14 @@
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-blue-600 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-600 selection:text-white">
 
   <!-- Nav Header -->
   <header class="site-header sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-800">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <a href="#top" class="flex items-center gap-3">
-          <img src="/brand/logo-mark.png" alt="BusCommand" class="w-10 h-10 rounded-xl object-contain shadow-lg shadow-blue-950/60" width="40" height="40">
+          <img src="/brand/logo-mark.png" alt="BusCommand" class="w-10 h-10 rounded-xl object-contain shadow-lg shadow-indigo-950/60" width="40" height="40">
           <span class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
             BusCommand
             <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 bg-indigo-900/60 text-indigo-300 border border-indigo-700/50 rounded-full">v1.0.10</span>
@@ -184,25 +184,25 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
         <div class="glass-card p-5 rounded-2xl space-y-3 flex flex-col">
-          <span id="step1-num" class="text-[10px] font-mono font-bold text-blue-300 bg-blue-950/70 border border-blue-800/50 px-2.5 py-1 rounded-full self-start">KORAK 1</span>
+          <span id="step1-num" class="text-[10px] font-mono font-bold text-indigo-300 bg-indigo-950/70 border border-indigo-800/50 px-2.5 py-1 rounded-full self-start">KORAK 1</span>
           <h3 id="step1-title" class="font-bold text-white">Uvoz Plana</h3>
           <p id="step1-desc" class="text-xs text-slate-400 leading-relaxed flex-1">Uvoz kataloga i mesečnog plana.</p>
           <span id="step1-badge" class="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-2.5 py-1 rounded-full self-start">✓ Serverski verifikovano</span>
         </div>
         <div class="glass-card p-5 rounded-2xl space-y-3 flex flex-col">
-          <span id="step2-num" class="text-[10px] font-mono font-bold text-blue-300 bg-blue-950/70 border border-blue-800/50 px-2.5 py-1 rounded-full self-start">KORAK 2</span>
+          <span id="step2-num" class="text-[10px] font-mono font-bold text-indigo-300 bg-indigo-950/70 border border-indigo-800/50 px-2.5 py-1 rounded-full self-start">KORAK 2</span>
           <h3 id="step2-title" class="font-bold text-white">Needs Attention</h3>
           <p id="step2-desc" class="text-xs text-slate-400 leading-relaxed flex-1">Automatska detekcija problema.</p>
           <span id="step2-badge" class="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-2.5 py-1 rounded-full self-start">✓ Serverski verifikovano</span>
         </div>
         <div class="glass-card p-5 rounded-2xl space-y-3 flex flex-col">
-          <span id="step3-num" class="text-[10px] font-mono font-bold text-blue-300 bg-blue-950/70 border border-blue-800/50 px-2.5 py-1 rounded-full self-start">KORAK 3</span>
+          <span id="step3-num" class="text-[10px] font-mono font-bold text-indigo-300 bg-indigo-950/70 border border-indigo-800/50 px-2.5 py-1 rounded-full self-start">KORAK 3</span>
           <h3 id="step3-title" class="font-bold text-white">Zamena ≤ 3s</h3>
           <p id="step3-desc" class="text-xs text-slate-400 leading-relaxed flex-1">Plan Lock zamena vozača i autobusa.</p>
           <span id="step3-badge" class="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-2.5 py-1 rounded-full self-start">✓ Serverski verifikovano</span>
         </div>
         <div class="glass-card p-5 rounded-2xl space-y-3 flex flex-col">
-          <span id="step4-num" class="text-[10px] font-mono font-bold text-blue-300 bg-blue-950/70 border border-blue-800/50 px-2.5 py-1 rounded-full self-start">KORAK 4</span>
+          <span id="step4-num" class="text-[10px] font-mono font-bold text-indigo-300 bg-indigo-950/70 border border-indigo-800/50 px-2.5 py-1 rounded-full self-start">KORAK 4</span>
           <h3 id="step4-title" class="font-bold text-white">Driver Potvrda</h3>
           <p id="step4-desc" class="text-xs text-slate-400 leading-relaxed flex-1">Mobilna PWA potvrda preuzimanja.</p>
           <span id="step4-badge" class="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-2.5 py-1 rounded-full self-start">✓ Serverski verifikovano</span>
@@ -358,11 +358,11 @@
         <!-- Technical Security Audit -->
         <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
           <div class="space-y-2">
-            <div class="w-9 h-9 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center border border-blue-500/30 font-bold text-xs">DOC</div>
+            <div class="w-9 h-9 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 font-bold text-xs">DOC</div>
             <h3 id="dl-audit-title" class="font-bold text-white text-sm">Technical Security Audit</h3>
             <p id="dl-audit-desc" class="text-xs text-slate-400">Architecture, tenant isolation, D21 Zero-Credential policy, GDPR compliance report.</p>
           </div>
-          <button onclick="downloadDoc('audit')" id="dl-btn-audit" class="w-full py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
+          <button onclick="downloadDoc('audit')" id="dl-btn-audit" class="w-full py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
             Download HTML
           </button>
         </div>
@@ -462,15 +462,15 @@
         <form onsubmit="submitPilot(event)" class="glass-card p-6 rounded-2xl space-y-4">
           <div class="space-y-1.5">
             <label for="pilot-company" id="pilot-label-name" class="text-xs font-bold text-slate-300 block">Naziv firme</label>
-            <input type="text" id="pilot-company" required class="w-full px-3 py-2.5 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-white focus:border-blue-500 focus:outline-none" placeholder="Busunternehmen GmbH">
+            <input type="text" id="pilot-company" required class="w-full px-3 py-2.5 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-white focus:border-indigo-500 focus:outline-none" placeholder="Busunternehmen GmbH">
           </div>
           <div class="space-y-1.5">
             <label for="pilot-email" id="pilot-label-email" class="text-xs font-bold text-slate-300 block">Email</label>
-            <input type="email" id="pilot-email" required class="w-full px-3 py-2.5 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-white focus:border-blue-500 focus:outline-none" placeholder="office@firma.at">
+            <input type="email" id="pilot-email" required class="w-full px-3 py-2.5 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-white focus:border-indigo-500 focus:outline-none" placeholder="office@firma.at">
           </div>
           <div class="space-y-1.5">
             <label for="pilot-buses" id="pilot-label-buses" class="text-xs font-bold text-slate-300 block">Broj autobusa</label>
-            <input type="number" id="pilot-buses" min="1" required class="w-full px-3 py-2.5 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-white focus:border-blue-500 focus:outline-none" placeholder="25">
+            <input type="number" id="pilot-buses" min="1" required class="w-full px-3 py-2.5 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-white focus:border-indigo-500 focus:outline-none" placeholder="25">
           </div>
           <button type="submit" id="pilot-submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-indigo-600/30 transition-all">Prijavi firmu na pilot</button>
           <p id="pilot-note" class="text-[11px] text-slate-500 text-center">Odgovaramo u roku od 24h. Podaci se koriste isključivo za kontakt.</p>
@@ -570,6 +570,7 @@
         ctaFleet: "Kontaktirajte nas",
         navStaff: "Staff prijava",
         navDriver: "Vozačka app",
+        navDownloadHub: "Download Hub",
         pilotKicker: "Zero-Risk Pilot",
         pilotTitle: "Vođeni pilot program od 30 dana",
         pilotDesc: "Prijavite firmu, uvezemo katalog i obučimo dispečere — bez rizika, bez kartice, uz potpunu kontrolu.",
@@ -657,6 +658,7 @@
         ctaFleet: "Kontaktieren Sie uns",
         navStaff: "Staff-Login",
         navDriver: "Fahrer-App",
+        navDownloadHub: "Download-Hub",
         pilotKicker: "Zero-Risk Pilot",
         pilotTitle: "Begleitetes 30-Tage-Pilotprogramm",
         pilotDesc: "Melden Sie Ihre Firma an — wir importieren den Katalog und schulen die Disponenten. Ohne Risiko, ohne Karte, mit voller Kontrolle.",
@@ -744,6 +746,7 @@
         ctaFleet: "Contact us",
         navStaff: "Staff Login",
         navDriver: "Driver App",
+        navDownloadHub: "Download Hub",
         pilotKicker: "Zero-Risk Pilot",
         pilotTitle: "Guided 30-day pilot program",
         pilotDesc: "Sign your company up — we import the catalog and train your dispatchers. No risk, no card, full control.",
@@ -781,6 +784,7 @@
       document.getElementById('hero-cta-driver').textContent = pack.heroCtaDriver;
       document.getElementById('nav-staff-btn').textContent = pack.navStaff;
       document.getElementById('nav-driver-btn').textContent = pack.navDriver;
+      document.getElementById('nav-download-hub').textContent = pack.navDownloadHub;
       document.getElementById('how-title').textContent = pack.howTitle;
       document.getElementById('how-sub').textContent = pack.howSub;
       for (const n of ['1', '2', '3', '4']) {

@@ -148,14 +148,21 @@ function _docsToList(docs, companyId = null) {
 
 const DISPATCHER_DRIVER_SENSITIVE = Object.freeze([
     "eid", "pin", "password", "passwordHash", "companyId", "company_code", "companyCode",
-    "personalCode", "loginCode", "activationCode", "otp", "plz", "postalCode"
+    "personalCode", "loginCode", "activationCode", "otp", "plz", "postalCode",
+    "companyCodeHash", "loginCodeHash", "temporaryCodeHash", "temporaryHash",
+    "activationCodeHash", "activationExpiresAt", "activationUsedAt",
+    "activatedAt", "codeActivated", "personalCodeUpdatedAt", "personalCodeSetAt",
+    "personalCodeSetBy"
 ]);
 
-/** Dispatcher may only keep contact + assignment fields — never EID/PIN. */
+/** Dispatcher may only keep contact + assignment fields — never EID/PIN.
+ *  Fail-closed: if the role is not explicitly company-admin or superadmin,
+ *  we sanitize as if it were a dispatcher. This prevents accidental credential
+ *  leakage when the role is undefined, null, or any unexpected value. */
 function sanitizeDriverRecordForClient(driver, role) {
     const raw = driver && typeof driver === "object" ? driver : {};
     const name = String(raw.name || [raw.firstName, raw.lastName].filter(Boolean).join(" ")).trim();
-    if (role !== "dispatcher") {
+    if (role === "company-admin" || role === "superadmin") {
         return name && !raw.name ? { ...raw, name } : raw;
     }
     const firstName = String(raw.firstName || "").trim();
@@ -179,7 +186,10 @@ function _docsToDriversList(docs, companyId = null) {
     const role = _currentRole();
     return _docsToList(docs, companyId).map((driver) => {
         const sanitized = sanitizeDriverRecordForClient(driver, role);
-        if (role === "dispatcher") {
+        // Fail-closed: strip sensitive fields for any role that is not
+        // explicitly company-admin or superadmin (covers dispatcher, driver,
+        // undefined, null, and any unexpected value).
+        if (role !== "company-admin" && role !== "superadmin") {
             DISPATCHER_DRIVER_SENSITIVE.forEach((field) => {
                 if (Object.hasOwn(sanitized, field)) delete sanitized[field];
             });

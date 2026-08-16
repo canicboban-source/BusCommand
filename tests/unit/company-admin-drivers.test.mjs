@@ -88,7 +88,7 @@ test("Company Admin can edit driver profile fields and CA-only EID/PIN controls"
   assert.match(registerSrc, /driver_manual_created/);
   assert.match(validation, /\\d\{5,12\}/);
   assert.match(firebase, /sanitizeDriverRecordForClient/);
-  assert.match(firebase, /role !== "dispatcher"/);
+  assert.match(firebase, /role !== "company-admin" && role !== "superadmin"/);
   // Manual add must not chain CSV import + PIN (partial-state risk).
   const manualAddFn = client.match(
     /async function submitCompanyDriverManualAdd\([\s\S]*?\n\}/
