@@ -1,14 +1,14 @@
 // BusCommand — staff surface action handlers
 import { handleCompanyAuditFilters, loadMoreCompanyAudit, refreshCompanyAudit, resetCompanyAuditFilters } from "./admin/company-admin-audit.js";
 import { applyBrandingSettings, clearCompanyBrandingLogo, handleCompanyBrandingLogoFile } from "./admin/company-admin-branding.js";
-import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriverAddModal, closeCompanyDriverEdit, confirmCompanyDriversImport, deleteCompanyDriver, handleCompanyDriversFile, handleCompanyDriversFilter, handleCompanyDriversSearch, openCompanyDriverAddModal, openCompanyDriverEdit, saveCompanyDriverEdit, submitCompanyDriverManualAdd, toggleCompanyDriverStatus } from "./admin/company-admin-drivers.js";
+import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriverAddModal, closeCompanyDriverEdit, confirmCompanyDriversImport, deleteCompanyDriver, toggleDriverPinVisibility, handleCompanyDriversFile, handleCompanyDriversFilter, handleCompanyDriversSearch, openCompanyDriverAddModal, openCompanyDriverEdit, saveCompanyDriverEdit, submitCompanyDriverManualAdd, toggleCompanyDriverStatus } from "./admin/company-admin-drivers.js";
 import { cancelCompanyGroupEdit, deleteCompanyGroup, focusCompanyGroupForm, saveCompanyGroup, startEditCompanyGroup } from "./admin/company-admin-groups.js";
 import { clearCompanyServicePlanPreview, closeCompanyServicePlanDuty, closeCompanyServicePlanHistory, handleCompanyServicePlanFile, handleCompanyServicePlanGroupChange, openCompanyServicePlanDuty, openCompanyServicePlanHistory, publishCompanyServicePlan, activateCompanyServicePlanVersion } from "./admin/company-admin-service-plan.js";
 import { handleCompanySettingsCountry, handleCompanySettingsInput, resetCompanySettingsForm, saveCompanyProfileSettings } from "./admin/company-admin-settings.js";
 import { addCompanyDispatcher, focusCompanyDispatcherForm, removeCompanyDispatcher, resetCompanyDispatcherPassword, revokeCompanyDispatcherSessions, saveCompanyDispatcherGroups, saveCompanyDispatcherProfile, toggleCaDispGroupsEdit, toggleCaDispProfileEdit, toggleCompanyDispatcherStatus } from "./admin/company-admin-team.js";
 import { endCompanySupportSession, openCompanyOpsOverview } from "./admin/company-admin.js";
 import { createDispatcherGroup, enterDispatcherActiveGroup, exitImpersonation, saveNewDispatcherPassword, switchToGroupSetup } from "./admin/dispatcher-setup.js";
-import { superadminCreateCompany, superadminCreateCompanyAdmin, superadminDeleteCompany, superadminCancelDeleteCompanyModal, superadminConfirmDeleteCompany, superadminDeleteCompanyAdmin, superadminFocusCompanies, superadminCopyCompanyId, superadminCopyText, superadminImpersonate, superadminOpenCompany, superadminOpenCompanyDetail, superadminCloseCompanyDetail, superadminOpenCreateMissingAdmin, superadminSubmitCreateMissingAdmin, superadminCancelCreateMissingAdmin, superadminSetCompanyAdminStatus, superadminResetCompanyAdminPassword, superadminResetPin, superadminToggleStatus, superadminStartSupport, superadminCancelSupportModal, superadminConfirmSupportStart, superadminEndSupport, superadminSaveCompanySettings, superadminOnPlanChange, superadminSaveDemoCompanyProfile, superadminOpenCreateModal, superadminCloseCreateModal, superadminSubmitCreateModal } from "./admin/superadmin.js";
+import { loadSuperadminModule } from "./admin/superadmin-loader.js";
 import { forgotDispatcherPassword, loginAsDispatcher, logout } from "./auth/login-dispatcher.js";
 import { closeSuperAdminModal, confirmSuperAdminPin, handleLogoClick } from "./auth/superadmin.js";
 import { clickElementById, installActionDelegates, removeElementById } from "./core/action-delegate.js";
@@ -262,6 +262,57 @@ async function fillHelpModal(...args) {
     return mod.fillHelpModal(...args);
 }
 
+/**
+ * D17: Super Admin panel handlers lazy-load the SA chunk on first use —
+ * the panel is role-gated, so CA/Dispo sessions never pay for it.
+ */
+const SUPERADMIN_ACTIONS = [
+    "superadminOpenCreateModal",
+    "superadminCloseCreateModal",
+    "superadminSubmitCreateModal",
+    "superadminCreateCompany",
+    "superadminCreateCompanyAdmin",
+    "superadminDeleteCompany",
+    "superadminCancelDeleteCompanyModal",
+    "superadminConfirmDeleteCompany",
+    "superadminDeleteCompanyAdmin",
+    "superadminFocusCompanies",
+    "superadminCopyCompanyId",
+    "superadminCopyText",
+    "superadminImpersonate",
+    "superadminOpenCompany",
+    "superadminOpenCompanyDetail",
+    "superadminCloseCompanyDetail",
+    "superadminOpenCreateMissingAdmin",
+    "superadminSubmitCreateMissingAdmin",
+    "superadminCancelCreateMissingAdmin",
+    "superadminSetCompanyAdminStatus",
+    "superadminResetCompanyAdminPassword",
+    "superadminResetPin",
+    "superadminToggleStatus",
+    "superadminStartSupport",
+    "superadminCancelSupportModal",
+    "superadminConfirmSupportStart",
+    "superadminEndSupport",
+    "superadminSaveCompanySettings",
+    "superadminOnPlanChange",
+    "superadminSaveDemoCompanyProfile"
+];
+
+const superadminLazyHandlers = {};
+for (const actionName of SUPERADMIN_ACTIONS) {
+    superadminLazyHandlers[actionName] = async function (...args) {
+        let mod;
+        try {
+            mod = await loadSuperadminModule();
+        } catch {
+            showToast(t("plan_import_chunk_load_failed"), "error", 8000);
+            return undefined;
+        }
+        return mod[actionName](...args);
+    };
+}
+
 const HANDLERS = {
     addBus,
     toggleBusEdit,
@@ -453,36 +504,7 @@ const HANDLERS = {
     showModal,
     startEditCompanyGroup,
     submitDispatcherMessage,
-    superadminOpenCreateModal,
-    superadminCloseCreateModal,
-    superadminSubmitCreateModal,
-    superadminCreateCompany,
-    superadminCreateCompanyAdmin,
-    superadminDeleteCompany,
-    superadminCancelDeleteCompanyModal,
-    superadminConfirmDeleteCompany,
-    superadminDeleteCompanyAdmin,
-    superadminFocusCompanies,
-    superadminCopyCompanyId,
-    superadminCopyText,
-    superadminImpersonate,
-    superadminOpenCompany,
-    superadminOpenCompanyDetail,
-    superadminCloseCompanyDetail,
-    superadminOpenCreateMissingAdmin,
-    superadminSubmitCreateMissingAdmin,
-    superadminCancelCreateMissingAdmin,
-    superadminSetCompanyAdminStatus,
-    superadminResetCompanyAdminPassword,
-    superadminResetPin,
-    superadminToggleStatus,
-    superadminStartSupport,
-    superadminCancelSupportModal,
-    superadminConfirmSupportStart,
-    superadminEndSupport,
-    superadminSaveCompanySettings,
-    superadminOnPlanChange,
-    superadminSaveDemoCompanyProfile,
+    ...superadminLazyHandlers,
     switchScheduleTab,
     switchSection,
     switchToGroupSetup,
@@ -494,6 +516,7 @@ const HANDLERS = {
     removeCompanyDispatcher,
     toggleCompanyDriverStatus,
     deleteCompanyDriver,
+    toggleDriverPinVisibility,
     toggleDriverActive,
     toggleDriverKG,
     toggleTheme,

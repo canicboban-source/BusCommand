@@ -702,6 +702,19 @@ function deleteCompanyDriver(driverId) {
     }, { danger: true, title: t("ca_drivers_delete_confirm_title"), confirmText: t("ca_drivers_delete") || "Obriši" });
 }
 
+/** Eye toggle for PIN inputs — switches password↔text, never blocks typing. */
+function toggleDriverPinVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const showing = input.type === "text";
+    input.type = showing ? "password" : "text";
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+    const button = input.closest(".company-pin-input-wrap")?.querySelector(".company-pin-toggle i");
+    if (button) button.setAttribute("data-lucide", showing ? "eye" : "eye-off");
+    if (typeof lucide !== "undefined") lucide.createIcons();
+}
+
 function openCompanyDriverAddModal() {
     populateGroupControls();
     clearManualDriverForm();
@@ -826,6 +839,10 @@ async function saveCompanyDriverEdit() {
     const statusValue = String(document.getElementById("ca-driver-edit-status")?.value || "active");
     const active = statusValue !== "inactive";
     const payload = { firstName, lastName, phone, email, postalCode, groupId, knownGroupIds, active };
+    // EID is editable — changes go through the dedicated identity-guard route.
+    const eidInput = document.getElementById("ca-driver-edit-eid");
+    const eidValue = eidInput ? String(eidInput.value || "").trim() : "";
+    const eidChanged = Boolean(eidValue) && eidValue !== String(driver.eid || "").trim();
     editSavePending = true;
     const saveBtn = document.getElementById("ca-driver-edit-save");
     if (saveBtn) saveBtn.disabled = true;
@@ -837,12 +854,17 @@ async function saveCompanyDriverEdit() {
                 lineId: groupId,
                 knownGroupIds,
                 active,
+                ...(eidChanged ? { eid: eidValue } : {}),
                 ...(personalCode ? { pin: personalCode, company_code: personalCode, hasPersonalCode: true, codeActivated: true } : {})
             });
             saveState();
         } else {
             const result = await ApiClient.updateCompanyDriver(window.currentUser?.companyId, driverId, payload);
             if (!result.success) throw new Error(result.error || t("ca_drivers_edit_failed"));
+            if (eidChanged) {
+                const eidResult = await ApiClient.setCompanyDriverEid(window.currentUser?.companyId, driverId, eidValue);
+                if (!eidResult.success) throw new Error(result.error || t("ca_drivers_edit_failed"));
+            }
             if (personalCode) {
                 const codeResult = await ApiClient.setCompanyDriverPersonalCode(
                     window.currentUser?.companyId,
@@ -930,6 +952,7 @@ export {
     changeCompanyDriversPage,
     toggleCompanyDriverStatus,
     deleteCompanyDriver,
+    toggleDriverPinVisibility,
     openCompanyDriverAddModal,
     closeCompanyDriverAddModal,
     openCompanyDriverEdit,

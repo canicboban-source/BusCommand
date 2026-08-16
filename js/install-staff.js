@@ -29,7 +29,6 @@ import "./maps/schedule-parse.js";
 import "./maps/schedule-upload.js";
 import "./maps/schedule-viewer.js";
 import "./maps/schedule-auto-detect.js";
-import "./admin/superadmin.js";
 import "./admin/company-admin.js";
 import "./admin/dispatcher-setup.js";
 import "./data/schedules.js";

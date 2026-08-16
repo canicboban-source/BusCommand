@@ -543,14 +543,18 @@ function registerDriverRoutes(app, deps) {
     }
   });
 
-  app.use("/api/driver", async (req, res, next) => {
+  // 24/7 driver access: schedule, confirmations, SOS, reports, vacations and
+  // messages stay reachable whenever the driver authenticates. The ONLY
+  // shift-bound surface is the live GPS trail (GDPR: telemetry is tied to
+  // an active driving window, nothing else).
+  app.use("/api/driver/location", async (req, res, next) => {
     try {
       const policy = await loadDriverWorkPolicy(req.driver);
       if (policy.status !== "active") {
         return res.status(403).json({
           success: false,
           code: policy.status === "grace" ? "DRIVER_SHIFT_ENDED" : "DRIVER_OFF_DUTY",
-          error: "Aplikacija voza\u010da miruje van radnog vremena."
+          error: "GPS telemetrija je dostupna samo tokom aktivne smene."
         });
       }
       req.driverWorkPolicy = policy;

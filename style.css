@@ -3646,6 +3646,29 @@ input:focus, select:focus, textarea:focus {
     color: #fee2e2;
 }
 .company-driver-delete-action:hover { background: #ef4444; border-color: #ef4444; color: #fff; }
+
+/* PIN input with eye toggle — the mask must never block typing. */
+.company-pin-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.company-pin-input-wrap input { flex: 1; min-width: 0; }
+.company-pin-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+.company-pin-toggle:hover { color: var(--text-main); border-color: rgba(148,163,184,0.4); }
+.company-pin-toggle i { width: 16px; height: 16px; }
 .company-driver-edit-panel {
     background: linear-gradient(135deg, #0f1419, #1a2332);
     border: 1px solid rgba(61, 126, 245, 0.45);

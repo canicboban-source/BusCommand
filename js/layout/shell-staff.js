@@ -1,6 +1,6 @@
 // BusCommand — staff surface app shell (SA / CA / dispatcher)
 import { renderCompanyAdminDashboard } from "../admin/company-admin.js";
-import { renderSuperAdminDashboard } from "../admin/superadmin.js";
+import { loadSuperadminModule } from "../admin/superadmin-loader.js";
 import { checkSOSStatus } from "../maps/sos-siren.js";
 import { rejectDispatcherWithoutGroups, clearAllSensitiveAuthFields } from "../auth/login-ui.js";
 import { clearUserSession, syncUserSession } from "../auth/login-session.js";
@@ -66,7 +66,7 @@ export function showAppLayout() {
         dispNav?.classList.add("hidden");
         saNav?.classList.remove("hidden");
         caNav?.classList.add("hidden");
-        renderSuperAdminDashboard();
+        loadSuperadminModule().then((mod) => mod.renderSuperAdminDashboard()).catch(() => {});
         switchSection("superadmin-dashboard");
     } else if (role === "company-admin") {
         const sub = document.getElementById("header-user-sub");

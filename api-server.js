@@ -18,6 +18,11 @@ const pinoHttp = require("pino-http");
 const { logger } = require("./server/logger");
 const { buildStartupInfo } = require("./server/startup-info");
 const { registerDriverRoutes } = require("./server/driver-routes");
+const {
+  readDriverIdentityGuardInTx,
+  writeDriverIdentityGuardBumpInTx,
+  findEidConflict
+} = require("./server/driver-identity-guard");
 const { rateLimit, clearRateLimit, getClientIp } = require("./server/rate-limit");
 const {
   ProvisioningError,
@@ -83,7 +88,8 @@ const {
   companyDriverProfileBody,
   companyDriverPersonalCodeBody,
   companyDriverCreateBody,
-  companyDriverDeleteBody
+  companyDriverDeleteBody,
+  companyDriverEidBody
 } = require("./server/validation");
 
 const { version: APP_VERSION } = require("./package.json");
@@ -1408,6 +1414,7 @@ app.patch(
         }
       }
       await profileRef.update(profileUpdate);
+
       await _logAuditEvent(companyId, req.staffUser.uid, "driver_profile_updated", {
         driverId,
         previous: {
@@ -1445,6 +1452,72 @@ app.patch(
       }
       req.log?.error({ err }, "Company driver profile update failed");
       return res.status(500).json({ success: false, error: "Profil vozača nije sačuvan." });
+    }
+  }
+);
+
+/** CA-only: rewrite the internal service number (EID). Credential data stays
+ *  out of the profile schema; this route owns the identity-guard transaction
+ *  (uniqueness check + guard bump), mirroring the manual-create contract. */
+app.post(
+  "/api/company-admin/drivers/:driverId/eid",
+  rateLimit(10, 5 * 60 * 1000),
+  requireCompanyAdmin,
+  validateBody(companyDriverEidBody),
+  async (req, res) => {
+    const companyId = requireOwnCompany(req, res);
+    if (!companyId) return;
+    const driverId = String(req.params.driverId || "").trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(driverId)) {
+      return res.status(400).json({ success: false, error: "Nevažeći vozač." });
+    }
+    const newEid = String(req.validatedBody.eid || "").trim();
+    const companyRef = db.collection("companies").doc(companyId);
+    const credentialRef = companyRef.collection("driver_credentials").doc(driverId);
+    try {
+      let previousEid = null;
+      await db.runTransaction(async (tx) => {
+        const guard = await readDriverIdentityGuardInTx(tx, companyRef);
+        const credSnap = await tx.get(credentialRef);
+        if (!credSnap.exists) {
+          const err = new Error("Vozač nije pronađen.");
+          err.code = "driver-not-found";
+          throw err;
+        }
+        const cred = credSnap.data() || {};
+        previousEid = String(cred.eid || "").trim();
+        if (previousEid === newEid) return;
+        const allCredentials = await tx.get(companyRef.collection("driver_credentials"));
+        if (findEidConflict(allCredentials.docs, [newEid])) {
+          const err = new Error("EID_EXISTS");
+          err.code = "EID_EXISTS";
+          throw err;
+        }
+        tx.update(credentialRef, {
+          eid: newEid,
+          eidUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          eidUpdatedBy: req.staffUser.uid
+        });
+        writeDriverIdentityGuardBumpInTx(tx, admin.firestore.FieldValue, guard);
+      });
+      await _logAuditEvent(companyId, req.staffUser.uid, "driver_eid_updated", {
+        driverId,
+        previous: { eid: previousEid },
+        next: { eid: newEid }
+      }, {
+        actorRole: req.staffUser.role,
+        actorName: req.staffUser.name || null
+      });
+      return res.json({ success: true, driverId, eid: newEid });
+    } catch (err) {
+      if (err.code === "EID_EXISTS") {
+        return res.status(409).json({ success: false, error: "EID već postoji u ovoj firmi." });
+      }
+      if (err.code === "driver-not-found") {
+        return res.status(404).json({ success: false, error: err.message });
+      }
+      req.log?.error({ err }, "Company driver EID update failed");
+      return res.status(500).json({ success: false, error: "EID nije sačuvan." });
     }
   }
 );

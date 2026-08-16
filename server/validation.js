@@ -191,6 +191,13 @@ const companyDriverProfileBody = z.object({
   active: z.boolean().optional()
 }).strict();
 
+/** CA-only: rewrite the internal service number (EID) — credential data,
+ *  handled on its own audited route inside the identity-guard transaction. */
+const companyDriverEidBody = z.object({
+  companyId: z.string().trim().min(1).max(64),
+  eid: z.string().trim().min(1).max(64)
+}).strict();
+
 /** CA-only: delete a driver — companyId is required for requireOwnCompany. */
 const companyDriverDeleteBody = z.object({
   companyId: z.string().trim().min(1).max(64)
@@ -273,5 +280,6 @@ module.exports = {
   companyDriverProfileBody,
   companyDriverPersonalCodeBody,
   companyDriverCreateBody,
-  companyDriverDeleteBody
+  companyDriverDeleteBody,
+  companyDriverEidBody
 };

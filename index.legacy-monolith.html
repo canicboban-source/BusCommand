@@ -1441,7 +1441,10 @@
                                     </label>
                                     <label class="form-group" for="ca-driver-add-pin">
                                         <span data-i18n="ca_drivers_add_pin">PIN (5–12 cifara)</span>
-                                        <input type="password" id="ca-driver-add-pin" inputmode="numeric" pattern="[0-9]{5,12}" minlength="5" maxlength="12" autocomplete="new-password" required>
+                                        <span class="company-pin-input-wrap">
+                                            <input type="password" id="ca-driver-add-pin" inputmode="numeric" pattern="[0-9]{5,12}" minlength="5" maxlength="12" value="" autocomplete="new-password" required data-i18n-placeholder="ca_drivers_pin_placeholder">
+                                            <button type="button" class="company-pin-toggle" data-action="toggleDriverPinVisibility" data-action-args='["ca-driver-add-pin"]' aria-label="PIN" title="PIN"><i data-lucide="eye"></i></button>
+                                        </span>
                                     </label>
                                     <label class="form-group" for="ca-driver-add-group">
                                         <span data-i18n="ca_drivers_add_primary_group">Primarna grupa</span>
@@ -1481,7 +1484,7 @@
                             <div class="company-driver-edit-grid">
                                 <label class="form-group" for="ca-driver-edit-eid">
                                     <span data-i18n="ca_drivers_eid">EID</span>
-                                    <input type="text" id="ca-driver-edit-eid" readonly tabindex="-1">
+                                    <input type="text" id="ca-driver-edit-eid" maxlength="64" autocomplete="off">
                                 </label>
                                 <label class="form-group" for="ca-driver-edit-first-name">
                                     <span data-i18n="ca_drivers_edit_first_name">Ime</span>
@@ -1518,7 +1521,10 @@
                                 </label>
                                 <label class="form-group company-driver-edit-group" for="ca-driver-edit-pin">
                                     <span data-i18n="ca_drivers_pin_label">Novi lični kod (PIN)</span>
-                                    <input type="text" id="ca-driver-edit-pin" maxlength="64" autocomplete="off" placeholder="••••">
+                                    <span class="company-pin-input-wrap">
+                                        <input type="password" id="ca-driver-edit-pin" inputmode="numeric" pattern="[0-9]{5,12}" minlength="5" maxlength="12" value="" autocomplete="new-password" data-i18n-placeholder="ca_drivers_pin_placeholder">
+                                        <button type="button" class="company-pin-toggle" data-action="toggleDriverPinVisibility" data-action-args='["ca-driver-edit-pin"]' aria-label="PIN" title="PIN"><i data-lucide="eye"></i></button>
+                                    </span>
                                 </label>
                             </div>
                             <fieldset class="company-driver-known-fieldset">

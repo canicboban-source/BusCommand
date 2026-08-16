@@ -10,23 +10,22 @@ import { t } from "../ui/i18n.js";
 import { saveDriverOfflineSnapshot, clearDriverSensitiveCaches } from "./offline-snapshot.js";
 
 let policy = null;
-let restTimer = null;
-let logoutTimer = null;
+let shiftEndTimer = null;
 let visibilityBound = false;
 
 function driverWorkPolicy() {
     return policy;
 }
 
+/** True only inside an active driving window — gates GPS telemetry (GDPR),
+ *  never the app itself: drivers stay logged in 24/7. */
 function isDriverWorkSessionActive() {
     return USE_LOCAL_STATE || (policy?.status === "active" && Date.now() < Date.parse(policy.notificationsUntil));
 }
 
 function clearWorkTimers() {
-    if (restTimer) clearTimeout(restTimer);
-    if (logoutTimer) clearTimeout(logoutTimer);
-    restTimer = null;
-    logoutTimer = null;
+    if (shiftEndTimer) clearTimeout(shiftEndTimer);
+    shiftEndTimer = null;
 }
 
 async function terminateDriverSession(messageKey = "driver_session_ended") {
@@ -38,64 +37,35 @@ async function terminateDriverSession(messageKey = "driver_session_ended") {
     try { await clearDriverSensitiveCaches(); } catch { /* best-effort */ }
     clearUserSession();
     window.currentUser = null;
-    document.getElementById("driver-rest-overlay")?.remove();
     try { await Auth.logout(); } catch { /* login screen still closes local session */ }
     showLoginScreen(true);
-    showToast(t(messageKey), "info", 6000);
+    if (messageKey) showToast(t(messageKey), "info", 6000);
 }
 
-function showRestOverlay() {
-    if (document.getElementById("driver-rest-overlay")) return;
-    const overlay = document.createElement("div");
-    overlay.id = "driver-rest-overlay";
-    overlay.setAttribute("role", "dialog");
-    overlay.setAttribute("aria-modal", "true");
-    overlay.style.cssText = "position:fixed;inset:0;z-index:20000;background:#07111f;display:grid;place-items:center;padding:24px;color:#fff;text-align:center;";
-    const card = document.createElement("div");
-    card.style.cssText = "max-width:520px;padding:32px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:#101c2e;box-shadow:0 24px 80px rgba(0,0,0,.45);";
-    const title = document.createElement("h2");
-    title.textContent = t("driver_rest_title");
-    const description = document.createElement("p");
-    description.textContent = t("driver_rest_description");
-    description.style.cssText = "color:#a9b7ca;line-height:1.6;margin:12px 0 22px;";
-    const button = document.createElement("button");
-    button.className = "btn-primary";
-    button.textContent = t("driver_logout_now");
-    button.addEventListener("click", () => terminateDriverSession());
-    card.append(title, description, button);
-    overlay.appendChild(card);
-    document.body.appendChild(overlay);
-    button.focus();
-}
-
-function enterDriverRestMode() {
-    configureDriverGpsGate({
-        liveGps: policy?.features?.liveGps === true,
-        sessionActive: false
-    });
+/** Shift ended but the driver stays signed in (24/7): close the GPS gate,
+ *  drop live sync and surface the neutral off-duty status. */
+function enterDriverIdleMode(announce = true) {
+    configureDriverGpsGate({ liveGps: false, sessionActive: false });
     stopDriverGpsTracking();
-    stopFirestoreSync();
-    if (window.state?.messages) window.state.messages = [];
-    showRestOverlay();
+    policy = { ...(policy || {}), status: "off_duty" };
+    if (announce) showToast(t("driver_shift_idle_24_7") || t("driver_session_ended"), "info", 6000);
 }
 
 function enforceCurrentTime() {
     if (!policy || USE_LOCAL_STATE) return;
+    if (policy.status !== "active" && policy.status !== "grace") return;
     const current = Date.now();
     if (current >= Date.parse(policy.sessionEndsAt)) {
-        terminateDriverSession();
-    } else if (current >= Date.parse(policy.notificationsUntil)) {
-        enterDriverRestMode();
+        enterDriverIdleMode();
     }
 }
 
 function startDriverWorkSessionGuard() {
     if (USE_LOCAL_STATE || !policy) return;
     clearWorkTimers();
-    const untilRest = Math.max(0, Date.parse(policy.notificationsUntil) - Date.now());
-    const untilLogout = Math.max(0, Date.parse(policy.sessionEndsAt) - Date.now());
-    restTimer = setTimeout(enterDriverRestMode, untilRest);
-    logoutTimer = setTimeout(() => terminateDriverSession(), untilLogout);
+    if (policy.status !== "active" && policy.status !== "grace") return;
+    const untilEnd = Math.max(0, Date.parse(policy.sessionEndsAt) - Date.now());
+    shiftEndTimer = setTimeout(() => enterDriverIdleMode(), untilEnd);
     if (!visibilityBound) {
         visibilityBound = true;
         document.addEventListener("visibilitychange", () => {
@@ -105,15 +75,17 @@ function startDriverWorkSessionGuard() {
     enforceCurrentTime();
 }
 
+/** 24/7 contract: a valid login always opens the app. Off-duty drivers get
+ *  the neutral "no shift today" status with every feature except live GPS. */
 async function prepareDriverWorkSession() {
     if (USE_LOCAL_STATE) return true;
     const result = await ApiClient.getDriverWorkSession();
-    if (!result.success || result.policy?.status !== "active") {
+    if (!result.success) {
         policy = result.policy || null;
-        await terminateDriverSession(result.policy?.status === "grace" ? "driver_shift_ended" : "driver_off_duty");
+        await terminateDriverSession("driver_session_ended");
         return false;
     }
-    policy = result.policy;
+    policy = result.policy || null;
     configureDriverGpsGate({
         liveGps: policy?.features?.liveGps === true,
         sessionActive: policy?.status === "active"
@@ -138,7 +110,7 @@ async function confirmUpcomingShifts(dates = null) {
     const targets = Array.isArray(dates) && dates.length
         ? pending.filter((target) => dates.includes(target.date))
         : pending;
-    if (!targets.length || policy?.status !== "active") return false;
+    if (!targets.length) return false;
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
         showToast(t("driver_critical_needs_network"), "error");
         return false;
@@ -158,6 +130,6 @@ async function confirmUpcomingShifts(dates = null) {
 
 export {
     driverWorkPolicy, isDriverWorkSessionActive, prepareDriverWorkSession,
-    startDriverWorkSessionGuard, enterDriverRestMode, terminateDriverSession,
+    startDriverWorkSessionGuard, enterDriverIdleMode, terminateDriverSession,
     confirmUpcomingShifts, driverLiveGpsEnabled
 };
