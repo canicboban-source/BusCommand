@@ -288,9 +288,16 @@ function submitVacationRequest(event) {
     const endVal = document.getElementById("vacation-end")?.value || "";
     const type = document.getElementById("vacation-type")?.value || "";
     const reason = String(document.getElementById("vacation-reason")?.value || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startVal) || !/^\d{4}-\d{2}-\d{2}$/.test(endVal)) {
+        showToast(t("js_alert_date_err"), "error");
+        return;
+    }
+    if (endVal < startVal) {
+        showToast(t("driver_vacation_end_before_start") || "End date must be on or after start date.", "error");
+        return;
+    }
     const days = vacationDays(startVal, endVal);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(startVal) || !/^\d{4}-\d{2}-\d{2}$/.test(endVal)
-        || !["lt_vacation", "lt_paid", "lt_days"].includes(type)
+    if (!["lt_vacation", "lt_paid", "lt_days"].includes(type)
         || !Number.isInteger(days) || days < 1 || days > 366 || reason.length > 1000) {
         showToast(t("js_alert_date_err"), "error");
         return;

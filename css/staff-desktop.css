@@ -430,6 +430,59 @@ html[data-app-surface="staff"] #dispatcher-dashboard.ops-center .ops-center-top 
     margin-bottom: 14px;
 }
 
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-center-top-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+html[data-app-surface="staff"] .ops-last-refreshed {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+html[data-app-surface="staff"] .ops-tomorrow-card {
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-top: 12px;
+    border: 1px solid var(--border-light, #e5e7eb);
+    background: var(--bg-surface, #fafafa);
+}
+html[data-app-surface="staff"] .ops-tomorrow-card.is-ok {
+    border-color: var(--success, #10b981);
+    background: color-mix(in srgb, var(--success, #10b981) 5%, white);
+}
+html[data-app-surface="staff"] .ops-tomorrow-card.is-warning {
+    border-color: var(--warning, #f59e0b);
+    background: color-mix(in srgb, var(--warning, #f59e0b) 5%, white);
+}
+html[data-app-surface="staff"] .ops-tomorrow-card.is-critical {
+    border-color: var(--danger, #ef4444);
+    background: color-mix(in srgb, var(--danger, #ef4444) 5%, white);
+}
+html[data-app-surface="staff"] .ops-tomorrow-stats {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-top: 4px;
+}
+html[data-app-surface="staff"] .ops-tomorrow-stats strong {
+    font-size: 1.3rem;
+}
+html[data-app-surface="staff"] .ops-tomorrow-detail {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+html[data-app-surface="staff"] .ops-tomorrow-warn {
+    margin: 6px 0 0;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--danger, #ef4444);
+}
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-health {
     display: inline-flex;
     align-items: center;
@@ -2824,6 +2877,29 @@ html[data-app-surface="staff"] .daily-plan-slot-cell.is-drop-target {
 html[data-app-surface="staff"] .dnd-fallback-select {
     margin-top: 2px;
 }
+@keyframes dnd-shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(3px); }
+}
+html[data-app-surface="staff"] .dnd-driver-chip.dnd-drop-failed {
+    animation: dnd-shake 0.5s ease-out;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.5);
+}
+html[data-app-surface="staff"] .daily-plan-future-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary-color) 20%, transparent);
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
 /* ── Monthly day edit modal ── */
 html[data-app-surface="staff"] .monthly-day-edit-panel {
     background: linear-gradient(160deg, color-mix(in srgb, var(--staff-panel) 88%, #0f1419) 0%, var(--staff-panel-2) 100%);
@@ -3068,6 +3144,32 @@ html[data-app-surface="staff"] .monthly-mass-ops__field .med-control {
     min-height: 36px;
 }
 
+html[data-app-surface="staff"] .monthly-matrix-bulk-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 12px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--primary-color) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary-color) 18%, transparent);
+}
+html[data-app-surface="staff"] .monthly-matrix-bulk-title {
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+html[data-app-surface="staff"] .monthly-matrix-bulk-field {
+    display: grid;
+    gap: 4px;
+    font-size: 0.75rem;
+}
+html[data-app-surface="staff"] .monthly-matrix-bulk-field .med-control {
+    min-width: 88px;
+    min-height: 36px;
+}
 html[data-app-surface="staff"] .monthly-matrix-wrap {
     margin-bottom: 18px;
 }
@@ -4970,7 +5072,9 @@ html[data-app-surface="staff"] .company-drivers-directory-table td {
 html[data-app-surface="staff"] .company-drivers-directory-table th:nth-child(7),
 html[data-app-surface="staff"] .company-drivers-directory-table td:nth-child(7),
 html[data-app-surface="staff"] .company-drivers-directory-table th:nth-child(8),
-html[data-app-surface="staff"] .company-drivers-directory-table td:nth-child(8) {
+html[data-app-surface="staff"] .company-drivers-directory-table td:nth-child(8),
+html[data-app-surface="staff"] .company-drivers-directory-table th:nth-child(9),
+html[data-app-surface="staff"] .company-drivers-directory-table td:nth-child(9) {
   overflow: visible;
   text-overflow: clip;
   white-space: nowrap;
@@ -4982,7 +5086,9 @@ html[data-app-surface="staff"] .company-groups-list-card,
 html[data-app-surface="staff"] #ca-groups-manage-list {
   min-width: 0;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
+  position: relative;
 }
 
 html[data-app-surface="staff"] .company-drivers-legacy-notice {
@@ -4997,11 +5103,294 @@ html[data-app-surface="staff"] .company-drivers-legacy-notice {
   line-height: 1.4;
 }
 
+/* ── Admin page layout standard ──────────────────────────────────────
+   Top: secondary/compact action cards (add, import). Bottom: the full-width
+   directory/list — the dominant element with every filter and option visible.
+   Applies first to CA Drivers; reuse .admin-page-actions / .admin-page-directory
+   on other Company Admin pages to keep the same visual hierarchy everywhere. */
+html[data-app-surface="staff"] .company-drivers-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+html[data-app-surface="staff"] .company-drivers-create-stack,
+html[data-app-surface="staff"] .admin-page-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 768px) {
+  html[data-app-surface="staff"] .company-drivers-create-stack,
+  html[data-app-surface="staff"] .admin-page-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Secondary action cards — compact, muted, clearly lower visual weight than
+   the directory below them. */
+html[data-app-surface="staff"] .company-drivers-add-card,
+html[data-app-surface="staff"] .company-drivers-import-card,
+html[data-app-surface="staff"] .admin-page-actions .card {
+  padding: 16px;
+  background: var(--panel-alt-bg, rgba(148, 163, 184, 0.05));
+  box-shadow: none;
+}
+html[data-app-surface="staff"] .company-drivers-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+html[data-app-surface="staff"] .company-drivers-card-heading h3 {
+  font-size: 0.92rem;
+  margin: 2px 0 4px;
+}
+html[data-app-surface="staff"] .company-drivers-card-heading p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+html[data-app-surface="staff"] .company-drivers-card-heading > i {
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* Directory — the dominant, full-width element. Stronger accent so the eye
+   lands here after the compact actions above. */
+html[data-app-surface="staff"] .company-drivers-directory-card,
+html[data-app-surface="staff"] .admin-page-directory {
+  padding: 20px;
+  border-top: 3px solid var(--primary-color);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+}
+html[data-app-surface="staff"] .company-drivers-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--panel-border);
+}
+html[data-app-surface="staff"] .company-drivers-toolbar h3 {
+  font-size: 1.05rem;
+  margin: 2px 0 0;
+}
+html[data-app-surface="staff"] .company-drivers-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+html[data-app-surface="staff"] .company-drivers-filters select {
+  min-height: 36px;
+}
+html[data-app-surface="staff"] .company-drivers-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  min-height: 36px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: var(--panel-bg);
+}
+html[data-app-surface="staff"] .company-drivers-search svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+html[data-app-surface="staff"] .company-drivers-search input {
+  border: none;
+  background: transparent;
+  min-height: 34px;
+  min-width: 200px;
+}
+html[data-app-surface="staff"] .company-drivers-search input:focus {
+  outline: none;
+}
+
+/* Summary stat strip — compact chips above the actions, not competing with them. */
+html[data-app-surface="staff"] .company-drivers-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+html[data-app-surface="staff"] .company-driver-stat {
+  flex: 1 1 140px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: none;
+}
+html[data-app-surface="staff"] .company-driver-stat span {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+html[data-app-surface="staff"] .company-driver-stat strong {
+  font-size: 1.3rem;
+}
+html[data-app-surface="staff"] .company-driver-stat-active strong {
+  color: var(--success-color);
+}
+html[data-app-surface="staff"] .company-driver-stat-expiry strong {
+  color: var(--warning-color);
+}
+
 html[data-app-surface="staff"] .company-drivers-directory-table {
   display: table;
   width: 100%;
   max-width: 100%;
-  table-layout: fixed;
+  table-layout: auto;
+  min-width: 880px;
+}
+
+/* Actions column (9th) — sticky right so kebab menu is always visible */
+html[data-app-surface="staff"] .company-drivers-directory-table th:nth-child(9),
+html[data-app-surface="staff"] .company-drivers-directory-table td:nth-child(9) {
+  position: sticky;
+  right: 0;
+  background: var(--card-bg, #1A2438);
+  box-shadow: -2px 0 6px rgba(0,0,0,0.25);
+  z-index: 2;
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  padding: 6px 8px;
+  text-align: center;
+}
+
+html[data-app-surface="staff"] .company-driver-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Status pill — mirrors .bus-status-pill so it never overflows its table cell. */
+html[data-app-surface="staff"] .company-driver-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+html[data-app-surface="staff"] .company-driver-status svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+html[data-app-surface="staff"] .company-driver-status.is-active {
+  background: var(--success-bg);
+  color: var(--success-color);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+html[data-app-surface="staff"] .company-driver-status.is-inactive {
+  background: var(--panel-alt-bg, rgba(148, 163, 184, 0.12));
+  color: var(--text-muted);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+/* Compliance pill — license/CPC/medical expiry state, color-coded and self-explanatory via title tooltip. */
+html[data-app-surface="staff"] .compliance-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  margin: 1px;
+}
+html[data-app-surface="staff"] .compliance-pill svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+html[data-app-surface="staff"] .compliance-pill.is-expired {
+  background: var(--danger-bg);
+  color: var(--danger-color);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+html[data-app-surface="staff"] .compliance-pill.is-soon {
+  background: var(--warning-bg);
+  color: var(--warning-color);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+html[data-app-surface="staff"] .compliance-pill.is-ok {
+  background: var(--success-bg);
+  color: var(--success-color);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+html[data-app-surface="staff"] .compliance-pill.is-empty {
+  color: var(--text-muted);
+  cursor: help;
+}
+html[data-app-surface="staff"] .company-drivers-th-info {
+  width: 12px;
+  height: 12px;
+  opacity: 0.5;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+
+/* PIN column — missing PIN is a one-click action, not a dead dash, since most
+   fleets import drivers before anyone has set a personal code. */
+html[data-app-surface="staff"] .company-driver-pin-missing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--warning-bg);
+  color: var(--warning-color);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  cursor: pointer;
+}
+html[data-app-surface="staff"] .company-driver-pin-missing:hover {
+  border-color: rgba(245, 158, 11, 0.6);
+}
+html[data-app-surface="staff"] .company-driver-pin-missing svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+html[data-app-surface="staff"] .company-driver-pin-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+html[data-app-surface="staff"] .company-driver-pin-status.is-set {
+  color: var(--success-color);
+}
+html[data-app-surface="staff"] .company-driver-pin-status svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {

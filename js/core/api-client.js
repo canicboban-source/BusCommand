@@ -263,9 +263,9 @@ const ApiClient = (() => {
         });
     }
     async function deleteCompanyGroup(companyId, groupId) {
-        const query = new URLSearchParams({ companyId });
-        return apiFetch("/api/company-admin/groups/" + encodeURIComponent(groupId) + "?" + query.toString(), {
-            method: "DELETE"
+        return apiFetch("/api/company-admin/groups/" + encodeURIComponent(groupId), {
+            method: "DELETE",
+            body: JSON.stringify({ companyId })
         });
     }
     async function reportStateSync(details) {
@@ -323,9 +323,9 @@ const ApiClient = (() => {
         return apiFetch("/api/company-admin/drivers" + query);
     }
     async function deleteCompanyDriver(companyId, driverId) {
-        const query = new URLSearchParams({ companyId });
-        return apiFetch("/api/company-admin/drivers/" + encodeURIComponent(driverId) + "?" + query.toString(), {
-            method: "DELETE"
+        return apiFetch("/api/company-admin/drivers/" + encodeURIComponent(driverId), {
+            method: "DELETE",
+            body: JSON.stringify({ companyId })
         });
     }
     async function setCompanyDriverPersonalCode(companyId, driverId, companyCode) {

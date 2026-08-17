@@ -28,14 +28,38 @@ function normalizeShiftCode(raw, lineId) {
     if (!text) return null;
 
     const upper = text.toUpperCase();
-    if (/SLOBODNO|FREI|^OFF$|ABWESEN/.test(upper)) {
+
+    // A real route code (e.g. "320.701", "320.F05") in the same cell always wins over a
+    // free-text absence/off keyword that may appear in an explanatory parenthetical note
+    // (e.g. "320.701 (Sonn/Feiertage in NOe)" is a Sunday/holiday ROUTE, not a day off).
+    const lineEscForGuard = line ? line.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : "";
+    const hasRouteLikeCode = line
+        ? new RegExp(`\\b${lineEscForGuard}\\.(?:[FSX]\\d{2}|\\d{3})\\b`, "i").test(text) || /\b[FSX]\d{2}\b/i.test(text)
+        : /\b\d{3}\.(?:[FSX]\d{2}|\d{3})\b/i.test(text);
+
+    if (!hasRouteLikeCode && /SLOBODNO|FREI|^OFF$|ABWESEN/.test(upper)) {
         return { type: "off", name: "SLOBODNO", routeCode: null, lines: "" };
     }
-    if (/URLAUB|ODMOR/.test(upper)) {
+    if (upper === "MORNING" || upper === "JUTRO" || upper === "VORMITTAG") {
+        return { type: "morning", name: "Dienst", routeCode: null, lines: "" };
+    }
+    if (upper === "AFTERNOON" || upper === "POPODNE" || upper === "NACHMITTAG") {
+        return { type: "afternoon", name: "Dienst", routeCode: null, lines: "" };
+    }
+    if (upper === "NIGHT" || upper === "NOC" || upper === "NOĆ" || upper === "NACHT") {
+        return { type: "night", name: "Dienst", routeCode: null, lines: "" };
+    }
+    if (!hasRouteLikeCode && /URLAUB|ODMOR|GODIŠNJI|VACATION|HOLIDAY_LEAVE/.test(upper)) {
         return { type: "vacation", name: "Urlaub", routeCode: null, lines: "" };
     }
-    if (/KRANK|BOLOVANJE|SICK/.test(upper)) {
+    if (!hasRouteLikeCode && /KRANK|BOLOVANJE|BOLEST|SICK/.test(upper)) {
         return { type: "sick", name: "Krank", routeCode: null, lines: "" };
+    }
+    if (!hasRouteLikeCode && /SCHULUNG|TRAINING|OBUKA|FORTBILDUNG/.test(upper)) {
+        return { type: "training", name: "Schulung", routeCode: null, lines: "" };
+    }
+    if (!hasRouteLikeCode && /FEIERTAG|PRAZNIK|BLAGDAN|PUBLIC.?HOLIDAY/.test(upper)) {
+        return { type: "off", name: "Feiertag", routeCode: null, lines: "" };
     }
     // Bare "Dienst" (no route code) — operational day without assigned line code.
     if (/^DIENST$/.test(upper) || /^DIENST\s*$/.test(upper)) {

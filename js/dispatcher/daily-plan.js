@@ -4,7 +4,7 @@ import { todayDateStr, escapeHtml, getVisibleDrivers, showToast } from "../core/
 import { getGroupById } from "../data/groups.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr, changeAttr } from "../core/action-delegate.js";
-import { persistShift, removeShift } from "./shifts.js";
+import { persistShift, removeShift, undoShift } from "./shifts.js";
 import { showConfirm } from "../ui/confirm-modal.js";
 import { isOperationalReadOnly } from "../core/access.js";
 import { refreshPlanLockBanner } from "./plan-edit-lock-ui.js";
@@ -111,8 +111,12 @@ function bindDragAndDrop(container, _slots, dateStr) {
             event.dataTransfer.setData("text/plain", draggedDriverName);
             chip.classList.add("is-dragging");
         });
-        chip.addEventListener("dragend", () => {
+        chip.addEventListener("dragend", (event) => {
             chip.classList.remove("is-dragging");
+            if (event.dataTransfer?.dropEffect === "none") {
+                chip.classList.add("dnd-drop-failed");
+                setTimeout(() => chip.classList.remove("dnd-drop-failed"), 600);
+            }
             draggedDriverName = null;
         });
     });
@@ -215,6 +219,9 @@ function buildDailyPlanTable(slots, { compact = false, editable = false, dateStr
                                 ? `<div class="daily-plan-row-actions">
                                     <button type="button" class="btn-secondary" ${actionAttr("openShiftCell", [driverName, date])}>${escapeHtml(t("ops_btn_edit") || "Izmeni")}</button>
                                     <button type="button" class="btn-secondary daily-plan-clear-btn" ${actionAttr("clearDailyShift", [driverName, date])}>${escapeHtml(t("dispo_clear_shift") || "Clear shift")}</button>
+                                    ${canUndoShift(shift)
+                                        ? `<button type="button" class="btn-secondary daily-plan-undo-btn" ${actionAttr("undoDailyShift", [driverName, date])}><i data-lucide="undo-2"></i> ${escapeHtml(t("ops_btn_undo") || "Undo")}</button>`
+                                        : ""}
                                    </div>`
                                 : `<span class="daily-plan-pick-hint">${escapeHtml(t("ops_pick_driver") || "Izaberite vozača")}</span>`}
                         </td>
@@ -287,20 +294,24 @@ function renderDailyPlanFullPage() {
     if (!container) return;
     const today = todayDateStr();
     if (picker) {
-        picker.value = today;
+        if (!picker.value) picker.value = today;
         picker.min = today;
-        picker.max = today;
-        picker.readOnly = true;
+        const maxDate = new Date();
+        maxDate.setDate(maxDate.getDate() + 7);
+        picker.max = maxDate.toISOString().slice(0, 10);
+        picker.readOnly = false;
     }
+    const selectedDate = picker?.value || today;
 
     const groupId = getActiveHubGroupId();
     const group = groupId ? getGroupById(groupId) : null;
     if (subtitle && group) subtitle.textContent = t("daily_full_subtitle", { name: group.name, id: group.id });
 
-    paintPlanHealthBanner("daily-plan-health", { groupId, dateStr: today });
-    renderDailySituationPanel(today, groupId);
+    paintPlanHealthBanner("daily-plan-health", { groupId, dateStr: selectedDate });
+    renderDailySituationPanel(selectedDate, groupId);
 
-    const date = today;
+    const date = selectedDate;
+    const isFuture = date > today;
     const plan = getDailyPlanForDate(date);
     renderDailyPlanMeta(plan, metaEl, { full: true });
     if (!plan.slots.length) {
@@ -308,9 +319,12 @@ function renderDailyPlanFullPage() {
         void refreshPlanLockBanner();
         return;
     }
-    const editable = !isOperationalReadOnly();
+    const editable = !isOperationalReadOnly() && !isFuture;
     const poolHtml = editable ? buildDriverPoolHtml(plan.slots, date) : "";
-    container.innerHTML = `${poolHtml}${buildDailyPlanTable(plan.slots, { editable, dateStr: date })}`;
+    const futureHint = isFuture
+        ? `<div class="daily-plan-future-hint" role="status"><i data-lucide="eye"></i> ${escapeHtml(t("daily_future_readonly") || "Future dates are read-only. Edit via monthly plan.")}</div>`
+        : "";
+    container.innerHTML = `${futureHint}${poolHtml}${buildDailyPlanTable(plan.slots, { editable, dateStr: date })}`;
     if (typeof lucide !== "undefined") lucide.createIcons();
     if (editable) bindDragAndDrop(container, plan.slots, date);
     void refreshPlanLockBanner();
@@ -320,10 +334,16 @@ function bindDailyPlanFullPage() {
     const picker = document.getElementById("daily-plan-date-picker");
     if (picker) {
         const today = todayDateStr();
-        picker.value = today;
+        if (!picker.value) picker.value = today;
         picker.min = today;
-        picker.max = today;
-        picker.readOnly = true;
+        const maxDate = new Date();
+        maxDate.setDate(maxDate.getDate() + 7);
+        picker.max = maxDate.toISOString().slice(0, 10);
+        picker.readOnly = false;
+        if (!picker.dataset.dailyFullBound) {
+            picker.dataset.dailyFullBound = "1";
+            picker.addEventListener("change", () => renderDailyPlanFullPage());
+        }
     }
 }
 
@@ -385,6 +405,28 @@ function clearDailyShift(driverName, dateStr) {
         title: t("dispo_clear_shift") || "Clear shift",
         confirmText: t("dispo_clear_shift") || "Clear shift"
     });
+}
+
+function canUndoShift(shift) {
+    return shift?.source === "shift" && Number(shift?.revision) >= 1;
+}
+
+async function undoDailyShift(driverName, dateStr) {
+    if (isOperationalReadOnly()) {
+        showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+        return;
+    }
+    const name = String(driverName || "").trim();
+    const date = String(dateStr || "").trim();
+    if (!name || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+    const driver = getVisibleDrivers().find(driver => driver.name === name);
+    if (!driver) return;
+    const ok = await undoShift(driver, date);
+    if (!ok) return;
+    showToast(t("shift_undone") || "Change undone.", "success");
+    renderDailyPlanFullPage();
+    renderDailyPlanPanel(date);
+    if (typeof window.renderDispatcherDashboard === "function") window.renderDispatcherDashboard();
 }
 
 /**
@@ -465,5 +507,6 @@ export {
     bindDailyPlanFullPage,
     refreshDailyPlanOnDateChange,
     dailyPlanAssignDriver,
-    clearDailyShift
+    clearDailyShift,
+    undoDailyShift
 };

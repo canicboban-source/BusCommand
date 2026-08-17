@@ -315,6 +315,27 @@
           <span class="pill pill-green">Elena Fischer</span>
           <span class="text-[10px] text-slate-500" id="dp-avail-note">(1 driver available — Group B)</span>
         </div>
+
+        <!-- Tomorrow preview & auto-refresh -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          <div class="glass-card p-4 rounded-xl border border-emerald-500/20 bg-emerald-950/10">
+            <div class="flex items-center gap-2">
+              <span class="text-emerald-400 text-xs font-bold">&#9201;</span>
+              <span class="text-xs font-bold text-white" id="ds-tomorrow">Tomorrow Coverage</span>
+            </div>
+            <div class="flex items-baseline gap-2 mt-2">
+              <span class="text-xl font-extrabold text-emerald-400">100%</span>
+              <span class="text-[10px] text-slate-400">5/5 drivers assigned</span>
+            </div>
+          </div>
+          <div class="glass-card p-4 rounded-xl border border-indigo-500/20">
+            <div class="flex items-center gap-2">
+              <span class="text-indigo-400 text-xs">&#8634;</span>
+              <span class="text-xs font-bold text-white" id="ds-refresh">Auto-Refresh</span>
+            </div>
+            <p class="text-[10px] text-slate-400 mt-2">Dashboard refreshes every 30 seconds. Last updated: <span class="text-slate-300 font-mono">08:42:15</span></p>
+          </div>
+        </div>
       </div>
 
       <!-- ═══ TAB 2: Driver PWA ═══ -->
@@ -379,8 +400,8 @@
               <li class="flex items-start gap-3">
                 <span class="text-red-400 font-bold text-sm mt-0.5">&#9888;</span>
                 <div>
-                  <p id="drv-f2-title" class="text-sm font-semibold text-white">2-Second SOS</p>
-                  <p id="drv-f2-desc" class="text-xs text-slate-400">Emergency alert reaches the dispatcher in under 2 seconds. No phone calls while driving.</p>
+                  <p id="drv-f2-title" class="text-sm font-semibold text-white">2-Second SOS with 30s Cancel</p>
+                  <p id="drv-f2-desc" class="text-xs text-slate-400">Emergency alert reaches the dispatcher in under 2 seconds. Accidental trigger? Cancel within 30 seconds.</p>
                 </div>
               </li>
               <li class="flex items-start gap-3">
@@ -395,6 +416,13 @@
                 <div>
                   <p id="drv-f4-title" class="text-sm font-semibold text-white">Monthly Calendar View</p>
                   <p id="drv-f4-desc" class="text-xs text-slate-400">Color-coded shift calendar with morning, afternoon, off, and vacation days at a glance.</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-amber-400 font-bold text-sm mt-0.5">&#9889;</span>
+                <div>
+                  <p id="drv-f5-title" class="text-sm font-semibold text-white">Offline Queue</p>
+                  <p id="drv-f5-desc" class="text-xs text-slate-400">Reports and delay notifications queue locally when offline. Auto-sync when the connection returns.</p>
                 </div>
               </li>
             </ul>
@@ -534,7 +562,7 @@
           </div>
           <div class="space-y-1.5">
             <p id="arch-card1-sol-title" class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">BusCommand rešenje:</p>
-            <p id="arch-card1-sol-desc" class="text-xs text-slate-300 leading-relaxed">3-dnevni lookahead radar, zamena vozača/busa za 3s, Plan-Lock zaštita objavljenog plana.</p>
+            <p id="arch-card1-sol-desc" class="text-xs text-slate-300 leading-relaxed">Auto-refresh svakih 30s, tomorrow coverage preview, zamena vozača/busa za 3s, Plan-Lock zaštita objavljenog plana.</p>
           </div>
         </div>
         <div class="bento-card p-6 sm:p-8 rounded-2xl space-y-4">
@@ -546,7 +574,7 @@
           </div>
           <div class="space-y-1.5">
             <p id="arch-card2-sol-title" class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">BusCommand rešenje:</p>
-            <p id="arch-card2-sol-desc" class="text-xs text-slate-300 leading-relaxed">2s anti-panic SOS, 4 operativna tastera, 1-klik potvrda preuzimanja smene sa telefona.</p>
+            <p id="arch-card2-sol-desc" class="text-xs text-slate-300 leading-relaxed">2s anti-panic SOS sa 30s cancel, offline queue za izveštaje, 1-klik potvrda smene, kalendar i poruke.</p>
           </div>
         </div>
         <div class="bento-card p-6 sm:p-8 rounded-2xl space-y-4">
@@ -661,7 +689,19 @@
 
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
+        <!-- Quick-Start Guide (replaces live training) -->
+        <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
+          <div class="space-y-2">
+            <div class="w-9 h-9 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 font-bold text-xs">PDF</div>
+            <h3 id="dl-quickstart-title" class="font-bold text-white text-sm">Quick-Start Guide</h3>
+            <p id="dl-quickstart-desc" class="text-xs text-slate-400">Printable A4 guide for dispatchers and drivers — self-service onboarding, no live session needed.</p>
+          </div>
+          <button onclick="downloadDoc('quickstart')" id="dl-btn-quickstart" class="w-full py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
+            Download Guide
+          </button>
+        </div>
+
         <!-- Technical Security Audit -->
         <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
           <div class="space-y-2">
@@ -694,6 +734,7 @@
         <a href="/downloads/BusCommand_Fleet_Vehicles_Template.csv" download class="text-indigo-400 hover:text-indigo-300 underline decoration-dotted">BusCommand_Fleet_Vehicles_Template.csv</a>
         <a href="/downloads/BusCommand_Technical_Security_Audit.html" download class="text-indigo-400 hover:text-indigo-300 underline decoration-dotted">BusCommand_Technical_Security_Audit.html</a>
         <a href="/downloads/BusCommand_DPA_GDPR_Article_28.html" download class="text-indigo-400 hover:text-indigo-300 underline decoration-dotted">BusCommand_DPA_GDPR_Article_28.html</a>
+        <a href="/downloads/BusCommand_QuickStart_Guide.html" download class="text-indigo-400 hover:text-indigo-300 underline decoration-dotted">BusCommand_QuickStart_Guide.html</a>
       </div>
     </section>
 
@@ -803,7 +844,7 @@
           <h3 id="pilot-guarantees-title" class="text-lg font-bold text-white">5 garancija pilot programa</h3>
           <ul id="pilot-guarantees" class="space-y-3 text-sm text-slate-300">
             <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">1.</span><span>Uvoz postojećeg kataloga smena i vozača od strane našeg tima.</span></li>
-            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">2.</span><span>45-minutna obuka dispečera, uživo, za celog tima.</span></li>
+            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">2.</span><span>Štampani vodič za brzi start za dispečere i vozače — samostalno uvođenje, bez potrebe za uživo terminom.</span></li>
             <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">3.</span><span>NDA i DPA Član 28 potpisani pre starta pilota.</span></li>
             <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">4.</span><span>Bez kreditne kartice — otkaz bilo kada u 30 dana.</span></li>
             <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">5.</span><span>Potpuni izvoz svih podataka na kraju pilota.</span></li>
@@ -825,7 +866,7 @@
         heroTitle: "Operativni sistem napravljen posebno za <span class='text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-cyan-300 to-emerald-400'>autobuske firme</span>",
         heroDesc: "Od mesečnog plana do zamene vozača ili autobusa u roku od 3 sekunde. Sve na jednom ekranu — bez rasutih Excel tabela, telefonskih prekida u vožnji i nagađanja ko vozi.",
         m1num: "≤ 3s", m1lbl: "Vreme zamene vozača/busa uz Plan-Lock",
-        m2num: "100%", m2lbl: "Pravna pokrivenost D21 & EU 561/2006",
+        m2num: "100%", m2lbl: "D21 role matrica + EU 561 upozorenja na odmor",
         m3num: "0€", m3lbl: "Investicija u nepotreban hardver",
         heroCtaPilot: "Zatražite besplatan pilot (30 dana)",
         heroCtaStaff: "Staff Login",
@@ -886,7 +927,7 @@
         archC2Kicker: "Za linijske vozače",
         archC2Title: "Driver PWA",
         archC2Prob: "Papirni rasporedi i Viber grupe — zastoj, kvar ili udes ide preko poziva u vožnji.",
-        archC2Sol: "2s anti-panic SOS, 4 operativna tastera, 1-klik potvrda preuzimanja smene sa telefona.",
+        archC2Sol: "2s anti-panic SOS sa 30s otkazivanjem, offline red za izveštaje, 1-klik potvrda smene, kalendar i poruke.",
         archC3Kicker: "Za vlasnike, direktore i Betriebsleiter-e",
         archC3Title: "Tenant & Credential Zid",
         archC3Prob: "Curenje podataka i GDPR kazne — lični podaci vozača u deljenim fajlovima bez kontrole.",
@@ -913,9 +954,12 @@
         dlFleetHint: "Broj autobusa, registracija, grupa, status. Bez broja sedišta.",
         dlDpa: "GDPR Article 28 DPA",
         dlDpaHint: "Ugovor o obradi podataka i Frankfurt Cloud sertifikacija.",
+        dlQuickstart: "Vodič za brzi start",
+        dlQuickstartHint: "Štampani A4 vodič za dispečere i vozače — samostalno uvođenje, bez potrebe za uživo obukom.",
         dlAll: "Dodatni zvanični šabloni:",
         dlBtnPdf: "Download HTML",
         dlBtnDpa: "Download DPA",
+        dlBtnQuickstart: "Preuzmi vodič",
         pricingTitle: "Cenovnik",
         pricingDesc: "Bez skrivenih troškova. Prilagođeno veličini vašeg voznog parka.",
         pricePer: "/ mesečno / po firmi",
@@ -947,14 +991,14 @@
         pilotSubmit: "Prijavi firmu na pilot",
         pilotNote: "Odgovaramo u roku od 24h. Podaci se koriste isključivo za kontakt.",
         guaranteesTitle: "5 garancija pilot programa",
-        guarantees: "<li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>1.</span><span>Uvoz postojećeg kataloga smena i vozača od strane našeg tima.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>2.</span><span>45-minutna obuka dispečera, uživo, za celog tima.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>3.</span><span>NDA i DPA Član 28 potpisani pre starta pilota.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>4.</span><span>Bez kreditne kartice — otkaz bilo kada u 30 dana.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>5.</span><span>Potpuni izvoz svih podataka na kraju pilota.</span></li>"
+        guarantees: "<li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>1.</span><span>Uvoz postojećeg kataloga smena i vozača od strane našeg tima.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>2.</span><span>Štampani vodič za brzi start za dispečere i vozače — samostalno uvođenje, bez potrebe za uživo terminom.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>3.</span><span>NDA i DPA Član 28 potpisani pre starta pilota.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>4.</span><span>Bez kreditne kartice — otkaz bilo kada u 30 dana.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>5.</span><span>Potpuni izvoz svih podataka na kraju pilota.</span></li>"
       },
       de: {
         heroKicker: "Spezialisiertes Dispo-Kommandozentrum für Busbetriebe",
         heroTitle: "Das Betriebssystem speziell für <span class='text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-cyan-300 to-emerald-400'>Busunternehmen</span>",
         heroDesc: "Vom Monatsplan bis zum Fahrer- oder Buswechsel in 3 Sekunden. Alles auf einem Bildschirm — ohne verstreute Excel-Tabellen, Anrufe während der Fahrt und Rätselraten, wer heute fährt.",
         m1num: "≤ 3s", m1lbl: "Zeit für Fahrer-/Buswechsel mit Plan-Lock",
-        m2num: "100%", m2lbl: "Rechtliche Abdeckung D21 & EU 561/2006",
+        m2num: "100%", m2lbl: "D21-Rollenmatrix + EU-561-Ruhezeit-Hinweise",
         m3num: "0€", m3lbl: "Investition in unnötige Hardware",
         heroCtaPilot: "Kostenlosen Pilot anfordern (30 Tage)",
         heroCtaStaff: "Staff Login",
@@ -1015,7 +1059,7 @@
         archC2Kicker: "Für Linienfahrer",
         archC2Title: "Driver PWA",
         archC2Prob: "Papierpläne und Viber-Gruppen — Stau, Panne oder Unfall läuft über Anrufe während der Fahrt.",
-        archC2Sol: "2s Anti-Panik-SOS, 4 Betriebstasten, 1-Klick-Schichtbestätigung vom Handy.",
+        archC2Sol: "2s Anti-Panik-SOS mit 30s Abbruch, Offline-Warteschlange für Meldungen, 1-Klick-Schichtbestätigung, Kalender und Nachrichten.",
         archC3Kicker: "Für Geschäftsführer & Fuhrparkleiter",
         archC3Title: "Mandanten- & Credential-Grenze",
         archC3Prob: "Datenlecks und DSGVO-Strafen — Fahrerdaten in geteilten Dateien ohne Kontrolle.",
@@ -1042,9 +1086,12 @@
         dlFleetHint: "Busnummer, Kennzeichen, Gruppen-ID, Status. Ohne Sitzplatzanzahl.",
         dlDpa: "DSGVO Art. 28 DPA",
         dlDpaHint: "Auftragsverarbeitungsvertrag und Frankfurt-Cloud-Zertifizierung.",
+        dlQuickstart: "Schnellstart-Anleitung",
+        dlQuickstartHint: "Druckbare A4-Anleitung für Disponenten und Fahrer — Selbst-Onboarding, keine Live-Schulung nötig.",
         dlAll: "Weitere offizielle Vorlagen:",
         dlBtnPdf: "HTML herunterladen",
         dlBtnDpa: "DPA herunterladen",
+        dlBtnQuickstart: "Anleitung herunterladen",
         pricingTitle: "Preise",
         pricingDesc: "Keine versteckten Kosten. Angepasst an die Größe Ihres Fuhrparks.",
         pricePer: "/ Monat / pro Firma",
@@ -1076,14 +1123,14 @@
         pilotSubmit: "Firma zum Pilot anmelden",
         pilotNote: "Antwort innerhalb von 24h. Daten werden ausschließlich für den Kontakt verwendet.",
         guaranteesTitle: "5 Garantien des Pilotprogramms",
-        guarantees: "<li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>1.</span><span>Import des bestehenden Dienst- und Fahrerkatalogs durch unser Team.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>2.</span><span>45-minütige Live-Schulung für das gesamte Dispo-Team.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>3.</span><span>NDA und DPA Art. 28 werden vor Pilotstart unterzeichnet.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>4.</span><span>Keine Kreditkarte — jederzeit innerhalb von 30 Tagen kündbar.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>5.</span><span>Vollständiger Export aller Daten am Ende des Pilotprogramms.</span></li>"
+        guarantees: "<li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>1.</span><span>Import des bestehenden Dienst- und Fahrerkatalogs durch unser Team.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>2.</span><span>Druckbarer Schnellstart-Leitfaden für Disponenten und Fahrer — Selbst-Onboarding, kein Live-Termin nötig.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>3.</span><span>NDA und DPA Art. 28 werden vor Pilotstart unterzeichnet.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>4.</span><span>Keine Kreditkarte — jederzeit innerhalb von 30 Tagen kündbar.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>5.</span><span>Vollständiger Export aller Daten am Ende des Pilotprogramms.</span></li>"
       },
       en: {
         heroKicker: "Specialized dispatch command center for bus operators",
         heroTitle: "The operating system built specifically for <span class='text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-cyan-300 to-emerald-400'>bus companies</span>",
         heroDesc: "From the monthly plan to a driver or bus swap within 3 seconds. All on one screen — no scattered Excel sheets, no phone calls mid-drive, no guessing who is driving.",
         m1num: "≤ 3s", m1lbl: "Driver/bus swap time with Plan-Lock",
-        m2num: "100%", m2lbl: "Legal coverage D21 & EU 561/2006",
+        m2num: "100%", m2lbl: "D21 role matrix + EU 561 rest-period alerts",
         m3num: "0€", m3lbl: "Investment in unnecessary hardware",
         heroCtaPilot: "Request a free pilot (30 days)",
         heroCtaStaff: "Staff Login",
@@ -1144,7 +1191,7 @@
         archC2Kicker: "For Route Drivers",
         archC2Title: "Driver PWA",
         archC2Prob: "Paper schedules and Viber groups — delays, breakdowns and accidents go through phone calls mid-drive.",
-        archC2Sol: "2s anti-panic SOS, 4 operational buttons, 1-click shift acknowledgment from the phone.",
+        archC2Sol: "2s anti-panic SOS with 30s cancel, offline queue for reports, 1-click shift confirmation, calendar and messages.",
         archC3Kicker: "For Fleet Owners, Directors & Operations Heads",
         archC3Title: "Tenant & Credential Boundary",
         archC3Prob: "Data leaks and GDPR fines — driver personal data in shared files without control.",
@@ -1171,9 +1218,12 @@
         dlFleetHint: "Bus number, license plate, group ID, status. No seat count.",
         dlDpa: "GDPR Article 28 DPA",
         dlDpaHint: "Data processing agreement, Frankfurt Cloud certification, EU data residency.",
+        dlQuickstart: "Quick-Start Guide",
+        dlQuickstartHint: "Printable A4 guide for dispatchers and drivers — self-service onboarding, no live session needed.",
         dlAll: "Additional official templates:",
         dlBtnPdf: "Download HTML",
         dlBtnDpa: "Download DPA",
+        dlBtnQuickstart: "Download Guide",
         pricingTitle: "Pricing",
         pricingDesc: "No hidden costs. Sized to your fleet.",
         pricePer: "/ month / per company",
@@ -1205,7 +1255,7 @@
         pilotSubmit: "Apply for the pilot",
         pilotNote: "We reply within 24h. Data is used for contact only.",
         guaranteesTitle: "5 pilot program guarantees",
-        guarantees: "<li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>1.</span><span>We import your existing duty and driver catalog.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>2.</span><span>Live 45-minute training for the entire dispatcher team.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>3.</span><span>NDA and DPA Article 28 signed before the pilot starts.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>4.</span><span>No credit card — cancel any time within 30 days.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>5.</span><span>Full export of all data at the end of the pilot.</span></li>"
+        guarantees: "<li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>1.</span><span>We import your existing duty and driver catalog.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>2.</span><span>Printable Quick-Start Guide for dispatchers and drivers — self-service onboarding, no live session needed.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>3.</span><span>NDA and DPA Article 28 signed before the pilot starts.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>4.</span><span>No credit card — cancel any time within 30 days.</span></li><li class='flex items-start gap-2.5 glass-card p-4 rounded-xl'><span class='text-emerald-400 font-bold'>5.</span><span>Full export of all data at the end of the pilot.</span></li>"
       }
     };
 
@@ -1346,8 +1396,11 @@
       document.getElementById('dl-fleet-desc').textContent = pack.dlFleetHint;
       document.getElementById('dl-dpa-title').textContent = pack.dlDpa;
       document.getElementById('dl-dpa-desc').textContent = pack.dlDpaHint;
+      document.getElementById('dl-quickstart-title').textContent = pack.dlQuickstart;
+      document.getElementById('dl-quickstart-desc').textContent = pack.dlQuickstartHint;
       document.getElementById('dl-btn-audit').textContent = pack.dlBtnPdf;
       document.getElementById('dl-btn-dpa').textContent = pack.dlBtnDpa;
+      document.getElementById('dl-btn-quickstart').textContent = pack.dlBtnQuickstart;
       document.getElementById('downloads-all').textContent = pack.dlAll;
       document.getElementById('pricing-title').textContent = pack.pricingTitle;
       document.getElementById('pricing-desc').textContent = pack.pricingDesc;
@@ -1393,7 +1446,7 @@
         'Naziv firme: ' + company + '\n' +
         'Email: ' + email + '\n' +
         'Broj autobusa: ' + buses + '\n\n' +
-        'Molim za plan pilot onboardinga (5 garancija, DPA Član 28, obuka dispečera).'
+        'Molim za plan pilot onboardinga (5 garancija, DPA Član 28, vodič za brzi start).'
       );
       window.location.href = 'mailto:office@buscommand.com?subject=' + subject + '&body=' + body;
     }
@@ -1403,7 +1456,8 @@
         'audit': '/downloads/BusCommand_Technical_Security_Audit.html',
         'monthly': '/downloads/BusCommand_Monthly_Schedule_Template.csv',
         'fleet': '/downloads/BusCommand_Fleet_Template.csv',
-        'dpa': '/downloads/BusCommand_DPA_GDPR_Article_28.html'
+        'dpa': '/downloads/BusCommand_DPA_GDPR_Article_28.html',
+        'quickstart': '/downloads/BusCommand_QuickStart_Guide.html'
       };
       
       const url = downloadUrls[type];

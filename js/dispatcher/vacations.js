@@ -53,13 +53,14 @@ function renderDispatcherVacations() {
 
     const readOnly = isOperationalReadOnly();
     const visibleKeys = visibleDriverKeys();
+    const isCA = ["company-admin", "company_admin"].includes(window.currentUser?.role);
     const pendingVacations = (window.state.vacations || [])
         .filter(vacation => ["pending", "Na čekanju"].includes(vacation.status))
         .filter(vacation => {
+            if (isCA) return true;
             if (window.currentUser?.role === "dispatcher") {
                 return vacationVisibleToDispatcher(vacation, visibleKeys);
             }
-            // CA may view nothing here (ops RO) — keep empty rather than show unscoped actions.
             return false;
         });
 

@@ -71,47 +71,46 @@ function handleAvatarUpload(event) {
     }
 
     const reader = new FileReader();
+    reader.onerror = function() {
+        showToast(t("avatar_upload_failed") || "Upload failed.", "error");
+    };
     reader.onload = function(e) {
         const img = new Image();
+        img.onerror = function() {
+            showToast(t("avatar_upload_failed") || "Upload failed.", "error");
+        };
         img.onload = function() {
-            const canvas = document.createElement("canvas");
-            const ctx = canvas.getContext("2d");
-            
-            const max_size = 180; // Maksimalna širina/visina u pikselima
-            let width = img.width;
-            let height = img.height;
-            
-            if (width > height) {
-                if (width > max_size) {
-                    height *= max_size / width;
-                    width = max_size;
+            try {
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+
+                const max_size = 180;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > max_size) { height *= max_size / width; width = max_size; }
+                } else {
+                    if (height > max_size) { width *= max_size / height; height = max_size; }
                 }
-            } else {
-                if (height > max_size) {
-                    width *= max_size / height;
-                    height = max_size;
+
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const compressedBase64 = canvas.toDataURL("image/jpeg", 0.80);
+
+                if (window.currentUser && window.currentUser.role === "driver") {
+                    const driver = window.state.drivers.find(d => d.name === window.currentUser.name);
+                    if (driver) {
+                        driver.avatar = compressedBase64;
+                        saveState();
+                        updateAvatarUI();
+                        showToast(t("avatar_upload_success") || "Profile picture updated.", "success");
+                    }
                 }
-            }
-            
-            canvas.width = width;
-            canvas.height = height;
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // Kompresija na JPEG sa 80% kvaliteta da bi fajl bio lagan za localStorage (do 15kb)
-            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.80);
-            
-            if (window.currentUser && window.currentUser.role === "driver") {
-                const driver = window.state.drivers.find(d => d.name === window.currentUser.name);
-                if (driver) {
-                    driver.avatar = compressedBase64;
-                    saveState();
-                    updateAvatarUI();
-                    
-                    let msg = "Fotografija uspešno ažurirana!";
-                    if (window.state.language === "de") msg = "Profilbild erfolgreich aktualisiert!";
-                    else if (window.state.language === "en") msg = "Profile picture updated successfully!";
-                    showToast(msg, "success");
-                }
+            } catch {
+                showToast(t("avatar_upload_failed") || "Upload failed.", "error");
             }
         };
         img.src = e.target.result;

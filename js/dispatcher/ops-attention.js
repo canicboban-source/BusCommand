@@ -406,10 +406,84 @@ function collectPlanGapAttentionItems(groupId = null, dateStr = null) {
     return items;
 }
 
+/**
+ * EU 561/2006 Art. 8 minimum daily rest check (informational, not a legal
+ * ruling — see docs/decisions.md). Flags consecutive-day duties where the
+ * gap between yesterday's shift end and today's shift start is below the
+ * 11h regular daily rest floor. Off/vacation/sick/clear days never count as
+ * a duty boundary. This never blocks assignment — dispatcher decides.
+ */
+const EU561_MIN_DAILY_REST_HOURS = 11;
+const DRIVING_SHIFT_TYPES = new Set(["morning", "afternoon", "night", "bereitschaft", "standby"]);
+
+function minutesFromHHMM(value) {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(value || "").trim());
+    if (!m) return null;
+    const h = Number(m[1]);
+    const min = Number(m[2]);
+    if (!Number.isFinite(h) || !Number.isFinite(min) || h > 47 || min > 59) return null;
+    return h * 60 + min;
+}
+
+function isoDateMinusDays(dateStr, days) {
+    const parts = String(dateStr || "").split("-").map(Number);
+    if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n))) return null;
+    const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+    d.setUTCDate(d.getUTCDate() - days);
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+function collectRestPeriodAttentionItems(groupId = null, dateStr = null) {
+    const today = dateStr || todayDateStr();
+    const yesterday = isoDateMinusDays(today, 1);
+    if (!yesterday) return [];
+    const scope = groupId || window.state?.activeGroupHubId || window.state?.activeGroupFilter || "";
+    const items = [];
+
+    getVisibleDrivers().forEach((driver) => {
+        if (driver.active === false) return;
+        const gid = driver.groupId || driver.lineId || "";
+        if (scope && gid && String(gid) !== String(scope)) return;
+
+        const todayShift = getShiftForDriverDate(driver.name, today);
+        const prevShift = getShiftForDriverDate(driver.name, yesterday);
+        if (!todayShift || !prevShift) return;
+        if (!DRIVING_SHIFT_TYPES.has(todayShift.type) || !DRIVING_SHIFT_TYPES.has(prevShift.type)) return;
+
+        const startMin = minutesFromHHMM(todayShift.start);
+        const endMin = minutesFromHHMM(prevShift.end);
+        if (startMin === null || endMin === null) return;
+
+        // Rest = (today's start + 24h) - yesterday's end, both anchored to their own day.
+        const restMinutes = (startMin + 24 * 60) - endMin;
+        const restHours = restMinutes / 60;
+        if (restHours >= EU561_MIN_DAILY_REST_HOURS) return;
+
+        const id = driverUid(driver) || driver.name;
+        items.push({
+            id: `rest:driver:${id}:${today}`,
+            kind: "rest_period_violation",
+            severity: "warning",
+            driverId: id,
+            driverName: driver.name,
+            groupId: gid || scope,
+            date: today,
+            restHours: Math.round(restHours * 10) / 10,
+            title: t("ops_rest_violation_title") || "Nedovoljan odmor (EU 561/2006)",
+            summary: t("ops_attn_rest_violation_summary", { driver: driver.name, hours: (Math.round(restHours * 10) / 10) })
+                || `${driver.name} ima samo ${Math.round(restHours * 10) / 10}h odmora između smena — proverite raspored.`
+        });
+    });
+
+    return items;
+}
+
 /** Real attention + plan-gap cards (one list for the solutions panel). */
 function collectAllAttentionItems(groupId = null, dateStr = null) {
     const real = collectOpsAttentionItems();
     const gaps = collectPlanGapAttentionItems(groupId, dateStr);
+    const restViolations = collectRestPeriodAttentionItems(groupId, dateStr);
+    gaps.push(...restViolations);
     const seen = new Set(real.map((row) => row.id));
     const merged = real.slice();
     for (const gap of gaps) {
@@ -979,9 +1053,25 @@ function syncOpsPlanHealthAttentionState(needsAttention, count) {
     }
 }
 
+if (typeof document !== "undefined" && !window.__buscommandOpsShortcutBound) {
+    window.__buscommandOpsShortcutBound = true;
+    document.addEventListener("keydown", (event) => {
+        if (event.ctrlKey && event.shiftKey && event.key === "A") {
+            event.preventDefault();
+            const panel = document.getElementById("ops-attention-panel");
+            if (panel && !panel.classList.contains("hidden")) {
+                closeOpsAttentionPanel();
+            } else {
+                openOpsAttentionPanel();
+            }
+        }
+    });
+}
+
 export {
     collectOpsAttentionItems,
     collectPlanGapAttentionItems,
+    collectRestPeriodAttentionItems,
     collectAllAttentionItems,
     openOpsAttentionPanel,
     closeOpsAttentionPanel,

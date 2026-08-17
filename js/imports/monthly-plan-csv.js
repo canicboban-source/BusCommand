@@ -13,7 +13,7 @@ function column(headers, aliases) {
 
 function isMonthlyPlanCsv(text) {
     const header = foldDiacritics(String(text || "").split(/\r?\n/, 1)[0].toLowerCase()).replace(/[\s\-.]+/g, "_");
-    return /(datum|date)/.test(header) && /(dienst|smena|shift)/.test(header) && /(ime_prezime|ime_i_prezime|vozac|driver|name)/.test(header);
+    return /(datum|date)/.test(header) && /(dienst|smena|shift|type)/.test(header) && /(ime_prezime|ime_i_prezime|vozac|driver|name)/.test(header);
 }
 
 function detectDelimiter(line) {
@@ -55,8 +55,8 @@ function parseMonthlyPlanCsv(text, lineId) {
     const headers = rows[0].map((value) => String(value).trim().toLowerCase());
     const indexes = {
         date: column(headers, ["datum", "date"]),
-        line: column(headers, ["linija", "line"]),
-        shift: column(headers, ["dienst", "smena", "shift", "shift_code"]),
+        line: column(headers, ["linija", "line", "line_turnus", "turnus"]),
+        shift: column(headers, ["dienst", "smena", "shift", "shift_code", "type", "shift_type"]),
         bus: column(headers, ["bus", "autobus"]),
         driver: column(headers, ["ime_prezime", "ime i prezime", "vozac", "vozač", "driver", "driver name", "driver_name", "name", "ime"]),
         dayPart: column(headers, ["deo_dana", "deo dana", "day_part"])

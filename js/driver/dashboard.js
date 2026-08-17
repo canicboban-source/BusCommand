@@ -11,6 +11,8 @@ import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { driverWorkPolicy } from "./work-session.js";
 
 let sosSubmissionPending = false;
+let _sosSentAt = 0;
+const SOS_CANCEL_WINDOW_MS = 30000;
 
 function localeForLang(lang) {
     const localeMap = {
@@ -369,8 +371,10 @@ async function sendDriverSosNow() {
         window.state.sosActive = true;
         window.state.sosDriver = window.currentUser.name;
         window.state.sosBus = window.currentUser.bus;
+        _sosSentAt = Date.now();
         if (USE_LOCAL_STATE) saveState();
         checkSOSStatus();
+        showSosCancelButton();
         showToast(t("js_alert_sos_sent"), "error");
     } finally {
         sosSubmissionPending = false;
@@ -400,12 +404,63 @@ function renderCallDispatcherButton() {
     btn.classList.toggle("hidden", !dispatchPhoneNumber());
 }
 
+function canCancelSos() {
+    return window.state.sosActive
+        && window.currentUser?.role === "driver"
+        && window.currentUser.name === window.state.sosDriver
+        && _sosSentAt > 0
+        && (Date.now() - _sosSentAt) < SOS_CANCEL_WINDOW_MS;
+}
+
+function showSosCancelButton() {
+    const banner = document.getElementById("driver-sos-banner");
+    if (!banner) return;
+    let cancelBtn = banner.querySelector(".sos-self-cancel");
+    if (cancelBtn) cancelBtn.remove();
+    if (!canCancelSos()) return;
+    cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "btn-secondary sos-self-cancel";
+    cancelBtn.textContent = t("sos_cancel_btn") || "Cancel SOS";
+    cancelBtn.addEventListener("click", cancelDriverSos);
+    banner.appendChild(cancelBtn);
+    setTimeout(() => {
+        cancelBtn.remove();
+    }, SOS_CANCEL_WINDOW_MS - (Date.now() - _sosSentAt));
+}
+
+async function cancelDriverSos() {
+    if (!canCancelSos()) {
+        showToast(t("sos_cancel_expired") || "Cancel window expired.", "info");
+        return;
+    }
+    try {
+        if (!USE_LOCAL_STATE) {
+            const result = await ApiClient.resolveStaffSos("driver_self_cancel");
+            if (!result.success) {
+                showToast(result.error || t("sos_cancel_failed") || "SOS cancel failed.", "error");
+                return;
+            }
+        }
+        window.state.sosActive = false;
+        window.state.sosDriver = "";
+        window.state.sosBus = "";
+        _sosSentAt = 0;
+        if (USE_LOCAL_STATE) saveState();
+        checkSOSStatus();
+        showToast(t("sos_cancelled") || "SOS cancelled.", "success");
+    } catch {
+        showToast(t("sos_cancel_failed") || "SOS cancel failed.", "error");
+    }
+}
+
 export {
     renderDriverDashboard,
     renderStopsTimeline,
     checkInAtStop,
     driverCheckIn,
     sendDriverSosNow,
+    cancelDriverSos,
     callDispatcher,
     dispatchPhoneNumber,
     renderCallDispatcherButton,

@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BusCommand — Driver</title>
-  <link rel="icon" type="image/png" href="/brand/logo-hero.png">
-  <link rel="apple-touch-icon" href="/brand/logo-hero.png">
     <!-- Google Font: Outfit (Moderan i premium izgled) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -742,10 +740,57 @@
                         <div>
                             <span class="company-page-kicker" data-i18n="ca_buses_kicker">FLOTA</span>
                             <h2><i data-lucide="bus"></i><span data-i18n="ca_nav_buses">Autobusi</span></h2>
-                            <p id="ca-buses-readonly-note" data-i18n="ca_buses_readonly_note">Pregled flote samo za čitanje. Dispečeri povezuju i vode autobuse u dnevnim operacijama.</p>
+                            <p id="ca-buses-readonly-note" data-i18n="ca_buses_readonly_note">Upravljajte flotom firme: dodavanje, izmena i dodela grupa i statusa.</p>
                         </div>
-                        <div class="company-settings-save-state is-saved"><i data-lucide="eye"></i><span id="ca-buses-count">0</span></div>
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <button type="button" id="ca-bus-add-open" class="btn-primary" data-action="openCaBusAddModal">
+                                <i data-lucide="plus"></i><span data-i18n="ca_buses_add_btn">Dodaj autobus</span>
+                            </button>
+                            <div class="company-settings-save-state is-saved"><i data-lucide="eye"></i><span id="ca-buses-count">0</span></div>
+                        </div>
                     </header>
+
+                    <div id="ca-bus-add-card" class="card full-width-card hidden">
+                        <div class="company-drivers-card-heading">
+                            <div>
+                                <span class="service-plan-kicker" data-i18n="ca_buses_kicker">FLEET</span>
+                                <h3 data-i18n="ca_buses_add_title">Dodaj autobus</h3>
+                            </div>
+                            <i data-lucide="bus" aria-hidden="true"></i>
+                        </div>
+                        <form id="ca-bus-add-form" class="company-drivers-add-form" data-submit-action="submitCaBusAdd" novalidate>
+                            <div class="company-drivers-add-fields">
+                                <label class="form-group" for="ca-bus-add-number">
+                                    <span data-i18n="ca_buses_number">Broj autobusa</span>
+                                    <input type="text" id="ca-bus-add-number" maxlength="128" autocomplete="off" required>
+                                </label>
+                                <label class="form-group" for="ca-bus-add-plate">
+                                    <span data-i18n="ca_buses_plate">Tablice</span>
+                                    <input type="text" id="ca-bus-add-plate" maxlength="20" autocomplete="off" data-i18n-placeholder="ph_bus_plate" placeholder="MD-101AB">
+                                </label>
+                                <label class="form-group" for="ca-bus-add-group">
+                                    <span data-i18n="ca_buses_group">Grupa</span>
+                                    <select id="ca-bus-add-group" required>
+                                        <option value="" data-i18n="ca_plan_group_placeholder">Izaberite grupu</option>
+                                    </select>
+                                </label>
+                                <label class="form-group" for="ca-bus-add-status">
+                                    <span data-i18n="ca_buses_status">Status</span>
+                                    <select id="ca-bus-add-status"></select>
+                                </label>
+                            </div>
+                            <div class="company-driver-add-actions">
+                                <button type="button" class="btn-secondary" data-action="closeCaBusAddModal">
+                                    <span data-i18n="ca_buses_cancel">Otkaži</span>
+                                </button>
+                                <button type="submit" id="ca-bus-add-submit" class="btn-primary company-drivers-add-submit">
+                                    <i data-lucide="bus"></i>
+                                    <span data-i18n="ca_buses_add_btn">Dodaj autobus</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
                     <div class="card full-width-card">
                         <div class="table-container">
                             <table class="app-table table-large">
@@ -753,8 +798,9 @@
                                     <tr>
                                         <th data-i18n="table_bus">Autobus</th>
                                         <th data-i18n="table_plate">Tablice</th>
-                                        <th data-i18n="ca_col_groups">Grupe</th>
+                                        <th data-i18n="ca_buses_group">Grupa</th>
                                         <th data-i18n="table_status">Status</th>
+                                        <th data-i18n="table_actions">Akcije</th>
                                     </tr>
                                 </thead>
                                 <tbody id="ca-buses-table-body"></tbody>
@@ -1025,13 +1071,24 @@
                 · <span data-i18n="med_edit_month">Mesec</span>: <strong id="med-month-label">—</strong>
             </p>
             <p class="monthly-day-edit-hint" data-i18n="med_edit_hint">
-                Za svaki dan: izaberite tip (slobodno / odmor / bolovanje / radna smena), zatim šifru i autobus ako treba.
+                Za svaki dan: izaberite šifru smene iz kataloga (npr. 310.S01) i autobus ako treba. Za slobodno / odmor / bolovanje izaberite tip bez šifre.
             </p>
 
             <div class="form-group monthly-day-edit-field">
                 <label data-i18n="med_label_day">Dan / datum</label>
                 <select id="med-day-select" class="med-control" data-change-action="onMedDaySelectChange"></select>
                 <div id="med-date-hint" class="med-date-hint"></div>
+            </div>
+
+            <div class="form-group monthly-day-edit-field">
+                <label data-i18n="med_label_code">Šifra smene</label>
+                <select id="med-shift-code-select" class="med-control" data-change-action="onMedCatalogSelectChange">
+                    <option value="" data-i18n="med_code_none">— Bez šifre / slobodno —</option>
+                </select>
+                <input type="text" id="med-shift-code-custom" class="med-control med-control--follow" data-i18n-placeholder="med_code_placeholder" placeholder="ili ukucajte šifru, npr. 310.S01"
+                    data-input-action="onMedShiftCodeCustomInput">
+                <div id="med-catalog-lock-hint" class="med-date-hint" hidden aria-live="polite"></div>
+                <div id="med-duty-time-hint" class="med-date-hint" hidden aria-live="polite"></div>
             </div>
 
             <div class="form-group monthly-day-edit-field">
@@ -1045,17 +1102,7 @@
                     <option value="vacation" data-i18n="shift_type_vacation">🏖️ Godišnji odmor</option>
                     <option value="sick" data-i18n="shift_type_sick">🤒 Bolovanje</option>
                 </select>
-            </div>
-
-            <div class="form-group monthly-day-edit-field">
-                <label data-i18n="med_label_code">Šifra smene</label>
-                <select id="med-shift-code-select" class="med-control" data-change-action="onMedCatalogSelectChange">
-                    <option value="" data-i18n="med_code_none">— Bez šifre / slobodno —</option>
-                </select>
-                <input type="text" id="med-shift-code-custom" class="med-control med-control--follow" data-i18n-placeholder="med_code_placeholder" placeholder="ili ukucajte šifru, npr. 310.S01"
-                    data-input-action="onMedShiftCodeCustomInput">
-                <div id="med-catalog-lock-hint" class="med-date-hint" hidden aria-live="polite"></div>
-                <div id="med-duty-time-hint" class="med-date-hint" hidden aria-live="polite"></div>
+                <div id="med-type-auto-hint" class="med-date-hint" aria-live="polite" data-i18n="med_type_auto_hint">Tip se automatski postavlja prema izabranoj šifri. Menjajte ga ručno samo za slobodno / odmor / bolovanje.</div>
             </div>
 
             <div class="form-group monthly-day-edit-field monthly-day-edit-field--last">

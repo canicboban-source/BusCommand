@@ -1729,6 +1729,18 @@ button {
     font-size: 0.9rem;
     animation: sosPulse 1s ease-in-out infinite;
 }
+.sos-banner-driver .sos-self-cancel {
+    margin-left: auto;
+    padding: 6px 14px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border-radius: 6px;
+    background: white;
+    color: #ef4444;
+    border: 1px solid #ef4444;
+    cursor: pointer;
+    white-space: nowrap;
+}
 .sos-banner-driver.hidden { display: none !important; }
 
 /* ============================================================
@@ -3530,27 +3542,31 @@ input:focus, select:focus, textarea:focus {
     display: table;
 }
 
-/* Column widths: STATUS (7) must never truncate. ACTIONS (8) is a single ⋮
-   trigger since D25, so the reclaimed width goes back to name/lines/phone. */
+/* Column widths — 9 columns: EID, Name, Group, Lines known, Phone, PIN,
+   Compliance, Status, Actions. STATUS (8) and ACTIONS (9) must never
+   truncate — a squeezed status pill was previously unreadable. */
 .company-drivers-directory-table th:nth-child(1),
-.company-drivers-directory-table td:nth-child(1) { width: 9%; }
+.company-drivers-directory-table td:nth-child(1) { width: 8%; }
 .company-drivers-directory-table th:nth-child(2),
-.company-drivers-directory-table td:nth-child(2) { width: 24%; }
+.company-drivers-directory-table td:nth-child(2) { width: 18%; }
 .company-drivers-directory-table th:nth-child(3),
-.company-drivers-directory-table td:nth-child(3) { width: 14%; }
+.company-drivers-directory-table td:nth-child(3) { width: 11%; }
 .company-drivers-directory-table th:nth-child(4),
-.company-drivers-directory-table td:nth-child(4) { width: 12%; }
+.company-drivers-directory-table td:nth-child(4) { width: 11%; }
 .company-drivers-directory-table th:nth-child(5),
-.company-drivers-directory-table td:nth-child(5) { width: 14%; }
+.company-drivers-directory-table td:nth-child(5) { width: 13%; }
 .company-drivers-directory-table th:nth-child(6),
-.company-drivers-directory-table td:nth-child(6) { width: 8%; }
+.company-drivers-directory-table td:nth-child(6) { width: 12%; }
 .company-drivers-directory-table th:nth-child(7),
 .company-drivers-directory-table td:nth-child(7) { width: 12%; }
 .company-drivers-directory-table th:nth-child(8),
-.company-drivers-directory-table td:nth-child(8) { width: 7%; }
+.company-drivers-directory-table td:nth-child(8) { width: 10%; }
+.company-drivers-directory-table th:nth-child(9),
+.company-drivers-directory-table td:nth-child(9) { width: 5%; }
 
 .company-drivers-table td:nth-child(7),
-.company-drivers-table td:nth-child(8) {
+.company-drivers-table td:nth-child(8),
+.company-drivers-table td:nth-child(9) {
     overflow: visible;
     text-overflow: clip;
     white-space: nowrap;
@@ -3725,15 +3741,17 @@ input:focus, select:focus, textarea:focus {
     font-size: 0.72rem;
 }
 
+/* Below 1280px, "Lines known" is the least operationally critical column
+   (dispatchers see it too) — drop it first and hand its width to Name/Phone.
+   PIN, Compliance, Status and Actions always stay visible: PIN status is
+   the #1 reason a CA opens this page, and hiding it defeats the purpose. */
 @media (max-width: 1280px) {
     .company-drivers-directory-table th:nth-child(4),
-    .company-drivers-directory-table td:nth-child(4),
-    .company-drivers-directory-table th:nth-child(6),
-    .company-drivers-directory-table td:nth-child(6) { display: none; }
+    .company-drivers-directory-table td:nth-child(4) { display: none; }
     .company-drivers-directory-table th:nth-child(2),
-    .company-drivers-directory-table td:nth-child(2) { width: 28%; }
-    .company-drivers-directory-table th:nth-child(8),
-    .company-drivers-directory-table td:nth-child(8) { width: 18%; }
+    .company-drivers-directory-table td:nth-child(2) { width: 24%; }
+    .company-drivers-directory-table th:nth-child(5),
+    .company-drivers-directory-table td:nth-child(5) { width: 16%; }
 }
 
 @media (max-width: 1100px) {

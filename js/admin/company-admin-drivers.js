@@ -40,6 +40,7 @@ let importPending = false;
 let editSavePending = false;
 let driversFilterTimer = null;
 const statusPending = new Set();
+const recentlyDeletedIds = new Map();
 
 function normalizeHeader(value) {
     return String(value || "").replace(/^\uFEFF/, "").trim().toLowerCase();
@@ -370,6 +371,7 @@ async function submitCompanyDriverManualAdd(event) {
             }
             const refreshed = await loadStateFromFirestore(companyId);
             window.state.drivers = refreshed?.drivers || [];
+            recentlyDeletedIds.clear();
             await enrichCompanyDriversFromApi();
             // Never persist plaintext PIN on the client driver object.
             if (result.companyCode) {
@@ -506,8 +508,10 @@ function compliancePillHtml(driver) {
     }
     if (!pills.length) {
         const hasAny = fields.some(({ key }) => String(driver[key] || "").trim());
-        if (hasAny) return `<span class="compliance-pill is-ok"><i data-lucide="shield-check"></i></span>`;
-        return `<span class="compliance-pill is-empty">—</span>`;
+        if (hasAny) {
+            return `<span class="compliance-pill is-ok" title="${escapeHtml(t("ca_drivers_compliance_ok") || "Svi rokovi važe")}"><i data-lucide="shield-check"></i></span>`;
+        }
+        return `<span class="compliance-pill is-empty" title="${escapeHtml(t("ca_drivers_compliance_empty") || "Nema unetih rokova (dozvola/CPC/lekarsko)")}">—</span>`;
     }
     return pills.join(" ");
 }
@@ -536,7 +540,9 @@ function renderDirectory() {
             <td data-label="${t("ca_plan_group")}">${group ? `<span class="company-driver-group-dot" style="--driver-group-color:${escapeHtml(group.color || "#3d7ef5")}"></span>${escapeHtml(group.name)}` : `<span class="company-driver-unassigned">${t("ca_drivers_unassigned")}</span>`}</td>
             <td data-label="${t("ca_drivers_known_lines")}">${escapeHtml(knownLinesLabel(driver))}</td>
             <td data-label="${t("ca_drivers_phone")}">${escapeHtml(driver.phone || "—")}</td>
-            <td data-label="${t("ca_drivers_pin_short")}"><span class="company-driver-pin-status">${driver.hasPersonalCode === false ? "—" : escapeHtml(t("ca_drivers_pin_set") || "Postavljen")}</span></td>
+            <td data-label="${t("ca_drivers_pin_short")}">${driver.hasPersonalCode === false
+        ? `<button type="button" class="company-driver-pin-missing" ${actionAttr("openCompanyDriverEdit", [driver.id, "pin"])} title="${escapeHtml(t("ca_drivers_pin_set_action") || "Postavite PIN")}"><i data-lucide="key-round"></i>${escapeHtml(t("ca_drivers_pin_missing") || "Nije postavljen")}</button>`
+        : `<span class="company-driver-pin-status is-set"><i data-lucide="check"></i>${escapeHtml(t("ca_drivers_pin_set") || "Postavljen")}</span>`}</td>
             <td data-label="${t("ca_drivers_compliance")}">${compliancePillHtml(driver)}</td>
             <td data-label="${t("ca_col_status")}"><span class="company-driver-status ${active ? "is-active" : "is-inactive"}"><i data-lucide="${active ? "circle-check" : "circle-pause"}"></i>${t(active ? "driver_status_active" : "driver_status_inactive")}</span></td>
             <td data-label="${t("table_actions")}"><div class="company-driver-row-actions">
@@ -574,7 +580,7 @@ function renderDirectory() {
     container.innerHTML = `
         <div class="company-drivers-results-count">${tp("ca_drivers_results", drivers.length, { count: drivers.length })}</div>
         <div class="company-drivers-table-wrap"><table class="company-drivers-table company-drivers-directory-table">
-            <thead><tr><th>${t("ca_drivers_eid")}</th><th>${t("ca_drivers_name")}</th><th>${t("ca_plan_group")}</th><th>${t("ca_drivers_known_lines")}</th><th>${t("ca_drivers_phone")}</th><th>${t("ca_drivers_pin_short")}</th><th>${t("ca_drivers_compliance")}</th><th>${t("ca_col_status")}</th><th>${t("table_actions")}</th></tr></thead>
+            <thead><tr><th>${t("ca_drivers_eid")}</th><th>${t("ca_drivers_name")}</th><th>${t("ca_plan_group")}</th><th>${t("ca_drivers_known_lines")}</th><th>${t("ca_drivers_phone")}</th><th>${t("ca_drivers_pin_short")}</th><th title="${escapeHtml(t("ca_drivers_compliance_hint") || "Vozačka dozvola, CPC i lekarsko — rok isteka")}">${t("ca_drivers_compliance")} <i data-lucide="info" class="company-drivers-th-info"></i></th><th>${t("ca_col_status")}</th><th>${t("table_actions")}</th></tr></thead>
             <tbody>${rows}</tbody>
         </table></div>
         ${pageCount > 1 ? `<nav class="company-drivers-pagination" aria-label="${tx("ca_drivers_pagination")}">
@@ -766,6 +772,7 @@ function deleteCompanyDriver(driverId) {
                 if (!result.success) throw new Error(result.error || t("ca_drivers_delete_failed"));
             }
             window.state.drivers = (window.state.drivers || []).filter((entry) => entry.id !== driverId);
+            recentlyDeletedIds.set(driverId, Date.now());
             if (USE_LOCAL_STATE) saveState();
             renderSummary();
             renderDirectory();
@@ -804,7 +811,7 @@ function closeCompanyDriverAddModal() {
     closeModal("ca-driver-add-modal");
 }
 
-function openCompanyDriverEdit(driverId) {
+function openCompanyDriverEdit(driverId, focusField = "") {
     const driver = companyDrivers().find((entry) => entry.id === driverId);
     if (!driver || editSavePending) return;
     const idInput = document.getElementById("ca-driver-edit-id");
@@ -845,9 +852,8 @@ function openCompanyDriverEdit(driverId) {
         const selected = readKnownGroupIdsFromDom(document.getElementById("ca-driver-edit-known-groups"));
         paintKnownGroupChecks(selected, group.value);
     };
-    showModal("ca-driver-edit-modal");
+    showModal("ca-driver-edit-modal", focusField === "pin" ? pin : firstName);
     refreshIcons();
-    firstName.focus();
 }
 
 function knownLinesLabel(driver) {
@@ -1012,6 +1018,9 @@ async function enrichCompanyDriversFromApi() {
         };
     });
     result.drivers.forEach((driver) => {
+        const deletedAt = recentlyDeletedIds.get(driver.id);
+        if (deletedAt && Date.now() - deletedAt < 30000) return;
+        if (deletedAt) recentlyDeletedIds.delete(driver.id);
         if (!(window.state.drivers || []).some((entry) => entry.id === driver.id)) {
             window.state.drivers.push(driver);
         }

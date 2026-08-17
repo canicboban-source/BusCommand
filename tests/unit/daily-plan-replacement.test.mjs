@@ -5,15 +5,19 @@ import { URL } from "node:url";
 
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
-test("daily plan is constrained to today and directs future changes to monthly plan", async () => {
+test("daily plan allows a 7-day forward lookahead but keeps future dates read-only and directs edits to monthly plan", async () => {
   const [source, html] = await Promise.all([
     read("../../js/dispatcher/daily-plan.js"),
     read("../../staff.html")
   ]);
   assert.match(source, /picker\.min = today/);
-  assert.match(source, /picker\.max = today/);
+  assert.match(source, /maxDate\.setDate\(maxDate\.getDate\(\) \+ 7\)/);
+  assert.match(source, /picker\.max = maxDate\.toISOString\(\)/);
+  assert.match(source, /const isFuture = date > today/);
+  assert.match(source, /editable = !isOperationalReadOnly\(\) && !isFuture/);
   assert.match(source, /if \(dateStr !== today\)/);
   assert.match(source, /shift_future_monthly_only/);
+  assert.match(source, /daily_future_readonly/);
   assert.match(html, /id="daily-plan-date-picker"/);
 });
 

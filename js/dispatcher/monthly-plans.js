@@ -505,8 +505,33 @@ function cellLabelForMatrix(schedule, day, liveShift = null) {
 }
 
 function renderGroupMonthMatrix(drivers, year, monthNum, totalDays, month) {
+    const readOnly = isOperationalReadOnly();
+    const bulkToolbar = readOnly ? "" : `
+      <div class="monthly-matrix-bulk-toolbar" role="group" aria-label="${escapeHtml(t("monthly_bulk_label") || "Bulk edit")}">
+        <span class="monthly-matrix-bulk-title">${escapeHtml(t("monthly_bulk_label") || "Bulk edit")}</span>
+        <label class="monthly-matrix-bulk-field">
+          <span>${escapeHtml(t("monthly_bulk_day_from") || "Day from")}</span>
+          <input type="number" id="matrix-bulk-from" class="med-control" min="1" max="${totalDays}" value="1">
+        </label>
+        <label class="monthly-matrix-bulk-field">
+          <span>${escapeHtml(t("monthly_bulk_day_to") || "Day to")}</span>
+          <input type="number" id="matrix-bulk-to" class="med-control" min="1" max="${totalDays}" value="${Math.min(7, totalDays)}">
+        </label>
+        <label class="monthly-matrix-bulk-field">
+          <span>${escapeHtml(t("monthly_bulk_type") || "Type")}</span>
+          <select id="matrix-bulk-type" class="med-control">
+            <option value="off">${escapeHtml(getShiftTypeLabel("off"))}</option>
+            <option value="vacation">${escapeHtml(getShiftTypeLabel("vacation"))}</option>
+            <option value="sick">${escapeHtml(getShiftTypeLabel("sick"))}</option>
+          </select>
+        </label>
+        <button type="button" class="btn-secondary" ${actionAttr("applyMatrixBulkEdit", [month, year, monthNum])}>
+          <i data-lucide="check-check"></i> ${escapeHtml(t("monthly_bulk_apply") || "Apply to all drivers")}
+        </button>
+      </div>`;
     let html = `<div class="monthly-matrix-wrap">
       <p class="monthly-matrix-hint">${t("monthly_matrix_hint") || "Pregled grupe — klik na ćeliju otvara izmenu."}</p>
+      ${bulkToolbar}
       <div class="monthly-matrix-scroll">
       <table class="monthly-matrix">
         <thead class="monthly-matrix-thead">
@@ -1154,6 +1179,67 @@ async function applyMonthlyMassAbsence(days, type) {
     }
 }
 
+async function applyMatrixBulkEdit(month, year, monthNum) {
+    if (isOperationalReadOnly()) {
+        showToast(t("error_ops_read_only"), "error");
+        return;
+    }
+    const fromDay = parseInt(document.getElementById("matrix-bulk-from")?.value, 10);
+    const toDay = parseInt(document.getElementById("matrix-bulk-to")?.value, 10);
+    const type = document.getElementById("matrix-bulk-type")?.value || "off";
+    if (!fromDay || !toDay || fromDay > toDay || fromDay < 1) {
+        showToast(t("monthly_mass_invalid_range") || "Invalid day range.", "error");
+        return;
+    }
+    if (!["off", "vacation", "sick"].includes(type)) {
+        showToast(t("monthly_mass_invalid_type") || "Invalid type.", "error");
+        return;
+    }
+    const drivers = getVisibleDrivers().filter(driver => driver.active !== false);
+    if (!drivers.length) {
+        showToast(t("monthly_select_prompt") || "No drivers visible.", "error");
+        return;
+    }
+    const days = [];
+    for (let d = fromDay; d <= toDay; d++) days.push(d);
+    const typeLabel = getShiftTypeLabel(type);
+    const message = (t("monthly_bulk_confirm", {
+        count: days.length,
+        drivers: drivers.length,
+        from: fromDay,
+        to: toDay,
+        type: typeLabel
+    }) || `Apply "${typeLabel}" for days ${fromDay}–${toDay} to all ${drivers.length} drivers?`);
+
+    showConfirm(message, async () => {
+        let ok = 0;
+        let fail = 0;
+        const name = typeLabel;
+        for (const driver of drivers) {
+            if (!driver.id) continue;
+            for (const day of days) {
+                const dateStr = `${year}-${String(monthNum).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                const saved = await persistShift(driver, dateStr, type, name, null, null, null);
+                if (saved) ok += 1;
+                else fail += 1;
+            }
+        }
+        renderMonthlyPlansView();
+        if (fail === 0) {
+            showToast(t("monthly_bulk_done", { count: ok }) || `Saved: ${ok} cells.`, "success");
+        } else {
+            showToast(
+                t("monthly_bulk_partial", { ok, fail }) || `Saved ${ok}, failed ${fail}.`,
+                fail === ok + fail ? "error" : "warning"
+            );
+        }
+    }, {
+        title: t("monthly_bulk_label") || "Bulk edit",
+        confirmText: t("btn_confirm") || "Confirm",
+        danger: true
+    });
+}
+
 /**
  * @deprecated Empty Frei shells are not a product action.
  * Kept as a no-op redirect so any stale data-action cannot create empty plans.
@@ -1415,6 +1501,7 @@ export {
     saveMonthlyDayEdit,
     undoMonthlyDayEdit,
     previewMonthlyMassAbsence,
+    applyMatrixBulkEdit,
     onMedDaySelectChange,
     onMedCatalogSelectChange,
     onMedShiftTypeChange,

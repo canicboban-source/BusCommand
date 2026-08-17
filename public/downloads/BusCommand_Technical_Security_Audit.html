@@ -389,13 +389,14 @@
             <p>BusCommand does not track driver location or collect telemetry data outside of active shift periods. GPS tracking is not used; the platform relies on shift confirmations and incident reporting rather than continuous surveillance.</p>
         </div>
 
-        <h3>7.4 EU 561/2006 Compliance</h3>
-        <p>The platform supports compliance with EU Regulation 561/2006 on drivers' hours:</p>
+        <h3>7.4 EU 561/2006 Driving-Time Awareness</h3>
+        <p>The platform assists dispatchers in tracking driver working hours relevant to EU Regulation 561/2006:</p>
         <ul>
             <li><strong>Shift Tracking:</strong> Accurate recording of shift start/end times</li>
-            <li><strong>Rest Periods:</strong> Enforcement of minimum rest periods between shifts</li>
-            <li><strong>Documentation:</strong> Automated generation of required compliance reports</li>
+            <li><strong>Rest Period Alerts:</strong> The dispatcher cockpit flags consecutive-day duties with less than 11 hours between shift end and next shift start (Art. 8 daily rest floor), for dispatcher review — this is an informational aid, not an automated legal determination</li>
+            <li><strong>Audit Trail:</strong> Every shift change is recorded in the append-only audit log for later review</li>
         </ul>
+        <p style="font-size:0.85em;color:#666;">Final responsibility for driving-time and rest-period compliance remains with the operator and its transport-law counsel. BusCommand does not replace a certified tachograph/working-time compliance system.</p>
     </div>
 
     <div class="section">
@@ -518,7 +519,7 @@
             <strong>Compliance Summary:</strong>
             <ul>
                 <li>✓ GDPR Compliant</li>
-                <li>✓ EU 561/2006 Compliant</li>
+                <li>✓ EU 561/2006 Rest-Period Alerting (dispatcher aid, not a certified legal ruling)</li>
                 <li>✓ EU Data Residency (Frankfurt, Germany)</li>
                 <li>✓ ISO 27001 Aligned Security Practices</li>
                 <li>✓ SOC 2 Type II Ready Controls</li>

@@ -2,8 +2,9 @@
 import { handleCompanyAuditFilters, loadMoreCompanyAudit, refreshCompanyAudit, resetCompanyAuditFilters } from "./admin/company-admin-audit.js";
 import { applyBrandingSettings, clearCompanyBrandingLogo, handleCompanyBrandingLogoFile } from "./admin/company-admin-branding.js";
 import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriverAddModal, closeCompanyDriverEdit, confirmCompanyDriversImport, deleteCompanyDriver, toggleDriverPinVisibility, handleCompanyDriversFile, handleCompanyDriversFilter, handleCompanyDriversSearch, openCompanyDriverAddModal, openCompanyDriverEdit, saveCompanyDriverEdit, submitCompanyDriverManualAdd, toggleCompanyDriverStatus } from "./admin/company-admin-drivers.js";
+import { renderCompanyAdminBuses, openCompanyBusesOverview, openCaBusAddModal, closeCaBusAddModal, submitCaBusAdd, openCaBusEdit, saveCaBusEdit, cancelCaBusEdit, changeCaBusGroup, quickSetCaBusStatus, setCaBusOtherLine, toggleCaBusActive } from "./admin/company-admin-buses.js";
 import { cancelCompanyGroupEdit, deleteCompanyGroup, focusCompanyGroupForm, saveCompanyGroup, startEditCompanyGroup } from "./admin/company-admin-groups.js";
-import { clearCompanyServicePlanPreview, closeCompanyServicePlanDuty, closeCompanyServicePlanHistory, handleCompanyServicePlanFile, handleCompanyServicePlanGroupChange, openCompanyServicePlanDuty, openCompanyServicePlanHistory, publishCompanyServicePlan, activateCompanyServicePlanVersion } from "./admin/company-admin-service-plan.js";
+import { clearCompanyServicePlanPreview, closeCompanyServicePlanDuty, closeCompanyServicePlanHistory, deleteDraftDuty, discardServicePlanDraft, handleCompanyServicePlanFile, handleCompanyServicePlanGroupChange, openAddDutyForm, closeAddDutyForm, openCompanyServicePlanDuty, openCompanyServicePlanHistory, openEditDutyForm, closeEditDutyForm, publishCompanyServicePlan, publishServicePlanDraft, renderDraftDutyTable, renderServicePlanEditor, startServicePlanDraft, submitAddDuty, submitEditDuty, activateCompanyServicePlanVersion } from "./admin/company-admin-service-plan.js";
 import { handleCompanySettingsCountry, handleCompanySettingsInput, resetCompanySettingsForm, saveCompanyProfileSettings, handleEmailSmtpInput, resetEmailSmtpForm, saveEmailSmtpSettings } from "./admin/company-admin-settings.js";
 import { addCompanyDispatcher, focusCompanyDispatcherForm, removeCompanyDispatcher, resetCompanyDispatcherPassword, revokeCompanyDispatcherSessions, saveCompanyDispatcherGroups, saveCompanyDispatcherProfile, toggleCaDispGroupsEdit, toggleCaDispProfileEdit, toggleCompanyDispatcherStatus } from "./admin/company-admin-team.js";
 import { endCompanySupportSession, openCompanyOpsOverview } from "./admin/company-admin.js";
@@ -45,13 +46,13 @@ import {
 import { removeDispatcher } from "./dispatcher/dispatchers.js";
 import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup as openMonthlyPlanForGroupCore, openMonthlyPlanImport as openMonthlyPlanImportCore, openMonthlyPlansFull as openMonthlyPlansFullCore, openVehiclesFromPlan, scrollHubSection } from "./dispatcher/group-hub.js";
 import { returnLostItem, setLostItemStatus, openLostItemPhoto } from "./dispatcher/lost-items.js";
-import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, deleteMonthlyPlan, exportMonthlyGroupPlanCsv, focusMonthlyDriverPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, openMonthlyDayEditForDriver, previewMonthlyMassAbsence, saveMonthlyDayEdit, selectMonthlyPlanGroup, undoMonthlyDayEdit } from "./dispatcher/monthly-plans.js";
+import { closeMonthlyDayEditModal, createEmptyMonthlyPlan, deleteMonthlyPlan, exportMonthlyGroupPlanCsv, focusMonthlyDriverPlan, loadMonthlyPlanForDriver, onMedCatalogSelectChange, onMedDaySelectChange, onMedShiftTypeChange, openMonthlyDayEdit, openMonthlyDayEditForDriver, previewMonthlyMassAbsence, applyMatrixBulkEdit, saveMonthlyDayEdit, selectMonthlyPlanGroup, undoMonthlyDayEdit } from "./dispatcher/monthly-plans.js";
 import { goToOpsPlanProblems } from "./dispatcher/plan-health-banner.js";
 import { openVehiclesForGroup } from "./dispatcher/vehicles-panel.js";
 import { resolveReport, openReportResolution, closeReportResolution } from "./dispatcher/reports.js";
 import { shiftWeekNav } from "./dispatcher/shift-utils.js";
 import { assignShift, openShiftCell, persistShift, removeShift } from "./dispatcher/shifts.js";
-import { dailyPlanAssignDriver, clearDailyShift } from "./dispatcher/daily-plan.js";
+import { dailyPlanAssignDriver, clearDailyShift, undoDailyShift } from "./dispatcher/daily-plan.js";
 import {
     acquirePlanEditLock,
     releasePlanEditLock,
@@ -380,6 +381,7 @@ const HANDLERS = {
     exportMonthlyGroupPlanCsv,
     deleteMonthlyPlan,
     clearDailyShift,
+    undoDailyShift,
     async detachDriverFromLine(...args) {
         const mod = await import("./dispatcher/line-roster.js");
         return mod.detachDriverFromLine(...args);
@@ -399,7 +401,19 @@ const HANDLERS = {
     dispatcherHelpOpenMailto,
     dispatcherHelpSoftReload,
     endCompanySupportSession,
+    openCompanyBusesOverview,
     openCompanyOpsOverview,
+    openCaBusAddModal,
+    closeCaBusAddModal,
+    submitCaBusAdd,
+    openCaBusEdit,
+    saveCaBusEdit,
+    cancelCaBusEdit,
+    changeCaBusGroup,
+    quickSetCaBusStatus,
+    setCaBusOtherLine,
+    toggleCaBusActive,
+    renderCompanyAdminBuses,
     enterDispatcherActiveGroup,
     exitImpersonation,
     exportDriversCSV,
@@ -452,6 +466,7 @@ const HANDLERS = {
     openMonthlyDayEdit,
     openMonthlyDayEditForDriver,
     previewMonthlyMassAbsence,
+    applyMatrixBulkEdit,
     openOperationalIncident,
     openVehicleOperationalIncident,
     transitionOperationalIncident,
@@ -473,7 +488,19 @@ const HANDLERS = {
     refreshPlanLockBanner,
     opsAssignDriver,
     publishCompanyServicePlan,
+    publishServicePlanDraft,
     activateCompanyServicePlanVersion,
+    closeAddDutyForm,
+    closeEditDutyForm,
+    deleteDraftDuty,
+    discardServicePlanDraft,
+    openAddDutyForm,
+    openEditDutyForm,
+    renderDraftDutyTable,
+    renderServicePlanEditor,
+    startServicePlanDraft,
+    submitAddDuty,
+    submitEditDuty,
     refreshCompanyAudit,
     removeDispatcher,
     removeElementById,

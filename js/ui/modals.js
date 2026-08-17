@@ -57,7 +57,7 @@ function renderSosConfirmContext() {
     if (note) note.value = "";
 }
 
-function showModal(id) {
+function showModal(id, initialFocus = null) {
     if (id === "factory-reset-modal" && !canRunFactoryReset(window.currentUser?.role, USE_LOCAL_STATE)) {
         showToast(t("error_access_denied"), "error");
         return false;
@@ -77,7 +77,7 @@ function showModal(id) {
         el.classList.remove("hidden");
         el.style.display = "flex";
         el.setAttribute("aria-hidden", "false");
-        attachFocusTrap(el);
+        attachFocusTrap(el, { initialFocus });
         if (typeof lucide !== "undefined") lucide.createIcons();
         return true;
     }

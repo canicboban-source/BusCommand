@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BusCommand — Dispatcher & Admin</title>
-  <link rel="icon" type="image/png" href="/brand/logo-hero.png">
-  <link rel="apple-touch-icon" href="/brand/logo-hero.png">
     <!-- Google Font: Outfit (Moderan i premium izgled) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -366,6 +364,11 @@
                         <li>
                             <a href="#" class="nav-item" data-action="switchSection" data-action-args='["company-admin-service-plan"]'>
                                 <i data-lucide="calendar-range"></i> <span data-i18n="ca_nav_service_plan">Planovi smena</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-item" data-action="switchSection" data-action-args='["dispatcher-vacations"]'>
+                                <i data-lucide="calendar-check"></i> <span data-i18n="nav_vacation_requests">Zahtevi za odmor</span>
                             </a>
                         </li>
                         <li>
@@ -870,6 +873,13 @@
                                     <input type="file" id="ca-service-plan-file" accept=".xlsx,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/pdf" hidden
                                         data-change-action="handleCompanyServicePlanFile" data-change-pass="event">
                                 </div>
+                                <div class="service-plan-upload-field" id="ca-edit-catalog-field">
+                                    <span data-i18n="ca_plan_catalog_edit_label">Uređivanje postojećeg kataloga</span>
+                                    <button type="button" class="btn-secondary" id="ca-edit-catalog-btn" data-action="startServicePlanDraft">
+                                        <i data-lucide="pen-line"></i>
+                                        <span data-i18n="ca_plan_edit_catalog">Uredi katalog</span>
+                                    </button>
+                                </div>
                             </div>
                             <div class="service-plan-download-row" aria-label="BusCommand templates">
                                 <span class="service-plan-kicker" data-i18n="ca_plan_download_title">Preuzmite BusCommand šablon</span>
@@ -901,6 +911,56 @@
                     </div>
 
                     <div id="ca-service-plan-preview" class="service-plan-preview-host" aria-live="polite"></div>
+
+                    <div id="ca-service-plan-editor" class="card service-plan-editor-card hidden" aria-live="polite"></div>
+
+                    <div id="ca-duty-form" class="card service-plan-duty-form hidden" aria-live="polite">
+                        <div class="service-plan-duty-form-header">
+                            <span class="service-plan-kicker" data-i18n="ca_plan_duty_form_title_add">Dodaj novu smenu</span>
+                            <h3 id="ca-duty-form-title"></h3>
+                        </div>
+                        <div class="service-plan-duty-form-grid">
+                            <div class="form-group">
+                                <label for="ca-duty-form-code" data-i18n="ca_plan_duty_code">Kod smene</label>
+                                <input type="text" id="ca-duty-form-code" placeholder="npr. 310.S01" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="ca-duty-form-work-start" data-i18n="ca_plan_duty_work_start">Početak rada</label>
+                                <input type="text" id="ca-duty-form-work-start" placeholder="HH:MM" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="ca-duty-form-first-trip" data-i18n="ca_plan_duty_first_trip">Prva vožnja</label>
+                                <input type="text" id="ca-duty-form-first-trip" placeholder="HH:MM" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="ca-duty-form-last-trip-ends" data-i18n="ca_plan_duty_last_trip">Kraj poslednje vožnje</label>
+                                <input type="text" id="ca-duty-form-last-trip-ends" placeholder="HH:MM" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="ca-duty-form-work-end" data-i18n="ca_plan_duty_work_end">Kraj rada</label>
+                                <input type="text" id="ca-duty-form-work-end" placeholder="HH:MM" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="ca-duty-form-day-type" data-i18n="ca_plan_duty_day_type">Tip dana</label>
+                                <select id="ca-duty-form-day-type">
+                                    <option value="SCHOOL_WEEKDAY" data-i18n="ca_plan_day_school">Radni dan — škola</option>
+                                    <option value="HOLIDAY_WEEKDAY" data-i18n="ca_plan_day_holiday_weekday">Radni dan — raspust</option>
+                                    <option value="SATURDAY" data-i18n="ca_plan_day_saturday">Subota</option>
+                                    <option value="SUNDAY_HOLIDAY" data-i18n="ca_plan_day_sunday">Nedelja / praznik</option>
+                                    <option value="ALL_DAYS" data-i18n="ca_plan_day_all">Svi dani</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="ca-duty-form-error" class="service-plan-form-error" role="alert" hidden></div>
+                        <div class="service-plan-duty-form-actions">
+                            <button type="button" class="btn-primary" id="ca-duty-form-save">
+                                <i data-lucide="plus"></i> <span data-i18n="ca_plan_duty_save">Sačuvaj smenu</span>
+                            </button>
+                            <button type="button" class="btn-secondary" id="ca-duty-form-cancel" data-action="closeAddDutyForm">
+                                <i data-lucide="x"></i> <span data-i18n="ca_plan_duty_cancel">Otkaži</span>
+                            </button>
+                        </div>
+                    </div>
 
                     <!-- D21: CA monthly driver-assignment import removed — Dispo owns that flow (no EID). -->
 
@@ -1413,12 +1473,18 @@
                             <h2 data-i18n="nav_ops_center">Operativni centar</h2>
                             <p class="subtitle" style="margin-top:6px;" data-i18n="disp_dashboard_subtitle">Pregled grupa, vozača na dužnosti i aktivnih problema — jutarnji uvid na jednom mestu.</p>
                         </div>
-                        <div class="ops-health" id="ops-plan-health" role="status" aria-live="polite">
-                            <span class="dot" aria-hidden="true"></span>
-                            <div>
-                                <strong data-i18n="ops_plan_healthy">Plan je zdrav</strong>
-                                <span data-i18n="ops_plan_healthy_hint">Sve je u skladu sa planom</span>
+                        <div class="ops-center-top-right">
+                            <div class="ops-health" id="ops-plan-health" role="status" aria-live="polite">
+                                <span class="dot" aria-hidden="true"></span>
+                                <div>
+                                    <strong data-i18n="ops_plan_healthy">Plan je zdrav</strong>
+                                    <span data-i18n="ops_plan_healthy_hint">Sve je u skladu sa planom</span>
+                                </div>
                             </div>
+                            <span class="ops-last-refreshed" aria-live="polite">
+                                <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i>
+                                <span id="ops-last-refreshed"></span>
+                            </span>
                         </div>
                     </div>
 
@@ -1495,6 +1561,8 @@
                                     <tbody id="ops-daily-plan-rows">
                                     </tbody>
                                 </table>
+                            </div>
+                            <div class="ops-tomorrow-preview" id="ops-tomorrow-preview" aria-live="polite">
                             </div>
                             <div class="ops-panel-kicker" style="margin-top:14px;" data-i18n="nav_messages">Poruke</div>
                             <div class="alerts-list" id="dispatcher-messages-preview">
@@ -2001,10 +2069,57 @@
                         <div>
                             <span class="company-page-kicker" data-i18n="ca_buses_kicker">FLOTA</span>
                             <h2><i data-lucide="bus"></i><span data-i18n="ca_nav_buses">Autobusi</span></h2>
-                            <p id="ca-buses-readonly-note" data-i18n="ca_buses_readonly_note">Pregled flote samo za čitanje. Dispečeri povezuju i vode autobuse u dnevnim operacijama.</p>
+                            <p id="ca-buses-readonly-note" data-i18n="ca_buses_readonly_note">Upravljajte flotom firme: dodavanje, izmena i dodela grupa i statusa.</p>
                         </div>
-                        <div class="company-settings-save-state is-saved"><i data-lucide="eye"></i><span id="ca-buses-count">0</span></div>
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <button type="button" id="ca-bus-add-open" class="btn-primary" data-action="openCaBusAddModal">
+                                <i data-lucide="plus"></i><span data-i18n="ca_buses_add_btn">Dodaj autobus</span>
+                            </button>
+                            <div class="company-settings-save-state is-saved"><i data-lucide="eye"></i><span id="ca-buses-count">0</span></div>
+                        </div>
                     </header>
+
+                    <div id="ca-bus-add-card" class="card full-width-card hidden">
+                        <div class="company-drivers-card-heading">
+                            <div>
+                                <span class="service-plan-kicker" data-i18n="ca_buses_kicker">FLEET</span>
+                                <h3 data-i18n="ca_buses_add_title">Dodaj autobus</h3>
+                            </div>
+                            <i data-lucide="bus" aria-hidden="true"></i>
+                        </div>
+                        <form id="ca-bus-add-form" class="company-drivers-add-form" data-submit-action="submitCaBusAdd" novalidate>
+                            <div class="company-drivers-add-fields">
+                                <label class="form-group" for="ca-bus-add-number">
+                                    <span data-i18n="ca_buses_number">Broj autobusa</span>
+                                    <input type="text" id="ca-bus-add-number" maxlength="128" autocomplete="off" required>
+                                </label>
+                                <label class="form-group" for="ca-bus-add-plate">
+                                    <span data-i18n="ca_buses_plate">Tablice</span>
+                                    <input type="text" id="ca-bus-add-plate" maxlength="20" autocomplete="off" data-i18n-placeholder="ph_bus_plate" placeholder="MD-101AB">
+                                </label>
+                                <label class="form-group" for="ca-bus-add-group">
+                                    <span data-i18n="ca_buses_group">Grupa</span>
+                                    <select id="ca-bus-add-group" required>
+                                        <option value="" data-i18n="ca_plan_group_placeholder">Izaberite grupu</option>
+                                    </select>
+                                </label>
+                                <label class="form-group" for="ca-bus-add-status">
+                                    <span data-i18n="ca_buses_status">Status</span>
+                                    <select id="ca-bus-add-status"></select>
+                                </label>
+                            </div>
+                            <div class="company-driver-add-actions">
+                                <button type="button" class="btn-secondary" data-action="closeCaBusAddModal">
+                                    <span data-i18n="ca_buses_cancel">Otkaži</span>
+                                </button>
+                                <button type="submit" id="ca-bus-add-submit" class="btn-primary company-drivers-add-submit">
+                                    <i data-lucide="bus"></i>
+                                    <span data-i18n="ca_buses_add_btn">Dodaj autobus</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
                     <div class="card full-width-card">
                         <div class="table-container">
                             <table class="app-table table-large">
@@ -2012,8 +2127,9 @@
                                     <tr>
                                         <th data-i18n="table_bus">Autobus</th>
                                         <th data-i18n="table_plate">Tablice</th>
-                                        <th data-i18n="ca_col_groups">Grupe</th>
+                                        <th data-i18n="ca_buses_group">Grupa</th>
                                         <th data-i18n="table_status">Status</th>
+                                        <th data-i18n="table_actions">Akcije</th>
                                     </tr>
                                 </thead>
                                 <tbody id="ca-buses-table-body"></tbody>
@@ -2061,11 +2177,11 @@
                         <p class="company-settings-hint" data-i18n="ca_settings_email_hint">Povežite sopstveni mail server. BusCommand šalje potvrde smena i istek licenci preko vašeg servera — bez troška za vas.</p>
                         <form id="ca-email-smtp-form" data-submit-action="saveEmailSmtpSettings" novalidate>
                             <div class="company-settings-form-grid">
-                                <label for="ca-smtp-host"><span data-i18n="ca_smtp_host">SMTP server</span><input id="ca-smtp-host" type="text" maxlength="255" autocomplete="off" placeholder="mail.njihovafirma.com" data-input-action="handleEmailSmtpInput"></label>
+                                <label for="ca-smtp-host"><span data-i18n="ca_smtp_host">SMTP server</span><input id="ca-smtp-host" type="text" maxlength="255" autocomplete="off" placeholder="mail.example.com" data-input-action="handleEmailSmtpInput"></label>
                                 <label for="ca-smtp-port"><span data-i18n="ca_smtp_port">Port</span><input id="ca-smtp-port" type="number" min="1" max="65535" value="587" autocomplete="off" data-input-action="handleEmailSmtpInput"></label>
-                                <label for="ca-smtp-user"><span data-i18n="ca_smtp_user">Korisničko ime</span><input id="ca-smtp-user" type="text" maxlength="255" autocomplete="off" placeholder="office@njihovafirma.com" data-input-action="handleEmailSmtpInput"></label>
+                                <label for="ca-smtp-user"><span data-i18n="ca_smtp_user">Korisničko ime</span><input id="ca-smtp-user" type="text" maxlength="255" autocomplete="off" placeholder="office@example.com" data-input-action="handleEmailSmtpInput"></label>
                                 <label for="ca-smtp-pass"><span data-i18n="ca_smtp_pass">Lozinka</span><input id="ca-smtp-pass" type="password" maxlength="255" autocomplete="new-password" data-i18n-placeholder="ca_smtp_pass_placeholder" placeholder="Unesite lozinku" data-input-action="handleEmailSmtpInput"></label>
-                                <label for="ca-smtp-from"><span data-i18n="ca_smtp_from">"From" adresa</span><input id="ca-smtp-from" type="email" maxlength="254" autocomplete="email" placeholder="office@njihovafirma.com" data-input-action="handleEmailSmtpInput"></label>
+                                <label for="ca-smtp-from"><span data-i18n="ca_smtp_from">"From" adresa</span><input id="ca-smtp-from" type="email" maxlength="254" autocomplete="email" placeholder="office@example.com" data-input-action="handleEmailSmtpInput"></label>
                                 <label for="ca-smtp-enabled"><span data-i18n="ca_smtp_enabled">Aktivno</span><select id="ca-smtp-enabled"><option value="false" data-i18n="ca_smtp_disabled">Isključeno</option><option value="true" data-i18n="ca_smtp_active">Uključeno</option></select></label>
                             </div>
                             <div class="company-settings-form-actions"><button type="button" class="btn-secondary" data-action="resetEmailSmtpForm" data-i18n="btn_cancel">Otkaži</button><button id="ca-smtp-save" type="submit" class="btn-primary"><i data-lucide="save"></i><span data-i18n="ca_smtp_save">Sačuvaj SMTP</span></button></div>
@@ -2443,13 +2559,24 @@
                 · <span data-i18n="med_edit_month">Mesec</span>: <strong id="med-month-label">—</strong>
             </p>
             <p class="monthly-day-edit-hint" data-i18n="med_edit_hint">
-                Za svaki dan: izaberite tip (slobodno / odmor / bolovanje / radna smena), zatim šifru i autobus ako treba.
+                Za svaki dan: izaberite šifru smene iz kataloga (npr. 310.S01) i autobus ako treba. Za slobodno / odmor / bolovanje izaberite tip bez šifre.
             </p>
 
             <div class="form-group monthly-day-edit-field">
                 <label data-i18n="med_label_day">Dan / datum</label>
                 <select id="med-day-select" class="med-control" data-change-action="onMedDaySelectChange"></select>
                 <div id="med-date-hint" class="med-date-hint"></div>
+            </div>
+
+            <div class="form-group monthly-day-edit-field">
+                <label data-i18n="med_label_code">Šifra smene</label>
+                <select id="med-shift-code-select" class="med-control" data-change-action="onMedCatalogSelectChange">
+                    <option value="" data-i18n="med_code_none">— Bez šifre / slobodno —</option>
+                </select>
+                <input type="text" id="med-shift-code-custom" class="med-control med-control--follow" data-i18n-placeholder="med_code_placeholder" placeholder="ili ukucajte šifru, npr. 310.S01"
+                    data-input-action="onMedShiftCodeCustomInput">
+                <div id="med-catalog-lock-hint" class="med-date-hint" hidden aria-live="polite"></div>
+                <div id="med-duty-time-hint" class="med-date-hint" hidden aria-live="polite"></div>
             </div>
 
             <div class="form-group monthly-day-edit-field">
@@ -2463,17 +2590,7 @@
                     <option value="vacation" data-i18n="shift_type_vacation">🏖️ Godišnji odmor</option>
                     <option value="sick" data-i18n="shift_type_sick">🤒 Bolovanje</option>
                 </select>
-            </div>
-
-            <div class="form-group monthly-day-edit-field">
-                <label data-i18n="med_label_code">Šifra smene</label>
-                <select id="med-shift-code-select" class="med-control" data-change-action="onMedCatalogSelectChange">
-                    <option value="" data-i18n="med_code_none">— Bez šifre / slobodno —</option>
-                </select>
-                <input type="text" id="med-shift-code-custom" class="med-control med-control--follow" data-i18n-placeholder="med_code_placeholder" placeholder="ili ukucajte šifru, npr. 310.S01"
-                    data-input-action="onMedShiftCodeCustomInput">
-                <div id="med-catalog-lock-hint" class="med-date-hint" hidden aria-live="polite"></div>
-                <div id="med-duty-time-hint" class="med-date-hint" hidden aria-live="polite"></div>
+                <div id="med-type-auto-hint" class="med-date-hint" aria-live="polite" data-i18n="med_type_auto_hint">Tip se automatski postavlja prema izabranoj šifri. Menjajte ga ručno samo za slobodno / odmor / bolovanje.</div>
             </div>
 
             <div class="form-group monthly-day-edit-field monthly-day-edit-field--last">

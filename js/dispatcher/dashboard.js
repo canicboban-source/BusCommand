@@ -53,6 +53,8 @@ let _confirmFetchInFlight = false;
 let _confirmFetchFailed = false;
 let _confirmFetchErrorToastedAt = 0;
 let _confirmNeedsPaint = false;
+let _autoRefreshTimer = null;
+let _lastDashboardRenderAt = 0;
 
 function driverUid(drv) {
     return drv?.id || drv?.uid || drv?.driverId || "";
@@ -285,6 +287,48 @@ function updateMessagesNavBadge(count) {
     }
 }
 
+function tomorrowDateStr() {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+}
+
+function renderTomorrowPreview() {
+    const el = document.getElementById("ops-tomorrow-preview");
+    if (!el) return;
+    const tomorrow = tomorrowDateStr();
+    const allDrivers = getVisibleDrivers().filter(d => d.active);
+    let uncoveredCount = 0;
+    let coveredCount = 0;
+    for (const drv of allDrivers) {
+        const duty = getShiftForDriverDate(drv.name, tomorrow);
+        if (!duty || duty.type === "off" || duty.type === "clear") {
+            uncoveredCount++;
+        } else {
+            coveredCount++;
+        }
+    }
+    const total = allDrivers.length;
+    if (!total) {
+        el.innerHTML = "";
+        return;
+    }
+    const percent = total > 0 ? Math.round((coveredCount / total) * 100) : 0;
+    const isOk = uncoveredCount === 0;
+    const statusClass = isOk ? "is-ok" : (uncoveredCount > 2 ? "is-critical" : "is-warning");
+    el.innerHTML = `
+        <div class="ops-tomorrow-card ${statusClass}">
+            <div class="ops-panel-kicker">${escapeHtml(t("ops_tomorrow_kicker") || "Sutra")}</div>
+            <div class="ops-tomorrow-stats">
+                <strong>${percent}%</strong>
+                <span>${escapeHtml(t("ops_tomorrow_coverage") || "pokrivenost")}</span>
+                <span class="ops-tomorrow-detail">${coveredCount}/${total} ${escapeHtml(t("ops_tomorrow_drivers") || "vozača")}</span>
+            </div>
+            ${uncoveredCount > 0 ? `<p class="ops-tomorrow-warn">${escapeHtml(t("ops_tomorrow_gaps", { count: uncoveredCount }) || `${uncoveredCount} vozač(a) bez smene za sutra`)}</p>` : ""}
+        </div>
+    `;
+}
+
 function renderMessagesPreview() {
     const container = document.getElementById("dispatcher-messages-preview");
     if (!container) return;
@@ -349,8 +393,35 @@ function shiftSelectHtml(driverName, currentType, selectIdSuffix = "") {
     </select>`;
 }
 
+function paintLastRefreshedIndicator() {
+    const el = document.getElementById("ops-last-refreshed");
+    if (!el) return;
+    if (!_lastDashboardRenderAt) {
+        el.textContent = "";
+        return;
+    }
+    const d = new Date(_lastDashboardRenderAt);
+    el.textContent = `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d.getSeconds().toString().padStart(2, "0")}`;
+}
+
+function startAutoRefresh() {
+    if (_autoRefreshTimer) return;
+    _autoRefreshTimer = setInterval(() => {
+        const container = document.getElementById("dispatcher-dashboard");
+        if (!container || container.classList.contains("hidden") || container.offsetParent === null) {
+            clearInterval(_autoRefreshTimer);
+            _autoRefreshTimer = null;
+            return;
+        }
+        renderDispatcherDashboard();
+    }, 30000);
+}
+
 function renderDispatcherDashboard() {
+    _lastDashboardRenderAt = Date.now();
     renderDashboardGroupsGrid();
+    paintLastRefreshedIndicator();
+    startAutoRefresh();
     void refreshStaffShiftConfirmations().then((updated) => {
         if (updated || _confirmNeedsPaint) {
             _confirmNeedsPaint = false;
@@ -426,6 +497,7 @@ function renderDispatcherDashboard() {
     }
 
     renderMessagesPreview();
+    renderTomorrowPreview();
     void renderOpsActivityFeed();
 
     const todayStr = todayDateStr();

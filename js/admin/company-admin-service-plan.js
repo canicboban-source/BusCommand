@@ -6,7 +6,7 @@ import { actionAttr } from "../core/action-delegate.js";
 import { escapeHtml, showToast, refreshIcons, toastApiError } from "../core/utils.js";
 import { readServicePlanFile } from "../imports/service-plan-excel.js";
 import { t } from "../ui/i18n.js";
-import { icon, tx, btnSecondary, statCell } from "../ui/markup.js";
+import { icon, tx, btnSecondary, btnPrimary, statCell } from "../ui/markup.js";
 
 let pendingImport = null;
 let currentPlans = new Map();
@@ -17,6 +17,9 @@ let loadingHistoryGroupId = null;
 let selectedHistoryId = null;
 let selectedDutyCode = null;
 let dutyReturnFocusCode = null;
+let pendingDraft = null;
+let draftFormMode = null;
+let draftFormCode = null;
 
 if (typeof document !== "undefined") {
     document.addEventListener("keydown", event => {
@@ -102,6 +105,29 @@ function dayTypeLabel(dayType) {
         ALL_DAYS: "ca_plan_day_all"
     };
     return t(labels[dayType] || "ca_plan_day_other");
+}
+
+const DRAFT_DAY_TYPES = ["SCHOOL_WEEKDAY", "HOLIDAY_WEEKDAY", "SATURDAY", "SUNDAY_HOLIDAY", "ALL_DAYS"];
+const TIME_REGEX = /^([0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/;
+
+function isValidTime(value) {
+    return typeof value === "string" && TIME_REGEX.test(value);
+}
+
+function isValidDayType(value) {
+    return DRAFT_DAY_TYPES.includes(value);
+}
+
+function bumpVersion(version) {
+    const match = String(version || "").match(/^\d+/);
+    return match ? String(Number(match[0]) + 1) : "1";
+}
+
+function deepCloneDuties(duties = []) {
+    return duties.map(duty => ({
+        ...duty,
+        activities: (duty.activities || []).map(activity => ({ ...activity }))
+    }));
 }
 
 function dutySignature(duty) {
@@ -473,6 +499,7 @@ async function loadCurrentServicePlans() {
 function renderCompanyAdminServicePlan() {
     if (!isCompanyAdmin()) return;
     renderGroupSelector();
+    renderServicePlanEditor();
     renderServicePlanPreview();
     renderCurrentServicePlans();
     renderServicePlanHistory();
@@ -682,15 +709,369 @@ async function activateCompanyServicePlanVersion(planId) {
     }
 }
 
+function resetDutyForm() {
+    const ids = ["ca-duty-form-code", "ca-duty-form-work-start", "ca-duty-form-first-trip", "ca-duty-form-last-trip-ends", "ca-duty-form-work-end"];
+    for (const id of ids) {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+    }
+    const dayType = document.getElementById("ca-duty-form-day-type");
+    if (dayType) dayType.value = "SCHOOL_WEEKDAY";
+    const error = document.getElementById("ca-duty-form-error");
+    if (error) {
+        error.hidden = true;
+        error.textContent = "";
+    }
+}
+
+function setDutyInput(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.value = String(value || "");
+}
+
+function showDutyFormError(message) {
+    const error = document.getElementById("ca-duty-form-error");
+    if (error) {
+        error.hidden = false;
+        error.textContent = message;
+    }
+}
+
+function closeDutyFormCommon() {
+    draftFormMode = null;
+    draftFormCode = null;
+    const form = document.getElementById("ca-duty-form");
+    if (form) form.hidden = true;
+    resetDutyForm();
+}
+
+function currentDraftGroup() {
+    return pendingDraft?.groupId || selectedGroupId();
+}
+
+function startServicePlanDraft() {
+    if (!isCompanyAdmin()) return;
+    const groupId = selectedGroupId();
+    if (!groupId) {
+        showToast(t("ca_plan_group_required"), "error");
+        return;
+    }
+    const activePlan = currentPlans.get(groupId);
+    if (!activePlan) {
+        showToast(t("ca_plan_draft_no_active"), "error");
+        return;
+    }
+    pendingDraft = {
+        ...activePlan,
+        groupId,
+        planVersion: bumpVersion(activePlan.planVersion),
+        duties: deepCloneDuties(activePlan.duties)
+    };
+    pendingImport = null;
+    selectedDutyCode = null;
+    dutyReturnFocusCode = null;
+    renderCompanyAdminServicePlan();
+}
+
+function discardServicePlanDraft() {
+    pendingDraft = null;
+    draftFormMode = null;
+    draftFormCode = null;
+    closeDutyFormCommon();
+    renderCompanyAdminServicePlan();
+}
+
+function openAddDutyForm() {
+    if (!pendingDraft) return;
+    draftFormMode = "add";
+    draftFormCode = null;
+    resetDutyForm();
+    const form = document.getElementById("ca-duty-form");
+    if (form) form.hidden = false;
+    const save = document.getElementById("ca-duty-form-save");
+    if (save) {
+        save.setAttribute("data-action", "submitAddDuty");
+        save.innerHTML = `${icon("plus")} ${escapeHtml(t("ca_plan_duty_save"))}`;
+    }
+    const cancel = document.getElementById("ca-duty-form-cancel");
+    if (cancel) cancel.setAttribute("data-action", "closeAddDutyForm");
+    const title = document.getElementById("ca-duty-form-title");
+    if (title) title.textContent = t("ca_plan_duty_form_title_add");
+    refreshIcons();
+}
+
+function closeAddDutyForm() {
+    closeDutyFormCommon();
+}
+
+function openEditDutyForm(dutyCode) {
+    if (!pendingDraft || !dutyCode) return;
+    const duty = pendingDraft.duties.find(item => item.code === dutyCode);
+    if (!duty) return;
+    draftFormMode = "edit";
+    draftFormCode = dutyCode;
+    setDutyInput("ca-duty-form-code", duty.code);
+    setDutyInput("ca-duty-form-work-start", duty.workStart);
+    setDutyInput("ca-duty-form-first-trip", duty.firstTripStart);
+    setDutyInput("ca-duty-form-last-trip-ends", duty.lastTripEnd);
+    setDutyInput("ca-duty-form-work-end", duty.workEnd);
+    setDutyInput("ca-duty-form-day-type", duty.dayType);
+    const form = document.getElementById("ca-duty-form");
+    if (form) form.hidden = false;
+    const save = document.getElementById("ca-duty-form-save");
+    if (save) {
+        save.setAttribute("data-action", "submitEditDuty");
+        save.innerHTML = `${icon("save")} ${escapeHtml(t("ca_plan_duty_save"))}`;
+    }
+    const cancel = document.getElementById("ca-duty-form-cancel");
+    if (cancel) cancel.setAttribute("data-action", "closeEditDutyForm");
+    const title = document.getElementById("ca-duty-form-title");
+    if (title) title.textContent = t("ca_plan_duty_form_title_edit", { duty: duty.code });
+    refreshIcons();
+}
+
+function closeEditDutyForm() {
+    closeDutyFormCommon();
+}
+
+function submitAddDuty() {
+    return submitDutyForm("add");
+}
+
+function submitEditDuty() {
+    return submitDutyForm("edit");
+}
+
+function submitDutyForm(mode) {
+    if (!pendingDraft) return;
+    const code = String(document.getElementById("ca-duty-form-code")?.value || "").trim();
+    const workStart = String(document.getElementById("ca-duty-form-work-start")?.value || "").trim();
+    const firstTrip = String(document.getElementById("ca-duty-form-first-trip")?.value || "").trim();
+    const lastTrip = String(document.getElementById("ca-duty-form-last-trip-ends")?.value || "").trim();
+    const workEnd = String(document.getElementById("ca-duty-form-work-end")?.value || "").trim();
+    const dayType = String(document.getElementById("ca-duty-form-day-type")?.value || "").trim();
+
+    if (!code) {
+        showDutyFormError(t("ca_plan_duty_code_required"));
+        return;
+    }
+    const codeExists = pendingDraft.duties.some(item => item.code === code);
+    if (mode === "add" && codeExists) {
+        showDutyFormError(t("ca_plan_duty_duplicate"));
+        return;
+    }
+    if (mode === "edit" && code !== draftFormCode && codeExists) {
+        showDutyFormError(t("ca_plan_duty_duplicate"));
+        return;
+    }
+    if ([workStart, firstTrip, lastTrip, workEnd].some(value => !isValidTime(value))) {
+        showDutyFormError(t("ca_plan_duty_invalid_time"));
+        return;
+    }
+    if (!isValidDayType(dayType)) {
+        showDutyFormError(t("ca_plan_duty_invalid_day_type"));
+        return;
+    }
+
+    const existingIndex = pendingDraft.duties.findIndex(item => item.code === draftFormCode);
+    const newDuty = {
+        code,
+        workStart,
+        firstTripStart: firstTrip,
+        lastTripEnd: lastTrip,
+        workEnd,
+        dayType,
+        activities: mode === "edit" && existingIndex >= 0
+            ? (pendingDraft.duties[existingIndex].activities || [])
+            : []
+    };
+    if (mode === "edit" && existingIndex >= 0) {
+        pendingDraft.duties[existingIndex] = newDuty;
+    } else {
+        pendingDraft.duties.push(newDuty);
+    }
+    closeDutyFormCommon();
+    renderServicePlanEditor();
+}
+
+function deleteDraftDuty(dutyCode) {
+    if (!pendingDraft || !dutyCode) return;
+    pendingDraft.duties = pendingDraft.duties.filter(item => item.code !== dutyCode);
+    if (draftFormCode === dutyCode) closeDutyFormCommon();
+    renderServicePlanEditor();
+}
+
+async function publishServicePlanDraft() {
+    if (!isCompanyAdmin() || !pendingDraft) return;
+    const groupId = currentDraftGroup();
+    if (!groupId) {
+        showToast(t("ca_plan_group_required"), "error");
+        return;
+    }
+    const button = document.getElementById("ca-publish-draft");
+    if (button?.disabled) return;
+    if (button) button.disabled = true;
+    const plan = pendingDraft;
+    const source = {};
+    try {
+        if (USE_LOCAL_STATE) {
+            if (!Array.isArray(window.state.servicePlans)) window.state.servicePlans = [];
+            const planId = `${groupId}-${plan.planCode}-${plan.planVersion}-${plan.validFrom}`;
+            if (window.state.servicePlans.some(existing => existing.id === planId)) {
+                throw new Error(t("ca_plan_version_exists"));
+            }
+            window.state.servicePlans.forEach(existing => {
+                if (existing.groupId === groupId && existing.status === "active") {
+                    existing.status = "superseded";
+                    existing.supersededBy = planId;
+                }
+            });
+            const published = {
+                ...plan,
+                id: planId,
+                status: "active",
+                sourceHash: "draft",
+                publishedAt: new Date().toISOString(),
+                publishedBy: window.currentUser.id || window.currentUser.email || "company-admin",
+                activatedAt: new Date().toISOString(),
+                activatedBy: window.currentUser.id || window.currentUser.email || "company-admin"
+            };
+            window.state.servicePlans.push(published);
+            applyServicePlanToCatalog(published, groupId);
+            saveState();
+        } else {
+            const companyId = window.currentUser.companyId;
+            const preview = await ApiClient.previewServicePlan(companyId, groupId, plan);
+            if (!preview.success) {
+                showToast(preview.error || t("ca_plan_needs_fix"), "error");
+                if (button) button.disabled = false;
+                return;
+            }
+            const staged = await ApiClient.publishServicePlan(companyId, groupId, plan, source);
+            if (!staged.success) {
+                toastApiError(staged);
+                if (button) button.disabled = false;
+                return;
+            }
+            const activated = await ApiClient.activateServicePlan(companyId, groupId, staged.planId);
+            if (!activated.success) {
+                showToast(activated.error || t("ca_plan_activate_failed"), "error");
+                await loadServicePlanHistory();
+                if (button) button.disabled = false;
+                return;
+            }
+            const version = await ApiClient.getServicePlanVersion(companyId, groupId, staged.planId);
+            if (version?.success && version.plan) {
+                applyServicePlanToCatalog(version.plan, groupId);
+                currentPlans.set(groupId, version.plan);
+            }
+        }
+        pendingDraft = null;
+        draftFormMode = null;
+        draftFormCode = null;
+        currentPlans.set(groupId, { ...plan, groupId, status: "active" });
+        renderCompanyAdminServicePlan();
+        await loadServicePlanHistory();
+        showToast(t("ca_plan_draft_published"), "success", 5000);
+    } catch (error) {
+        console.error("Service plan draft publish failed", error);
+        showToast(error.message || t("ca_plan_draft_publish_failed"), "error");
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
+
+function renderServicePlanEditor() {
+    const editor = document.getElementById("ca-service-plan-editor");
+    if (!editor) return;
+    if (!pendingDraft) {
+        editor.hidden = true;
+        editor.innerHTML = "";
+        return;
+    }
+    editor.hidden = false;
+    const group = companyGroups().find(item => String(item.id) === pendingDraft.groupId);
+    editor.innerHTML = `
+        <div class="service-plan-editor-header">
+            <div>
+                <span class="service-plan-kicker">${tx("ca_plan_draft_kicker")}</span>
+                <h3>${tx("ca_plan_draft_title")}</h3>
+                <p>${tx("ca_plan_draft_hint")}</p>
+            </div>
+            <div class="service-plan-editor-meta">
+                ${statCell("ca_plan_group", escapeHtml(group?.name || pendingDraft.groupId))}
+                ${statCell("ca_plan_draft_version", escapeHtml(String(pendingDraft.planVersion)))}
+            </div>
+        </div>
+        <div id="ca-draft-duty-table"></div>
+        <div class="service-plan-editor-actions">
+            ${btnSecondary(actionAttr("openAddDutyForm"), `${icon("plus")} ${tx("ca_plan_add_duty")}`)}
+            ${btnPrimary(actionAttr("publishServicePlanDraft"), `${icon("badge-check")} ${tx("ca_plan_publish_draft")}`, `id="ca-publish-draft"`)}
+            ${btnSecondary(actionAttr("discardServicePlanDraft"), `${icon("x")} ${tx("ca_plan_discard_draft")}`)}
+        </div>
+    `;
+    renderDraftDutyTable();
+    refreshIcons();
+}
+
+function renderDraftDutyTable() {
+    const container = document.getElementById("ca-draft-duty-table");
+    if (!container) return;
+    const duties = pendingDraft?.duties || [];
+    if (!duties.length) {
+        container.innerHTML = `<div class="service-plan-empty">${tx("ca_plan_draft_no_duties")}</div>`;
+        return;
+    }
+    container.innerHTML = `
+        <div class="service-plan-table-wrap">
+            <table class="service-plan-table">
+                <thead><tr>
+                    <th>${tx("ca_plan_col_duty")}</th>
+                    <th>${tx("ca_plan_col_work_start")}</th>
+                    <th>${tx("ca_plan_col_first_trip")}</th>
+                    <th>${tx("ca_plan_col_last_trip")}</th>
+                    <th>${tx("ca_plan_col_work_end")}</th>
+                    <th>${tx("ca_plan_col_day_type")}</th>
+                    <th>${tx("ca_plan_duty_actions")}</th>
+                </tr></thead>
+                <tbody>${duties.map(duty => `<tr>
+                    <td>${escapeHtml(duty.code)}</td>
+                    <td>${escapeHtml(duty.workStart)}</td>
+                    <td>${escapeHtml(duty.firstTripStart)}</td>
+                    <td>${escapeHtml(duty.lastTripEnd)}</td>
+                    <td>${escapeHtml(duty.workEnd)}${duty.endDayOffset ? `<sup>+${escapeHtml(duty.endDayOffset)}</sup>` : ""}</td>
+                    <td><span class="service-plan-day-badge">${escapeHtml(dayTypeLabel(duty.dayType))}</span></td>
+                    <td class="service-plan-row-actions">
+                        <button type="button" class="btn-secondary" aria-label="${tx("ca_plan_duty_edit", { duty: duty.code })}" ${actionAttr("openEditDutyForm", [duty.code])}>${icon("pen-line")}</button>
+                        <button type="button" class="btn-secondary" aria-label="${tx("ca_plan_duty_delete", { duty: duty.code })}" ${actionAttr("deleteDraftDuty", [duty.code])}>${icon("trash-2")}</button>
+                    </td>
+                </tr>`).join("")}</tbody>
+            </table>
+        </div>`;
+    refreshIcons();
+}
+
 export {
     activateCompanyServicePlanVersion,
     clearCompanyServicePlanPreview,
     closeCompanyServicePlanDuty,
     closeCompanyServicePlanHistory,
+    closeAddDutyForm,
+    closeEditDutyForm,
+    deleteDraftDuty,
+    discardServicePlanDraft,
     handleCompanyServicePlanFile,
     handleCompanyServicePlanGroupChange,
+    openAddDutyForm,
     openCompanyServicePlanDuty,
     openCompanyServicePlanHistory,
+    openEditDutyForm,
     publishCompanyServicePlan,
-    renderCompanyAdminServicePlan
+    publishServicePlanDraft,
+    renderCompanyAdminServicePlan,
+    renderDraftDutyTable,
+    renderServicePlanEditor,
+    startServicePlanDraft,
+    submitAddDuty,
+    submitEditDuty
 };

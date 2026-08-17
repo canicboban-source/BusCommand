@@ -50,16 +50,16 @@ async function cancelDriverActivation() {
     clearActivationInput();
     pendingActivation = null;
     const companyId = window.currentUser?.companyId || COMPANY_ID;
+    clearDriverFileInputs();
+    clearAllPasswordFields();
     await Auth.logout();
     window.currentUser = null;
     clearUserSession();
-    clearDriverFileInputs();
-    clearTenantStateCache(companyId);
-    resetInMemoryTenantState(window.state?.language || localStorage.getItem("buscommand_lang") || "en");
     setDriverActivationPending(false);
     setActivationVisible(false);
-    clearAllPasswordFields();
     showLoginScreen(false);
+    clearTenantStateCache(companyId);
+    resetInMemoryTenantState(window.state?.language || localStorage.getItem("buscommand_lang") || "en");
 }
 
 function closeDriverActivationForSignedOut() {

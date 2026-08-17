@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BusCommand Quick-Start Guide — Dispatcher & Driver</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #fff;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #1e40af;
+            padding-bottom: 20px;
+        }
+        .header h1 {
+            color: #1e40af;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .header .subtitle {
+            color: #64748b;
+            font-size: 14px;
+        }
+        .doc-meta {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            font-size: 13px;
+        }
+        .doc-meta div {
+            margin: 5px 0;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h2 {
+            color: #1e40af;
+            font-size: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .section h3 {
+            color: #475569;
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        .section p {
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+        .section ul, .section ol {
+            margin: 10px 0 10px 20px;
+        }
+        .section li {
+            margin-bottom: 8px;
+        }
+        .step-box {
+            background: #eef2ff;
+            border-left: 4px solid #4f46e5;
+            padding: 14px 18px;
+            margin: 14px 0;
+            border-radius: 4px;
+        }
+        .step-box strong {
+            color: #1e40af;
+        }
+        .compliance-box {
+            background: #f0fdf4;
+            border-left: 4px solid #16a34a;
+            padding: 14px 18px;
+            margin: 14px 0;
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #475569;
+        }
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+        }
+        @media print {
+            body {
+                padding: 20px;
+            }
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>BusCommand Quick-Start Guide</h1>
+        <div class="subtitle">Printable A4 reference for Dispatchers and Drivers — self-service onboarding, no live session required</div>
+    </div>
+
+    <div class="doc-meta">
+        <div><strong>Document Version:</strong> 1.0</div>
+        <div><strong>Publication Date:</strong> August 2026</div>
+        <div><strong>Classification:</strong> Public — Customer Onboarding Material</div>
+        <div><strong>Target Audience:</strong> Dispatchers, Drivers, Company Admins</div>
+    </div>
+
+    <div class="section">
+        <h2>1. Before You Start</h2>
+        <p>This guide replaces a live training session. Print it, pin it in the dispatch office, and hand a copy to every driver on their first shift. No prior software experience is required — every screen mirrors the steps below.</p>
+        <div class="compliance-box">
+            <strong>Support:</strong> If a step below does not match what you see on screen, contact your Company Admin first — they control which groups, buses, and permissions your account can see.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>2. Dispatcher Cockpit — First 10 Minutes</h2>
+        <div class="step-box"><strong>Step 1 — Log in.</strong> Open the Staff link your Company Admin sent you, select your name and enter your PIN.</div>
+        <div class="step-box"><strong>Step 2 — Open your group.</strong> The Operations Center shows all groups/lines you dispatch. Click a group card to open its Daily Plan.</div>
+        <div class="step-box"><strong>Step 3 — Read "Needs Attention" first.</strong> This panel lists every open problem — uncovered shifts, missing buses, unconfirmed drivers, SOS alarms, and rest-period warnings — with a suggested fix next to each one.</div>
+        <div class="step-box"><strong>Step 4 — Replace a driver or bus.</strong> Click the empty slot in the Daily Plan, pick a suggested replacement from the list (already filtered to available, in-group candidates), and confirm. The server saves the change immediately — no separate "save" button.</div>
+        <div class="step-box"><strong>Step 5 — Check the dashboard automatically refreshes.</strong> The Operations Center updates itself every 30 seconds; the "last updated" timestamp in the top-right tells you how fresh the data is.</div>
+        <table>
+            <tr><th>Panel</th><th>What it tells you</th></tr>
+            <tr><td>Needs Attention</td><td>Every open problem, with the safest fix suggested</td></tr>
+            <tr><td>Daily Plan</td><td>Today's assignments, drag-and-drop reassignment (today only)</td></tr>
+            <tr><td>Monthly Plan</td><td>Import and bulk-edit a full month at once</td></tr>
+            <tr><td>Tomorrow Coverage</td><td>Percentage of tomorrow's shifts already assigned</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>3. Driver App — First 5 Minutes</h2>
+        <p>The Driver App is a Progressive Web App (PWA): open the link once, no app-store install, no update prompts.</p>
+        <div class="step-box"><strong>Step 1 — Log in.</strong> Open the Driver link, select your name and enter your PIN. First-time drivers set a personal PIN during activation.</div>
+        <div class="step-box"><strong>Step 2 — Confirm today's shift.</strong> Your route, bus number, and start/end time are on the home screen. Tap "Confirm Shift" — the dispatcher sees this instantly.</div>
+        <div class="step-box"><strong>Step 3 — Know your two quick-report buttons.</strong> "Delay / Traffic (+15 min)" and "Vehicle Fault" send a one-tap report to the dispatcher, with GPS-free location context. Nothing else on the home screen needs an explanation.</div>
+        <div class="step-box"><strong>Step 4 — Know the SOS button.</strong> Press and hold for 2 seconds to alert the dispatcher immediately. If pressed by mistake, you have 30 seconds to cancel it from the same screen.</div>
+        <div class="step-box"><strong>Step 5 — Check messages and calendar.</strong> Dispatcher messages appear at the bottom of the home screen; the Calendar tab shows the full month with color-coded shift types.</div>
+    </div>
+
+    <div class="section">
+        <h2>4. Company Admin — What You Configure Once</h2>
+        <ul>
+            <li>Groups/lines, buses, and drivers (Driver Roster Template available in the Download Hub)</li>
+            <li>Duty catalog / Service Plan (the shift codes dispatchers assign from)</li>
+            <li>Dispatcher accounts and which groups each one can see</li>
+            <li>Company branding (name, logo, colors shown to your team)</li>
+        </ul>
+        <p>Company Admin does not import monthly driver assignments — that stays with the dispatcher, by design, to keep day-to-day operational changes close to the people running the shift.</p>
+    </div>
+
+    <div class="section">
+        <h2>5. Frequently Asked in the First Week</h2>
+        <table>
+            <tr><th>Question</th><th>Short answer</th></tr>
+            <tr><td>Can I edit a future day's plan?</td><td>Daily Plan is read-only more than 0 days ahead — edit future days from the Monthly Plan instead.</td></tr>
+            <tr><td>What happens if two dispatchers edit the same shift?</td><td>The server rejects the second save with a conflict message — refresh and reapply.</td></tr>
+            <tr><td>Can I see another company's data?</td><td>No — every account is scoped to one tenant. This is enforced server-side, not just hidden in the UI.</td></tr>
+            <tr><td>Where do I download official templates?</td><td>The Download Hub on the BusCommand website — Driver Roster, Monthly Schedule, and Fleet templates in both XLSX and CSV.</td></tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p>BusCommand Quick-Start Guide — Version 1.0 — August 2026</p>
+        <p>This document is provided for customer onboarding and does not replace the Terms of Service or DPA.</p>
+    </div>
+</body>
+</html>
