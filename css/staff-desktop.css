@@ -443,6 +443,24 @@ html[data-app-surface="staff"] .ops-last-refreshed {
     font-size: 0.7rem;
     color: var(--text-muted);
     opacity: 0.7;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: var(--transition-fast, all 0.15s ease);
+}
+html[data-app-surface="staff"] .ops-last-refreshed:hover {
+    opacity: 1;
+    color: var(--text-main);
+    border-color: var(--panel-border);
+    background: rgba(148, 163, 184, 0.08);
+}
+html[data-app-surface="staff"] .ops-last-refreshed:active svg {
+    animation: ops-refresh-spin 0.5s ease;
+}
+@keyframes ops-refresh-spin {
+    to { transform: rotate(360deg); }
 }
 html[data-app-surface="staff"] .ops-tomorrow-card {
     padding: 10px 14px;
@@ -624,6 +642,26 @@ html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table td {
     padding: 10px 12px;
     text-align: left;
     border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* Column widths: DRIVER / BUS / SHIFT / STATUS / ACTIONS. The Actions column
+   can hold two icon buttons side by side — it was previously clipped by the
+   shared overflow:hidden rule (staff-desktop.css ~5059) with no per-column
+   width, since table-layout:fixed splits 5 columns evenly by default. */
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table th:nth-child(1),
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table td:nth-child(1) { width: 22%; }
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table th:nth-child(2),
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table td:nth-child(2) { width: 16%; }
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table th:nth-child(3),
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table td:nth-child(3) { width: 18%; }
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table th:nth-child(4),
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table td:nth-child(4) { width: 18%; }
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table th:nth-child(5),
+html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table td:nth-child(5) {
+    width: 26%;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
 }
 
 html[data-app-surface="staff"] #dispatcher-dashboard .ops-daily-table th {

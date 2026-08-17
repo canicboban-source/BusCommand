@@ -41,7 +41,8 @@ import {
     openOpsAttentionPanel,
     closeOpsAttentionPanel,
     focusOpsAttentionItem,
-    applyOpsAttentionFix
+    applyOpsAttentionFix,
+    refreshOpsCenterNow
 } from "./dispatcher/dashboard.js";
 import { removeDispatcher } from "./dispatcher/dispatchers.js";
 import { backFromPlanFullPage, closeGroupHub, openDailyPlanForGroup, openDailyPlanFull, openGroupHub, openMonthlyPlanForGroup as openMonthlyPlanForGroupCore, openMonthlyPlanImport as openMonthlyPlanImportCore, openMonthlyPlansFull as openMonthlyPlansFullCore, openVehiclesFromPlan, scrollHubSection } from "./dispatcher/group-hub.js";
@@ -475,6 +476,7 @@ const HANDLERS = {
     closeOpsAttentionPanel,
     focusOpsAttentionItem,
     applyOpsAttentionFix,
+    refreshOpsCenterNow,
     openReportResolution,
     openMonthlyPlanForGroup,
     openMonthlyPlansFull,

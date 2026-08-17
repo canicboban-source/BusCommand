@@ -1872,10 +1872,10 @@
                                     <span data-i18n="ops_plan_healthy_hint">Sve je u skladu sa planom</span>
                                 </div>
                             </div>
-                            <span class="ops-last-refreshed" aria-live="polite">
+                            <button type="button" class="ops-last-refreshed" data-action="refreshOpsCenterNow" aria-live="polite" title="Osveži sada" data-i18n-title="ops_refresh_now">
                                 <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i>
                                 <span id="ops-last-refreshed"></span>
-                            </span>
+                            </button>
                         </div>
                     </div>
 
@@ -1969,6 +1969,10 @@
                             </div>
                             <div id="dispatcher-active-drivers-list" class="ops-crew-list" aria-live="polite">
                                 <!-- Dinamički podaci iz JS -->
+                            </div>
+                            <div class="ops-panel-kicker" style="margin-top:14px;" data-i18n="ops_recent_activity_title">Nedavne izmene</div>
+                            <div id="ops-recent-activity" class="ops-activity-feed" aria-live="polite">
+                                <!-- Dinamički iz JS: renderOpsActivityFeed() -->
                             </div>
                         </div>
                     </div>

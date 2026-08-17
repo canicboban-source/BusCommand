@@ -431,7 +431,17 @@ function renderDispatcherDashboard() {
 
     const allDrivers = getVisibleDrivers();
     const activeDriversCount = allDrivers.filter(d => d.active).length;
-    const activeBusesList = allDrivers.filter(d => d.active && d.bus).map(d => d.bus);
+    // Buses are assigned per shift, not stored as a static driver.bus field in
+    // real usage — read today's actual duty (same source as the daily plan
+    // table below) instead of a field that is almost always empty.
+    const todayForBusCount = todayDateStr();
+    const activeBusesList = allDrivers
+        .filter(d => d.active)
+        .map(d => {
+            const duty = getDriverDutySummary(d.name, todayForBusCount);
+            return duty.bus !== "—" ? duty.bus : (d.bus || "");
+        })
+        .filter(Boolean);
     const activeBusesCount = [...new Set(activeBusesList)].length;
     const operationalReports = visibleOperationalReports();
     const openReportsCount = operationalReports.length;
@@ -1219,8 +1229,17 @@ async function opsAssignDriver(driverName, shiftType = "morning") {
 
 window.renderDispatcherDashboard = renderDispatcherDashboard;
 
+/** Explicit manual refresh — dispatchers should never have to guess whether
+ * the view is current. Re-renders immediately and confirms with a toast so
+ * the action feels deliberate, not silent. */
+function refreshOpsCenterNow() {
+    renderDispatcherDashboard();
+    showToast(t("ops_refreshed_toast") || "Operativni centar osvežen.", "success", 1600);
+}
+
 export {
     renderDispatcherDashboard,
+    refreshOpsCenterNow,
     countUnreadMessages,
     updateMessagesNavBadge,
     updateDriverBusInline,
