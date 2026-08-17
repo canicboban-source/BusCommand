@@ -5112,6 +5112,7 @@ html[data-app-surface="staff"] .company-drivers-layout {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
 }
 
 html[data-app-surface="staff"] .company-drivers-create-stack,
@@ -5119,6 +5120,7 @@ html[data-app-surface="staff"] .admin-page-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
+  width: 100%;
 }
 
 @media (max-width: 768px) {
@@ -5165,6 +5167,8 @@ html[data-app-surface="staff"] .company-drivers-card-heading > i {
    lands here after the compact actions above. */
 html[data-app-surface="staff"] .company-drivers-directory-card,
 html[data-app-surface="staff"] .admin-page-directory {
+  width: 100%;
+  box-sizing: border-box;
   padding: 20px;
   border-top: 3px solid var(--primary-color);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
