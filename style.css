@@ -450,6 +450,27 @@ button {
     box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
 }
 
+.btn-lost-submit {
+    background: var(--info-violet, #8b5cf6);
+    color: var(--text-main);
+    border: none;
+    padding: 14px 20px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: var(--transition-normal);
+}
+
+.btn-lost-submit:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(139, 92, 246, 0.3);
+}
+
 .btn-logout {
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.2);
@@ -1078,6 +1099,25 @@ button {
 
 .breakdown-color i, .breakdown-color h3 {
     color: var(--danger-color);
+}
+
+.lost-found-color i, .lost-found-color h3 {
+    color: var(--info-violet, #8b5cf6);
+}
+
+/* Three report-type cards (delay / breakdown / lost item) side by side on
+   desktop, stacked on narrow screens. Was previously undefined — cards fell
+   back to default block stacking with no controlled gap. */
+.reports-grid-three {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    align-items: start;
+}
+@media (max-width: 1024px) {
+    .reports-grid-three {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* --- GODIŠNJI ODMOR --- */
@@ -2014,6 +2054,70 @@ body {
     gap: 8px;
 }
 .card h3 i { width: 16px; height: 16px; color: var(--primary-color); }
+
+/* Explicit full-width utility for stacked page cards (add form, directory/table).
+   Previously relied on accidental block-level sizing — same latent-bug class as
+   the CA Drivers layout fix; make it a real, defined rule so future parent
+   layout changes (grid/flex) cannot silently shrink these cards. */
+.full-width-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 16px;
+}
+.full-width-card:last-child { margin-bottom: 0; }
+
+/* Small uppercase eyebrow label used above page/section titles across CA pages
+   (Buses, Dispatcher team, Settings). Matches the colored kicker style already
+   used elsewhere (e.g. .service-plan-kicker, .company-groups-kicker). */
+.company-page-kicker {
+    display: inline-block;
+    margin-bottom: 4px;
+    color: var(--primary-color);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* Generic stat-chip grid reused by pages that show a row of summary numbers
+   above their main content (e.g. Dispatcher team). */
+.company-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+.company-summary-grid article {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-md);
+    min-width: 0;
+}
+.company-summary-grid article > i,
+.company-summary-grid article > svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+.company-summary-grid article > span {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.company-summary-grid article > strong {
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
 
 /* Stat kartice */
 .stat-item {
