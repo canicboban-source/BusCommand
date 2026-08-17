@@ -13,7 +13,7 @@ import {
     scopedDispatcherReports,
     sortReportsForOperations
 } from "./report-model.js";
-import { persistShift } from "./shifts.js";
+import { persistShift, openShiftCell } from "./shifts.js";
 import { ApiClient } from "../core/api-client.js";
 import { saveState } from "../core/state.js";
 import { busHasGroup } from "../data/bus-group-membership.js";
@@ -631,19 +631,34 @@ function renderDispatcherDashboard() {
     if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
+/** Buses follow a duty code (assigned via the monthly plan / duty catalog),
+ * never the other way around. If the driver has no catalog-linked duty yet,
+ * a bus-only quick-pick here would create an invalid "wrong/missing duty"
+ * shift — route to the real duty assignment flow instead. */
+function hasCatalogDuty(shift) {
+    return Boolean(shift && shift.type !== "clear" && shift.type !== "off" && shift.routeCode);
+}
+
 async function updateDriverBusInline(driverName, newBus) {
     const driver = driverByName(driverName);
     if (!driver) return;
     const today = todayDateStr();
     const existing = getShiftForDriverDate(driverName, today);
-    const type = existing?.type && existing.type !== "clear" ? existing.type : "morning";
+    if (!hasCatalogDuty(existing)) {
+        showToast(
+            t("ops_bus_needs_duty_first") || "Prvo dodelite šifru dužnosti iz kataloga — bus se vezuje za smenu.",
+            "info"
+        );
+        openShiftCell(driverName, today);
+        return;
+    }
     const saved = await persistShift(
         driver,
         today,
-        type,
-        existing?.name || "",
-        existing?.start || null,
-        existing?.end || null,
+        existing.type,
+        existing.name || existing.routeCode || "",
+        existing.start || null,
+        existing.end || null,
         newBus
     );
     if (!saved) return;
@@ -661,15 +676,16 @@ async function updateDriverShiftInline(driverName, newShiftType) {
         renderDispatcherDashboard();
         return;
     }
-    const saved = await persistShift(driver, today, type, "", null, null, driver.bus || "");
-    if (!saved) return;
+    // A working shift type without a real catalog duty code (and its paired
+    // bus, imported together via the monthly plan) is not a valid duty —
+    // send the dispatcher to the real assignment flow instead of persisting
+    // a bare type that would immediately show up as "wrong/missing duty".
     showToast(
-        type === "clear" || type === "off"
-            ? (t("ops_shift_cleared", { driver: driverName }) || `Smena uklonjena: ${driverName}`)
-            : (t("ops_shift_assigned", { driver: driverName, type: shiftTypeLabel(type) }) || `Smena: ${driverName}`),
-        "success"
+        t("ops_shift_needs_duty_first") || "Izaberite šifru dužnosti iz kataloga — tip smene se time postavlja automatski.",
+        "info"
     );
-    renderDispatcherDashboard();
+    openShiftCell(driverName, today);
+    return;
 }
 
 function activeCoverageIncident(driver, date) {
