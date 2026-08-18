@@ -626,19 +626,33 @@ function renderAttentionCard(item) {
                 <i data-lucide="wrench"></i> ${escapeHtml(t("ops_attn_apply_coverage") || "Primeni zamenu odmah")}
             </button>`;
     } else if (item.kind === "wrong_shift") {
-        solution = `
-            <label class="ops-attention-label" for="attn-duty-${sid}">${escapeHtml(t("ops_attn_pick_shift") || "Izaberi smenu")}</label>
-            <select id="attn-duty-${sid}" class="ops-attention-select" data-attn-field="duty">
-                ${optionList(item.duties.map(d => ({
-                    value: d.code,
-                    label: d.start && d.end ? `${d.code} · ${d.start}–${d.end}` : (d.label ? `${d.code} (${d.label})` : d.code)
-                })), {
-                    emptyLabel: t("ops_attn_no_shifts") || "Nema smena u katalogu"
-                })}
-            </select>
-            <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id])} ${item.duties.length ? "" : "disabled"}>
-                <i data-lucide="check"></i> ${escapeHtml(t("ops_attn_apply_shift") || "Primeni smenu")}
-            </button>`;
+        if (!item.duties.length) {
+            // A permanently-disabled dropdown with no explanation is a dead end.
+            // The duty catalog for this group has no published entries — that is
+            // a Company Admin action, not something the dispatcher can fix here.
+            solution = `
+                <p class="ops-attention-soft">${escapeHtml(
+                    t("ops_attn_no_catalog_hint")
+                    || "Nema objavljenog kataloga smena za ovu grupu. Kontaktirajte Company Admin-a da objavi Plan smena, ili otvorite dnevni plan da vidite pun kontekst."
+                )}</p>
+                <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id, "daily"])}>
+                    <i data-lucide="calendar-days"></i> ${escapeHtml(t("ops_attn_gap_open_daily") || "Otvori dnevni plan")}
+                </button>`;
+        } else {
+            solution = `
+                <label class="ops-attention-label" for="attn-duty-${sid}">${escapeHtml(t("ops_attn_pick_shift") || "Izaberi smenu")}</label>
+                <select id="attn-duty-${sid}" class="ops-attention-select" data-attn-field="duty">
+                    ${optionList(item.duties.map(d => ({
+                        value: d.code,
+                        label: d.start && d.end ? `${d.code} · ${d.start}–${d.end}` : (d.label ? `${d.code} (${d.label})` : d.code)
+                    })), {
+                        emptyLabel: t("ops_attn_no_shifts") || "Nema smena u katalogu"
+                    })}
+                </select>
+                <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id])}>
+                    <i data-lucide="check"></i> ${escapeHtml(t("ops_attn_apply_shift") || "Primeni smenu")}
+                </button>`;
+        }
     } else if (item.kind === "report") {
         solution = `
             <label class="ops-attention-label" for="attn-res-${sid}">${escapeHtml(t("ops_attn_resolution_type") || "Tip rešenja")}</label>
@@ -886,7 +900,8 @@ async function applyOpsAttentionFix(itemId, fixAction = "") {
     const statusEl = card?.querySelector("[data-attn-status]");
     if (!item || !card) return;
 
-    if (item.kind === "plan_gap_driver" || item.kind === "plan_gap_slot") {
+    if (item.kind === "plan_gap_driver" || item.kind === "plan_gap_slot"
+        || (item.kind === "wrong_shift" && fixAction === "daily")) {
         const action = String(fixAction || "daily");
         closeOpsAttentionPanel();
         if (action === "assign" && item.driverName) {
