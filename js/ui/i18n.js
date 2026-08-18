@@ -207,7 +207,7 @@ function applyBrandingToUI() {
         const tenantLogo = logoUrl
             ? `<img class="bc-tenant-logo" src="${escapeAttr(logoUrl)}" alt="${safeName}" referrerpolicy="no-referrer" style="max-height: 28px; max-width: 96px; object-fit: contain;">`
             : "";
-        const tenantNameText = displayName && displayName !== "BusCommand" ? escapeAttr(displayName) : "";
+        const tenantNameText = escapeAttr(displayName);
         headerLogoContainer.innerHTML = `<div style="display:flex; align-items:center; gap:10px;">${productBrandMarkHtml({ name: "BusCommand" })}<span class="bc-tenant-name" id="app-branding-title">${tenantNameText}</span>${tenantLogo}</div>`;
     }
 

@@ -17,19 +17,21 @@ function minimalDemoState() {
 }
 
 async function seedDemoState(page, state = minimalDemoState()) {
-  const companyId = state.companyId
-    || (state.companyAdmins && state.companyAdmins[0] && state.companyAdmins[0].companyId)
+  const base = minimalDemoState();
+  const merged = { ...base, ...state, e2eFixture: true };
+  const companyId = merged.companyId
+    || (merged.companyAdmins && merged.companyAdmins[0] && merged.companyAdmins[0].companyId)
     || "qa-local";
   await installQaHarness(page, {
     companyId,
-    state: { ...state, e2eFixture: true, companyId },
-    saEmail: state.dispatchers?.find((d) => d.isSuperAdmin)?.email,
-    caEmail: state.companyAdmins?.[0]?.email,
-    dispoEmail: state.dispatchers?.find((d) => !d.isSuperAdmin)?.email,
-    password: state.dispatchers?.find((d) => !d.isSuperAdmin)?.password
-      || state.companyAdmins?.[0]?.password,
-    driverName: state.drivers?.[0]?.name,
-    driverPin: state.drivers?.[0]?.pin
+    state: { ...merged, companyId },
+    saEmail: merged.dispatchers?.find((d) => d.isSuperAdmin)?.email,
+    caEmail: merged.companyAdmins?.[0]?.email,
+    dispoEmail: merged.dispatchers?.find((d) => !d.isSuperAdmin)?.email,
+    password: merged.dispatchers?.find((d) => !d.isSuperAdmin)?.password
+      || merged.companyAdmins?.[0]?.password,
+    driverName: merged.drivers?.[0]?.name,
+    driverPin: merged.drivers?.[0]?.pin
   });
 }
 
