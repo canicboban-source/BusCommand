@@ -2,6 +2,7 @@
 import { t } from "../ui/i18n.js";
 import { driverBelongsToLine } from "../data/group-membership.js";
 import { isMobileDevice, isMobileUserAgent } from "./mobile-device.js";
+import { timezoneForCountry } from "../admin/company-admin-settings-model.js";
 
 // ── UTILITY: escapeHtml ──────────────────────────────────
 function escapeHtml(str) {
@@ -24,6 +25,13 @@ function refreshIcons() {
 
 // ── DATA ISOLATION HELPERS ───────────────────────────────
 // Vraća vozače vidljive trenutnom korisniku po ulozi
+function getDriverById(driverId) {
+    if (!driverId) return null;
+    return (window.state.drivers || []).find(d =>
+        d.id === driverId || d.uid === driverId || d.driverId === driverId
+    ) || null;
+}
+
 function getVisibleDrivers() {
     const all = window.state.drivers || [];
     if (!window.currentUser) return all;
@@ -140,6 +148,56 @@ function todayDateStr() {
     return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 }
 
+/**
+ * Authoritative operational timezone for date/radar math (P1-A). Never the
+ * browser's local timezone. Reuses the SAME source already authoritative
+ * for the confirmation scheduler and daily plan: the tenant's IANA zone,
+ * derived from the company profile's country
+ * (see js/admin/company-admin-settings-model.js timezoneForCountry — no
+ * new config field is introduced here).
+ */
+function operationalTimezone() {
+    const explicit = window.state?.profile?.timezone;
+    if (explicit && typeof explicit === "string") return explicit;
+    const country = window.state?.profile?.country;
+    const tz = country ? timezoneForCountry(country) : "";
+    return tz || "UTC";
+}
+
+/**
+ * Today's calendar date (YYYY-MM-DD) in the authoritative operational
+ * timezone, using Intl (correct across DST/month/year boundaries) rather
+ * than the browser's local Date getters.
+ */
+function operationalTodayDateStr(timezone = operationalTimezone()) {
+    try {
+        return new Intl.DateTimeFormat("en-CA", {
+            timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit"
+        }).format(new Date());
+    } catch {
+        return todayDateStr();
+    }
+}
+
+/**
+ * Adds/subtracts whole CALENDAR days (not 24h periods) to a YYYY-MM-DD
+ * string using UTC-anchored date math, so DST transitions in the
+ * operational timezone never shift the resulting calendar date by a day.
+ */
+function addCalendarDays(dateStr, days) {
+    const parts = String(dateStr || "").split("-").map(Number);
+    if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n))) return null;
+    const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+    d.setUTCDate(d.getUTCDate() + days);
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+/** Operational date N calendar days from "today" in the tenant's timezone. */
+function operationalDateStr(offsetDays = 0) {
+    const base = operationalTodayDateStr();
+    return offsetDays ? addCalendarDays(base, offsetDays) : base;
+}
+
 // Vraca plan rada na osnovu ID-ja (kljuca)
 function getScheduleByKey(key) {
     if (!window.state || !window.state.schedules) return null;
@@ -151,11 +209,16 @@ export {
     isMobileDevice,
     escapeHtml,
     refreshIcons,
+    getDriverById,
     getVisibleDrivers,
     getVisibleGroups,
     showToast,
     toastApiError,
     formatDateTime,
     todayDateStr,
+    operationalTimezone,
+    operationalTodayDateStr,
+    operationalDateStr,
+    addCalendarDays,
     getScheduleByKey
 };

@@ -1,0 +1,572 @@
+{
+  "requests": [
+    {
+      "url": "http://localhost:8766/staff.html",
+      "method": "GET"
+    },
+    {
+      "url": "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap",
+      "method": "GET"
+    },
+    {
+      "url": "https://unpkg.com/lucide@0.469.0",
+      "method": "GET"
+    },
+    {
+      "url": "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/staff-HoagWuxJ.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/init-CVUyb9xI.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/translations-DktKx29u.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/monthly-plan-persist-utils-IWPVMv-k.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/monthly-plans-CHae61sa.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/dashboard-BKqiO3z7.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/superadmin-loader-DTkIuto3.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/reports-BUI70sSR.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/msg-compose-loader-N0GIVrKc.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/submit-lock-5bNCNtTX.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/company-admin-groups-CzNHxd38.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/schedule-import-utils-DikK6JjL.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/init-BV6-Ycqa.css",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/staff-Dl7yuvPA.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/brand/logo-mark.png",
+      "method": "GET"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/plan-import-loader-BXK6G2ll.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo-emulator-key",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:lookup?key=demo-emulator-key",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:9099/securetoken.googleapis.com/v1/token?key=demo-emulator-key",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:9099/securetoken.googleapis.com/v1/token?key=demo-emulator-key",
+      "method": "POST"
+    },
+    {
+      "url": "http://localhost:8766/api/license/qa-scale-a",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/api/license/qa-scale-a",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&RID=8684&CVER=22&X-HTTP-Session-Id=gsessionid&zx=k0w9zic2gp0j&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&RID=rpc&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&AID=0&CI=0&TYPE=xmlhttp&zx=dxve99sxnqpu&t=1",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8685&AID=5&zx=5kmpguunnwzy&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8686&AID=9&zx=lnsb9175o2yz&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8687&AID=15&zx=81qyl21ks5ru&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8688&AID=16&zx=ir4a8yn5z5f6&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8689&AID=19&zx=sv8mummz57qg&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8690&AID=25&zx=tiy4izorjbdu&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8691&AID=30&zx=1406s0f84ptr&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8692&AID=34&zx=18rt869zbil7&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8693&AID=38&zx=yjv7tpdn2lo0&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8694&AID=39&zx=ldaapbalbmot&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8695&AID=43&zx=3dq1vhage53v&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8696&AID=47&zx=r9k35vmkqql1&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8697&AID=47&zx=4wde5q3m9zt4&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8698&AID=50&zx=s08xs0px34lq&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8699&AID=55&zx=xsm7ti3yoxes&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8700&AID=56&zx=gxtq42rscvni&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8701&AID=58&zx=fz4az1umcmll&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8702&AID=63&zx=8a0r6rw2dfim&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8703&AID=64&zx=tk0hu8hhoqol&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://localhost:8766/assets/shell-staff-BittXc8v.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/brand/logo-mark.png",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/help-support-C5UFLutD.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/api/staff/shift-confirmations",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/api/staff/ops-activity?limit=12",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/api/staff/ops-activity?limit=12",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8704&AID=66&zx=sjaa4taxrnuj&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "https://a.basemaps.cartocdn.com/dark_all/11/1116/712.png",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/api/staff/map-access",
+      "method": "PUT"
+    },
+    {
+      "url": "http://localhost:8766/api/staff/ops-activity?limit=12",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&RID=8705&AID=101&zx=79e4x5og2f91&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://localhost:8766/api/staff/shifts/assignment",
+      "method": "PUT"
+    },
+    {
+      "url": "http://localhost:8766/staff.html",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&RID=rpc&SID=XEuoiyM_6ncsTWJW7kkS2g%3D%3D&AID=112&CI=0&TYPE=xmlhttp&zx=8qmrn6q4wrj2&t=1",
+      "method": "GET"
+    },
+    {
+      "url": "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap",
+      "method": "GET"
+    },
+    {
+      "url": "https://unpkg.com/lucide@0.469.0",
+      "method": "GET"
+    },
+    {
+      "url": "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/staff-HoagWuxJ.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/init-CVUyb9xI.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/translations-DktKx29u.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/monthly-plan-persist-utils-IWPVMv-k.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/monthly-plans-CHae61sa.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/dashboard-BKqiO3z7.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/superadmin-loader-DTkIuto3.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/reports-BUI70sSR.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/msg-compose-loader-N0GIVrKc.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/submit-lock-5bNCNtTX.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/company-admin-groups-CzNHxd38.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/schedule-import-utils-DikK6JjL.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/init-BV6-Ycqa.css",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/staff-Dl7yuvPA.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/brand/logo-mark.png",
+      "method": "GET"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/plan-import-loader-BXK6G2ll.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:lookup?key=demo-emulator-key",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:9099/securetoken.googleapis.com/v1/token?key=demo-emulator-key",
+      "method": "POST"
+    },
+    {
+      "url": "http://localhost:8766/api/license/qa-scale-a",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&RID=51231&CVER=22&X-HTTP-Session-Id=gsessionid&zx=n7pr7tv0cf01&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&RID=rpc&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&AID=0&CI=0&TYPE=xmlhttp&zx=oorhdpk4ocb&t=1",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51232&AID=5&zx=ezj90se8edyl&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51233&AID=6&zx=hkex3ltftd3n&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51234&AID=10&zx=bhhb6ep0z4c&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51235&AID=11&zx=viyvvzyzyxal&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51236&AID=15&zx=3tmsaenrfx9y&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51237&AID=15&zx=jmwdas2hbvhj&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51238&AID=20&zx=bamn61f9fywk&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51239&AID=25&zx=y7mgaydo6aqa&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51240&AID=25&zx=tv7j6dbx6zfm&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51241&AID=30&zx=6yqaj2fnled&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51242&AID=30&zx=o7fq2hex8hup&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51243&AID=35&zx=e63g4hyenqij&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51244&AID=36&zx=c9peei70bm7a&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51245&AID=39&zx=ukzv7zh5xq6w&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51246&AID=39&zx=77r0ciektiys&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51247&AID=44&zx=iw4gn0s8n1n7&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51248&AID=45&zx=yf9xtufn8r6p&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51249&AID=48&zx=ff5o8neo1399&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51250&AID=48&zx=adqkejnguzhz&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51251&AID=52&zx=dnpx9jota6fm&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51252&AID=53&zx=dz68dtba5etl&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51253&AID=56&zx=ec2f8gk1yolf&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51254&AID=57&zx=3m1creo0oqle&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51255&AID=60&zx=8rmvledzwyiz&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51256&AID=61&zx=9fzomfnm48qb&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51257&AID=65&zx=aet3ei62vzdc&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51258&AID=66&zx=lps2xjnr55l7&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://localhost:8766/brand/logo-mark.png",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/shell-staff-BittXc8v.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51259&AID=68&zx=eedlsqjrs260&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://localhost:8766/assets/help-support-C5UFLutD.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/api/staff/shift-confirmations",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/api/staff/ops-activity?limit=12",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fdemo-buscommand-scale%2Fdatabases%2F(default)&SID=t-C0MhFBO_zb6Dwsb7kuEg%3D%3D&RID=51260&AID=72&zx=adethnw5bnwi&t=1",
+      "method": "POST"
+    },
+    {
+      "url": "http://localhost:8766/api/staff/ops-activity?limit=12",
+      "method": "GET"
+    },
+    {
+      "url": "https://a.basemaps.cartocdn.com/dark_all/11/1116/712.png",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/api/staff/map-access",
+      "method": "PUT"
+    }
+  ],
+  "hostSummary": {
+    "localhost": 53,
+    "fonts.googleapis.com": 2,
+    "unpkg.com": 8,
+    "www.gstatic.com": 6,
+    "fonts.gstatic.com": 2,
+    "127.0.0.1": 61,
+    "a.basemaps.cartocdn.com": 2
+  },
+  "violations": [],
+  "libraryCdnHits": [
+    "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap",
+    "https://unpkg.com/lucide@0.469.0",
+    "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
+    "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js",
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js",
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js",
+    "https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js",
+    "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+    "https://a.basemaps.cartocdn.com/dark_all/11/1116/712.png",
+    "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap",
+    "https://unpkg.com/lucide@0.469.0",
+    "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
+    "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js",
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js",
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js",
+    "https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js",
+    "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+    "https://a.basemaps.cartocdn.com/dark_all/11/1116/712.png"
+  ]
+}

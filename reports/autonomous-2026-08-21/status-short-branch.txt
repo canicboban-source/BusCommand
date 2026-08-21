@@ -1,0 +1,30 @@
+## HEAD (no branch)
+ M js/core/firebase-service.js
+ M js/core/firebase-web-config.js
+ M js/core/shift-plan.js
+ M js/core/utils.js
+ M js/dispatcher/daily-plan.js
+ M js/dispatcher/dashboard.js
+ M js/dispatcher/ops-attention.js
+ M js/dispatcher/shift-grid.js
+ M js/dispatcher/shift-utils.js
+ M js/dispatcher/shifts.js
+ M tests/e2e/dispatcher-cockpit.spec.js
+ M tests/e2e/dispo-soft-remove.spec.js
+ M tests/unit/daily-plan-replacement.test.mjs
+ M tests/unit/eu561-rest-period-attention.test.mjs
+ M translations.js
+?? qa-report/
+?? reports/autonomous-2026-08-21/
+?? tests/e2e/_connector-smoke.spec.js
+?? tests/e2e/_gate0-firestore-unavailable.spec.js
+?? tests/e2e/_negative-auth-unavailable.spec.js
+?? tests/e2e/_p1a-radar-ui-verify.spec.js
+?? tests/e2e/_p1b-radar-identity-ui.spec.js
+?? tests/e2e/connector-smoke-requests.json
+?? tests/e2e/gate0-requests.json
+?? tests/e2e/screenshots-p1a/
+?? tests/unit/firebase-emulator-connector.test.js
+?? tests/unit/p1a-operational-timezone.test.mjs
+?? tests/unit/p1a-radar-identity.test.mjs
+?? tests/unit/p1b-driver-identity-closure.test.mjs

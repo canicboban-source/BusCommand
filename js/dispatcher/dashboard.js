@@ -1,6 +1,6 @@
 // BusCommand ESM v9.5 — Operativni centar (editable)
-import { formatDateTime, getVisibleDrivers, showToast, escapeHtml, todayDateStr } from "../core/utils.js";
-import { getDriverDutySummary, getShiftForDriverDate, setShiftForDriverDate } from "../core/shift-plan.js";
+import { formatDateTime, getDriverById, getVisibleDrivers, showToast, escapeHtml, todayDateStr } from "../core/utils.js";
+import { getDriverDutySummary, getShiftForDriverDate, getShiftForDriverIdOnly, setShiftForDriverIdOnly } from "../core/shift-plan.js";
 import { actionAttr, changeAttr } from "../core/action-delegate.js";
 import { t } from "../ui/i18n.js";
 import { renderDashboardGroupsGrid } from "./group-hub.js";
@@ -363,32 +363,31 @@ function driverInitials(name) {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function driverByName(driverName) {
-    return (window.state.drivers || []).find(d => d.name === driverName) || null;
-}
 
 function shiftTypeLabel(value) {
     const opt = SHIFT_TYPE_OPTIONS.find(item => item.value === value);
     return opt ? (t(opt.labelKey) || opt.fallback) : value;
 }
 
-function busSelectHtml(driverName, selectedBus, selectIdSuffix = "") {
+function busSelectHtml(driverId, selectedBus, selectIdSuffix = "") {
     const options = (window.state.buses || []).map(b => {
         const num = String(b.number ?? "");
         return `<option value="${escapeHtml(num)}" ${num === String(selectedBus) ? "selected" : ""}>Bus ${escapeHtml(num)}</option>`;
     }).join("");
     const emptySelected = !selectedBus || selectedBus === "—" ? "selected" : "";
-    return `<select class="ops-edit-select" ${changeAttr("updateDriverBusInline", [driverName], "args-value")} aria-label="${escapeHtml(t("table_bus") || "Bus")}" id="ops-bus-${escapeHtml(selectIdSuffix || driverName)}">
+    const idSuffix = selectIdSuffix || String(driverId || "");
+    return `<select class="ops-edit-select" ${changeAttr("updateDriverBusInline", [driverId], "args-value")} aria-label="${escapeHtml(t("table_bus") || "Bus")}" id="ops-bus-${escapeHtml(idSuffix)}">
         <option value="" ${emptySelected}>—</option>
         ${options}
     </select>`;
 }
 
-function shiftSelectHtml(driverName, currentType, selectIdSuffix = "") {
+function shiftSelectHtml(driverId, currentType, selectIdSuffix = "") {
     const options = SHIFT_TYPE_OPTIONS.map(st =>
         `<option value="${st.value}" ${currentType === st.value ? "selected" : ""}>${escapeHtml(shiftTypeLabel(st.value))}</option>`
     ).join("");
-    return `<select class="ops-edit-select" ${changeAttr("updateDriverShiftInline", [driverName], "args-value")} aria-label="${escapeHtml(t("table_shift_route") || "Smena")}" id="ops-shift-${escapeHtml(selectIdSuffix || driverName)}">
+    const idSuffix = selectIdSuffix || String(driverId || "");
+    return `<select class="ops-edit-select" ${changeAttr("updateDriverShiftInline", [driverId], "args-value")} aria-label="${escapeHtml(t("table_shift_route") || "Smena")}" id="ops-shift-${escapeHtml(idSuffix)}">
         ${options}
     </select>`;
 }
@@ -489,7 +488,7 @@ function renderDispatcherDashboard() {
                     <div class="alert-item-content ops-action-body">
                         <div class="alert-item-title">
                             <span>${escapeHtml(item.title || item.kind || "—")}</span>
-                            <span class="alert-item-time">${escapeHtml(item.date || "")}</span>
+                            <span class="alert-item-time">${escapeHtml(item.radarDayLabel ? `${item.radarDayLabel} · ${item.date || ""}` : (item.date || ""))}</span>
                         </div>
                         <span class="alert-item-desc">${escapeHtml(item.summary || item.detail || "—")}</span>
                         <span class="alert-item-meta">${escapeHtml(metaParts.join(" · ") || "—")}</span>
@@ -540,20 +539,21 @@ function renderDispatcherDashboard() {
                     : (confirmStatus === "confirmed" ? "is-ok"
                         : (confirmStatus === "expired" || confirmStatus === "failed" ? "is-uncovered"
                             : (confirmStatus === "pending" ? "is-pending" : "is-neutral")));
+                const drvId = driverUid(drv);
                 const busOutBtn = !uncovered && busNum
-                    ? `<button type="button" class="btn-danger-ghost ops-row-action" ${actionAttr("openVehicleOperationalIncident", [busNum, drv.name])} aria-label="${escapeHtml(t("ops_bus_out") || "Vozilo van operacije")}"><i data-lucide="bus"></i></button>`
+                    ? `<button type="button" class="btn-danger-ghost ops-row-action" ${actionAttr("openVehicleOperationalIncident", [busNum, drvId])} aria-label="${escapeHtml(t("ops_bus_out") || "Vozilo van operacije")}"><i data-lucide="bus"></i></button>`
                     : "";
                 const actionBtn = incident
                     ? `<button type="button" class="ops-row-action urgent-action" ${actionAttr("openOpsAttentionPanel", [`coverage:${incident.id}`])}><i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}</button>`
                     : uncovered
                     ? `<button type="button" class="ops-row-action urgent-action" ${actionAttr("openOpsAttentionPanel", [])}><i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}</button>`
                     : !busNum
-                    ? `<button type="button" class="ops-row-action urgent-action" ${actionAttr("openOpsAttentionPanel", [`bus:${driverUid(drv)}`])}><i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}</button>`
-                    : `<span class="ops-row-actions">${busOutBtn}<button type="button" class="btn-danger-ghost ops-row-action" ${actionAttr("openOperationalIncident", [drv.name])} aria-label="${escapeHtml(t("ops_incident_open") || "Prijavi problem")}"><i data-lucide="user-x"></i> ${escapeHtml(t("ops_incident_open") || "Problem")}</button></span>`;
+                    ? `<button type="button" class="ops-row-action urgent-action" ${actionAttr("openOpsAttentionPanel", [`bus:${drvId}`])}><i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}</button>`
+                    : `<span class="ops-row-actions">${busOutBtn}<button type="button" class="btn-danger-ghost ops-row-action" ${actionAttr("openOperationalIncident", [drvId])} aria-label="${escapeHtml(t("ops_incident_open") || "Prijavi problem")}"><i data-lucide="user-x"></i> ${escapeHtml(t("ops_incident_open") || "Problem")}</button></span>`;
                 return `<tr class="${rowClass}">
                     <td><strong>${escapeHtml(drv.name || "")}</strong></td>
-                    <td>${busSelectHtml(drv.name, busNum, `day-${drv.name}`)}</td>
-                    <td>${shiftSelectHtml(drv.name, shiftType, `day-${drv.name}`)}</td>
+                    <td>${busSelectHtml(drvId, busNum, `day-${drvId}`)}</td>
+                    <td>${shiftSelectHtml(drvId, shiftType, `day-${drvId}`)}</td>
                     <td><span class="ops-status-pill" data-status="${escapeHtml(confirmStatus)}">${escapeHtml(statusLabel)}</span></td>
                     <td>${actionBtn}</td>
                 </tr>`;
@@ -571,6 +571,7 @@ function renderDispatcherDashboard() {
         }
 
         visibleCrew.forEach(drv => {
+            const drvId = driverUid(drv);
             const duty = getDriverDutySummary(drv.name, todayStr);
             const shift = duty.shift;
             const busNum = duty.bus !== "—" ? duty.bus : (drv.bus || "");
@@ -614,11 +615,11 @@ function renderDispatcherDashboard() {
                     </div>
                     <div class="ops-crew-meta">${escapeHtml(shiftLabel)} · ${escapeHtml(String(busNum || "—"))} · ${escapeHtml(currentStop)}</div>
                     <div class="ops-crew-controls">
-                        ${busSelectHtml(drv.name, busNum, `crew-${drv.name}`)}
-                        ${shiftSelectHtml(drv.name, shift?.type || "", `crew-${drv.name}`)}
+                        ${busSelectHtml(drvId, busNum, `crew-${drvId}`)}
+                        ${shiftSelectHtml(drvId, shift?.type || "", `crew-${drvId}`)}
                     </div>
                     <div class="ops-crew-actions">
-                        <button type="button" class="btn-primary ops-assign-btn" ${actionAttr("opsAssignDriver", [drv.name, uncovered ? "morning" : (shift?.type || "morning")])}>
+                        <button type="button" class="btn-primary ops-assign-btn" ${actionAttr("opsAssignDriver", [drvId, uncovered ? "morning" : (shift?.type || "morning")])}>
                             ${escapeHtml(uncovered ? (t("ops_btn_assign") || "Dodeli") : (t("ops_btn_edit") || "Izmeni"))}
                         </button>
                     </div>
@@ -639,17 +640,17 @@ function hasCatalogDuty(shift) {
     return Boolean(shift && shift.type !== "clear" && shift.type !== "off" && shift.routeCode);
 }
 
-async function updateDriverBusInline(driverName, newBus) {
-    const driver = driverByName(driverName);
+async function updateDriverBusInline(driverId, newBus) {
+    const driver = getDriverById(driverId);
     if (!driver) return;
     const today = todayDateStr();
-    const existing = getShiftForDriverDate(driverName, today);
+    const existing = getShiftForDriverIdOnly(driverId, today);
     if (!hasCatalogDuty(existing)) {
         showToast(
             t("ops_bus_needs_duty_first") || "Prvo dodelite šifru dužnosti iz kataloga — bus se vezuje za smenu.",
             "info"
         );
-        openShiftCell(driverName, today);
+        openShiftCell(driverId, today);
         return;
     }
     const saved = await persistShift(
@@ -662,17 +663,17 @@ async function updateDriverBusInline(driverName, newBus) {
         newBus
     );
     if (!saved) return;
-    showToast(t("ops_bus_assigned", { bus: newBus || "—", driver: driverName }) || `Bus ${newBus} → ${driverName}`, "success");
+    showToast(t("ops_bus_assigned", { bus: newBus || "—", driver: driver.name }) || `Bus ${newBus} → ${driver.name}`, "success");
     renderDispatcherDashboard();
 }
 
-async function updateDriverShiftInline(driverName, newShiftType) {
-    const driver = driverByName(driverName);
+async function updateDriverShiftInline(driverId, newShiftType) {
+    const driver = getDriverById(driverId);
     if (!driver) return;
     const today = todayDateStr();
     const type = newShiftType || "clear";
     if (["clear", "off", "vacation", "sick"].includes(type)) {
-        openOperationalIncident(driverName);
+        openOperationalIncident(driverId);
         renderDispatcherDashboard();
         return;
     }
@@ -684,7 +685,7 @@ async function updateDriverShiftInline(driverName, newShiftType) {
         t("ops_shift_needs_duty_first") || "Izaberite šifru dužnosti iz kataloga — tip smene se time postavlja automatski.",
         "info"
     );
-    openShiftCell(driverName, today);
+    openShiftCell(driverId, today);
     return;
 }
 
@@ -705,7 +706,7 @@ function coverageDriverCandidates(report) {
     return getVisibleDrivers().filter(driver => {
         if (driver.active === false || driverUid(driver) === report.driverId) return false;
         if (!driverKnowsGroup(driver, groupId)) return false;
-        const duty = getShiftForDriverDate(driver.name, report.date);
+        const duty = getShiftForDriverIdOnly(driverUid(driver), report.date);
         return !duty || AVAILABLE_REPLACEMENT_TYPES.has(String(duty.type || "").toLowerCase());
     });
 }
@@ -715,7 +716,7 @@ function coverageBusCandidates(report) {
     const used = new Set();
     getVisibleDrivers().forEach(driver => {
         if (driverUid(driver) === report.driverId) return;
-        const duty = getShiftForDriverDate(driver.name, report.date);
+        const duty = getShiftForDriverIdOnly(driverUid(driver), report.date);
         if (duty && !AVAILABLE_REPLACEMENT_TYPES.has(String(duty.type || "").toLowerCase()) && duty.bus) {
             used.add(String(duty.bus));
         }
@@ -1039,13 +1040,14 @@ async function renderOpsActivityFeed() {
     }).join("");
 }
 
-function openOperationalIncident(driverName, preferredReplacementDriverId = "") {
-    const driver = driverByName(driverName);
+function openOperationalIncident(driverId, preferredReplacementDriverId = "") {
+    const driver = getDriverById(driverId);
     if (!driver) return;
     const today = todayDateStr();
+    const driverIdValue = driverUid(driver);
     const duplicate = visibleOperationalReports().find(report =>
         reportKind(report).kind === "coverage"
-        && report.driverId === driverUid(driver)
+        && report.driverId === driverIdValue
         && report.date === today
     );
     if (duplicate) {
@@ -1055,11 +1057,12 @@ function openOperationalIncident(driverName, preferredReplacementDriverId = "") 
     const modal = ensureIncidentModal();
     modal.dataset.affectedEntity = "driver";
     delete modal.dataset.busNumber;
-    modal.dataset.driverName = driverName;
+    modal.dataset.driverId = driverIdValue;
+    modal.dataset.driverName = driver.name || "";
     modal.dataset.preferredReplacementDriverId = String(preferredReplacementDriverId || "");
     const title = modal.querySelector("h2");
     if (title) title.textContent = t("ops_incident_title") || "Vozač ne može da nastavi smenu";
-    modal.querySelector("#ops-incident-driver").textContent = driverName;
+    modal.querySelector("#ops-incident-driver").textContent = driver.name || "";
     paintIncidentReasonOptions(modal, "driver");
     modal.classList.remove("hidden");
     modal.style.display = "flex";
@@ -1080,13 +1083,13 @@ function closeOperationalIncident() {
 }
 
 function alignPlanAfterDriverIncident(driver, reasonCode, today) {
-    if (!driver?.name) return;
+    if (!driver?.id) return;
     const shiftType = reasonCode === "sick" ? "sick" : "clear";
     const label = reasonCode === "sick"
         ? (t("shift_type_sick") || "Bolovanje")
         : "";
     // Bypass persistShift gate: incident is already being opened.
-    setShiftForDriverDate(driver.name, today, {
+    setShiftForDriverIdOnly(driverUid(driver), driver.name || "", today, {
         type: shiftType,
         name: label,
         bus: "",
@@ -1109,9 +1112,10 @@ function alignPlanAfterBusIncident(busNumber, reasonCode, today) {
         bus.revision = (Number.isInteger(bus.revision) ? bus.revision : 0) + 1;
     }
     for (const drv of getVisibleDrivers()) {
-        const shift = getShiftForDriverDate(drv.name, today);
+        const drvId = driverUid(drv);
+        const shift = getShiftForDriverIdOnly(drvId, today);
         if (!shift || String(shift.bus || "") !== number) continue;
-        setShiftForDriverDate(drv.name, today, {
+        setShiftForDriverIdOnly(drvId, drv.name || "", today, {
             type: shift.type || "morning",
             name: shift.name || "",
             bus: "",
@@ -1127,7 +1131,7 @@ async function submitOperationalIncident(event) {
     event.preventDefault();
     const modal = document.getElementById("ops-incident-modal");
     const affectedEntity = modal?.dataset.affectedEntity === "vehicle" ? "vehicle" : "driver";
-    const driver = driverByName(modal?.dataset.driverName);
+    const driver = affectedEntity === "driver" ? getDriverById(modal?.dataset.driverId) : null;
     const busNumber = String(modal?.dataset.busNumber || "").trim();
     const reasonCode = String(modal?.querySelector("#ops-incident-reason-code")?.value || "").trim();
     const description = String(modal?.querySelector("#ops-incident-description")?.value || "").trim().slice(0, 120);
@@ -1143,7 +1147,7 @@ async function submitOperationalIncident(event) {
     const submit = modal.querySelector("button[type='submit']");
     submit.disabled = true;
     const today = todayDateStr();
-    const shift = driver ? getShiftForDriverDate(driver.name, today) : null;
+    const shift = driver ? getShiftForDriverIdOnly(driverUid(driver), today) : null;
     const bus = affectedEntity === "vehicle"
         ? busNumber
         : (shift?.bus || driver?.bus || "");
@@ -1229,8 +1233,8 @@ async function submitOperationalIncident(event) {
 }
 
 /** Reši / Dodeli — dodeli tip smene (default morning) i osveži ops centar. */
-async function opsAssignDriver(driverName, shiftType = "morning") {
-    const driver = driverByName(driverName);
+async function opsAssignDriver(driverId, shiftType = "morning") {
+    const driver = getDriverById(driverId);
     if (!driver) {
         showToast(t("js_no_drivers") || "Vozač nije pronađen.", "error");
         return;

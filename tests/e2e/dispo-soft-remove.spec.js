@@ -222,7 +222,7 @@ test.describe("Dispo soft-remove (list, not company)", () => {
 
     const invoked = await page.evaluate((d) => {
       if (typeof window.clearDailyShift !== "function") return false;
-      window.clearDailyShift("Soft Remove Driver", d);
+      window.clearDailyShift("drv-soft-1", d);
       return true;
     }, date);
     expect(invoked).toBeTruthy();

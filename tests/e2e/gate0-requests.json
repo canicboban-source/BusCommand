@@ -1,0 +1,115 @@
+{
+  "allRequests": [
+    {
+      "url": "http://localhost:8766/staff.html",
+      "method": "GET"
+    },
+    {
+      "url": "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap",
+      "method": "GET"
+    },
+    {
+      "url": "https://unpkg.com/lucide@0.469.0",
+      "method": "GET"
+    },
+    {
+      "url": "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/staff-BPLXT-uQ.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/init-DdDCtkOM.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/translations-DktKx29u.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/monthly-plan-persist-utils-DeF2s5Wo.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/monthly-plans-PbxyROp9.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/dashboard-DWVmFjGZ.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/superadmin-loader-C9ftrPFP.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/reports-BmXMOBIh.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/msg-compose-loader-DWd52zvo.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/submit-lock-5bNCNtTX.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/company-admin-groups-9eGyq6Ca.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/schedule-import-utils--SVEZkjn.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/init-BV6-Ycqa.css",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/staff-Dl7yuvPA.css",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/brand/logo-mark.png",
+      "method": "GET"
+    },
+    {
+      "url": "https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:8766/assets/plan-import-loader-D9uxqpgJ.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo-emulator-key",
+      "method": "POST"
+    }
+  ],
+  "prodDataPlaneHits": [],
+  "driverCount": 0,
+  "appVisible": false
+}

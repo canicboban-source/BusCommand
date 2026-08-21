@@ -565,7 +565,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await loginDispatcher(page);
 
     await page.evaluate((date) =>
-      window.dailyPlanAssignDriver(date, "morning", "101.S01", "Standby Driver"),
+      window.dailyPlanAssignDriver(date, "morning", "101.S01", "drv-standby"),
       todayIso()
     );
 

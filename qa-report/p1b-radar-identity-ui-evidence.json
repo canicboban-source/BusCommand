@@ -1,0 +1,141 @@
+{
+  "seed": {
+    "companyId": "qa-scale-a",
+    "driverA": "aaaaaaaa-0000-4000-8000-00000000000a",
+    "driverB": "bbbbbbbb-0000-4000-8000-00000000000b",
+    "dispatcherUid": "LvsD36FQRL38dh5hSobWM8Lk81jk"
+  },
+  "D0": "2026-08-21",
+  "D1": "2026-08-22",
+  "D2": "2026-08-23",
+  "before": {
+    "aName": "Marko Jovanović",
+    "bName": "Marko Jovanović",
+    "aShifts": [
+      {
+        "date": "2026-08-21",
+        "type": "morning"
+      },
+      {
+        "date": "2026-08-23",
+        "type": "morning"
+      }
+    ],
+    "bShifts": [
+      {
+        "date": "2026-08-22",
+        "type": "morning"
+      }
+    ]
+  },
+  "afterAssign": {
+    "aShifts": [
+      {
+        "date": "2026-08-21",
+        "type": "morning"
+      },
+      {
+        "date": "2026-08-23",
+        "type": "morning"
+      }
+    ],
+    "bShifts": [
+      {
+        "date": "2026-08-22",
+        "type": "morning"
+      },
+      {
+        "date": "2026-08-21",
+        "type": "morning"
+      }
+    ]
+  },
+  "afterRefresh": {
+    "aShifts": [
+      {
+        "date": "2026-08-21",
+        "type": "morning"
+      },
+      {
+        "date": "2026-08-23",
+        "type": "morning"
+      }
+    ],
+    "bShifts": [
+      {
+        "date": "2026-08-21",
+        "type": "morning"
+      },
+      {
+        "date": "2026-08-22",
+        "type": "morning"
+      }
+    ],
+    "radarItems": [
+      {
+        "id": "bus:bbbbbbbb-0000-4000-8000-00000000000b",
+        "title": "No bus",
+        "sub": "Marko Jovanović"
+      },
+      {
+        "id": "gap:driver:aaaaaaaa-0000-4000-8000-00000000000a:2026-08-22",
+        "title": "Uncovered driver",
+        "sub": "Marko Jovanović",
+        "date": "Tomorrow · 2026-08-22"
+      },
+      {
+        "id": "gap:driver:bbbbbbbb-0000-4000-8000-00000000000b:2026-08-23",
+        "title": "Uncovered driver",
+        "sub": "Marko Jovanović",
+        "date": "Day after tomorrow · 2026-08-23"
+      }
+    ]
+  },
+  "afterClear": {
+    "aShifts": [
+      {
+        "date": "2026-08-21",
+        "type": "morning"
+      },
+      {
+        "date": "2026-08-23",
+        "type": "morning"
+      }
+    ],
+    "bShifts": [
+      {
+        "date": "2026-08-21",
+        "type": "morning"
+      },
+      {
+        "date": "2026-08-22",
+        "type": "morning"
+      },
+      {
+        "date": "2026-08-23",
+        "type": "clear"
+      }
+    ]
+  },
+  "final": {
+    "bShifts": [
+      {
+        "date": "2026-08-21",
+        "type": "morning"
+      },
+      {
+        "date": "2026-08-22",
+        "type": "morning"
+      },
+      {
+        "date": "2026-08-23",
+        "type": "clear"
+      }
+    ],
+    "radarItems": [
+      "bus:bbbbbbbb-0000-4000-8000-00000000000b",
+      "gap:driver:aaaaaaaa-0000-4000-8000-00000000000a:2026-08-22",
+      "gap:driver:bbbbbbbb-0000-4000-8000-00000000000b:2026-08-23"
+    ]
+  }
+}

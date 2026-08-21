@@ -125,11 +125,19 @@ if (HAS_FIREBASE) {
   admin = require("firebase-admin");
   let serviceAccount = runtimeValidation.serviceAccount;
   if (!serviceAccount) {
-    serviceAccount = SERVICE_ACCOUNT_JSON
-      ? JSON.parse(SERVICE_ACCOUNT_JSON)
-      : JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, "utf8"));
+    const emulatorEnabled = Boolean(process.env.FIRESTORE_EMULATOR_HOST || process.env.FIREBASE_AUTH_EMULATOR_HOST);
+    if (emulatorEnabled) {
+      const emulatorProjectId = process.env.VITE_FIREBASE_EMULATOR_PROJECT_ID || "demo-buscommand-scale";
+      admin.initializeApp({ projectId: emulatorProjectId });
+    } else {
+      serviceAccount = SERVICE_ACCOUNT_JSON
+        ? JSON.parse(SERVICE_ACCOUNT_JSON)
+        : JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, "utf8"));
+      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    }
+  } else {
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
   }
-  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
   db = admin.firestore();
 }
 

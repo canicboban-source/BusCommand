@@ -2,6 +2,7 @@
 import { cancelDriverActivation, openDriverActivation, submitDriverActivation } from "./auth/driver-activation.js";
 import { logout } from "./auth/login-dispatcher.js";
 import { loginAsDriver } from "./auth/login-driver.js";
+import { switchLoginTab } from "./auth/login-ui.js";
 import { clickElementById, installActionDelegates, removeElementById } from "./core/action-delegate.js";
 import { handleAvatarUpload, triggerAvatarUpload } from "./driver/avatar.js";
 import { confirmTomorrowShift } from "./driver/calendar.js";
@@ -56,6 +57,7 @@ const HANDLERS = {
     submitLostItem,
     submitPreTripCheck,
     submitVacationRequest,
+    switchLoginTab,
     switchSection,
     t,
     toggleTheme,

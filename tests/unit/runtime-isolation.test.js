@@ -105,6 +105,20 @@ test("staging QA harness allows test-only bypass without credentials", () => {
   assert.equal(result.serviceAccount, null);
 });
 
+test("local emulator env is still treated as Firebase-capable even under QA harness", () => {
+  const result = validateRuntimeBeforeListen({
+    BUSCOMMAND_ENV: "development",
+    NODE_ENV: "development",
+    BUSCOMMAND_QA_HARNESS: "1",
+    FIRESTORE_EMULATOR_HOST: "127.0.0.1:8080",
+    FIREBASE_AUTH_EMULATOR_HOST: "127.0.0.1:9099"
+  });
+  assert.equal(result.runtime, "development");
+  assert.equal(result.qaBypass, true);
+  assert.equal(result.hasFirebase, true);
+  assert.equal(result.serviceAccount, null);
+});
+
 test("NODE_ENV alone does not enable QA bypass", () => {
   assert.throws(
     () => validateRuntimeBeforeListen({

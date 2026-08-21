@@ -7,7 +7,9 @@ import { t } from "../ui/i18n.js";
 import {
     EXPECTED_FIREBASE_PROJECT_ID,
     readFirebaseWebConfig,
-    validateFirebaseWebConfig
+    validateFirebaseWebConfig,
+    readFirebaseEmulatorConfig,
+    validateFirebaseEmulatorConfig
 } from "./firebase-web-config.js";
 import {
     diffCollectionOps,
@@ -23,13 +25,104 @@ import { checkSOSStatus } from "../maps/sos-siren.js";
 
 let db = null;
 
+// QA/dev-only local emulator connector. The BUILD/RUNTIME flag
+// VITE_USE_FIREBASE_EMULATOR="1" is the mandatory primary gate — it must be
+// baked in at build time (never a URL param). A runtime-only global
+// (window.__BUSCOMMAND_USE_FIREBASE_EMULATOR__) may additionally be present
+// as a test signal, but per D-owner directive it is NEVER sufficient by
+// itself: if the build flag is absent, emulator mode never activates,
+// regardless of any runtime global. Every real production/staging
+// deployment ships without VITE_USE_FIREBASE_EMULATOR set, so this whole
+// branch is dead code there.
+function currentHostname() {
+    try {
+        return typeof window !== "undefined" ? window.location.hostname : "";
+    } catch {
+        return "";
+    }
+}
+
+function runtimeEmulatorSignalPresent() {
+    try {
+        return typeof window !== "undefined" && window.__BUSCOMMAND_USE_FIREBASE_EMULATOR__ === true;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Strict, fail-closed emulator gate. Returns:
+ *  - { active: false } when the build flag is off (normal production path;
+ *    the caller must proceed with the existing production validation).
+ *  - { active: true, config } when every required condition is satisfied.
+ *  - throws when the build flag is on but any required condition fails —
+ *    the configuration is REJECTED before any Firebase call is made; there
+ *    is no silent fallback to defaults or to production.
+ */
+function resolveFirebaseEmulatorGate() {
+    const config = readFirebaseEmulatorConfig();
+    if (!config.enabled) {
+        return { active: false, config: null };
+    }
+    const validation = validateFirebaseEmulatorConfig(config, { hostname: currentHostname() });
+    if (!validation.valid) {
+        throw new Error(validation.error);
+    }
+    return { active: true, config };
+}
+
 function initializeFirebaseClient() {
     if (USE_LOCAL_STATE) return null;
+
+    // Resolve (and, if enabled, strictly validate) the emulator gate BEFORE
+    // touching any Firebase config or SDK call. An enabled-but-invalid
+    // configuration throws here and nothing further executes.
+    const emulatorGate = resolveFirebaseEmulatorGate();
+
+    if (typeof firebase === "undefined") throw new Error("Firebase browser SDK is unavailable.");
+
+    let justInitialized = false;
+
+    if (emulatorGate.active) {
+        // Emulator mode uses its OWN isolated, synthetic "demo-*" project
+        // configuration — it never reuses or validates against the
+        // production EXPECTED_FIREBASE_PROJECT_ID/authDomain/storageBucket.
+        const emu = emulatorGate.config;
+        if (firebase.apps.length) {
+            const activeProjectId = firebase.app().options.projectId;
+            if (activeProjectId !== emu.projectId) {
+                throw new Error(`Refusing to use Firebase project ${activeProjectId || "unknown"} in emulator mode.`);
+            }
+        } else {
+            firebase.initializeApp({
+                apiKey: "demo-emulator-key",
+                authDomain: `${emu.projectId}.firebaseapp.com`,
+                projectId: emu.projectId,
+                storageBucket: `${emu.projectId}.appspot.com`,
+                messagingSenderId: "0",
+                appId: `1:0:web:0`
+            });
+            justInitialized = true;
+        }
+        db = firebase.firestore();
+        // Emulator connection MUST happen before the first real Auth/Firestore
+        // operation. Nothing above this point issues a network call; nothing
+        // below runs until both useEmulator() calls have completed.
+        if (justInitialized) {
+            db.useEmulator(emu.firestoreHost, emu.firestorePort);
+            firebase.auth().useEmulator(`http://${emu.authHost}:${emu.authPort}`);
+        }
+        return db;
+    }
+
+    // Normal production/staging path — unchanged from before. The runtime-only
+    // window signal (if present) is intentionally ignored here: it is a test
+    // marker, never an activation switch, per the required guard semantics.
+    void runtimeEmulatorSignalPresent();
 
     const firebaseConfig = readFirebaseWebConfig();
     const validation = validateFirebaseWebConfig(firebaseConfig);
     if (!validation.valid) throw new Error(validation.error);
-    if (typeof firebase === "undefined") throw new Error("Firebase browser SDK is unavailable.");
 
     if (firebase.apps.length) {
         const activeProjectId = firebase.app().options.projectId;

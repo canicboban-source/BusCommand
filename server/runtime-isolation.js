@@ -24,6 +24,13 @@ function isQaHarness(env = process.env) {
   return String(env.BUSCOMMAND_QA_HARNESS || "").trim() === "1";
 }
 
+function hasLocalFirebaseEmulator(env = process.env) {
+  return Boolean(
+    String(env.FIRESTORE_EMULATOR_HOST || "").trim() ||
+    String(env.FIREBASE_AUTH_EMULATOR_HOST || "").trim()
+  );
+}
+
 function parseServiceAccountJson(raw) {
   if (raw === undefined || raw === null || String(raw).trim() === "") {
     return { ok: false, code: "staging-firebase-credential-missing" };
@@ -117,19 +124,20 @@ function validateRuntimeBeforeListen(env = process.env, options = {}) {
   const keyFileExists = options.keyFileExists === true;
 
   if (runtime !== "staging") {
-    const hasFirebase = !qaBypass && Boolean(
+  const productionFirebaseConfigured = Boolean(
       env.FIREBASE_SERVICE_ACCOUNT_JSON
       || env.GOOGLE_APPLICATION_CREDENTIALS
       || keyFileExists
     );
-    return {
-      runtime,
-      qaBypass,
-      corsPolicy,
-      hasFirebase,
-      serviceAccount: null,
-      appPublicUrl: null
-    };
+  const hasFirebase = productionFirebaseConfigured || hasLocalFirebaseEmulator(env);
+  return {
+    runtime,
+    qaBypass,
+    corsPolicy,
+    hasFirebase,
+    serviceAccount: null,
+    appPublicUrl: null
+  };
   }
 
   if (qaBypass) {

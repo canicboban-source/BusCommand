@@ -3,7 +3,8 @@ import { renderDispatcherShifts } from "./shifts.js";
 import {
     dateToStr,
     getCurrentShiftForDriver,
-    getShiftForDriverDate
+    getShiftForDriverDate,
+    getShiftForDriverIdOnly
 } from "../core/shift-plan.js";
 
 function getWeekDates(offset) {
@@ -31,5 +32,6 @@ export {
     dateToStr,
     shiftWeekNav,
     getShiftForDriverDate,
+    getShiftForDriverIdOnly,
     getCurrentShiftForDriver
 };

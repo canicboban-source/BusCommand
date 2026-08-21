@@ -1,7 +1,11 @@
 // BusCommand ESM v9.5
 import { getVisibleDrivers, todayDateStr } from "../core/utils.js";
 import { getGroupById } from "../data/groups.js";
-import { dateToStr, getShiftForDriverDate } from "./shift-utils.js";
+import { dateToStr, getShiftForDriverIdOnly } from "./shift-utils.js";
+
+function driverId(driver) {
+    return driver?.id || driver?.uid || "";
+}
 import { t } from "../ui/i18n.js";
 import { actionAttr } from "../core/action-delegate.js";
 
@@ -77,7 +81,8 @@ function renderShiftsWeeklyGrid(weekDays) {
 
         weekDays.forEach(d => {
             const dStr = dateToStr(d);
-            const shift = getShiftForDriverDate(driver.name, dStr);
+            const drvId = driverId(driver);
+            const shift = getShiftForDriverIdOnly(drvId, dStr);
             const isToday = dStr === todayStr;
             const isPast  = dStr < todayStr;
             const style = shiftColors[shift ? shift.type : "empty"] || shiftColors.empty;
@@ -88,12 +93,12 @@ function renderShiftsWeeklyGrid(weekDays) {
                      display:flex;flex-direction:column;align-items:center;justify-content:center;
                      position:relative; opacity:${isPast && !shift ? "0.4" : "1"}; cursor:pointer;
                      transition:all 0.15s ease;"
-                     ${actionAttr("openShiftCell", [driver.name, dStr])}
+                     ${actionAttr("openShiftCell", [drvId, dStr])}
                      onmouseenter="this.style.opacity='0.8'" onmouseleave="this.style.opacity='${isPast && !shift ? "0.4" : "1"}'">
                     ${shift ? `
                         <span style="font-size:1.1rem;">${style.icon}</span>
                         <span style="font-size:10px;font-weight:600;color:${style.text};margin-top:2px;line-height:1.2;">${shift.name || t("shift_"+shift.type) || shift.type}</span>
-                        <button ${actionAttr("removeShift", [driver.name, dStr], { stopPropagation: true })}
+                        <button ${actionAttr("removeShift", [drvId, dStr], { stopPropagation: true })}
                             style="position:absolute;top:2px;right:2px;background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;font-size:10px;padding:1px;line-height:1;"
                             title="${t("btn_delete")}">✕</button>
                     ` : `<span style="font-size:18px;color:rgba(255,255,255,0.1);">+</span>`}

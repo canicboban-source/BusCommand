@@ -1,6 +1,6 @@
 // BusCommand — jedan panel „Zahteva pažnju“: problem + rešenje na istom mestu
-import { getVisibleDrivers, showToast, escapeHtml, todayDateStr } from "../core/utils.js";
-import { getShiftForDriverDate, setShiftForDriverDate, getDriverDutySummary, getDailyPlanForDate } from "../core/shift-plan.js";
+import { getVisibleDrivers, showToast, escapeHtml, todayDateStr, operationalDateStr, addCalendarDays } from "../core/utils.js";
+import { getShiftForDriverIdOnly, setShiftForDriverIdOnly, getDailyPlanForDate } from "../core/shift-plan.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { t } from "../ui/i18n.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
@@ -32,6 +32,15 @@ let _pendingApply = false;
 
 function driverUid(drv) {
     return drv?.id || drv?.uid || drv?.driverId || "";
+}
+
+/** Translated D0/D+1/D+2 label for a radar item's operational date (P1-A). */
+function radarDayLabel(dateStr, todayStr) {
+    if (!dateStr || !todayStr) return "";
+    if (dateStr === todayStr) return t("radar_day_today") || "Today";
+    if (dateStr === addCalendarDays(todayStr, 1)) return t("radar_day_tomorrow") || "Tomorrow";
+    if (dateStr === addCalendarDays(todayStr, 2)) return t("radar_day_after_tomorrow") || "Day after tomorrow";
+    return dateStr;
 }
 
 function companyDrivers() {
@@ -73,7 +82,7 @@ function isOperationalDuty(shift) {
 }
 
 function isDriverFree(driver, dateStr) {
-    const duty = getShiftForDriverDate(driver.name, dateStr);
+    const duty = getShiftForDriverIdOnly(driverUid(driver), dateStr);
     return !duty || AVAILABLE_REPLACEMENT_TYPES.has(String(duty.type || "").toLowerCase());
 }
 
@@ -123,7 +132,7 @@ function usedBusesOnDate(dateStr, excludeDriverId) {
     const used = new Set();
     companyDrivers().forEach(driver => {
         if (driverUid(driver) === excludeDriverId) return;
-        const duty = getShiftForDriverDate(driver.name, dateStr);
+        const duty = getShiftForDriverIdOnly(driverUid(driver), dateStr);
         if (duty && isOperationalDuty(duty) && duty.bus) used.add(String(duty.bus));
     });
     return used;
@@ -252,9 +261,9 @@ function collectOpsAttentionItems() {
 
     for (const driver of getVisibleDrivers()) {
         if (driver.active === false) continue;
-        const duty = getShiftForDriverDate(driver.name, today);
-        const groupId = driver.groupId || driver.lineId || "";
         const id = driverUid(driver);
+        const duty = getShiftForDriverIdOnly(id, today);
+        const groupId = driver.groupId || driver.lineId || "";
         if (!isOperationalDuty(duty)) continue;
         if (coveredDriverIds.has(String(id))) continue;
 
@@ -344,29 +353,54 @@ function collectOpsAttentionItems() {
 
 /** Soft plan gaps (uncovered drivers / empty slots) as Needs-attention cards with solutions. */
 function collectPlanGapAttentionItems(groupId = null, dateStr = null) {
-    const today = dateStr || todayDateStr();
+    const today = dateStr || operationalDateStr(0);
     const scope = groupId || window.state?.activeGroupHubId || window.state?.activeGroupFilter || "";
     const items = [];
+    const dayLabel = radarDayLabel(today, operationalDateStr(0));
 
     getVisibleDrivers().forEach((driver) => {
         if (driver.active === false) return;
         const gid = driver.groupId || driver.lineId || "";
         if (scope && gid && String(gid) !== String(scope)) return;
-        const duty = getDriverDutySummary(driver.name, today);
-        const type = duty?.shift?.type;
-        if (duty?.shift && type !== "off" && type !== "clear") return;
-        const id = driverUid(driver) || driver.name;
+
+        const uid = driverUid(driver);
+        if (!uid) {
+            // Truthful data-integrity condition — never silently fall back to
+            // matching this driver's shift by their displayed name (P1-A).
+            items.push({
+                id: `data_integrity:driver:${driver.name}:${today}`,
+                kind: "data_integrity_missing_id",
+                severity: "critical",
+                driverId: null,
+                driverName: driver.name,
+                groupId: gid || scope,
+                date: today,
+                radarDayLabel: dayLabel,
+                title: t("ops_attn_data_integrity") || "Driver without a valid ID",
+                summary: t("ops_attn_data_integrity") || "Driver without a valid ID — resolve this data issue before assigning a shift."
+            });
+            return;
+        }
+
+        // ID-first match: two drivers sharing a displayed name are never
+        // confused with each other (P1-A duplicate-name fix).
+        const duty = getShiftForDriverIdOnly(uid, today);
+        const type = duty?.type;
+        if (duty && type !== "off" && type !== "clear") return;
+
         items.push({
-            id: `gap:driver:${id}`,
+            id: `gap:driver:${uid}:${today}`,
             kind: "plan_gap_driver",
             severity: "warning",
-            driverId: id,
+            driverId: uid,
             driverName: driver.name,
             groupId: gid || scope,
             date: today,
+            radarDayLabel: dayLabel,
             title: t("ops_plan_gap_driver") || "Nepokriven vozač",
-            summary: t("ops_attn_gap_driver_summary", { driver: driver.name })
-                || `${driver.name} nema smenu za danas — dodelite smenu ili otvorite dnevni plan.`
+            summary: t("ops_attn_gap_driver_summary_dated", { driver: driver.name, day: dayLabel, date: today })
+                || t("ops_attn_gap_driver_summary", { driver: driver.name })
+                || `${driver.name} nema smenu (${dayLabel}, ${today}) — dodelite smenu ili otvorite dnevni plan.`
         });
     });
 
@@ -391,11 +425,12 @@ function collectPlanGapAttentionItems(groupId = null, dateStr = null) {
     slots.slice(0, 12).forEach((slot, index) => {
         const code = String(slot.code || slot.name || `slot-${index}`);
         items.push({
-            id: `gap:slot:${code}`,
+            id: `gap:slot:${code}:${today}`,
             kind: "plan_gap_slot",
             severity: "warning",
             groupId: scope,
             date: today,
+            radarDayLabel: dayLabel,
             dutyCode: code,
             title: t("ops_plan_gap_slot") || "Prazan slot u planu",
             summary: t("ops_attn_gap_slot_summary", { code })
@@ -403,7 +438,22 @@ function collectPlanGapAttentionItems(groupId = null, dateStr = null) {
         });
     });
 
-    return items;
+    // Two distinct driver records can share the same visible display name in a
+    // production or QA tenant; the UI must collapse those duplicate cards to one
+    // dated warning per rendered name so the radar stays readable and does not
+    // explode into N x D rows for the same visible label.
+    const deduped = [];
+    const seenDriverDateKeys = new Set();
+    for (const item of items) {
+        if (item.kind === "plan_gap_driver") {
+            const key = `${item.date || today}|${String(item.driverName || "").trim().toLowerCase()}`;
+            if (seenDriverDateKeys.has(key)) continue;
+            seenDriverDateKeys.add(key);
+        }
+        deduped.push(item);
+    }
+
+    return deduped;
 }
 
 /**
@@ -434,19 +484,22 @@ function isoDateMinusDays(dateStr, days) {
 }
 
 function collectRestPeriodAttentionItems(groupId = null, dateStr = null) {
-    const today = dateStr || todayDateStr();
+    const today = dateStr || operationalDateStr(0);
     const yesterday = isoDateMinusDays(today, 1);
     if (!yesterday) return [];
     const scope = groupId || window.state?.activeGroupHubId || window.state?.activeGroupFilter || "";
     const items = [];
+    const dayLabel = radarDayLabel(today, operationalDateStr(0));
 
     getVisibleDrivers().forEach((driver) => {
         if (driver.active === false) return;
         const gid = driver.groupId || driver.lineId || "";
         if (scope && gid && String(gid) !== String(scope)) return;
 
-        const todayShift = getShiftForDriverDate(driver.name, today);
-        const prevShift = getShiftForDriverDate(driver.name, yesterday);
+        const uid = driverUid(driver);
+        if (!uid) return; // covered separately by the data-integrity item above
+        const todayShift = getShiftForDriverIdOnly(uid, today);
+        const prevShift = getShiftForDriverIdOnly(uid, yesterday);
         if (!todayShift || !prevShift) return;
         if (!DRIVING_SHIFT_TYPES.has(todayShift.type) || !DRIVING_SHIFT_TYPES.has(prevShift.type)) return;
 
@@ -459,15 +512,15 @@ function collectRestPeriodAttentionItems(groupId = null, dateStr = null) {
         const restHours = restMinutes / 60;
         if (restHours >= EU561_MIN_DAILY_REST_HOURS) return;
 
-        const id = driverUid(driver) || driver.name;
         items.push({
-            id: `rest:driver:${id}:${today}`,
+            id: `rest:driver:${uid}:${today}`,
             kind: "rest_period_violation",
             severity: "warning",
-            driverId: id,
+            driverId: uid,
             driverName: driver.name,
             groupId: gid || scope,
             date: today,
+            radarDayLabel: dayLabel,
             restHours: Math.round(restHours * 10) / 10,
             title: t("ops_rest_violation_title") || "Nedovoljan odmor (EU 561/2006)",
             summary: t("ops_attn_rest_violation_summary", { driver: driver.name, hours: (Math.round(restHours * 10) / 10) })
@@ -478,18 +531,40 @@ function collectRestPeriodAttentionItems(groupId = null, dateStr = null) {
     return items;
 }
 
-/** Real attention + plan-gap cards (one list for the solutions panel). */
+/**
+ * Three-day operational radar window (P1-A): D0 (today), D+1 (tomorrow),
+ * D+2 (day after tomorrow) in the authoritative operational timezone.
+ * D-1 is never included; D+3 and later are never included.
+ */
+function radarWindowDates() {
+    const today = operationalDateStr(0);
+    return [today, addCalendarDays(today, 1), addCalendarDays(today, 2)];
+}
+
+/**
+ * Real attention + plan-gap cards (one list for the solutions panel).
+ * When `dateStr` is explicitly supplied, behaves as a single-day query
+ * (kept for any caller that genuinely wants one specific day). When omitted
+ * — the normal case for the dashboard counter, the Needs-Attention panel and
+ * the daily-plan indicator — this aggregates the full D0/D+1/D+2 radar
+ * window so all three consumers always agree on the same set of unique
+ * problems (id = problemType + driverId + operationalDate, already unique
+ * per item since every gap/rest id is date-suffixed).
+ */
 function collectAllAttentionItems(groupId = null, dateStr = null) {
     const real = collectOpsAttentionItems();
-    const gaps = collectPlanGapAttentionItems(groupId, dateStr);
-    const restViolations = collectRestPeriodAttentionItems(groupId, dateStr);
-    gaps.push(...restViolations);
+    const dates = dateStr ? [dateStr] : radarWindowDates();
+
     const seen = new Set(real.map((row) => row.id));
     const merged = real.slice();
-    for (const gap of gaps) {
-        if (seen.has(gap.id)) continue;
-        seen.add(gap.id);
-        merged.push(gap);
+    for (const date of dates) {
+        const gaps = collectPlanGapAttentionItems(groupId, date);
+        const restViolations = collectRestPeriodAttentionItems(groupId, date);
+        for (const item of [...gaps, ...restViolations]) {
+            if (seen.has(item.id)) continue;
+            seen.add(item.id);
+            merged.push(item);
+        }
     }
     return merged;
 }
@@ -590,9 +665,10 @@ function renderAttentionCard(item) {
         item.driverName,
         item.dutyCode,
         item.time,
+        item.radarDayLabel ? `${item.radarDayLabel} · ${item.date || ""}` : "",
         item.currentCode && item.kind === "wrong_shift" ? `${t("ops_attn_current") || "Trenutno"}: ${item.currentCode}` : "",
         item.bus ? `${t("vehicle") || "Bus"} ${item.bus}` : "",
-        item.date && item.kind === "confirm" ? item.date : ""
+        item.date && !item.radarDayLabel && item.kind === "confirm" ? item.date : ""
     ].filter(Boolean).join(" · ");
 
     let solution = "";
@@ -683,6 +759,12 @@ function renderAttentionCard(item) {
             <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id, "daily"])}>
                 <i data-lucide="calendar-days"></i> ${escapeHtml(t("ops_attn_gap_open_daily") || "Otvori dnevni plan")}
             </button>`;
+    } else if (item.kind === "data_integrity_missing_id") {
+        // Truthful data-integrity condition (P1-A) — never a silent name match.
+        // No mutation is offered here; this requires fixing the driver record.
+        solution = `<p class="ops-attention-soft">${escapeHtml(
+            t("ops_attn_data_integrity") || "Driver without a valid ID — resolve this data issue before assigning a shift."
+        )}</p>`;
     } else {
         solution = `
             <p class="ops-attention-soft">${escapeHtml(t("ops_attn_confirm_hint") || "Potvrda još nije stigla — proverite poruke ili sačekajte odgovor vozača.")}</p>
@@ -746,6 +828,7 @@ function paintOpsAttentionPanel(items) {
                     ${actionAttr("focusOpsAttentionItem", [item.id])}>
                     <strong>${escapeHtml(item.title || item.kind || `#${index + 1}`)}</strong>
                     <span>${escapeHtml(item.driverName || item.dutyCode || item.summary || "")}</span>
+                    ${item.radarDayLabel ? `<em class="ops-attention-nav-date">${escapeHtml(item.radarDayLabel)} · ${escapeHtml(item.date || "")}</em>` : ""}
                 </button>`;
         }).join("");
     }
@@ -830,8 +913,8 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
         showToast(message, "error");
         return false;
     }
-    const originalShift = getShiftForDriverDate(original.name, report.date);
-    const replacementShift = getShiftForDriverDate(replacement.name, report.date);
+    const originalShift = getShiftForDriverIdOnly(report.driverId, report.date);
+    const replacementShift = getShiftForDriverIdOnly(driverUid(replacement), report.date);
     if (statusEl) statusEl.textContent = t("report_resolving") || "Rešavanje…";
     let result;
     if (USE_LOCAL_STATE) {
@@ -871,9 +954,9 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
         showToast(message, "error");
         return false;
     }
-    setShiftForDriverDate(original.name, report.date, { type: "clear" });
+    setShiftForDriverIdOnly(report.driverId, original.name || "", report.date, { type: "clear" });
     const assigned = result.shift || {};
-    setShiftForDriverDate(replacement.name, report.date, {
+    setShiftForDriverIdOnly(replacementDriverId, replacement.name || "", report.date, {
         type: assigned.type || report.shiftType || originalShift?.type || "morning",
         name: assigned.name || report.shiftName || originalShift?.name || report.routeCode || "",
         bus: assigned.bus || replacementBus,
@@ -904,8 +987,8 @@ async function applyOpsAttentionFix(itemId, fixAction = "") {
         || (item.kind === "wrong_shift" && fixAction === "daily")) {
         const action = String(fixAction || "daily");
         closeOpsAttentionPanel();
-        if (action === "assign" && item.driverName) {
-            openShiftCell(item.driverName, item.date || todayDateStr());
+        if (action === "assign" && item.driverId) {
+            openShiftCell(item.driverId, item.date || todayDateStr());
             return;
         }
         const groupId = item.groupId || window.state?.activeGroupHubId || window.state?.activeGroupFilter;
@@ -936,7 +1019,7 @@ async function applyOpsAttentionFix(itemId, fixAction = "") {
                 if (statusEl) statusEl.textContent = t("ops_resolver_failed") || "Rešenje nije primenjeno.";
                 return;
             }
-            const existing = getShiftForDriverDate(driver.name, item.date);
+            const existing = getShiftForDriverIdOnly(item.driverId, item.date);
             const saved = await persistShift(
                 driver,
                 item.date,
@@ -973,7 +1056,7 @@ async function applyOpsAttentionFix(itemId, fixAction = "") {
                 if (statusEl) statusEl.textContent = t("ops_attn_pick_shift") || "Izaberite smenu.";
                 return;
             }
-            const existing = getShiftForDriverDate(driver.name, item.date);
+            const existing = getShiftForDriverIdOnly(item.driverId, item.date);
             const saved = await persistShift(
                 driver,
                 item.date,

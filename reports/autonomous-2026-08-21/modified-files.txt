@@ -1,0 +1,15 @@
+js/core/firebase-service.js
+js/core/firebase-web-config.js
+js/core/shift-plan.js
+js/core/utils.js
+js/dispatcher/daily-plan.js
+js/dispatcher/dashboard.js
+js/dispatcher/ops-attention.js
+js/dispatcher/shift-grid.js
+js/dispatcher/shift-utils.js
+js/dispatcher/shifts.js
+tests/e2e/dispatcher-cockpit.spec.js
+tests/e2e/dispo-soft-remove.spec.js
+tests/unit/daily-plan-replacement.test.mjs
+tests/unit/eu561-rest-period-attention.test.mjs
+translations.js

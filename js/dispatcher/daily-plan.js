@@ -1,6 +1,6 @@
 // BusCommand — dnevni plan (poz. 1 = x2 Bereitschaft) — editable slots
-import { getDailyPlanForDate, getActiveBereitschaftCode, getShiftForDriverDate } from "../core/shift-plan.js";
-import { todayDateStr, escapeHtml, getVisibleDrivers, showToast } from "../core/utils.js";
+import { getDailyPlanForDate, getActiveBereitschaftCode, getShiftForDriverIdOnly } from "../core/shift-plan.js";
+import { todayDateStr, escapeHtml, getDriverById, getVisibleDrivers, showToast } from "../core/utils.js";
 import { getGroupById } from "../data/groups.js";
 import { t } from "../ui/i18n.js";
 import { actionAttr, changeAttr } from "../core/action-delegate.js";
@@ -13,7 +13,7 @@ import { paintPlanHealthBanner } from "./plan-health-banner.js";
 import { collectAllAttentionItems } from "./ops-attention.js";
 
 /** DnD state — tracks the driver being dragged between pool and slots. */
-let draggedDriverName = null;
+let draggedDriverId = null;
 
 function getActiveHubGroupId() {
     return window.state.activeGroupHubId || null;
@@ -52,11 +52,11 @@ function currentPlanDate() {
     return todayDateStr();
 }
 
-function driverOptions(selectedName, selectedId = "") {
+function driverOptions(selectedId = "") {
     return getVisibleDrivers().map(driver => {
-        const selected = (selectedId && (driver.id === selectedId || driver.uid === selectedId))
-            || (selectedName && driver.name === selectedName);
-        return `<option value="${escapeHtml(driver.name)}" ${selected ? "selected" : ""}>${escapeHtml(driver.name)}</option>`;
+        const value = driver.id || driver.uid || "";
+        const selected = selectedId && (driver.id === selectedId || driver.uid === selectedId);
+        return `<option value="${escapeHtml(value)}" ${selected ? "selected" : ""}>${escapeHtml(driver.name)}</option>`;
     }).join("");
 }
 
@@ -88,9 +88,10 @@ function buildDriverPoolHtml(slots, _dateStr) {
     if (!available.length) return "";
     const chips = available.map(driver => {
         const initials = String(driver.name || "").split(/\s+/).map(p => p[0]).join("").slice(0, 2).toUpperCase();
+        const driverId = driver.id || driver.uid || "";
         return `<span class="dnd-driver-chip" draggable="true"
             data-driver-name="${escapeHtml(driver.name)}"
-            data-driver-id="${escapeHtml(driver.id || driver.uid || "")}"
+            data-driver-id="${escapeHtml(driverId)}"
             title="${escapeHtml(driver.name)}">${escapeHtml(initials)} ${escapeHtml(driver.name)}</span>`;
     }).join("");
     return `<div class="dnd-driver-pool" role="region" aria-label="${escapeHtml(t("dnd_pool_label") || "Available drivers")}">
@@ -103,12 +104,12 @@ function buildDriverPoolHtml(slots, _dateStr) {
 function bindDragAndDrop(container, _slots, dateStr) {
     if (isOperationalReadOnly() || !container) return;
 
-    // Pool chips — dragstart sets the driver payload.
+    // Pool chips — dragstart sets the driver payload (authoritative id, not name).
     container.querySelectorAll(".dnd-driver-chip").forEach(chip => {
         chip.addEventListener("dragstart", (event) => {
-            draggedDriverName = chip.dataset.driverName || "";
+            draggedDriverId = chip.dataset.driverId || "";
             event.dataTransfer.effectAllowed = "move";
-            event.dataTransfer.setData("text/plain", draggedDriverName);
+            event.dataTransfer.setData("text/plain", draggedDriverId);
             chip.classList.add("is-dragging");
         });
         chip.addEventListener("dragend", (event) => {
@@ -117,14 +118,14 @@ function bindDragAndDrop(container, _slots, dateStr) {
                 chip.classList.add("dnd-drop-failed");
                 setTimeout(() => chip.classList.remove("dnd-drop-failed"), 600);
             }
-            draggedDriverName = null;
+            draggedDriverId = null;
         });
     });
 
     // Slot drop targets — the driver <td> cell.
     container.querySelectorAll("[data-slot-drop]").forEach(cell => {
         cell.addEventListener("dragover", (event) => {
-            if (!draggedDriverName) return;
+            if (!draggedDriverId) return;
             event.preventDefault();
             event.dataTransfer.dropEffect = "move";
             cell.classList.add("is-drop-target");
@@ -137,24 +138,24 @@ function bindDragAndDrop(container, _slots, dateStr) {
             cell.classList.remove("is-drop-target");
             const slotType = cell.dataset.slotType || "morning";
             const slotCode = cell.dataset.slotCode || "";
-            const driverName = draggedDriverName || event.dataTransfer.getData("text/plain") || "";
-            if (!driverName) return;
+            const driverId = draggedDriverId || event.dataTransfer.getData("text/plain") || "";
+            if (!driverId) return;
             // Reuse the existing server-authoritative assignment path.
-            dailyPlanAssignDriver(dateStr, slotType, slotCode, driverName);
+            dailyPlanAssignDriver(dateStr, slotType, slotCode, driverId);
         });
     });
 
     // Assigned driver chips in slots — draggable to move between slots.
     container.querySelectorAll("[data-assigned-driver]").forEach(chip => {
         chip.addEventListener("dragstart", (event) => {
-            draggedDriverName = chip.dataset.driverName || "";
+            draggedDriverId = chip.dataset.driverId || chip.dataset.driverName || "";
             event.dataTransfer.effectAllowed = "move";
-            event.dataTransfer.setData("text/plain", draggedDriverName);
+            event.dataTransfer.setData("text/plain", draggedDriverId);
             chip.classList.add("is-dragging");
         });
         chip.addEventListener("dragend", () => {
             chip.classList.remove("is-dragging");
-            draggedDriverName = null;
+            draggedDriverId = null;
         });
     });
 }
@@ -184,7 +185,7 @@ function buildDailyPlanTable(slots, { compact = false, editable = false, dateStr
                     const time = slot.start && slot.end ? `${slot.start}\u2013${slot.end}` : "\u2014";
                     const driverName = slot.driverName || "";
                     const driverId = slot.driverId || "";
-                    const shift = driverName ? getShiftForDriverDate(driverName, date) : null;
+                    const shift = driverId ? getShiftForDriverIdOnly(driverId, date) : null;
                     const bus = shift?.bus || "";
                     const rowClass = isBr ? "daily-plan-row daily-plan-row--standby" : "daily-plan-row";
                     if (!editable) {
@@ -205,22 +206,22 @@ function buildDailyPlanTable(slots, { compact = false, editable = false, dateStr
                                 : `<span class="dnd-slot-empty">${escapeHtml(t("dnd_drop_here") || "Drop driver here")}</span>`}
                             <select class="ops-edit-select dnd-fallback-select" ${changeAttr("dailyPlanAssignDriver", [date, slot.type || "morning", slot.code || ""], "args-value")} aria-label="${escapeHtml(t("daily_col_driver") || "Vozač")}">
                                 <option value="">—</option>
-                                ${driverOptions(driverName, driverId)}
+                                ${driverOptions(driverId)}
                             </select>
                         </td>
                         <td>
-                            <select class="ops-edit-select" ${driverName ? changeAttr("updateDriverBusInline", [driverName], "args-value") : "disabled"} aria-label="${escapeHtml(t("table_bus") || "Bus")}">
+                            <select class="ops-edit-select" ${driverId ? changeAttr("updateDriverBusInline", [driverId], "args-value") : "disabled"} aria-label="${escapeHtml(t("table_bus") || "Bus")}">
                                 ${busOptions(bus)}
                             </select>
                         </td>
                         <td class="daily-plan-time">${escapeHtml(time)}</td>
                         <td>
-                            ${driverName
+                            ${driverId
                                 ? `<div class="daily-plan-row-actions">
-                                    <button type="button" class="btn-secondary" ${actionAttr("openShiftCell", [driverName, date])}>${escapeHtml(t("ops_btn_edit") || "Izmeni")}</button>
-                                    <button type="button" class="btn-secondary daily-plan-clear-btn" ${actionAttr("clearDailyShift", [driverName, date])}>${escapeHtml(t("dispo_clear_shift") || "Clear shift")}</button>
+                                    <button type="button" class="btn-secondary" ${actionAttr("openShiftCell", [driverId, date])}>${escapeHtml(t("ops_btn_edit") || "Izmeni")}</button>
+                                    <button type="button" class="btn-secondary daily-plan-clear-btn" ${actionAttr("clearDailyShift", [driverId, date])}>${escapeHtml(t("dispo_clear_shift") || "Clear shift")}</button>
                                     ${canUndoShift(shift)
-                                        ? `<button type="button" class="btn-secondary daily-plan-undo-btn" ${actionAttr("undoDailyShift", [driverName, date])}><i data-lucide="undo-2"></i> ${escapeHtml(t("ops_btn_undo") || "Undo")}</button>`
+                                        ? `<button type="button" class="btn-secondary daily-plan-undo-btn" ${actionAttr("undoDailyShift", [driverId, date])}><i data-lucide="undo-2"></i> ${escapeHtml(t("ops_btn_undo") || "Undo")}</button>`
                                         : ""}
                                    </div>`
                                 : `<span class="daily-plan-pick-hint">${escapeHtml(t("ops_pick_driver") || "Izaberite vozača")}</span>`}
@@ -379,24 +380,29 @@ function refreshDailyPlanOnDateChange() {
     renderDailyPlanPanel(picker?.value);
 }
 
-function clearDailyShift(driverName, dateStr) {
+function clearDailyShift(driverId, dateStr) {
     if (isOperationalReadOnly()) {
         showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
         return;
     }
-    const name = String(driverName || "").trim();
+    const id = String(driverId || "").trim();
     const date = String(dateStr || "").trim();
-    if (!name || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
-    const shift = getShiftForDriverDate(name, date);
+    if (!id || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+    const driver = getDriverById(id);
+    if (!driver) {
+        showToast(t("js_no_drivers") || "Vozač nije pronađen.", "error");
+        return;
+    }
+    const shift = getShiftForDriverIdOnly(id, date);
     if (!shift || shift.type === "clear" || shift.type === "off") {
         showToast(t("dispo_clear_shift_empty") || "No shift to clear for this day.", "info");
         return;
     }
     const msg = (t("dispo_confirm_clear_shift") || "Remove the shift for {driver} on {date}?")
-        .replace("{driver}", name)
+        .replace("{driver}", driver.name || id)
         .replace("{date}", date);
     showConfirm(msg, async () => {
-        await removeShift(name, date);
+        await removeShift(id, date);
         renderDailyPlanFullPage();
         renderDailyPlanPanel(date);
         if (typeof window.renderDispatcherDashboard === "function") window.renderDispatcherDashboard();
@@ -411,15 +417,15 @@ function canUndoShift(shift) {
     return shift?.source === "shift" && Number(shift?.revision) >= 1;
 }
 
-async function undoDailyShift(driverName, dateStr) {
+async function undoDailyShift(driverId, dateStr) {
     if (isOperationalReadOnly()) {
         showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
         return;
     }
-    const name = String(driverName || "").trim();
+    const id = String(driverId || "").trim();
     const date = String(dateStr || "").trim();
-    if (!name || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
-    const driver = getVisibleDrivers().find(driver => driver.name === name);
+    if (!id || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+    const driver = getDriverById(id);
     if (!driver) return;
     const ok = await undoShift(driver, date);
     if (!ok) return;
@@ -431,9 +437,9 @@ async function undoDailyShift(driverName, dateStr) {
 
 /**
  * Assign selected driver to a daily-plan slot type for the given date.
- * changeAttr passes the select value as the last argument.
+ * changeAttr passes the select value (driverId) as the last argument.
  */
-async function dailyPlanAssignDriver(dateStr, shiftType, routeCode, driverName) {
+async function dailyPlanAssignDriver(dateStr, shiftType, routeCode, driverId) {
     const today = todayDateStr();
     if (dateStr !== today) {
         showToast(t("shift_future_monthly_only"), "error");
@@ -445,14 +451,12 @@ async function dailyPlanAssignDriver(dateStr, shiftType, routeCode, driverName) 
         String(slot.code || "") === String(routeCode || "")
         && String(slot.type || "morning") === String(type)
     );
-    const previousDriver = currentSlot?.driverName
-        ? getVisibleDrivers().find(driver => driver.name === currentSlot.driverName)
+    const previousDriver = currentSlot?.driverId
+        ? getDriverById(currentSlot.driverId)
         : null;
-    const nextDriver = driverName
-        ? getVisibleDrivers().find(driver => driver.name === driverName)
-        : null;
+    const nextDriver = driverId ? getDriverById(driverId) : null;
 
-    if (driverName && !nextDriver) return;
+    if (driverId && !nextDriver) return;
     if (previousDriver?.id === nextDriver?.id) return;
 
     if (previousDriver) {
@@ -467,7 +471,7 @@ async function dailyPlanAssignDriver(dateStr, shiftType, routeCode, driverName) 
         if (incident && typeof window.openCoverageResolver === "function") {
             window.openCoverageResolver(incident.id, preferredReplacementDriverId);
         } else if (typeof window.openOperationalIncident === "function") {
-            window.openOperationalIncident(previousDriver.name, preferredReplacementDriverId);
+            window.openOperationalIncident(previousDriverId, preferredReplacementDriverId);
         }
         renderDailyPlanFullPage();
         renderDailyPlanPanel(today);

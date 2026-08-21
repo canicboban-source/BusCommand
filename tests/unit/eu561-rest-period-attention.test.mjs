@@ -11,21 +11,24 @@ globalThis.window = {
         activeGroupFilter: "",
         groups: [{ id: "310" }],
         drivers: [
-            { name: "Driver Rest OK", groupId: "310", active: true },
-            { name: "Driver Rest Short", groupId: "310", active: true },
-            { name: "Driver Off Yesterday", groupId: "310", active: true },
-            { name: "Driver No Data", groupId: "310", active: true }
+            { id: "drv-rest-ok", name: "Driver Rest OK", groupId: "310", active: true },
+            { id: "drv-rest-short", name: "Driver Rest Short", groupId: "310", active: true },
+            { id: "drv-off-yesterday", name: "Driver Off Yesterday", groupId: "310", active: true },
+            { id: "drv-no-data", name: "Driver No Data", groupId: "310", active: true }
         ],
+        // Authoritative shape (P1-A): matched by driverId, never by name —
+        // driverName is included only as display data, same as the real
+        // monthly-plan-commit-produced shift documents.
         shifts: [
             // OK: 12h rest — ends 20:00 yesterday, starts 08:00 today (12h gap)
-            { driverName: "Driver Rest OK", date: "2026-08-16", type: "afternoon", start: "12:00", end: "20:00", revision: 0 },
-            { driverName: "Driver Rest OK", date: "2026-08-17", type: "morning", start: "08:00", end: "16:00", revision: 0 },
+            { driverId: "drv-rest-ok", driverName: "Driver Rest OK", date: "2026-08-16", type: "afternoon", start: "12:00", end: "20:00", revision: 0 },
+            { driverId: "drv-rest-ok", driverName: "Driver Rest OK", date: "2026-08-17", type: "morning", start: "08:00", end: "16:00", revision: 0 },
             // Violation: ends 23:00 yesterday, starts 05:00 today (6h gap)
-            { driverName: "Driver Rest Short", date: "2026-08-16", type: "night", start: "15:00", end: "23:00", revision: 0 },
-            { driverName: "Driver Rest Short", date: "2026-08-17", type: "morning", start: "05:00", end: "13:00", revision: 0 },
+            { driverId: "drv-rest-short", driverName: "Driver Rest Short", date: "2026-08-16", type: "night", start: "15:00", end: "23:00", revision: 0 },
+            { driverId: "drv-rest-short", driverName: "Driver Rest Short", date: "2026-08-17", type: "morning", start: "05:00", end: "13:00", revision: 0 },
             // Off yesterday, driving today — should not flag (off is not a driving type)
-            { driverName: "Driver Off Yesterday", date: "2026-08-16", type: "off", revision: 0 },
-            { driverName: "Driver Off Yesterday", date: "2026-08-17", type: "morning", start: "05:00", end: "13:00", revision: 0 }
+            { driverId: "drv-off-yesterday", driverName: "Driver Off Yesterday", date: "2026-08-16", type: "off", revision: 0 },
+            { driverId: "drv-off-yesterday", driverName: "Driver Off Yesterday", date: "2026-08-17", type: "morning", start: "05:00", end: "13:00", revision: 0 }
             // Driver No Data: intentionally has no shifts at all
         ]
     }

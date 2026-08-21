@@ -1,0 +1,98 @@
+{
+  "D0": "2026-08-20",
+  "D1": "2026-08-21",
+  "D2": "2026-08-22",
+  "rA0": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "shift": {
+        "driverId": "aaaaaaaa-0000-4000-8000-00000000000a",
+        "groupId": "310",
+        "date": "2026-08-20",
+        "type": "morning",
+        "name": "310.S01",
+        "bus": "radar-a",
+        "routeCode": "310.S01",
+        "start": "05:00",
+        "end": "13:00",
+        "driverName": "Marko Jovanović",
+        "assignedBy": "cJKYfiumM1QTI1QkoM0JLENjZf2k",
+        "assignedAt": null,
+        "confirmedByDriver": false,
+        "confirmedAt": null,
+        "shiftFingerprint": null,
+        "confirmationSourceShiftDate": null,
+        "confirmationBoundRevision": 1,
+        "revision": 1,
+        "priorSnapshot": {
+          "empty": true,
+          "revision": 0
+        },
+        "id": "aaaaaaaa-0000-4000-8000-00000000000a_2026-08-20"
+      }
+    }
+  },
+  "rA2": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "shift": {
+        "driverId": "aaaaaaaa-0000-4000-8000-00000000000a",
+        "groupId": "310",
+        "date": "2026-08-22",
+        "type": "morning",
+        "name": "310.S01",
+        "bus": "radar-a",
+        "routeCode": "310.S01",
+        "start": "05:00",
+        "end": "13:00",
+        "driverName": "Marko Jovanović",
+        "assignedBy": "cJKYfiumM1QTI1QkoM0JLENjZf2k",
+        "assignedAt": null,
+        "confirmedByDriver": false,
+        "confirmedAt": null,
+        "shiftFingerprint": null,
+        "confirmationSourceShiftDate": null,
+        "confirmationBoundRevision": 1,
+        "revision": 1,
+        "priorSnapshot": {
+          "empty": true,
+          "revision": 0
+        },
+        "id": "aaaaaaaa-0000-4000-8000-00000000000a_2026-08-22"
+      }
+    }
+  },
+  "rB1": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "shift": {
+        "driverId": "bbbbbbbb-0000-4000-8000-00000000000b",
+        "groupId": "310",
+        "date": "2026-08-21",
+        "type": "morning",
+        "name": "310.S01",
+        "bus": "radar-b",
+        "routeCode": "310.S01",
+        "start": "05:00",
+        "end": "13:00",
+        "driverName": "Marko Jovanović",
+        "assignedBy": "cJKYfiumM1QTI1QkoM0JLENjZf2k",
+        "assignedAt": null,
+        "confirmedByDriver": false,
+        "confirmedAt": null,
+        "shiftFingerprint": null,
+        "confirmationSourceShiftDate": null,
+        "confirmationBoundRevision": 1,
+        "revision": 1,
+        "priorSnapshot": {
+          "empty": true,
+          "revision": 0
+        },
+        "id": "bbbbbbbb-0000-4000-8000-00000000000b_2026-08-21"
+      }
+    }
+  }
+}

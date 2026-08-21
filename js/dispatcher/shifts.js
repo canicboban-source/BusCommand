@@ -1,7 +1,7 @@
 // BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
-import { getShiftForDriverDate, parseRouteCodeFromText, setShiftForDriverDate } from "../core/shift-plan.js";
-import { getVisibleDrivers, showToast, todayDateStr } from "../core/utils.js";
+import { getShiftForDriverIdOnly, parseRouteCodeFromText, setShiftForDriverIdOnly } from "../core/shift-plan.js";
+import { getDriverById, getVisibleDrivers, showToast, todayDateStr } from "../core/utils.js";
 import { getGroupById, renderGroupFilterBar } from "../data/groups.js";
 import { renderShiftsWeeklyGrid } from "./shift-grid.js";
 import { getWeekDates } from "./shift-utils.js";
@@ -22,6 +22,7 @@ import {
     getShiftCatalogForLine,
     inferOperationalShiftType
 } from "../core/line-shift-catalog.js";
+import { loadActiveServicePlanForLine } from "../core/service-plan.js";
 
 const pendingShiftAssignments = new Set();
 
@@ -75,9 +76,6 @@ function paintResolvedDutyHint(duty) {
     el.textContent = `${duty.code} · ${duty.type} · ${time}`;
 }
 
-function driverByName(driverName) {
-    return getVisibleDrivers().find(driver => driver.name === driverName) || null;
-}
 
 /**
  * Local preflight for bus conflicts / inactive / non-ready.
@@ -98,7 +96,7 @@ function preflightBusAssignment(driver, date, type, start, end, busValue) {
     if (bus.active === false) {
         return t("ops_bus_inactive") || "Bus is inactive.";
     }
-    const existing = getShiftForDriverDate(driver.name, date);
+    const existing = getShiftForDriverIdOnly(driver.id, date);
     const keepCurrent = String(existing?.bus || "").trim() === busNumber;
     if (!busIsAssignable(bus) && !keepCurrent) {
         return t("ops_bus_not_ready") || "Bus is not ready for assignment.";
@@ -152,7 +150,7 @@ function applyServerShiftConflict(driver, date, conflict) {
     const remote = conflict?.shift;
     if (!remote || typeof remote !== "object") return;
     if (remote.type && remote.type !== "clear") {
-        setShiftForDriverDate(driver.name, date, {
+        setShiftForDriverIdOnly(driver.id, driver.name, date, {
             type: remote.type,
             name: remote.name || "",
             start: remote.start || null,
@@ -165,7 +163,7 @@ function applyServerShiftConflict(driver, date, conflict) {
             syncSchedule: true
         });
     } else {
-        setShiftForDriverDate(driver.name, date, { type: "clear", syncSchedule: true });
+        setShiftForDriverIdOnly(driver.id, driver.name, date, { type: "clear", syncSchedule: true });
     }
 }
 
@@ -201,7 +199,11 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
             showToast(busBlock, "error", 6000);
             return false;
         }
-        const existing = getShiftForDriverDate(driver.name, date);
+        if (!driver.id) {
+            showToast(t("ops_attn_data_integrity") || "Driver without a valid ID — resolve this data issue before assigning a shift.", "error");
+            return false;
+        }
+        const existing = getShiftForDriverIdOnly(driver.id, date);
         // Mirror-only cells report revision 0; never invent a positive revision locally.
         const expectedRevision = existing?.source === "shift" && Number.isInteger(existing.revision)
             ? existing.revision
@@ -258,13 +260,13 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
                 const clearedRevision = Number.isInteger(result.revision)
                     ? result.revision
                     : (Number.isInteger(result.shift?.revision) ? result.shift.revision : expectedRevision + 1);
-                setShiftForDriverDate(driver.name, date, {
+                setShiftForDriverIdOnly(driver.id, driver.name, date, {
                     type: "clear",
                     syncSchedule: true,
                     revision: clearedRevision
                 });
             } else {
-                setShiftForDriverDate(driver.name, date, {
+                setShiftForDriverIdOnly(driver.id, driver.name, date, {
                     type,
                     name,
                     start,
@@ -276,7 +278,7 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
             return true;
         }
         if (bus != null) driver.bus = String(bus);
-        setShiftForDriverDate(driver.name, date, { type, name, start, end, bus: busValue || undefined, revision: expectedRevision + 1 });
+        setShiftForDriverIdOnly(driver.id, driver.name, date, { type, name, start, end, bus: busValue || undefined, revision: expectedRevision + 1 });
         saveState();
         return true;
     } finally {
@@ -294,7 +296,7 @@ async function undoShift(driver, date) {
     if (pendingShiftAssignments.has(key)) return false;
     pendingShiftAssignments.add(key);
     try {
-        const existing = getShiftForDriverDate(driver.name, date);
+        const existing = getShiftForDriverIdOnly(driver.id, date);
         const expectedRevision = existing?.source === "shift" && Number.isInteger(existing.revision)
             ? existing.revision
             : 0;
@@ -332,13 +334,13 @@ async function undoShift(driver, date) {
             const clearedRevision = Number.isInteger(result.revision)
                 ? result.revision
                 : (Number.isInteger(result.shift?.revision) ? result.shift.revision : expectedRevision + 1);
-            setShiftForDriverDate(driver.name, date, {
+            setShiftForDriverIdOnly(driver.id, driver.name, date, {
                 type: "clear",
                 syncSchedule: true,
                 revision: clearedRevision
             });
         } else if (result.shift) {
-            setShiftForDriverDate(driver.name, date, {
+            setShiftForDriverIdOnly(driver.id, driver.name, date, {
                 type: result.shift.type,
                 name: result.shift.name || "",
                 start: result.shift.start || null,
@@ -366,12 +368,12 @@ function renderDispatcherShifts() {
         driverSelect.replaceChildren();
         drivers.forEach(driver => {
             const option = document.createElement("option");
-            option.value = driver.name;
+            option.value = driver.id || driver.uid || "";
             const group = getGroupById(driver.groupId);
             option.textContent = group ? `${driver.name} [${group.name}]` : driver.name;
             driverSelect.appendChild(option);
         });
-        if (drivers.some(driver => driver.name === previous)) driverSelect.value = previous;
+        if (drivers.some(driver => (driver.id || driver.uid || "") === previous)) driverSelect.value = previous;
     }
     const dateInput = document.getElementById("shift-date-input");
     if (dateInput && !dateInput.value) dateInput.value = todayDateStr();
@@ -384,13 +386,13 @@ function renderDispatcherShifts() {
     if (nameInput && !nameInput.dataset.dutyHintBound) {
         nameInput.dataset.dutyHintBound = "1";
         nameInput.addEventListener("input", () => {
-            const drv = driverByName(driverSelect?.value || "");
+            const drv = getDriverById(driverSelect?.value || "");
             const lid = drv?.groupId || drv?.lineId || lineId;
             paintResolvedDutyHint(resolveDutyFromCaPlan(nameInput.value, lid));
         });
     }
     if (nameInput?.value) {
-        const drv = driverByName(driverSelect?.value || "");
+        const drv = getDriverById(driverSelect?.value || "");
         paintResolvedDutyHint(resolveDutyFromCaPlan(nameInput.value, drv?.groupId || drv?.lineId || lineId));
     }
 
@@ -405,20 +407,28 @@ function renderDispatcherShifts() {
     if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
-function openShiftCell(driverName, dateStr) {
-    const driver = driverByName(driverName);
+async function openShiftCell(driverId, dateStr) {
+    const driver = getDriverById(driverId);
     if (!driver) return;
     switchSection("dispatcher-shifts");
+    const lineId = driver.groupId || driver.lineId || window.state?.activeGroupHubId || null;
+    if (lineId) {
+        try {
+            await loadActiveServicePlanForLine(lineId);
+        } catch (e) {
+            console.warn("Active service plan could not be loaded", e);
+        }
+    }
     const driverSelect = document.getElementById("shift-driver-select");
     const dateInput = document.getElementById("shift-date-input");
-    if (driverSelect) driverSelect.value = driver.name;
+    if (driverSelect) driverSelect.value = driver.id || driver.uid || "";
     if (dateInput) dateInput.value = dateStr;
-    const shift = getShiftForDriverDate(driver.name, dateStr);
+    const shift = getShiftForDriverIdOnly(driver.id || driver.uid, dateStr);
     const nameInput = document.getElementById("shift-name-input");
     const code = shift?.routeCode || parseRouteCodeFromText(shift?.name) || shift?.name || "";
     if (nameInput) nameInput.value = code;
-    fillDutyDatalist(driver.groupId || driver.lineId);
-    paintResolvedDutyHint(resolveDutyFromCaPlan(code, driver.groupId || driver.lineId));
+    fillDutyDatalist(lineId);
+    paintResolvedDutyHint(resolveDutyFromCaPlan(code, lineId));
     window.setTimeout(() => {
         const form = document.querySelector(".shift-form-grid");
         form?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -435,7 +445,7 @@ function isCoveredWorkingShift(shift) {
 /** Today’s covered duty must go through incident → guided resolution, not silent clear/absence. */
 function requireIncidentForTodayCoveredChange(driver, date, nextType) {
     if (!driver || date !== todayDateStr()) return false;
-    const existing = getShiftForDriverDate(driver.name, date);
+    const existing = getShiftForDriverIdOnly(driver.id || driver.uid, date);
     if (!isCoveredWorkingShift(existing)) return false;
     const next = String(nextType || "").toLowerCase();
     if (!["clear", "off", "vacation", "sick"].includes(next)) return false;
@@ -445,16 +455,16 @@ function requireIncidentForTodayCoveredChange(driver, date, nextType) {
         "error"
     );
     if (typeof window.openOperationalIncident === "function") {
-        window.openOperationalIncident(driver.name);
+        window.openOperationalIncident(driver.id || driver.uid);
     }
     return true;
 }
 
 async function assignShift() {
-    const driverName = document.getElementById("shift-driver-select")?.value || "";
+    const driverId = document.getElementById("shift-driver-select")?.value || "";
     const date = document.getElementById("shift-date-input")?.value || "";
     const name = String(document.getElementById("shift-name-input")?.value || "").trim();
-    const driver = driverByName(driverName);
+    const driver = getDriverById(driverId);
     if (!driver || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !name || name.length > 120) {
         showToast(t("shift_err_required"), "error");
         return;
@@ -493,8 +503,8 @@ async function assignShift() {
     renderDispatcherShifts();
 }
 
-async function removeShift(driverName, dateStr) {
-    const driver = driverByName(driverName);
+async function removeShift(driverId, dateStr) {
+    const driver = getDriverById(driverId);
     if (!driver || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return;
     if (requireIncidentForTodayCoveredChange(driver, dateStr, "clear")) return;
     const saved = await persistShift(driver, dateStr, "clear");

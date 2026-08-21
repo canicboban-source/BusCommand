@@ -321,11 +321,90 @@ function getShiftForDriverDate(driverName, dateStr) {
     return null;
 }
 
+/**
+ * ID-first canonical shift lookup (P1-A). Matches ONLY on the authoritative
+ * driverId — never falls back to name matching, so two drivers sharing a
+ * displayed name can never be confused with each other. Returns null (a
+ * truthful "no data" result) rather than silently matching by name when
+ * driverId is missing.
+ */
+function getShiftForDriverIdOnly(driverId, dateStr) {
+    if (!driverId) return null;
+    ensureShiftsArray();
+    const direct = window.state.shifts.find(s => s.date === dateStr && s.driverId === driverId);
+    if (!direct) return null;
+    if (direct.type === "clear") {
+        return {
+            ...direct, type: "clear", name: "", bus: null, routeCode: null, start: null, end: null,
+            revision: Number.isInteger(direct.revision) ? direct.revision : 0, source: "shift", cleared: true
+        };
+    }
+    return { ...direct, revision: Number.isInteger(direct.revision) ? direct.revision : 0, source: "shift" };
+}
+
 function getCurrentShiftForDriver(driverName, yearMonthStr, dayNum) {
     const dateStr = `${yearMonthStr}-${String(dayNum).padStart(2, "0")}`;
     const shift = getShiftForDriverDate(driverName, dateStr);
     if (shift) return shift;
     return { type: "off", name: "Frei" };
+}
+
+/**
+ * ID-first shift setter (P1-B). Mutates only the shift document whose
+ * authoritative driverId matches; never falls back to name matching. The
+ * caller must supply both the canonical driverId and the display driverName
+ * so the document remains self-describing without a name lookup.
+ */
+function setShiftForDriverIdOnly(driverId, driverName, dateStr, { type, name, bus, routeCode, start, end, revision, syncSchedule = true }) {
+    ensureShiftsArray();
+    if (!driverId) return;
+
+    window.state.shifts = window.state.shifts.filter((s) => {
+        if (s.date !== dateStr) return true;
+        return s.driverId !== driverId;
+    });
+
+    if (type && type !== "clear") {
+        const label = name || SHIFT_TYPE_LABELS[type] || type;
+        window.state.shifts.push({
+            id: `shf-${driverId}-${dateStr}`,
+            driverId,
+            driverName,
+            date: dateStr,
+            type,
+            name: label,
+            bus: bus || parseBusFromText(label) || null,
+            routeCode: routeCode || parseRouteCodeFromText(label) || null,
+            start: start || null,
+            end: end || null,
+            revision: Number.isInteger(revision) ? revision : 0,
+            confirmedByDriver: false,
+            assignedBy: window.currentUser?.name || "Dispečer",
+            assignedAt: todayDateStr()
+        });
+    } else if (type === "clear" && Number.isInteger(revision) && revision > 0) {
+        window.state.shifts.push({
+            id: `shf-${driverId}-${dateStr}`,
+            driverId,
+            driverName,
+            date: dateStr,
+            type: "clear",
+            name: "",
+            bus: null,
+            routeCode: null,
+            start: null,
+            end: null,
+            revision,
+            confirmedByDriver: false,
+            assignedBy: window.currentUser?.name || "Dispečer",
+            assignedAt: todayDateStr(),
+            cleared: true
+        });
+    }
+
+    if (syncSchedule) {
+        syncShiftToMonthlyPlan(driverName, dateStr, type, name, start, end, bus, routeCode);
+    }
 }
 
 function setShiftForDriverDate(driverName, dateStr, { type, name, bus, routeCode, start, end, revision, syncSchedule = true }) {
@@ -478,6 +557,31 @@ function getDriverDutySummary(driverName, dateStr) {
     };
 }
 
+/**
+ * ID-first duty summary for radar/attention logic (P1-A). `driverName` is
+ * used only for display text, never for matching the shift record.
+ */
+function getDriverDutySummaryById(driverId, driverName, dateStr) {
+    const driver = (window.state.drivers || []).find(d => d.id === driverId || d.uid === driverId);
+    const shift = getShiftForDriverIdOnly(driverId, dateStr);
+    const bus = shift?.bus || driver?.bus || "—";
+    const routeCode = shift?.routeCode || parseRouteCodeFromText(shift?.name);
+    const route = findRouteForDriver(driver, routeCode);
+    const shiftLabel = (shift?.type && ABSENCE_SHIFT_TYPES.has(shift.type) && !shift.routeCode)
+        ? localizedShiftTypeLabel(shift.type)
+        : (shift?.routeCode || shift?.name || (shift?.type ? localizedShiftTypeLabel(shift.type) : "—"));
+
+    return {
+        driver,
+        shift,
+        bus,
+        route,
+        routeCode,
+        shiftLabel,
+        isBereitschaft: shift?.type === "bereitschaft" || routeCode === getActiveBereitschaftCode()
+    };
+}
+
 function getTomorrowDutySummary(driverName) {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -563,10 +667,13 @@ export {
     SHIFT_TYPE_LABELS,
     ensureShiftsArray,
     getShiftForDriverDate,
+    getShiftForDriverIdOnly,
     getCurrentShiftForDriver,
     setShiftForDriverDate,
+    setShiftForDriverIdOnly,
     syncShiftToMonthlyPlan,
     getDriverDutySummary,
+    getDriverDutySummaryById,
     getTomorrowDutySummary,
     detectDriverFromFilename,
     detectMonthFromFilename,

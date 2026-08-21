@@ -11,6 +11,7 @@ import { endCompanySupportSession, openCompanyOpsOverview } from "./admin/compan
 import { createDispatcherGroup, enterDispatcherActiveGroup, exitImpersonation, saveNewDispatcherPassword, switchToGroupSetup } from "./admin/dispatcher-setup.js";
 import { loadSuperadminModule } from "./admin/superadmin-loader.js";
 import { forgotDispatcherPassword, loginAsDispatcher, logout } from "./auth/login-dispatcher.js";
+import { switchLoginTab } from "./auth/login-ui.js";
 import { closeSuperAdminModal, confirmSuperAdminPin, handleLogoClick } from "./auth/superadmin.js";
 import { clickElementById, installActionDelegates, removeElementById } from "./core/action-delegate.js";
 import { exportDriversCSV, exportLostItemsCSV, exportReportsCSV } from "./core/export-csv.js";
@@ -538,6 +539,7 @@ const HANDLERS = {
     submitDispatcherMessage,
     ...superadminLazyHandlers,
     switchScheduleTab,
+    switchLoginTab,
     switchSection,
     switchToGroupSetup,
     t,

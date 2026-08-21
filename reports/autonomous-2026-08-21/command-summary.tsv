@@ -1,0 +1,9 @@
+ts	command	exit	log
+2026-08-21T10:24:09	lint-pass1	0	reports\autonomous-2026-08-21\logs\lint-pass1.log
+2026-08-21T10:24:35	unit-pass1	0	reports\autonomous-2026-08-21\logs\unit-pass1.log
+2026-08-21T10:24:38	secrets-pass1	0	reports\autonomous-2026-08-21\logs\secrets-pass1.log
+2026-08-21T10:27:56	ules-pass1	0	reports\autonomous-2026-08-21\logs\rules-pass1.log
+2026-08-21T10:42:03	unit-extended	0	reports\autonomous-2026-08-21\logs\unit-extended.log
+2026-08-21T10:42:26	connector-unit	0	reports\autonomous-2026-08-21\logs\connector-unit.log
+2026-08-21T10:42:26	build	0	reports\autonomous-2026-08-21\logs\build.log
+2026-08-21T10:42:47	e2e-connector-radar	1	reports\autonomous-2026-08-21\logs\e2e-connector-radar.log

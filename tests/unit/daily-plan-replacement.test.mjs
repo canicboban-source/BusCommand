@@ -29,7 +29,7 @@ test("daily driver replacement opens the guided incident flow before changing th
   assert.ok(start > -1 && end > start);
   assert.match(handler, /planBeforeChange\.slots\.find/);
   assert.match(handler, /window\.openCoverageResolver\(incident\.id, preferredReplacementDriverId\)/);
-  assert.match(handler, /window\.openOperationalIncident\(previousDriver\.name, preferredReplacementDriverId\)/);
+  assert.match(handler, /window\.openOperationalIncident\(previousDriverId, preferredReplacementDriverId\)/);
   assert.match(handler, /if \(previousDriver\)[\s\S]*return;[\s\S]*persistShift\(/);
   assert.doesNotMatch(handler, /persistShift\(previousDriver/);
   assert.doesNotMatch(handler, /resolveReport\(/);
@@ -69,7 +69,7 @@ test("drag-and-drop driver pool and slot drop targets are wired", async () => {
   assert.match(source, /dragover/);
   assert.match(source, /drop.*event/);
   // Reuses existing server-authoritative assignment path
-  assert.match(source, /dailyPlanAssignDriver\(dateStr, slotType, slotCode, driverName\)/);
+  assert.match(source, /dailyPlanAssignDriver\(dateStr, slotType, slotCode, driverId\)/);
   // Read-only guard
   assert.match(source, /isOperationalReadOnly\(\)/);
   // Assigned drivers are also draggable between slots

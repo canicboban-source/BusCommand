@@ -1,0 +1,34 @@
+{
+  "D0": "2026-08-21",
+  "D1": "2026-08-22",
+  "D2": "2026-08-23",
+  "rA0": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "driverId": "aaaaaaaa-0000-4000-8000-00000000000a",
+      "date": "2026-08-21",
+      "bus": "radar-a"
+    }
+  },
+  "rA2": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "driverId": "aaaaaaaa-0000-4000-8000-00000000000a",
+      "date": "2026-08-23",
+      "bus": "radar-a"
+    }
+  },
+  "rB1": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "driverId": "bbbbbbbb-0000-4000-8000-00000000000b",
+      "date": "2026-08-22",
+      "bus": "radar-b"
+    }
+  },
+  "driverA": "aaaaaaaa-0000-4000-8000-00000000000a",
+  "driverB": "bbbbbbbb-0000-4000-8000-00000000000b"
+}

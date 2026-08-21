@@ -1,0 +1,1706 @@
+diff --git a/js/core/firebase-service.js b/js/core/firebase-service.js
+index c7450c1..d67cbd3 100644
+--- a/js/core/firebase-service.js
++++ b/js/core/firebase-service.js
+@@ -7,7 +7,9 @@ import { t } from "../ui/i18n.js";
+ import {
+     EXPECTED_FIREBASE_PROJECT_ID,
+     readFirebaseWebConfig,
+-    validateFirebaseWebConfig
++    validateFirebaseWebConfig,
++    readFirebaseEmulatorConfig,
++    validateFirebaseEmulatorConfig
+ } from "./firebase-web-config.js";
+ import {
+     diffCollectionOps,
+@@ -23,13 +25,104 @@ import { checkSOSStatus } from "../maps/sos-siren.js";
+ 
+ let db = null;
+ 
++// QA/dev-only local emulator connector. The BUILD/RUNTIME flag
++// VITE_USE_FIREBASE_EMULATOR="1" is the mandatory primary gate — it must be
++// baked in at build time (never a URL param). A runtime-only global
++// (window.__BUSCOMMAND_USE_FIREBASE_EMULATOR__) may additionally be present
++// as a test signal, but per D-owner directive it is NEVER sufficient by
++// itself: if the build flag is absent, emulator mode never activates,
++// regardless of any runtime global. Every real production/staging
++// deployment ships without VITE_USE_FIREBASE_EMULATOR set, so this whole
++// branch is dead code there.
++function currentHostname() {
++    try {
++        return typeof window !== "undefined" ? window.location.hostname : "";
++    } catch {
++        return "";
++    }
++}
++
++function runtimeEmulatorSignalPresent() {
++    try {
++        return typeof window !== "undefined" && window.__BUSCOMMAND_USE_FIREBASE_EMULATOR__ === true;
++    } catch {
++        return false;
++    }
++}
++
++/**
++ * Strict, fail-closed emulator gate. Returns:
++ *  - { active: false } when the build flag is off (normal production path;
++ *    the caller must proceed with the existing production validation).
++ *  - { active: true, config } when every required condition is satisfied.
++ *  - throws when the build flag is on but any required condition fails —
++ *    the configuration is REJECTED before any Firebase call is made; there
++ *    is no silent fallback to defaults or to production.
++ */
++function resolveFirebaseEmulatorGate() {
++    const config = readFirebaseEmulatorConfig();
++    if (!config.enabled) {
++        return { active: false, config: null };
++    }
++    const validation = validateFirebaseEmulatorConfig(config, { hostname: currentHostname() });
++    if (!validation.valid) {
++        throw new Error(validation.error);
++    }
++    return { active: true, config };
++}
++
+ function initializeFirebaseClient() {
+     if (USE_LOCAL_STATE) return null;
+ 
++    // Resolve (and, if enabled, strictly validate) the emulator gate BEFORE
++    // touching any Firebase config or SDK call. An enabled-but-invalid
++    // configuration throws here and nothing further executes.
++    const emulatorGate = resolveFirebaseEmulatorGate();
++
++    if (typeof firebase === "undefined") throw new Error("Firebase browser SDK is unavailable.");
++
++    let justInitialized = false;
++
++    if (emulatorGate.active) {
++        // Emulator mode uses its OWN isolated, synthetic "demo-*" project
++        // configuration — it never reuses or validates against the
++        // production EXPECTED_FIREBASE_PROJECT_ID/authDomain/storageBucket.
++        const emu = emulatorGate.config;
++        if (firebase.apps.length) {
++            const activeProjectId = firebase.app().options.projectId;
++            if (activeProjectId !== emu.projectId) {
++                throw new Error(`Refusing to use Firebase project ${activeProjectId || "unknown"} in emulator mode.`);
++            }
++        } else {
++            firebase.initializeApp({
++                apiKey: "demo-emulator-key",
++                authDomain: `${emu.projectId}.firebaseapp.com`,
++                projectId: emu.projectId,
++                storageBucket: `${emu.projectId}.appspot.com`,
++                messagingSenderId: "0",
++                appId: `1:0:web:0`
++            });
++            justInitialized = true;
++        }
++        db = firebase.firestore();
++        // Emulator connection MUST happen before the first real Auth/Firestore
++        // operation. Nothing above this point issues a network call; nothing
++        // below runs until both useEmulator() calls have completed.
++        if (justInitialized) {
++            db.useEmulator(emu.firestoreHost, emu.firestorePort);
++            firebase.auth().useEmulator(`http://${emu.authHost}:${emu.authPort}`);
++        }
++        return db;
++    }
++
++    // Normal production/staging path — unchanged from before. The runtime-only
++    // window signal (if present) is intentionally ignored here: it is a test
++    // marker, never an activation switch, per the required guard semantics.
++    void runtimeEmulatorSignalPresent();
++
+     const firebaseConfig = readFirebaseWebConfig();
+     const validation = validateFirebaseWebConfig(firebaseConfig);
+     if (!validation.valid) throw new Error(validation.error);
+-    if (typeof firebase === "undefined") throw new Error("Firebase browser SDK is unavailable.");
+ 
+     if (firebase.apps.length) {
+         const activeProjectId = firebase.app().options.projectId;
+diff --git a/js/core/firebase-web-config.js b/js/core/firebase-web-config.js
+index 6b9ddf6..6476df8 100644
+--- a/js/core/firebase-web-config.js
++++ b/js/core/firebase-web-config.js
+@@ -38,4 +38,81 @@ function validateFirebaseWebConfig(config) {
+     return { valid: true, error: null };
+ }
+ 
+-export { readFirebaseWebConfig, validateFirebaseWebConfig };
++const LOCAL_HOSTS = Object.freeze(["localhost", "127.0.0.1"]);
++
++/**
++ * QA/dev-only local emulator connector configuration. This is a SEPARATE,
++ * strictly-validated path from production `readFirebaseWebConfig` above and
++ * never substitutes for it in a real deployment.
++ *
++ * All of the following are REQUIRED (conjunction, not best-effort):
++ *  - VITE_USE_FIREBASE_EMULATOR === "1" (explicit build/runtime opt-in)
++ *  - page hostname is exactly "localhost" or "127.0.0.1"
++ *  - Firestore/Auth emulator hosts are exactly "localhost" or "127.0.0.1"
++ *  - project id starts with "demo-" (never the real project id)
++ *
++ * A runtime-only global (window.__BUSCOMMAND_USE_FIREBASE_EMULATOR__) may be
++ * present as an ADDITIONAL signal but is never sufficient by itself.
++ */
++// Only fills a default when the variable is genuinely ABSENT/empty. If a
++// value was actually supplied, it is passed through as-is (even if invalid)
++// so validateFirebaseEmulatorConfig can explicitly reject it rather than a
++// silent numeric coercion (e.g. Number("bad-port") || fallback) masking a
++// misconfiguration.
++function portOrDefault(value, fallback) {
++    if (value === undefined || value === null || String(value).trim() === "") return fallback;
++    return Number(value);
++}
++
++function readFirebaseEmulatorConfig(env = import.meta.env || {}) {
++    return {
++        enabled: String(env.VITE_USE_FIREBASE_EMULATOR || "") === "1",
++        projectId: typeof env.VITE_FIREBASE_EMULATOR_PROJECT_ID === "string"
++            ? env.VITE_FIREBASE_EMULATOR_PROJECT_ID.trim() : "",
++        firestoreHost: typeof env.VITE_FIREBASE_EMULATOR_FIRESTORE_HOST === "string" && env.VITE_FIREBASE_EMULATOR_FIRESTORE_HOST.trim()
++            ? env.VITE_FIREBASE_EMULATOR_FIRESTORE_HOST.trim() : "127.0.0.1",
++        firestorePort: portOrDefault(env.VITE_FIREBASE_EMULATOR_FIRESTORE_PORT, 8080),
++        authHost: typeof env.VITE_FIREBASE_EMULATOR_AUTH_HOST === "string" && env.VITE_FIREBASE_EMULATOR_AUTH_HOST.trim()
++            ? env.VITE_FIREBASE_EMULATOR_AUTH_HOST.trim() : "127.0.0.1",
++        authPort: portOrDefault(env.VITE_FIREBASE_EMULATOR_AUTH_PORT, 9099)
++    };
++}
++
++/**
++ * Validates the emulator connector configuration as a strict conjunction.
++ * Returns { valid:false } for ANY missing/invalid piece — callers must
++ * reject/throw, never silently fall back to a default that could be unsafe
++ * (e.g. never assume "localhost" if an invalid host string was supplied).
++ */
++function validateFirebaseEmulatorConfig(config, { hostname } = {}) {
++    if (!config || config.enabled !== true) {
++        return { valid: false, error: "Firebase emulator mode is not enabled (VITE_USE_FIREBASE_EMULATOR!==1)." };
++    }
++    if (!LOCAL_HOSTS.includes(String(hostname || ""))) {
++        return { valid: false, error: `Firebase emulator mode refused: page hostname "${hostname}" is not localhost/127.0.0.1.` };
++    }
++    if (!LOCAL_HOSTS.includes(String(config.firestoreHost || ""))) {
++        return { valid: false, error: `Firebase emulator mode refused: Firestore host "${config.firestoreHost}" is not localhost/127.0.0.1.` };
++    }
++    if (!LOCAL_HOSTS.includes(String(config.authHost || ""))) {
++        return { valid: false, error: `Firebase emulator mode refused: Auth host "${config.authHost}" is not localhost/127.0.0.1.` };
++    }
++    if (!Number.isInteger(config.firestorePort) || config.firestorePort <= 0 || config.firestorePort > 65535) {
++        return { valid: false, error: `Firebase emulator mode refused: invalid Firestore port "${config.firestorePort}".` };
++    }
++    if (!Number.isInteger(config.authPort) || config.authPort <= 0 || config.authPort > 65535) {
++        return { valid: false, error: `Firebase emulator mode refused: invalid Auth port "${config.authPort}".` };
++    }
++    if (!/^demo-[a-z0-9-]+$/.test(String(config.projectId || ""))) {
++        return { valid: false, error: `Firebase emulator mode refused: project id "${config.projectId}" must start with "demo-".` };
++    }
++    return { valid: true, error: null };
++}
++
++export {
++    readFirebaseWebConfig,
++    validateFirebaseWebConfig,
++    readFirebaseEmulatorConfig,
++    validateFirebaseEmulatorConfig,
++    LOCAL_HOSTS
++};
+diff --git a/js/core/shift-plan.js b/js/core/shift-plan.js
+index a3eaeb4..b00f828 100644
+--- a/js/core/shift-plan.js
++++ b/js/core/shift-plan.js
+@@ -321,6 +321,27 @@ function getShiftForDriverDate(driverName, dateStr) {
+     return null;
+ }
+ 
++/**
++ * ID-first canonical shift lookup (P1-A). Matches ONLY on the authoritative
++ * driverId — never falls back to name matching, so two drivers sharing a
++ * displayed name can never be confused with each other. Returns null (a
++ * truthful "no data" result) rather than silently matching by name when
++ * driverId is missing.
++ */
++function getShiftForDriverIdOnly(driverId, dateStr) {
++    if (!driverId) return null;
++    ensureShiftsArray();
++    const direct = window.state.shifts.find(s => s.date === dateStr && s.driverId === driverId);
++    if (!direct) return null;
++    if (direct.type === "clear") {
++        return {
++            ...direct, type: "clear", name: "", bus: null, routeCode: null, start: null, end: null,
++            revision: Number.isInteger(direct.revision) ? direct.revision : 0, source: "shift", cleared: true
++        };
++    }
++    return { ...direct, revision: Number.isInteger(direct.revision) ? direct.revision : 0, source: "shift" };
++}
++
+ function getCurrentShiftForDriver(driverName, yearMonthStr, dayNum) {
+     const dateStr = `${yearMonthStr}-${String(dayNum).padStart(2, "0")}`;
+     const shift = getShiftForDriverDate(driverName, dateStr);
+@@ -328,6 +349,64 @@ function getCurrentShiftForDriver(driverName, yearMonthStr, dayNum) {
+     return { type: "off", name: "Frei" };
+ }
+ 
++/**
++ * ID-first shift setter (P1-B). Mutates only the shift document whose
++ * authoritative driverId matches; never falls back to name matching. The
++ * caller must supply both the canonical driverId and the display driverName
++ * so the document remains self-describing without a name lookup.
++ */
++function setShiftForDriverIdOnly(driverId, driverName, dateStr, { type, name, bus, routeCode, start, end, revision, syncSchedule = true }) {
++    ensureShiftsArray();
++    if (!driverId) return;
++
++    window.state.shifts = window.state.shifts.filter((s) => {
++        if (s.date !== dateStr) return true;
++        return s.driverId !== driverId;
++    });
++
++    if (type && type !== "clear") {
++        const label = name || SHIFT_TYPE_LABELS[type] || type;
++        window.state.shifts.push({
++            id: `shf-${driverId}-${dateStr}`,
++            driverId,
++            driverName,
++            date: dateStr,
++            type,
++            name: label,
++            bus: bus || parseBusFromText(label) || null,
++            routeCode: routeCode || parseRouteCodeFromText(label) || null,
++            start: start || null,
++            end: end || null,
++            revision: Number.isInteger(revision) ? revision : 0,
++            confirmedByDriver: false,
++            assignedBy: window.currentUser?.name || "Dispecer",
++            assignedAt: todayDateStr()
++        });
++    } else if (type === "clear" && Number.isInteger(revision) && revision > 0) {
++        window.state.shifts.push({
++            id: `shf-${driverId}-${dateStr}`,
++            driverId,
++            driverName,
++            date: dateStr,
++            type: "clear",
++            name: "",
++            bus: null,
++            routeCode: null,
++            start: null,
++            end: null,
++            revision,
++            confirmedByDriver: false,
++            assignedBy: window.currentUser?.name || "Dispecer",
++            assignedAt: todayDateStr(),
++            cleared: true
++        });
++    }
++
++    if (syncSchedule) {
++        syncShiftToMonthlyPlan(driverName, dateStr, type, name, start, end, bus, routeCode);
++    }
++}
++
+ function setShiftForDriverDate(driverName, dateStr, { type, name, bus, routeCode, start, end, revision, syncSchedule = true }) {
+     ensureShiftsArray();
+ 
+@@ -478,6 +557,31 @@ function getDriverDutySummary(driverName, dateStr) {
+     };
+ }
+ 
++/**
++ * ID-first duty summary for radar/attention logic (P1-A). `driverName` is
++ * used only for display text, never for matching the shift record.
++ */
++function getDriverDutySummaryById(driverId, driverName, dateStr) {
++    const driver = (window.state.drivers || []).find(d => d.id === driverId || d.uid === driverId);
++    const shift = getShiftForDriverIdOnly(driverId, dateStr);
++    const bus = shift?.bus || driver?.bus || "—";
++    const routeCode = shift?.routeCode || parseRouteCodeFromText(shift?.name);
++    const route = findRouteForDriver(driver, routeCode);
++    const shiftLabel = (shift?.type && ABSENCE_SHIFT_TYPES.has(shift.type) && !shift.routeCode)
++        ? localizedShiftTypeLabel(shift.type)
++        : (shift?.routeCode || shift?.name || (shift?.type ? localizedShiftTypeLabel(shift.type) : "—"));
++
++    return {
++        driver,
++        shift,
++        bus,
++        route,
++        routeCode,
++        shiftLabel,
++        isBereitschaft: shift?.type === "bereitschaft" || routeCode === getActiveBereitschaftCode()
++    };
++}
++
+ function getTomorrowDutySummary(driverName) {
+     const tomorrow = new Date();
+     tomorrow.setDate(tomorrow.getDate() + 1);
+@@ -563,10 +667,13 @@ export {
+     SHIFT_TYPE_LABELS,
+     ensureShiftsArray,
+     getShiftForDriverDate,
++    getShiftForDriverIdOnly,
+     getCurrentShiftForDriver,
+     setShiftForDriverDate,
++    setShiftForDriverIdOnly,
+     syncShiftToMonthlyPlan,
+     getDriverDutySummary,
++    getDriverDutySummaryById,
+     getTomorrowDutySummary,
+     detectDriverFromFilename,
+     detectMonthFromFilename,
+diff --git a/js/core/utils.js b/js/core/utils.js
+index 001f86e..facc07b 100644
+--- a/js/core/utils.js
++++ b/js/core/utils.js
+@@ -2,6 +2,7 @@
+ import { t } from "../ui/i18n.js";
+ import { driverBelongsToLine } from "../data/group-membership.js";
+ import { isMobileDevice, isMobileUserAgent } from "./mobile-device.js";
++import { timezoneForCountry } from "../admin/company-admin-settings-model.js";
+ 
+ // -- UTILITY: escapeHtml ----------------------------------
+ function escapeHtml(str) {
+@@ -24,6 +25,13 @@ function refreshIcons() {
+ 
+ // -- DATA ISOLATION HELPERS -------------------------------
+ // Vraca vozace vidljive trenutnom korisniku po ulozi
++function getDriverById(driverId) {
++    if (!driverId) return null;
++    return (window.state.drivers || []).find(d =>
++        d.id === driverId || d.uid === driverId || d.driverId === driverId
++    ) || null;
++}
++
+ function getVisibleDrivers() {
+     const all = window.state.drivers || [];
+     if (!window.currentUser) return all;
+@@ -140,6 +148,56 @@ function todayDateStr() {
+     return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+ }
+ 
++/**
++ * Authoritative operational timezone for date/radar math (P1-A). Never the
++ * browser's local timezone. Reuses the SAME source already authoritative
++ * for the confirmation scheduler and daily plan: the tenant's IANA zone,
++ * derived from the company profile's country
++ * (see js/admin/company-admin-settings-model.js timezoneForCountry — no
++ * new config field is introduced here).
++ */
++function operationalTimezone() {
++    const explicit = window.state?.profile?.timezone;
++    if (explicit && typeof explicit === "string") return explicit;
++    const country = window.state?.profile?.country;
++    const tz = country ? timezoneForCountry(country) : "";
++    return tz || "UTC";
++}
++
++/**
++ * Today's calendar date (YYYY-MM-DD) in the authoritative operational
++ * timezone, using Intl (correct across DST/month/year boundaries) rather
++ * than the browser's local Date getters.
++ */
++function operationalTodayDateStr(timezone = operationalTimezone()) {
++    try {
++        return new Intl.DateTimeFormat("en-CA", {
++            timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit"
++        }).format(new Date());
++    } catch {
++        return todayDateStr();
++    }
++}
++
++/**
++ * Adds/subtracts whole CALENDAR days (not 24h periods) to a YYYY-MM-DD
++ * string using UTC-anchored date math, so DST transitions in the
++ * operational timezone never shift the resulting calendar date by a day.
++ */
++function addCalendarDays(dateStr, days) {
++    const parts = String(dateStr || "").split("-").map(Number);
++    if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n))) return null;
++    const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
++    d.setUTCDate(d.getUTCDate() + days);
++    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
++}
++
++/** Operational date N calendar days from "today" in the tenant's timezone. */
++function operationalDateStr(offsetDays = 0) {
++    const base = operationalTodayDateStr();
++    return offsetDays ? addCalendarDays(base, offsetDays) : base;
++}
++
+ // Vraca plan rada na osnovu ID-ja (kljuca)
+ function getScheduleByKey(key) {
+     if (!window.state || !window.state.schedules) return null;
+@@ -151,11 +209,16 @@ export {
+     isMobileDevice,
+     escapeHtml,
+     refreshIcons,
++    getDriverById,
+     getVisibleDrivers,
+     getVisibleGroups,
+     showToast,
+     toastApiError,
+     formatDateTime,
+     todayDateStr,
++    operationalTimezone,
++    operationalTodayDateStr,
++    operationalDateStr,
++    addCalendarDays,
+     getScheduleByKey
+ };
+diff --git a/js/dispatcher/daily-plan.js b/js/dispatcher/daily-plan.js
+index eae918d..4526e18 100644
+--- a/js/dispatcher/daily-plan.js
++++ b/js/dispatcher/daily-plan.js
+@@ -1,6 +1,6 @@
+ // BusCommand — dnevni plan (poz. 1 = x2 Bereitschaft) — editable slots
+-import { getDailyPlanForDate, getActiveBereitschaftCode, getShiftForDriverDate } from "../core/shift-plan.js";
+-import { todayDateStr, escapeHtml, getVisibleDrivers, showToast } from "../core/utils.js";
++import { getDailyPlanForDate, getActiveBereitschaftCode, getShiftForDriverIdOnly } from "../core/shift-plan.js";
++import { todayDateStr, escapeHtml, getDriverById, getVisibleDrivers, showToast } from "../core/utils.js";
+ import { getGroupById } from "../data/groups.js";
+ import { t } from "../ui/i18n.js";
+ import { actionAttr, changeAttr } from "../core/action-delegate.js";
+@@ -13,7 +13,7 @@ import { paintPlanHealthBanner } from "./plan-health-banner.js";
+ import { collectAllAttentionItems } from "./ops-attention.js";
+ 
+ /** DnD state — tracks the driver being dragged between pool and slots. */
+-let draggedDriverName = null;
++let draggedDriverId = null;
+ 
+ function getActiveHubGroupId() {
+     return window.state.activeGroupHubId || null;
+@@ -52,11 +52,11 @@ function currentPlanDate() {
+     return todayDateStr();
+ }
+ 
+-function driverOptions(selectedName, selectedId = "") {
++function driverOptions(selectedId = "") {
+     return getVisibleDrivers().map(driver => {
+-        const selected = (selectedId && (driver.id === selectedId || driver.uid === selectedId))
+-            || (selectedName && driver.name === selectedName);
+-        return `<option value="${escapeHtml(driver.name)}" ${selected ? "selected" : ""}>${escapeHtml(driver.name)}</option>`;
++        const value = driver.id || driver.uid || "";
++        const selected = selectedId && (driver.id === selectedId || driver.uid === selectedId);
++        return `<option value="${escapeHtml(value)}" ${selected ? "selected" : ""}>${escapeHtml(driver.name)}</option>`;
+     }).join("");
+ }
+ 
+@@ -88,9 +88,10 @@ function buildDriverPoolHtml(slots, _dateStr) {
+     if (!available.length) return "";
+     const chips = available.map(driver => {
+         const initials = String(driver.name || "").split(/\s+/).map(p => p[0]).join("").slice(0, 2).toUpperCase();
++        const driverId = driver.id || driver.uid || "";
+         return `<span class="dnd-driver-chip" draggable="true"
+             data-driver-name="${escapeHtml(driver.name)}"
+-            data-driver-id="${escapeHtml(driver.id || driver.uid || "")}"
++            data-driver-id="${escapeHtml(driverId)}"
+             title="${escapeHtml(driver.name)}">${escapeHtml(initials)} ${escapeHtml(driver.name)}</span>`;
+     }).join("");
+     return `<div class="dnd-driver-pool" role="region" aria-label="${escapeHtml(t("dnd_pool_label") || "Available drivers")}">
+@@ -103,12 +104,12 @@ function buildDriverPoolHtml(slots, _dateStr) {
+ function bindDragAndDrop(container, _slots, dateStr) {
+     if (isOperationalReadOnly() || !container) return;
+ 
+-    // Pool chips — dragstart sets the driver payload.
++    // Pool chips — dragstart sets the driver payload (authoritative id, not name).
+     container.querySelectorAll(".dnd-driver-chip").forEach(chip => {
+         chip.addEventListener("dragstart", (event) => {
+-            draggedDriverName = chip.dataset.driverName || "";
++            draggedDriverId = chip.dataset.driverId || "";
+             event.dataTransfer.effectAllowed = "move";
+-            event.dataTransfer.setData("text/plain", draggedDriverName);
++            event.dataTransfer.setData("text/plain", draggedDriverId);
+             chip.classList.add("is-dragging");
+         });
+         chip.addEventListener("dragend", (event) => {
+@@ -117,14 +118,14 @@ function bindDragAndDrop(container, _slots, dateStr) {
+                 chip.classList.add("dnd-drop-failed");
+                 setTimeout(() => chip.classList.remove("dnd-drop-failed"), 600);
+             }
+-            draggedDriverName = null;
++            draggedDriverId = null;
+         });
+     });
+ 
+     // Slot drop targets — the driver <td> cell.
+     container.querySelectorAll("[data-slot-drop]").forEach(cell => {
+         cell.addEventListener("dragover", (event) => {
+-            if (!draggedDriverName) return;
++            if (!draggedDriverId) return;
+             event.preventDefault();
+             event.dataTransfer.dropEffect = "move";
+             cell.classList.add("is-drop-target");
+@@ -137,24 +138,24 @@ function bindDragAndDrop(container, _slots, dateStr) {
+             cell.classList.remove("is-drop-target");
+             const slotType = cell.dataset.slotType || "morning";
+             const slotCode = cell.dataset.slotCode || "";
+-            const driverName = draggedDriverName || event.dataTransfer.getData("text/plain") || "";
+-            if (!driverName) return;
++            const driverId = draggedDriverId || event.dataTransfer.getData("text/plain") || "";
++            if (!driverId) return;
+             // Reuse the existing server-authoritative assignment path.
+-            dailyPlanAssignDriver(dateStr, slotType, slotCode, driverName);
++            dailyPlanAssignDriver(dateStr, slotType, slotCode, driverId);
+         });
+     });
+ 
+     // Assigned driver chips in slots — draggable to move between slots.
+     container.querySelectorAll("[data-assigned-driver]").forEach(chip => {
+         chip.addEventListener("dragstart", (event) => {
+-            draggedDriverName = chip.dataset.driverName || "";
++            draggedDriverId = chip.dataset.driverId || chip.dataset.driverName || "";
+             event.dataTransfer.effectAllowed = "move";
+-            event.dataTransfer.setData("text/plain", draggedDriverName);
++            event.dataTransfer.setData("text/plain", draggedDriverId);
+             chip.classList.add("is-dragging");
+         });
+         chip.addEventListener("dragend", () => {
+             chip.classList.remove("is-dragging");
+-            draggedDriverName = null;
++            draggedDriverId = null;
+         });
+     });
+ }
+@@ -184,7 +185,7 @@ function buildDailyPlanTable(slots, { compact = false, editable = false, dateStr
+                     const time = slot.start && slot.end ? `${slot.start}\u2013${slot.end}` : "\u2014";
+                     const driverName = slot.driverName || "";
+                     const driverId = slot.driverId || "";
+-                    const shift = driverName ? getShiftForDriverDate(driverName, date) : null;
++                    const shift = driverId ? getShiftForDriverIdOnly(driverId, date) : null;
+                     const bus = shift?.bus || "";
+                     const rowClass = isBr ? "daily-plan-row daily-plan-row--standby" : "daily-plan-row";
+                     if (!editable) {
+@@ -205,22 +206,22 @@ function buildDailyPlanTable(slots, { compact = false, editable = false, dateStr
+                                 : `<span class="dnd-slot-empty">${escapeHtml(t("dnd_drop_here") || "Drop driver here")}</span>`}
+                             <select class="ops-edit-select dnd-fallback-select" ${changeAttr("dailyPlanAssignDriver", [date, slot.type || "morning", slot.code || ""], "args-value")} aria-label="${escapeHtml(t("daily_col_driver") || "Vozac")}">
+                                 <option value="">—</option>
+-                                ${driverOptions(driverName, driverId)}
++                                ${driverOptions(driverId)}
+                             </select>
+                         </td>
+                         <td>
+-                            <select class="ops-edit-select" ${driverName ? changeAttr("updateDriverBusInline", [driverName], "args-value") : "disabled"} aria-label="${escapeHtml(t("table_bus") || "Bus")}">
++                            <select class="ops-edit-select" ${driverId ? changeAttr("updateDriverBusInline", [driverId], "args-value") : "disabled"} aria-label="${escapeHtml(t("table_bus") || "Bus")}">
+                                 ${busOptions(bus)}
+                             </select>
+                         </td>
+                         <td class="daily-plan-time">${escapeHtml(time)}</td>
+                         <td>
+-                            ${driverName
++                            ${driverId
+                                 ? `<div class="daily-plan-row-actions">
+-                                    <button type="button" class="btn-secondary" ${actionAttr("openShiftCell", [driverName, date])}>${escapeHtml(t("ops_btn_edit") || "Izmeni")}</button>
+-                                    <button type="button" class="btn-secondary daily-plan-clear-btn" ${actionAttr("clearDailyShift", [driverName, date])}>${escapeHtml(t("dispo_clear_shift") || "Clear shift")}</button>
++                                    <button type="button" class="btn-secondary" ${actionAttr("openShiftCell", [driverId, date])}>${escapeHtml(t("ops_btn_edit") || "Izmeni")}</button>
++                                    <button type="button" class="btn-secondary daily-plan-clear-btn" ${actionAttr("clearDailyShift", [driverId, date])}>${escapeHtml(t("dispo_clear_shift") || "Clear shift")}</button>
+                                     ${canUndoShift(shift)
+-                                        ? `<button type="button" class="btn-secondary daily-plan-undo-btn" ${actionAttr("undoDailyShift", [driverName, date])}><i data-lucide="undo-2"></i> ${escapeHtml(t("ops_btn_undo") || "Undo")}</button>`
++                                        ? `<button type="button" class="btn-secondary daily-plan-undo-btn" ${actionAttr("undoDailyShift", [driverId, date])}><i data-lucide="undo-2"></i> ${escapeHtml(t("ops_btn_undo") || "Undo")}</button>`
+                                         : ""}
+                                    </div>`
+                                 : `<span class="daily-plan-pick-hint">${escapeHtml(t("ops_pick_driver") || "Izaberite vozaca")}</span>`}
+@@ -379,24 +380,29 @@ function refreshDailyPlanOnDateChange() {
+     renderDailyPlanPanel(picker?.value);
+ }
+ 
+-function clearDailyShift(driverName, dateStr) {
++function clearDailyShift(driverId, dateStr) {
+     if (isOperationalReadOnly()) {
+         showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+         return;
+     }
+-    const name = String(driverName || "").trim();
++    const id = String(driverId || "").trim();
+     const date = String(dateStr || "").trim();
+-    if (!name || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+-    const shift = getShiftForDriverDate(name, date);
++    if (!id || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
++    const driver = getDriverById(id);
++    if (!driver) {
++        showToast(t("js_no_drivers") || "Vozac nije pronaden.", "error");
++        return;
++    }
++    const shift = getShiftForDriverIdOnly(id, date);
+     if (!shift || shift.type === "clear" || shift.type === "off") {
+         showToast(t("dispo_clear_shift_empty") || "No shift to clear for this day.", "info");
+         return;
+     }
+     const msg = (t("dispo_confirm_clear_shift") || "Remove the shift for {driver} on {date}?")
+-        .replace("{driver}", name)
++        .replace("{driver}", driver.name || id)
+         .replace("{date}", date);
+     showConfirm(msg, async () => {
+-        await removeShift(name, date);
++        await removeShift(id, date);
+         renderDailyPlanFullPage();
+         renderDailyPlanPanel(date);
+         if (typeof window.renderDispatcherDashboard === "function") window.renderDispatcherDashboard();
+@@ -411,15 +417,15 @@ function canUndoShift(shift) {
+     return shift?.source === "shift" && Number(shift?.revision) >= 1;
+ }
+ 
+-async function undoDailyShift(driverName, dateStr) {
++async function undoDailyShift(driverId, dateStr) {
+     if (isOperationalReadOnly()) {
+         showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
+         return;
+     }
+-    const name = String(driverName || "").trim();
++    const id = String(driverId || "").trim();
+     const date = String(dateStr || "").trim();
+-    if (!name || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+-    const driver = getVisibleDrivers().find(driver => driver.name === name);
++    if (!id || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
++    const driver = getDriverById(id);
+     if (!driver) return;
+     const ok = await undoShift(driver, date);
+     if (!ok) return;
+@@ -431,9 +437,9 @@ async function undoDailyShift(driverName, dateStr) {
+ 
+ /**
+  * Assign selected driver to a daily-plan slot type for the given date.
+- * changeAttr passes the select value as the last argument.
++ * changeAttr passes the select value (driverId) as the last argument.
+  */
+-async function dailyPlanAssignDriver(dateStr, shiftType, routeCode, driverName) {
++async function dailyPlanAssignDriver(dateStr, shiftType, routeCode, driverId) {
+     const today = todayDateStr();
+     if (dateStr !== today) {
+         showToast(t("shift_future_monthly_only"), "error");
+@@ -445,14 +451,12 @@ async function dailyPlanAssignDriver(dateStr, shiftType, routeCode, driverName)
+         String(slot.code || "") === String(routeCode || "")
+         && String(slot.type || "morning") === String(type)
+     );
+-    const previousDriver = currentSlot?.driverName
+-        ? getVisibleDrivers().find(driver => driver.name === currentSlot.driverName)
+-        : null;
+-    const nextDriver = driverName
+-        ? getVisibleDrivers().find(driver => driver.name === driverName)
++    const previousDriver = currentSlot?.driverId
++        ? getDriverById(currentSlot.driverId)
+         : null;
++    const nextDriver = driverId ? getDriverById(driverId) : null;
+ 
+-    if (driverName && !nextDriver) return;
++    if (driverId && !nextDriver) return;
+     if (previousDriver?.id === nextDriver?.id) return;
+ 
+     if (previousDriver) {
+@@ -467,7 +471,7 @@ async function dailyPlanAssignDriver(dateStr, shiftType, routeCode, driverName)
+         if (incident && typeof window.openCoverageResolver === "function") {
+             window.openCoverageResolver(incident.id, preferredReplacementDriverId);
+         } else if (typeof window.openOperationalIncident === "function") {
+-            window.openOperationalIncident(previousDriver.name, preferredReplacementDriverId);
++            window.openOperationalIncident(previousDriverId, preferredReplacementDriverId);
+         }
+         renderDailyPlanFullPage();
+         renderDailyPlanPanel(today);
+diff --git a/js/dispatcher/dashboard.js b/js/dispatcher/dashboard.js
+index 007aa5d..afea434 100644
+--- a/js/dispatcher/dashboard.js
++++ b/js/dispatcher/dashboard.js
+@@ -1,6 +1,6 @@
+ // BusCommand ESM v9.5 — Operativni centar (editable)
+-import { formatDateTime, getVisibleDrivers, showToast, escapeHtml, todayDateStr } from "../core/utils.js";
+-import { getDriverDutySummary, getShiftForDriverDate, setShiftForDriverDate } from "../core/shift-plan.js";
++import { formatDateTime, getDriverById, getVisibleDrivers, showToast, escapeHtml, todayDateStr } from "../core/utils.js";
++import { getDriverDutySummary, getShiftForDriverDate, getShiftForDriverIdOnly, setShiftForDriverIdOnly } from "../core/shift-plan.js";
+ import { actionAttr, changeAttr } from "../core/action-delegate.js";
+ import { t } from "../ui/i18n.js";
+ import { renderDashboardGroupsGrid } from "./group-hub.js";
+@@ -363,32 +363,31 @@ function driverInitials(name) {
+     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+ }
+ 
+-function driverByName(driverName) {
+-    return (window.state.drivers || []).find(d => d.name === driverName) || null;
+-}
+ 
+ function shiftTypeLabel(value) {
+     const opt = SHIFT_TYPE_OPTIONS.find(item => item.value === value);
+     return opt ? (t(opt.labelKey) || opt.fallback) : value;
+ }
+ 
+-function busSelectHtml(driverName, selectedBus, selectIdSuffix = "") {
++function busSelectHtml(driverId, selectedBus, selectIdSuffix = "") {
+     const options = (window.state.buses || []).map(b => {
+         const num = String(b.number ?? "");
+         return `<option value="${escapeHtml(num)}" ${num === String(selectedBus) ? "selected" : ""}>Bus ${escapeHtml(num)}</option>`;
+     }).join("");
+     const emptySelected = !selectedBus || selectedBus === "—" ? "selected" : "";
+-    return `<select class="ops-edit-select" ${changeAttr("updateDriverBusInline", [driverName], "args-value")} aria-label="${escapeHtml(t("table_bus") || "Bus")}" id="ops-bus-${escapeHtml(selectIdSuffix || driverName)}">
++    const idSuffix = selectIdSuffix || String(driverId || "");
++    return `<select class="ops-edit-select" ${changeAttr("updateDriverBusInline", [driverId], "args-value")} aria-label="${escapeHtml(t("table_bus") || "Bus")}" id="ops-bus-${escapeHtml(idSuffix)}">
+         <option value="" ${emptySelected}>—</option>
+         ${options}
+     </select>`;
+ }
+ 
+-function shiftSelectHtml(driverName, currentType, selectIdSuffix = "") {
++function shiftSelectHtml(driverId, currentType, selectIdSuffix = "") {
+     const options = SHIFT_TYPE_OPTIONS.map(st =>
+         `<option value="${st.value}" ${currentType === st.value ? "selected" : ""}>${escapeHtml(shiftTypeLabel(st.value))}</option>`
+     ).join("");
+-    return `<select class="ops-edit-select" ${changeAttr("updateDriverShiftInline", [driverName], "args-value")} aria-label="${escapeHtml(t("table_shift_route") || "Smena")}" id="ops-shift-${escapeHtml(selectIdSuffix || driverName)}">
++    const idSuffix = selectIdSuffix || String(driverId || "");
++    return `<select class="ops-edit-select" ${changeAttr("updateDriverShiftInline", [driverId], "args-value")} aria-label="${escapeHtml(t("table_shift_route") || "Smena")}" id="ops-shift-${escapeHtml(idSuffix)}">
+         ${options}
+     </select>`;
+ }
+@@ -489,7 +488,7 @@ function renderDispatcherDashboard() {
+                     <div class="alert-item-content ops-action-body">
+                         <div class="alert-item-title">
+                             <span>${escapeHtml(item.title || item.kind || "—")}</span>
+-                            <span class="alert-item-time">${escapeHtml(item.date || "")}</span>
++                            <span class="alert-item-time">${escapeHtml(item.radarDayLabel ? `${item.radarDayLabel} · ${item.date || ""}` : (item.date || ""))}</span>
+                         </div>
+                         <span class="alert-item-desc">${escapeHtml(item.summary || item.detail || "—")}</span>
+                         <span class="alert-item-meta">${escapeHtml(metaParts.join(" · ") || "—")}</span>
+@@ -540,20 +539,21 @@ function renderDispatcherDashboard() {
+                     : (confirmStatus === "confirmed" ? "is-ok"
+                         : (confirmStatus === "expired" || confirmStatus === "failed" ? "is-uncovered"
+                             : (confirmStatus === "pending" ? "is-pending" : "is-neutral")));
++                const drvId = driverUid(drv);
+                 const busOutBtn = !uncovered && busNum
+-                    ? `<button type="button" class="btn-danger-ghost ops-row-action" ${actionAttr("openVehicleOperationalIncident", [busNum, drv.name])} aria-label="${escapeHtml(t("ops_bus_out") || "Vozilo van operacije")}"><i data-lucide="bus"></i></button>`
++                    ? `<button type="button" class="btn-danger-ghost ops-row-action" ${actionAttr("openVehicleOperationalIncident", [busNum, drvId])} aria-label="${escapeHtml(t("ops_bus_out") || "Vozilo van operacije")}"><i data-lucide="bus"></i></button>`
+                     : "";
+                 const actionBtn = incident
+                     ? `<button type="button" class="ops-row-action urgent-action" ${actionAttr("openOpsAttentionPanel", [`coverage:${incident.id}`])}><i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}</button>`
+                     : uncovered
+                     ? `<button type="button" class="ops-row-action urgent-action" ${actionAttr("openOpsAttentionPanel", [])}><i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}</button>`
+                     : !busNum
+-                    ? `<button type="button" class="ops-row-action urgent-action" ${actionAttr("openOpsAttentionPanel", [`bus:${driverUid(drv)}`])}><i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}</button>`
+-                    : `<span class="ops-row-actions">${busOutBtn}<button type="button" class="btn-danger-ghost ops-row-action" ${actionAttr("openOperationalIncident", [drv.name])} aria-label="${escapeHtml(t("ops_incident_open") || "Prijavi problem")}"><i data-lucide="user-x"></i> ${escapeHtml(t("ops_incident_open") || "Problem")}</button></span>`;
++                    ? `<button type="button" class="ops-row-action urgent-action" ${actionAttr("openOpsAttentionPanel", [`bus:${drvId}`])}><i data-lucide="zap"></i> ${escapeHtml(t("ops_attn_solve_now") || "Reši odmah")}</button>`
++                    : `<span class="ops-row-actions">${busOutBtn}<button type="button" class="btn-danger-ghost ops-row-action" ${actionAttr("openOperationalIncident", [drvId])} aria-label="${escapeHtml(t("ops_incident_open") || "Prijavi problem")}"><i data-lucide="user-x"></i> ${escapeHtml(t("ops_incident_open") || "Problem")}</button></span>`;
+                 return `<tr class="${rowClass}">
+                     <td><strong>${escapeHtml(drv.name || "")}</strong></td>
+-                    <td>${busSelectHtml(drv.name, busNum, `day-${drv.name}`)}</td>
+-                    <td>${shiftSelectHtml(drv.name, shiftType, `day-${drv.name}`)}</td>
++                    <td>${busSelectHtml(drvId, busNum, `day-${drvId}`)}</td>
++                    <td>${shiftSelectHtml(drvId, shiftType, `day-${drvId}`)}</td>
+                     <td><span class="ops-status-pill" data-status="${escapeHtml(confirmStatus)}">${escapeHtml(statusLabel)}</span></td>
+                     <td>${actionBtn}</td>
+                 </tr>`;
+@@ -571,6 +571,7 @@ function renderDispatcherDashboard() {
+         }
+ 
+         visibleCrew.forEach(drv => {
++            const drvId = driverUid(drv);
+             const duty = getDriverDutySummary(drv.name, todayStr);
+             const shift = duty.shift;
+             const busNum = duty.bus !== "—" ? duty.bus : (drv.bus || "");
+@@ -614,11 +615,11 @@ function renderDispatcherDashboard() {
+                     </div>
+                     <div class="ops-crew-meta">${escapeHtml(shiftLabel)} · ${escapeHtml(String(busNum || "—"))} · ${escapeHtml(currentStop)}</div>
+                     <div class="ops-crew-controls">
+-                        ${busSelectHtml(drv.name, busNum, `crew-${drv.name}`)}
+-                        ${shiftSelectHtml(drv.name, shift?.type || "", `crew-${drv.name}`)}
++                        ${busSelectHtml(drvId, busNum, `crew-${drvId}`)}
++                        ${shiftSelectHtml(drvId, shift?.type || "", `crew-${drvId}`)}
+                     </div>
+                     <div class="ops-crew-actions">
+-                        <button type="button" class="btn-primary ops-assign-btn" ${actionAttr("opsAssignDriver", [drv.name, uncovered ? "morning" : (shift?.type || "morning")])}>
++                        <button type="button" class="btn-primary ops-assign-btn" ${actionAttr("opsAssignDriver", [drvId, uncovered ? "morning" : (shift?.type || "morning")])}>
+                             ${escapeHtml(uncovered ? (t("ops_btn_assign") || "Dodeli") : (t("ops_btn_edit") || "Izmeni"))}
+                         </button>
+                     </div>
+@@ -639,17 +640,17 @@ function hasCatalogDuty(shift) {
+     return Boolean(shift && shift.type !== "clear" && shift.type !== "off" && shift.routeCode);
+ }
+ 
+-async function updateDriverBusInline(driverName, newBus) {
+-    const driver = driverByName(driverName);
++async function updateDriverBusInline(driverId, newBus) {
++    const driver = getDriverById(driverId);
+     if (!driver) return;
+     const today = todayDateStr();
+-    const existing = getShiftForDriverDate(driverName, today);
++    const existing = getShiftForDriverIdOnly(driverId, today);
+     if (!hasCatalogDuty(existing)) {
+         showToast(
+             t("ops_bus_needs_duty_first") || "Prvo dodelite šifru dužnosti iz kataloga — bus se vezuje za smenu.",
+             "info"
+         );
+-        openShiftCell(driverName, today);
++        openShiftCell(driverId, today);
+         return;
+     }
+     const saved = await persistShift(
+@@ -662,17 +663,17 @@ async function updateDriverBusInline(driverName, newBus) {
+         newBus
+     );
+     if (!saved) return;
+-    showToast(t("ops_bus_assigned", { bus: newBus || "—", driver: driverName }) || `Bus ${newBus} ? ${driverName}`, "success");
++    showToast(t("ops_bus_assigned", { bus: newBus || "—", driver: driver.name }) || `Bus ${newBus} ? ${driver.name}`, "success");
+     renderDispatcherDashboard();
+ }
+ 
+-async function updateDriverShiftInline(driverName, newShiftType) {
+-    const driver = driverByName(driverName);
++async function updateDriverShiftInline(driverId, newShiftType) {
++    const driver = getDriverById(driverId);
+     if (!driver) return;
+     const today = todayDateStr();
+     const type = newShiftType || "clear";
+     if (["clear", "off", "vacation", "sick"].includes(type)) {
+-        openOperationalIncident(driverName);
++        openOperationalIncident(driverId);
+         renderDispatcherDashboard();
+         return;
+     }
+@@ -684,7 +685,7 @@ async function updateDriverShiftInline(driverName, newShiftType) {
+         t("ops_shift_needs_duty_first") || "Izaberite šifru dužnosti iz kataloga — tip smene se time postavlja automatski.",
+         "info"
+     );
+-    openShiftCell(driverName, today);
++    openShiftCell(driverId, today);
+     return;
+ }
+ 
+@@ -705,7 +706,7 @@ function coverageDriverCandidates(report) {
+     return getVisibleDrivers().filter(driver => {
+         if (driver.active === false || driverUid(driver) === report.driverId) return false;
+         if (!driverKnowsGroup(driver, groupId)) return false;
+-        const duty = getShiftForDriverDate(driver.name, report.date);
++        const duty = getShiftForDriverIdOnly(driverUid(driver), report.date);
+         return !duty || AVAILABLE_REPLACEMENT_TYPES.has(String(duty.type || "").toLowerCase());
+     });
+ }
+@@ -715,7 +716,7 @@ function coverageBusCandidates(report) {
+     const used = new Set();
+     getVisibleDrivers().forEach(driver => {
+         if (driverUid(driver) === report.driverId) return;
+-        const duty = getShiftForDriverDate(driver.name, report.date);
++        const duty = getShiftForDriverIdOnly(driverUid(driver), report.date);
+         if (duty && !AVAILABLE_REPLACEMENT_TYPES.has(String(duty.type || "").toLowerCase()) && duty.bus) {
+             used.add(String(duty.bus));
+         }
+@@ -1039,13 +1040,14 @@ async function renderOpsActivityFeed() {
+     }).join("");
+ }
+ 
+-function openOperationalIncident(driverName, preferredReplacementDriverId = "") {
+-    const driver = driverByName(driverName);
++function openOperationalIncident(driverId, preferredReplacementDriverId = "") {
++    const driver = getDriverById(driverId);
+     if (!driver) return;
+     const today = todayDateStr();
++    const driverIdValue = driverUid(driver);
+     const duplicate = visibleOperationalReports().find(report =>
+         reportKind(report).kind === "coverage"
+-        && report.driverId === driverUid(driver)
++        && report.driverId === driverIdValue
+         && report.date === today
+     );
+     if (duplicate) {
+@@ -1055,11 +1057,12 @@ function openOperationalIncident(driverName, preferredReplacementDriverId = "")
+     const modal = ensureIncidentModal();
+     modal.dataset.affectedEntity = "driver";
+     delete modal.dataset.busNumber;
+-    modal.dataset.driverName = driverName;
++    modal.dataset.driverId = driverIdValue;
++    modal.dataset.driverName = driver.name || "";
+     modal.dataset.preferredReplacementDriverId = String(preferredReplacementDriverId || "");
+     const title = modal.querySelector("h2");
+     if (title) title.textContent = t("ops_incident_title") || "Vozac ne može da nastavi smenu";
+-    modal.querySelector("#ops-incident-driver").textContent = driverName;
++    modal.querySelector("#ops-incident-driver").textContent = driver.name || "";
+     paintIncidentReasonOptions(modal, "driver");
+     modal.classList.remove("hidden");
+     modal.style.display = "flex";
+@@ -1080,13 +1083,13 @@ function closeOperationalIncident() {
+ }
+ 
+ function alignPlanAfterDriverIncident(driver, reasonCode, today) {
+-    if (!driver?.name) return;
++    if (!driver?.id) return;
+     const shiftType = reasonCode === "sick" ? "sick" : "clear";
+     const label = reasonCode === "sick"
+         ? (t("shift_type_sick") || "Bolovanje")
+         : "";
+     // Bypass persistShift gate: incident is already being opened.
+-    setShiftForDriverDate(driver.name, today, {
++    setShiftForDriverIdOnly(driverUid(driver), driver.name || "", today, {
+         type: shiftType,
+         name: label,
+         bus: "",
+@@ -1109,9 +1112,10 @@ function alignPlanAfterBusIncident(busNumber, reasonCode, today) {
+         bus.revision = (Number.isInteger(bus.revision) ? bus.revision : 0) + 1;
+     }
+     for (const drv of getVisibleDrivers()) {
+-        const shift = getShiftForDriverDate(drv.name, today);
++        const drvId = driverUid(drv);
++        const shift = getShiftForDriverIdOnly(drvId, today);
+         if (!shift || String(shift.bus || "") !== number) continue;
+-        setShiftForDriverDate(drv.name, today, {
++        setShiftForDriverIdOnly(drvId, drv.name || "", today, {
+             type: shift.type || "morning",
+             name: shift.name || "",
+             bus: "",
+@@ -1127,7 +1131,7 @@ async function submitOperationalIncident(event) {
+     event.preventDefault();
+     const modal = document.getElementById("ops-incident-modal");
+     const affectedEntity = modal?.dataset.affectedEntity === "vehicle" ? "vehicle" : "driver";
+-    const driver = driverByName(modal?.dataset.driverName);
++    const driver = affectedEntity === "driver" ? getDriverById(modal?.dataset.driverId) : null;
+     const busNumber = String(modal?.dataset.busNumber || "").trim();
+     const reasonCode = String(modal?.querySelector("#ops-incident-reason-code")?.value || "").trim();
+     const description = String(modal?.querySelector("#ops-incident-description")?.value || "").trim().slice(0, 120);
+@@ -1143,7 +1147,7 @@ async function submitOperationalIncident(event) {
+     const submit = modal.querySelector("button[type='submit']");
+     submit.disabled = true;
+     const today = todayDateStr();
+-    const shift = driver ? getShiftForDriverDate(driver.name, today) : null;
++    const shift = driver ? getShiftForDriverIdOnly(driverUid(driver), today) : null;
+     const bus = affectedEntity === "vehicle"
+         ? busNumber
+         : (shift?.bus || driver?.bus || "");
+@@ -1229,8 +1233,8 @@ async function submitOperationalIncident(event) {
+ }
+ 
+ /** Reši / Dodeli — dodeli tip smene (default morning) i osveži ops centar. */
+-async function opsAssignDriver(driverName, shiftType = "morning") {
+-    const driver = driverByName(driverName);
++async function opsAssignDriver(driverId, shiftType = "morning") {
++    const driver = getDriverById(driverId);
+     if (!driver) {
+         showToast(t("js_no_drivers") || "Vozac nije pronaden.", "error");
+         return;
+diff --git a/js/dispatcher/ops-attention.js b/js/dispatcher/ops-attention.js
+index ea337b9..f266948 100644
+--- a/js/dispatcher/ops-attention.js
++++ b/js/dispatcher/ops-attention.js
+@@ -1,6 +1,6 @@
+ // BusCommand — jedan panel „Zahteva pažnju“: problem + rešenje na istom mestu
+-import { getVisibleDrivers, showToast, escapeHtml, todayDateStr } from "../core/utils.js";
+-import { getShiftForDriverDate, setShiftForDriverDate, getDriverDutySummary, getDailyPlanForDate } from "../core/shift-plan.js";
++import { getVisibleDrivers, showToast, escapeHtml, todayDateStr, operationalDateStr, addCalendarDays } from "../core/utils.js";
++import { getShiftForDriverIdOnly, setShiftForDriverIdOnly, getDailyPlanForDate } from "../core/shift-plan.js";
+ import { actionAttr } from "../core/action-delegate.js";
+ import { t } from "../ui/i18n.js";
+ import { USE_LOCAL_STATE } from "../core/runtime-config.js";
+@@ -34,6 +34,15 @@ function driverUid(drv) {
+     return drv?.id || drv?.uid || drv?.driverId || "";
+ }
+ 
++/** Translated D0/D+1/D+2 label for a radar item's operational date (P1-A). */
++function radarDayLabel(dateStr, todayStr) {
++    if (!dateStr || !todayStr) return "";
++    if (dateStr === todayStr) return t("radar_day_today") || "Today";
++    if (dateStr === addCalendarDays(todayStr, 1)) return t("radar_day_tomorrow") || "Tomorrow";
++    if (dateStr === addCalendarDays(todayStr, 2)) return t("radar_day_after_tomorrow") || "Day after tomorrow";
++    return dateStr;
++}
++
+ function companyDrivers() {
+     const companyId = window.currentUser?.companyId;
+     const all = window.state.drivers || [];
+@@ -73,7 +82,7 @@ function isOperationalDuty(shift) {
+ }
+ 
+ function isDriverFree(driver, dateStr) {
+-    const duty = getShiftForDriverDate(driver.name, dateStr);
++    const duty = getShiftForDriverIdOnly(driverUid(driver), dateStr);
+     return !duty || AVAILABLE_REPLACEMENT_TYPES.has(String(duty.type || "").toLowerCase());
+ }
+ 
+@@ -123,7 +132,7 @@ function usedBusesOnDate(dateStr, excludeDriverId) {
+     const used = new Set();
+     companyDrivers().forEach(driver => {
+         if (driverUid(driver) === excludeDriverId) return;
+-        const duty = getShiftForDriverDate(driver.name, dateStr);
++        const duty = getShiftForDriverIdOnly(driverUid(driver), dateStr);
+         if (duty && isOperationalDuty(duty) && duty.bus) used.add(String(duty.bus));
+     });
+     return used;
+@@ -252,9 +261,9 @@ function collectOpsAttentionItems() {
+ 
+     for (const driver of getVisibleDrivers()) {
+         if (driver.active === false) continue;
+-        const duty = getShiftForDriverDate(driver.name, today);
+-        const groupId = driver.groupId || driver.lineId || "";
+         const id = driverUid(driver);
++        const duty = getShiftForDriverIdOnly(id, today);
++        const groupId = driver.groupId || driver.lineId || "";
+         if (!isOperationalDuty(duty)) continue;
+         if (coveredDriverIds.has(String(id))) continue;
+ 
+@@ -344,29 +353,54 @@ function collectOpsAttentionItems() {
+ 
+ /** Soft plan gaps (uncovered drivers / empty slots) as Needs-attention cards with solutions. */
+ function collectPlanGapAttentionItems(groupId = null, dateStr = null) {
+-    const today = dateStr || todayDateStr();
++    const today = dateStr || operationalDateStr(0);
+     const scope = groupId || window.state?.activeGroupHubId || window.state?.activeGroupFilter || "";
+     const items = [];
++    const dayLabel = radarDayLabel(today, operationalDateStr(0));
+ 
+     getVisibleDrivers().forEach((driver) => {
+         if (driver.active === false) return;
+         const gid = driver.groupId || driver.lineId || "";
+         if (scope && gid && String(gid) !== String(scope)) return;
+-        const duty = getDriverDutySummary(driver.name, today);
+-        const type = duty?.shift?.type;
+-        if (duty?.shift && type !== "off" && type !== "clear") return;
+-        const id = driverUid(driver) || driver.name;
++
++        const uid = driverUid(driver);
++        if (!uid) {
++            // Truthful data-integrity condition — never silently fall back to
++            // matching this driver's shift by their displayed name (P1-A).
++            items.push({
++                id: `data_integrity:driver:${driver.name}:${today}`,
++                kind: "data_integrity_missing_id",
++                severity: "critical",
++                driverId: null,
++                driverName: driver.name,
++                groupId: gid || scope,
++                date: today,
++                radarDayLabel: dayLabel,
++                title: t("ops_attn_data_integrity") || "Driver without a valid ID",
++                summary: t("ops_attn_data_integrity") || "Driver without a valid ID — resolve this data issue before assigning a shift."
++            });
++            return;
++        }
++
++        // ID-first match: two drivers sharing a displayed name are never
++        // confused with each other (P1-A duplicate-name fix).
++        const duty = getShiftForDriverIdOnly(uid, today);
++        const type = duty?.type;
++        if (duty && type !== "off" && type !== "clear") return;
++
+         items.push({
+-            id: `gap:driver:${id}`,
++            id: `gap:driver:${uid}:${today}`,
+             kind: "plan_gap_driver",
+             severity: "warning",
+-            driverId: id,
++            driverId: uid,
+             driverName: driver.name,
+             groupId: gid || scope,
+             date: today,
++            radarDayLabel: dayLabel,
+             title: t("ops_plan_gap_driver") || "Nepokriven vozac",
+-            summary: t("ops_attn_gap_driver_summary", { driver: driver.name })
+-                || `${driver.name} nema smenu za danas — dodelite smenu ili otvorite dnevni plan.`
++            summary: t("ops_attn_gap_driver_summary_dated", { driver: driver.name, day: dayLabel, date: today })
++                || t("ops_attn_gap_driver_summary", { driver: driver.name })
++                || `${driver.name} nema smenu (${dayLabel}, ${today}) — dodelite smenu ili otvorite dnevni plan.`
+         });
+     });
+ 
+@@ -391,11 +425,12 @@ function collectPlanGapAttentionItems(groupId = null, dateStr = null) {
+     slots.slice(0, 12).forEach((slot, index) => {
+         const code = String(slot.code || slot.name || `slot-${index}`);
+         items.push({
+-            id: `gap:slot:${code}`,
++            id: `gap:slot:${code}:${today}`,
+             kind: "plan_gap_slot",
+             severity: "warning",
+             groupId: scope,
+             date: today,
++            radarDayLabel: dayLabel,
+             dutyCode: code,
+             title: t("ops_plan_gap_slot") || "Prazan slot u planu",
+             summary: t("ops_attn_gap_slot_summary", { code })
+@@ -434,19 +469,22 @@ function isoDateMinusDays(dateStr, days) {
+ }
+ 
+ function collectRestPeriodAttentionItems(groupId = null, dateStr = null) {
+-    const today = dateStr || todayDateStr();
++    const today = dateStr || operationalDateStr(0);
+     const yesterday = isoDateMinusDays(today, 1);
+     if (!yesterday) return [];
+     const scope = groupId || window.state?.activeGroupHubId || window.state?.activeGroupFilter || "";
+     const items = [];
++    const dayLabel = radarDayLabel(today, operationalDateStr(0));
+ 
+     getVisibleDrivers().forEach((driver) => {
+         if (driver.active === false) return;
+         const gid = driver.groupId || driver.lineId || "";
+         if (scope && gid && String(gid) !== String(scope)) return;
+ 
+-        const todayShift = getShiftForDriverDate(driver.name, today);
+-        const prevShift = getShiftForDriverDate(driver.name, yesterday);
++        const uid = driverUid(driver);
++        if (!uid) return; // covered separately by the data-integrity item above
++        const todayShift = getShiftForDriverIdOnly(uid, today);
++        const prevShift = getShiftForDriverIdOnly(uid, yesterday);
+         if (!todayShift || !prevShift) return;
+         if (!DRIVING_SHIFT_TYPES.has(todayShift.type) || !DRIVING_SHIFT_TYPES.has(prevShift.type)) return;
+ 
+@@ -459,15 +497,15 @@ function collectRestPeriodAttentionItems(groupId = null, dateStr = null) {
+         const restHours = restMinutes / 60;
+         if (restHours >= EU561_MIN_DAILY_REST_HOURS) return;
+ 
+-        const id = driverUid(driver) || driver.name;
+         items.push({
+-            id: `rest:driver:${id}:${today}`,
++            id: `rest:driver:${uid}:${today}`,
+             kind: "rest_period_violation",
+             severity: "warning",
+-            driverId: id,
++            driverId: uid,
+             driverName: driver.name,
+             groupId: gid || scope,
+             date: today,
++            radarDayLabel: dayLabel,
+             restHours: Math.round(restHours * 10) / 10,
+             title: t("ops_rest_violation_title") || "Nedovoljan odmor (EU 561/2006)",
+             summary: t("ops_attn_rest_violation_summary", { driver: driver.name, hours: (Math.round(restHours * 10) / 10) })
+@@ -478,18 +516,40 @@ function collectRestPeriodAttentionItems(groupId = null, dateStr = null) {
+     return items;
+ }
+ 
+-/** Real attention + plan-gap cards (one list for the solutions panel). */
++/**
++ * Three-day operational radar window (P1-A): D0 (today), D+1 (tomorrow),
++ * D+2 (day after tomorrow) in the authoritative operational timezone.
++ * D-1 is never included; D+3 and later are never included.
++ */
++function radarWindowDates() {
++    const today = operationalDateStr(0);
++    return [today, addCalendarDays(today, 1), addCalendarDays(today, 2)];
++}
++
++/**
++ * Real attention + plan-gap cards (one list for the solutions panel).
++ * When `dateStr` is explicitly supplied, behaves as a single-day query
++ * (kept for any caller that genuinely wants one specific day). When omitted
++ * — the normal case for the dashboard counter, the Needs-Attention panel and
++ * the daily-plan indicator — this aggregates the full D0/D+1/D+2 radar
++ * window so all three consumers always agree on the same set of unique
++ * problems (id = problemType + driverId + operationalDate, already unique
++ * per item since every gap/rest id is date-suffixed).
++ */
+ function collectAllAttentionItems(groupId = null, dateStr = null) {
+     const real = collectOpsAttentionItems();
+-    const gaps = collectPlanGapAttentionItems(groupId, dateStr);
+-    const restViolations = collectRestPeriodAttentionItems(groupId, dateStr);
+-    gaps.push(...restViolations);
++    const dates = dateStr ? [dateStr] : radarWindowDates();
++
+     const seen = new Set(real.map((row) => row.id));
+     const merged = real.slice();
+-    for (const gap of gaps) {
+-        if (seen.has(gap.id)) continue;
+-        seen.add(gap.id);
+-        merged.push(gap);
++    for (const date of dates) {
++        const gaps = collectPlanGapAttentionItems(groupId, date);
++        const restViolations = collectRestPeriodAttentionItems(groupId, date);
++        for (const item of [...gaps, ...restViolations]) {
++            if (seen.has(item.id)) continue;
++            seen.add(item.id);
++            merged.push(item);
++        }
+     }
+     return merged;
+ }
+@@ -590,9 +650,10 @@ function renderAttentionCard(item) {
+         item.driverName,
+         item.dutyCode,
+         item.time,
++        item.radarDayLabel ? `${item.radarDayLabel} · ${item.date || ""}` : "",
+         item.currentCode && item.kind === "wrong_shift" ? `${t("ops_attn_current") || "Trenutno"}: ${item.currentCode}` : "",
+         item.bus ? `${t("vehicle") || "Bus"} ${item.bus}` : "",
+-        item.date && item.kind === "confirm" ? item.date : ""
++        item.date && !item.radarDayLabel && item.kind === "confirm" ? item.date : ""
+     ].filter(Boolean).join(" · ");
+ 
+     let solution = "";
+@@ -683,6 +744,12 @@ function renderAttentionCard(item) {
+             <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id, "daily"])}>
+                 <i data-lucide="calendar-days"></i> ${escapeHtml(t("ops_attn_gap_open_daily") || "Otvori dnevni plan")}
+             </button>`;
++    } else if (item.kind === "data_integrity_missing_id") {
++        // Truthful data-integrity condition (P1-A) — never a silent name match.
++        // No mutation is offered here; this requires fixing the driver record.
++        solution = `<p class="ops-attention-soft">${escapeHtml(
++            t("ops_attn_data_integrity") || "Driver without a valid ID — resolve this data issue before assigning a shift."
++        )}</p>`;
+     } else {
+         solution = `
+             <p class="ops-attention-soft">${escapeHtml(t("ops_attn_confirm_hint") || "Potvrda još nije stigla — proverite poruke ili sacekajte odgovor vozaca.")}</p>
+@@ -746,6 +813,7 @@ function paintOpsAttentionPanel(items) {
+                     ${actionAttr("focusOpsAttentionItem", [item.id])}>
+                     <strong>${escapeHtml(item.title || item.kind || `#${index + 1}`)}</strong>
+                     <span>${escapeHtml(item.driverName || item.dutyCode || item.summary || "")}</span>
++                    ${item.radarDayLabel ? `<em class="ops-attention-nav-date">${escapeHtml(item.radarDayLabel)} · ${escapeHtml(item.date || "")}</em>` : ""}
+                 </button>`;
+         }).join("");
+     }
+@@ -830,8 +898,8 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
+         showToast(message, "error");
+         return false;
+     }
+-    const originalShift = getShiftForDriverDate(original.name, report.date);
+-    const replacementShift = getShiftForDriverDate(replacement.name, report.date);
++    const originalShift = getShiftForDriverIdOnly(report.driverId, report.date);
++    const replacementShift = getShiftForDriverIdOnly(driverUid(replacement), report.date);
+     if (statusEl) statusEl.textContent = t("report_resolving") || "Rešavanje…";
+     let result;
+     if (USE_LOCAL_STATE) {
+@@ -871,9 +939,9 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
+         showToast(message, "error");
+         return false;
+     }
+-    setShiftForDriverDate(original.name, report.date, { type: "clear" });
++    setShiftForDriverIdOnly(report.driverId, original.name || "", report.date, { type: "clear" });
+     const assigned = result.shift || {};
+-    setShiftForDriverDate(replacement.name, report.date, {
++    setShiftForDriverIdOnly(replacementDriverId, replacement.name || "", report.date, {
+         type: assigned.type || report.shiftType || originalShift?.type || "morning",
+         name: assigned.name || report.shiftName || originalShift?.name || report.routeCode || "",
+         bus: assigned.bus || replacementBus,
+@@ -904,8 +972,8 @@ async function applyOpsAttentionFix(itemId, fixAction = "") {
+         || (item.kind === "wrong_shift" && fixAction === "daily")) {
+         const action = String(fixAction || "daily");
+         closeOpsAttentionPanel();
+-        if (action === "assign" && item.driverName) {
+-            openShiftCell(item.driverName, item.date || todayDateStr());
++        if (action === "assign" && item.driverId) {
++            openShiftCell(item.driverId, item.date || todayDateStr());
+             return;
+         }
+         const groupId = item.groupId || window.state?.activeGroupHubId || window.state?.activeGroupFilter;
+@@ -936,7 +1004,7 @@ async function applyOpsAttentionFix(itemId, fixAction = "") {
+                 if (statusEl) statusEl.textContent = t("ops_resolver_failed") || "Rešenje nije primenjeno.";
+                 return;
+             }
+-            const existing = getShiftForDriverDate(driver.name, item.date);
++            const existing = getShiftForDriverIdOnly(item.driverId, item.date);
+             const saved = await persistShift(
+                 driver,
+                 item.date,
+@@ -973,7 +1041,7 @@ async function applyOpsAttentionFix(itemId, fixAction = "") {
+                 if (statusEl) statusEl.textContent = t("ops_attn_pick_shift") || "Izaberite smenu.";
+                 return;
+             }
+-            const existing = getShiftForDriverDate(driver.name, item.date);
++            const existing = getShiftForDriverIdOnly(item.driverId, item.date);
+             const saved = await persistShift(
+                 driver,
+                 item.date,
+diff --git a/js/dispatcher/shift-grid.js b/js/dispatcher/shift-grid.js
+index 73a8e70..b026af9 100644
+--- a/js/dispatcher/shift-grid.js
++++ b/js/dispatcher/shift-grid.js
+@@ -1,7 +1,11 @@
+ // BusCommand ESM v9.5
+ import { getVisibleDrivers, todayDateStr } from "../core/utils.js";
+ import { getGroupById } from "../data/groups.js";
+-import { dateToStr, getShiftForDriverDate } from "./shift-utils.js";
++import { dateToStr, getShiftForDriverIdOnly } from "./shift-utils.js";
++
++function driverId(driver) {
++    return driver?.id || driver?.uid || "";
++}
+ import { t } from "../ui/i18n.js";
+ import { actionAttr } from "../core/action-delegate.js";
+ 
+@@ -77,7 +81,8 @@ function renderShiftsWeeklyGrid(weekDays) {
+ 
+         weekDays.forEach(d => {
+             const dStr = dateToStr(d);
+-            const shift = getShiftForDriverDate(driver.name, dStr);
++            const drvId = driverId(driver);
++            const shift = getShiftForDriverIdOnly(drvId, dStr);
+             const isToday = dStr === todayStr;
+             const isPast  = dStr < todayStr;
+             const style = shiftColors[shift ? shift.type : "empty"] || shiftColors.empty;
+@@ -88,12 +93,12 @@ function renderShiftsWeeklyGrid(weekDays) {
+                      display:flex;flex-direction:column;align-items:center;justify-content:center;
+                      position:relative; opacity:${isPast && !shift ? "0.4" : "1"}; cursor:pointer;
+                      transition:all 0.15s ease;"
+-                     ${actionAttr("openShiftCell", [driver.name, dStr])}
++                     ${actionAttr("openShiftCell", [drvId, dStr])}
+                      onmouseenter="this.style.opacity='0.8'" onmouseleave="this.style.opacity='${isPast && !shift ? "0.4" : "1"}'">
+                     ${shift ? `
+                         <span style="font-size:1.1rem;">${style.icon}</span>
+                         <span style="font-size:10px;font-weight:600;color:${style.text};margin-top:2px;line-height:1.2;">${shift.name || t("shift_"+shift.type) || shift.type}</span>
+-                        <button ${actionAttr("removeShift", [driver.name, dStr], { stopPropagation: true })}
++                        <button ${actionAttr("removeShift", [drvId, dStr], { stopPropagation: true })}
+                             style="position:absolute;top:2px;right:2px;background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;font-size:10px;padding:1px;line-height:1;"
+                             title="${t("btn_delete")}">?</button>
+                     ` : `<span style="font-size:18px;color:rgba(255,255,255,0.1);">+</span>`}
+diff --git a/js/dispatcher/shift-utils.js b/js/dispatcher/shift-utils.js
+index e37f7b9..4b69897 100644
+--- a/js/dispatcher/shift-utils.js
++++ b/js/dispatcher/shift-utils.js
+@@ -3,7 +3,8 @@ import { renderDispatcherShifts } from "./shifts.js";
+ import {
+     dateToStr,
+     getCurrentShiftForDriver,
+-    getShiftForDriverDate
++    getShiftForDriverDate,
++    getShiftForDriverIdOnly
+ } from "../core/shift-plan.js";
+ 
+ function getWeekDates(offset) {
+@@ -31,5 +32,6 @@ export {
+     dateToStr,
+     shiftWeekNav,
+     getShiftForDriverDate,
++    getShiftForDriverIdOnly,
+     getCurrentShiftForDriver
+ };
+diff --git a/js/dispatcher/shifts.js b/js/dispatcher/shifts.js
+index df787f8..9fd290f 100644
+--- a/js/dispatcher/shifts.js
++++ b/js/dispatcher/shifts.js
+@@ -1,7 +1,7 @@
+ // BusCommand ESM v9.5
+ import { saveState } from "../core/state.js";
+-import { getShiftForDriverDate, parseRouteCodeFromText, setShiftForDriverDate } from "../core/shift-plan.js";
+-import { getVisibleDrivers, showToast, todayDateStr } from "../core/utils.js";
++import { getShiftForDriverIdOnly, parseRouteCodeFromText, setShiftForDriverIdOnly } from "../core/shift-plan.js";
++import { getDriverById, getVisibleDrivers, showToast, todayDateStr } from "../core/utils.js";
+ import { getGroupById, renderGroupFilterBar } from "../data/groups.js";
+ import { renderShiftsWeeklyGrid } from "./shift-grid.js";
+ import { getWeekDates } from "./shift-utils.js";
+@@ -22,6 +22,7 @@ import {
+     getShiftCatalogForLine,
+     inferOperationalShiftType
+ } from "../core/line-shift-catalog.js";
++import { loadActiveServicePlanForLine } from "../core/service-plan.js";
+ 
+ const pendingShiftAssignments = new Set();
+ 
+@@ -75,9 +76,6 @@ function paintResolvedDutyHint(duty) {
+     el.textContent = `${duty.code} · ${duty.type} · ${time}`;
+ }
+ 
+-function driverByName(driverName) {
+-    return getVisibleDrivers().find(driver => driver.name === driverName) || null;
+-}
+ 
+ /**
+  * Local preflight for bus conflicts / inactive / non-ready.
+@@ -98,7 +96,7 @@ function preflightBusAssignment(driver, date, type, start, end, busValue) {
+     if (bus.active === false) {
+         return t("ops_bus_inactive") || "Bus is inactive.";
+     }
+-    const existing = getShiftForDriverDate(driver.name, date);
++    const existing = getShiftForDriverIdOnly(driver.id, date);
+     const keepCurrent = String(existing?.bus || "").trim() === busNumber;
+     if (!busIsAssignable(bus) && !keepCurrent) {
+         return t("ops_bus_not_ready") || "Bus is not ready for assignment.";
+@@ -152,7 +150,7 @@ function applyServerShiftConflict(driver, date, conflict) {
+     const remote = conflict?.shift;
+     if (!remote || typeof remote !== "object") return;
+     if (remote.type && remote.type !== "clear") {
+-        setShiftForDriverDate(driver.name, date, {
++        setShiftForDriverIdOnly(driver.id, driver.name, date, {
+             type: remote.type,
+             name: remote.name || "",
+             start: remote.start || null,
+@@ -165,7 +163,7 @@ function applyServerShiftConflict(driver, date, conflict) {
+             syncSchedule: true
+         });
+     } else {
+-        setShiftForDriverDate(driver.name, date, { type: "clear", syncSchedule: true });
++        setShiftForDriverIdOnly(driver.id, driver.name, date, { type: "clear", syncSchedule: true });
+     }
+ }
+ 
+@@ -201,7 +199,11 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
+             showToast(busBlock, "error", 6000);
+             return false;
+         }
+-        const existing = getShiftForDriverDate(driver.name, date);
++        if (!driver.id) {
++            showToast(t("ops_attn_data_integrity") || "Driver without a valid ID — resolve this data issue before assigning a shift.", "error");
++            return false;
++        }
++        const existing = getShiftForDriverIdOnly(driver.id, date);
+         // Mirror-only cells report revision 0; never invent a positive revision locally.
+         const expectedRevision = existing?.source === "shift" && Number.isInteger(existing.revision)
+             ? existing.revision
+@@ -258,13 +260,13 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
+                 const clearedRevision = Number.isInteger(result.revision)
+                     ? result.revision
+                     : (Number.isInteger(result.shift?.revision) ? result.shift.revision : expectedRevision + 1);
+-                setShiftForDriverDate(driver.name, date, {
++                setShiftForDriverIdOnly(driver.id, driver.name, date, {
+                     type: "clear",
+                     syncSchedule: true,
+                     revision: clearedRevision
+                 });
+             } else {
+-                setShiftForDriverDate(driver.name, date, {
++                setShiftForDriverIdOnly(driver.id, driver.name, date, {
+                     type,
+                     name,
+                     start,
+@@ -276,7 +278,7 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
+             return true;
+         }
+         if (bus != null) driver.bus = String(bus);
+-        setShiftForDriverDate(driver.name, date, { type, name, start, end, bus: busValue || undefined, revision: expectedRevision + 1 });
++        setShiftForDriverIdOnly(driver.id, driver.name, date, { type, name, start, end, bus: busValue || undefined, revision: expectedRevision + 1 });
+         saveState();
+         return true;
+     } finally {
+@@ -294,7 +296,7 @@ async function undoShift(driver, date) {
+     if (pendingShiftAssignments.has(key)) return false;
+     pendingShiftAssignments.add(key);
+     try {
+-        const existing = getShiftForDriverDate(driver.name, date);
++        const existing = getShiftForDriverIdOnly(driver.id, date);
+         const expectedRevision = existing?.source === "shift" && Number.isInteger(existing.revision)
+             ? existing.revision
+             : 0;
+@@ -332,13 +334,13 @@ async function undoShift(driver, date) {
+             const clearedRevision = Number.isInteger(result.revision)
+                 ? result.revision
+                 : (Number.isInteger(result.shift?.revision) ? result.shift.revision : expectedRevision + 1);
+-            setShiftForDriverDate(driver.name, date, {
++            setShiftForDriverIdOnly(driver.id, driver.name, date, {
+                 type: "clear",
+                 syncSchedule: true,
+                 revision: clearedRevision
+             });
+         } else if (result.shift) {
+-            setShiftForDriverDate(driver.name, date, {
++            setShiftForDriverIdOnly(driver.id, driver.name, date, {
+                 type: result.shift.type,
+                 name: result.shift.name || "",
+                 start: result.shift.start || null,
+@@ -366,12 +368,12 @@ function renderDispatcherShifts() {
+         driverSelect.replaceChildren();
+         drivers.forEach(driver => {
+             const option = document.createElement("option");
+-            option.value = driver.name;
++            option.value = driver.id || driver.uid || "";
+             const group = getGroupById(driver.groupId);
+             option.textContent = group ? `${driver.name} [${group.name}]` : driver.name;
+             driverSelect.appendChild(option);
+         });
+-        if (drivers.some(driver => driver.name === previous)) driverSelect.value = previous;
++        if (drivers.some(driver => (driver.id || driver.uid || "") === previous)) driverSelect.value = previous;
+     }
+     const dateInput = document.getElementById("shift-date-input");
+     if (dateInput && !dateInput.value) dateInput.value = todayDateStr();
+@@ -384,13 +386,13 @@ function renderDispatcherShifts() {
+     if (nameInput && !nameInput.dataset.dutyHintBound) {
+         nameInput.dataset.dutyHintBound = "1";
+         nameInput.addEventListener("input", () => {
+-            const drv = driverByName(driverSelect?.value || "");
++            const drv = getDriverById(driverSelect?.value || "");
+             const lid = drv?.groupId || drv?.lineId || lineId;
+             paintResolvedDutyHint(resolveDutyFromCaPlan(nameInput.value, lid));
+         });
+     }
+     if (nameInput?.value) {
+-        const drv = driverByName(driverSelect?.value || "");
++        const drv = getDriverById(driverSelect?.value || "");
+         paintResolvedDutyHint(resolveDutyFromCaPlan(nameInput.value, drv?.groupId || drv?.lineId || lineId));
+     }
+ 
+@@ -405,20 +407,28 @@ function renderDispatcherShifts() {
+     if (typeof lucide !== "undefined") lucide.createIcons();
+ }
+ 
+-function openShiftCell(driverName, dateStr) {
+-    const driver = driverByName(driverName);
++async function openShiftCell(driverId, dateStr) {
++    const driver = getDriverById(driverId);
+     if (!driver) return;
+     switchSection("dispatcher-shifts");
++    const lineId = driver.groupId || driver.lineId || window.state?.activeGroupHubId || null;
++    if (lineId) {
++        try {
++            await loadActiveServicePlanForLine(lineId);
++        } catch (e) {
++            console.warn("Active service plan could not be loaded", e);
++        }
++    }
+     const driverSelect = document.getElementById("shift-driver-select");
+     const dateInput = document.getElementById("shift-date-input");
+-    if (driverSelect) driverSelect.value = driver.name;
++    if (driverSelect) driverSelect.value = driver.id || driver.uid || "";
+     if (dateInput) dateInput.value = dateStr;
+-    const shift = getShiftForDriverDate(driver.name, dateStr);
++    const shift = getShiftForDriverIdOnly(driver.id || driver.uid, dateStr);
+     const nameInput = document.getElementById("shift-name-input");
+     const code = shift?.routeCode || parseRouteCodeFromText(shift?.name) || shift?.name || "";
+     if (nameInput) nameInput.value = code;
+-    fillDutyDatalist(driver.groupId || driver.lineId);
+-    paintResolvedDutyHint(resolveDutyFromCaPlan(code, driver.groupId || driver.lineId));
++    fillDutyDatalist(lineId);
++    paintResolvedDutyHint(resolveDutyFromCaPlan(code, lineId));
+     window.setTimeout(() => {
+         const form = document.querySelector(".shift-form-grid");
+         form?.scrollIntoView({ behavior: "smooth", block: "center" });
+@@ -435,7 +445,7 @@ function isCoveredWorkingShift(shift) {
+ /** Today’s covered duty must go through incident ? guided resolution, not silent clear/absence. */
+ function requireIncidentForTodayCoveredChange(driver, date, nextType) {
+     if (!driver || date !== todayDateStr()) return false;
+-    const existing = getShiftForDriverDate(driver.name, date);
++    const existing = getShiftForDriverIdOnly(driver.id || driver.uid, date);
+     if (!isCoveredWorkingShift(existing)) return false;
+     const next = String(nextType || "").toLowerCase();
+     if (!["clear", "off", "vacation", "sick"].includes(next)) return false;
+@@ -445,16 +455,16 @@ function requireIncidentForTodayCoveredChange(driver, date, nextType) {
+         "error"
+     );
+     if (typeof window.openOperationalIncident === "function") {
+-        window.openOperationalIncident(driver.name);
++        window.openOperationalIncident(driver.id || driver.uid);
+     }
+     return true;
+ }
+ 
+ async function assignShift() {
+-    const driverName = document.getElementById("shift-driver-select")?.value || "";
++    const driverId = document.getElementById("shift-driver-select")?.value || "";
+     const date = document.getElementById("shift-date-input")?.value || "";
+     const name = String(document.getElementById("shift-name-input")?.value || "").trim();
+-    const driver = driverByName(driverName);
++    const driver = getDriverById(driverId);
+     if (!driver || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !name || name.length > 120) {
+         showToast(t("shift_err_required"), "error");
+         return;
+@@ -493,8 +503,8 @@ async function assignShift() {
+     renderDispatcherShifts();
+ }
+ 
+-async function removeShift(driverName, dateStr) {
+-    const driver = driverByName(driverName);
++async function removeShift(driverId, dateStr) {
++    const driver = getDriverById(driverId);
+     if (!driver || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return;
+     if (requireIncidentForTodayCoveredChange(driver, dateStr, "clear")) return;
+     const saved = await persistShift(driver, dateStr, "clear");
+diff --git a/tests/e2e/dispatcher-cockpit.spec.js b/tests/e2e/dispatcher-cockpit.spec.js
+index 2ea328d..5a02a99 100644
+--- a/tests/e2e/dispatcher-cockpit.spec.js
++++ b/tests/e2e/dispatcher-cockpit.spec.js
+@@ -565,7 +565,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
+     await loginDispatcher(page);
+ 
+     await page.evaluate((date) =>
+-      window.dailyPlanAssignDriver(date, "morning", "101.S01", "Standby Driver"),
++      window.dailyPlanAssignDriver(date, "morning", "101.S01", "drv-standby"),
+       todayIso()
+     );
+ 
+diff --git a/tests/e2e/dispo-soft-remove.spec.js b/tests/e2e/dispo-soft-remove.spec.js
+index 809a50d..7a63092 100644
+--- a/tests/e2e/dispo-soft-remove.spec.js
++++ b/tests/e2e/dispo-soft-remove.spec.js
+@@ -222,7 +222,7 @@ test.describe("Dispo soft-remove (list, not company)", () => {
+ 
+     const invoked = await page.evaluate((d) => {
+       if (typeof window.clearDailyShift !== "function") return false;
+-      window.clearDailyShift("Soft Remove Driver", d);
++      window.clearDailyShift("drv-soft-1", d);
+       return true;
+     }, date);
+     expect(invoked).toBeTruthy();
+diff --git a/tests/unit/daily-plan-replacement.test.mjs b/tests/unit/daily-plan-replacement.test.mjs
+index 51cee8f..551b63e 100644
+--- a/tests/unit/daily-plan-replacement.test.mjs
++++ b/tests/unit/daily-plan-replacement.test.mjs
+@@ -29,7 +29,7 @@ test("daily driver replacement opens the guided incident flow before changing th
+   assert.ok(start > -1 && end > start);
+   assert.match(handler, /planBeforeChange\.slots\.find/);
+   assert.match(handler, /window\.openCoverageResolver\(incident\.id, preferredReplacementDriverId\)/);
+-  assert.match(handler, /window\.openOperationalIncident\(previousDriver\.name, preferredReplacementDriverId\)/);
++  assert.match(handler, /window\.openOperationalIncident\(previousDriverId, preferredReplacementDriverId\)/);
+   assert.match(handler, /if \(previousDriver\)[\s\S]*return;[\s\S]*persistShift\(/);
+   assert.doesNotMatch(handler, /persistShift\(previousDriver/);
+   assert.doesNotMatch(handler, /resolveReport\(/);
+@@ -69,7 +69,7 @@ test("drag-and-drop driver pool and slot drop targets are wired", async () => {
+   assert.match(source, /dragover/);
+   assert.match(source, /drop.*event/);
+   // Reuses existing server-authoritative assignment path
+-  assert.match(source, /dailyPlanAssignDriver\(dateStr, slotType, slotCode, driverName\)/);
++  assert.match(source, /dailyPlanAssignDriver\(dateStr, slotType, slotCode, driverId\)/);
+   // Read-only guard
+   assert.match(source, /isOperationalReadOnly\(\)/);
+   // Assigned drivers are also draggable between slots
+diff --git a/tests/unit/eu561-rest-period-attention.test.mjs b/tests/unit/eu561-rest-period-attention.test.mjs
+index 7c497f6..8558623 100644
+--- a/tests/unit/eu561-rest-period-attention.test.mjs
++++ b/tests/unit/eu561-rest-period-attention.test.mjs
+@@ -11,21 +11,24 @@ globalThis.window = {
+         activeGroupFilter: "",
+         groups: [{ id: "310" }],
+         drivers: [
+-            { name: "Driver Rest OK", groupId: "310", active: true },
+-            { name: "Driver Rest Short", groupId: "310", active: true },
+-            { name: "Driver Off Yesterday", groupId: "310", active: true },
+-            { name: "Driver No Data", groupId: "310", active: true }
++            { id: "drv-rest-ok", name: "Driver Rest OK", groupId: "310", active: true },
++            { id: "drv-rest-short", name: "Driver Rest Short", groupId: "310", active: true },
++            { id: "drv-off-yesterday", name: "Driver Off Yesterday", groupId: "310", active: true },
++            { id: "drv-no-data", name: "Driver No Data", groupId: "310", active: true }
+         ],
++        // Authoritative shape (P1-A): matched by driverId, never by name —
++        // driverName is included only as display data, same as the real
++        // monthly-plan-commit-produced shift documents.
+         shifts: [
+             // OK: 12h rest — ends 20:00 yesterday, starts 08:00 today (12h gap)
+-            { driverName: "Driver Rest OK", date: "2026-08-16", type: "afternoon", start: "12:00", end: "20:00", revision: 0 },
+-            { driverName: "Driver Rest OK", date: "2026-08-17", type: "morning", start: "08:00", end: "16:00", revision: 0 },
++            { driverId: "drv-rest-ok", driverName: "Driver Rest OK", date: "2026-08-16", type: "afternoon", start: "12:00", end: "20:00", revision: 0 },
++            { driverId: "drv-rest-ok", driverName: "Driver Rest OK", date: "2026-08-17", type: "morning", start: "08:00", end: "16:00", revision: 0 },
+             // Violation: ends 23:00 yesterday, starts 05:00 today (6h gap)
+-            { driverName: "Driver Rest Short", date: "2026-08-16", type: "night", start: "15:00", end: "23:00", revision: 0 },
+-            { driverName: "Driver Rest Short", date: "2026-08-17", type: "morning", start: "05:00", end: "13:00", revision: 0 },
++            { driverId: "drv-rest-short", driverName: "Driver Rest Short", date: "2026-08-16", type: "night", start: "15:00", end: "23:00", revision: 0 },
++            { driverId: "drv-rest-short", driverName: "Driver Rest Short", date: "2026-08-17", type: "morning", start: "05:00", end: "13:00", revision: 0 },
+             // Off yesterday, driving today — should not flag (off is not a driving type)
+-            { driverName: "Driver Off Yesterday", date: "2026-08-16", type: "off", revision: 0 },
+-            { driverName: "Driver Off Yesterday", date: "2026-08-17", type: "morning", start: "05:00", end: "13:00", revision: 0 }
++            { driverId: "drv-off-yesterday", driverName: "Driver Off Yesterday", date: "2026-08-16", type: "off", revision: 0 },
++            { driverId: "drv-off-yesterday", driverName: "Driver Off Yesterday", date: "2026-08-17", type: "morning", start: "05:00", end: "13:00", revision: 0 }
+             // Driver No Data: intentionally has no shifts at all
+         ]
+     }
+diff --git a/translations.js b/translations.js
+index 78b5447..f04aeb9 100644
+--- a/translations.js
++++ b/translations.js
+@@ -15,6 +15,11 @@ const TRANSLATIONS = {
+         ops_plan_gap_hint: "Kliknite — otvara se panel sa problemom i rešenjima.",
+         ops_plan_gap_aria: "Dnevni plan ima praznine. Otvorite panel rešenja.",
+         ops_attn_gap_driver_summary: "{driver} nema smenu za danas — dodelite smenu ili otvorite dnevni plan.",
++        radar_day_today: "Danas",
++        radar_day_tomorrow: "Sutra",
++        radar_day_after_tomorrow: "Prekosutra",
++        ops_attn_gap_driver_summary_dated: "{driver} nema smenu ({day}, {date}) — dodelite smenu ili otvorite dnevni plan.",
++        ops_attn_data_integrity: "Vozac bez validnog ID-a — prijavite ovaj problem pre nego što se dodeli smena.",
+         ops_attn_gap_slot_summary: "Slot {code} nema vozaca — otvorite dnevni plan i dodelite pokrice.",
+         ops_attn_gap_driver_hint: "Rešenje: dodelite smenu ovom vozacu ili otvorite dnevni plan grupe.",
+         ops_attn_gap_slot_hint: "Rešenje: otvorite dnevni plan i dodelite vozaca na ovaj slot.",
+@@ -834,6 +839,11 @@ const TRANSLATIONS = {
+         ops_plan_gap_hint: "Click — opens the panel with the problem and solutions.",
+         ops_plan_gap_aria: "Daily plan has gaps. Open the solutions panel.",
+         ops_attn_gap_driver_summary: "{driver} has no duty today — assign a shift or open the daily plan.",
++        radar_day_today: "Today",
++        radar_day_tomorrow: "Tomorrow",
++        radar_day_after_tomorrow: "Day after tomorrow",
++        ops_attn_gap_driver_summary_dated: "{driver} has no duty ({day}, {date}) — assign a shift or open the daily plan.",
++        ops_attn_data_integrity: "Driver without a valid ID — resolve this data issue before assigning a shift.",
+         ops_attn_gap_slot_summary: "Slot {code} has no driver — open the daily plan and assign coverage.",
+         ops_attn_gap_driver_hint: "Solution: assign a shift to this driver or open the group daily plan.",
+         ops_attn_gap_slot_hint: "Solution: open the daily plan and assign a driver to this slot.",
+@@ -1525,6 +1535,11 @@ const TRANSLATIONS = {
+         ops_plan_gap_hint: "Klicken — öffnet das Panel mit Problem und Lösungen.",
+         ops_plan_gap_aria: "Tagesplan hat Lücken. Lösungspanel öffnen.",
+         ops_attn_gap_driver_summary: "{driver} hat heute keinen Dienst — Schicht zuweisen oder Tagesplan öffnen.",
++        radar_day_today: "Heute",
++        radar_day_tomorrow: "Morgen",
++        radar_day_after_tomorrow: "Übermorgen",
++        ops_attn_gap_driver_summary_dated: "{driver} hat keinen Dienst ({day}, {date}) — Schicht zuweisen oder Tagesplan öffnen.",
++        ops_attn_data_integrity: "Fahrer ohne gültige ID — dieses Datenproblem vor der Schichtzuweisung beheben.",
+         ops_attn_gap_slot_summary: "Slot {code} hat keinen Fahrer — Tagesplan öffnen und Besetzung zuweisen.",
+         ops_attn_gap_driver_hint: "Lösung: diesem Fahrer eine Schicht zuweisen oder den Gruppen-Tagesplan öffnen.",
+         ops_attn_gap_slot_hint: "Lösung: Tagesplan öffnen und diesem Slot einen Fahrer zuweisen.",
