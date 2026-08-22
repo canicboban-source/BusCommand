@@ -9,6 +9,8 @@ test("Auth emulator unreachable -> login fails locally, never reaches production
       prodHits.push(req.url());
     }
   });
+  await page.route(/(?:127\.0\.0\.1|localhost):9099(?:\/|$)/, (route) => route.abort());
+
   await page.goto("/staff.html");
   const tab = page.locator("#tab-dispatcher-btn");
   if (await tab.isVisible().catch(() => false)) await tab.click();

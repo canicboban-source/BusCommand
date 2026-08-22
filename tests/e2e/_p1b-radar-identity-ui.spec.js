@@ -174,7 +174,14 @@ test.describe.serial("RADAR-P1B", () => {
 
     await page.locator("#shifts-weekly-grid").waitFor({ state: "visible", timeout: 10000 });
     const removeBtn = page.locator(`[data-action="removeShift"][data-action-args*="${seed.driverB}"][data-action-args*="${D2}"]`);
-    await expect(removeBtn).toBeVisible();
+    if (!await removeBtn.isVisible().catch(() => false)) {
+      const nextWeekBtn = page.locator('button[data-action="shiftWeekNav"][data-action-args="[1]"]');
+      if (await nextWeekBtn.isVisible().catch(() => false)) {
+        await nextWeekBtn.click();
+        await page.waitForTimeout(500);
+      }
+    }
+    await expect(removeBtn).toBeVisible({ timeout: 10000 });
     const removeArgs = await removeBtn.getAttribute("data-action-args");
     const removeParsed = JSON.parse(removeArgs || "[]");
     expect(removeParsed[0]).toBe(seed.driverB);

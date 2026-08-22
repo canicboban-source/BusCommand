@@ -16,6 +16,8 @@ test("Firestore emulator unreachable -> local failure, no prod fallback, no muta
     if (FORBIDDEN.some((re) => re.test(url.hostname))) prodDataPlaneHits.push(req.url());
   });
 
+  await page.route(/(?:127\.0\.0\.1|localhost):8080(?:\/|$)/, (route) => route.abort());
+
   await page.goto("/staff.html");
   const tab = page.locator("#tab-dispatcher-btn");
   if (await tab.isVisible().catch(() => false)) await tab.click();

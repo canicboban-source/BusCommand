@@ -32,6 +32,7 @@ test.describe("UI smoke", () => {
   });
 
   test("production mode fails closed without Preview Firebase variables", async ({ page }) => {
+    await page.route("https://www.gstatic.com/firebasejs/**", (route) => route.abort());
     await page.addInitScript(() => localStorage.setItem("buscommand_lang", "en"));
     await page.goto("/staff.html?mode=production");
     await expect(page.locator("#login-logo")).toContainText("BusCommand");
@@ -594,7 +595,7 @@ test.describe("UI smoke", () => {
     });
     await page.evaluate(() => window.switchSection("dispatcher-shifts"));
     await expect(page.locator("#dispatcher-shifts")).toBeVisible();
-    await page.locator("#shift-driver-select").selectOption("E2E Driver");
+    await page.locator("#shift-driver-select").selectOption({ value: "drv-e2e" });
     const today = new Date().toISOString().slice(0, 10);
     await page.locator("#shift-date-input").fill(today);
     await page.locator("#shift-name-input").fill("310.E2E");

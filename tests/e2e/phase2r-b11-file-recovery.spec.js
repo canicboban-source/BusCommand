@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { seedDemoState, loginDispatcher } = require("./helpers.js");
 
-const CHUNK_RE = /\/assets\/plan-import-[^/?#]+\.js(?:\?|$)/i;
+const CHUNK_RE = /\/assets\/plan-import-(?!loader)[^/?#]+\.js(?:\?|$)/i;
 const FIXTURE = fs.readFileSync(
   path.join(__dirname, "../fixtures/qa-monthly-plan-import-loose.txt"),
   "utf8"
