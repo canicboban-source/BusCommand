@@ -122,10 +122,12 @@ async function installFirebaseSaStubRoutes(page) {
 async function bootSaRemote(page) {
   await installRemoteApiSaBoot(page);
   await installFirebaseSaStubRoutes(page);
+  await stubSaDashboardApis(page);
   await page.goto("/staff.html");
   await expect(page.locator("#login-dispatcher-email")).toBeVisible({ timeout: 20000 });
   await loginSuperAdmin(page, SA_EMAIL, SA_PASSWORD);
   await expect(page.locator("#sa-open-create-modal")).toBeVisible({ timeout: 20000 });
+  await expect(page.locator("#superadmin-companies-list")).toBeVisible({ timeout: 10000 });
 }
 
 async function openCreateModal(page) {
@@ -325,8 +327,8 @@ test.describe("B2C-01-F1 production create-company CA follow-up", () => {
     const probe = createProbe();
     const createdCa = { value: null };
     const companyRecord = { value: null };
-    attachDashboardRefreshProbe(page, probe);
     await stubSaDashboardApis(page, { createdCa, companyRecord });
+    attachDashboardRefreshProbe(page, probe);
     installIntercepts(page, probe, { companyMode: "success", caMode: "success", createdCa, companyRecord });
     await installSentinelToast(page);
     const refreshBefore = refreshWaves(probe);
