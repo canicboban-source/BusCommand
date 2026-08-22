@@ -101,6 +101,7 @@ const {
   publicLostItemPhoto
 } = require("./lost-item-lifecycle");
 const { createStaffAuth } = require("./staff-auth");
+const { deriveTokenId } = require("./notification-dispatcher");
 
 const COST = 12;
 const smsProvider = createSmsProvider();
@@ -109,6 +110,13 @@ const SENSITIVE_DRIVER_FIELDS = Object.freeze([
   "temporaryCodeHash", "temporaryHash", "activationCodeHash", "activationExpiresAt",
   "activationUsedAt", "pin", "password", "passwordHash"
 ]);
+const fcmTokenRegisterSchema = z.object({
+  token: z.string().trim().min(20).max(4096),
+  deviceLabel: z.string().trim().max(100).optional().default("")
+}).strict();
+const fcmTokenRevokeSchema = z.object({
+  token: z.string().trim().min(20).max(4096)
+}).strict();
 const companySchema = z.string().trim().toLowerCase().min(1).max(64).regex(/^[a-z0-9][a-z0-9-]*$/);
 // The driver signs in with the employee id printed on their roster. `driverId`
 // stays accepted so a browser still running a cached bundle keeps working, but
@@ -608,6 +616,189 @@ function registerDriverRoutes(app, deps) {
       return res.status(500).json({ success: false, error: "Lokacija nije mogla biti sačuvana." });
     }
   });
+
+function isSafeFirestorePathSegment(segment) {
+  return typeof segment === "string" &&
+    segment.length >= 1 &&
+    segment.length <= 128 &&
+    /^[a-zA-Z0-9_-]+$/.test(segment) &&
+    segment !== "." &&
+    segment !== "..";
+}
+
+  app.post("/api/driver/fcm-token", rateLimit(20, 60_000), async (req, res) => {
+    const parsed = fcmTokenRegisterSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, code: "INVALID_FCM_TOKEN", error: "Nevažeći FCM token." });
+    }
+    try {
+      const { token, deviceLabel } = parsed.data;
+      const tokenId = deriveTokenId(token);
+      const companyId = req.driver.companyId;
+      const driverId = req.driver.uid;
+
+      const firestore = db();
+      const ownerRef = firestore.collection("fcm_token_owners").doc(tokenId);
+      const currentTokenRef = firestore.collection("companies").doc(companyId)
+        .collection("drivers").doc(driverId)
+        .collection("fcm_tokens").doc(tokenId);
+
+      const nowIso = new Date().toISOString();
+
+      const executeRegistration = async (tx) => {
+        const ownerSnap = await tx.get(ownerRef);
+        const currentTokenSnap = await tx.get(currentTokenRef);
+
+        if (!ownerSnap.exists) {
+          const initialCreatedAt = currentTokenSnap.exists
+            ? (currentTokenSnap.data()?.createdAt || nowIso)
+            : nowIso;
+
+          tx.set(currentTokenRef, {
+            token,
+            deviceLabel: deviceLabel || (currentTokenSnap.exists ? (currentTokenSnap.data()?.deviceLabel || "") : "") || "",
+            status: "active",
+            createdAt: initialCreatedAt,
+            updatedAt: nowIso,
+            lastDeliveredAt: null,
+            failedAttempts: 0,
+            lastErrorCode: null
+          });
+
+          tx.set(ownerRef, {
+            companyId,
+            driverId,
+            createdAt: initialCreatedAt,
+            updatedAt: nowIso
+          });
+        } else {
+          const ownerData = ownerSnap.data() || {};
+          const isSameOwner = ownerData.companyId === companyId && ownerData.driverId === driverId;
+
+          if (isSameOwner) {
+            const existingCreatedAt = currentTokenSnap.exists
+              ? (currentTokenSnap.data()?.createdAt || ownerData.createdAt || nowIso)
+              : (ownerData.createdAt || nowIso);
+
+            tx.set(currentTokenRef, {
+              token,
+              deviceLabel: deviceLabel || (currentTokenSnap.exists ? (currentTokenSnap.data()?.deviceLabel || "") : "") || "",
+              status: "active",
+              createdAt: existingCreatedAt,
+              updatedAt: nowIso,
+              lastDeliveredAt: null,
+              failedAttempts: 0,
+              lastErrorCode: null
+            });
+
+            tx.set(ownerRef, {
+              companyId,
+              driverId,
+              createdAt: ownerData.createdAt || existingCreatedAt,
+              updatedAt: nowIso
+            });
+          } else {
+            const oldCompanyId = ownerData.companyId;
+            const oldDriverId = ownerData.driverId;
+
+            if (isSafeFirestorePathSegment(oldCompanyId) && isSafeFirestorePathSegment(oldDriverId)) {
+              const oldTokenRef = firestore.collection("companies").doc(oldCompanyId)
+                .collection("drivers").doc(oldDriverId)
+                .collection("fcm_tokens").doc(tokenId);
+              tx.delete(oldTokenRef);
+            }
+
+            tx.set(currentTokenRef, {
+              token,
+              deviceLabel: deviceLabel || "",
+              status: "active",
+              createdAt: nowIso,
+              updatedAt: nowIso,
+              lastDeliveredAt: null,
+              failedAttempts: 0,
+              lastErrorCode: null
+            });
+
+            tx.set(ownerRef, {
+              companyId,
+              driverId,
+              createdAt: nowIso,
+              updatedAt: nowIso
+            });
+          }
+        }
+      };
+
+      if (typeof firestore.runTransaction === "function") {
+        await firestore.runTransaction(executeRegistration);
+      } else {
+        const directTx = {
+          get: async (ref) => ref.get(),
+          set: (ref, data, opts) => ref.set(data, opts),
+          delete: (ref) => ref.delete()
+        };
+        await executeRegistration(directTx);
+      }
+
+      return res.status(200).json({ success: true, tokenId });
+    } catch (error) {
+      req.log?.error?.({ err: error }, "Registracija FCM tokena vozača nije uspela");
+      return res.status(500).json({ success: false, error: "Registracija FCM tokena nije uspela." });
+    }
+  });
+
+  if (typeof app.delete === "function") {
+    app.delete("/api/driver/fcm-token", rateLimit(20, 60_000), async (req, res) => {
+      const parsed = fcmTokenRevokeSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ success: false, code: "INVALID_FCM_TOKEN", error: "Nevažeći FCM token." });
+      }
+      try {
+        const { token } = parsed.data;
+        const tokenId = deriveTokenId(token);
+        const companyId = req.driver.companyId;
+        const driverId = req.driver.uid;
+
+        const firestore = db();
+        const ownerRef = firestore.collection("fcm_token_owners").doc(tokenId);
+        const currentTokenRef = firestore.collection("companies").doc(companyId)
+          .collection("drivers").doc(driverId)
+          .collection("fcm_tokens").doc(tokenId);
+
+        const executeRevocation = async (tx) => {
+          const ownerSnap = await tx.get(ownerRef);
+          if (!ownerSnap.exists) {
+            tx.delete(currentTokenRef);
+            return;
+          }
+
+          const ownerData = ownerSnap.data() || {};
+          if (ownerData.companyId === companyId && ownerData.driverId === driverId) {
+            tx.delete(currentTokenRef);
+            tx.delete(ownerRef);
+          } else {
+            tx.delete(currentTokenRef);
+          }
+        };
+
+        if (typeof firestore.runTransaction === "function") {
+          await firestore.runTransaction(executeRevocation);
+        } else {
+          const directTx = {
+            get: async (ref) => ref.get(),
+            set: (ref, data, opts) => ref.set(data, opts),
+            delete: (ref) => ref.delete()
+          };
+          await executeRevocation(directTx);
+        }
+
+        return res.status(200).json({ success: true });
+      } catch (error) {
+        req.log?.error?.({ err: error }, "Opoziv FCM tokena vozača nije uspeo");
+        return res.status(500).json({ success: false, error: "Opoziv FCM tokena nije uspeo." });
+      }
+    });
+  }
 
   // Staff authorization lives in one place (server/staff-auth.js): revoked-token
   // check, tenant profile lookup, role drift and superseded sessions. This used

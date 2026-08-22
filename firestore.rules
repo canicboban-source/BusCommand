@@ -85,6 +85,12 @@ service cloud.firestore {
                     && isDriverLocationWriteAllowed(companyId);
     }
 
+    // ─── FCM PUSH TOKENS ─────────────────────────────────────
+    // Server-owned: inaccessible to all browser / client SDK sessions.
+    match /companies/{companyId}/drivers/{driverId}/fcm_tokens/{tokenId} {
+      allow read, write: if false;
+    }
+
     // ─── SMJENE ─────────────────────────────────────────────
 
     match /companies/{companyId}/shifts/{shiftId} {
@@ -261,6 +267,11 @@ service cloud.firestore {
     // Server-only ops docs (Admin SDK). Includes D24.2 driver_identity_guard
     // (companies/{companyId}/ops/driver_identity_guard) — browser R/W/L deny.
     match /companies/{companyId}/ops/{opsId} {
+      allow read, write: if false;
+    }
+
+    // ─── FCM TOKEN GLOBAL OWNERSHIP REGISTRY (samo Admin SDK) ─
+    match /fcm_token_owners/{tokenId} {
       allow read, write: if false;
     }
 
