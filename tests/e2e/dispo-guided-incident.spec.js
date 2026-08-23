@@ -116,7 +116,8 @@ test.describe("Dispo guided incident (reason → plan → attention)", () => {
         today
       };
     });
-    expect(aligned.shiftType).toBe("sick");
+    // Plan preservation: reporting driver unavailable does NOT modify shift on plan
+    expect(aligned.shiftType).toBe("morning");
     expect(aligned.reportOpen).toBeTruthy();
     expect(aligned.reasonCode).toBe("sick");
     expect(aligned.hasAudit).toBeTruthy();

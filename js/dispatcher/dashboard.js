@@ -28,6 +28,8 @@ import {
     refreshOpsAttentionPanelIfOpen,
     applyOpsAttentionFix,
     applyCoverageResolution,
+    resolveCoverageAvailableAgain,
+    resolveCoverageAvailableAgainFromCard,
     syncOpsPlanHealthAttentionState
 } from "./ops-attention.js";
 import { paintPlanHealthBanner } from "./plan-health-banner.js";
@@ -757,6 +759,9 @@ function ensureCoverageResolverModal() {
             <p id="ops-coverage-resolver-status" class="ops-resolution-status" role="status" aria-live="polite"></p>
             <div class="ops-incident-actions">
                 <button type="button" class="btn-secondary" ${actionAttr("closeCoverageResolver")}>${escapeHtml(t("btn_cancel"))}</button>
+                <button type="button" class="btn-secondary ops-coverage-available-again" ${actionAttr("resolveModalCoverageAvailableAgain")}>
+                    <i data-lucide="user-check"></i> ${escapeHtml(t("ops_attn_driver_available_again") || "Vozač je ponovo dostupan")}
+                </button>
                 <button type="submit" class="urgent-action ops-resolution-submit"><i data-lucide="wrench"></i> ${escapeHtml(t("ops_coverage_confirm"))}</button>
             </div>
         </form>`;
@@ -802,13 +807,34 @@ function openCoverageResolver(reportId, preferredReplacementDriverId = "") {
     return true;
 }
 
-function closeCoverageResolver() {
+function closeCoverageResolver(force = false) {
     const modal = document.getElementById("ops-coverage-resolver-modal");
-    if (!modal || modal.dataset.pending === "true") return;
+    if (!modal || (!force && modal.dataset.pending === "true")) return;
     modal.classList.add("hidden");
     modal.style.display = "none";
     modal.setAttribute("aria-hidden", "true");
     delete modal.dataset.reportId;
+    delete modal.dataset.pending;
+}
+
+async function resolveModalCoverageAvailableAgain() {
+    const modal = document.getElementById("ops-coverage-resolver-modal");
+    const reportId = String(modal?.dataset.reportId || "");
+    const status = modal?.querySelector("#ops-coverage-resolver-status");
+    const submit = modal?.querySelector("button[type='submit']");
+    const availBtn = modal?.querySelector(".ops-coverage-available-again");
+    if (!modal || !reportId) return;
+    modal.dataset.pending = "true";
+    if (submit) submit.disabled = true;
+    if (availBtn) availBtn.disabled = true;
+    try {
+        const ok = await resolveCoverageAvailableAgain(reportId, status);
+        if (ok) closeCoverageResolver(true);
+    } finally {
+        delete modal.dataset.pending;
+        if (submit) submit.disabled = false;
+        if (availBtn) availBtn.disabled = false;
+    }
 }
 
 async function submitCoverageResolution(event) {
@@ -824,7 +850,7 @@ async function submitCoverageResolution(event) {
     if (submit) submit.disabled = true;
     try {
         const ok = await applyCoverageResolution(reportId, replacementDriverId, replacementBus, status);
-        if (ok) closeCoverageResolver();
+        if (ok) closeCoverageResolver(true);
     } finally {
         delete modal.dataset.pending;
         if (submit) submit.disabled = false;
@@ -1082,21 +1108,6 @@ function closeOperationalIncident() {
     delete modal.dataset.busNumber;
 }
 
-function alignPlanAfterDriverIncident(driver, reasonCode, today) {
-    if (!driver?.id) return;
-    const shiftType = reasonCode === "sick" ? "sick" : "clear";
-    const label = reasonCode === "sick"
-        ? (t("shift_type_sick") || "Bolovanje")
-        : "";
-    // Bypass persistShift gate: incident is already being opened.
-    setShiftForDriverIdOnly(driverUid(driver), driver.name || "", today, {
-        type: shiftType,
-        name: label,
-        bus: "",
-        syncSchedule: true
-    });
-}
-
 function alignPlanAfterBusIncident(busNumber, reasonCode, today) {
     const number = String(busNumber || "").trim();
     if (!number) return;
@@ -1197,11 +1208,14 @@ async function submitOperationalIncident(event) {
         }
         if (result.report && !result.report.reasonCode) result.report.reasonCode = reasonCode;
         window.state.reports = Array.isArray(window.state.reports) ? window.state.reports : [];
-        window.state.reports.push(result.report);
-
-        if (affectedEntity === "driver") {
-            alignPlanAfterDriverIncident(driver, reasonCode, today);
+        const existingReportIndex = window.state.reports.findIndex((r) => r.id === result.report?.id);
+        if (existingReportIndex >= 0) {
+            window.state.reports[existingReportIndex] = { ...window.state.reports[existingReportIndex], ...result.report };
         } else {
+            window.state.reports.push(result.report);
+        }
+
+        if (affectedEntity === "vehicle") {
             alignPlanAfterBusIncident(busNumber, reasonCode, today);
         }
 
@@ -1270,6 +1284,8 @@ export {
     closeOperationalIncident,
     openCoverageResolver,
     closeCoverageResolver,
+    resolveModalCoverageAvailableAgain,
+    resolveCoverageAvailableAgainFromCard,
     transitionOperationalIncident,
     openOpsAttentionPanel,
     closeOpsAttentionPanel,
@@ -1278,6 +1294,8 @@ export {
 };
 
 window.openCoverageResolver = openCoverageResolver;
+window.resolveModalCoverageAvailableAgain = resolveModalCoverageAvailableAgain;
+window.resolveCoverageAvailableAgainFromCard = resolveCoverageAvailableAgainFromCard;
 window.openOpsAttentionPanel = openOpsAttentionPanel;
 window.focusOpsAttentionItem = focusOpsAttentionItem;
 window.closeOpsAttentionPanel = closeOpsAttentionPanel;

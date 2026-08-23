@@ -22,6 +22,7 @@ service cloud.firestore {
       allow read: if isSuperAdmin()
                   && companyCollection != "driver_credentials"
                   && companyCollection != "ops"
+                  && companyCollection != "ops_active_incidents"
                   && (companyCollection != "drivers" || !driverProfileExposesCredentials());
       allow write: if false;
     }
@@ -261,6 +262,10 @@ service cloud.firestore {
     // Server-only ops docs (Admin SDK). Includes D24.2 driver_identity_guard
     // (companies/{companyId}/ops/driver_identity_guard) — browser R/W/L deny.
     match /companies/{companyId}/ops/{opsId} {
+      allow read, write: if false;
+    }
+
+    match /companies/{companyId}/ops_active_incidents/{incidentId} {
       allow read, write: if false;
     }
 
