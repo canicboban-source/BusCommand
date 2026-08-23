@@ -361,8 +361,8 @@ test.describe("B2C-01-F1.1.1.1-A Escape no-load", () => {
       await page.locator("#sa-open-create-modal").click();
       await expect(page.locator("#sa-create-company-modal")).toBeVisible();
       await expect.poll(async () => loaderFailureToastCount(page), { timeout: 8000 }).toBe(1);
+      await expect.poll(() => chunkRequests, { timeout: 8000 }).toBeGreaterThan(chunksAtOpenStart);
       const chunksBeforeEscape = chunkRequests;
-      expect(chunksBeforeEscape).toBeGreaterThan(chunksAtOpenStart);
 
       await page.keyboard.press("Escape");
       await expect(page.locator("#sa-create-company-modal")).toBeHidden({ timeout: 5000 });
