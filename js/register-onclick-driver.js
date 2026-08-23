@@ -22,8 +22,16 @@ import { changeLanguage, t } from "./ui/i18n.js";
 import { closeModal, closeSosConfirmModal, confirmClearSOS, confirmResolveSOS, showModal } from "./ui/modals.js";
 import { toggleTheme } from "./ui/theme.js";
 import { canInvokeActionDuringDriverActivation } from "./auth/driver-access-gate.js";
+import { enableDriverPush, revokeDriverPushToken } from "./driver/driver-push-client.js";
+
+function driverLogout(...args) {
+    revokeDriverPushToken().catch(() => {});
+    return logout(...args);
+}
 
 const HANDLERS = {
+    toggleDriverPush: () => enableDriverPush(),
+    logout: driverLogout,
     archiveMessage,
     archiveReadMessages,
     cancelDriverActivation,
@@ -43,7 +51,6 @@ const HANDLERS = {
     fpNavSwitch,
     handleAvatarUpload,
     loginAsDriver,
-    logout,
     markMessageAsRead,
     openDriverActivation,
     openDriverMessagesNav,

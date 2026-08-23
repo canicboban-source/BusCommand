@@ -1,5 +1,10 @@
 const TRANSLATIONS = {
     sr: {
+        driver_notifications_enable: "Omogući obaveštenja",
+        driver_notifications_enabled: "Obaveštenja su uključena",
+        driver_notifications_denied: "Obaveštenja su blokirana u pregledaču",
+        driver_notifications_unsupported: "Obaveštenja nisu podržana na ovom uređaju",
+        driver_notifications_unavailable: "Servis obaveštenja trenutno nije dostupan",
         ca_nav_service_plan: "Planovi smena",
         nav_ops_center: "Operativni centar",
         ops_plan_healthy: "Plan je zdrav",
@@ -824,6 +829,11 @@ const TRANSLATIONS = {
 
     },
     en: {
+        driver_notifications_enable: "Enable notifications",
+        driver_notifications_enabled: "Notifications enabled",
+        driver_notifications_denied: "Notifications blocked in browser",
+        driver_notifications_unsupported: "Notifications not supported on this device",
+        driver_notifications_unavailable: "Notification service currently unavailable",
         ca_nav_service_plan: "Shift plans",
         nav_ops_center: "Operations center",
         ops_plan_healthy: "Plan is healthy",
@@ -1520,6 +1530,11 @@ const TRANSLATIONS = {
         ca_plan_duty_code_required: "Enter a duty code."
     },
     de: {
+        driver_notifications_enable: "Benachrichtigungen aktivieren",
+        driver_notifications_enabled: "Benachrichtigungen aktiviert",
+        driver_notifications_denied: "Benachrichtigungen im Browser blockiert",
+        driver_notifications_unsupported: "Benachrichtigungen auf diesem Gerät nicht unterstützt",
+        driver_notifications_unavailable: "Benachrichtigungsdienst derzeit nicht verfügbar",
         ca_nav_service_plan: "Dienstpläne",
         nav_ops_center: "Operationszentrale",
         ops_plan_healthy: "Plan ist gesund",

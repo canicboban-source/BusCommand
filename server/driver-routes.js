@@ -626,6 +626,14 @@ function isSafeFirestorePathSegment(segment) {
     segment !== "..";
 }
 
+  app.get("/api/driver/fcm-config", rateLimit(60, 60_000), (req, res) => {
+    const vapidKey = String(process.env.FIREBASE_WEB_PUSH_VAPID_PUBLIC_KEY || "").trim();
+    if (!vapidKey) {
+      return res.json({ success: true, enabled: false, vapidKey: null });
+    }
+    return res.json({ success: true, enabled: true, vapidKey });
+  });
+
   app.post("/api/driver/fcm-token", rateLimit(20, 60_000), async (req, res) => {
     const parsed = fcmTokenRegisterSchema.safeParse(req.body);
     if (!parsed.success) {

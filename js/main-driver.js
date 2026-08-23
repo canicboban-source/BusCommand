@@ -9,6 +9,7 @@ import { installDriverSurface } from "./install-driver.js";
 import { registerOnclickHandlers } from "./register-onclick-driver.js";
 import { bootstrapBusCommand } from "./bootstrap/init.js";
 import { migrateLegacyStorage } from "./core/storage-keys.js";
+import { refreshDriverPushOnStartup } from "./driver/driver-push-client.js";
 
 window.__BUSCOMMAND_SURFACE__ = "driver";
 window.BusCommandConfig = BusCommandConfig;
@@ -20,6 +21,14 @@ window.ApiClient = ApiClient;
 migrateLegacyStorage();
 installDriverSurface();
 registerOnclickHandlers();
+
+if (Auth?.onAuthStateChanged) {
+    Auth.onAuthStateChanged((user) => {
+        if (user && user.role === "driver") {
+            refreshDriverPushOnStartup();
+        }
+    });
+}
 
 function startBusCommand() {
     bootstrapBusCommand();

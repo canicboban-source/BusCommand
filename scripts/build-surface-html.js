@@ -104,7 +104,8 @@ const DRIVER_ONLY_IDS = [
   "fp-mobile-nav",
   "pre-trip-modal",
   "sos-trigger-modal",
-  "msg-fullscreen-alert"
+  "msg-fullscreen-alert",
+  "driver-push-toggle-btn"
 ];
 
 function buildSurfaceHtml(surface, entryScript, extras = {}) {

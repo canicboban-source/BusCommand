@@ -83,3 +83,60 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+self.addEventListener("push", (event) => {
+  const title = "BusCommand";
+  const body = "Imate novu operativnu poruku.";
+  let tag = "shift-notification";
+  const data = { eventType: "operational_message" };
+
+  if (event.data) {
+    try {
+      const json = event.data.json();
+      if (json && typeof json === "object") {
+        if (json.notification && typeof json.notification === "object") {
+          if (typeof json.notification.tag === "string" && json.notification.tag.length > 0 && json.notification.tag.length <= 64) {
+            tag = json.notification.tag;
+          }
+        }
+        if (json.data && typeof json.data === "object" && typeof json.data.eventType === "string") {
+          data.eventType = json.data.eventType;
+        }
+      }
+    } catch {
+      // Malformed json payload falls back safely to generic operational notification
+    }
+  }
+
+  const options = {
+    body,
+    icon: "/brand/logo-icon-192.png",
+    badge: "/brand/logo-icon-192.png",
+    tag,
+    data
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const driverUrl = new URL("/driver.html", self.location.origin).href;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url && client.url.startsWith(self.location.origin) && "focus" in client) {
+          const clientPath = new URL(client.url).pathname;
+          if (clientPath === "/driver.html" || clientPath === "/driver") {
+            return client.focus();
+          }
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(driverUrl);
+      }
+    })
+  );
+});
