@@ -122,15 +122,19 @@ async function installFirebaseSaStubRoutes(page) {
 async function bootSaRemote(page) {
   await installRemoteApiSaBoot(page);
   await installFirebaseSaStubRoutes(page);
+  await stubSaDashboardApis(page);
   await page.goto("/staff.html");
   await expect(page.locator("#login-dispatcher-email")).toBeVisible({ timeout: 20000 });
   await loginSuperAdmin(page, SA_EMAIL, SA_PASSWORD);
   await expect(page.locator("#sa-open-create-modal")).toBeVisible({ timeout: 20000 });
+  await expect(page.locator("#superadmin-companies-list")).toBeVisible({ timeout: 10000 });
 }
 
 async function openCreateModal(page) {
+  const chunkPromise = page.waitForResponse((res) => /sa-create-company-flow/.test(res.url()) && res.status() === 200, { timeout: 5000 }).catch(() => null);
   await page.locator("#sa-open-create-modal").click();
   await expect(page.locator("#sa-create-company-modal")).toBeVisible();
+  await chunkPromise;
   await expect
     .poll(async () => {
       if (await page.locator("#sa-new-name").evaluate((el) => document.activeElement === el).catch(() => false)) {
@@ -138,6 +142,9 @@ async function openCreateModal(page) {
       }
       if (await page.locator("#sa-ca-name").evaluate((el) => document.activeElement === el).catch(() => false)) {
         return "ca";
+      }
+      if (await page.locator("#sa-ca-password").evaluate((el) => document.activeElement === el).catch(() => false)) {
+        return "ca-password";
       }
       return "";
     }, { timeout: 10000 })
@@ -325,8 +332,8 @@ test.describe("B2C-01-F1 production create-company CA follow-up", () => {
     const probe = createProbe();
     const createdCa = { value: null };
     const companyRecord = { value: null };
-    attachDashboardRefreshProbe(page, probe);
     await stubSaDashboardApis(page, { createdCa, companyRecord });
+    attachDashboardRefreshProbe(page, probe);
     installIntercepts(page, probe, { companyMode: "success", caMode: "success", createdCa, companyRecord });
     await installSentinelToast(page);
     const refreshBefore = refreshWaves(probe);
@@ -412,6 +419,7 @@ test.describe("B2C-01-F1 production create-company CA follow-up", () => {
     await openCreateModal(page);
     await fillCreateForm(page, { withCa: true });
     await page.locator("#sa-create-company-btn").click();
+    await expect.poll(() => probe.company, { timeout: 10000 }).toBe(1);
     await expect(page.locator("#sa-create-partial-banner")).toBeVisible({ timeout: 10000 });
     expect(probe.ca).toBe(0);
     await page.locator("#sa-create-company-modal .modal-close").click();
@@ -458,7 +466,8 @@ test.describe("B2C-01-F1 production create-company CA follow-up", () => {
     await openCreateModal(page);
     await fillCreateForm(page, { withCa: true });
     await page.locator("#sa-create-company-btn").click();
-    await expect.poll(() => probe.ca).toBe(1);
+    await expect.poll(() => probe.company, { timeout: 10000 }).toBe(1);
+    await expect.poll(() => probe.ca, { timeout: 10000 }).toBe(1);
     await page.locator('#sa-create-company-modal [data-action="superadminCloseCreateModal"].btn-secondary').click();
     await expect(page.locator("#sa-create-leave-confirm")).toBeVisible({ timeout: 8000 });
     await page.locator("#sa-create-leave-confirm-btn").click();
@@ -558,6 +567,7 @@ test.describe("B2C-01-F1 production create-company CA follow-up", () => {
     // Re-open under block to exercise footer Close
     await page.locator("#sa-open-create-modal").click();
     await expect(page.locator("#sa-create-company-modal")).toBeVisible();
+    await expect.poll(async () => failedChunk, { timeout: 8000 }).toBe(failedAfterOpen + 1);
     await expect.poll(async () => loaderFailureToastCount(page), { timeout: 8000 }).toBe(1);
     const failedBeforeFooter = failedChunk;
     await page.locator('#sa-create-company-modal [data-action="superadminCloseCreateModal"].btn-secondary').click();

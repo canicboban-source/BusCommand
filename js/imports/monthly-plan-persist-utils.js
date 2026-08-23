@@ -18,12 +18,41 @@ function foldName(name) {
         .trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-/** Exact-name lookup with diacritics folding, so persist phase never drops a
- *  driver that the import preview already matched (e.g. "Djordjevic" → "Đorđević"). */
+function nameTokens(name) {
+    const folded = foldName(name);
+    if (!folded) return [];
+    return folded.split(" ").filter(Boolean);
+}
+
+function tokenMultisetEquals(tokensA, tokensB) {
+    if (tokensA.length !== tokensB.length || tokensA.length === 0) return false;
+    const sortedA = [...tokensA].sort();
+    const sortedB = [...tokensB].sort();
+    for (let i = 0; i < sortedA.length; i++) {
+        if (sortedA[i] !== sortedB[i]) return false;
+    }
+    return true;
+}
+
+/** Exact-name lookup with diacritics folding and token multiset reordering, so
+ *  persist phase never drops a driver that the import preview already matched. */
 function findDriverByName(drivers, driverName) {
     const needle = foldName(driverName);
     if (!needle) return null;
-    return (drivers || []).find((driver) => foldName(driver.name) === needle) || null;
+    const needleTokens = nameTokens(driverName);
+
+    const candidates = (drivers || []).filter((driver) => {
+        const dKey = foldName(driver?.name);
+        if (dKey === needle) return true;
+        if (needleTokens.length >= 2) {
+            const dTokens = nameTokens(driver?.name);
+            return tokenMultisetEquals(needleTokens, dTokens);
+        }
+        return false;
+    });
+
+    if (candidates.length === 1) return candidates[0];
+    return null;
 }
 
-export { normalizeType, findDriverByName };
+export { normalizeType, findDriverByName, tokenMultisetEquals };

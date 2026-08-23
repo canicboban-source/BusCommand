@@ -1,9 +1,69 @@
 const { test, expect } = require("@playwright/test");
+const http = require("http");
+const net = require("net");
+const path = require("path");
+const { spawn } = require("child_process");
 const pkg = require("../../package.json");
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:8766";
 
+function getFreePort() {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.listen(0, "127.0.0.1", () => {
+      const port = srv.address().port;
+      srv.close(() => resolve(port));
+    });
+    srv.on("error", reject);
+  });
+}
+
+function waitForServer(url, timeoutMs = 15000) {
+  const start = Date.now();
+  return new Promise((resolve, reject) => {
+    function check() {
+      http.get(url, (res) => {
+        if (res.statusCode === 200) return resolve();
+        if (Date.now() - start > timeoutMs) return reject(new Error("Timeout waiting for server"));
+        setTimeout(check, 100);
+      }).on("error", () => {
+        if (Date.now() - start > timeoutMs) return reject(new Error("Timeout waiting for server"));
+        setTimeout(check, 100);
+      });
+    }
+    check();
+  });
+}
+
 test.describe("API smoke", () => {
+  let noFirebaseServer = null;
+  let noFirebaseBase = null;
+
+  test.beforeAll(async () => {
+    const port = await getFreePort();
+    noFirebaseBase = `http://127.0.0.1:${port}`;
+    const env = {
+      ...process.env,
+      PORT: String(port),
+      BUSCOMMAND_QA_HARNESS: "1",
+      FIRESTORE_EMULATOR_HOST: "",
+      FIREBASE_AUTH_EMULATOR_HOST: "",
+      FIREBASE_SERVICE_ACCOUNT_JSON: "",
+      GOOGLE_APPLICATION_CREDENTIALS: ""
+    };
+    noFirebaseServer = spawn(process.execPath, [path.resolve(__dirname, "../../api-server.js")], {
+      env,
+      stdio: "ignore"
+    });
+    await waitForServer(`${noFirebaseBase}/api/health`);
+  });
+
+  test.afterAll(async () => {
+    if (noFirebaseServer) {
+      noFirebaseServer.kill();
+    }
+  });
+
   test("GET /api/health", async ({ request }) => {
     const res = await request.get(`${BASE}/api/health`);
     expect(res.status()).toBe(200);
@@ -53,7 +113,7 @@ test.describe("API smoke", () => {
   });
 
   test("POST /api/auth/driver-login fails closed without Firebase", async ({ request }) => {
-    const res = await request.post(`${BASE}/api/auth/driver-login`, {
+    const res = await request.post(`${noFirebaseBase}/api/auth/driver-login`, {
       data: { companyId: "local-test", eid: "TEST-EID", loginCode: "482913" }
     });
     expect(res.status()).toBe(503);
@@ -76,7 +136,7 @@ test.describe("API smoke", () => {
   });
 
   test("GET /api/license fails closed without Firebase", async ({ request }) => {
-    const res = await request.get(`${BASE}/api/license/local-test`);
+    const res = await request.get(`${noFirebaseBase}/api/license/local-test`);
     expect(res.status()).toBe(503);
     const body = await res.json();
     expect(body.success).toBe(false);

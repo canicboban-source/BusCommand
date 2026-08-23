@@ -61,6 +61,8 @@ test.describe("Super Admin demo", () => {
 
   test("5x logo modal accepts demo SA email+password", async ({ page }) => {
     await page.goto("/staff.html");
+    await expect(page.locator("#login-screen")).toBeVisible();
+    await page.waitForFunction(() => typeof window.handleLogoClick === "function");
     await page.evaluate(() => {
       for (let i = 0; i < 5; i++) {
         if (typeof window.handleLogoClick === "function") window.handleLogoClick();
@@ -100,12 +102,14 @@ test.describe("Super Admin demo", () => {
 
     await page.locator('[data-action="superadminOpenCreateModal"]').click();
     await expect(page.locator("#sa-create-company-modal")).toBeVisible();
+    await page.waitForTimeout(250);
     await page.locator("#sa-new-name").fill("Temp Co");
     await page.locator("#sa-new-tenant").fill("temp-co");
     await page.locator("#sa-ca-name").fill("Temp Admin");
     await page.locator("#sa-ca-email").fill("temp-ca@qa.local");
     await page.locator("#sa-ca-password").fill("Qa-test-ok-9");
     await page.locator("#sa-create-company-btn").click();
+    await expect(page.locator("#sa-create-company-modal")).toBeHidden({ timeout: 10000 });
     await expect(page.locator("#superadmin-total-companies")).toHaveText("2");
 
     const tempRow = page.locator('#superadmin-companies-list .sa-company-row[data-company-id="temp-co"]');

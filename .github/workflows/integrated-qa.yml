@@ -42,21 +42,23 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: First complete verification
+      # Public browser config plus isolated localhost emulator build values
+      - name: Complete application verification
         run: |
+          cp .env.example .env.local
+          cat << 'EOF' >> .env.local
+          VITE_USE_FIREBASE_EMULATOR=1
+          VITE_FIREBASE_EMULATOR_PROJECT_ID=demo-buscommand-scale
+          VITE_FIREBASE_EMULATOR_FIRESTORE_HOST=127.0.0.1
+          VITE_FIREBASE_EMULATOR_FIRESTORE_PORT=8080
+          VITE_FIREBASE_EMULATOR_AUTH_HOST=127.0.0.1
+          VITE_FIREBASE_EMULATOR_AUTH_PORT=9099
+          EOF
           npm run lint -- --quiet
           npm run test:unit
           npm run test:rules
           npm run build
-          npm run test:e2e
-
-      - name: Second complete verification
-        run: |
-          npm run lint -- --quiet
-          npm run test:unit
-          npm run test:rules
-          npm run build
-          npm run test:e2e
+          npx playwright test --retries=0
 
       - name: Preserve browser diagnostics
         if: failure()

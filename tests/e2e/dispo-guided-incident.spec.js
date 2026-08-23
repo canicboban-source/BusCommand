@@ -85,7 +85,7 @@ test.describe("Dispo guided incident (reason → plan → attention)", () => {
     await page.evaluate(() => {
       window.state.activeGroupHubId = "101";
       if (typeof window.openOperationalIncident === "function") {
-        window.openOperationalIncident("Marko Sick");
+        window.openOperationalIncident("drv-marko");
       } else {
         throw new Error("openOperationalIncident missing");
       }

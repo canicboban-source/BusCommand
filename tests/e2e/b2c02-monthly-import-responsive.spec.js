@@ -131,6 +131,7 @@ test.describe("B2C-02 monthly import responsive preview", () => {
     await expect(month).toContainText("avg 2026");
     await expect(month).toHaveAttribute("aria-label", /Mesec|Month|Monat/i);
 
+    await page.locator('[data-testid="plan-import-pending-row"]').scrollIntoViewIfNeeded();
     const layout = await measureLayout(page);
     expect(layout.nativeMonthCount).toBe(0);
     expect(layout.driverText).toBe(LONG_NAME);

@@ -421,7 +421,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
       const shift = window.state.shifts.find(item => item.driverId === "drv-wrong");
       return shift?.routeCode || shift?.name || "";
     })).toBe("101.S02");
-    await expect(page.locator(".ops-attention-card").filter({ hasText: /Wrong Code Driver/i })).toHaveCount(0);
+    await expect(page.locator('.ops-attention-card[data-attn-id="shift:drv-wrong"]')).toHaveCount(0);
   });
 
   test("dispatcher can edit bus plate and ops status; breakdown leaves the free pool", async ({ page }) => {
@@ -555,7 +555,7 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await expect.poll(async () => page.evaluate(() =>
       window.state.shifts.find(item => item.driverId === "drv-nobus")?.bus
     )).toBe("BUS-SAME");
-    await expect(page.locator(".ops-attention-card").filter({ hasText: /No Bus Driver/i })).toHaveCount(0);
+    await expect(page.locator('.ops-attention-card[data-attn-id="bus:drv-nobus"]')).toHaveCount(0);
   });
 
   test("daily replacement records the incident first and applies one guided resolution", async ({ page }) => {
