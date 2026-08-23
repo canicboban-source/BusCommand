@@ -52,18 +52,40 @@ function foldNameKey(value) {
     return foldDiacritics(String(value || "").trim().toLowerCase()).replace(/\s+/g, " ");
 }
 
+function nameTokens(value) {
+    const folded = foldNameKey(value);
+    if (!folded) return [];
+    return folded.split(" ").filter(Boolean);
+}
+
+function tokenMultisetEquals(tokensA, tokensB) {
+    if (tokensA.length !== tokensB.length || tokensA.length === 0) return false;
+    const sortedA = [...tokensA].sort();
+    const sortedB = [...tokensB].sort();
+    for (let i = 0; i < sortedA.length; i++) {
+        if (sortedA[i] !== sortedB[i]) return false;
+    }
+    return true;
+}
+
 function matchDriversByName(name, drivers) {
-    const needle = foldNameKey(name);
-    if (!needle) return { matches: [], ambiguous: false };
-    const exact = (drivers || []).filter((d) => foldNameKey(d?.name) === needle);
-    if (exact.length === 1) return { matches: exact, ambiguous: false };
-    if (exact.length > 1) return { matches: exact, ambiguous: true };
-    const partial = (drivers || []).filter((d) => {
-        const dn = foldNameKey(d?.name);
-        return dn && (dn.includes(needle) || needle.includes(dn));
+    const needleKey = foldNameKey(name);
+    if (!needleKey) return { matches: [], ambiguous: false };
+    const needleTokens = nameTokens(name);
+    if (!needleTokens.length) return { matches: [], ambiguous: false };
+
+    const candidates = (drivers || []).filter((d) => {
+        const dKey = foldNameKey(d?.name);
+        if (dKey === needleKey) return true;
+        if (needleTokens.length >= 2) {
+            const dTokens = nameTokens(d?.name);
+            return tokenMultisetEquals(needleTokens, dTokens);
+        }
+        return false;
     });
-    if (partial.length === 1) return { matches: partial, ambiguous: false };
-    if (partial.length > 1) return { matches: partial, ambiguous: true };
+
+    if (candidates.length === 1) return { matches: candidates, ambiguous: false };
+    if (candidates.length > 1) return { matches: candidates, ambiguous: true };
     return { matches: [], ambiguous: false };
 }
 
@@ -567,6 +589,21 @@ async function runServerPreview() {
     }
 
     if (!result?.success) {
+        if (result?.code === "NETWORK_ERROR" || result?.status === 0) {
+            _serverImport = {
+                phase: "preview_transport_failed",
+                jobs: [],
+                errors: [{ code: "PREVIEW_TRANSPORT_FAILED" }],
+                busy: false
+            };
+            renderPlanImportPreview();
+            showToast(
+                t("plan_import_preview_transport_failed") || "Server preview could not be reached. Pending files are kept — retry preview.",
+                "error",
+                8000
+            );
+            return;
+        }
         _serverImport = {
             phase: "rejected",
             jobs: [],
@@ -630,6 +667,21 @@ async function runServerCommit() {
                 return;
             }
             if (!result?.success) {
+                if (result?.code === "NETWORK_ERROR" || result?.status === 0) {
+                    _serverImport = {
+                        phase: "commit_unknown",
+                        jobs: retainedJobs,
+                        errors: [{ code: "COMMIT_OUTCOME_UNKNOWN" }],
+                        busy: false
+                    };
+                    renderPlanImportPreview();
+                    showToast(
+                        t("plan_import_commit_unknown") || "Commit outcome is not confirmed. Retry the same import.",
+                        "error",
+                        9000
+                    );
+                    return;
+                }
                 const code = result?.code || "MONTHLY_IMPORT_COMMIT_FAILED";
                 const recovery = result?.recoveryRequired === true
                     || code === "MONTHLY_IMPORT_COMPENSATION_FAILED"
@@ -870,5 +922,8 @@ export {
     updatePendingImportMonth,
     removePendingImport,
     clearPendingPlanImports,
-    confirmBulkPlanImport
+    confirmBulkPlanImport,
+    matchDriversByName,
+    matchDriverByName,
+    tokenMultisetEquals
 };
