@@ -136,7 +136,7 @@ const activateSchema = z.object({
 });
 const groupIdSchema = z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/);
 const importSchema = z.object({ companyId: companySchema, groupId: groupIdSchema, csv: z.string().min(1).max(1_000_000) });
-const driverIdSchema = z.string().uuid();
+const driverIdSchema = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/);
 const driverStatusSchema = z.object({ active: z.boolean() });
 const busIdSchema = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/);
 const busOpsStatusSchema = z.enum(["active", "breakdown", "reserve", "other_line"]);
@@ -1344,13 +1344,16 @@ function isSafeFirestorePathSegment(segment) {
 
   app.post("/api/driver/shift-confirmations", rateLimit(10, 60_000), async (req, res) => {
     const parsed = shiftConfirmationSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ success: false, error: "Neva\u017ee\u0107a potvrda smene." });
-    const allowed = new Map(req.driverWorkPolicy.confirmationTargets.map((target) => [target.date, target]));
-    if (parsed.data.dates.some((date) => !allowed.has(date))) {
-      return res.status(403).json({ success: false, error: "Potvrditi se mogu samo ponu\u0111ene naredne smene." });
-    }
+    if (!parsed.success) return res.status(400).json({ success: false, error: "Nevažeća potvrda smene." });
     try {
-      const companyRef = req.driverWorkPolicy.companyRef;
+      const policy = req.driverWorkPolicy || await loadDriverWorkPolicy(req.driver);
+      const confirmationTargets = policy?.confirmationTargets || [];
+      const allowed = new Map(confirmationTargets.map((target) => [target.date, target]));
+      if (parsed.data.dates.some((date) => !allowed.has(date))) {
+        return res.status(403).json({ success: false, error: "Potvrditi se mogu samo ponuđene naredne smene." });
+      }
+      const companyRef = policy?.companyRef || db().collection("companies").doc(req.driver.companyId);
+      const sourceShiftDate = policy?.shift?.date || null;
       const confirmedAt = admin().firestore.FieldValue.serverTimestamp();
       const boundRevisions = await db().runTransaction(async (tx) => {
         const dates = parsed.data.dates;
@@ -1367,7 +1370,7 @@ function isSafeFirestorePathSegment(segment) {
         for (let i = 0; i < dates.length; i += 1) {
           const live = shiftSnaps[i].exists ? shiftSnaps[i].data() : null;
           const groupId = live?.groupId
-            || req.driverWorkPolicy?.shift?.groupId
+            || policy?.shift?.groupId
             || req.driver?.groupId
             || null;
           const month = scheduleMonthFromDate(dates[i]);
@@ -1427,10 +1430,10 @@ function isSafeFirestorePathSegment(segment) {
           }
           const boundRevision = currentRevision(live);
           revisions[date] = boundRevision;
-          pending.push({ snap, date, target, boundRevision });
+          pending.push({ date, snap, target, boundRevision });
         }
 
-        // 6) Writes only after all reads + gates: clear safe-expired locks, then confirms.
+        // 6) All writes after all reads and gate decisions.
         for (const gate of gates) {
           if (gate.decision.clearLock) tx.delete(gate.lockRef);
         }
@@ -1441,7 +1444,7 @@ function isSafeFirestorePathSegment(segment) {
             shiftFingerprint: item.target.fingerprint,
             confirmationBoundRevision: item.boundRevision,
             confirmedAt,
-            confirmationSourceShiftDate: req.driverWorkPolicy.shift.date
+            confirmationSourceShiftDate: sourceShiftDate
           }, { merge: true });
           // Update existing shift only — never merge-create a phantom assignment.
           tx.set(item.snap.ref, {
@@ -1449,7 +1452,7 @@ function isSafeFirestorePathSegment(segment) {
             confirmedAt,
             shiftFingerprint: item.target.fingerprint,
             confirmationBoundRevision: item.boundRevision,
-            confirmationSourceShiftDate: req.driverWorkPolicy.shift.date,
+            confirmationSourceShiftDate: sourceShiftDate,
             updatedAt: confirmedAt
           }, { merge: true });
         }
@@ -1469,7 +1472,7 @@ function isSafeFirestorePathSegment(segment) {
       }
       await logAudit(req.driver.companyId, req.driver.uid, "driver_shifts_confirmed", {
         dates: parsed.data.dates,
-        sourceShiftDate: req.driverWorkPolicy.shift.date,
+        sourceShiftDate,
         boundRevisions
       });
       return res.json({ success: true, confirmedDates: parsed.data.dates });

@@ -17,7 +17,7 @@ const STAFF_MESSAGE_TEMPLATES = Object.freeze([
 
 const TEMPLATE_SET = new Set(STAFF_MESSAGE_TEMPLATES);
 
-const driverIdSchema = z.string().uuid();
+const driverIdSchema = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/);
 const groupIdSchema = z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/);
 
 const staffMessageSchema = z.object({
