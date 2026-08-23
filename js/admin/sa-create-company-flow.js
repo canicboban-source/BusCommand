@@ -520,7 +520,7 @@ async function runSaFullCreateFlow() {
                     showSaCreateOutcomeToast(mapSaCreateApiError(res, "sa_create_company_exists"), "error");
                     return false;
                 }
-                if (res == null || (res.success === false && !res.error && !res.status)) {
+                if (res == null || (res.success === false && !res.error && !res.status) || res.code === "NETWORK_ERROR" || res.status === 0) {
                     saCreateFlow.status = SA_CREATE_FLOW.UNKNOWN_REQUIRES_CHECK;
                     applySaCreateUnknownUi();
                     showSaCreateOutcomeToast(t("sa_create_unknown_check_company"), "error");

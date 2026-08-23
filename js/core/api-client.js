@@ -13,23 +13,78 @@ const ApiClient = (() => {
         if (!headers["Content-Type"] && options.body) {
             headers["Content-Type"] = "application/json";
         }
-        const token = await _getToken();
-        if (token) headers["Authorization"] = "Bearer " + token;
-        const res = await window.fetch(path, { ...options, headers });
-
-        let data;
+        let token = null;
         try {
-            data = await res.json();
+            token = await _getToken();
+        } catch { /* ignore token lookup error */ }
+        if (token) headers["Authorization"] = "Bearer " + token;
+
+        let res;
+        try {
+            res = await window.fetch(path, { ...options, headers });
         } catch {
-            data = { success: false, error: "Nevalidan odgovor servera." };
+            return {
+                success: false,
+                error: "Mrežna greška. Proverite internet vezu.",
+                code: "NETWORK_ERROR",
+                status: 0
+            };
+        }
+
+        let data = null;
+        const contentType = res.headers && typeof res.headers.get === "function"
+            ? (res.headers.get("content-type") || "")
+            : "";
+        if (contentType.includes("application/json")) {
+            try {
+                data = await res.json();
+            } catch {
+                data = null;
+            }
+        } else {
+            try {
+                const text = await res.text();
+                if (text && text.trim().startsWith("{")) {
+                    data = JSON.parse(text);
+                }
+            } catch {
+                data = null;
+            }
         }
 
         if (!res.ok) {
+            let errorMsg = data && typeof data.error === "string" ? data.error : null;
+            let code = data && typeof data.code === "string" ? data.code : null;
+
+            if (!errorMsg) {
+                if (res.status === 401) {
+                    errorMsg = "Nevažeći ili istekao token.";
+                    code = code || "UNAUTHORIZED";
+                } else if (res.status === 403) {
+                    errorMsg = "Pristup odbijen.";
+                    code = code || "FORBIDDEN";
+                } else if (res.status === 404) {
+                    errorMsg = "Traženi resurs nije pronađen.";
+                    code = code || "NOT_FOUND";
+                } else if (res.status === 409) {
+                    errorMsg = "Konflikt podataka.";
+                    code = code || "CONFLICT";
+                } else if (res.status === 429) {
+                    errorMsg = "Prekoračen broj zahteva. Pokušajte ponovo kasnije.";
+                    code = code || "RATE_LIMITED";
+                } else if (res.status >= 500) {
+                    errorMsg = "Servis je trenutno nedostupan.";
+                    code = code || "SERVICE_UNAVAILABLE";
+                } else {
+                    errorMsg = "HTTP " + res.status;
+                }
+            }
+
             return {
                 success: false,
-                error: (data && data.error) || ("HTTP " + res.status),
+                error: errorMsg,
                 status: res.status,
-                code: data && data.code,
+                code,
                 conflict: data && data.conflict,
                 lock: data && data.lock,
                 bus: data && data.bus,
@@ -37,6 +92,19 @@ const ApiClient = (() => {
                 recoveryRequired: data && data.recoveryRequired === true,
                 retryable: data && data.retryable === true,
                 compensated: data && data.compensated === true
+            };
+        }
+
+        if (res.status === 204) {
+            return { success: true, status: 204 };
+        }
+
+        if (!data || typeof data !== "object") {
+            return {
+                success: false,
+                error: "Nevalidan odgovor servera.",
+                code: "INVALID_RESPONSE",
+                status: res.status
             };
         }
 
