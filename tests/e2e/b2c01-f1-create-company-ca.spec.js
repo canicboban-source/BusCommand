@@ -131,8 +131,10 @@ async function bootSaRemote(page) {
 }
 
 async function openCreateModal(page) {
+  const chunkPromise = page.waitForResponse((res) => /sa-create-company-flow/.test(res.url()) && res.status() === 200, { timeout: 5000 }).catch(() => null);
   await page.locator("#sa-open-create-modal").click();
   await expect(page.locator("#sa-create-company-modal")).toBeVisible();
+  await chunkPromise;
   await expect
     .poll(async () => {
       if (await page.locator("#sa-new-name").evaluate((el) => document.activeElement === el).catch(() => false)) {
@@ -560,6 +562,7 @@ test.describe("B2C-01-F1 production create-company CA follow-up", () => {
     // Re-open under block to exercise footer Close
     await page.locator("#sa-open-create-modal").click();
     await expect(page.locator("#sa-create-company-modal")).toBeVisible();
+    await expect.poll(async () => failedChunk, { timeout: 8000 }).toBe(failedAfterOpen + 1);
     await expect.poll(async () => loaderFailureToastCount(page), { timeout: 8000 }).toBe(1);
     const failedBeforeFooter = failedChunk;
     await page.locator('#sa-create-company-modal [data-action="superadminCloseCreateModal"].btn-secondary').click();
