@@ -143,6 +143,9 @@ async function openCreateModal(page) {
       if (await page.locator("#sa-ca-name").evaluate((el) => document.activeElement === el).catch(() => false)) {
         return "ca";
       }
+      if (await page.locator("#sa-ca-password").evaluate((el) => document.activeElement === el).catch(() => false)) {
+        return "ca-password";
+      }
       return "";
     }, { timeout: 10000 })
     .not.toBe("");
@@ -416,6 +419,7 @@ test.describe("B2C-01-F1 production create-company CA follow-up", () => {
     await openCreateModal(page);
     await fillCreateForm(page, { withCa: true });
     await page.locator("#sa-create-company-btn").click();
+    await expect.poll(() => probe.company, { timeout: 10000 }).toBe(1);
     await expect(page.locator("#sa-create-partial-banner")).toBeVisible({ timeout: 10000 });
     expect(probe.ca).toBe(0);
     await page.locator("#sa-create-company-modal .modal-close").click();
@@ -462,7 +466,8 @@ test.describe("B2C-01-F1 production create-company CA follow-up", () => {
     await openCreateModal(page);
     await fillCreateForm(page, { withCa: true });
     await page.locator("#sa-create-company-btn").click();
-    await expect.poll(() => probe.ca).toBe(1);
+    await expect.poll(() => probe.company, { timeout: 10000 }).toBe(1);
+    await expect.poll(() => probe.ca, { timeout: 10000 }).toBe(1);
     await page.locator('#sa-create-company-modal [data-action="superadminCloseCreateModal"].btn-secondary').click();
     await expect(page.locator("#sa-create-leave-confirm")).toBeVisible({ timeout: 8000 });
     await page.locator("#sa-create-leave-confirm-btn").click();
