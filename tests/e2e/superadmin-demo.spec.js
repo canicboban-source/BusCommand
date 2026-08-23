@@ -61,6 +61,8 @@ test.describe("Super Admin demo", () => {
 
   test("5x logo modal accepts demo SA email+password", async ({ page }) => {
     await page.goto("/staff.html");
+    await expect(page.locator("#login-screen")).toBeVisible();
+    await page.waitForFunction(() => typeof window.handleLogoClick === "function");
     await page.evaluate(() => {
       for (let i = 0; i < 5; i++) {
         if (typeof window.handleLogoClick === "function") window.handleLogoClick();
