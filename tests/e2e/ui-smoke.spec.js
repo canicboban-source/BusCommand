@@ -855,13 +855,21 @@ test.describe("UI smoke", () => {
 
   test("Escape, backdrop close and browser Back cannot expose pending driver UI", async ({ page }) => {
     for (const exit of ["escape", "backdrop", "back"]) {
+      if (exit === "back") {
+        await page.goto("/staff.html");
+      }
       await openPendingDriverActivation(page);
       if (exit === "escape") await page.keyboard.press("Escape");
       if (exit === "backdrop") await page.evaluate(() => document.getElementById("driver-activation-modal").click());
-      if (exit === "back") await page.goBack();
+      if (exit === "back") {
+        const historyLength = await page.evaluate(() => window.history.length);
+        expect(historyLength).toBeGreaterThan(1);
+        await page.goBack();
+      }
       await expect(page.locator("#login-screen")).toBeVisible();
+      await expect(page.locator("#driver-activation-modal")).toBeHidden();
       await expect(page.locator("#app-container")).toBeHidden();
-      expect(await page.evaluate(() => window.__testFirebaseSessionActive)).toBe(false);
+      await expect.poll(() => page.evaluate(() => window.__testFirebaseSessionActive)).toBe(false);
     }
   });
 });

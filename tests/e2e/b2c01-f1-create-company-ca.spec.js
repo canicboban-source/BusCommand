@@ -131,10 +131,9 @@ async function bootSaRemote(page) {
 }
 
 async function openCreateModal(page) {
-  const chunkPromise = page.waitForResponse((res) => /sa-create-company-flow/.test(res.url()) && res.status() === 200, { timeout: 5000 }).catch(() => null);
   await page.locator("#sa-open-create-modal").click();
   await expect(page.locator("#sa-create-company-modal")).toBeVisible();
-  await chunkPromise;
+  await expect(page.locator("#sa-create-company-btn")).toHaveAttribute("data-sa-create-mode", /^(?:create|retry-ca|unknown)$/);
   await expect
     .poll(async () => {
       if (await page.locator("#sa-new-name").evaluate((el) => document.activeElement === el).catch(() => false)) {
@@ -584,6 +583,7 @@ test.describe("B2C-01-F1 production create-company CA follow-up", () => {
     );
     await page.locator("#sa-open-create-modal").click();
     await chunkOk;
+    await expect(page.locator("#sa-create-company-btn")).toHaveAttribute("data-sa-create-mode", /^(?:create|retry-ca|unknown)$/);
     await expect
       .poll(async () => page.locator("#sa-new-name").evaluate((el) => document.activeElement === el), {
         timeout: 10000
