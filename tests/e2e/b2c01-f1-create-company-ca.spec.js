@@ -133,6 +133,7 @@ async function bootSaRemote(page) {
 async function openCreateModal(page) {
   await page.locator("#sa-open-create-modal").click();
   await expect(page.locator("#sa-create-company-modal")).toBeVisible();
+  await expect(page.locator("#sa-create-company-form")).toHaveAttribute("data-sa-create-ready", "true");
   await expect(page.locator("#sa-create-company-btn")).toHaveAttribute("data-sa-create-mode", /^(?:create|retry-ca|unknown)$/);
   await expect
     .poll(async () => {
@@ -157,6 +158,13 @@ async function fillCreateForm(page, { withCa = true } = {}) {
     await page.locator("#sa-ca-name").fill("BC-B2C01-F1 Admin");
     await page.locator("#sa-ca-email").fill("bc-b2c01-f1-admin@example.invalid");
     await page.locator("#sa-ca-password").fill(TEST_PASSWORD);
+  }
+  await expect(page.locator("#sa-new-name")).toHaveValue("BC-B2C01-F1-Co");
+  await expect(page.locator("#sa-new-tenant")).toHaveValue("bc-b2c01-f1-client-slug");
+  if (withCa) {
+    await expect(page.locator("#sa-ca-name")).toHaveValue("BC-B2C01-F1 Admin");
+    await expect(page.locator("#sa-ca-email")).toHaveValue("bc-b2c01-f1-admin@example.invalid");
+    await expect(page.locator("#sa-ca-password")).toHaveValue(TEST_PASSWORD);
   }
 }
 
@@ -583,6 +591,7 @@ test.describe("B2C-01-F1 production create-company CA follow-up", () => {
     );
     await page.locator("#sa-open-create-modal").click();
     await chunkOk;
+    await expect(page.locator("#sa-create-company-form")).toHaveAttribute("data-sa-create-ready", "true");
     await expect(page.locator("#sa-create-company-btn")).toHaveAttribute("data-sa-create-mode", /^(?:create|retry-ca|unknown)$/);
     await expect
       .poll(async () => page.locator("#sa-new-name").evaluate((el) => document.activeElement === el), {
