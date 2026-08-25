@@ -5,6 +5,8 @@ const { seedDemoState, loginDispatcher, loginDriver } = require("./helpers.js");
 test.describe("UI smoke", () => {
   async function openPendingDriverActivation(page) {
     await page.goto("/driver.html");
+    await expect(page.locator("#login-screen")).toBeVisible();
+    await expect(page.locator("#login-driver-pin")).toBeVisible();
     await page.evaluate(() => {
       window.__testFirebaseSessionActive = true;
       const originalAuth = window.firebase.auth;
@@ -15,6 +17,7 @@ test.describe("UI smoke", () => {
       window.firebase.auth.restore = () => { window.firebase.auth = originalAuth; };
       window.openDriverActivation();
     });
+    await expect(page.locator("#driver-activation-modal")).toBeVisible();
   }
 
   test("login screen loads", async ({ page }) => {
@@ -776,7 +779,6 @@ test.describe("UI smoke", () => {
 
   test("pending driver sees only activation and direct operational navigation is blocked", async ({ page }) => {
     await openPendingDriverActivation(page);
-    await page.evaluate(() => window.openDriverActivation());
     await expect(page.locator("#driver-activation-modal")).toBeVisible();
     await expect(page.locator("#app-container")).toHaveCount(0);
     await expect(page.locator("#pre-trip-modal")).toHaveCount(0);
@@ -829,6 +831,8 @@ test.describe("UI smoke", () => {
 
   test("Cancel signs out pending Firebase session, clears files and returns login", async ({ page }) => {
     await page.goto("/driver.html");
+    await expect(page.locator("#login-screen")).toBeVisible();
+    await expect(page.locator("#login-driver-pin")).toBeVisible();
     await page.locator("#pre-trip-damage-file").setInputFiles({
       name: "safe-test-image.png", mimeType: "image/png", buffer: Buffer.from("safe-test")
     });
@@ -842,6 +846,7 @@ test.describe("UI smoke", () => {
       window.__testFirebaseSessionActive = true;
       window.openDriverActivation();
     });
+    await expect(page.locator("#driver-activation-modal")).toBeVisible();
     await page.locator("#driver-activation-cancel").click();
     await expect(page.locator("#login-screen")).toBeVisible();
     await expect(page.locator("#driver-activation-modal")).toBeHidden();
