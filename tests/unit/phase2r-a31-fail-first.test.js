@@ -62,7 +62,7 @@ test("A.3.1 source: assignment + undo read import lock inside mutation tx", () =
 
 test("A.3.1 source: incident resolve checks import locks in same tx", () => {
   const idx = routesSrc.indexOf('app.put("/api/staff/operational-incidents/:reportId/resolve"');
-  const block = routesSrc.slice(idx, idx + 9000);
+  const block = routesSrc.slice(idx, idx + 20000);
   assert.match(block, /readMonthlyImportLockInTx|evaluateMonthlyImportLockState/);
   assert.match(block, /runTransaction[\s\S]*readMonthlyImportLockInTx|runTransaction[\s\S]*evaluateMonthlyImportLockState/);
 });

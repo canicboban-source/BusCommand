@@ -216,10 +216,23 @@ function collectOpsAttentionItems() {
     const today = todayDateStr();
     const items = [];
     const coveredDriverIds = new Set();
+    const seenCoverageKeys = new Set();
 
     for (const report of visibleOperationalReports()) {
         const kind = reportKind(report).kind;
         if (kind === "coverage") {
+            const incidentType = String(report.type || "coverage:disruption").trim();
+            const entity = String(report.affectedEntity || (report.driverId ? "driver" : "vehicle")).trim();
+            const resourceId = entity === "vehicle" ? String(report.bus || "").trim() : String(report.driverId || "").trim();
+            const groupKey = String(report.groupId || report.lineId || "").trim();
+            const dateKey = String(report.date || today).trim();
+            const scopeKind = String(report.scopeKind || "day").trim();
+            const scopeId = String(report.scopeId || "day").trim();
+            const coverageKey = `${incidentType}:${entity}:${resourceId}:${dateKey}:${groupKey}:${scopeKind}:${scopeId}`;
+            if (seenCoverageKeys.has(coverageKey)) {
+                continue;
+            }
+            seenCoverageKeys.add(coverageKey);
             coveredDriverIds.add(String(report.driverId || ""));
             const groupId = report.groupId || report.lineId || "";
             const drivers = freeDriverPools(groupId, report.driverId, report.date || today);
@@ -698,9 +711,14 @@ function renderAttentionCard(item) {
                     emptyLabel: t("ops_coverage_no_buses") || "Nema slobodnog autobusa"
                 })}
             </select>
-            <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id])} ${hasDrivers && hasBuses ? "" : "disabled"}>
-                <i data-lucide="wrench"></i> ${escapeHtml(t("ops_attn_apply_coverage") || "Primeni zamenu odmah")}
-            </button>`;
+            <div class="ops-attention-actions">
+                <button type="button" class="urgent-action ops-attention-apply" ${actionAttr("applyOpsAttentionFix", [item.id])} ${hasDrivers && hasBuses ? "" : "disabled"}>
+                    <i data-lucide="wrench"></i> ${escapeHtml(t("ops_attn_apply_coverage") || "Primeni zamenu odmah")}
+                </button>
+                <button type="button" class="btn-secondary ops-attention-available-again" ${actionAttr("resolveCoverageAvailableAgainFromCard", [item.id])}>
+                    <i data-lucide="user-check"></i> ${escapeHtml(t("ops_attn_driver_available_again") || "Vozač je ponovo dostupan")}
+                </button>
+            </div>`;
     } else if (item.kind === "wrong_shift") {
         if (!item.duties.length) {
             // A permanently-disabled dropdown with no explanation is a dead end.
@@ -976,6 +994,103 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
     return true;
 }
 
+async function resolveCoverageAvailableAgain(reportId, statusEl = null) {
+    const report = (window.state.reports || []).find(item =>
+        item.id === reportId && isActiveReport(item)
+    );
+    if (!report) {
+        const message = t("ops_incident_not_found") || "Incident nije pronađen.";
+        if (statusEl) statusEl.textContent = message;
+        showToast(message, "error");
+        return false;
+    }
+    if (statusEl) statusEl.textContent = t("report_resolving") || "Rešavanje…";
+    let result;
+    if (USE_LOCAL_STATE) {
+        result = {
+            success: true,
+            report: {
+                id: report.id,
+                status: "resolved",
+                resolution: {
+                    type: "available_again",
+                    summary: t("ops_attn_driver_available_again") || "Vozač je ponovo dostupan"
+                }
+            }
+        };
+    } else {
+        result = await ApiClient.resolveStaffOperationalIncident(report.id, {
+            type: "available_again",
+            resolutionType: "available_again",
+            expectedProblemRevision: Number.isInteger(report.revision) ? report.revision : 0
+        });
+    }
+    if (!result?.success) {
+        const message = result?.error || t("ops_resolver_failed") || "Rešavanje nije uspelo.";
+        if (statusEl) statusEl.textContent = message;
+        showToast(message, "error");
+        return false;
+    }
+
+    const targetDriverId = report.driverId;
+    const targetDate = report.date;
+    const targetGroupId = report.groupId || report.lineId || "";
+    const targetScopeKind = report.scopeKind || "day";
+    const targetScopeId = report.scopeId || "day";
+    const targetType = report.type || "coverage:disruption";
+    const resolvedPayload = {
+        status: "resolved",
+        resolution: result.report?.resolution || { type: "available_again", summary: t("ops_attn_driver_available_again") || "Vozač je ponovo dostupan" },
+        resolvedAt: result.report?.resolvedAt || new Date().toISOString(),
+        resolvedBy: result.report?.resolvedBy || window.currentUser?.uid || window.currentUser?.id
+    };
+
+    (window.state.reports || []).forEach(r => {
+        if (
+            r.id === report.id ||
+            (targetDriverId &&
+                r.driverId === targetDriverId &&
+                r.date === targetDate &&
+                (r.type || "coverage:disruption") === targetType &&
+                (r.groupId || r.lineId || "") === targetGroupId &&
+                (r.scopeKind || "day") === targetScopeKind &&
+                (r.scopeId || "day") === targetScopeId &&
+                reportKind(r).kind === "coverage")
+        ) {
+            Object.assign(r, resolvedPayload);
+        }
+    });
+
+    if (USE_LOCAL_STATE) saveState();
+    showToast(t("ops_coverage_available_success") || "Vozač je ponovo označen kao dostupan.", "success");
+    notifyOpsChanged({ date: report.date });
+    return true;
+}
+
+async function resolveCoverageAvailableAgainFromCard(itemId) {
+    const items = collectAllAttentionItems();
+    const item = items.find(row => row.id === itemId);
+    const card = document.querySelector(`[data-attn-id="${String(itemId).replace(/"/g, "")}"]`);
+    const statusEl = card?.querySelector("[data-attn-status]");
+    if (!item || !card) return;
+    if (_pendingApply) return;
+    _pendingApply = true;
+    card.classList.add("is-pending");
+    const buttons = card.querySelectorAll("button");
+    buttons.forEach(b => b.disabled = true);
+    try {
+        const ok = await resolveCoverageAvailableAgain(item.reportId, statusEl);
+        if (ok) {
+            _focusItemId = "";
+            refreshOpsAttentionPanelIfOpen();
+        }
+    } finally {
+        _pendingApply = false;
+        card.classList.remove("is-pending");
+        buttons.forEach(b => b.disabled = false);
+    }
+}
+
 async function applyOpsAttentionFix(itemId, fixAction = "") {
     const items = collectAllAttentionItems();
     const item = items.find(row => row.id === itemId);
@@ -1177,6 +1292,8 @@ export {
     refreshOpsAttentionPanelIfOpen,
     applyOpsAttentionFix,
     applyCoverageResolution,
+    resolveCoverageAvailableAgain,
+    resolveCoverageAvailableAgainFromCard,
     syncOpsPlanHealthAttentionState,
     wireOpsPlanHealthAttention
 };
