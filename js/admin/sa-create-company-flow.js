@@ -281,6 +281,8 @@ function hideSaCreateModalShell() {
     const modal = document.getElementById("sa-create-company-modal");
     if (!modal) return;
     detachSaCreateEscape();
+    const form = document.getElementById("sa-create-company-form");
+    if (form) form.removeAttribute("data-sa-create-ready");
     modal.classList.add("hidden");
     modal.setAttribute("hidden", "");
 }
@@ -316,10 +318,14 @@ function superadminOpenCreateModal() {
     if (saCreateFlow.status === SA_CREATE_FLOW.COMPANY_CREATED_CA_PENDING && saCreateFlow.companyId) {
         applySaCreatePartialUi();
         document.getElementById("sa-ca-name")?.focus();
+        const form = document.getElementById("sa-create-company-form");
+        if (form) form.setAttribute("data-sa-create-ready", "true");
         return;
     }
     if (saCreateFlow.status === SA_CREATE_FLOW.UNKNOWN_REQUIRES_CHECK) {
         applySaCreateUnknownUi();
+        const form = document.getElementById("sa-create-company-form");
+        if (form) form.setAttribute("data-sa-create-ready", "true");
         return;
     }
     if (saCreateFlow.status === SA_CREATE_FLOW.COMPLETED || saCreateFlow.status === SA_CREATE_FLOW.IDLE) {
@@ -330,6 +336,8 @@ function superadminOpenCreateModal() {
         syncSaCreatePrimaryCta();
     }
     document.getElementById("sa-new-name")?.focus();
+    const form = document.getElementById("sa-create-company-form");
+    if (form) form.setAttribute("data-sa-create-ready", "true");
 }
 
 function superadminCloseCreateModal() {

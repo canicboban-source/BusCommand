@@ -55,6 +55,7 @@ function attachFocusTrap(modal, { initialFocus = null } = {}) {
   traps.set(modal, { onKeyDown, previousFocus });
 
   requestAnimationFrame(() => {
+    if (modal.contains(document.activeElement) && document.activeElement !== modal) return;
     const nodes = focusableIn(modal);
     const target = initialFocus && modal.contains(initialFocus) ? initialFocus : nodes[0];
     target?.focus?.();
