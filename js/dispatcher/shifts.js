@@ -167,6 +167,78 @@ function applyServerShiftConflict(driver, date, conflict) {
     }
 }
 
+
+let _dutyConflictPrevFocus = null;
+let _dutyConflictKeyHandler = null;
+
+function showDutyConflictModal({ dutyCode = "", date = "", existingDriverName = "", existingDriverId = "" } = {}) {
+    const modal = document.getElementById("duty-conflict-modal");
+    if (!modal) return;
+    _dutyConflictPrevFocus = document.activeElement;
+    const title = document.getElementById("duty-conflict-title");
+    const msg = document.getElementById("duty-conflict-message");
+    const existingBtn = document.getElementById("duty-conflict-open-existing-btn");
+    const closeBtn = document.getElementById("duty-conflict-close-btn");
+    if (title) title.textContent = t("duty_conflict_modal_title") || "Smena je već dodeljena";
+    if (msg) {
+        msg.textContent = (t("duty_conflict_modal_message") || "Smena {dutyCode} za {date} već je dodeljena vozaču {driverName}.")
+            .replace("{dutyCode}", dutyCode || "—")
+            .replace("{date}", date || "—")
+            .replace("{driverName}", existingDriverName || "drugom vozaču");
+    }
+    if (existingBtn) {
+        if (existingDriverId) {
+            existingBtn.dataset.driverId = existingDriverId;
+            existingBtn.dataset.date = date;
+            existingBtn.classList.remove("hidden");
+            existingBtn.style.display = "";
+            (existingBtn.querySelector("span") || existingBtn).textContent = (t("duty_conflict_modal_open_existing") || "Prikaži vozača {driverName}").replace("{driverName}", existingDriverName || "");
+        } else {
+            existingBtn.classList.add("hidden");
+            existingBtn.style.display = "none";
+        }
+    }
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+    modal.removeAttribute("hidden");
+    if (!_dutyConflictKeyHandler) {
+        _dutyConflictKeyHandler = (e) => { if (e.key === "Escape") { e.preventDefault(); closeDutyConflictModal(); } };
+        document.addEventListener("keydown", _dutyConflictKeyHandler);
+    }
+    closeBtn?.focus();
+}
+
+function closeDutyConflictModal() {
+    const modal = document.getElementById("duty-conflict-modal");
+    if (modal) {
+        modal.classList.add("hidden");
+        modal.style.display = "none";
+        modal.setAttribute("hidden", "true");
+    }
+    if (_dutyConflictKeyHandler) {
+        document.removeEventListener("keydown", _dutyConflictKeyHandler);
+        _dutyConflictKeyHandler = null;
+    }
+    if (_dutyConflictPrevFocus?.focus) {
+        try { _dutyConflictPrevFocus.focus(); } catch {}
+        _dutyConflictPrevFocus = null;
+    }
+}
+
+function openConflictingDriverAssignment() {
+    const btn = document.getElementById("duty-conflict-open-existing-btn");
+    const driverId = btn?.dataset.driverId;
+    const date = btn?.dataset.date;
+    closeDutyConflictModal();
+    if (driverId && date) {
+        openShiftCell(driverId, date);
+    }
+}
+
+window.showDutyConflictModal = showDutyConflictModal;
+window.closeDutyConflictModal = closeDutyConflictModal;
+window.openConflictingDriverAssignment = openConflictingDriverAssignment;
+
 async function persistShift(driver, date, type, name = "", start = null, end = null, bus = null) {
     if (isOperationalReadOnly()) {
         showToast(t("error_ops_read_only") || "Read-only view — changes are not allowed.", "error");
@@ -216,6 +288,15 @@ async function persistShift(driver, date, type, name = "", start = null, end = n
                 ...(start ? { start } : {}), ...(end ? { end } : {})
             });
             if (!result.success) {
+                if (result.code === "DUTY_ALREADY_ASSIGNED") {
+                    showDutyConflictModal({
+                        dutyCode: result.conflict?.dutyCode || parseRouteCodeFromText(name) || name || "",
+                        date,
+                        existingDriverName: result.conflict?.existingDriverName || "",
+                        existingDriverId: result.conflict?.existingDriverId || ""
+                    });
+                    return false;
+                }
                 if (result.code === "REVISION_CONFLICT") {
                     applyServerShiftConflict(driver, date, result.conflict);
                     showToast(toastForAssignmentCode(result.code, result.error), "error");
@@ -314,6 +395,15 @@ async function undoShift(driver, date) {
             expectedRevision
         });
         if (!result.success) {
+            if (result.code === "DUTY_ALREADY_ASSIGNED") {
+                showDutyConflictModal({
+                    dutyCode: result.conflict?.dutyCode || "",
+                    date,
+                    existingDriverName: result.conflict?.existingDriverName || "",
+                    existingDriverId: result.conflict?.existingDriverId || ""
+                });
+                return false;
+            }
             if (result.status === 409 || result.code === "REVISION_CONFLICT") {
                 applyServerShiftConflict(driver, date, result.conflict);
                 showToast(t("shift_conflict_refresh") || "Raspored je izmenjen. Osvežite i pokušajte ponovo.", "error");
@@ -513,4 +603,4 @@ async function removeShift(driverId, dateStr) {
     renderDispatcherShifts();
 }
 
-export { renderDispatcherShifts, openShiftCell, assignShift, removeShift, persistShift, undoShift };
+export { renderDispatcherShifts, openShiftCell, assignShift, removeShift, persistShift, undoShift, showDutyConflictModal, closeDutyConflictModal, openConflictingDriverAssignment };

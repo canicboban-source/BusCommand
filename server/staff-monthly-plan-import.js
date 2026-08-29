@@ -19,6 +19,7 @@ const {
   capturePriorSnapshot
 } = require("./shift-assignment");
 const servicePlans = require("./service-plans");
+const { canonicalDutyGuardKey, dutyGuardRef, writeDutyGuardClaimInTx, writeDutyGuardReleaseInTx } = require("./duty-instance-guard");
 
 const PREVIEW_TTL_MS = 30 * 60 * 1000;
 let _getActiveServicePlan = servicePlans.getActiveServicePlan;
@@ -364,8 +365,34 @@ async function compensateStaffImport({
           const data = snap.data() || {};
           if (data.importId !== importId) return; // never overwrite a newer writer
           const restored = fullRestoreFromPrevious(row, groupId, admin);
-          if (!restored) tx.delete(snap.ref);
-          else tx.set(snap.ref, restored);
+          if (!restored) {
+            tx.delete(snap.ref);
+            if (data.routeCode || data.name) {
+              const guardKey = canonicalDutyGuardKey({ groupId, serviceDate: row.date, dutyCode: data.routeCode || data.name });
+              if (guardKey) writeDutyGuardReleaseInTx(tx, dutyGuardRef(companyRef, guardKey));
+            }
+          } else {
+            tx.set(snap.ref, restored);
+            if (restored.type !== "clear" && !ABSENCE_OR_CLEAR.has(restored.type) && (restored.routeCode || restored.name)) {
+              const guardKey = canonicalDutyGuardKey({ groupId: restored.groupId || groupId, serviceDate: row.date, dutyCode: restored.routeCode || restored.name });
+              if (guardKey) {
+                writeDutyGuardClaimInTx(tx, dutyGuardRef(companyRef, guardKey), admin.firestore.FieldValue, {
+                  companyId: companyRef.id,
+                  groupId: restored.groupId || groupId,
+                  serviceDate: row.date,
+                  dutyCode: restored.routeCode || restored.name,
+                  shiftType: restored.type,
+                  ownerDriverId: restored.driverId,
+                  ownerShiftDocumentId: shiftDocumentId(restored.driverId, row.date),
+                  assignedBus: restored.bus || "",
+                  staffUid: restored.assignedBy || "compensation"
+                });
+              }
+            } else if (data.routeCode || data.name) {
+              const guardKey = canonicalDutyGuardKey({ groupId, serviceDate: row.date, dutyCode: data.routeCode || data.name });
+              if (guardKey) writeDutyGuardReleaseInTx(tx, dutyGuardRef(companyRef, guardKey));
+            }
+          }
           ids.push(row.driverId);
         });
         return ids;
@@ -779,6 +806,29 @@ async function applyImportChunkTransaction({
       }], 409, { recoveryRequired: true });
     }
 
+    const guardPlan = chunk.map((row, index) => {
+      const current = shiftSnaps[index].exists ? shiftSnaps[index].data() : null;
+      const incomingDutyCode = row.type !== "clear" && !ABSENCE_OR_CLEAR.has(row.type) ? dutyCodeOf(row) : "";
+      const currentDutyCode = current && !ABSENCE_OR_CLEAR.has(current.type) ? dutyCodeOf(current) : "";
+      const incomingGuardKey = incomingDutyCode ? canonicalDutyGuardKey({ groupId, serviceDate: row.date, dutyCode: incomingDutyCode }) : null;
+      const currentGuardKey = (currentDutyCode && currentDutyCode !== incomingDutyCode) ? canonicalDutyGuardKey({ groupId, serviceDate: row.date, dutyCode: currentDutyCode }) : null;
+      return {
+        incomingDutyCode,
+        currentDutyCode,
+        incomingGuardRef: incomingGuardKey ? dutyGuardRef(companyRef, incomingGuardKey) : null,
+        currentGuardRef: currentGuardKey ? dutyGuardRef(companyRef, currentGuardKey) : null
+      };
+    });
+
+    const guardRefsToRead = [...new Set(
+      guardPlan.flatMap((g) => [g.incomingGuardRef, g.currentGuardRef]).filter(Boolean)
+    )];
+    const guardSnaps = await txGetAll(tx, guardRefsToRead);
+    const guardSnapMap = new Map();
+    guardRefsToRead.forEach((ref, i) => {
+      guardSnapMap.set(ref.path, guardSnaps[i]);
+    });
+
     chunk.forEach((row, index) => {
       const current = shiftSnaps[index].exists ? shiftSnaps[index].data() : null;
       if (current?.importId === importId) return;
@@ -790,6 +840,26 @@ async function applyImportChunkTransaction({
           currentRevision: currentRevision(current)
         }], 409);
       }
+
+      const gp = guardPlan[index];
+      if (gp.incomingGuardRef) {
+        const gSnap = guardSnapMap.get(gp.incomingGuardRef.path);
+        if (gSnap && gSnap.exists) {
+          const gData = gSnap.data() || {};
+          if (gData.ownerDriverId && gData.ownerDriverId !== row.driverId) {
+            const conflictDriverName = gData.ownerDriverName || gData.ownerDriverId || "";
+            throw new GroupMonthlyImportError("MONTHLY_IMPORT_CONFLICT", [{
+              driverId: row.driverId,
+              date: row.date,
+              code: "DUTY_ALREADY_ASSIGNED",
+              dutyCode: gp.incomingDutyCode,
+              existingDriverId: gData.ownerDriverId,
+              existingDriverName: conflictDriverName
+            }], 409);
+          }
+        }
+      }
+
       const next = buildCanonicalImportShift({
         row,
         groupId,
@@ -799,6 +869,26 @@ async function applyImportChunkTransaction({
         existing: current
       });
       tx.set(shiftSnaps[index].ref, next);
+
+      if (gp.incomingGuardRef) {
+        writeDutyGuardClaimInTx(tx, gp.incomingGuardRef, _admin.firestore.FieldValue, {
+          companyId: companyRef.id,
+          groupId,
+          serviceDate: row.date,
+          dutyCode: gp.incomingDutyCode,
+          shiftType: row.type,
+          ownerDriverId: row.driverId,
+          ownerShiftDocumentId: shiftDocumentId(row.driverId, row.date),
+          assignedBus: next.bus || "",
+          staffUid: actorId
+        });
+      }
+      if (gp.currentGuardRef) {
+        const oldSnap = guardSnapMap.get(gp.currentGuardRef.path);
+        if (oldSnap && oldSnap.exists && oldSnap.data()?.ownerDriverId === row.driverId) {
+          writeDutyGuardReleaseInTx(tx, gp.currentGuardRef);
+        }
+      }
     });
     tx.set(importRef, { appliedChunks: chunkIndex + 1 }, { merge: true });
   });

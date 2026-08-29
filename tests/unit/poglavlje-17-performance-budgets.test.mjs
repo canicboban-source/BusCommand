@@ -82,3 +82,28 @@ test("D17 decision and SURFACE split item reflect Ch17 work", () => {
   const surface = read("docs/SURFACE-SPLIT-PROGRESS.md");
   assert.match(surface, /state-observer/);
 });
+
+test("lazy CA audit log loader wires dynamic import and action handlers without eager bundle pollution", async () => {
+  const staffSections = read("js/surface/register-staff-sections.js");
+  const staffOnClick = read("js/register-onclick-staff.js");
+
+  // Verify static import is absent in staff section registrations
+  assert.doesNotMatch(staffSections, /import \{ renderCompanyAdminAudit \} from/);
+  assert.match(staffSections, /import\("\.\.\/admin\/company-admin-audit\.js"\)/);
+
+  // Verify lazy loaders and dynamic handlers in staff onclick
+  assert.doesNotMatch(staffOnClick, /import \{ handleCompanyAuditFilters/);
+  assert.match(staffOnClick, /function loadCompanyAdminAudit\(\)/);
+  assert.match(staffOnClick, /handleCompanyAuditFilters\s*\(/);
+  assert.match(staffOnClick, /refreshCompanyAudit\s*\(/);
+  assert.match(staffOnClick, /resetCompanyAuditFilters\s*\(/);
+  assert.match(staffOnClick, /loadMoreCompanyAudit\s*\(/);
+
+  // Verify target module exports the expected interface
+  const auditSource = read("js/admin/company-admin-audit.js");
+  assert.match(auditSource, /export \{[^}]*renderCompanyAdminAudit/);
+  assert.match(auditSource, /export \{[^}]*handleCompanyAuditFilters/);
+  assert.match(auditSource, /export \{[^}]*refreshCompanyAudit/);
+  assert.match(auditSource, /export \{[^}]*resetCompanyAuditFilters/);
+  assert.match(auditSource, /export \{[^}]*loadMoreCompanyAudit/);
+});

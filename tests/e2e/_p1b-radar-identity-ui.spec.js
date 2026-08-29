@@ -27,6 +27,7 @@ function writePath() {
 
 test.describe.serial("RADAR-P1B", () => {
   test("P1-B live: radar-to-resolution driver identity closure for duplicate names D0/D+2", async ({ page }) => {
+    test.setTimeout(60000);
     execSync(`node "${P1A_SEED}"`, { cwd: ROOT_DIR, stdio: "inherit" });
     execSync(`node "${P1B_WRITE}"`, { cwd: ROOT_DIR, stdio: "inherit" });
 
@@ -99,8 +100,8 @@ test.describe.serial("RADAR-P1B", () => {
     expect(editor.date).toBe(D0);
     expect(editor.driverText).toContain("Marko Jovanović");
 
-    await page.locator("#shift-name-input").fill("310.S01");
-    await page.waitForTimeout(200);
+    await page.locator("#shift-name-input").fill("310.S02");
+    await expect(page.locator("#shift-duty-resolved")).toContainText("310.S02");
     await shot(page, "05-shift-editor-duty-filled");
     await page.locator('[data-action="assignShift"]').click();
 
@@ -127,7 +128,7 @@ test.describe.serial("RADAR-P1B", () => {
     await page.waitForTimeout(600);
     await shot(page, "07-ops-attention-after-hard-refresh");
 
-    const afterRefresh = await page.evaluate(({ driverA, driverB, D0 }) => ({
+    const afterRefresh = await page.evaluate(({ driverA, driverB }) => ({
       aShifts: (window.state.shifts || []).filter(s => s.driverId === driverA).map(s => ({ date: s.date, type: s.type })),
       bShifts: (window.state.shifts || []).filter(s => s.driverId === driverB).map(s => ({ date: s.date, type: s.type })),
       radarItems: Array.from(document.querySelectorAll(".ops-attention-nav-item")).map(b => ({
@@ -136,7 +137,7 @@ test.describe.serial("RADAR-P1B", () => {
         sub: b.querySelector("span")?.textContent,
         date: b.querySelector("em")?.textContent
       }))
-    }), { driverA: seed.driverA, driverB: seed.driverB, D0 });
+    }), { driverA: seed.driverA, driverB: seed.driverB });
     console.log("EVIDENCE after refresh:", JSON.stringify(afterRefresh, null, 2));
 
     expect(afterRefresh.bShifts.some(s => s.date === D0)).toBe(true);
@@ -163,7 +164,8 @@ test.describe.serial("RADAR-P1B", () => {
     expect(d2Editor.driverId).toBe(seed.driverB);
     expect(d2Editor.date).toBe(D2);
 
-    await page.locator("#shift-name-input").fill("310.S01");
+    await page.locator("#shift-name-input").fill("310.S02");
+    await expect(page.locator("#shift-duty-resolved")).toContainText("310.S02");
     await page.locator('[data-action="assignShift"]').click();
     await page.waitForFunction(({ driverB, D2 }) =>
       (window.state.shifts || []).some(s => s.driverId === driverB && s.date === D2 && s.type !== "clear"),
@@ -210,10 +212,10 @@ test.describe.serial("RADAR-P1B", () => {
     await page.waitForTimeout(600);
     await shot(page, "12-ops-attention-final");
 
-    const final = await page.evaluate(({ driverB, D2 }) => ({
+    const final = await page.evaluate(({ driverB }) => ({
       bShifts: (window.state.shifts || []).filter(s => s.driverId === driverB).map(s => ({ date: s.date, type: s.type })),
       radarItems: Array.from(document.querySelectorAll(".ops-attention-nav-item")).map(b => JSON.parse(b.dataset.actionArgs || "[]")[0])
-    }), { driverB: seed.driverB, D2 });
+    }), { driverB: seed.driverB });
     console.log("EVIDENCE final:", JSON.stringify(final, null, 2));
 
     expect(final.bShifts.some(s => s.date === D2 && s.type === "clear")).toBe(true);

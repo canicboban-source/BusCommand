@@ -33,7 +33,7 @@ import { clearPendingPlanImports, confirmBulkPlanImport, handleBulkPlanDrop, han
 import { resolveReport } from "./dispatcher/reports.js";
 import { archiveAllDispatcherMessages, archiveDispatcherMessage } from "./dispatcher/sent-messages.js";
 import { shiftWeekNav } from "./dispatcher/shift-utils.js";
-import { assignShift, openShiftCell, removeShift } from "./dispatcher/shifts.js";
+import { assignShift, closeDutyConflictModal, openConflictingDriverAssignment, openShiftCell, removeShift } from "./dispatcher/shifts.js";
 import { handleVacation } from "./dispatcher/vacations.js";
 import { handleAvatarUpload, triggerAvatarUpload } from "./driver/avatar.js";
 import { confirmTomorrowShift } from "./driver/calendar.js";
@@ -96,6 +96,7 @@ const __ONCLICK_HANDLERS = {
     closeCompanyServicePlanDuty,
     closeCompanyServicePlanHistory,
     closeConfirmModal,
+    closeDutyConflictModal,
     closeGroupHub,
     closeModal,
     closeMonthlyDayEditModal,
@@ -173,6 +174,7 @@ const __ONCLICK_HANDLERS = {
     openMonthlyPlanForGroup,
     openMonthlyPlansFull,
     openShiftCell,
+    openConflictingDriverAssignment,
     publishCompanyServicePlan,
     activateCompanyServicePlanVersion,
     refreshCompanyAudit,

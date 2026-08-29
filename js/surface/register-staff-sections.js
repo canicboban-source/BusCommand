@@ -12,7 +12,6 @@ import { renderCompanyAdminTeam } from "../admin/company-admin-team.js";
 import { renderCompanyAdminGroups } from "../admin/company-admin-groups.js";
 import { renderCompanyAdminServicePlan } from "../admin/company-admin-service-plan.js";
 import { renderCompanyAdminDrivers } from "../admin/company-admin-drivers.js";
-import { renderCompanyAdminAudit } from "../admin/company-admin-audit.js";
 import { renderCompanyAdminSettings } from "../admin/company-admin-settings.js";
 import { renderCompanyAdminBuses } from "../admin/company-admin-buses.js";
 import { renderDispatcherShifts } from "../dispatcher/shifts.js";
@@ -49,7 +48,10 @@ export function registerStaffSections() {
         "company-admin-buses": () => renderCompanyAdminBuses(),
         "company-admin-service-plan": () => renderCompanyAdminServicePlan(),
         "company-admin-team": () => renderCompanyAdminTeam(),
-        "company-admin-audit": () => renderCompanyAdminAudit(),
+        "company-admin-audit": async () => {
+            const { renderCompanyAdminAudit } = await import("../admin/company-admin-audit.js");
+            renderCompanyAdminAudit();
+        },
         "dispatcher-daily-schedule": () => {
             renderScheduleHistory();
             refreshDailyPlanOnDateChange();

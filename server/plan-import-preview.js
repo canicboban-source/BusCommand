@@ -1,3 +1,5 @@
+"use strict";
+
 const crypto = require("crypto");
 const { ASSIGNABLE_BUS_STATUSES } = require("./assignment-resource-guard");
 
@@ -60,7 +62,27 @@ function buildPlanImportPreview({
 }) {
   const errors = [];
   const seen = new Set();
+  const seenDuties = new Map(); // `${date}|${dutyCode}` -> { driverId, rowNumber }
   const inputRows = payload.rows.map(canonicalRow);
+
+  // Pre-index existing shifts that are NOT overwritten by this import payload
+  const incomingDriverDates = new Set(inputRows.map((r) => `${r.driverId}|${r.date}`));
+  const existingDutyHolders = new Map();
+  if (shiftsById) {
+    for (const existingShift of shiftsById.values()) {
+      if (!existingShift || ABSENCE_OR_CLEAR.has(existingShift.type)) continue;
+      if (incomingDriverDates.has(`${existingShift.driverId}|${existingShift.date}`)) {
+        continue;
+      }
+      const existingCode = dutyCodeOf(existingShift);
+      if (existingCode) {
+        existingDutyHolders.set(`${existingShift.date}|${existingCode}`, {
+          driverId: existingShift.driverId,
+          driverName: existingShift.driverName || existingShift.driverId
+        });
+      }
+    }
+  }
 
   inputRows.forEach((row, index) => {
     const rowNumber = index + 1;
@@ -105,16 +127,51 @@ function buildPlanImportPreview({
       const code = dutyCodeOf(row);
       if (!code) {
         errors.push({ row: rowNumber, code: "DUTY_CODE_REQUIRED", driverId: row.driverId, date: row.date });
-      } else if (requireDutyCatalog && (!dutiesByCode || dutiesByCode.size === 0)) {
-        errors.push({ row: rowNumber, code: "DUTY_CATALOG_MISSING", driverId: row.driverId, date: row.date });
-      } else if (dutiesByCode && dutiesByCode.size > 0 && !dutiesByCode.has(code)) {
-        errors.push({
-          row: rowNumber,
-          code: "DUTY_NOT_IN_ACTIVE_CATALOG",
-          driverId: row.driverId,
-          date: row.date,
-          dutyCode: code
-        });
+      } else {
+        // Uniqueness check within the incoming payload
+        const dutyKey = `${row.date}|${code}`;
+        if (seenDuties.has(dutyKey)) {
+          const prev = seenDuties.get(dutyKey);
+          errors.push({
+            row: rowNumber,
+            code: "DUPLICATE_DUTY_ASSIGNMENT",
+            driverId: row.driverId,
+            date: row.date,
+            dutyCode: code,
+            conflictingDriverId: prev.driverId,
+            conflictingRow: prev.rowNumber
+          });
+        } else {
+          seenDuties.set(dutyKey, { driverId: row.driverId, rowNumber });
+        }
+
+        // Uniqueness check against existing non-overwritten active shifts
+        if (existingDutyHolders.has(dutyKey)) {
+          const conflict = existingDutyHolders.get(dutyKey);
+          if (conflict.driverId !== row.driverId) {
+            errors.push({
+              row: rowNumber,
+              code: "DUTY_ALREADY_ASSIGNED",
+              driverId: row.driverId,
+              date: row.date,
+              dutyCode: code,
+              existingDriverId: conflict.driverId,
+              existingDriverName: conflict.driverName
+            });
+          }
+        }
+
+        if (requireDutyCatalog && (!dutiesByCode || dutiesByCode.size === 0)) {
+          errors.push({ row: rowNumber, code: "DUTY_CATALOG_MISSING", driverId: row.driverId, date: row.date });
+        } else if (dutiesByCode && dutiesByCode.size > 0 && !dutiesByCode.has(code)) {
+          errors.push({
+            row: rowNumber,
+            code: "DUTY_NOT_IN_ACTIVE_CATALOG",
+            driverId: row.driverId,
+            date: row.date,
+            dutyCode: code
+          });
+        }
       }
     }
 

@@ -39,6 +39,7 @@ function createDb() {
         name: "Ana Driver"
       }
     },
+    ops_active_duties: {},
     buses: {
       "bus-101": { number: "101", active: true, opsStatus: "active", groupId: GROUP_ID }
     }
@@ -49,6 +50,7 @@ function createDb() {
       id,
       path: `${collection}/${id}`,
       async get() {
+        if (!bags[collection]) bags[collection] = {};
         const data = bags[collection][id];
         return {
           id,

@@ -269,6 +269,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /companies/{companyId}/ops_active_duties/{dutyKey} {
+      allow read, write: if false;
+    }
+
     // ─── HELPER FUNCTIONS ───────────────────────────────────
 
     function isSuperAdmin() {

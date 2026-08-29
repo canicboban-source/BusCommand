@@ -3433,6 +3433,27 @@
         </div>
     </div>
 
+    <!-- DUTY CONFLICT MODAL (FAZA 7 / P1) -->
+    <div id="duty-conflict-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="duty-conflict-title" style="display:none;">
+        <div class="modal-content" style="max-width:460px; padding:24px; border: 1px solid rgba(239,68,68,0.4); border-radius:16px; background:#12121e; box-shadow:0 20px 40px rgba(0,0,0,0.6);">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                <div style="width:40px; height:40px; border-radius:50%; background:rgba(239,68,68,0.15); display:flex; align-items:center; justify-content:center; color:#ef4444; font-size:1.3rem; flex-shrink:0;">
+                    &#9888;
+                </div>
+                <h3 id="duty-conflict-title" style="margin:0; font-size:1.15rem; color:#f87171;" data-i18n="duty_conflict_modal_title">Smena je već dodeljena</h3>
+            </div>
+            <p id="duty-conflict-message" style="margin:0 0 20px 0; font-size:0.95rem; line-height:1.5; color:#e2e8f0;"></p>
+            <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+                <button type="button" id="duty-conflict-open-existing-btn" class="btn-secondary hidden" style="display:none;" data-action="openConflictingDriverAssignment">
+                    <span data-i18n="duty_conflict_modal_open_existing">Prikaži vozača</span>
+                </button>
+                <button type="button" id="duty-conflict-close-btn" class="btn-primary" data-action="closeDutyConflictModal" data-i18n="duty_conflict_modal_ok" style="background:#4f46e5; border:none; padding:10px 18px; border-radius:8px; color:white; font-weight:600; cursor:pointer;">
+                    OK / Nazad na plan
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ── MOBILNI BOTTOM NAV (vidljiv samo na mobilnom, ≤640px) ── -->
     <div id="fp-mobile-nav">
         <button class="fp-nav-btn active" id="fp-nav-home" data-action="fpNavSwitch" data-action-args='["home"]'>

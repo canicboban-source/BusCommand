@@ -21,19 +21,27 @@ async function main() {
   await companyRef.collection("profile").doc("main").set({ country: "RS", timezone: "Europe/Belgrade" }, { merge: true });
   await companyRef.collection("groups").doc("310").set({ id: "310", name: "Line 310", description: "", color: "#3D7EF5", active: true }, { merge: true });
 
+  const existingPlans = await companyRef.collection("service_plans").where("groupId", "==", "310").get();
+  for (const doc of existingPlans.docs) {
+    if (doc.id !== "plan-310-radar-seed") {
+      await doc.ref.set({ status: "superseded" }, { merge: true });
+    }
+  }
+
   const planRef = companyRef.collection("service_plans").doc("plan-310-radar-seed");
   const dutyPlan = { code: "310.S01", type: "morning", label: "310.S01", shortName: "S01", start: "05:00", end: "13:00", workStart: "05:00", workEnd: "13:00", activities: [], revisionId: "seed-radar-1" };
+  const dutyPlan2 = { code: "310.S02", type: "morning", label: "310.S02", shortName: "S02", start: "06:00", end: "14:00", workStart: "06:00", workEnd: "14:00", activities: [], revisionId: "seed-radar-1" };
   await planRef.set({
     id: "plan-310-radar-seed",
     groupId: "310",
     templateVersion: "v1",
     planCode: "310",
     planVersion: "1",
-    validFrom: "2026-01-01",
+    validFrom: "2099-12-31",
     timezone: "Europe/Belgrade",
     status: "active",
     revisionId: "seed-radar-1",
-    dutyCount: 1,
+    dutyCount: 2,
     activityCount: 0,
     overnightDutyCount: 0,
     publishedAt: FieldValue.serverTimestamp(),
@@ -42,6 +50,7 @@ async function main() {
     activatedBy: "seed"
   }, { merge: true });
   await planRef.collection("duties").doc("310.S01").set(dutyPlan, { merge: true });
+  await planRef.collection("duties").doc("310.S02").set(dutyPlan2, { merge: true });
 
   let user;
   try {

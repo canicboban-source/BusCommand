@@ -25,7 +25,7 @@ test("assignment PUT imports and applies assignment-resource-guard", () => {
 test("D24.1 assignment revalidates live bus/duty/scope inside mutation transaction", () => {
   const assignIdx = ROUTES.indexOf('app.put("/api/staff/shifts/assignment"');
   assert.ok(assignIdx > 0);
-  const slice = ROUTES.slice(assignIdx, assignIdx + 12000);
+  const slice = ROUTES.slice(assignIdx, assignIdx + 30000);
   assert.match(slice, /getActiveServicePlanInTx/);
   assert.match(slice, /busLookupQuery/);
   assert.match(slice, /tx\.get\(driverRef\)/);

@@ -823,7 +823,6 @@ const TRANSLATIONS = {
         ca_plan_duty_invalid_day_type: "Izaberite ispravan tip dana.",
         ca_plan_duty_duplicate: "Šifra smene već postoji.",
         ca_plan_duty_code_required: "Unesite šifru smene."
-
     },
     en: {
         ca_nav_service_plan: "Shift plans",
@@ -2348,6 +2347,31 @@ const NEW_TRANSLATIONS = {
     },
     group_setup_subtitle: {
         sr: "Kreirajte nove linije/grupe ili izaberite grupu za rad", en: "Create new routes/groups or choose one to manage", de: "Erstellen Sie neue Routen/Gruppen oder wählen Sie eine aus"},
+    duty_conflict_modal_title: {
+        sr: "Smena je već dodeljena", en: "Duty already assigned", de: "Dienst bereits zugewiesen", fr: "Service déjà attribué", it: "Turno già assegnato", cs: "Směna již přiřazena"
+    },
+    duty_conflict_modal_message: {
+        sr: "Smena {dutyCode} za {date} već je dodeljena vozaču {driverName}.",
+        en: "Duty {dutyCode} for {date} is already assigned to driver {driverName}.",
+        de: "Dienst {dutyCode} für {date} ist bereits dem Fahrer {driverName} zugewiesen.",
+        fr: "Le service {dutyCode} pour le {date} est déjà attribué au conducteur {driverName}.",
+        it: "Il turno {dutyCode} per il {date} è già assegnato all'autista {driverName}.",
+        cs: "Směna {dutyCode} na {date} je již přiřazena řidiči {driverName}."
+    },
+    duty_conflict_modal_ok: {
+        sr: "OK / Nazad na plan", en: "OK / Back to plan", de: "OK / Zurück zum Plan", fr: "OK / Retour au planning", it: "OK / Torna al piano", cs: "OK / Zpět na plán"
+    },
+    duty_conflict_modal_open_existing: {
+        sr: "Prikaži vozača {driverName}", en: "Show driver {driverName}", de: "Fahrer {driverName} anzeigen", fr: "Afficher le conducteur {driverName}", it: "Mostra autista {driverName}", cs: "Zobrazit řidiče {driverName}"
+    },
+    ops_duty_already_assigned: {
+        sr: "Smena {dutyCode} za {date} već je dodeljena vozaču {driverName}.",
+        en: "Duty {dutyCode} for {date} is already assigned to driver {driverName}.",
+        de: "Dienst {dutyCode} für {date} ist bereits dem Fahrer {driverName} zugewiesen.",
+        fr: "Le service {dutyCode} pour le {date} est déjà attribué au conducteur {driverName}.",
+        it: "Il turno {dutyCode} per il {date} è già assegnato all'autista {driverName}.",
+        cs: "Směna {dutyCode} na {date} je již přiřazena řidiči {driverName}."
+    },
     active_group_label: {
         sr: "Izaberite grupu za rad", en: "Select Group to Dispatch", de: "Gruppe zum Disponieren auswählen"},
     active_group_short: {
