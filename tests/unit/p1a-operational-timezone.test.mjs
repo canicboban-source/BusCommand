@@ -4,6 +4,10 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const { belgradeDateStr, addCalendarDays: p1bAddCalendarDays } = require("../../qa-report/p1b-radar-live-write.js");
 
 function makeWindow(profile) {
     return {
@@ -84,4 +88,23 @@ test("operationalDateStr uses the configured operational timezone even if it dif
     // timezone-driven and not a single hard-coded browser-local computation.
     assert.notEqual(farAhead, undefined);
     assert.notEqual(behind, undefined);
+});
+
+test("P1-B: belgradeDateStr derives Europe/Belgrade calendar date across CEST UTC midnight boundaries", () => {
+    // Summer CEST (UTC+2): Midnight in Belgrade occurs at 22:00:00Z
+    assert.equal(belgradeDateStr(new Date("2026-08-29T21:59:59Z")), "2026-08-29");
+    assert.equal(belgradeDateStr(new Date("2026-08-29T22:00:00Z")), "2026-08-30");
+    assert.equal(belgradeDateStr(new Date("2026-08-29T23:18:52Z")), "2026-08-30");
+});
+
+test("P1-B: belgradeDateStr derives Europe/Belgrade calendar date across winter CET UTC midnight boundaries", () => {
+    // Winter CET (UTC+1): Midnight in Belgrade occurs at 23:00:00Z
+    assert.equal(belgradeDateStr(new Date("2026-01-15T22:59:59Z")), "2026-01-15");
+    assert.equal(belgradeDateStr(new Date("2026-01-15T23:00:00Z")), "2026-01-16");
+});
+
+test("P1-B: addCalendarDays correctly performs neutral ISO calendar arithmetic and month/year rollovers", () => {
+    assert.equal(p1bAddCalendarDays("2026-08-30", 1), "2026-08-31");
+    assert.equal(p1bAddCalendarDays("2026-08-30", 2), "2026-09-01");
+    assert.equal(p1bAddCalendarDays("2026-12-31", 1), "2027-01-01");
 });

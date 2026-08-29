@@ -145,10 +145,11 @@ function freeBusPools(groupId, dateStr, excludeDriverId, keepBus = "") {
     const company = [];
     const otherGroups = [];
     for (const bus of (window.state.buses || [])) {
-        if (!busIsAssignable(bus) && String(bus.number || "") !== String(keepBus || "")) continue;
+        if (!busIsAssignable(bus)) continue;
         const number = String(bus.number || "");
         if (!number) continue;
-        if (used.has(number) && number !== String(keepBus || "")) continue;
+        const isKeep = number === String(keepBus || "");
+        if (used.has(number) && !isKeep) continue;
         const groups = (bus.groupIds || [bus.groupId || bus.lineId].filter(Boolean)).map(String);
         const inTarget = target && busHasGroup(bus, target);
         const unassigned = groups.length === 0;
@@ -303,6 +304,27 @@ function collectOpsAttentionItems() {
                 }) || `${driver.name} je na smeni bez vozila — dodelite autobus odmah.`,
                 busPools: buses
             });
+        } else if (needsBus && bus) {
+            const busObj = (window.state?.buses || []).find((b) => String(b.number || "").trim() === String(bus).trim());
+            if (!busIsAssignable(busObj)) {
+                const buses = freeBusPools(groupId, today, id, "");
+                items.push({
+                    id: `inactive_bus:${id}:${bus}:${today}`,
+                    kind: "inactive_bus",
+                    severity: "critical",
+                    driverId: id,
+                    driverName: driver.name,
+                    groupId,
+                    date: today,
+                    bus: String(bus),
+                    dutyCode: duty.routeCode || duty.name || "",
+                    time: duty.start && duty.end ? `${duty.start}–${duty.end}` : "",
+                    title: t("ops_attn_inactive_bus_title") || "Neaktivan autobus",
+                    summary: t("ops_attn_inactive_bus_summary", { busNumber: bus })
+                        || `Autobus ${bus} je neaktivan. Izaberi drugi autobus.`,
+                    busPools: buses
+                });
+            }
         }
 
         ensureShiftCatalogForEdit(groupId);
@@ -544,6 +566,53 @@ function collectRestPeriodAttentionItems(groupId = null, dateStr = null) {
     return items;
 }
 
+function collectInactiveBusAttentionItems(groupId = null, dateStr = null) {
+    const today = dateStr || operationalDateStr(0);
+    const scope = groupId || window.state?.activeGroupHubId || window.state?.activeGroupFilter || "";
+    const items = [];
+    const dayLabel = radarDayLabel(today, operationalDateStr(0));
+
+    getVisibleDrivers().forEach((driver) => {
+        if (driver.active === false) return;
+        const gid = driver.groupId || driver.lineId || "";
+        if (scope && gid && String(gid) !== String(scope)) return;
+
+        const uid = driverUid(driver);
+        if (!uid) return;
+        const duty = getShiftForDriverIdOnly(uid, today);
+        if (!duty || !isOperationalDuty(duty)) return;
+
+        const dutyType = String(duty.type || "").toLowerCase();
+        const needsBus = ["morning", "afternoon", "night"].includes(dutyType);
+        const bus = duty.bus || driver.bus || "";
+        if (!needsBus || !bus) return;
+
+        const busObj = window.state?.buses?.find((b) => String(b.number ?? "").trim() === String(bus).trim());
+        if (busIsAssignable(busObj)) return;
+
+        const buses = freeBusPools(gid || scope, today, uid, "");
+        items.push({
+            id: `inactive_bus:${uid}:${bus}:${today}`,
+            kind: "inactive_bus",
+            severity: "critical",
+            driverId: uid,
+            driverName: driver.name,
+            groupId: gid || scope,
+            date: today,
+            radarDayLabel: dayLabel,
+            bus,
+            dutyCode: duty.routeCode || duty.name || "",
+            time: duty.start && duty.end ? `${duty.start}–${duty.end}` : "",
+            title: t("ops_attn_inactive_bus_title") || "Neaktivan autobus",
+            summary: t("ops_attn_inactive_bus_summary", { busNumber: bus })
+                || `Autobus ${bus} je neaktivan. Izaberi drugi autobus.`,
+            busPools: buses
+        });
+    });
+
+    return items;
+}
+
 /**
  * Three-day operational radar window (P1-A): D0 (today), D+1 (tomorrow),
  * D+2 (day after tomorrow) in the authoritative operational timezone.
@@ -573,7 +642,8 @@ function collectAllAttentionItems(groupId = null, dateStr = null) {
     for (const date of dates) {
         const gaps = collectPlanGapAttentionItems(groupId, date);
         const restViolations = collectRestPeriodAttentionItems(groupId, date);
-        for (const item of [...gaps, ...restViolations]) {
+        const inactiveBuses = collectInactiveBusAttentionItems(groupId, date);
+        for (const item of [...gaps, ...restViolations, ...inactiveBuses]) {
             if (seen.has(item.id)) continue;
             seen.add(item.id);
             merged.push(item);
@@ -686,10 +756,13 @@ function renderAttentionCard(item) {
 
     let solution = "";
     const sid = domSafeId(item.id);
-    if (item.kind === "missing_bus") {
+    if (item.kind === "missing_bus" || item.kind === "inactive_bus") {
         const hasBuses = (item.busPools?.all || []).length > 0;
+        const label = item.kind === "inactive_bus"
+            ? (t("ops_attn_pick_replacement_bus") || "Izaberi drugi autobus")
+            : (t("ops_attn_pick_bus") || "Dodeli autobus");
         solution = `
-            <label class="ops-attention-label" for="attn-bus-${sid}">${escapeHtml(t("ops_attn_pick_bus") || "Dodeli autobus")}</label>
+            <label class="ops-attention-label" for="attn-bus-${sid}">${escapeHtml(label)}</label>
             <select id="attn-bus-${sid}" class="ops-attention-select" data-attn-field="bus">
                 ${pooledOptionList(item.busPools, { emptyLabel: t("ops_coverage_no_buses") || "Nema slobodnog autobusa" })}
             </select>
@@ -1123,7 +1196,7 @@ async function applyOpsAttentionFix(itemId, fixAction = "") {
     card.classList.add("is-pending");
     if (statusEl) statusEl.textContent = t("report_resolving") || "Rešavanje…";
     try {
-        if (item.kind === "missing_bus") {
+        if (item.kind === "missing_bus" || item.kind === "inactive_bus") {
             const bus = String(cardField(card, "bus")?.value || "");
             if (!bus) {
                 if (statusEl) statusEl.textContent = t("ops_attn_pick_bus") || "Izaberite autobus.";
@@ -1285,6 +1358,7 @@ export {
     collectOpsAttentionItems,
     collectPlanGapAttentionItems,
     collectRestPeriodAttentionItems,
+    collectInactiveBusAttentionItems,
     collectAllAttentionItems,
     openOpsAttentionPanel,
     closeOpsAttentionPanel,
@@ -1297,3 +1371,12 @@ export {
     syncOpsPlanHealthAttentionState,
     wireOpsPlanHealthAttention
 };
+
+if (typeof window !== "undefined") {
+    window.collectOpsAttentionItems = collectOpsAttentionItems;
+    window.collectInactiveBusAttentionItems = collectInactiveBusAttentionItems;
+    window.collectAllAttentionItems = collectAllAttentionItems;
+    window.openOpsAttentionPanel = openOpsAttentionPanel;
+    window.closeOpsAttentionPanel = closeOpsAttentionPanel;
+    window.focusOpsAttentionItem = focusOpsAttentionItem;
+}

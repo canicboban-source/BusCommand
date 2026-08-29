@@ -25,8 +25,9 @@ const BUDGETS = {
   /**
    * Shared dictionary chunk. +1 KiB in Phase 0 closeout for monthly_edit_day /
    * assigned-day plural strings (en/sr/de only — kept out of 16-lang propagate).
+   * +1 KiB in P1.1 for inactive bus operational integrity translations.
    */
-  translationsChunkBytes: 369 * 1024,
+  translationsChunkBytes: 370 * 1024,
 };
 
 function readHtml(name) {

@@ -7128,15 +7128,30 @@ Object.assign(TRANSLATIONS.de, {
 // EU 561/2006 Art. 8 informational rest-period attention card.
 Object.assign(TRANSLATIONS.en, {
     ops_rest_violation_title: "Insufficient rest (EU 561/2006)",
-    ops_attn_rest_violation_summary: "{driver} has only {hours}h rest between shifts — review the schedule."
+    ops_attn_rest_violation_summary: "{driver} has only {hours}h rest between shifts — review the schedule.",
+    ops_attn_inactive_bus_title: "Inactive bus",
+    ops_attn_inactive_bus_summary: "Bus {busNumber} is inactive. Pick another bus.",
+    ops_attn_pick_replacement_bus: "Pick another bus",
+    ops_bus_inactive_badge: "inactive",
+    ops_bus_inactive_warn: "Bus {bus} is inactive"
 });
 Object.assign(TRANSLATIONS.sr, {
     ops_rest_violation_title: "Nedovoljan odmor (EU 561/2006)",
-    ops_attn_rest_violation_summary: "{driver} ima samo {hours}h odmora između smena — proverite raspored."
+    ops_attn_rest_violation_summary: "{driver} ima samo {hours}h odmora između smena — proverite raspored.",
+    ops_attn_inactive_bus_title: "Neaktivan autobus",
+    ops_attn_inactive_bus_summary: "Autobus {busNumber} je neaktivan. Izaberi drugi autobus.",
+    ops_attn_pick_replacement_bus: "Izaberi drugi autobus",
+    ops_bus_inactive_badge: "neaktivan",
+    ops_bus_inactive_warn: "Autobus {bus} je neaktivan"
 });
 Object.assign(TRANSLATIONS.de, {
     ops_rest_violation_title: "Unzureichende Ruhezeit (EU 561/2006)",
-    ops_attn_rest_violation_summary: "{driver} hat nur {hours}h Ruhezeit zwischen den Schichten — Plan prüfen."
+    ops_attn_rest_violation_summary: "{driver} hat nur {hours}h Ruhezeit zwischen den Schichten — Plan prüfen.",
+    ops_attn_inactive_bus_title: "Inaktiver Bus",
+    ops_attn_inactive_bus_summary: "Bus {busNumber} ist inaktiv. Wählen Sie einen anderen Bus.",
+    ops_attn_pick_replacement_bus: "Anderen Bus wählen",
+    ops_bus_inactive_badge: "inaktiv",
+    ops_bus_inactive_warn: "Bus {bus} ist inaktiv"
 });
 
 // D23 — product UI languages only (en/de/sr). Unsupported keys are dropped.

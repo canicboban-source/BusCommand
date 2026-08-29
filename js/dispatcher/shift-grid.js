@@ -1,7 +1,8 @@
 // BusCommand ESM v9.5
-import { getVisibleDrivers, todayDateStr } from "../core/utils.js";
+import { getVisibleDrivers, todayDateStr, escapeHtml } from "../core/utils.js";
 import { getGroupById } from "../data/groups.js";
 import { dateToStr, getShiftForDriverIdOnly } from "./shift-utils.js";
+import { busIsAssignable } from "../data/bus-ops.js";
 
 function driverId(driver) {
     return driver?.id || driver?.uid || "";
@@ -78,17 +79,21 @@ function renderShiftsWeeklyGrid(weekDays) {
                     </div>
                 </div>
             </td>`;
-
+        const drvId = driverId(driver);
         weekDays.forEach(d => {
             const dStr = dateToStr(d);
-            const drvId = driverId(driver);
             const shift = getShiftForDriverIdOnly(drvId, dStr);
             const isToday = dStr === todayStr;
-            const isPast  = dStr < todayStr;
+            const isPast = dStr < todayStr;
             const style = shiftColors[shift ? shift.type : "empty"] || shiftColors.empty;
+            const bus = shift?.bus || "";
+            const busObj = bus ? window.state?.buses?.find(b => String(b.number ?? "").trim() === bus.trim()) : null;
+            const isBusInactive = !!(bus && shift?.type && !["off", "vacation", "sick", "clear"].includes(shift.type) && !busIsAssignable(busObj));
+            const borderColor = isBusInactive ? "#ef4444" : (isToday ? "var(--primary-color)" : style.border);
+            const shadowStyle = isBusInactive ? "box-shadow: inset 0 0 0 1px #ef4444;" : "";
 
             html += `<td style="padding:3px;">
-                <div style="background:${style.bg}; border:1px solid ${isToday ? "var(--primary-color)" : style.border};
+                <div style="background:${style.bg}; border:1px solid ${borderColor}; ${shadowStyle}
                      border-radius:8px; padding:6px 4px; text-align:center; min-height:56px;
                      display:flex;flex-direction:column;align-items:center;justify-content:center;
                      position:relative; opacity:${isPast && !shift ? "0.4" : "1"}; cursor:pointer;
@@ -98,6 +103,7 @@ function renderShiftsWeeklyGrid(weekDays) {
                     ${shift ? `
                         <span style="font-size:1.1rem;">${style.icon}</span>
                         <span style="font-size:10px;font-weight:600;color:${style.text};margin-top:2px;line-height:1.2;">${shift.name || t("shift_"+shift.type) || shift.type}</span>
+                        ${isBusInactive ? `<span style="font-size:9px;font-weight:700;color:#ef4444;margin-top:1px;">⚠️ Bus ${escapeHtml(bus)}</span>` : ""}
                         <button ${actionAttr("removeShift", [drvId, dStr], { stopPropagation: true })}
                             style="position:absolute;top:2px;right:2px;background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;font-size:10px;padding:1px;line-height:1;"
                             title="${t("btn_delete")}">✕</button>
