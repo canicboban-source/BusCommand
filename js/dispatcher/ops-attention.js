@@ -1103,7 +1103,7 @@ async function applyOpsAttentionFix(itemId, fixAction = "") {
         const action = String(fixAction || "daily");
         closeOpsAttentionPanel();
         if (action === "assign" && item.driverId) {
-            openShiftCell(item.driverId, item.date || todayDateStr());
+            await openShiftCell(item.driverId, item.date || todayDateStr());
             return;
         }
         const groupId = item.groupId || window.state?.activeGroupHubId || window.state?.activeGroupFilter;

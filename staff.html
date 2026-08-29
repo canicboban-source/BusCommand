@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="css/design-tokens.css">
     <link rel="stylesheet" href="css/brand.css">
     <link rel="stylesheet" href="style.css">
-    
+
 <link rel="stylesheet" href="css/staff-desktop.css">
     <script type="module" src="js/main-staff.js"></script>
 </head>
@@ -171,7 +171,7 @@
                 </div>
                 <p data-i18n="disp_new_password_subtitle">Izaberite ličnu lozinku (najmanje 6 karaktera)</p>
             </div>
-            
+
             <div class="login-form-content">
                 <input type="hidden" id="setup-dispatcher-id">
                 <div class="form-group">
@@ -191,7 +191,7 @@
         </div>
     </div>
 
-    
+
 
     <!-- GROUP SETUP & SWITCH PANEL -->
     <div id="dispatcher-group-setup-view" class="login-container hidden">
@@ -203,7 +203,7 @@
                 </div>
                 <p data-i18n="group_setup_subtitle">Create new routes/groups or choose one to manage</p>
             </div>
-            
+
             <div class="login-form-content" style="display:flex; flex-direction:column; gap:20px;">
                 <!-- Select Active Group -->
                 <div class="form-group" id="group-select-container">
@@ -217,9 +217,9 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:10px 0;">
-                
+
                 <!-- Create New Group — samo legacy; CA sada upravlja grupama -->
                 <div id="group-setup-create-block" style="display:none;">
                     <h3 style="margin-top:0; font-size:1.1rem; color:var(--text-main); font-weight:600; margin-bottom:12px;" data-i18n="btn_create_group">Create New Group</h3>
@@ -243,7 +243,7 @@
 
     <!-- 2. GLAVNI KONTEJNER APLIKACIJE (NAKON PRIJAVE) -->
     <div id="app-container" class="app-layout hidden">
-        
+
         <!-- Hitan SOS alarm za dispečera -->
         <div id="dispatcher-sos-banner" class="sos-banner hidden">
             <div class="sos-banner-content">
@@ -271,7 +271,7 @@
                 <div class="trial-indicator hidden" id="app-trial-badge" hidden aria-hidden="true"></div>
                 <div id="header-connection-status" class="header-connection-status" data-state="online" role="status" aria-live="polite">Online</div>
             </div>
-            
+
             <div class="header-right">
                 <!-- Selektor jezika u zaglavlju -->
                 <div class="header-lang-selector">
@@ -289,7 +289,7 @@
                         <i data-lucide="refresh-cw"></i>
                     </div>
                 </div>
-                
+
                 <div class="user-profile-info">
                     <div class="user-avatar" style="overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative;">
                         <img id="header-user-avatar-img" src="" class="hidden" style="width: 100%; height: 100%; object-fit: cover;">
@@ -300,7 +300,7 @@
                         <span id="header-user-sub">Autobus 102</span>
                     </div>
                 </div>
-                
+
                 <!-- Dark/Light mode toggle -->
                 <button id="theme-toggle-btn" class="btn-logout" type="button" data-action="toggleTheme" title="Toggle dark/light mode" data-i18n-title="theme_toggle_aria" aria-label="Toggle dark/light mode" data-i18n-aria-label="theme_toggle_aria" style="margin-right:4px;">
                     <i data-lucide="moon" id="theme-icon" aria-hidden="true"></i>
@@ -322,7 +322,7 @@
             <aside class="app-sidebar">
                 <nav class="sidebar-nav">
                     <!-- Navigacija za vozača -->
-                    
+
 
                     <ul id="superadmin-nav" class="nav-list hidden">
                         <li>
@@ -436,20 +436,20 @@
 
             <!-- GLAVNI SADRŽAJ (MAIN CONTENT) -->
             <main id="main-content" class="app-main" tabindex="-1">
-                
+
                 <!-- =============== SEKCIJE VOZAČA =============== -->
 
                 <!-- DNEVNI PLAN VOŽNJE -->
-                
+
 
                 <!-- MESEČNI PLAN -->
-                
+
 
                 <!-- PRIJAVA PROBLEM / KAŠNJENJA / IZGUBLJENE STVARI -->
-                
+
 
                 <!-- GODIŠNJI ODMOR -->
-                
+
 
 
                 <!-- =============== SEKCIJE DISPEČERA (FIRME) =============== -->
@@ -463,7 +463,7 @@
                     <div id="sa-platform-health" class="sa-platform-health" role="status" aria-live="polite">
                         <span data-i18n="sa_health_loading">Checking platform health…</span>
                     </div>
-                    
+
                     <div class="stats-grid">
                         <button type="button" class="stat-card" data-action="superadminFocusCompanies" aria-label="Open registered companies">
                             <div class="stat-icon-wrapper" style="background: rgba(166,0,26,0.12); color: #a6001a;">
@@ -493,7 +493,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <p id="superadmin-stats-error" class="hidden" data-i18n="superadmin_stats_error" style="color:var(--danger-color);margin:-12px 0 20px;">Overview statistics are currently unavailable.</p>
 
                     <!-- Companies table + create modal -->
@@ -2214,13 +2214,13 @@
             </main>
 
             <!-- MOBILNA BOTTOM NAVIGACIJA (samo za vozača, samo na telefonu) -->
-            
+
 
         </div>
     </div>
 
     <!-- FULL-SCREEN PORUKA OD DISPEČERA -->
-    
+
 
     <!-- SOS CONFIRM MODAL -->
     <div id="sos-confirm-modal" class="modal-backdrop bc-overlay-modal hidden" role="dialog" aria-modal="true" aria-labelledby="sos-confirm-title" data-action="closeSosConfirmModal" data-action-self="true" aria-hidden="true" style="display:none;">
@@ -2287,7 +2287,7 @@
     </div>
 
     <!-- 3. MODAL ZA PROVERU VOZILA PRE SMENE (WAGENÜBERGABE) -->
-    
+
 
     <!-- Povezivanje JS logike -->
 
@@ -2896,8 +2896,29 @@
         </div>
     </div>
 
+    <!-- DUTY CONFLICT MODAL (FAZA 7 / P1) -->
+    <div id="duty-conflict-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="duty-conflict-title" style="display:none;">
+        <div class="modal-content" style="max-width:460px; padding:24px; border: 1px solid rgba(239,68,68,0.4); border-radius:16px; background:#12121e; box-shadow:0 20px 40px rgba(0,0,0,0.6);">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                <div style="width:40px; height:40px; border-radius:50%; background:rgba(239,68,68,0.15); display:flex; align-items:center; justify-content:center; color:#ef4444; font-size:1.3rem; flex-shrink:0;">
+                    &#9888;
+                </div>
+                <h3 id="duty-conflict-title" style="margin:0; font-size:1.15rem; color:#f87171;" data-i18n="duty_conflict_modal_title">Smena je već dodeljena</h3>
+            </div>
+            <p id="duty-conflict-message" style="margin:0 0 20px 0; font-size:0.95rem; line-height:1.5; color:#e2e8f0;"></p>
+            <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+                <button type="button" id="duty-conflict-open-existing-btn" class="btn-secondary hidden" style="display:none;" data-action="openConflictingDriverAssignment">
+                    <span data-i18n="duty_conflict_modal_open_existing">Prikaži vozača</span>
+                </button>
+                <button type="button" id="duty-conflict-close-btn" class="btn-primary" data-action="closeDutyConflictModal" data-i18n="duty_conflict_modal_ok" style="background:#4f46e5; border:none; padding:10px 18px; border-radius:8px; color:white; font-weight:600; cursor:pointer;">
+                    OK / Nazad na plan
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ── MOBILNI BOTTOM NAV (vidljiv samo na mobilnom, ≤640px) ── -->
-    
+
 
 </body>
 </html>

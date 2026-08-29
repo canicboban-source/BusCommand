@@ -107,7 +107,7 @@ test.describe("Unavailable driver incident workflow and resolution", () => {
       window.state.reports.find((r) => r.driverId === "drv-luka")?.status
     )).toBe("resolved");
 
-    await expect(page.locator(".ops-attention-card").filter({ hasText: /Luka Kovačević/i })).toHaveCount(0);
+    await expect(page.locator('.ops-attention-card[data-attn-id^="coverage:"]').filter({ hasText: /Luka Kova\u010devi\u0107/i })).toHaveCount(0);
 
     // 6. Plan data remains 100% UNCHANGED
     const shiftAfterResolve = await page.evaluate((d) =>
@@ -177,7 +177,7 @@ test.describe("Unavailable driver incident workflow and resolution", () => {
     })).toBe(true);
 
     // Attention panel clears Luka's card
-    await expect(page.locator(".ops-attention-card").filter({ hasText: /Luka Kovačević/i })).toHaveCount(0);
+    await expect(page.locator('.ops-attention-card[data-attn-id^="coverage:"]').filter({ hasText: /Luka Kova\u010devi\u0107/i })).toHaveCount(0);
   });
 
   test("coverage resolver modal includes distinct available-again action", async ({ page }) => {

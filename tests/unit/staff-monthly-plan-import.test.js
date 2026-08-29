@@ -17,6 +17,7 @@ const {
 } = require("../../server/staff-monthly-plan-import");
 const { lockDocumentId } = require("../../server/group-monthly-plan-import");
 const { currentRevision } = require("../../server/shift-assignment");
+const { canonicalDutyGuardKey } = require("../../server/duty-instance-guard");
 
 const DRIVER_ID = "11111111-1111-4111-8111-111111111111";
 const COMPANY_ID = "company-a";
@@ -49,7 +50,8 @@ function createDb() {
     buses: {
       "bus-101": { number: "101", active: true, opsStatus: "active", groupId: GROUP_ID }
     },
-    service_plans: {}
+    service_plans: {},
+    ops_active_duties: {}
   };
 
   function ref(collection, id) {
@@ -57,6 +59,7 @@ function createDb() {
       id,
       path: `${collection}/${id}`,
       async get() {
+        if (!bags[collection]) bags[collection] = {};
         const data = bags[collection][id];
         return {
           id,
@@ -620,4 +623,228 @@ test("new row rollback deletes imported shift", async () => {
     lockRef
   });
   assert.equal(bags.shifts[`${DRIVER_ID}_${MONTH}-05`], undefined);
+});
+
+test("Task 1: commit-time duty guard collision rejects with MONTHLY_IMPORT_CONFLICT / DUTY_ALREADY_ASSIGNED, preserves existing owner guard and shift, causes zero partial mutation for losing driver, and triggers clean compensation", async () => {
+  const OTHER_DRIVER_ID = "22222222-2222-4222-8222-222222222222";
+  const { db, admin, bags } = createDb();
+
+  // Seed other driver
+  bags.drivers[OTHER_DRIVER_ID] = {
+    active: true,
+    groupId: GROUP_ID,
+    firstName: "Marko",
+    lastName: "Nikolić",
+    name: "Marko Nikolić"
+  };
+
+  // Seed existing shift and duty guard owned by Marko on 2026-08-03
+  const existingDutyCode = "310.S01";
+  const existingDate = `${MONTH}-03`;
+  const existingGuardKey = canonicalDutyGuardKey({ groupId: GROUP_ID, serviceDate: existingDate, dutyCode: existingDutyCode });
+
+  bags.shifts[`${OTHER_DRIVER_ID}_${existingDate}`] = {
+    driverId: OTHER_DRIVER_ID,
+    driverName: "Marko Nikolić",
+    groupId: GROUP_ID,
+    date: existingDate,
+    type: "morning",
+    name: existingDutyCode,
+    routeCode: existingDutyCode,
+    revision: 1
+  };
+  bags.ops_active_duties[existingGuardKey] = {
+    schemaVersion: "v1",
+    companyId: COMPANY_ID,
+    groupId: GROUP_ID,
+    serviceDate: existingDate,
+    dutyCode: existingDutyCode,
+    shiftType: "morning",
+    ownerDriverId: OTHER_DRIVER_ID,
+    ownerShiftDocumentId: `${OTHER_DRIVER_ID}_${existingDate}`,
+    assignedBus: "",
+    claimedBy: "existing-staff"
+  };
+
+  const preview = {
+    groupId: GROUP_ID,
+    month: MONTH,
+    sourceName: "import-collision.csv",
+    reason: "collision-test",
+    fingerprint: crypto.createHash("sha256").update("collision-test").digest("hex"),
+    summary: { total: 1, created: 1, updated: 0, removed: 0 },
+    rows: [
+      {
+        driverId: DRIVER_ID,
+        date: existingDate,
+        type: "morning",
+        name: existingDutyCode,
+        bus: "",
+        expectedRevision: 0,
+        previous: null
+      }
+    ]
+  };
+
+  const prepared = await prepareStaffMonthlyImport({
+    db, admin, companyId: COMPANY_ID, actorId: "disp-1", preview
+  });
+
+  // Attempt to commit import -> MUST throw MONTHLY_IMPORT_CONFLICT with DUTY_ALREADY_ASSIGNED
+  await assert.rejects(
+    () => commitStaffMonthlyImport({
+      db, admin, companyId: COMPANY_ID, actorId: "disp-1",
+      importId: prepared.id, fingerprint: prepared.fingerprint,
+      actorGroups: [GROUP_ID]
+    }),
+    (err) => {
+      assert.equal(err.status, 409);
+      assert.equal(err.code, "MONTHLY_IMPORT_CONFLICT");
+      const dutyConflict = err.details?.find((d) => d.code === "DUTY_ALREADY_ASSIGNED");
+      assert.ok(dutyConflict, "Must contain DUTY_ALREADY_ASSIGNED detail");
+      assert.equal(dutyConflict.existingDriverId, OTHER_DRIVER_ID);
+      assert.equal(dutyConflict.dutyCode, existingDutyCode);
+      return true;
+    }
+  );
+
+  // Invariant 1: Existing owner shift remains completely unchanged
+  assert.deepEqual(bags.shifts[`${OTHER_DRIVER_ID}_${existingDate}`], {
+    driverId: OTHER_DRIVER_ID,
+    driverName: "Marko Nikolić",
+    groupId: GROUP_ID,
+    date: existingDate,
+    type: "morning",
+    name: existingDutyCode,
+    routeCode: existingDutyCode,
+    revision: 1
+  });
+
+  // Invariant 2: Existing canonical guard remains owned by Marko
+  assert.equal(bags.ops_active_duties[existingGuardKey].ownerDriverId, OTHER_DRIVER_ID);
+
+  // Invariant 3: Losing imported driver receives zero shift mutation
+  assert.equal(bags.shifts[`${DRIVER_ID}_${existingDate}`], undefined);
+
+  // Invariant 4: No new false revision or orphan guard
+  assert.equal(Object.keys(bags.ops_active_duties).length, 1);
+
+  // Invariant 5: Import job record is marked failed and compensated
+  const importJob = bags.monthly_plan_imports[prepared.id];
+  assert.equal(importJob.status, "failed");
+  assert.equal(importJob.compensated, true);
+});
+
+test("Task 4: multi-chunk failure injection: failure in second chunk triggers deterministic compensation restoring first chunk shifts and releasing first chunk guards", async () => {
+  const { db, admin, bags } = createDb();
+  setStaffImportWriteChunkSizeForTests(1); // Force 1 row per chunk to produce multi-chunk execution
+
+  setGetActiveServicePlanForTests(async () => ({
+    duties: [{ code: "310.S01" }, { code: "310.S02" }]
+  }));
+
+  const OTHER_DRIVER_ID = "33333333-3333-4333-8333-333333333333";
+  bags.drivers[OTHER_DRIVER_ID] = {
+    active: true,
+    groupId: GROUP_ID,
+    firstName: "Stefan",
+    lastName: "Jovanović",
+    name: "Stefan Jovanović"
+  };
+
+  // Seed collision on Row 2 (2026-08-04, 310.S02) owned by Stefan
+  const row2Duty = "310.S02";
+  const row2Date = `${MONTH}-04`;
+  const row2GuardKey = canonicalDutyGuardKey({ groupId: GROUP_ID, serviceDate: row2Date, dutyCode: row2Duty });
+  bags.shifts[`${OTHER_DRIVER_ID}_${row2Date}`] = {
+    driverId: OTHER_DRIVER_ID,
+    driverName: "Stefan Jovanović",
+    groupId: GROUP_ID,
+    date: row2Date,
+    type: "morning",
+    name: row2Duty,
+    routeCode: row2Duty,
+    revision: 1
+  };
+  bags.ops_active_duties[row2GuardKey] = {
+    schemaVersion: "v1",
+    companyId: COMPANY_ID,
+    groupId: GROUP_ID,
+    serviceDate: row2Date,
+    dutyCode: row2Duty,
+    shiftType: "morning",
+    ownerDriverId: OTHER_DRIVER_ID,
+    ownerShiftDocumentId: `${OTHER_DRIVER_ID}_${row2Date}`,
+    assignedBus: "",
+    claimedBy: "existing-staff"
+  };
+
+  const preview = {
+    groupId: GROUP_ID,
+    month: MONTH,
+    sourceName: "multi-chunk-failure.csv",
+    reason: "multi-chunk-test",
+    fingerprint: crypto.createHash("sha256").update("multi-chunk-test").digest("hex"),
+    summary: { total: 2, created: 2, updated: 0, removed: 0 },
+    rows: [
+      // Row 1: clean assignment on 2026-08-03 (Chunk 1 will write this shift and guard)
+      {
+        driverId: DRIVER_ID,
+        date: `${MONTH}-03`,
+        type: "morning",
+        name: "310.S01",
+        bus: "",
+        expectedRevision: 0,
+        previous: null
+      },
+      // Row 2: conflicting assignment on 2026-08-04 (Chunk 2 will fail due to Stefan's ownership)
+      {
+        driverId: DRIVER_ID,
+        date: row2Date,
+        type: "morning",
+        name: row2Duty,
+        bus: "",
+        expectedRevision: 0,
+        previous: null
+      }
+    ]
+  };
+
+  const prepared = await prepareStaffMonthlyImport({
+    db, admin, companyId: COMPANY_ID, actorId: "disp-1", preview
+  });
+
+  await assert.rejects(
+    () => commitStaffMonthlyImport({
+      db, admin, companyId: COMPANY_ID, actorId: "disp-1",
+      importId: prepared.id, fingerprint: prepared.fingerprint,
+      actorGroups: [GROUP_ID]
+    }),
+    (err) => err.code === "MONTHLY_IMPORT_CONFLICT"
+  );
+
+  // Post-compensation invariants:
+  // 1. Chunk 1 shift (2026-08-03) was rolled back and deleted
+  assert.equal(bags.shifts[`${DRIVER_ID}_${MONTH}-03`], undefined, "Chunk 1 shift must be deleted by compensation");
+
+  // 2. Chunk 1 guard (310.S01) was released and deleted
+  const row1GuardKey = canonicalDutyGuardKey({ groupId: GROUP_ID, serviceDate: `${MONTH}-03`, dutyCode: "310.S01" });
+  assert.equal(bags.ops_active_duties[row1GuardKey], undefined, "Chunk 1 guard must be deleted by compensation");
+
+  // 3. Row 2 shift on Stefan remains untouched
+  assert.ok(bags.shifts[`${OTHER_DRIVER_ID}_${row2Date}`]);
+  assert.equal(bags.ops_active_duties[row2GuardKey].ownerDriverId, OTHER_DRIVER_ID);
+
+  // 4. Exact correspondence: no shift without guard, no guard without shift
+  const remainingShifts = Object.values(bags.shifts);
+  assert.equal(remainingShifts.length, 1);
+  assert.equal(Object.keys(bags.ops_active_duties).length, 1);
+
+  // 5. Status honestly reflects failure and completed compensation
+  const importJob = bags.monthly_plan_imports[prepared.id];
+  assert.equal(importJob.status, "failed");
+  assert.equal(importJob.compensated, true);
+  assert.equal(importJob.compensationStatus, "completed");
+
+  setStaffImportWriteChunkSizeForTests(0);
 });

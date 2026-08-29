@@ -90,7 +90,8 @@ const STAFF_ONLY_IDS = [
   // The Super Admin entry only has handlers on the staff bundle, so on the
   // driver surface this markup was a modal nothing could open. The id here used
   // to be "sa-pin-modal", which matches nothing in the shell.
-  "superadmin-pin-modal"
+  "superadmin-pin-modal",
+  "duty-conflict-modal"
 ];
 
 const DRIVER_ONLY_IDS = [
@@ -172,8 +173,14 @@ const staffHead = `    <link rel="stylesheet" href="css/brand.css">
     <link rel="stylesheet" href="css/staff-desktop.css">
 `;
 
-const driverHtml = buildSurfaceHtml("driver", "js/main-driver.js", { headLinks: driverHead });
-const staffHtml = buildSurfaceHtml("staff", "js/main-staff.js", { staffHead });
+const driverHtml = buildSurfaceHtml("driver", "js/main-driver.js", { headLinks: driverHead })
+  .split("\n")
+  .map((l) => l.trimEnd())
+  .join("\n");
+const staffHtml = buildSurfaceHtml("staff", "js/main-staff.js", { staffHead })
+  .split("\n")
+  .map((l) => l.trimEnd())
+  .join("\n");
 
 fs.writeFileSync(path.join(ROOT, "driver.html"), driverHtml);
 fs.writeFileSync(path.join(ROOT, "staff.html"), staffHtml);

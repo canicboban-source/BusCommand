@@ -204,7 +204,8 @@ test("import locks, plan locks and job state stay invisible and untouchable for 
     ["monthly_plan_imports", "imp-1"],
     ["monthly_plan_import_locks", "31099_2026-08"],
     ["plan_locks", "31099_2026-08"],
-    ["ops", "confirmation_dispatch"]
+    ["ops", "confirmation_dispatch"],
+    ["ops_active_duties", "v1_31099__2026-08-01__310.605"]
   ];
   for (const [role, uid] of [["company_admin", "ca-1"], ["dispatcher", "disp-1"], ["driver", "drv-1"]]) {
     const db = auth(uid, role, "alpha");

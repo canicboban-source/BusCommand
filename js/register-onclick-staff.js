@@ -1,5 +1,4 @@
 // BusCommand — staff surface action handlers
-import { handleCompanyAuditFilters, loadMoreCompanyAudit, refreshCompanyAudit, resetCompanyAuditFilters } from "./admin/company-admin-audit.js";
 import { applyBrandingSettings, clearCompanyBrandingLogo, handleCompanyBrandingLogoFile } from "./admin/company-admin-branding.js";
 import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriverAddModal, closeCompanyDriverEdit, confirmCompanyDriversImport, deleteCompanyDriver, toggleDriverPinVisibility, handleCompanyDriversFile, handleCompanyDriversFilter, handleCompanyDriversSearch, openCompanyDriverAddModal, openCompanyDriverEdit, saveCompanyDriverEdit, submitCompanyDriverManualAdd, toggleCompanyDriverStatus } from "./admin/company-admin-drivers.js";
 import { renderCompanyAdminBuses, openCompanyBusesOverview, openCaBusAddModal, closeCaBusAddModal, submitCaBusAdd, openCaBusEdit, saveCaBusEdit, cancelCaBusEdit, changeCaBusGroup, quickSetCaBusStatus, setCaBusOtherLine, toggleCaBusActive } from "./admin/company-admin-buses.js";
@@ -55,7 +54,7 @@ import { goToOpsPlanProblems } from "./dispatcher/plan-health-banner.js";
 import { openVehiclesForGroup } from "./dispatcher/vehicles-panel.js";
 import { resolveReport, openReportResolution, closeReportResolution } from "./dispatcher/reports.js";
 import { shiftWeekNav } from "./dispatcher/shift-utils.js";
-import { assignShift, openShiftCell, persistShift, removeShift } from "./dispatcher/shifts.js";
+import { assignShift, closeDutyConflictModal, openConflictingDriverAssignment, openShiftCell, persistShift, removeShift } from "./dispatcher/shifts.js";
 import { dailyPlanAssignDriver, clearDailyShift, undoDailyShift } from "./dispatcher/daily-plan.js";
 import {
     acquirePlanEditLock,
@@ -88,6 +87,11 @@ function loadDispatcherHelp() {
 /** Lazy CA onboarding wizard — not needed for Dispo monthly plan path. */
 function loadCompanyAdminOnboarding() {
     return import("./admin/company-admin-onboarding.js");
+}
+
+/** Lazy CA audit log chunk — keeps D17 staff budget under soft ceiling. */
+function loadCompanyAdminAudit() {
+    return import("./admin/company-admin-audit.js");
 }
 
 /**
@@ -362,6 +366,7 @@ const HANDLERS = {
     closeCompanyServicePlanDuty,
     closeCompanyServicePlanHistory,
     closeConfirmModal,
+    closeDutyConflictModal,
     closeDispatcherHelp,
     closeGroupHub,
     closeModal,
@@ -431,7 +436,10 @@ const HANDLERS = {
     getScheduleByKey,
     handleBulkPlanDrop,
     handleBulkPlanFileInput,
-    handleCompanyAuditFilters,
+    async handleCompanyAuditFilters(...args) {
+        const mod = await loadCompanyAdminAudit();
+        return mod.handleCompanyAuditFilters(...args);
+    },
     handleCompanyDriversFile,
     handleCompanyDriversFilter,
     handleCompanyDriversSearch,
@@ -449,7 +457,10 @@ const HANDLERS = {
     insertScheduleTable,
     loadMonthlyPlanForDriver,
     focusMonthlyDriverPlan,
-    loadMoreCompanyAudit,
+    async loadMoreCompanyAudit(...args) {
+        const mod = await loadCompanyAdminAudit();
+        return mod.loadMoreCompanyAudit(...args);
+    },
     loginAsDispatcher,
     logout,
     onMedCatalogSelectChange,
@@ -486,6 +497,7 @@ const HANDLERS = {
     openMonthlyPlanForGroup,
     openMonthlyPlansFull,
     openShiftCell,
+    openConflictingDriverAssignment,
     persistShift,
     dailyPlanAssignDriver,
     acquirePlanEditLock,
@@ -508,12 +520,18 @@ const HANDLERS = {
     startServicePlanDraft,
     submitAddDuty,
     submitEditDuty,
-    refreshCompanyAudit,
+    async refreshCompanyAudit(...args) {
+        const mod = await loadCompanyAdminAudit();
+        return mod.refreshCompanyAudit(...args);
+    },
     removeDispatcher,
     removeElementById,
     removePendingImport,
     removeShift,
-    resetCompanyAuditFilters,
+    async resetCompanyAuditFilters(...args) {
+        const mod = await loadCompanyAdminAudit();
+        return mod.resetCompanyAuditFilters(...args);
+    },
     resetCompanyDispatcherPassword,
     resetCompanySettingsForm,
     resetEmailSmtpForm,

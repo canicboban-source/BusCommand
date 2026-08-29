@@ -48,6 +48,15 @@ const {
   assignmentResourceErrorMessage
 } = require("./assignment-resource-guard");
 const { getActiveServicePlan, getActiveServicePlanInTx } = require("./service-plans");
+const {
+  canonicalDutyGuardKey,
+  dutyGuardRef,
+  evaluateDutyGuardClaim,
+  writeDutyGuardClaimInTx,
+  writeDutyGuardReleaseInTx,
+  writeDutyGuardTransferInTx,
+  isPassiveDutyType
+} = require("./duty-instance-guard");
 const { commitImportedDriversWithIdentityGuard } = require("./company-admin-driver-ops");
 
 /** Test-only barrier inside assignment mutation (after reads, before writes). */
@@ -3428,6 +3437,43 @@ function registerDriverRoutes(app, deps) {
           throw error;
         }
 
+        const priorShift = sameDriverRefs && originalShiftSnap.exists
+          ? originalShiftSnap.data()
+          : (replacementShiftSnap.exists ? replacementShiftSnap.data() : null);
+        const shiftData = {
+          driverId: parsed.data.replacementDriverId,
+          date,
+          type: (sameDriverRefs && priorShift?.type) || initialReport.shiftType || "morning",
+          name: (sameDriverRefs && priorShift?.name) || initialReport.shiftName || "",
+          bus: parsed.data.replacementBus,
+          routeCode: (sameDriverRefs && priorShift?.routeCode) || initialReport.shiftName || "",
+          start: priorShift?.start || (originalShiftSnap.exists ? originalShiftSnap.data().start || undefined : undefined),
+          end: priorShift?.end || (originalShiftSnap.exists ? originalShiftSnap.data().end || undefined : undefined)
+        };
+
+        const resolvedDutyCode = String(shiftData.routeCode || shiftData.name || "").trim().toUpperCase();
+        const dutyGuardKey = resolvedDutyCode && !isPassiveDutyType(shiftData.type)
+          ? canonicalDutyGuardKey({ groupId, serviceDate: date, dutyCode: resolvedDutyCode })
+          : null;
+        const dutyGuardDocRef = dutyGuardKey ? dutyGuardRef(companyRef, dutyGuardKey) : null;
+        const dutyGuardSnap = dutyGuardDocRef ? await tx.get(dutyGuardDocRef) : null;
+
+        if (dutyGuardSnap && dutyGuardSnap.exists) {
+          const gData = dutyGuardSnap.data() || {};
+          if (gData.ownerDriverId && gData.ownerDriverId !== initialReport.driverId && gData.ownerDriverId !== parsed.data.replacementDriverId) {
+            const error = new Error("DUTY_ALREADY_ASSIGNED");
+            error.code = "DUTY_ALREADY_ASSIGNED";
+            error.conflict = {
+              dutyCode: resolvedDutyCode,
+              date,
+              groupId,
+              existingDriverId: gData.ownerDriverId,
+              existingDriverName: gData.ownerDriverName || gData.ownerDriverId
+            };
+            throw error;
+          }
+        }
+
         for (const gate of importGates) {
           if (gate.decision.clearLock) tx.delete(gate.lockRef);
         }
@@ -3448,19 +3494,6 @@ function registerDriverRoutes(app, deps) {
           }
         }
 
-        const priorShift = sameDriverRefs && originalShiftSnap.exists
-          ? originalShiftSnap.data()
-          : (replacementShiftSnap.exists ? replacementShiftSnap.data() : null);
-        const shiftData = {
-          driverId: parsed.data.replacementDriverId,
-          date,
-          type: (sameDriverRefs && priorShift?.type) || initialReport.shiftType || "morning",
-          name: (sameDriverRefs && priorShift?.name) || initialReport.shiftName || "",
-          bus: parsed.data.replacementBus,
-          routeCode: (sameDriverRefs && priorShift?.routeCode) || initialReport.shiftName || "",
-          start: priorShift?.start || (originalShiftSnap.exists ? originalShiftSnap.data().start || undefined : undefined),
-          end: priorShift?.end || (originalShiftSnap.exists ? originalShiftSnap.data().end || undefined : undefined)
-        };
         const replacementShift = buildAssignedShift({
           data: shiftData,
           driverName: replacementName,
@@ -3471,6 +3504,29 @@ function registerDriverRoutes(app, deps) {
           priorSnapshot: capturePriorSnapshot(priorShift)
         });
         tx.set(replacementShiftRef, replacementShift);
+
+        if (dutyGuardDocRef) {
+          if (dutyGuardSnap && dutyGuardSnap.exists) {
+            writeDutyGuardTransferInTx(tx, dutyGuardDocRef, admin().firestore.FieldValue, {
+              ownerDriverId: parsed.data.replacementDriverId,
+              ownerShiftDocumentId: replacementShiftRef.id,
+              assignedBus: parsed.data.replacementBus || "",
+              staffUid: req.staff.uid
+            });
+          } else {
+            writeDutyGuardClaimInTx(tx, dutyGuardDocRef, admin().firestore.FieldValue, {
+              companyId: req.staff.companyId,
+              groupId,
+              serviceDate: date,
+              dutyCode: resolvedDutyCode,
+              shiftType: shiftData.type,
+              ownerDriverId: parsed.data.replacementDriverId,
+              ownerShiftDocumentId: replacementShiftRef.id,
+              assignedBus: parsed.data.replacementBus || "",
+              staffUid: req.staff.uid
+            });
+          }
+        }
         if (day != null) {
           const scheduleBase = replacementScheduleSnap.exists
             ? replacementScheduleSnap.data()
@@ -3627,6 +3683,14 @@ function registerDriverRoutes(app, deps) {
       }
       if (error.code === "revision_conflict") {
         return res.status(409).json({ success: false, code: "REVISION_CONFLICT", error: "Plan je u međuvremenu izmenjen. Osvežite prikaz." });
+      }
+      if (error.code === "DUTY_ALREADY_ASSIGNED") {
+        return res.status(409).json({
+          success: false,
+          code: "DUTY_ALREADY_ASSIGNED",
+          error: `Smena ${error.conflict?.dutyCode || ""} za ${parsed.data?.date || ""} već je dodeljena drugom vozaču.`,
+          conflict: error.conflict || null
+        });
       }
       if (error.code === "bus_conflict") {
         return res.status(409).json({ success: false, code: "BUS_NOT_AVAILABLE", error: "Autobus je u međuvremenu dodeljen drugoj smeni." });
@@ -4120,7 +4184,7 @@ function registerDriverRoutes(app, deps) {
 
       const busNumber = String(parsed.data.bus || "").trim();
       const needsBusGuard = parsed.data.type !== "clear" && isActiveDutyType(parsed.data.type) && Boolean(busNumber);
-      const dutyCode = String(parsed.data.routeCode || parsed.data.name || "").trim();
+      const dutyCode = String(parsed.data.routeCode || parsed.data.name || "").trim().toUpperCase();
       const needsDutyGuard = parsed.data.type !== "clear" && isActiveDutyType(parsed.data.type) && Boolean(dutyCode);
       const driverRef = companyRef.collection("drivers").doc(parsed.data.driverId);
       const staffUserRef = companyRef.collection("users").doc(req.staff.uid);
@@ -4129,6 +4193,9 @@ function registerDriverRoutes(app, deps) {
         : null;
       const busLookupQuery = needsBusGuard
         ? companyRef.collection("buses").where("number", "==", busNumber).limit(5)
+        : null;
+      const legacyDutyConflictQuery = needsDutyGuard
+        ? companyRef.collection("shifts").where("date", "==", parsed.data.date).where("routeCode", "==", dutyCode)
         : null;
 
       const result = await db().runTransaction(async (tx) => {
@@ -4144,6 +4211,7 @@ function registerDriverRoutes(app, deps) {
         const legacyScheduleSnap = await tx.get(legacyScheduleRef);
         const busLookupSnap = busLookupQuery ? await tx.get(busLookupQuery) : null;
         const busConflictSnap = busConflictQuery ? await tx.get(busConflictQuery) : null;
+        const legacyDutyConflictSnap = legacyDutyConflictQuery ? await tx.get(legacyDutyConflictQuery) : null;
 
         // D24.1.1 — LIVE staff fail-closed (no claims/middleware fallback).
         if (!liveStaffSnap.exists) {
@@ -4176,6 +4244,8 @@ function registerDriverRoutes(app, deps) {
         }
         const liveDriver = liveDriverSnap.data() || {};
         const liveDriverGroupId = liveDriver.groupId || liveDriver.lineId || null;
+        const writeDriverGroupId = lockedGroupId;
+        const writeDriverName = safeDriver(liveDriverSnap).name || driverName;
         if (!liveDriverGroupId || String(liveDriverGroupId) !== String(lockedGroupId)) {
           // D24.1.1.1: mismatch is authoritative internally; response must stay data-minimal.
           const error = new Error("DRIVER_SCOPE_CHANGED");
@@ -4256,6 +4326,59 @@ function registerDriverRoutes(app, deps) {
           throw error;
         }
 
+        // Canonical Duty Guard: Read & Evaluate
+        const incomingDutyGuardKey = needsDutyGuard ? canonicalDutyGuardKey({ groupId: liveDriverGroupId, serviceDate: parsed.data.date, dutyCode }) : null;
+        const incomingDutyGuardRef = incomingDutyGuardKey ? dutyGuardRef(companyRef, incomingDutyGuardKey) : null;
+        const incomingDutyGuardSnap = incomingDutyGuardRef ? await tx.get(incomingDutyGuardRef) : null;
+
+        const existingDutyCode = (existing && !isPassiveDutyType(existing.type)) ? String(existing.routeCode || existing.name || "").trim().toUpperCase() : "";
+        const targetDutyCode = needsDutyGuard ? dutyCode : "";
+        const oldDutyGuardKey = (existingDutyCode && existingDutyCode !== targetDutyCode) ? canonicalDutyGuardKey({ groupId: liveDriverGroupId, serviceDate: parsed.data.date, dutyCode: existingDutyCode }) : null;
+        const oldDutyGuardRef = oldDutyGuardKey ? dutyGuardRef(companyRef, oldDutyGuardKey) : null;
+        const oldDutyGuardSnap = oldDutyGuardRef ? await tx.get(oldDutyGuardRef) : null;
+
+        if (needsDutyGuard) {
+          if (incomingDutyGuardSnap && incomingDutyGuardSnap.exists) {
+            const claimCheck = evaluateDutyGuardClaim({
+              guardData: incomingDutyGuardSnap.data(),
+              driverId: parsed.data.driverId,
+              driverName: writeDriverName,
+              shiftDocumentId: shiftId,
+              date: parsed.data.date,
+              groupId: liveDriverGroupId,
+              dutyCode
+            });
+            if (!claimCheck.ok) {
+              const error = new Error(claimCheck.code);
+              error.code = claimCheck.code;
+              error.conflict = claimCheck.conflict;
+              throw error;
+            }
+          } else if (legacyDutyConflictSnap) {
+            const conflictDoc = legacyDutyConflictSnap.docs.find((doc) => {
+              const d = doc.data() || {};
+              return doc.id !== shiftId
+                && d.driverId !== parsed.data.driverId
+                && !isPassiveDutyType(d.type)
+                && (String(d.groupId || d.lineId || "") === String(liveDriverGroupId));
+            });
+            if (conflictDoc) {
+              const conflicting = conflictDoc.data() || {};
+              const error = new Error("DUTY_ALREADY_ASSIGNED");
+              error.code = "DUTY_ALREADY_ASSIGNED";
+              error.conflict = {
+                dutyCode,
+                date: parsed.data.date,
+                groupId: liveDriverGroupId,
+                existingDriverId: conflicting.driverId,
+                existingDriverName: conflicting.driverName || conflicting.driverId,
+                existingShiftId: conflictDoc.id
+              };
+              throw error;
+            }
+          }
+        }
+
         if (needsBusGuard) {
           const liveBusDoc = (busLookupSnap?.docs || [])
             .map((doc) => ({ id: doc.id, ...doc.data() }))
@@ -4300,9 +4423,6 @@ function registerDriverRoutes(app, deps) {
         // Apply duty-derived times for the write payload (still inside tx, before writes).
         if (assignmentStart && !parsed.data.start) parsed.data.start = assignmentStart;
         if (assignmentEnd && !parsed.data.end) parsed.data.end = assignmentEnd;
-        const writeDriverGroupId = lockedGroupId;
-        const writeDriverName = safeDriver(liveDriverSnap).name || driverName;
-
         if (_assignmentMutationHookForTests) {
           await _assignmentMutationHookForTests({
             tx,
@@ -4337,6 +4457,15 @@ function registerDriverRoutes(app, deps) {
             assignedAt
           });
           tx.set(shiftRef, cleared);
+          if (oldDutyGuardRef && oldDutyGuardSnap?.exists && oldDutyGuardSnap.data()?.ownerDriverId === parsed.data.driverId) {
+            writeDutyGuardReleaseInTx(tx, oldDutyGuardRef);
+          } else if (existingDutyCode) {
+            const clearOldGuardKey = canonicalDutyGuardKey({ groupId: liveDriverGroupId, serviceDate: parsed.data.date, dutyCode: existingDutyCode });
+            if (clearOldGuardKey) {
+              const clearOldRef = dutyGuardRef(companyRef, clearOldGuardKey);
+              writeDutyGuardReleaseInTx(tx, clearOldRef);
+            }
+          }
 
           if (scheduleBaseSnap.exists && dayNum != null) {
             const schedule = { ...scheduleBaseSnap.data() };
@@ -4373,6 +4502,22 @@ function registerDriverRoutes(app, deps) {
           priorSnapshot
         });
         tx.set(shiftRef, shift);
+        if (incomingDutyGuardRef) {
+          writeDutyGuardClaimInTx(tx, incomingDutyGuardRef, admin().firestore.FieldValue, {
+            companyId: req.staff.companyId,
+            groupId: writeDriverGroupId,
+            serviceDate: parsed.data.date,
+            dutyCode,
+            shiftType: parsed.data.type,
+            ownerDriverId: parsed.data.driverId,
+            ownerShiftDocumentId: shiftId,
+            assignedBus: busNumber,
+            staffUid: req.staff.uid
+          });
+        }
+        if (oldDutyGuardRef && oldDutyGuardSnap?.exists && oldDutyGuardSnap.data()?.ownerDriverId === parsed.data.driverId) {
+          writeDutyGuardReleaseInTx(tx, oldDutyGuardRef);
+        }
 
         if (dayNum != null) {
           const base = scheduleBaseSnap.exists
@@ -4488,6 +4633,30 @@ function registerDriverRoutes(app, deps) {
           success: false,
           code: "DRIVER_SCOPE_CHANGED",
           error: assignmentResourceErrorMessage("DRIVER_SCOPE_CHANGED")
+        });
+      }
+      if (error.code === "DUTY_ALREADY_ASSIGNED") {
+        const attemptedDutyCode = String(parsed?.data?.routeCode || parsed?.data?.name || "").trim().toUpperCase();
+        let existingDriverName = error.conflict?.existingDriverName || "";
+        const conflictDriverId = error.conflict?.existingDriverId;
+        if (conflictDriverId && (!existingDriverName || existingDriverName === conflictDriverId || existingDriverName === "drugom vozaču")) {
+          try {
+            const drvSnap = await db().collection("companies").doc(req.staff.companyId).collection("drivers").doc(conflictDriverId).get();
+            if (drvSnap.exists && drvSnap.data()?.name) {
+              existingDriverName = drvSnap.data().name;
+            }
+          } catch {}
+        }
+        if (!existingDriverName) existingDriverName = "drugom vozaču";
+        const conflict = {
+          ...(error.conflict || { dutyCode: attemptedDutyCode, date: parsed.data.date }),
+          existingDriverName
+        };
+        return res.status(409).json({
+          success: false,
+          code: "DUTY_ALREADY_ASSIGNED",
+          error: `Smena ${conflict.dutyCode || attemptedDutyCode} za ${parsed.data.date} već je dodeljena vozaču ${existingDriverName}.`,
+          conflict
         });
       }
       if (error.code === "DRIVER_INACTIVE") {
@@ -4616,6 +4785,43 @@ function registerDriverRoutes(app, deps) {
         const assignedAt = admin().firestore.FieldValue.serverTimestamp();
         const scheduleBaseSnap = scheduleSnap.exists ? scheduleSnap : legacyScheduleSnap;
 
+        // Duty guard verification for undo / restore
+        const restoreDutyCode = (!plan.deleted && plan.restore && !isPassiveDutyType(plan.restore.type))
+          ? String(plan.restore.routeCode || plan.restore.name || "").trim().toUpperCase()
+          : "";
+        const incomingDutyGuardKey = restoreDutyCode
+          ? canonicalDutyGuardKey({ groupId: driverGroupId, serviceDate: parsed.data.date, dutyCode: restoreDutyCode })
+          : null;
+        const incomingDutyGuardRef = incomingDutyGuardKey ? dutyGuardRef(companyRef, incomingDutyGuardKey) : null;
+        const incomingDutyGuardSnap = incomingDutyGuardRef ? await tx.get(incomingDutyGuardRef) : null;
+
+        const existingDutyCode = (existing && !isPassiveDutyType(existing.type))
+          ? String(existing.routeCode || existing.name || "").trim().toUpperCase()
+          : "";
+        const oldDutyGuardKey = (existingDutyCode && existingDutyCode !== restoreDutyCode)
+          ? canonicalDutyGuardKey({ groupId: driverGroupId, serviceDate: parsed.data.date, dutyCode: existingDutyCode })
+          : null;
+        const oldDutyGuardRef = oldDutyGuardKey ? dutyGuardRef(companyRef, oldDutyGuardKey) : null;
+        const oldDutyGuardSnap = oldDutyGuardRef ? await tx.get(oldDutyGuardRef) : null;
+
+        if (restoreDutyCode && incomingDutyGuardSnap && incomingDutyGuardSnap.exists) {
+          const claimCheck = evaluateDutyGuardClaim({
+            guardData: incomingDutyGuardSnap.data(),
+            driverId: parsed.data.driverId,
+            driverName,
+            shiftDocumentId: shiftId,
+            date: parsed.data.date,
+            groupId: driverGroupId,
+            dutyCode: restoreDutyCode
+          });
+          if (!claimCheck.ok) {
+            const error = new Error(claimCheck.code);
+            error.code = claimCheck.code;
+            error.conflict = claimCheck.conflict;
+            throw error;
+          }
+        }
+
         if (plan.deleted) {
           const cleared = buildClearedShift({
             data: parsed.data,
@@ -4627,6 +4833,16 @@ function registerDriverRoutes(app, deps) {
             assignedAt
           });
           tx.set(shiftRef, cleared);
+          if (oldDutyGuardRef && oldDutyGuardSnap?.exists && oldDutyGuardSnap.data()?.ownerDriverId === parsed.data.driverId) {
+            writeDutyGuardReleaseInTx(tx, oldDutyGuardRef);
+          } else if (existingDutyCode) {
+            const clearOldGuardKey = canonicalDutyGuardKey({ groupId: driverGroupId, serviceDate: parsed.data.date, dutyCode: existingDutyCode });
+            if (clearOldGuardKey) {
+              const clearOldRef = dutyGuardRef(companyRef, clearOldGuardKey);
+              writeDutyGuardReleaseInTx(tx, clearOldRef);
+            }
+          }
+
           if (scheduleBaseSnap.exists && dayNum != null) {
             const schedule = { ...scheduleBaseSnap.data() };
             const parsedShifts = { ...(schedule.parsedShifts || {}) };
@@ -4668,6 +4884,28 @@ function registerDriverRoutes(app, deps) {
           priorSnapshot: plan.priorSnapshot
         });
         tx.set(shiftRef, shift);
+        if (incomingDutyGuardRef) {
+          writeDutyGuardClaimInTx(tx, incomingDutyGuardRef, admin().firestore.FieldValue, {
+            companyId: req.staff.companyId,
+            groupId: driverGroupId,
+            serviceDate: parsed.data.date,
+            dutyCode: restoreDutyCode,
+            shiftType: plan.restore.type || "morning",
+            ownerDriverId: parsed.data.driverId,
+            ownerShiftDocumentId: shiftId,
+            assignedBus: plan.restore.bus || "",
+            staffUid: req.staff.uid
+          });
+        }
+        if (oldDutyGuardRef && oldDutyGuardSnap?.exists && oldDutyGuardSnap.data()?.ownerDriverId === parsed.data.driverId) {
+          writeDutyGuardReleaseInTx(tx, oldDutyGuardRef);
+        } else if (existingDutyCode && existingDutyCode !== restoreDutyCode) {
+          const clearOldGuardKey = canonicalDutyGuardKey({ groupId: driverGroupId, serviceDate: parsed.data.date, dutyCode: existingDutyCode });
+          if (clearOldGuardKey) {
+            const clearOldRef = dutyGuardRef(companyRef, clearOldGuardKey);
+            writeDutyGuardReleaseInTx(tx, clearOldRef);
+          }
+        }
 
         if (dayNum != null) {
           const base = scheduleBaseSnap.exists
@@ -4730,6 +4968,16 @@ function registerDriverRoutes(app, deps) {
         shift: { ...result.shift, id: result.shiftId, assignedAt: null }
       });
     } catch (error) {
+      if (error.code === "DUTY_ALREADY_ASSIGNED") {
+        return res.status(409).json({
+          success: false,
+          code: "DUTY_ALREADY_ASSIGNED",
+          error: `Smena ${error.conflict?.dutyCode || ""} za ${parsed.data.date} već je dodeljena vozaču ${error.conflict?.existingDriverName || "drugom vozaču"}.`,
+          conflict: error.conflict || {
+            date: parsed.data.date
+          }
+        });
+      }
       if (error.code === "MONTHLY_IMPORT_IN_PROGRESS" || error.code === "MONTHLY_IMPORT_RECOVERY_REQUIRED") {
         return res.status(409).json({
           success: false,
