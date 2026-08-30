@@ -30,9 +30,21 @@ let server;
 let serverPort;
 let testEnv;
 
-function todayDateStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function todayDateStr(timeZone = "Europe/Vienna", date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date);
+
+  const values = Object.fromEntries(
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value])
+  );
+
+  return `${values.year}-${values.month}-${values.day}`;
 }
 
 async function wipeCollection(col) {
@@ -680,4 +692,10 @@ test("9. Overlapping resolution race: simultaneous resolutions produce 1 audit, 
   assert.equal(g1.exists, false, "Primary guard deleted");
   assert.equal(g2.exists, false, "Duplicate guard deleted");
   assert.equal(g3.exists, true, "Foreign guard remains untouched");
+});
+
+test("todayDateStr respects operational timezone across UTC midnight boundaries", () => {
+  const simulatedUtcMidnightBoundary = new Date("2026-08-29T22:16:26Z");
+  assert.equal(todayDateStr("Europe/Vienna", simulatedUtcMidnightBoundary), "2026-08-30");
+  assert.equal(todayDateStr("UTC", simulatedUtcMidnightBoundary), "2026-08-29");
 });

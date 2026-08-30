@@ -18,9 +18,11 @@ import { ApiClient } from "../core/api-client.js";
 import { saveState } from "../core/state.js";
 import { busHasGroup } from "../data/bus-group-membership.js";
 import { busIsAssignable } from "../data/bus-ops.js";
+import { busOptions } from "./daily-plan.js";
 import { driverKnowsGroup } from "../data/driver-known-groups.js";
 import {
     collectOpsAttentionItems,
+    collectInactiveBusAttentionItems,
     collectAllAttentionItems,
     openOpsAttentionPanel,
     closeOpsAttentionPanel,
@@ -372,16 +374,10 @@ function shiftTypeLabel(value) {
 }
 
 function busSelectHtml(driverId, selectedBus, selectIdSuffix = "") {
-    const options = (window.state.buses || []).map(b => {
-        const num = String(b.number ?? "");
-        return `<option value="${escapeHtml(num)}" ${num === String(selectedBus) ? "selected" : ""}>Bus ${escapeHtml(num)}</option>`;
-    }).join("");
-    const emptySelected = !selectedBus || selectedBus === "—" ? "selected" : "";
+    const busStr = String(selectedBus || "").trim();
+    const isInactive = !!(busStr && busStr !== "—" && !busIsAssignable(window.state?.buses?.find(b => String(b.number ?? "").trim() === busStr)));
     const idSuffix = selectIdSuffix || String(driverId || "");
-    return `<select class="ops-edit-select" ${changeAttr("updateDriverBusInline", [driverId], "args-value")} aria-label="${escapeHtml(t("table_bus") || "Bus")}" id="ops-bus-${escapeHtml(idSuffix)}">
-        <option value="" ${emptySelected}>—</option>
-        ${options}
-    </select>`;
+    return `<select class="ops-edit-select${isInactive ? " is-critical" : ""}" ${changeAttr("updateDriverBusInline", [driverId], "args-value")} aria-label="${escapeHtml(t("table_bus") || "Bus")}" id="ops-bus-${escapeHtml(idSuffix)}">${busOptions(selectedBus)}</select>`;
 }
 
 function shiftSelectHtml(driverId, currentType, selectIdSuffix = "") {
@@ -724,9 +720,9 @@ function coverageBusCandidates(report) {
         }
     });
     return (window.state.buses || []).filter(bus => {
+        if (!busIsAssignable(bus)) return false;
         const number = String(bus.number || "");
         const keep = number === String(report.bus || "");
-        if (!keep && !busIsAssignable(bus)) return false;
         return busHasGroup(bus, groupId)
             && (!used.has(number) || keep);
     });
@@ -1290,7 +1286,9 @@ export {
     openOpsAttentionPanel,
     closeOpsAttentionPanel,
     focusOpsAttentionItem,
-    applyOpsAttentionFix
+    applyOpsAttentionFix,
+    busSelectHtml,
+    coverageBusCandidates
 };
 
 window.openCoverageResolver = openCoverageResolver;
@@ -1299,3 +1297,6 @@ window.resolveCoverageAvailableAgainFromCard = resolveCoverageAvailableAgainFrom
 window.openOpsAttentionPanel = openOpsAttentionPanel;
 window.focusOpsAttentionItem = focusOpsAttentionItem;
 window.closeOpsAttentionPanel = closeOpsAttentionPanel;
+window.collectAllAttentionItems = collectAllAttentionItems;
+window.collectOpsAttentionItems = collectOpsAttentionItems;
+window.collectInactiveBusAttentionItems = collectInactiveBusAttentionItems;

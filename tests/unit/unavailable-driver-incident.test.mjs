@@ -229,9 +229,21 @@ async function startTestServer() {
     };
 }
 
-function todayDateStr() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function todayDateStr(timeZone = "Europe/Vienna", date = new Date()) {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    }).formatToParts(date);
+
+    const values = Object.fromEntries(
+        parts
+            .filter((part) => part.type !== "literal")
+            .map((part) => [part.type, part.value])
+    );
+
+    return `${values.year}-${values.month}-${values.day}`;
 }
 
 test("A. True concurrent creation: simultaneous requests produce exactly one active incident and one audit event", async () => {
@@ -550,4 +562,10 @@ test("attention panel module exports resolveCoverageAvailableAgain and resolveCo
 
     assert.match(dashboardSrc, /resolveModalCoverageAvailableAgain/, "Must wire modal available-again action");
     assert.match(dashboardSrc, /ops-coverage-available-again/, "Must render modal available-again button");
+});
+
+test("todayDateStr respects operational timezone across UTC midnight boundaries", () => {
+    const simulatedUtcMidnightBoundary = new Date("2026-08-29T22:03:21Z");
+    assert.equal(todayDateStr("Europe/Vienna", simulatedUtcMidnightBoundary), "2026-08-30");
+    assert.equal(todayDateStr("UTC", simulatedUtcMidnightBoundary), "2026-08-29");
 });

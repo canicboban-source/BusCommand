@@ -11,6 +11,7 @@ import { refreshPlanLockBanner } from "./plan-edit-lock-ui.js";
 import { isActiveReport } from "./report-model.js";
 import { paintPlanHealthBanner } from "./plan-health-banner.js";
 import { collectAllAttentionItems } from "./ops-attention.js";
+import { busIsAssignable } from "../data/bus-ops.js";
 
 /** DnD state — tracks the driver being dragged between pool and slots. */
 let draggedDriverId = null;
@@ -61,10 +62,22 @@ function driverOptions(selectedId = "") {
 }
 
 function busOptions(selectedBus) {
-    const options = (window.state.buses || []).map(b => {
+    const busStr = String(selectedBus || "").trim();
+    const buses = window.state.buses || [];
+    const currentBusObj = busStr && busStr !== "—"
+        ? buses.find(b => String(b.number ?? "").trim() === busStr)
+        : null;
+    const isInactive = Boolean(busStr && busStr !== "—" && !busIsAssignable(currentBusObj));
+
+    let options = buses.filter(busIsAssignable).map(b => {
         const num = String(b.number ?? "");
-        return `<option value="${escapeHtml(num)}" ${num === String(selectedBus || "") ? "selected" : ""}>Bus ${escapeHtml(num)}</option>`;
+        return `<option value="${escapeHtml(num)}" ${num === busStr ? "selected" : ""}>Bus ${escapeHtml(num)}</option>`;
     }).join("");
+
+    if (isInactive) {
+        options = `<option value="${escapeHtml(busStr)}" selected disabled>Bus ${escapeHtml(busStr)} (${escapeHtml(t("ops_bus_inactive_badge") || "neaktivan")})</option>` + options;
+    }
+
     return `<option value="">—</option>${options}`;
 }
 
@@ -187,13 +200,15 @@ function buildDailyPlanTable(slots, { compact = false, editable = false, dateStr
                     const driverId = slot.driverId || "";
                     const shift = driverId ? getShiftForDriverIdOnly(driverId, date) : null;
                     const bus = shift?.bus || "";
-                    const rowClass = isBr ? "daily-plan-row daily-plan-row--standby" : "daily-plan-row";
+                    const busObj = bus ? window.state?.buses?.find(b => String(b.number ?? "").trim() === bus.trim()) : null;
+                    const isBusInactive = !!(bus && !busIsAssignable(busObj));
+                    const rowClass = `${isBr ? "daily-plan-row daily-plan-row--standby" : "daily-plan-row"}${isBusInactive ? " daily-plan-row--critical is-critical" : ""}`;
                     if (!editable) {
                         return `<tr class="${rowClass}">
                             <td class="daily-plan-col-pos${isBr ? " is-standby" : ""}">${escapeHtml(String(slot.position ?? ""))}</td>
                             <td>${escapeHtml(codeLabel || "")}</td>
                             <td class="daily-plan-driver">${escapeHtml(driverName || "\u2014")}</td>
-                            <td>${escapeHtml(bus || "\u2014")}</td>
+                            <td class="${isBusInactive ? "is-critical" : ""}">${isBusInactive ? `<span style="color:var(--status-critical, #ef4444); font-weight:700;">Bus ${escapeHtml(bus)} ⚠️</span>` : escapeHtml(bus || "\u2014")}</td>
                             <td class="daily-plan-time">${escapeHtml(time)}</td>
                         </tr>`;
                     }
@@ -210,7 +225,7 @@ function buildDailyPlanTable(slots, { compact = false, editable = false, dateStr
                             </select>
                         </td>
                         <td>
-                            <select class="ops-edit-select" ${driverId ? changeAttr("updateDriverBusInline", [driverId], "args-value") : "disabled"} aria-label="${escapeHtml(t("table_bus") || "Bus")}">
+                            <select class="ops-edit-select${isBusInactive ? " is-critical" : ""}" ${driverId ? changeAttr("updateDriverBusInline", [driverId], "args-value") : "disabled"} aria-label="${escapeHtml(t("table_bus") || "Bus")}">
                                 ${busOptions(bus)}
                             </select>
                         </td>
@@ -512,5 +527,6 @@ export {
     refreshDailyPlanOnDateChange,
     dailyPlanAssignDriver,
     clearDailyShift,
-    undoDailyShift
+    undoDailyShift,
+    busOptions
 };
