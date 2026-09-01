@@ -23,6 +23,7 @@ service cloud.firestore {
                   && companyCollection != "driver_credentials"
                   && companyCollection != "ops"
                   && companyCollection != "ops_active_incidents"
+                  && !(companyCollection == "settings" && document == path("email_smtp"))
                   && (companyCollection != "drivers" || !driverProfileExposesCredentials());
       allow write: if false;
     }
@@ -47,6 +48,7 @@ service cloud.firestore {
     match /companies/{companyId}/settings/{doc} {
       // settings/sos carries live SOS identity — Dispo only if driver's home group assigned
       allow read: if isCompanyMember(companyId)
+                  && doc != "email_smtp"
                   && (doc != "sos"
                       || isCompanyAdmin(companyId)
                       || canDispatcherReadSosSettings(companyId)
