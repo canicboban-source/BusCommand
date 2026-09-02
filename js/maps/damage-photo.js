@@ -21,7 +21,11 @@ function viewDamagePhoto(driverName) {
         title.innerText = `Oštećenje vozila - ${driverName}`;
     }
     
-    body.innerHTML = `<img src="${driver.damagePhoto}" style="max-width:100%; max-height:420px; object-fit:contain; border-radius:var(--radius-sm); box-shadow: 0 4px 15px rgba(0,0,0,0.4);">`;
+    body.innerHTML = "";
+    const img = document.createElement("img");
+    img.style.cssText = "max-width:100%; max-height:420px; object-fit:contain; border-radius:var(--radius-sm); box-shadow: 0 4px 15px rgba(0,0,0,0.4);";
+    img.src = driver.damagePhoto;
+    body.appendChild(img);
     
     downloadLink.href = driver.damagePhoto;
     downloadLink.download = `ostecenje_${driverName.replace(/\s+/g, '_')}.png`;

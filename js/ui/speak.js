@@ -6,10 +6,7 @@ function speakMessage(text, lang) {
     try {
         window.speechSynthesis.cancel();
         
-        // Očisti tekst od eventualnih HTML tagova
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = text;
-        const cleanText = tempDiv.textContent || tempDiv.innerText || "";
+        const cleanText = text ? String(text) : "";
         
         const utterance = new SpeechSynthesisUtterance(cleanText);
         

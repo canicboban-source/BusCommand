@@ -1,7 +1,7 @@
 // BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
 import { syncUserSession } from "../auth/login-session.js";
-import { showToast } from "../core/utils.js";
+import { showToast, escapeHtml } from "../core/utils.js";
 import { renderDriverDashboard } from "../driver/dashboard.js";
 import { dayseed } from "./helpers.js";
 import { t } from "../ui/i18n.js";
@@ -40,7 +40,7 @@ function renderRouteStops() {
                 <span style="width:24px; height:24px; border-radius:50%; background:${index <= window.currentUser.currentStopIndex ? 'var(--primary-color)' : 'rgba(255,255,255,0.1)'}; color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem;">
                     ${index + 1}
                 </span>
-                <span style="font-weight:600; color:${index === window.currentUser.currentStopIndex ? 'var(--text-main)' : 'var(--text-muted)'};">${stop}</span>
+                <span style="font-weight:600; color:${index === window.currentUser.currentStopIndex ? 'var(--text-main)' : 'var(--text-muted)'};">${escapeHtml(stop)}</span>
             </div>
             <div style="font-size:0.75rem; font-weight:700; color:${index === window.currentUser.currentStopIndex ? 'var(--primary-color)' : (index < window.currentUser.currentStopIndex ? 'var(--success-color)' : 'var(--text-muted-dark)')};">
                 ${statusText}
@@ -167,7 +167,7 @@ function renderRouteSchematicSVG() {
         // Naizmenična visina naziva da se ne bi preklapali
         const textY = (i % 2 === 0) ? cy - 18 : cy + 22;
         
-        svgHtml += `<text x="${cx}" y="${textY}" text-anchor="middle" style="${fontStyle}">${displayName}</text>`;
+        svgHtml += `<text x="${cx}" y="${textY}" text-anchor="middle" style="${fontStyle}">${escapeHtml(displayName)}</text>`;
     });
     
     svgHtml += `</svg>`;

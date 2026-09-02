@@ -93,10 +93,11 @@ function showToast(message, type = "success", duration = 4000) {
     toast.className = `toast toast-${type}`;
     toast.innerHTML = `
         <div class="toast-body">
-            <div class="toast-msg">${message}</div>
+            <div class="toast-msg"></div>
         </div>
         <div class="toast-progress" style="animation-duration:${duration}ms"></div>
     `;
+    toast.querySelector(".toast-msg").textContent = message;
 
     const dismiss = () => {
         toast.classList.add("hiding");

@@ -333,7 +333,11 @@ function viewDamagePhoto(driverName) {
         title.innerText = `Oštećenje vozila - ${driverName}`;
     }
     
-    body.innerHTML = `<img src="${driver.damagePhoto}" style="max-width:100%; max-height:420px; object-fit:contain; border-radius:var(--radius-sm); box-shadow: 0 4px 15px rgba(0,0,0,0.4);">`;
+    body.innerHTML = "";
+    const img = document.createElement("img");
+    img.style.cssText = "max-width:100%; max-height:420px; object-fit:contain; border-radius:var(--radius-sm); box-shadow: 0 4px 15px rgba(0,0,0,0.4);";
+    img.src = driver.damagePhoto;
+    body.appendChild(img);
     
     downloadLink.href = driver.damagePhoto;
     downloadLink.download = `ostecenje_${driverName.replace(/\s+/g, '_')}.png`;
@@ -348,10 +352,7 @@ function speakMessage(text, lang) {
     try {
         window.speechSynthesis.cancel();
         
-        // Očisti tekst od eventualnih HTML tagova
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = text;
-        const cleanText = tempDiv.textContent || tempDiv.innerText || "";
+        const cleanText = text ? String(text) : "";
         
         const utterance = new SpeechSynthesisUtterance(cleanText);
         
@@ -791,12 +792,17 @@ function viewUploadedSchedule() {
                     /\.(jpg|jpeg|png|gif|webp)$/i.test(schedule.fileName);
     
     if (isImage) {
-        body.innerHTML = `<img src="${schedule.fileData}" style="max-width:100%; max-height:420px; object-fit:contain; border-radius:var(--radius-sm); box-shadow: 0 4px 15px rgba(0,0,0,0.4);">`;
+        body.innerHTML = "";
+        const img = document.createElement("img");
+        img.style.cssText = "max-width:100%; max-height:420px; object-fit:contain; border-radius:var(--radius-sm); box-shadow: 0 4px 15px rgba(0,0,0,0.4);";
+        img.src = schedule.fileData;
+        body.appendChild(img);
     } else if (schedule.fileType === "text/plain") {
         try {
             const base64Content = schedule.fileData.split(",")[1];
             const decodedText = decodeURIComponent(escape(atob(base64Content)));
-            body.innerHTML = `<pre style="color:var(--text-main); font-family:monospace; font-size:0.9rem; text-align:left; width:100%; white-space:pre-wrap; background:rgba(0,0,0,0.5); padding:15px; border-radius:var(--radius-sm); max-height:380px; overflow-y:auto; border:1px solid rgba(255,255,255,0.05); margin:0;">${decodedText}</pre>`;
+            body.innerHTML = `<pre style="color:var(--text-main); font-family:monospace; font-size:0.9rem; text-align:left; width:100%; white-space:pre-wrap; background:rgba(0,0,0,0.5); padding:15px; border-radius:var(--radius-sm); max-height:380px; overflow-y:auto; border:1px solid rgba(255,255,255,0.05); margin:0;"></pre>`;
+            body.querySelector("pre").textContent = decodedText;
         } catch (e) {
             body.innerHTML = `<div style="color:var(--text-muted); font-size:0.9rem;">Greška pri čitanju tekstualnog fajla. Preuzmite ga preko dugmeta ispod.</div>`;
         }
@@ -857,12 +863,13 @@ document.addEventListener("change", (e) => {
                 
                 const lang = state.language || "sr";
                 if (lang === "de") {
-                    feedback.innerHTML = `<i data-lucide="check-circle" style="width:14px; height:14px;"></i> Fahrer automatisch erkannt: <strong>${driver.name}</strong>`;
+                    feedback.innerHTML = `<i data-lucide="check-circle" style="width:14px; height:14px;"></i> Fahrer automatisch erkannt: <strong></strong>`;
                 } else if (lang === "en") {
-                    feedback.innerHTML = `<i data-lucide="check-circle" style="width:14px; height:14px;"></i> Driver auto-detected: <strong>${driver.name}</strong>`;
+                    feedback.innerHTML = `<i data-lucide="check-circle" style="width:14px; height:14px;"></i> Driver auto-detected: <strong></strong>`;
                 } else {
-                    feedback.innerHTML = `<i data-lucide="check-circle" style="width:14px; height:14px;"></i> Automatski prepoznat vozač: <strong>${driver.name}</strong>`;
+                    feedback.innerHTML = `<i data-lucide="check-circle" style="width:14px; height:14px;"></i> Automatski prepoznat vozač: <strong></strong>`;
                 }
+                feedback.querySelector("strong").textContent = driver.name;
                 
                 fileInput.parentNode.appendChild(feedback);
                 lucide.createIcons();

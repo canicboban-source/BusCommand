@@ -36,7 +36,8 @@ document.addEventListener("change", (e) => {
                 feedback.id = "uploader-auto-detect-feedback";
                 feedback.style.cssText = "color: var(--success-color); font-size: 0.8rem; margin-top: 8px; font-weight: 600; display: flex; align-items: center; gap: 4px; animation: fadeIn 0.3s ease;";
                 
-                feedback.innerHTML = `<i data-lucide="check-circle" style="width:14px; height:14px;"></i> ${t("schedule_auto_detect")} <strong>${driver.name}</strong>`;
+                feedback.innerHTML = `<i data-lucide="check-circle" style="width:14px; height:14px;"></i> ${t("schedule_auto_detect")} <strong></strong>`;
+                feedback.querySelector("strong").textContent = driver.name;
                 
                 fileInput.parentNode.appendChild(feedback);
                 lucide.createIcons();

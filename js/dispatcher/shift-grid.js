@@ -72,10 +72,10 @@ function renderShiftsWeeklyGrid(weekDays) {
         html += `<tr>
             <td style="padding:6px 12px; font-size:0.85rem; font-weight:600; color:var(--text-main); vertical-align:middle;">
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <div style="width:28px;height:28px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0;">${driver.name.charAt(0)}</div>
+                    <div style="width:28px;height:28px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0;">${escapeHtml(driver.name.charAt(0))}</div>
                     <div>
-                        <div>${driver.name.split(" ")[0]}</div>
-                        ${driverGroup ? `<div style="font-size:9px;color:${driverGroup.color};font-weight:700;margin-top:1px;">${driverGroup.name}</div>` : ""}
+                        <div>${escapeHtml(driver.name.split(" ")[0])}</div>
+                        ${driverGroup ? `<div style="font-size:9px;color:${driverGroup.color};font-weight:700;margin-top:1px;">${escapeHtml(driverGroup.name)}</div>` : ""}
                     </div>
                 </div>
             </td>`;
@@ -102,7 +102,7 @@ function renderShiftsWeeklyGrid(weekDays) {
                      onmouseenter="this.style.opacity='0.8'" onmouseleave="this.style.opacity='${isPast && !shift ? "0.4" : "1"}'">
                     ${shift ? `
                         <span style="font-size:1.1rem;">${style.icon}</span>
-                        <span style="font-size:10px;font-weight:600;color:${style.text};margin-top:2px;line-height:1.2;">${shift.name || t("shift_"+shift.type) || shift.type}</span>
+                        <span style="font-size:10px;font-weight:600;color:${style.text};margin-top:2px;line-height:1.2;">${escapeHtml(shift.name || t("shift_"+shift.type) || shift.type)}</span>
                         ${isBusInactive ? `<span style="font-size:9px;font-weight:700;color:#ef4444;margin-top:1px;">⚠️ Bus ${escapeHtml(bus)}</span>` : ""}
                         <button ${actionAttr("removeShift", [drvId, dStr], { stopPropagation: true })}
                             style="position:absolute;top:2px;right:2px;background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;font-size:10px;padding:1px;line-height:1;"
