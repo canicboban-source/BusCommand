@@ -1,4 +1,5 @@
 const fs = require("fs");
+const { artifactPath } = require("../tests/e2e/support/e2e-artifacts");
 process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || "127.0.0.1:8080";
 const admin = require("firebase-admin");
 
@@ -63,7 +64,7 @@ async function setShift(driverId, date, bus) {
 }
 
 async function main() {
-  const seed = JSON.parse(fs.readFileSync(__dirname + "/p1a-radar-live-seed-output.json", "utf8").replace(/^\uFEFF/, ""));
+  const seed = JSON.parse(fs.readFileSync(artifactPath("p1a-radar-live-seed-output.json"), "utf8").replace(/^\uFEFF/, ""));
   const today = new Date();
   const D0 = belgradeDateStr(today);
   const D1 = addCalendarDays(D0, 1);
@@ -73,7 +74,7 @@ async function main() {
   const rA2 = await setShift(seed.driverA, D2, "radar-a");
   const rB1 = await setShift(seed.driverB, D1, "radar-b");
 
-  fs.writeFileSync(__dirname + "/p1b-radar-live-write-output.json", JSON.stringify({ D0, D1, D2, rA0, rA2, rB1, driverA: seed.driverA, driverB: seed.driverB }, null, 2));
+  fs.writeFileSync(artifactPath("p1b-radar-live-write-output.json"), JSON.stringify({ D0, D1, D2, rA0, rA2, rB1, driverA: seed.driverA, driverB: seed.driverB }, null, 2));
   console.log("WROTE p1b-radar-live-write-output.json");
 }
 

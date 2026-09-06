@@ -1,4 +1,5 @@
 const fs = require("fs");
+const { artifactPath } = require("../tests/e2e/support/e2e-artifacts");
 const AUTH_BASE = "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=any";
 const API_BASE = "http://localhost:8768";
 
@@ -27,7 +28,7 @@ async function assign(token, payload) {
 }
 
 async function main() {
-  const seed = JSON.parse(fs.readFileSync(__dirname + "/p1a-radar-live-seed-output.json", "utf8").replace(/^\uFEFF/, ""));
+  const seed = JSON.parse(fs.readFileSync(artifactPath("p1a-radar-live-seed-output.json"), "utf8").replace(/^\uFEFF/, ""));
   const token = await signIn("dispo.smoke@qa-scale.local", "Qa-Scale-Test-9");
   const today = new Date();
   const D0 = localDateStr(today), D1 = localDateStr(plusDays(today, 1)), D2 = localDateStr(plusDays(today, 2));
@@ -42,7 +43,7 @@ async function main() {
   const rA2 = await set(seed.driverA, D2, "radar-a");
   const rB1 = await set(seed.driverB, D1, "radar-b");
 
-  fs.writeFileSync(__dirname + "/p1a-radar-live-write-output.json", JSON.stringify({ D0, D1, D2, rA0, rA2, rB1 }, null, 2));
+  fs.writeFileSync(artifactPath("p1a-radar-live-write-output.json"), JSON.stringify({ D0, D1, D2, rA0, rA2, rB1 }, null, 2));
   console.log("WROTE p1a-radar-live-write-output.json");
 }
 main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });

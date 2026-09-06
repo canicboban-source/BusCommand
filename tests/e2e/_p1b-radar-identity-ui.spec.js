@@ -2,13 +2,13 @@ const { test, expect } = require("@playwright/test");
 const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
+const { artifactDirectory, artifactPath } = require("./support/e2e-artifacts");
 
 const ROOT_DIR = path.join(__dirname, "..", "..");
 const P1A_SEED = path.join(ROOT_DIR, "qa-report", "p1a-radar-live-seed.js");
 const P1B_WRITE = path.join(ROOT_DIR, "qa-report", "p1b-radar-live-write.js");
 
-const SHOT_DIR = path.join(__dirname, "..", "..", "qa-report", "screenshots-p1b");
-fs.mkdirSync(SHOT_DIR, { recursive: true });
+const SHOT_DIR = artifactDirectory("screenshots-p1b");
 let seq = 0;
 async function shot(page, name) {
   seq += 1;
@@ -16,13 +16,11 @@ async function shot(page, name) {
 }
 
 function seedPath() {
-  const p = path.join(__dirname, "..", "..", "qa-report", "p1a-radar-live-seed-output.json");
-  return fs.existsSync(p) ? p : path.join(__dirname, "p1a-radar-live-seed-output.json");
+  return artifactPath("p1a-radar-live-seed-output.json");
 }
 
 function writePath() {
-  const p = path.join(__dirname, "..", "..", "qa-report", "p1b-radar-live-write-output.json");
-  return fs.existsSync(p) ? p : path.join(__dirname, "p1b-radar-live-write-output.json");
+  return artifactPath("p1b-radar-live-write-output.json");
 }
 
 test.describe.serial("RADAR-P1B", () => {
@@ -222,7 +220,7 @@ test.describe.serial("RADAR-P1B", () => {
     expect(final.radarItems.some(id => id.includes(`:driver:${seed.driverB}:${D2}`))).toBe(true);
 
     fs.writeFileSync(
-      path.join(__dirname, "..", "..", "qa-report", "p1b-radar-identity-ui-evidence.json"),
+      artifactPath("p1b-radar-identity-ui-evidence.json"),
       JSON.stringify({ seed, D0, D1, D2, before, afterAssign, afterRefresh, afterClear, final }, null, 2)
     );
   });

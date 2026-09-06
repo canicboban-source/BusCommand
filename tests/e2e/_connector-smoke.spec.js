@@ -6,6 +6,7 @@ const { test, expect } = require("@playwright/test");
 const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
+const { artifactPath } = require("./support/e2e-artifacts");
 
 const ROOT_DIR = path.join(__dirname, "..", "..");
 const MINIMAL_EMULATOR_SEED = path.join(ROOT_DIR, "qa-report", "seed-minimal-demo.js");
@@ -134,7 +135,7 @@ test("boot -> real Auth-emulator login -> hydration -> one write -> read-back, n
   console.log("EVIDENCE violations (Firebase/Google data-plane hosts contacted):", JSON.stringify(violations));
   console.log("EVIDENCE known-library-cdn-hits (disclosed, not a violation):", JSON.stringify(libraryCdnHits));
 
-  fs.writeFileSync(path.join(__dirname, "connector-smoke-requests.json"), JSON.stringify({ requests, hostSummary, violations, libraryCdnHits }, null, 2));
+  fs.writeFileSync(artifactPath("connector-smoke-requests.json"), JSON.stringify({ requests, hostSummary, violations, libraryCdnHits }, null, 2));
 
   expect(usingLocalState).toBe(false);
   expect(firebaseApps).toBeGreaterThan(0);

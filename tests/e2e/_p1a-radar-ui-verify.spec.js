@@ -2,12 +2,12 @@ const { test, expect } = require("@playwright/test");
 const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
+const { artifactDirectory, artifactPath } = require("./support/e2e-artifacts");
 
 const ROOT_DIR = path.join(__dirname, "..", "..");
 const P1A_SEED = path.join(ROOT_DIR, "qa-report", "p1a-radar-live-seed.js");
 
-const SHOT_DIR = path.join(__dirname, "screenshots-p1a");
-fs.mkdirSync(SHOT_DIR, { recursive: true });
+const SHOT_DIR = artifactDirectory("screenshots-p1a");
 let seq = 0;
 async function shot(page, name) {
   seq += 1;
@@ -18,9 +18,7 @@ test.describe.serial("RADAR-P1A", () => {
   test("P1-A live: duplicate-name D0/D1/D2 radar correctness through real UI + emulator", async ({ page }) => {
     execSync(`node "${P1A_SEED}"`, { cwd: ROOT_DIR, stdio: "inherit" });
 
-  const seedPath = fs.existsSync(path.join(__dirname, "p1a-radar-live-seed-output.json"))
-    ? path.join(__dirname, "p1a-radar-live-seed-output.json")
-    : path.join(__dirname, "..", "..", "qa-report", "p1a-radar-live-seed-output.json");
+  const seedPath = artifactPath("p1a-radar-live-seed-output.json");
   const seed = JSON.parse(fs.readFileSync(seedPath, "utf8").replace(/^\uFEFF/, ""));
 
   await page.goto("/staff.html");

@@ -2,7 +2,7 @@
 // Must fail locally, truthfully, with zero production fallback and zero mutation.
 const { test, expect } = require("@playwright/test");
 const fs = require("fs");
-const path = require("path");
+const { artifactPath } = require("./support/e2e-artifacts");
 const FORBIDDEN = [/googleapis\.com$/, /firebaseio\.com$/, /firebaseapp\.com$/];
 const KNOWN_LIBRARY_CDN = /^(www\.gstatic\.com|fonts\.googleapis\.com|fonts\.gstatic\.com|unpkg\.com|a\.basemaps\.cartocdn\.com)$/;
 
@@ -42,7 +42,7 @@ test("Firestore emulator unreachable -> local failure, no prod fallback, no muta
   console.log("EVIDENCE contains-generic-error-text:", /error|greška|fehler|unavailable|nedostupn/i.test(bodyText));
 
   fs.writeFileSync(
-    path.join(__dirname, "gate0-requests.json"),
+    artifactPath("gate0-requests.json"),
     JSON.stringify({ allRequests, prodDataPlaneHits, driverCount, appVisible }, null, 2)
   );
 

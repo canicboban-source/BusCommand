@@ -7,6 +7,7 @@
 process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
 process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";
 const admin = require("firebase-admin");
+const { artifactPath } = require("../tests/e2e/support/e2e-artifacts");
 admin.initializeApp({ projectId: "demo-buscommand-scale" });
 const db = admin.firestore();
 const auth = admin.auth();
@@ -86,7 +87,7 @@ async function main() {
   }
 
   require("fs").writeFileSync(
-    __dirname + "/p1a-radar-live-seed-output.json",
+    artifactPath("p1a-radar-live-seed-output.json"),
     JSON.stringify({ companyId, driverA, driverB, dispatcherUid: user.uid }, null, 2)
   );
   console.log("WROTE p1a-radar-live-seed-output.json");
