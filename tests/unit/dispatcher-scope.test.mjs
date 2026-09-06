@@ -54,8 +54,9 @@ test("sanitizeDispatcherActiveGroups rejects foreign active/hub IDs", () => {
 
 test("dispatcher create-group control remains unavailable", () => {
   const html = fs.readFileSync(new URL("../../staff.html", import.meta.url), "utf8");
-  const setupBlock = html.match(/<div id="group-setup-create-block"[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/)?.[0] || "";
-  assert.match(setupBlock, /display:none/);
+  const setupOpeningTag = html.match(/<div\b(?=[^>]*\bid="group-setup-create-block")[^>]*>/)?.[0] || "";
+  assert.match(setupOpeningTag, /\bclass="[^"]*\bhidden\b[^"]*"/);
+  assert.doesNotMatch(setupOpeningTag, /\bstyle="[^"]*display\s*:\s*none/i);
   const source = fs.readFileSync(new URL("../../js/admin/dispatcher-setup.js", import.meta.url), "utf8");
   assert.match(source, /function createDispatcherGroup\(\)[\s\S]*?if \(!USE_LOCAL_STATE\)/);
 });
