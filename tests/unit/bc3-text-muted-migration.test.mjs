@@ -94,3 +94,20 @@ test("BC-3 pure muted text uses the shared CSP-safe class", () => {
     /#dispatcher-lost-items-table\s+\.bc-lost-item-vehicle-meta\s*\{[^}]*font-size\s*:\s*12px\s*;?[^}]*\}/
   );
 });
+test("BC-3 quick-view muted labels use the shared CSP-safe class", () => {
+  const quickViewSource = fs.readFileSync(
+    new URL("../../js/dispatcher/quick-view.js", import.meta.url),
+    "utf8"
+  );
+
+  assert.equal(
+    (quickViewSource.match(/class="bc-text-muted"/g) || []).length,
+    7
+  );
+  assert.equal(
+    (quickViewSource.match(
+      /style\s*=\s*["']\s*color\s*:\s*var\(--text-muted\)\s*;?\s*["']/g
+    ) || []).length,
+    0
+  );
+});

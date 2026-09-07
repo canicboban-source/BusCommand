@@ -42,19 +42,19 @@ function renderDispatcherQuickView() {
                 <h5 style="font-size:0.82rem; color:var(--primary-color); font-weight:700; margin-bottom:8px; text-transform:uppercase;">${t("today_duty")}</h5>
                 <div style="display:flex; flex-direction:column; gap:6px; font-size:0.88rem;">
                     <div style="display:flex; justify-content:space-between;">
-                        <span style="color:var(--text-muted);">${t("route")}:</span>
+                        <span class="bc-text-muted">${t("route")}:</span>
                         <span style="font-weight:600; color:var(--text-main);">${escapeHtml(routeLabel)}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between;">
-                        <span style="color:var(--text-muted);">${t("vehicle")}:</span>
+                        <span class="bc-text-muted">${t("vehicle")}:</span>
                         <span style="font-weight:600; color:var(--text-main);">${escapeHtml(today.bus)}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between;">
-                        <span style="color:var(--text-muted);">${t("shift")}:</span>
+                        <span class="bc-text-muted">${t("shift")}:</span>
                         <span style="font-weight:600; color:var(--text-main);">${escapeHtml(today.shiftLabel)}${today.isBereitschaft ? ' <span style="color:#f59e0b;font-size:0.75rem;">(x2 · poz.1)</span>' : (today.dailyPosition ? ` <span style="color:var(--text-muted);font-size:0.75rem;">(poz.${escapeHtml(today.dailyPosition)})</span>` : "")}</span>
                     </div>
                     ${today.timeRange ? `<div style="display:flex; justify-content:space-between;">
-                        <span style="color:var(--text-muted);">Vreme:</span>
+                        <span class="bc-text-muted">Vreme:</span>
                         <span style="font-weight:600; color:var(--text-main);">${escapeHtml(today.timeRange)}</span>
                     </div>` : ""}
                 </div>
@@ -64,15 +64,15 @@ function renderDispatcherQuickView() {
                 <h5 style="font-size:0.82rem; color:var(--primary-color); font-weight:700; margin-bottom:8px; text-transform:uppercase;">${t("tomorrow_duty")}</h5>
                 <div style="display:flex; flex-direction:column; gap:6px; font-size:0.88rem;">
                     <div style="display:flex; justify-content:space-between;">
-                        <span style="color:var(--text-muted);">${t("duty_number")}:</span>
+                        <span class="bc-text-muted">${t("duty_number")}:</span>
                         <span style="font-weight:600; color:var(--text-main);">${escapeHtml(tomorrow.shift)}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between;">
-                        <span style="color:var(--text-muted);">${t("vehicle")}:</span>
+                        <span class="bc-text-muted">${t("vehicle")}:</span>
                         <span style="font-weight:600; color:var(--text-main);">${escapeHtml(tomorrow.bus)}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="color:var(--text-muted);">${t("status")}:</span>
+                        <span class="bc-text-muted">${t("status")}:</span>
                         ${tomorrow.confirmed
                             ? `<span style="color:#10b981; font-weight:600; display:flex; align-items:center; gap:3px; font-size:0.85rem;"><i data-lucide="check-circle" style="width:12px; height:12px;"></i> ${t("released")}</span>`
                             : `<span style="color:#f59e0b; font-weight:600; display:flex; align-items:center; gap:3px; font-size:0.85rem;"><i data-lucide="clock" style="width:12px; height:12px;"></i> ${t("pending")}</span>`
