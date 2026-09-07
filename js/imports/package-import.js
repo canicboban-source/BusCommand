@@ -202,11 +202,11 @@ function renderPackageImportPreview() {
         <div style="margin-top:16px;padding:16px;background:rgba(0,0,0,0.2);border:1px solid var(--panel-border);border-radius:var(--radius-md);">
             <h4 style="margin:0 0 12px;font-size:0.95rem;color:var(--primary-color);">${t("pkg_preview_title")}</h4>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;font-size:0.85rem;">
-                <div><span style="color:var(--text-muted);">${t("pkg_lbl_drivers_csv")}</span> <strong>${p.driverCount}</strong></div>
-                <div><span style="color:var(--text-muted);">${t("pkg_lbl_plan_rows")}</span> <strong>${p.planRows}</strong></div>
-                <div><span style="color:var(--text-muted);">${t("pkg_lbl_plan_drivers")}</span> <strong>${p.planDrivers}</strong></div>
-                <div><span style="color:var(--text-muted);">${t("pkg_lbl_month")}</span> <strong>${p.month || "—"}</strong></div>
-                <div><span style="color:var(--text-muted);">${t("pkg_lbl_catalog")}</span> <strong>${p.catalogCount}</strong></div>
+                <div><span class="bc-text-muted">${t("pkg_lbl_drivers_csv")}</span> <strong>${p.driverCount}</strong></div>
+                <div><span class="bc-text-muted">${t("pkg_lbl_plan_rows")}</span> <strong>${p.planRows}</strong></div>
+                <div><span class="bc-text-muted">${t("pkg_lbl_plan_drivers")}</span> <strong>${p.planDrivers}</strong></div>
+                <div><span class="bc-text-muted">${t("pkg_lbl_month")}</span> <strong>${p.month || "—"}</strong></div>
+                <div><span class="bc-text-muted">${t("pkg_lbl_catalog")}</span> <strong>${p.catalogCount}</strong></div>
             </div>
             ${p.errors.length ? `<p style="color:#fcd34d;font-size:0.8rem;margin-top:12px;">${p.errors.join(" · ")}</p>` : ""}
             ${p.driverNames.length ? `<p style="font-size:0.78rem;color:var(--text-muted);margin-top:10px;">${p.driverNames.join(", ")}</p>` : ""}

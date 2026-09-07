@@ -118,7 +118,7 @@ function photoDataUrl(item) {
 
 function photoCell(item) {
     const url = photoDataUrl(item);
-    if (!url) return `<span style="color:var(--text-muted);">—</span>`;
+    if (!url) return `<span class="bc-text-muted">—</span>`;
     return `<button type="button" class="lost-item-photo-thumb" ${actionAttr("openLostItemPhoto", [item.id])} aria-label="${escapeHtml(t("lost_photo_view"))}">
         <img src="${escapeHtml(url)}" alt="" width="40" height="40" style="object-fit:cover;border-radius:6px;">
     </button>`;

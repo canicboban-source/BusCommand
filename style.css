@@ -4559,3 +4559,7 @@ body.light-theme .company-settings-policy-grid article > svg { color:#15803d; }
 .hub-import-preview-body .bc-list-sub { margin: 0; font-size: inherit; }
 .hub-import-preview-body .btn-secondary + .btn-secondary,
 .hub-import-preview-body .btn-primary + .btn-secondary { margin-left: 8px; }
+/* BC-3 CSP-safe replacement for pure inline muted-text color. */
+.bc-text-muted {
+    color: var(--text-muted);
+}
