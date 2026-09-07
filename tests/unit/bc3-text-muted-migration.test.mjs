@@ -46,10 +46,51 @@ test("BC-3 pure muted text uses the shared CSP-safe class", () => {
 
   assert.equal(
     (packageImportSource.match(remainingMutedInlinePattern) || []).length,
-    2
+    0
   );
   assert.equal(
     (lostItemsSource.match(remainingMutedInlinePattern) || []).length,
-    2
+    0
+  );
+  assert.equal(
+    (packageImportSource.match(
+      /class="bc-text-muted bc-package-import-hint"/g
+    ) || []).length,
+    1
+  );
+  assert.equal(
+    (packageImportSource.match(
+      /class="bc-text-muted bc-package-import-driver-names"/g
+    ) || []).length,
+    1
+  );
+  assert.equal(
+    (lostItemsSource.match(
+      /class="bc-text-muted bc-lost-items-empty-state"/g
+    ) || []).length,
+    1
+  );
+  assert.equal(
+    (lostItemsSource.match(
+      /class="bc-text-muted bc-lost-item-vehicle-meta"/g
+    ) || []).length,
+    1
+  );
+
+  assert.match(
+    styleSource,
+    /#package-import-preview\s+\.bc-package-import-hint\s*\{[^}]*font-size\s*:\s*13px\s*;[^}]*margin-top\s*:\s*12px\s*;?[^}]*\}/
+  );
+  assert.match(
+    styleSource,
+    /#package-import-preview\s+\.bc-package-import-driver-names\s*\{[^}]*font-size\s*:\s*0\.78rem\s*;[^}]*margin-top\s*:\s*10px\s*;?[^}]*\}/
+  );
+  assert.match(
+    styleSource,
+    /#dispatcher-lost-items-table\s+\.bc-lost-items-empty-state\s*\{[^}]*text-align\s*:\s*center\s*;[^}]*padding\s*:\s*30px\s*;?[^}]*\}/
+  );
+  assert.match(
+    styleSource,
+    /#dispatcher-lost-items-table\s+\.bc-lost-item-vehicle-meta\s*\{[^}]*font-size\s*:\s*12px\s*;?[^}]*\}/
   );
 });

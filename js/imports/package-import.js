@@ -193,7 +193,7 @@ function renderPackageImportPreview() {
     if (!el) return;
 
     if (!_pendingPackage) {
-        el.innerHTML = `<p style="color:var(--text-muted);font-size:13px;margin-top:12px;">${t("pkg_upload_hint")}</p>`;
+        el.innerHTML = `<p class="bc-text-muted bc-package-import-hint">${t("pkg_upload_hint")}</p>`;
         return;
     }
 
@@ -209,7 +209,7 @@ function renderPackageImportPreview() {
                 <div><span class="bc-text-muted">${t("pkg_lbl_catalog")}</span> <strong>${p.catalogCount}</strong></div>
             </div>
             ${p.errors.length ? `<p style="color:#fcd34d;font-size:0.8rem;margin-top:12px;">${p.errors.join(" · ")}</p>` : ""}
-            ${p.driverNames.length ? `<p style="font-size:0.78rem;color:var(--text-muted);margin-top:10px;">${p.driverNames.join(", ")}</p>` : ""}
+            ${p.driverNames.length ? `<p class="bc-text-muted bc-package-import-driver-names">${p.driverNames.join(", ")}</p>` : ""}
             <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
                 <button type="button" class="btn-primary" ${p.errors.length ? "disabled aria-disabled=\"true\"" : actionAttr("confirmPackageImport")}>
                     <i data-lucide="save"></i> ${t("btn_save_package") || "Save package"}

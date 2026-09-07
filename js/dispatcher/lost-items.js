@@ -133,7 +133,7 @@ function renderDispatcherLostItems() {
     const items = (window.state.lostItems || []).filter(matchesFilter);
 
     if (!Array.isArray(window.state.lostItems) || window.state.lostItems.length === 0 || items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px;">${t("js_no_alerts")}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="bc-text-muted bc-lost-items-empty-state">${t("js_no_alerts")}</td></tr>`;
         return;
     }
 
@@ -145,7 +145,7 @@ function renderDispatcherLostItems() {
         const when = formatDateTime(item.date || (item.foundAt || "").slice(0, 10), item.time || (item.foundAt || "").slice(11, 16));
         tr.innerHTML = `
             <td>${escapeHtml(when)}</td>
-            <td><strong>${escapeHtml(item.driver || "—")}</strong><br><span style="font-size:12px;color:var(--text-muted);">${escapeHtml(t("vehicle"))} ${escapeHtml(item.bus || "—")}</span></td>
+            <td><strong>${escapeHtml(item.driver || "—")}</strong><br><span class="bc-text-muted bc-lost-item-vehicle-meta">${escapeHtml(t("vehicle"))} ${escapeHtml(item.bus || "—")}</span></td>
             <td><strong>${escapeHtml(typeDisplay)}</strong></td>
             <td>${escapeHtml(location)}</td>
             <td>${escapeHtml(desc)}</td>

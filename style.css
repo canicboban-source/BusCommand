@@ -4563,3 +4563,23 @@ body.light-theme .company-settings-policy-grid article > svg { color:#15803d; }
 .bc-text-muted {
     color: var(--text-muted);
 }
+
+/* BC-3 semantic replacements for compound muted-text styles. */
+#package-import-preview .bc-package-import-hint {
+    font-size: 13px;
+    margin-top: 12px;
+}
+
+#package-import-preview .bc-package-import-driver-names {
+    font-size: 0.78rem;
+    margin-top: 10px;
+}
+
+#dispatcher-lost-items-table .bc-lost-items-empty-state {
+    text-align: center;
+    padding: 30px;
+}
+
+#dispatcher-lost-items-table .bc-lost-item-vehicle-meta {
+    font-size: 12px;
+}
