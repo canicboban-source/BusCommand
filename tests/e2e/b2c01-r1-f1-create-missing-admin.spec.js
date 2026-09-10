@@ -84,7 +84,7 @@ async function installFirebaseSaStubRoutes(page) {
     })
   };
 })();`;
-  await page.route(/gstatic\.com\/firebasejs|firebasejs|\/firebase-/, async (route) => {
+  await page.route(/gstatic\.com\/firebasejs|firebasejs|\/firebase-|\/runtime-vendor\/firebase/, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/javascript; charset=utf-8",

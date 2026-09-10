@@ -5,6 +5,9 @@ import { renderDispatcherDashboard } from "../dispatcher/dashboard.js";
 import { t } from "../ui/i18n.js";
 import { mapState, ROUTE_GPS_PATHS } from "./map-data.js";
 
+const LOCATION_MAX_AGE_MS = 5 * 60_000;
+const FUTURE_TOLERANCE_MS = 60_000;
+
 function list(value) {
     return Array.isArray(value) ? value : [];
 }
@@ -14,17 +17,26 @@ function finiteNumber(value) {
     return Number.isFinite(number) ? number : null;
 }
 
-function liveCoordinates(driver) {
-    const source = driver?.lastLocation && typeof driver.lastLocation === "object"
-        ? driver.lastLocation
-        : driver;
-    const lat = finiteNumber(source?.latitude ?? source?.lat ?? source?.location?.latitude ?? source?.location?.lat);
-    const lng = finiteNumber(source?.longitude ?? source?.lng ?? source?.location?.longitude ?? source?.location?.lng);
-    return lat === null || lng === null ? null : [lat, lng];
+const HTML_MAP = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+function escapeHtml(v) {
+    return v == null ? "" : String(v).replace(/[&<>"']/g, (c) => HTML_MAP[c]);
+}
+
+function liveCoordinates(driver, now = Date.now()) {
+    const s = driver?.lastLocation && typeof driver.lastLocation === "object" ? driver.lastLocation : driver;
+    const lat = finiteNumber(s?.latitude ?? s?.lat ?? s?.location?.latitude ?? s?.location?.lat);
+    const lng = finiteNumber(s?.longitude ?? s?.lng ?? s?.location?.longitude ?? s?.location?.lng);
+    if (lat === null || lng === null || lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+    const t = s?.recordedAt || s?.updatedAt;
+    if (t) {
+        const ms = new Date(t).getTime();
+        if (Number.isFinite(ms) && (ms > now + 60000 || now - ms > 300000)) return null;
+    }
+    return [lat, lng];
 }
 
 function driverVisibleOnDispatcherMap(driver) {
-    if (!driver?.name || driver.active === false) return false;
+    if (!driver || driver.active === false) return false;
     const role = window.currentUser?.role;
     if (role === "company_admin" || role === "company-admin") return true;
     const groups = Array.isArray(window.currentUser?.groups) ? window.currentUser.groups : [];
@@ -130,20 +142,25 @@ function startGpsSimulation() {
     }, 4000);
 }
 
-function removeMarker(driverName) {
-    const marker = mapState.busMarkers[driverName];
-    if (!marker || !mapState.dispatcherMap) return;
-    mapState.dispatcherMap.removeLayer(marker);
-    delete mapState.busMarkers[driverName];
+function removeMarker(driverId) {
+    const marker = mapState.busMarkers[driverId];
+    if (!marker) return;
+    if (mapState.dispatcherMap) {
+        mapState.dispatcherMap.removeLayer(marker);
+    }
+    delete mapState.busMarkers[driverId];
 }
 
 function updateMapMarkers() {
     if (!mapState.dispatcherMap) return;
-    const activeDriverNames = new Set();
+    const activeDriverIds = new Set();
 
     list(window.state?.drivers).forEach((driver, index) => {
+        const driverId = driver?.id || driver?.name;
+        if (!driverId) return;
+
         if (!driverVisibleOnDispatcherMap(driver)) {
-            if (driver?.name) removeMarker(driver.name);
+            removeMarker(driverId);
             return;
         }
 
@@ -152,50 +169,52 @@ function updateMapMarkers() {
         if (!coords) {
             // No fabricated fallback in production: without a current driver
             // coordinate there must be no marker on the dispatcher map.
-            removeMarker(driver.name);
+            removeMarker(driverId);
             return;
         }
 
         const route = demoPosition?.route || null;
         const busNumber = driver.bus || "—";
-        const isSos = Boolean(window.state?.sosActive && window.state?.sosDriver === driver.name);
+        const driverName = driver.name || [driver.firstName, driver.lastName].filter(Boolean).join(" ") || "—";
+        const isSos = Boolean(window.state?.sosActive && (window.state?.sosDriver === driver.name || window.state?.sosDriver === driverId));
         const markerClass = isSos ? "bus-map-marker sos-active-marker" : "bus-map-marker";
         const markerLabel = route?.number || busNumber || "•";
+        const safeMarkerLabel = escapeHtml(markerLabel);
         const icon = L.divIcon({
             className: markerClass,
-            html: `<span>${markerLabel}</span>`,
+            html: `<span>${safeMarkerLabel}</span>`,
             iconSize: [32, 32],
             iconAnchor: [16, 16]
         });
-        const popup = `<div style="font-family:'Outfit',sans-serif;font-size:.85rem;line-height:1.4;">
-            <h4 style="margin:0 0 5px;font-size:.95rem;color:${isSos ? "var(--danger-color)" : "var(--primary-color)"};font-weight:700;">
-                ${isSos ? `🚨 ${t("sos_alert_title")}` : `🚌 ${t("vehicle")} ${busNumber}`}
-            </h4>
-            <strong>${t("driver")}:</strong> ${driver.name}<br>
-            ${route ? `<strong>${t("table_route")}:</strong> ${route.number || "—"} (${route.name || "—"})<br>` : ""}
-            <strong>${t("current_location")}:</strong> ${t("gps_live") || "GPS live"}
-        </div>`;
+        const safeBusNumber = escapeHtml(busNumber);
+        const safeDriverName = escapeHtml(driverName);
+        const safeRouteNum = escapeHtml(route?.number || "—");
+        const safeRouteName = escapeHtml(route?.name || "—");
+        const popup = `<div style="font-family:'Outfit',sans-serif;font-size:.85rem;line-height:1.4;"><h4 style="margin:0 0 5px;font-size:.95rem;color:${isSos ? "var(--danger-color)" : "var(--primary-color)"};font-weight:700;">${isSos ? `🚨 ${escapeHtml(t("sos_alert_title"))}` : `🚌 ${escapeHtml(t("vehicle"))} ${safeBusNumber}`}</h4><strong>${escapeHtml(t("driver"))}:</strong> ${safeDriverName}<br>${route ? `<strong>${escapeHtml(t("table_route"))}:</strong> ${safeRouteNum} (${safeRouteName})<br>` : ""}<strong>${escapeHtml(t("current_location"))}:</strong> ${escapeHtml(t("gps_live") || "GPS live")}</div>`;
 
-        activeDriverNames.add(driver.name);
-        const existing = mapState.busMarkers[driver.name];
+        activeDriverIds.add(driverId);
+        const existing = mapState.busMarkers[driverId];
         if (existing) {
             existing.setLatLng(coords);
             existing.setPopupContent(popup);
             existing.setIcon(icon);
         } else {
-            mapState.busMarkers[driver.name] = L.marker(coords, { icon })
+            mapState.busMarkers[driverId] = L.marker(coords, { icon })
                 .bindPopup(popup)
                 .addTo(mapState.dispatcherMap);
         }
     });
 
-    Object.keys(mapState.busMarkers).forEach(name => {
-        if (!activeDriverNames.has(name)) removeMarker(name);
+    Object.keys(mapState.busMarkers).forEach(driverId => {
+        if (!activeDriverIds.has(driverId)) removeMarker(driverId);
     });
 }
 
 export {
     initDispatcherLiveMap,
     startGpsSimulation,
-    updateMapMarkers
+    updateMapMarkers,
+    removeMarker,
+    liveCoordinates,
+    escapeHtml
 };

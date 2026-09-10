@@ -1,12 +1,13 @@
 /**
- * Lazy-load SheetJS / PDF.js only when an import path needs them (Ch17).
- * Keeps staff login/first paint free of heavy parser CDNs.
+ * Lazy-load local SheetJS / PDF.js only when an import path needs them.
+ * Tesseract remains an explicitly pinned external boundary until its worker,
+ * core and language assets are localized together.
  */
 
-const XLSX_SRC = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
-const PDFJS_SRC = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js";
-const PDFJS_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
-const TESSERACT_SRC = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+const XLSX_SRC = "/runtime-vendor/office/xlsx.full.min.js";
+const PDFJS_SRC = "/runtime-vendor/office/pdf.mjs";
+const PDFJS_WORKER = "/runtime-vendor/office/pdf.worker.mjs";
+const TESSERACT_SRC = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
 
 const pending = new Map();
 
@@ -14,59 +15,103 @@ function loadScript(src) {
   if (typeof document === "undefined") {
     return Promise.reject(new Error("office_parsers_no_document"));
   }
-  const existing = document.querySelector(`script[data-bc-office-src="${src}"]`);
-  if (existing) {
-    if (pending.has(src)) return pending.get(src);
-    return Promise.resolve();
-  }
+
   if (pending.has(src)) return pending.get(src);
+
+  const existing = document.querySelector(
+    `script[data-bc-office-src="${src}"]`
+  );
+
+  if (existing) return Promise.resolve();
 
   const promise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.src = src;
     script.async = true;
     script.dataset.bcOfficeSrc = src;
+
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`office_parsers_load_failed:${src}`));
+
+    script.onerror = () => {
+      pending.delete(src);
+      script.remove();
+      reject(new Error(`office_parsers_load_failed:${src}`));
+    };
+
     document.head.appendChild(script);
   });
+
   pending.set(src, promise);
-  return promise.finally(() => {
-    // Keep resolved promise for subsequent callers via existing script tag.
+  return promise;
+}
+
+function loadModule(src) {
+  if (pending.has(src)) return pending.get(src);
+
+  const promise = import(/* @vite-ignore */ src).catch((error) => {
+    pending.delete(src);
+    throw new Error(`office_parsers_module_load_failed:${src}`, {
+      cause: error
+    });
   });
+
+  pending.set(src, promise);
+  return promise;
 }
 
 async function ensureXlsx() {
   if (typeof globalThis.XLSX !== "undefined") return globalThis.XLSX;
+
   await loadScript(XLSX_SRC);
+
   if (typeof globalThis.XLSX === "undefined") {
     throw new Error("ca_plan_err_xlsx_missing");
   }
+
   return globalThis.XLSX;
 }
 
 async function ensurePdfJs() {
   if (typeof globalThis.pdfjsLib !== "undefined") {
-    if (!globalThis.pdfjsLib.GlobalWorkerOptions.workerSrc) {
-      globalThis.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
-    }
+    globalThis.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
     return globalThis.pdfjsLib;
   }
-  await loadScript(PDFJS_SRC);
-  if (typeof globalThis.pdfjsLib === "undefined") {
+
+  const pdfjsLib = await loadModule(PDFJS_SRC);
+
+  if (
+    typeof pdfjsLib.getDocument !== "function" ||
+    !pdfjsLib.GlobalWorkerOptions
+  ) {
     throw new Error("ca_plan_err_pdfjs_missing");
   }
-  globalThis.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
-  return globalThis.pdfjsLib;
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+  globalThis.pdfjsLib = pdfjsLib;
+
+  return pdfjsLib;
 }
 
 async function ensureTesseract() {
-  if (typeof globalThis.Tesseract !== "undefined") return globalThis.Tesseract;
+  if (typeof globalThis.Tesseract !== "undefined") {
+    return globalThis.Tesseract;
+  }
+
   await loadScript(TESSERACT_SRC);
+
   if (typeof globalThis.Tesseract === "undefined") {
     throw new Error("ca_plan_err_tesseract_missing");
   }
+
   return globalThis.Tesseract;
 }
 
-export { ensureXlsx, ensurePdfJs, ensureTesseract, XLSX_SRC, PDFJS_SRC, TESSERACT_SRC };
+export {
+  ensureXlsx,
+  ensurePdfJs,
+  ensureTesseract,
+  XLSX_SRC,
+  PDFJS_SRC,
+  PDFJS_WORKER,
+  TESSERACT_SRC
+};

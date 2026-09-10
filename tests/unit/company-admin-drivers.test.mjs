@@ -37,7 +37,7 @@ test("driver directory supports filtering, pagination and immediate access revoc
   assert.match(firebase, /item\.key === "groups" \|\| item\.key === "dispatchers" \|\| item\.key === "reports" \|\| item\.key === "drivers"/);
   const driverRules = rules.match(/match \/companies\/\{companyId\}\/drivers\/\{driverId\}[\s\S]*?\n {4}}/)[0];
   assert.match(driverRules, /allow create, delete: if false/);
-  assert.match(driverRules, /onlyUpdatingAllowedDriverFields\(\)/);
+  assert.match(driverRules, /allow update: if false/);
   assert.doesNotMatch(driverRules, /allow create: if isCompanyAdmin\(companyId\)/);
   assert.doesNotMatch(driverRules, /allow create: if isCompanyStaff\(companyId\)/);
 });

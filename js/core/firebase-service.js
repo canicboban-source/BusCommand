@@ -245,10 +245,27 @@ const DISPATCHER_DRIVER_SENSITIVE = Object.freeze([
     "companyCodeHash", "loginCodeHash", "temporaryCodeHash", "temporaryHash",
     "activationCodeHash", "activationExpiresAt", "activationUsedAt",
     "activatedAt", "codeActivated", "personalCodeUpdatedAt", "personalCodeSetAt",
-    "personalCodeSetBy"
+    "personalCodeSetBy", "trail", "locations", "history"
 ]);
 
-/** Dispatcher may only keep contact + assignment fields — never EID/PIN.
+function sanitizeDriverLocationForClient(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const lat = Number(raw.lat ?? raw.latitude ?? raw.location?.latitude ?? raw.location?.lat);
+    const lng = Number(raw.lng ?? raw.longitude ?? raw.location?.longitude ?? raw.location?.lng);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) return null;
+    const acc = Number(raw.accuracy);
+    const rec = typeof raw.recordedAt === "string" ? raw.recordedAt : (raw.recordedAt?.toDate?.()?.toISOString?.() || null);
+    const upd = typeof raw.updatedAt === "string" ? raw.updatedAt : (raw.updatedAt?.toDate?.()?.toISOString?.() || null);
+    return {
+        lat: Math.round(lat * 1e5) / 1e5,
+        lng: Math.round(lng * 1e5) / 1e5,
+        accuracy: Number.isFinite(acc) && acc >= 0 && acc <= 5000 ? Math.round(acc) : null,
+        recordedAt: rec,
+        updatedAt: upd
+    };
+}
+
+/** Dispatcher may only keep contact + assignment fields and narrow validated GPS — never EID/PIN/trail.
  *  Fail-closed: if the role is not explicitly company-admin or superadmin,
  *  we sanitize as if it were a dispatcher. This prevents accidental credential
  *  leakage when the role is undefined, null, or any unexpected value. */
@@ -260,7 +277,8 @@ function sanitizeDriverRecordForClient(driver, role) {
     }
     const firstName = String(raw.firstName || "").trim();
     const lastName = String(raw.lastName || "").trim();
-    return {
+    const lastLoc = sanitizeDriverLocationForClient(raw.lastLocation || (raw.lat !== undefined && raw.lng !== undefined ? raw : null));
+    const sanitized = {
         id: raw.id,
         name: name || [firstName, lastName].filter(Boolean).join(" ") || "—",
         firstName,
@@ -273,6 +291,10 @@ function sanitizeDriverRecordForClient(driver, role) {
         active: raw.active !== false,
         status: raw.status || (raw.active !== false ? "Active" : "Inactive")
     };
+    if (lastLoc) {
+        sanitized.lastLocation = lastLoc;
+    }
+    return sanitized;
 }
 
 function _docsToDriversList(docs, companyId = null) {
@@ -590,6 +612,8 @@ function _handleRemoteCollectionUpdate(itemKey) {
         const active = document.querySelector(".content-section:not(.hidden)");
         if (active && active.id === "dispatcher-dashboard") {
             _invokeRender("../dispatcher/dashboard.js", "renderDispatcherDashboard");
+        } else if (active && (active.id === "dispatcher-live-map-section" || active.id === "dispatcher-live-map")) {
+            _invokeRender("../maps/live-map-core.js", "updateMapMarkers");
         }
     }
     if (itemKey === "reports" && user.role === "dispatcher") {
@@ -922,5 +946,6 @@ export {
     startFirestoreSync,
     stopFirestoreSync,
     showFirebaseStatus,
-    initFirebase
+    initFirebase,
+    sanitizeDriverRecordForClient
 };

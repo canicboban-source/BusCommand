@@ -616,7 +616,7 @@ function buildStructuredPdfPayload(planInput) {
 async function extractPdfText(arrayBuffer) {
     const { ensurePdfJs } = await import("../core/office-parsers.js");
     const pdfjsLib = await ensurePdfJs();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, isEvalSupported: false }).promise;
     let text = "";
     for (let i = 1; i <= pdf.numPages; i += 1) {
         const page = await pdf.getPage(i);

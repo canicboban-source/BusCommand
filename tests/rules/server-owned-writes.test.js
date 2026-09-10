@@ -146,23 +146,41 @@ test("staff reads stay inside the authenticated tenant", async () => {
   await assertFails(getDoc(doc(db, "companies", "beta", "drivers", "drv-1")));
 });
 
-test("driver location writes require an active server-owned session", async () => {
+test("driver location is server-owned regardless of session or GPS flag", async () => {
   const db = auth("drv-1", "driver", "alpha");
-  await assertSucceeds(updateDoc(doc(db, "companies", "alpha", "drivers", "drv-1"), {
-    lastSeen: new Date(),
-    lastLocation: { lat: 47.8, lng: 16.2 }
-  }));
+  for (const liveGps of [false, true]) {
+    for (const state of ["active", "grace", "expired", "missing"]) {
+      await env.withSecurityRulesDisabled(async ctx => {
+        const adminDb = ctx.firestore();
+        await updateDoc(doc(adminDb, "companies", "alpha", "settings", "main"), { features: { liveGps } });
+        const sessionRef = doc(adminDb, "companies", "alpha", "driver_sessions", "drv-1");
+        if (state === "missing") await deleteDoc(sessionRef);
+        else await setDoc(sessionRef, {
+          sessionEndsAt: new Date(Date.now() + (state === "expired" ? -60000 : 3600000)),
+          notificationsUntil: new Date(Date.now() + (state === "active" ? 3600000 : -60000))
+        });
+      });
+      for (const sample of [{ lat: 47.8, lng: 16.2 }, { lat: 999, lng: -999 }]) {
+        await assertFails(updateDoc(doc(db, "companies", "alpha", "drivers", "drv-1"), {
+          lastSeen: new Date(), lastLocation: sample
+        }));
+      }
+    }
+  }
+});
 
-  await env.withSecurityRulesDisabled(async (ctx) => {
-    await updateDoc(doc(ctx.firestore(), "companies", "alpha", "driver_sessions", "drv-1"), {
-      sessionEndsAt: new Date(Date.now() - 60 * 1000)
-    });
+test("privileged location write remains readable while browser roles cannot overwrite it", async () => {
+  await env.withSecurityRulesDisabled(async ctx => {
+    await assertSucceeds(updateDoc(doc(ctx.firestore(), "companies", "alpha", "drivers", "drv-1"), {
+      lastSeen: new Date(), lastLocation: { lat: 47.8, lng: 16.2 }
+    }));
   });
-
-  await assertFails(updateDoc(doc(db, "companies", "alpha", "drivers", "drv-1"), {
-    lastSeen: new Date(),
-    lastLocation: { lat: 47.9, lng: 16.3 }
-  }));
+  for (const db of [auth("drv-1", "driver", "alpha"), auth("disp-1", "dispatcher", "alpha"), auth("ca-1", "company_admin", "alpha"), superAdmin()]) {
+    await assertSucceeds(getDoc(doc(db, "companies", "alpha", "drivers", "drv-1")));
+    await assertFails(updateDoc(doc(db, "companies", "alpha", "drivers", "drv-1"), {
+      lastLocation: { lat: 48, lng: 17 }
+    }));
+  }
 });
 
 test("driver cannot change protected profile fields during an active session", async () => {

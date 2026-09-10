@@ -256,9 +256,13 @@ app.use(cors({
 const defaultJsonParser = express.json({ limit: "64kb" });
 const servicePlanJsonParser = express.json({ limit: "4mb" });
 const brandingJsonParser = express.json({ limit: "512kb" });
+const lostItemJsonParser = express.json({ limit: "700kb" });
 app.use((req, res, next) => {
   if (req.method === "PUT" && req.path === "/api/company-admin/branding") {
     return brandingJsonParser(req, res, next);
+  }
+  if (req.method === "POST" && req.path === "/api/driver/lost-items") {
+    return lostItemJsonParser(req, res, next);
   }
   const isServicePlanWrite = req.path.startsWith("/api/company-admin/service-plans/");
   return (isServicePlanWrite ? servicePlanJsonParser : defaultJsonParser)(req, res, next);
@@ -562,10 +566,30 @@ app.post(
         actorId: req.adminUser.uid
       });
 
+      if (result.partial || result.authErrors > 0) {
+        req.log?.warn({
+          companyId,
+          deletedAuthUsers: result.deletedAuthUsers,
+          authErrors: result.authErrors,
+          failedUids: result.failedUids,
+          actorId: req.adminUser.uid
+        }, "company deletion partial Auth failure");
+
+        return res.status(207).json({
+          success: false,
+          partial: true,
+          companyId: result.companyId,
+          deletedAuthUsers: result.deletedAuthUsers,
+          authErrors: result.authErrors,
+          failedUids: result.failedUids,
+          error: `Brisanje nije kompletirano: ${result.authErrors} korisničkih naloga nije obrisano iz Auth sistema. Baza nije obrisana radi očuvanja mogućnosti ponovnog pokušaja.`
+        });
+      }
+
       req.log?.info({
         companyId,
         deletedAuthUsers: result.deletedAuthUsers,
-        authErrors: result.authErrors,
+        authErrors: 0,
         actorId: req.adminUser.uid
       }, "company permanently deleted");
 

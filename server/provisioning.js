@@ -135,6 +135,13 @@ async function wipeServicePlanDuties(db, companyRef) {
 /**
  * Permanently delete a company tree + Auth users that belong to it.
  * Requires confirmCompanyId === companyId (typed confirmation).
+ * 
+ * Order of operations:
+ * 1. Read company and collect all tenant Auth UIDs (users + drivers).
+ * 2. Delete Auth users first (with retry).
+ * 3. If any Auth deletion fails, halt before deleting Firestore and report partial failure
+ *    so the operation is safely retryable and identity is preserved.
+ * 4. Only when Auth is fully cleaned, wipe service plans and delete Firestore company tree.
  */
 async function deleteCompanyAtomic({ db, admin, companyId, confirmCompanyId, actorId }) {
   const id = String(companyId || "").trim();
@@ -160,6 +167,33 @@ async function deleteCompanyAtomic({ db, admin, companyId, confirmCompanyId, act
     ...driversSnap.docs.map((doc) => doc.id)
   ]);
 
+  let deletedAuthUsers = 0;
+  const failedUids = [];
+  for (const uid of authUids) {
+    try {
+      await deleteWithRetry(() => admin.auth().deleteUser(uid), 3);
+      deletedAuthUsers += 1;
+    } catch (error) {
+      if (error?.code === "auth/user-not-found") {
+        deletedAuthUsers += 1;
+        continue;
+      }
+      failedUids.push(uid);
+    }
+  }
+
+  if (failedUids.length > 0) {
+    return {
+      success: false,
+      partial: true,
+      companyId: id,
+      deletedAuthUsers,
+      authErrors: failedUids.length,
+      failedUids,
+      actorId: actorId || null
+    };
+  }
+
   await wipeServicePlanDuties(db, companyRef);
 
   const firestore = typeof admin.firestore === "function" ? admin.firestore() : db;
@@ -172,22 +206,12 @@ async function deleteCompanyAtomic({ db, admin, companyId, confirmCompanyId, act
     await companyRef.delete();
   }
 
-  let deletedAuthUsers = 0;
-  let authErrors = 0;
-  for (const uid of authUids) {
-    try {
-      await admin.auth().deleteUser(uid);
-      deletedAuthUsers += 1;
-    } catch (error) {
-      if (error?.code === "auth/user-not-found") continue;
-      authErrors += 1;
-    }
-  }
-
   return {
+    success: true,
+    partial: false,
     companyId: id,
     deletedAuthUsers,
-    authErrors,
+    authErrors: 0,
     actorId: actorId || null
   };
 }

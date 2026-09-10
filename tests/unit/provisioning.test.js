@@ -636,6 +636,8 @@ test("deleteCompanyAtomic removes company tree and Auth users", async () => {
     db, admin, companyId: "oldco", confirmCompanyId: "oldco", actorId: "sa"
   });
 
+  assert.equal(result.success, true);
+  assert.equal(result.partial, false);
   assert.equal(result.companyId, "oldco");
   assert.equal(result.deletedAuthUsers, 2);
   assert.deepEqual(admin.deleted.sort(), ["d1", "u1"]);
@@ -643,6 +645,58 @@ test("deleteCompanyAtomic removes company tree and Auth users", async () => {
   assert.equal(db.store.has("companies/oldco/users/u1"), false);
   assert.equal(db.store.has("companies/oldco/drivers/d1"), false);
   assert.equal(db.store.has("companies/oldco/groups/310"), false);
+});
+
+test("deleteCompanyAtomic partial Auth failure preserves Firestore tree and reports failure", async () => {
+  const db = fakeDeleteDb({
+    "companies/oldco": { name: "Old" },
+    "companies/oldco/users/u1": { role: "company_admin" },
+    "companies/oldco/drivers/d1": { name: "Driver" }
+  });
+  const admin = fakeAdmin({ failDelete: true });
+
+  const result = await deleteCompanyAtomic({
+    db, admin, companyId: "oldco", confirmCompanyId: "oldco", actorId: "sa"
+  });
+
+  assert.equal(result.success, false);
+  assert.equal(result.partial, true);
+  assert.equal(result.authErrors, 2);
+  assert.deepEqual(result.failedUids.sort(), ["d1", "u1"]);
+  assert.equal(db.store.has("companies/oldco"), true);
+  assert.equal(db.store.has("companies/oldco/users/u1"), true);
+  assert.equal(db.store.has("companies/oldco/drivers/d1"), true);
+});
+
+test("deleteCompanyAtomic retry succeeds after partial Auth recovery", async () => {
+  const db = fakeDeleteDb({
+    "companies/oldco": { name: "Old" },
+    "companies/oldco/users/u1": { role: "company_admin" },
+    "companies/oldco/drivers/d1": { name: "Driver" }
+  });
+  const deletedUids = [];
+  const admin = {
+    auth: () => ({
+      async deleteUser(uid) {
+        if (uid === "u1") {
+          const err = new Error("user-not-found");
+          err.code = "auth/user-not-found";
+          throw err;
+        }
+        deletedUids.push(uid);
+      }
+    })
+  };
+
+  const result = await deleteCompanyAtomic({
+    db, admin, companyId: "oldco", confirmCompanyId: "oldco", actorId: "sa"
+  });
+
+  assert.equal(result.success, true);
+  assert.equal(result.partial, false);
+  assert.equal(result.authErrors, 0);
+  assert.deepEqual(deletedUids, ["d1"]);
+  assert.equal(db.store.has("companies/oldco"), false);
 });
 
 function fakeDeleteDb(initial = {}) {

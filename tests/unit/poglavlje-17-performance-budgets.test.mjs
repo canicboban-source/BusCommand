@@ -27,9 +27,9 @@ test("driver entry does not import staff dispatcher state-observer setup", () =>
   assert.doesNotMatch(i18n, /import\("\.\.\/dispatcher\/msg-compose\.js"\)/);
 });
 
-test("Lucide CDN is pinned and office parsers are not eager in monolith head", () => {
+test("Local Lucide runtime is pinned and office parsers are not eager in monolith head", () => {
   const monolith = read("index.legacy-monolith.html");
-  assert.match(monolith, /lucide@0\.469\.0/);
+  assert.match(monolith, /\/runtime-vendor\/lucide\/lucide\.min\.js/);
   assert.doesNotMatch(monolith, /lucide@latest/);
   assert.doesNotMatch(monolith, /cdnjs\.cloudflare\.com\/ajax\/libs\/pdf\.js/);
   assert.doesNotMatch(monolith, /xlsx@0\.18\.5\/dist\/xlsx\.full\.min\.js/);

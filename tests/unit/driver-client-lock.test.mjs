@@ -18,7 +18,7 @@ test("production driver profile writes are server-owned", async () => {
 
   const driverRules = rules.match(/match \/companies\/\{companyId\}\/drivers\/\{driverId\}[\s\S]*?\n {4}}/)[0];
   assert.match(driverRules, /allow create, delete: if false/);
-  assert.match(driverRules, /onlyUpdatingAllowedDriverFields\(\)/);
+  assert.match(driverRules, /allow update: if false/);
   assert.doesNotMatch(driverRules, /allow create: if isCompanyAdmin/);
 
   assert.match(onboarding, /USE_LOCAL_STATE/);

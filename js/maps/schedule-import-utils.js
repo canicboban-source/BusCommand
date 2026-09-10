@@ -60,7 +60,7 @@ async function extractTextFromScheduleFile(file) {
         const { ensurePdfJs } = await import("../core/office-parsers.js");
         const pdfjsLib = await ensurePdfJs();
         const arrayBuffer = await readFileAsArrayBuffer(file);
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, isEvalSupported: false }).promise;
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();

@@ -35,7 +35,7 @@ test.describe("UI smoke", () => {
   });
 
   test("production mode fails closed without Preview Firebase variables", async ({ page }) => {
-    await page.route("https://www.gstatic.com/firebasejs/**", (route) => route.abort());
+    await page.route("**/runtime-vendor/firebase/**", (route) => route.abort());
     await page.addInitScript(() => localStorage.setItem("buscommand_lang", "en"));
     await page.goto("/staff.html?mode=production");
     await expect(page.locator("#login-logo")).toContainText("BusCommand");

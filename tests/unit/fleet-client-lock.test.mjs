@@ -39,7 +39,7 @@ test("fleet writes stay server-owned; buses use narrow APIs and routes remain lo
   );
   assert.match(
     map,
-    /if \(!coords\) \{[\s\S]*?removeMarker\(driver\.name\);[\s\S]*?return;/,
+    /if \(!coords\) \{[\s\S]*?removeMarker\(driverId\);[\s\S]*?return;/,
     "production must remove a marker when no current coordinate exists"
   );
 });

@@ -35,6 +35,8 @@ function createDb() {
   const plans = new Map();
   const duties = new Map();
   const groups = new Set(["group-a", "group-b"]);
+  let revision = 0;
+  const metrics = { retries: 0 };
 
   function planRef(id) {
     return {
@@ -81,6 +83,31 @@ function createDb() {
   return {
     plans,
     duties,
+    metrics,
+    async runTransaction(callback) {
+      // Optimistic DB double: invalidate a read when a concurrent commit wins.
+      // Deliberately conservative (whole-store revision), not an emulator.
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        let readRevision = null;
+        let writesStarted = false;
+        const batch = this.batch();
+        const result = await callback({
+          get: async ref => {
+            assert.equal(writesStarted, false, "transaction reads must precede writes");
+            if (readRevision === null) readRevision = revision;
+            return ref.get();
+          },
+          set: (...args) => { writesStarted = true; batch.set(...args); }
+        });
+        if (readRevision !== null && readRevision !== revision) {
+          metrics.retries += 1;
+          continue;
+        }
+        await batch.commit();
+        return result;
+      }
+      throw new Error("transaction retries exhausted");
+    },
     collection(name) {
       assert.equal(name, "companies");
       return {
@@ -101,6 +128,7 @@ function createDb() {
       return {
         set(ref, data, options) { operations.push({ ref, data, options }); },
         async commit() {
+          if (operations.length) revision += 1;
           operations.forEach(({ ref, data, options }) => {
             if (ref.kind === "plan") {
               plans.set(ref.id, options?.merge ? { ...(plans.get(ref.id) || {}), ...data } : { ...data });
@@ -220,4 +248,59 @@ test("publishing rejects a group that does not belong to the company", async () 
     error => error.code === "group-not-found"
   );
   assert.equal(db.plans.size, 0);
+});
+
+for (const withActive of [false, true]) {
+  test(`parallel activation leaves one active version (prior active: ${withActive})`, async () => {
+    const db = createDb();
+    if (withActive) await stageAndActivate(db, "65");
+    const staged = [];
+    for (const version of ["66", "67"]) {
+      staged.push(await publishServicePlan({ db, admin, companyId: "alpha", groupId: "group-a", actorId: "ca", plan: validPlan(version) }));
+    }
+    const results = await Promise.all(staged.map(({ planId }) => activateServicePlan({
+      db, admin, companyId: "alpha", groupId: "group-a", actorId: "ca", planId
+    })));
+    assert.equal(results.every(result => result.status === "active"), true);
+    const active = [...db.plans.entries()].filter(([, plan]) => plan.status === "active");
+    assert.equal(active.length, 1, "parallel requests must not leave two active catalogs");
+    const winner = active[0][0];
+    const loser = staged.find(plan => plan.planId !== winner).planId;
+    assert.equal(db.plans.get(loser).status, "superseded");
+    assert.equal(db.plans.get(loser).supersededBy, winner);
+    assert.equal(db.plans.get(winner).rolledBackFrom, loser);
+    assert.ok(db.metrics.retries > 0, "test must exercise a retried conflicting transaction");
+  });
+}
+
+test("activation rejects wrong group, missing version and invalid status without writes", async () => {
+  const db = createDb();
+  const staged = await publishServicePlan({ db, admin, companyId: "alpha", groupId: "group-a", actorId: "ca", plan: validPlan() });
+  const input = { db, admin, companyId: "alpha", groupId: "group-a", actorId: "ca", planId: staged.planId };
+  for (const [changes, code] of [
+    [{ groupId: "missing" }, "group-not-found"],
+    [{ groupId: "group-b" }, "plan-not-found"],
+    [{ planId: "missing-version" }, "plan-not-found"]
+  ]) await assert.rejects(activateServicePlan({ ...input, ...changes }), error => error.code === code);
+  db.plans.get(staged.planId).status = "invalid";
+  const before = JSON.stringify([...db.plans]);
+  await assert.rejects(activateServicePlan(input), error => error.code === "invalid-status");
+  assert.equal(JSON.stringify([...db.plans]), before);
+});
+
+test("repeat activation is idempotent and commit failure cannot report success", async () => {
+  const db = createDb();
+  const { staged } = await stageAndActivate(db, "66");
+  const input = { db, admin, companyId: "alpha", groupId: "group-a", actorId: "other-ca", planId: staged.planId };
+  const before = JSON.stringify([...db.plans]);
+  assert.equal((await activateServicePlan(input)).alreadyActive, true);
+  assert.equal(JSON.stringify([...db.plans]), before);
+  const pending = await publishServicePlan({ db, admin, companyId: "alpha", groupId: "group-a", actorId: "ca", plan: validPlan("67") });
+  const beforeFailure = JSON.stringify([...db.plans]);
+  db.runTransaction = async callback => {
+    await callback({ get: ref => ref.get(), set() {} });
+    throw new Error("commit unavailable");
+  };
+  await assert.rejects(activateServicePlan({ ...input, planId: pending.planId }), /commit unavailable/);
+  assert.equal(JSON.stringify([...db.plans]), beforeFailure);
 });

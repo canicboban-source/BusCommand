@@ -28,6 +28,8 @@ test("SW allowlist covers driver shell and rejects staff/api", () => {
 test("public sw-driver.js stays aligned with policy", () => {
   const sw = fs.readFileSync(path.join(__dirname, "../../public/sw-driver.js"), "utf8");
   assert.match(sw, /buscommand-driver-v2/);
+  assert.match(sw, /CACHE_PREFIX\s*=\s*["']buscommand-driver-["']/);
+  assert.match(sw, /k\.startsWith\(CACHE_PREFIX\)\s*&&\s*k\s*!==\s*CACHE/);
   assert.match(sw, /\/api\//);
   assert.match(sw, /staff\.html/);
   assert.match(sw, /driver\.html/);
@@ -35,6 +37,20 @@ test("public sw-driver.js stays aligned with policy", () => {
   assert.match(main, /scope:\s*["']\/driver\.html["']/);
   const manifest = fs.readFileSync(path.join(__dirname, "../../public/manifest-driver.webmanifest"), "utf8");
   assert.match(manifest, /"scope"\s*:\s*"\/driver\.html"/);
+});
+
+test("SW activate deletes only older buscommand-driver caches and preserves other caches", async () => {
+  const allCacheKeys = [
+    "buscommand-driver-v1",
+    "buscommand-driver-v2",
+    "staff-surface-cache",
+    "portal-cache-v1",
+    "other-origin-cache"
+  ];
+  const CACHE = "buscommand-driver-v2";
+  const CACHE_PREFIX = "buscommand-driver-";
+  const toDelete = allCacheKeys.filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE);
+  assert.deepEqual(toDelete, ["buscommand-driver-v1"]);
 });
 
 test("idempotency key normalization", () => {

@@ -159,69 +159,71 @@ async function activateServicePlan({ db, admin, companyId, groupId, actorId, pla
   const normalizedGroupId = normalizeServicePlanGroupId(groupId);
   const normalizedPlanId = normalizeServicePlanId(planId);
   const companyRef = db.collection("companies").doc(companyId);
-  await assertCompanyGroupsExist(companyRef, [normalizedGroupId]);
   const plansRef = companyRef.collection("service_plans");
   const planRef = plansRef.doc(normalizedPlanId);
-  const planSnap = await planRef.get();
-  if (!planSnap.exists || planSnap.data().groupId !== normalizedGroupId) {
-    const error = new Error("Verzija kataloga nije pronađena.");
-    error.code = "plan-not-found";
-    throw error;
-  }
-  const target = planSnap.data();
-  if (target.status === "active") {
-    return {
-      planId: normalizedPlanId,
-      status: "active",
-      alreadyActive: true,
-      previousActivePlanId: null,
-      plan: target
-    };
-  }
-  if (!["staged", "superseded"].includes(target.status)) {
-    const error = new Error("Samo sačuvane ili arhivirane verzije mogu da se aktiviraju.");
-    error.code = "invalid-status";
-    throw error;
-  }
+  return db.runTransaction(async (tx) => {
+    const groupSnap = await tx.get(companyRef.collection("groups").doc(normalizedGroupId));
+    if (!groupSnap.exists) {
+      const error = new Error("Jedna ili više grupa ne postoje u ovoj firmi.");
+      error.code = "group-not-found";
+      throw error;
+    }
+    const planSnap = await tx.get(planRef);
+    if (!planSnap.exists || planSnap.data().groupId !== normalizedGroupId) {
+      const error = new Error("Verzija kataloga nije pronađena.");
+      error.code = "plan-not-found";
+      throw error;
+    }
+    const target = planSnap.data();
+    if (!["active", "staged", "superseded"].includes(target.status)) {
+      const error = new Error("Samo sačuvane ili arhivirane verzije mogu da se aktiviraju.");
+      error.code = "invalid-status";
+      throw error;
+    }
 
-  const activeSnapshot = await plansRef.where("status", "==", "active").get();
-  const batch = db.batch();
-  const timestamp = admin.firestore.FieldValue.serverTimestamp();
-  let previousActivePlanId = null;
+    // Read every version in this group, including staged versions. Concurrent
+    // first activations must overlap even when no active version exists yet.
+    // All reads and writes participate in the same retried transaction.
+    const groupSnapshot = await tx.get(plansRef.where("groupId", "==", normalizedGroupId));
+    const previous = groupSnapshot.docs.filter(doc =>
+      doc.id !== normalizedPlanId && doc.data().status === "active"
+    );
+    if (target.status === "active" && previous.length === 0) {
+      return {
+        planId: normalizedPlanId,
+        status: "active",
+        alreadyActive: true,
+        previousActivePlanId: null,
+        plan: target
+      };
+    }
 
-  activeSnapshot.docs.forEach(doc => {
-    const current = doc.data();
-    if (doc.id !== normalizedPlanId && current.groupId === normalizedGroupId) {
+    const timestamp = admin.firestore.FieldValue.serverTimestamp();
+    let previousActivePlanId = null;
+    previous.forEach(doc => {
       previousActivePlanId = doc.id;
-      batch.set(doc.ref, {
+      tx.set(doc.ref, {
         status: "superseded",
         supersededAt: timestamp,
         supersededBy: normalizedPlanId
       }, { merge: true });
-    }
-  });
-
-  batch.set(planRef, {
-    status: "active",
-    activatedAt: timestamp,
-    activatedBy: actorId,
-    supersededAt: null,
-    supersededBy: null,
-    rolledBackFrom: previousActivePlanId
-  }, { merge: true });
-
-  await batch.commit();
-  return {
-    planId: normalizedPlanId,
-    status: "active",
-    alreadyActive: false,
-    previousActivePlanId,
-    plan: {
-      ...target,
+    });
+    tx.set(planRef, {
       status: "active",
+      activatedAt: timestamp,
+      activatedBy: actorId,
+      supersededAt: null,
+      supersededBy: null,
       rolledBackFrom: previousActivePlanId
-    }
-  };
+    }, { merge: true });
+    return {
+      planId: normalizedPlanId,
+      status: "active",
+      alreadyActive: false,
+      previousActivePlanId,
+      plan: { ...target, status: "active", rolledBackFrom: previousActivePlanId }
+    };
+  });
 }
 
 async function getActiveServicePlan({ db, companyId, groupId }) {

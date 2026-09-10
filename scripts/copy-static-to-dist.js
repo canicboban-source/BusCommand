@@ -91,3 +91,14 @@ for (const rel of [
   fs.copyFileSync(srcCss, destCss);
   console.log("COPY", rel);
 }
+const runtimeVendorSource = path.join(ROOT, "runtime-vendor");
+const runtimeVendorDestination = path.join(DIST, "runtime-vendor");
+
+if (!fs.existsSync(runtimeVendorSource)) {
+  console.error("runtime-vendor/ ne postoji — pokreni npm run prepare:vendor");
+  process.exit(1);
+}
+
+fs.rmSync(runtimeVendorDestination, { recursive: true, force: true });
+fs.cpSync(runtimeVendorSource, runtimeVendorDestination, { recursive: true });
+console.log("Copied runtime-vendor → dist/runtime-vendor");

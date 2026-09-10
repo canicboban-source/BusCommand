@@ -83,9 +83,8 @@ service cloud.firestore {
                     )
                   );
       allow create, delete: if false;
-      allow update: if isDriver(companyId) && request.auth.uid == driverId
-                    && onlyUpdatingAllowedDriverFields()
-                    && isDriverLocationWriteAllowed(companyId);
+      // GPS and profile mutations go through the authenticated server API.
+      allow update: if false;
     }
 
     // ─── SMJENE ─────────────────────────────────────────────
@@ -426,17 +425,6 @@ service cloud.firestore {
 
     function isLicenseActive(companyId) {
       return get(/databases/$(database)/documents/companies/$(companyId)/settings/main).data.status != "suspended";
-    }
-
-    function isDriverLocationWriteAllowed(companyId) {
-      return exists(/databases/$(database)/documents/companies/$(companyId)/driver_sessions/$(request.auth.uid))
-        && get(/databases/$(database)/documents/companies/$(companyId)/driver_sessions/$(request.auth.uid)).data.sessionEndsAt >= request.time;
-    }
-
-    function onlyUpdatingAllowedDriverFields() {
-      return request.resource.data.diff(resource.data)
-        .affectedKeys()
-        .hasOnly(["lastSeen", "lastLocation"]);
     }
 
     function onlyUpdatingOwnProfile() {

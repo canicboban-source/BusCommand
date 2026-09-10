@@ -55,3 +55,9 @@ firebase-debug.log
 /reports/**/*-git-status-short.txt
 /reports/**/*-git-diff-stat.txt
 /reports/**/*-source-manifest.txt
+
+# Generated local browser runtime
+/runtime-vendor/
+
+# Temporary local backups
+.backup-*/
