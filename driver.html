@@ -6,10 +6,6 @@
     <title>BusCommand — Driver</title>
   <link rel="icon" type="image/png" href="/brand/logo-hero.png">
   <link rel="apple-touch-icon" href="/brand/logo-hero.png">
-    <!-- Google Font: Outfit (Moderan i premium izgled) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Lucide ikone -->
     <script src="/runtime-vendor/lucide/lucide.min.js"></script>
     <!-- PDF.js / SheetJS: lazy-loaded via js/core/office-parsers.js on first import -->
@@ -1186,47 +1182,10 @@
     </div>
 
     <!-- SA SUPPORT SESSION (L7) -->
-    <div id="sa-support-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sa-support-title">
-        <div class="modal-content" style="max-width:440px;">
-            <h3 id="sa-support-title" data-i18n="sa_support_title">Start support session</h3>
-            <p data-i18n="sa_support_hint">Read-only help for this company. 1 hour max. Never shows login secrets.</p>
-            <div class="form-group">
-                <label for="sa-support-category" data-i18n="sa_support_category">Category</label>
-                <select id="sa-support-category">
-                    <option value="incident" data-i18n="sa_support_cat_incident">Incident</option>
-                    <option value="onboarding" data-i18n="sa_support_cat_onboarding">Onboarding</option>
-                    <option value="billing" data-i18n="sa_support_cat_billing">Billing</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="sa-support-reason" data-i18n="sa_support_reason">Reason (min. 20 characters)</label>
-                <textarea id="sa-support-reason" rows="3" maxlength="500" required></textarea>
-            </div>
-            <p id="sa-support-error" class="error-message hidden" role="alert"></p>
-            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;">
-                <button type="button" class="btn-secondary" data-action="superadminCancelSupportModal" data-i18n="btn_cancel">Cancel</button>
-                <button type="button" class="btn-primary" data-action="superadminConfirmSupportStart" data-i18n="sa_support_confirm">Start session</button>
-            </div>
-        </div>
-    </div>
+
 
     <!-- SA DELETE COMPANY -->
-    <div id="sa-delete-company-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sa-delete-company-title">
-        <div class="modal-content" style="max-width:440px;">
-            <h3 id="sa-delete-company-title" data-i18n="sa_delete_company_title">Delete company</h3>
-            <p data-i18n="sa_delete_company_hint">This permanently deletes the company, groups, drivers, plans and staff accounts. Type the company ID to confirm.</p>
-            <p style="margin:8px 0;"><code id="sa-delete-company-id-hint" style="font-size:0.95rem;"></code></p>
-            <div class="form-group">
-                <label for="sa-delete-company-confirm" data-i18n="sa_delete_company_confirm_label">Confirm company ID</label>
-                <input type="text" id="sa-delete-company-confirm" autocomplete="off" maxlength="64">
-            </div>
-            <p id="sa-delete-company-error" class="error-message hidden" role="alert"></p>
-            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;">
-                <button type="button" class="btn-secondary" data-action="superadminCancelDeleteCompanyModal" data-i18n="btn_cancel">Cancel</button>
-                <button type="button" class="btn-primary" data-action="superadminConfirmDeleteCompany" data-i18n="sa_delete_company" style="background:#7f1d1d;border:none;">Delete forever</button>
-            </div>
-        </div>
-    </div>
+
 
     <!-- SUPER ADMIN MODAL -->
 

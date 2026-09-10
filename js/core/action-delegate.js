@@ -128,7 +128,8 @@ export function actionAttr(name, args, extra = {}) {
     const attrs = [`data-action="${name}"`];
     if (args !== undefined) {
         const arr = Array.isArray(args) ? args : [args];
-        attrs.push(`data-action-args='${JSON.stringify(arr)}'`);
+        const safeArgs = JSON.stringify(arr).replace(/'/g, "&#39;");
+        attrs.push(`data-action-args='${safeArgs}'`);
     }
     if (extra.self) attrs.push('data-action-self="true"');
     if (extra.stopPropagation) attrs.push('data-action-stop-propagation="true"');
@@ -140,7 +141,8 @@ export function changeAttr(name, args, pass = "value") {
     const attrs = [`data-change-action="${name}"`];
     if (args !== undefined) {
         const arr = Array.isArray(args) ? args : [args];
-        attrs.push(`data-change-action-args='${JSON.stringify(arr)}'`);
+        const safeArgs = JSON.stringify(arr).replace(/'/g, "&#39;");
+        attrs.push(`data-change-action-args='${safeArgs}'`);
     }
     if (pass && pass !== "value") attrs.push(`data-change-pass="${pass}"`);
     return attrs.join(" ");

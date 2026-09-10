@@ -19,7 +19,12 @@ const DRIVER_SHELL_PATHS = new Set([
   "/brand/logo-mark.png",
   "/brand/logo-mark.svg",
   "/brand/logo-full.svg",
-  "/brand/logo-icon-512.png"
+  "/brand/logo-icon-512.png",
+  "/runtime-vendor/lucide/lucide.min.js",
+  "/runtime-vendor/firebase/firebase-app-compat.js",
+  "/runtime-vendor/firebase/firebase-auth-compat.js",
+  "/runtime-vendor/firebase/firebase-firestore-compat.js",
+  "/translations.js"
 ]);
 
 function normalizePathname(pathname) {
@@ -33,7 +38,8 @@ function isDriverShellPath(pathname) {
   if (DRIVER_SHELL_PATHS.has(path)) return true;
   if (path.startsWith("/icons/driver-")) return true;
   if (path.startsWith("/brand/")) return true;
-  if (path.startsWith("/assets/") && /(^|[-/])(driver|shell-driver)([-.]|$)/i.test(path)) return true;
+  if (path.startsWith("/runtime-vendor/")) return true;
+  if (path.startsWith("/assets/") && /(^|[-/])(driver|shell-driver|translations)([-.]|$)/i.test(path)) return true;
   return false;
 }
 

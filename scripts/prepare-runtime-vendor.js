@@ -51,6 +51,17 @@ void (async () => {
     console.log(`${targetRelative} | ${bytes.length} bytes | ${hash}`);
   }
 
+  const localVendors = [
+    [path.join(root, "scripts", "vendor", "tailwind.js"), path.join(outputRoot, "tailwind.js")]
+  ];
+  for (const [sourcePath, targetPath] of localVendors) {
+    if (fs.existsSync(sourcePath)) {
+      fs.copyFileSync(sourcePath, targetPath);
+      const bytes = fs.readFileSync(targetPath);
+      console.log(`tailwind.js | ${bytes.length} bytes | LOCAL_VENDOR`);
+    }
+  }
+
   console.log(`Prepared ${assets.length} deterministic runtime-vendor assets.`);
 })().catch((error) => {
   console.error(error);

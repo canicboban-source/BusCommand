@@ -117,7 +117,7 @@ test("live-map runtime safety: separate markers for same-name drivers & HTML esc
                 setPopupContent: function (p) { this.popup = p; return this; },
                 setIcon: function (i) { this.opts.icon = i; return this; },
                 bindPopup: function (p) { this.popup = p; return this; },
-                addTo: function (map) { return this; }
+                addTo: function () { return this; }
             };
             return m;
         }

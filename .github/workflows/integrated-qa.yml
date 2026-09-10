@@ -3,6 +3,7 @@ name: Integrated QA
 on:
   push:
     branches:
+      - main
       - preview/dispatcher-cockpit-qa
   pull_request:
   workflow_dispatch:

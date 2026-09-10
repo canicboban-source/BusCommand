@@ -18,11 +18,15 @@ service cloud.firestore {
 
     match /companies/{companyId}/{companyCollection}/{document=**} {
       // D24.1.1: SuperAdmin browser may not read credential-bearing driver profiles.
-      // D24.2: SuperAdmin browser may not read server-only ops (driver_identity_guard).
+      // D24.2: SuperAdmin browser may not read server-only ops (driver_identity_guard, plan locks, duties).
       allow read: if isSuperAdmin()
                   && companyCollection != "driver_credentials"
                   && companyCollection != "ops"
                   && companyCollection != "ops_active_incidents"
+                  && companyCollection != "ops_active_duties"
+                  && companyCollection != "monthly_plan_imports"
+                  && companyCollection != "monthly_plan_import_locks"
+                  && companyCollection != "plan_locks"
                   && !(companyCollection == "settings" && document == path("email_smtp"))
                   && (companyCollection != "drivers" || !driverProfileExposesCredentials());
       allow write: if false;
@@ -343,7 +347,10 @@ service cloud.firestore {
         "companyCode",
         "pin",
         "password",
-        "passwordHash"
+        "passwordHash",
+        "activationCodeHash",
+        "activationExpiresAt",
+        "activationUsedAt"
       ]);
     }
 

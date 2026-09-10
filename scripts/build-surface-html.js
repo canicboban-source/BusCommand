@@ -91,6 +91,8 @@ const STAFF_ONLY_IDS = [
   // driver surface this markup was a modal nothing could open. The id here used
   // to be "sa-pin-modal", which matches nothing in the shell.
   "superadmin-pin-modal",
+  "sa-support-modal",
+  "sa-delete-company-modal",
   "duty-conflict-modal"
 ];
 
