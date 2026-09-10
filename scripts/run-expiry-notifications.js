@@ -29,9 +29,10 @@ function daysUntil(dateStr) {
 }
 
 async function runExpiryNotifications() {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || "{}");
+  const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.FIREBASE_SERVICE_ACCOUNT || "{}";
+  const serviceAccount = JSON.parse(rawServiceAccount);
   if (!serviceAccount.project_id) {
-    console.error("FIREBASE_SERVICE_ACCOUNT not configured");
+    console.error("FIREBASE_SERVICE_ACCOUNT_JSON not configured");
     process.exit(1);
   }
   initializeApp({ credential: cert(serviceAccount) });

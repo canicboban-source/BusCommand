@@ -40,10 +40,14 @@ function rateLimit(maxAttempts = 5, windowMs = 5 * 60 * 1000) {
   };
 }
 
-function clearRateLimit(reqOrIp) {
+function clearRateLimit(reqOrIp, prefix = "") {
   const ip = typeof reqOrIp === "string" ? reqOrIp : getClientIp(reqOrIp);
   for (const key of _buckets.keys()) {
-    if (key.endsWith(`:${ip}`)) _buckets.delete(key);
+    if (key.endsWith(`:${ip}`)) {
+      if (!prefix || key.startsWith(`${prefix}:`)) {
+        _buckets.delete(key);
+      }
+    }
   }
 }
 
