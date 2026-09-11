@@ -35,18 +35,18 @@ function sanitizeHeader(str) {
 }
 
 function isPlatformSmtpConfigured(env = process.env) {
-  const host = (env.PLATFORM_SMTP_HOST || env.SMTP_HOST || '').trim();
-  const user = (env.PLATFORM_SMTP_USER || env.SMTP_USER || '').trim();
-  const pass = (env.PLATFORM_SMTP_PASS || env.SMTP_PASS || '').trim();
+  const host = (env.PLATFORM_SMTP_HOST || '').trim();
+  const user = (env.PLATFORM_SMTP_USER || '').trim();
+  const pass = (env.PLATFORM_SMTP_PASS || '').trim();
   return Boolean(host && user && pass);
 }
 
 function createPlatformTransport(env = process.env) {
   if (!nodemailer) return null;
-  const host = (env.PLATFORM_SMTP_HOST || env.SMTP_HOST || '').trim();
-  const port = Number(env.PLATFORM_SMTP_PORT || env.SMTP_PORT) || 587;
-  const user = (env.PLATFORM_SMTP_USER || env.SMTP_USER || '').trim();
-  const pass = (env.PLATFORM_SMTP_PASS || env.SMTP_PASS || '').trim();
+  const host = (env.PLATFORM_SMTP_HOST || '').trim();
+  const port = Number(env.PLATFORM_SMTP_PORT) || 465;
+  const user = (env.PLATFORM_SMTP_USER || '').trim();
+  const pass = (env.PLATFORM_SMTP_PASS || '').trim();
   if (!host || !user || !pass) return null;
 
   return nodemailer.createTransport({
@@ -67,7 +67,12 @@ function buildPilotEmailContent(data) {
   const phone = sanitizeHeader(data.phone || '—');
   const fleet = sanitizeHeader(data.fleetSize || data.tier || '—');
   const lang = sanitizeHeader(data.lang || 'sr').toUpperCase();
-  const timestamp = data.timestamp ? new Date(data.timestamp).toISOString() : new Date().toISOString();
+  let timestamp;
+  try {
+    timestamp = data.timestamp ? new Date(data.timestamp).toISOString() : new Date().toISOString();
+  } catch {
+    timestamp = new Date().toISOString();
+  }
   const source = sanitizeHeader(data.source || 'BusCommand landing — 30-day pilot');
   const message = data.message ? String(data.message).trim() : '';
 
@@ -141,7 +146,7 @@ function buildPilotEmailContent(data) {
 
 async function sendPilotEmail({ data, env = process.env, transportOverride = null }) {
   const { subject, text, html } = buildPilotEmailContent(data);
-  const from = sanitizeHeader(env.PLATFORM_SMTP_FROM || env.SMTP_FROM || '"BusCommand Pilot" <info@buscommand.com>');
+  const from = sanitizeHeader(env.PLATFORM_SMTP_FROM || '"BusCommand Pilot" <info@buscommand.com>');
   const replyTo = sanitizeHeader(data.email);
 
   const activeTransport = transportOverride || _injectedTransport;

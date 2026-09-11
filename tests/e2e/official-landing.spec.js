@@ -98,7 +98,7 @@ test.describe("Official Landing Page Enterprise E2E", () => {
     await expect(priceCards.nth(2)).toContainText("€390");
     await expect(priceCards.nth(3)).toContainText("€690");
 
-    // 7. Pilot Form Real Submission Flow (Success) - Neutral Fixtures
+    // 7. Pilot Form Real Submission Flow (Success) - Neutral Fixtures (no client metadata)
     await page.fill("#p-comp", "Demo Bus Company");
     await page.fill("#p-name", "Jane Doe");
     await page.fill("#p-email", "pilot@example.com");
@@ -123,12 +123,30 @@ test.describe("Official Landing Page Enterprise E2E", () => {
   test("pilot form error flow truthfully handles 503 SMTP_NOT_CONFIGURED", async ({ page }) => {
     const consoleErrors = [];
     const pageErrors = [];
+    const failedRequests = [];
+    const badResponses = [];
 
     page.on("console", msg => {
-      if (msg.type() === "error") consoleErrors.push(msg.text());
+      if (msg.type() === "error") {
+        consoleErrors.push({ text: msg.text(), url: msg.location().url });
+      }
     });
+
     page.on("pageerror", err => {
       pageErrors.push(err.message);
+    });
+
+    page.on("requestfailed", req => {
+      const url = req.url();
+      if (!url.includes("favicon")) {
+        failedRequests.push(`${req.method()} ${url} - ${req.failure()?.errorText}`);
+      }
+    });
+
+    page.on("response", resp => {
+      if (resp.status() >= 400) {
+        badResponses.push({ status: resp.status(), url: resp.url() });
+      }
     });
 
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -151,18 +169,47 @@ test.describe("Official Landing Page Enterprise E2E", () => {
     await page.fill("#p-comp", "Test Transport Co");
     await page.fill("#p-name", "John Doe");
     await page.fill("#p-email", "test@example.com");
-    await page.click("#pilotSubmitBtn");
 
+    const [pilotResponse] = await Promise.all([
+      page.waitForResponse(
+        resp => resp.url().includes("/api/public/pilot-request") && resp.request().method() === "POST"
+      ),
+      page.click("#pilotSubmitBtn")
+    ]);
+
+    // 1. Captured exact status 503
+    expect(pilotResponse.status()).toBe(503);
+
+    // 2. Response JSON has success: false, code: SMTP_NOT_CONFIGURED
+    const responseJson = await pilotResponse.json();
+    expect(responseJson.success).toBe(false);
+    expect(responseJson.code).toBe("SMTP_NOT_CONFIGURED");
+
+    // 3. Frontend displays exact server error message and error class
     await expect(feedback).toBeVisible();
     await expect(feedback).toContainText("Sistem za slanje email obaveštenja trenutno nije dostupan.");
     await expect(feedback).toHaveClass(/pilot-feedback-error/);
 
-    // Ensure no unexpected errors happened outside the intended 503 pilot-request response
-    const unexpectedErrors = consoleErrors.filter(
-      e => !e.includes("favicon") && !e.includes("503") && !e.includes("pilot-request")
+    // 4. Bad responses check: only the single expected 503 pilot-request response is permitted
+    const unexpectedResponses = badResponses.filter(
+      r => !(r.status === 503 && r.url.includes("/api/public/pilot-request")) && !r.url.includes("favicon")
     );
-    expect(unexpectedErrors).toEqual([]);
+    expect(unexpectedResponses).toEqual([]);
+
+    // 5. Console errors check: allow at most one Chromium resource load failure event for the 503 endpoint
+    const unexpectedConsoleErrors = consoleErrors.filter(item => {
+      if (item.url && item.url.includes("favicon")) return false;
+      const isExpected503Resource =
+        item.url.includes("/api/public/pilot-request") &&
+        item.text.includes("Failed to load resource") &&
+        item.text.includes("503");
+      return !isExpected503Resource;
+    });
+    expect(unexpectedConsoleErrors).toEqual([]);
+
+    // 6. Every pageerror and requestfailed fails the test
     expect(pageErrors).toEqual([]);
+    expect(failedRequests).toEqual([]);
   });
 
   test("mobile viewports (390px and 320px) zero horizontal overflow and responsive elements", async ({ page }) => {

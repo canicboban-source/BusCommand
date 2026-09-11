@@ -283,8 +283,6 @@ const pilotRequestBody = z.object({
   tier: z.enum(["micro", "starter", "pro", "fleet", "other", ""]).optional().default(""),
   message: z.string().trim().max(2000, "Poruka je predugačka (maksimalno 2000 karaktera).").optional().default(""),
   lang: z.enum(["sr", "de", "en"]).optional().default("sr"),
-  source: z.string().trim().max(100).optional().default("BusCommand landing — 30-day pilot"),
-  timestamp: z.union([z.string(), z.number()]).optional(),
   hp: z.string().optional().default("")
 }).strict().superRefine((data, ctx) => {
   if (data.hp && data.hp.trim().length > 0) {

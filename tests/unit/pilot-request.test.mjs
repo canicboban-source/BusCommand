@@ -50,7 +50,7 @@ describe("Pilot Request Hardened Unit & Security Suite", () => {
     assert.equal(clean, "Demo Corp Bcc: evil@attacker.com Subject: Injected");
   });
 
-  test("validation: accepts valid neutral applications in SR, DE, EN with Unicode", () => {
+  test("validation: accepts valid neutral applications in SR, DE, EN with Unicode (without client metadata)", () => {
     for (const lang of ["sr", "de", "en"]) {
       const validPayload = {
         companyName: "München Linienbus & Špedicija d.o.o.",
@@ -60,8 +60,7 @@ describe("Pilot Request Hardened Unit & Security Suite", () => {
         fleetSize: "25",
         tier: "starter",
         message: "Planiramo uvoz 15 linija sa smenama.",
-        lang,
-        source: "BusCommand landing — 30-day pilot"
+        lang
       };
       const result = pilotRequestBody.safeParse(validPayload);
       assert.ok(result.success, "Validation failed for lang " + lang);
@@ -69,6 +68,26 @@ describe("Pilot Request Hardened Unit & Security Suite", () => {
       assert.equal(result.data.email, "pilot@example.com");
       assert.equal(result.data.lang, lang);
     }
+  });
+
+  test("validation: rejects client-supplied timestamp or source (.strict())", () => {
+    const withTimestamp = pilotRequestBody.safeParse({
+      companyName: "Demo Bus Company",
+      contactName: "Jane Doe",
+      email: "pilot@example.com",
+      timestamp: "2026-09-12T00:00:00.000Z"
+    });
+    assert.ok(!withTimestamp.success, "Must reject client-supplied timestamp");
+    assert.ok(withTimestamp.error.issues.some(i => i.code === "unrecognized_keys" && i.keys.includes("timestamp")));
+
+    const withSource = pilotRequestBody.safeParse({
+      companyName: "Demo Bus Company",
+      contactName: "Jane Doe",
+      email: "pilot@example.com",
+      source: "malicious_spoofed_source"
+    });
+    assert.ok(!withSource.success, "Must reject client-supplied source");
+    assert.ok(withSource.error.issues.some(i => i.code === "unrecognized_keys" && i.keys.includes("source")));
   });
 
   test("validation: rejects unknown additional fields (.strict())", () => {
@@ -175,6 +194,17 @@ describe("Pilot Request Hardened Unit & Security Suite", () => {
     assert.ok(!content.html.includes("<img"));
   });
 
+  test("buildPilotEmailContent: safely guards against invalid timestamp without throwing", () => {
+    const res = buildPilotEmailContent({
+      companyName: "Demo Corp",
+      contactName: "Tester",
+      email: "pilot@example.com",
+      timestamp: "INVALID_DATE_VALUE"
+    });
+    assert.ok(res.html.includes("Vreme:"));
+    assert.ok(res.text.includes("Vreme:"));
+  });
+
   test("no runtime stub: unconfigured SMTP always fails closed regardless of environment flags", async () => {
     for (const testEnv of [
       { NODE_ENV: "production", BUSCOMMAND_QA_HARNESS: "1" },
@@ -194,6 +224,32 @@ describe("Pilot Request Hardened Unit & Security Suite", () => {
       assert.notEqual(res.status, "sent");
       assert.notEqual(res.status, "stub_sent");
     }
+  });
+
+  test("generic SMTP_* variables alone do not configure pilot transport", () => {
+    const genericOnlyEnv = {
+      SMTP_HOST: "smtp.example.com",
+      SMTP_PORT: "587",
+      SMTP_USER: "user@example.com",
+      SMTP_PASS: "secret"
+    };
+    assert.equal(isPlatformSmtpConfigured(genericOnlyEnv), false, "Generic SMTP_* must not configure pilot");
+    assert.equal(createPlatformTransport(genericOnlyEnv), null, "Transport must not be created from generic SMTP_*");
+  });
+
+  test("complete PLATFORM_SMTP_* variables configure transport", () => {
+    const platformEnv = {
+      PLATFORM_SMTP_HOST: "smtppro.zoho.eu",
+      PLATFORM_SMTP_PORT: "465",
+      PLATFORM_SMTP_USER: "info@buscommand.com",
+      PLATFORM_SMTP_PASS: "dummy_zoho_token_for_test"
+    };
+    assert.equal(isPlatformSmtpConfigured(platformEnv), true);
+    const transport = createPlatformTransport(platformEnv);
+    assert.ok(transport);
+    assert.equal(transport.options.host, "smtppro.zoho.eu");
+    assert.equal(transport.options.port, 465);
+    assert.equal(transport.options.secure, true);
   });
 
   test("sendPilotEmail: uses dependency injected transport when provided", async () => {
@@ -227,8 +283,7 @@ describe("Pilot Request Hardened Unit & Security Suite", () => {
     const prodEnv = {
       NODE_ENV: "production",
       BUSCOMMAND_QA_HARNESS: "",
-      PLATFORM_SMTP_HOST: "",
-      SMTP_HOST: ""
+      PLATFORM_SMTP_HOST: ""
     };
 
     assert.equal(isPlatformSmtpConfigured(prodEnv), false);
@@ -285,10 +340,8 @@ describe("Pilot Request Hardened Unit & Security Suite", () => {
       NODE_ENV: "production",
       PLATFORM_SMTP_HOST: "smtppro.zoho.eu",
       PLATFORM_SMTP_PORT: "465",
-      PLATFORM_SMTP_USER: "info@buscommand.com",
+      PLATFORM_SMTP_USER: "info@buscommand.com"
       // PLATFORM_SMTP_PASS intentionally omitted
-      BUSCOMMAND_QA_HARNESS: "1",
-      BUSCOMMAND_FORCE_EMAIL_STUB: "1"
     };
 
     assert.equal(isPlatformSmtpConfigured(prodZohoEnv), false, "Must be false without password");
@@ -307,7 +360,7 @@ describe("Pilot Request Hardened Unit & Security Suite", () => {
     assert.notEqual(res.status, "stub_sent");
   });
 
-  describe("HTTP Endpoint /api/public/pilot-request and Middleware Limits", () => {
+  describe("Middleware Model & Limit Verification (Synthetic Express Harness — not production api-server.js)", () => {
     let server;
     let baseUrl;
 
@@ -330,7 +383,11 @@ describe("Pilot Request Hardened Unit & Security Suite", () => {
         async (req, res) => {
           const data = req.validatedBody;
           const emailResult = await sendPilotEmail({
-            data,
+            data: {
+              ...data,
+              timestamp: new Date().toISOString(),
+              source: "BusCommand landing — 30-day pilot"
+            },
             env: process.env
           });
 
@@ -411,7 +468,6 @@ describe("Pilot Request Hardened Unit & Security Suite", () => {
     });
 
     test("HTTP 413: pilot payload exceeding 64kb is strictly rejected", async () => {
-      // Create payload > 64kb (e.g. 68kb message)
       const oversizedPayload = JSON.stringify({
         companyName: "Oversized Corp",
         contactName: "Tester",
@@ -503,7 +559,6 @@ describe("Pilot Request Hardened Unit & Security Suite", () => {
     test("HTTP 503: fails closed when SMTP is unconfigured in production", async () => {
       process.env.NODE_ENV = "production";
       delete process.env.PLATFORM_SMTP_HOST;
-      delete process.env.SMTP_HOST;
 
       const resp = await fetch(baseUrl + "/api/public/pilot-request", {
         method: "POST",
@@ -527,7 +582,6 @@ describe("Pilot Request Hardened Unit & Security Suite", () => {
       process.env.PLATFORM_SMTP_PORT = "465";
       process.env.PLATFORM_SMTP_USER = "info@buscommand.com";
       delete process.env.PLATFORM_SMTP_PASS;
-      delete process.env.SMTP_PASS;
 
       const resp = await fetch(baseUrl + "/api/public/pilot-request", {
         method: "POST",

@@ -325,7 +325,8 @@ app.post(
       const emailResult = await sendPilotEmail({
         data: {
           ...data,
-          timestamp: data.timestamp || new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          source: "BusCommand landing — 30-day pilot"
         },
         env: process.env
       });
@@ -2040,6 +2041,9 @@ app.get("*", (req, res) => {
 app.use((err, req, res, _next) => {
   if (err.message === "Not allowed by CORS") {
     return res.status(403).json({ success: false, error: "CORS origin nije dozvoljen." });
+  }
+  if (err.status === 413 || err.statusCode === 413 || err.type === "entity.too.large") {
+    return res.status(413).json({ success: false, error: "Payload Too Large" });
   }
   req.log?.error({ err }, "Unhandled error");
   return res.status(500).json({ success: false, error: "Interna greška servera." });

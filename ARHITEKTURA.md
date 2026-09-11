@@ -296,7 +296,7 @@ Pilot / Trial 30 dana (SuperAdmin aktivira licencu)
     ↓
 Obaveštenje pre isteka pilot perioda
     ↓
-Direktno fakturisanje (Direct SEPA / BACS / Corporate Invoice)
+Direktno B2B fakturisanje / ugovoreni način plaćanja
     ↓
 SuperAdmin evidentira uplatu i produžava licencu
     ↓
@@ -304,6 +304,8 @@ Istek bez uplate → status = "suspended" → blokada pristupa operacijama
     ↓
 SuperAdmin može manualno extend/override
 ```
+
+SuperAdmin ručno upravlja statusom licence dok ne uvedemo posebno odobreno billing rešenje.
 
 ### Upravljanje statusom licence
 - `active` → pun pristup svim modulima u okviru zakupljenog plana
@@ -335,8 +337,8 @@ SuperAdmin može manualno extend/override
 | Auth              | Firebase Authentication                  |
 | Baza podataka     | Firebase Firestore (europe-west3)        |
 | File storage      | Firebase Storage (logoi, PDF-ovi)        |
-| Biling & Licence  | Direct Enterprise Invoice / SuperAdmin   |
-| Email             | SendGrid ili Resend                      |
+| Biling & Licence  | Direktno B2B fakturisanje / SuperAdmin   |
+| Email             | Zoho Mail EU SMTP                        |
 | Hosting           | Firebase Hosting + Cloud Functions       |
 | SuperAdmin panel  | Posebna HTML/JS aplikacija               |
 | Monitoring        | Firebase Analytics + Crashlytics         |
