@@ -58,21 +58,21 @@
 
                 <!-- Tabovi -->
                 <div class="login-tabs">
-                    <button id="tab-driver-btn" class="login-tab hidden" hidden class="login-tab active" data-action="switchLoginTab" data-action-args='["driver"]'>
+                    <button id="tab-driver-btn" class="login-tab hidden" hidden style="display:none;" aria-hidden="true" data-action="switchLoginTab" data-action-args='["driver"]'>
                         <i data-lucide="user"></i>
                         <span data-i18n="driver">Driver</span>
                     </button>
-                    <button id="tab-dispatcher-btn" class="login-tab" data-action="switchLoginTab" data-action-args='["dispatcher"]'>
+                    <button id="tab-dispatcher-btn" class="login-tab active" data-action="switchLoginTab" data-action-args='["dispatcher"]'>
                         <i data-lucide="shield"></i>
                         <span data-i18n="staff_login_tab">Staff</span>
                     </button>
                 </div>
                 <p id="staff-login-role-hint" class="subtitle" style="margin:8px 0 14px;font-size:0.8rem;line-height:1.35;color:var(--text-muted);" data-i18n="staff_login_role_hint">
-                    Staff: Dispo, Company Admin or Super Admin (own email). Drivers: Driver tab.
+                    Staff: Dispo, Company Admin or Super Admin (corporate email).
                 </p>
 
                 <!-- Forma za vozača -->
-                <div id="driver-login-form" class="login-form-content hidden" hidden>
+                <div id="driver-login-form" class="login-form-content hidden" hidden style="display:none;" aria-hidden="true">
                     <div class="form-group">
                         <label for="login-driver-company" data-i18n="login_company_label">Company ID</label>
                         <input type="text" id="login-driver-company" maxlength="64" autocomplete="organization"

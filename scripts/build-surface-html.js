@@ -137,13 +137,17 @@ function buildSurfaceHtml(surface, entryScript, extras = {}) {
     html = html.replace(/<title>[^<]*<\/title>/, "<title>BusCommand — Dispatcher & Admin</title>");
     html = removeAllById(html, DRIVER_ONLY_IDS);
     html = html.replace(
-      /id="tab-driver-btn"/,
-      'id="tab-driver-btn" class="login-tab hidden" hidden'
+      /id="tab-driver-btn"[^>]*class="login-tab[^"]*"/,
+      'id="tab-driver-btn" class="login-tab hidden" hidden style="display:none;" aria-hidden="true"'
+    );
+    html = html.replace(
+      /id="tab-dispatcher-btn" class="login-tab"/,
+      'id="tab-dispatcher-btn" class="login-tab active"'
     );
     // Staff preview: email/password only — never show driver PWA login markup first
     html = html.replace(
       /id="driver-login-form" class="login-form-content"/,
-      'id="driver-login-form" class="login-form-content hidden" hidden'
+      'id="driver-login-form" class="login-form-content hidden" hidden style="display:none;" aria-hidden="true"'
     );
     html = html.replace(
       /id="dispatcher-login-form" class="login-form-content hidden"/,
@@ -258,7 +262,7 @@ if (fs.existsSync(DIST)) {
       fs.copyFileSync(path.join(brandSrc, name), path.join(brandDest, name));
     }
   }
-  for (const rel of ["css/brand.css", "css/driver-pwa.css", "css/staff-desktop.css"]) {
+  for (const rel of ["css/brand.css", "css/driver-pwa.css", "css/staff-desktop.css", "css/landing.css"]) {
     const srcCss = path.join(ROOT, rel);
     if (!fs.existsSync(srcCss)) continue;
     const destCss = path.join(DIST, rel);

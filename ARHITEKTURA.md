@@ -121,8 +121,8 @@ međusobni pristup. Firme A i B **nikad ne vide jedne druge podatke**.
     "privacyPolicyUrl": "https://acme-transit.example/privacy"
   },
   "billing": {
-    "stripeCustomerId": "cus_xxx",
-    "stripeSubscriptionId": "sub_xxx",
+    "billingEmail": "billing@acme-transit.example",
+    "paymentMethod": "invoice",
     "currentPeriodEnd": "2026-07-15T00:00:00Z"
   }
 }
@@ -178,9 +178,9 @@ međusobni pristup. Firme A i B **nikad ne vide jedne druge podatke**.
   "startDate": "2026-01-15T00:00:00Z",
   "endDate": null,
   "trialEnd": "2026-02-14T23:59:59Z",
-  "stripeCustomerId": "cus_xxx",
-  "stripeSubscriptionId": "sub_xxx",
-  "price": 149.00,
+  "paymentMethod": "invoice",
+  "invoiceEmail": "billing@acme-transit.example",
+  "price": 390.00,
   "currency": "EUR",
   "billingCycle": "monthly",
   "createdBy": "superadmin",
@@ -287,28 +287,29 @@ service cloud.firestore {
 
 ---
 
-## 8. BILLING (Stripe integracija)
+## 8. LICENCIRANJE I BILING (Enterprise & Direct Invoicing)
 
 ```
-Firma se registruje
+Firma se prijavljuje za 30-dnevni pilot
     ↓
-Trial 30 dana (automatski)
+Pilot / Trial 30 dana (SuperAdmin aktivira licencu)
     ↓
-Email upozorenje 7 dana prije isteka
+Obaveštenje pre isteka pilot perioda
     ↓
-Odabir plana → Stripe Checkout
+Direktno fakturisanje (Direct SEPA / BACS / Corporate Invoice)
     ↓
-Stripe Webhook → ažurira license status u Firestore
+SuperAdmin evidentira uplatu i produžava licencu
     ↓
-Neplaćanje → status = "suspended" → firma ne može ući
+Istek bez uplate → status = "suspended" → blokada pristupa operacijama
     ↓
 SuperAdmin može manualno extend/override
 ```
 
-### Stripe Webhook eventi
-- `invoice.payment_succeeded` → status = active
-- `invoice.payment_failed` → upozorenje, grace period 3 dana
-- `customer.subscription.deleted` → status = suspended
+### Upravljanje statusom licence
+- `active` → pun pristup svim modulima u okviru zakupljenog plana
+- `trial` → 30-dnevni pilot sa punim funkcionalnostima
+- `suspended` → blokiran pristup (istekla licenca / neplaćeno)
+- `cancelled` → deaktiviran nalog
 
 ---
 
@@ -334,7 +335,7 @@ SuperAdmin može manualno extend/override
 | Auth              | Firebase Authentication                  |
 | Baza podataka     | Firebase Firestore (europe-west3)        |
 | File storage      | Firebase Storage (logoi, PDF-ovi)        |
-| Billing           | Stripe                                   |
+| Biling & Licence  | Direct Enterprise Invoice / SuperAdmin   |
 | Email             | SendGrid ili Resend                      |
 | Hosting           | Firebase Hosting + Cloud Functions       |
 | SuperAdmin panel  | Posebna HTML/JS aplikacija               |
@@ -352,7 +353,7 @@ SuperAdmin može manualno extend/override
 5. SuperAdmin panel (osnova)
 
 ### Faza 2 — Kontrola
-6. Stripe billing integracija
+6. Enterprise invoicing i manual licence management
 7. Trial management + email notifikacije
 8. License enforcement (blokada pristupa)
 9. GDPR: export, brisanje, audit log

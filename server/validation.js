@@ -273,6 +273,41 @@ function validateBody(schema) {
   };
 }
 
+
+const pilotRequestBody = z.object({
+  companyName: z.string().trim().min(1, "Naziv kompanije je obavezan.").max(200, "Naziv kompanije je predugačak."),
+  contactName: z.string().trim().min(1, "Kontakt osoba je obavezna.").max(200, "Ime kontakt osobe je predugačko."),
+  email: z.string().trim().email("Nevažeća email adresa.").max(254, "Email adresa je predugačka."),
+  phone: z.string().trim().max(50, "Broj telefona je predugačak.").optional().default(""),
+  fleetSize: z.union([z.string(), z.number()]).transform(v => String(v).trim()).pipe(z.string().max(50)).optional().default(""),
+  tier: z.enum(["micro", "starter", "pro", "fleet", "other", ""]).optional().default(""),
+  message: z.string().trim().max(2000, "Poruka je predugačka (maksimalno 2000 karaktera).").optional().default(""),
+  lang: z.enum(["sr", "de", "en"]).optional().default("sr"),
+  source: z.string().trim().max(100).optional().default("BusCommand landing — 30-day pilot"),
+  timestamp: z.union([z.string(), z.number()]).optional(),
+  hp: z.string().optional().default("")
+}).strict().superRefine((data, ctx) => {
+  if (data.hp && data.hp.trim().length > 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Spam detekcija aktivirana.",
+      path: ["hp"]
+    });
+  }
+  const headerFields = [data.email, data.companyName, data.contactName, data.phone, data.fleetSize, data.tier];
+  for (const val of headerFields) {
+    if (typeof val === "string" && /[\r\n]/.test(val)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Nedozvoljeni karakteri u zaglavlju.",
+        path: ["email"]
+      });
+      break;
+    }
+  }
+});
+
+
 function assertCompanyIdUsable(companyId) {
   if (!companyId || companyId.length < 2) {
     return "Nedostaje ili je nevažeći companyId.";
@@ -312,5 +347,6 @@ module.exports = {
   companyDriverCreateBody,
   companyDriverDeleteBody,
   companyDriverEidBody,
-  companyEmailSmtpBody
+  companyEmailSmtpBody,
+  pilotRequestBody
 };

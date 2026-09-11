@@ -90,7 +90,8 @@ const {
   companyDriverCreateBody,
   companyDriverDeleteBody,
   companyDriverEidBody,
-  companyEmailSmtpBody
+  companyEmailSmtpBody,
+  pilotRequestBody
 } = require("./server/validation");
 
 const { version: APP_VERSION } = require("./package.json");
@@ -282,6 +283,7 @@ const {
   db: () => db
 });
 
+const { sendPilotEmail, isPlatformSmtpConfigured, TARGET_EMAIL } = require("./server/pilot-service");
 // ─── API: Konfiguracija servera ────────────────────────────
 
 // LIVENESS only — process alive. Not a Firebase/DB readiness proof.
@@ -299,6 +301,75 @@ app.get("/api/config", (req, res) => {
     port: PORT
   });
 });
+
+
+// ─── API: Public Pilot Request ─────────────────────────────
+
+app.post(
+  "/api/public/pilot-request",
+  rateLimit(5, 10 * 60 * 1000),
+  validateBody(pilotRequestBody),
+  async (req, res) => {
+    const data = req.validatedBody;
+    const correlationId = "pilot-" + Date.now().toString(36);
+
+    req.log?.info({
+      msg: "Pilot request submitted",
+      correlationId,
+      lang: data.lang,
+      hasPhone: Boolean(data.phone),
+      tier: data.tier || "custom"
+    });
+
+    try {
+      const emailResult = await sendPilotEmail({
+        data: {
+          ...data,
+          timestamp: data.timestamp || new Date().toISOString()
+        },
+        env: process.env
+      });
+
+      if (emailResult.status === "smtp_not_configured") {
+        req.log?.warn({ msg: "Platform SMTP not configured — failing closed", correlationId });
+        return res.status(503).json({
+          success: false,
+          code: "SMTP_NOT_CONFIGURED",
+          error: "Sistem za slanje email obaveštenja trenutno nije konfigurisan na serveru. Molimo vas da nas kontaktirate direktno na info@buscommand.com."
+        });
+      }
+
+      if (emailResult.status === "error" || emailResult.status === "no_transport") {
+        req.log?.error({ msg: "Failed to deliver pilot request email", correlationId });
+        return res.status(502).json({
+          success: false,
+          code: "EMAIL_DELIVERY_FAILED",
+          error: "Došlo je do greške prilikom slanja prijave. Molimo vas da pokušate ponovo ili pošaljete email na info@buscommand.com."
+        });
+      }
+
+      req.log?.info({
+        msg: "Pilot request accepted",
+        correlationId,
+        deliveryStatus: emailResult.status
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Prijava za pilot je uspešno primljena.",
+        recipient: TARGET_EMAIL,
+        status: emailResult.status
+      });
+    } catch (err) {
+      req.log?.error({ err, correlationId }, "Unexpected error in pilot request handler");
+      return res.status(500).json({
+        success: false,
+        code: "SERVER_ERROR",
+        error: "Došlo je do neočekivane greške. Molimo kontaktirajte info@buscommand.com."
+      });
+    }
+  }
+);
 
 const confirmationScheduler = createConfirmationScheduler({
   admin: () => admin,
