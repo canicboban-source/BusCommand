@@ -1,1386 +1,852 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="sr" class="dark">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#020914">
-  <title>BusCommand — Operational Control for Bus Companies</title>
-  <meta name="description" content="BusCommand povezuje plan, dispečera, vozača i vozilo u jedan operativni tok — od problema do nastavka operacije.">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BusCommand — Enterprise Fleet Management Platform</title>
   <link rel="icon" type="image/png" href="/brand/logo-hero.png">
   <link rel="apple-touch-icon" href="/brand/logo-hero.png">
-  <link rel="preload" as="image" href="/brand/hero-clean-1920x1080.jpg">
-  <style>
-
-:root{
-  --bg:#090d16;--bg2:#0d131d;--panel:#0c121c;--panel2:#111a25;--text:#f2f5f7;--muted:#93a0ad;
-  --blue:#4b8fca;--cyan:#75aeda;--green:#54c18a;--amber:#f0a23a;--red:#e45a5a;--line:rgba(150,165,180,.22)
-}
-*{box-sizing:border-box}
-html{background:var(--bg);scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-x:hidden}
-h1,h2,h3,.brand,.eyebrow,.nav,.btn,.role-btn,.pulse-step{font-family:"Space Grotesk",Inter,ui-sans-serif,system-ui,sans-serif;text-wrap:balance}
-small{line-height:1.35}
-a{text-decoration:none;color:inherit}
-button{font:inherit}
-.site-header{position:fixed;z-index:100;left:0;right:0;top:0;height:70px;padding:0 2.4vw;display:flex;align-items:center;gap:26px;background:linear-gradient(180deg,rgba(1,7,15,.96),rgba(1,7,15,.72) 68%,transparent);backdrop-filter:blur(12px)}
-.brand{display:flex;align-items:center;gap:10px;font-weight:850;font-size:20px;white-space:nowrap}.brand:before{content:"";width:42px;height:42px;flex:0 0 42px;border-radius:9px;background:#000 url("/brand/buscommand-logo-reference.png") 50% 38%/220% auto no-repeat;box-shadow:inset 0 0 0 1px rgba(34,161,255,.22)}.brand img{display:none}.brand span{display:block;letter-spacing:-.035em}
-.nav{display:flex;gap:30px;margin-left:auto;font-size:12px;font-weight:800;letter-spacing:.055em}.nav a{opacity:.72;transition:.2s}.nav a:hover{opacity:1;color:#39baff}
-.head-actions{display:flex;align-items:center;gap:12px}.lang{border:0;background:transparent;color:#fff;font-size:12px}.login{font-size:12px;font-weight:850;border:1px solid #148bff;padding:12px 18px;border-radius:7px;background:rgba(0,54,120,.35)}
-.film-timeline{height:190vh;position:relative}
-.film-stage{position:sticky;top:0;height:100vh;overflow:hidden;isolation:isolate;background:#020914}
-.world{position:absolute;inset:0;z-index:-5;background:url("/brand/hero-clean-1920x1080.jpg") center/cover no-repeat;transform:scale(1.03);will-change:transform,filter}
-.world-shade{position:absolute;inset:0;z-index:-4;background:
- linear-gradient(90deg,rgba(1,8,17,.93) 0%,rgba(1,8,17,.72) 30%,rgba(1,8,17,.14) 58%,rgba(1,8,17,.15) 100%),
- linear-gradient(180deg,rgba(1,8,17,.08),rgba(1,8,17,.10) 56%,rgba(1,8,17,.70) 100%);will-change:opacity}
-.wet-glow{position:absolute;left:0;right:0;bottom:-10%;height:38%;z-index:-2;background:radial-gradient(ellipse at 60% 40%,rgba(0,102,255,.22),transparent 60%);filter:blur(12px)}
-.route{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
-.route-shadow,.route-live{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round}
-.route-shadow{stroke:rgba(4,93,210,.18);stroke-width:10}
-.route-live{stroke:#087cff;stroke-width:4;filter:drop-shadow(0 0 8px #087cff);stroke-dasharray:17 15;animation:dash 5.5s linear infinite;transition:stroke .55s ease,filter .55s ease,opacity .55s ease}
-@keyframes dash{to{stroke-dashoffset:-64}}
-.hero-copy{position:absolute;left:3.1vw;top:15vh;width:min(650px,44vw);z-index:10;will-change:transform,opacity}
-.eyebrow{font-size:12px;letter-spacing:.08em;font-weight:850;color:#10baff;margin-bottom:18px}
-.hero-copy h1{font-size:clamp(50px,5vw,82px);line-height:1.01;letter-spacing:-.045em;margin:0 0 24px}.hero-copy h1 strong{font-weight:860;color:#f8fbff}.hero-sub{font-size:clamp(22px,1.85vw,32px);line-height:1.25}.hero-sub span,.dispo-caption h2 span{color:#12c5ff}.hero-copy p{max-width:520px;font-size:17px;line-height:1.65;color:#cbd6e2}
-.hero-actions{display:flex;gap:14px;margin-top:26px}.btn{padding:15px 22px;border-radius:8px;font-size:12px;font-weight:850}.primary{background:#086ff5;box-shadow:0 13px 38px rgba(8,111,245,.22)}.ghost{border:1px solid rgba(255,255,255,.28);background:rgba(0,7,16,.55)}
-.trust-row{display:flex;gap:0;margin-top:30px;border-top:1px solid rgba(139,184,224,.18);width:min(610px,100%)}.trust-row>div{display:flex;align-items:flex-start;gap:10px;font-size:12px;padding:15px 24px 0 0;margin-right:24px;position:relative}.trust-row>div:not(:last-child):after{content:"";position:absolute;right:0;top:15px;width:1px;height:28px;background:rgba(139,184,224,.15)}.trust-row b{font-size:12px;letter-spacing:.08em;color:#10baff}.trust-row small{color:#8fa3b8;line-height:1.45}
-.film-status{position:absolute;right:3vw;bottom:5.2vh;z-index:14;display:grid;grid-template-columns:auto 9px minmax(220px,1fr);align-items:center;gap:14px;min-width:360px;padding:14px 18px;border:1px solid rgba(106,166,220,.22);border-radius:12px;background:rgba(2,13,24,.68);box-shadow:0 18px 55px rgba(0,0,0,.32);backdrop-filter:blur(14px);transition:opacity .25s ease,transform .25s ease}
-.film-status time{font-size:24px;font-weight:850;letter-spacing:-.035em}.film-status-dot{width:8px;height:8px;border-radius:50%;background:#35d789;box-shadow:0 0 0 7px rgba(53,215,137,.1);transition:.4s}.film-status strong,.film-status small{display:block}.film-status strong{font-size:12px;letter-spacing:.08em}.film-status small{margin-top:3px;color:#90a5b9;font-size:12px}.film-status.is-alert .film-status-dot{background:#ff4c55;box-shadow:0 0 0 7px rgba(255,76,85,.11)}.film-status.is-working .film-status-dot{background:#10baff;box-shadow:0 0 0 7px rgba(16,186,255,.11)}.film-status.is-confirming .film-status-dot{background:#8f66ff;box-shadow:0 0 0 7px rgba(143,102,255,.12)}
-.scroll-cue{position:absolute;left:50%;bottom:5.5vh;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:3px;z-index:12;color:#e8f1fb}.scroll-cue .mouse{font-size:21px}.scroll-cue small{font-size:12px;letter-spacing:.06em}
-.product-reveal{position:absolute;left:1.5vw;right:1.5vw;bottom:1.8vh;z-index:15;transform:translate3d(0,78vh,0) scale(.96);opacity:0;will-change:transform,opacity}
-.product-shell{height:min(58vh,600px);display:grid;grid-template-columns:240px 1fr;border:1px solid rgba(84,153,220,.42);border-radius:22px;background:rgba(2,15,27,.93);box-shadow:0 -16px 80px rgba(0,0,0,.48);backdrop-filter:blur(16px);overflow:hidden}
-.sidebar{padding:24px 18px;border-right:1px solid rgba(255,255,255,.09);display:flex;flex-direction:column;gap:7px}.mini-brand{display:flex;align-items:center;gap:8px;margin-bottom:15px}.mini-brand .mark{border:1px solid #0b7cff;padding:6px;border-radius:7px;color:#21baff}.mini-brand b span{color:#0f83ff}
-.sidebar>a{padding:10px 11px;border-radius:7px;font-size:13px;color:#c7d2df;display:flex;gap:11px;align-items:center}.sidebar>a.active{background:#0c4daf;color:white}.sidebar>a i{margin-left:auto;background:#ef3636;width:20px;height:20px;display:grid;place-items:center;border-radius:50%;font-style:normal;font-size:12px}
-.who{margin-top:auto;display:flex;gap:9px;align-items:center;border:1px solid rgba(255,255,255,.08);padding:10px;border-radius:9px}.who>span:first-child{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#24415e}.who span{font-size:12px}.who small{display:block;color:#8fa2b8}
-.workspace{padding:18px 22px;min-width:0}.workspace-head{display:flex;justify-content:space-between;align-items:center}.workspace-head>div:first-child{display:flex;align-items:center;gap:12px}.workspace-head h2{font-size:22px;margin:0}.workspace-head em{font-style:normal;color:#31d987;font-size:12px;font-weight:850}.filters{display:flex;gap:9px}.filters span{font-size:12px;padding:10px 13px;border:1px solid rgba(255,255,255,.1);border-radius:7px;color:#d4deea;background:#071522}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}.kpis>div{position:relative;min-width:0;border:1px solid rgba(255,255,255,.08);background:#081a2b;border-radius:11px;padding:13px 15px}.kpis small{font-size:12px;color:#8295aa;display:block}.kpis strong{font-size:27px}.kpis sup{font-size:12px;color:#8395aa;font-weight:500}.kpis i{position:absolute;left:15px;right:15px;bottom:9px;height:4px;border-radius:9px}.kpis i.blue{background:#0b78ff}.kpis i.green{background:#34d27f}.kpis .alert-kpi{border-color:rgba(255,70,70,.32);background:linear-gradient(145deg,#1d0b12,#101520)}.kpis .alert-kpi small,.kpis .alert-kpi strong{color:#ff5353}
-.workspace-grid{display:grid;grid-template-columns:1.45fr .85fr;gap:13px}.live-map,.attention{border:1px solid rgba(255,255,255,.08);background:#071624;border-radius:12px;overflow:hidden}.live-map header,.attention header{height:40px;padding:0 13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.08);font-size:12px}.live-map header span{color:#28da84}.map-canvas{height:265px;position:relative;background:
- radial-gradient(circle at 65% 50%,rgba(10,101,223,.15),transparent 28%),
- repeating-linear-gradient(22deg,rgba(103,153,205,.05) 0 1px,transparent 1px 39px),
- repeating-linear-gradient(112deg,rgba(103,153,205,.05) 0 1px,transparent 1px 42px),#06131f;overflow:hidden}
-.map-canvas svg{position:absolute;inset:0;width:100%;height:100%}.map-canvas path{fill:none;stroke:#087cff;stroke-width:5;filter:drop-shadow(0 0 5px #087cff)}
-.busdot{position:absolute;width:30px;height:30px;border:3px solid #061522;border-radius:50%;background:#eef6ff;color:#0a6fe8;display:grid;place-items:center;box-shadow:0 0 0 2px #0c77ff;font-size:14px}.b1{left:17%;top:24%}.b2{left:32%;top:29%}.b3{left:52%;top:48%}.bad{left:65%;top:56%;color:white;background:#b51f2d;box-shadow:0 0 0 2px #ff5060}.b5{left:80%;top:70%}
-.map-alert{position:absolute;left:68%;top:43%;border:1px solid rgba(255,73,73,.65);background:rgba(49,7,12,.94);padding:10px 13px;border-radius:8px;color:#ff5d5d;transition:.4s ease}.map-alert strong,.map-alert span{display:block;font-size:12px}.map-alert span{margin-top:3px}.map-alert.is-resolved{border-color:rgba(39,208,121,.55);background:rgba(5,45,27,.94);color:#70e8ad}
-.incident{display:grid;grid-template-columns:10px 1fr auto;gap:9px;align-items:center;padding:14px}.red-dot{width:7px;height:7px;border-radius:50%;background:#ff4242}.incident strong{font-size:13px}.incident small{display:block;color:#9fb0c3;margin-top:3px}.incident button,.replacement button{border:1px solid #c62d38;background:transparent;color:#ff6a71;border-radius:6px;font-size:12px;padding:8px 11px;cursor:pointer}
-.replacement{display:none;margin:0 12px 12px;padding:12px;border:1px solid rgba(13,124,255,.28);background:#061a30;border-radius:9px}.replacement span,.replacement b{display:block}.replacement span{font-size:12px;color:#87a4be}.replacement b{font-size:12px;margin:5px 0 10px}.replacement button{width:100%;background:#0877ff;border-color:#0877ff;color:white;font-weight:850}
-.resolved{display:none;margin:0 12px 12px;padding:12px;background:rgba(39,208,121,.10);border:1px solid rgba(39,208,121,.28);border-radius:9px;color:#6de6a8;font-size:12px}.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:12px}.quick span{border:1px solid rgba(255,255,255,.07);background:#081a2b;border-radius:8px;padding:12px 5px;text-align:center;color:#0bb5ff;font-size:23px}.quick small{display:block;color:#aab9c8;font-size:12px;margin-top:5px}
-.attention.choosing .replacement{display:block}.attention.done .incident,.attention.done .replacement{display:none}.attention.done .resolved{display:block}.attention.done{border-color:rgba(39,208,121,.28)}
-.dispo-caption{position:absolute;left:3vw;top:18vh;width:390px;z-index:20;opacity:0;transform:translate3d(-18px,12px,0);pointer-events:none;will-change:opacity,transform;padding:18px 20px;border-left:2px solid rgba(8,124,255,.9);background:linear-gradient(90deg,rgba(2,12,24,.72),rgba(2,12,24,.18),transparent);backdrop-filter:blur(5px)}.dispo-caption h2{font-size:34px;line-height:1.05;letter-spacing:-.035em;margin:0 0 12px}.dispo-caption p{font-size:13px;color:#bdc8d4;line-height:1.5}
-.driver-confirm-signal{position:absolute;right:2vw;top:-78px;display:grid;grid-template-columns:34px minmax(260px,1fr) auto;align-items:center;gap:12px;min-width:520px;padding:13px 16px;border:1px solid rgba(56,218,139,.3);border-radius:12px;background:rgba(3,26,22,.9);box-shadow:0 20px 55px rgba(0,0,0,.34),0 0 34px rgba(43,210,127,.08);opacity:0;transform:translateY(12px);transition:.35s ease;pointer-events:none}.driver-confirm-signal.visible{opacity:1;transform:none}.driver-confirm-signal>span{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;background:rgba(45,215,132,.14);color:#67e7a7}.driver-confirm-signal small,.driver-confirm-signal strong{display:block}.driver-confirm-signal small{font-size:12px;letter-spacing:.08em;color:#63dda0}.driver-confirm-signal strong{font-size:12px;margin-top:3px}.driver-confirm-signal>b{font-size:12px;color:#9ab7aa}
-
-.scene2{position:relative;padding:100px 3vw 84px;background:#020914;overflow:hidden;isolation:isolate}
-.scene2-world{position:absolute;inset:0;z-index:-3;background:url("/brand/hero-clean-1920x1080.jpg") center 45%/cover no-repeat;opacity:.22;filter:saturate(.85) brightness(.72)}
-.scene2-shade{position:absolute;inset:0;z-index:-2;background:
- linear-gradient(180deg,#020914 0%,rgba(2,9,20,.88) 18%,rgba(2,9,20,.78) 55%,#020914 100%),
- radial-gradient(circle at 15% 55%,rgba(0,112,255,.16),transparent 26%),
- radial-gradient(circle at 80% 48%,rgba(0,112,255,.10),transparent 28%)}
-.scene2-head{max-width:880px;margin:0 auto 34px;text-align:center;position:relative;z-index:2}.scene2-head h2{font-size:clamp(38px,4vw,62px);line-height:1.02;letter-spacing:-.04em;margin:0 0 14px}.scene2-head h2 span{color:#08baff}.scene2-head p{color:#a9b9cb;font-size:15px}
-.storyline{max-width:1320px;margin:0 auto 24px;display:grid;grid-template-columns:repeat(6,1fr);gap:8px;position:relative;z-index:3}
-.story-step{appearance:none;border:1px solid rgba(92,147,200,.18);background:rgba(5,20,34,.76);color:#aab9c9;border-radius:11px;padding:11px;display:flex;align-items:center;gap:8px;text-align:left;cursor:pointer;transition:.22s}
-.story-step i{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:#102b45;color:#61b8ff;font-style:normal;font-weight:850;font-size:12px}.story-step span{font-size:12px;font-weight:850}.story-step small{display:block;margin-top:2px;color:#7f94a9;font-weight:500}
-.story-step.active{border-color:rgba(0,133,255,.65);background:rgba(5,45,82,.86);box-shadow:0 0 30px rgba(0,112,255,.12)}.story-step.active i{background:#0b76ff;color:white}
-.scene2-stage{max-width:1380px;margin:0 auto;min-height:630px;display:grid;grid-template-columns:1.05fr 1fr;gap:22px;position:relative;z-index:2}
-.physical-side,.product-side{position:relative;border:1px solid rgba(85,151,215,.18);border-radius:20px;background:rgba(3,16,29,.72);overflow:hidden;box-shadow:0 28px 70px rgba(0,0,0,.24)}
-.physical-side{min-height:630px;background:
- radial-gradient(circle at 65% 42%,rgba(0,99,255,.17),transparent 24%),
- linear-gradient(180deg,rgba(3,15,27,.35),rgba(3,15,27,.88)),
- url("/brand/hero-clean-1920x1080.jpg") 62% center/cover no-repeat}
-.scene-route{position:absolute;inset:0;width:100%;height:100%}.scene-route path{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round}.route-track{stroke:rgba(0,116,255,.16);stroke-width:10}.route-active{stroke:#0a7fff;stroke-width:4;filter:drop-shadow(0 0 7px #0a7fff);stroke-dasharray:16 13;animation:dash 5s linear infinite;transition:stroke .25s,stroke-dasharray .25s}
-.physical-copy{position:absolute;left:24px;bottom:22px;right:24px;padding:18px;border-left:2px solid #0a82ff;background:linear-gradient(90deg,rgba(2,12,24,.82),rgba(2,12,24,.18),transparent);backdrop-filter:blur(5px)}
-.physical-copy span{font-size:12px;letter-spacing:.08em;color:#16bcff;font-weight:850}.physical-copy strong{display:block;font-size:25px;margin:5px 0 6px}.physical-copy p{margin:0;color:#b7c6d5;font-size:12px}
-.mini-bus{position:absolute;width:190px;height:104px;border:1px solid rgba(22,139,255,.62);border-radius:16px;background:linear-gradient(180deg,rgba(2,10,18,.06),rgba(2,10,18,.82)),url("/brand/hero-clean-1920x1080.jpg") 69% center/cover no-repeat;box-shadow:0 0 32px rgba(0,100,255,.2);display:flex;align-items:flex-end;justify-content:flex-start;gap:6px;padding:10px;color:white;transition:.55s cubic-bezier(.22,.8,.22,1);z-index:2;overflow:hidden}.mini-bus span{color:#19c7ff;border:1px solid #0b85ff;border-radius:5px;padding:2px 4px;font-size:12px}.mini-bus b{font-size:12px}.mini-bus small{position:absolute;right:9px;bottom:10px;font-size:12px;color:#9db1c4}
-.bus-main{left:28%;top:36%;transform:translate(-50%,-50%)}.bus-replacement{right:-220px;top:51%;opacity:0}.bus-replacement.enter{right:13%;opacity:1}
-.bus-main.issue{filter:saturate(.35) brightness(.65);box-shadow:0 0 25px rgba(255,70,70,.3);border-color:#ff4e4e}.bus-main.exit{left:-220px;opacity:0}
-.product-side{padding:18px;display:grid;grid-template-columns:1.25fr .62fr;gap:15px;align-items:center}
-.scene2-dispo{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:#061522;padding:16px}.scene2-tabs{display:flex;gap:8px;margin-bottom:14px}.scene2-tabs .tab{font-size:12px;padding:7px 9px;border-radius:7px;background:#0a1d31;color:#8ca2b8}.scene2-tabs .active{background:#0c67d7;color:#fff}
-.plan-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.plan-row>div{padding:11px;border:1px solid rgba(255,255,255,.07);border-radius:9px;background:#081a2a}.plan-row small{display:block;font-size:12px;color:#758ba2}.plan-row strong{font-size:14px}.plan-row .ok{color:#45dd91}.plan-row .bad{color:#ff6060}
-.attention-flow{margin-top:13px;border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden}.attention-flow-head{display:flex;justify-content:space-between;padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px}.attention-flow-head em{font-style:normal;background:#c92d36;color:#fff;border-radius:5px;padding:2px 7px}
-.attention-message{display:flex;gap:9px;align-items:center;padding:16px 12px}.attention-message>span{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:rgba(38,211,124,.15);color:#49df96}.attention-message strong,.attention-message small{display:block}.attention-message strong{font-size:12px}.attention-message small{font-size:12px;color:#91a6ba;margin-top:4px}.attention-message.problem>span{background:rgba(255,68,68,.15);color:#ff5c5c}.attention-message.problem{background:linear-gradient(90deg,rgba(73,10,16,.55),transparent)}
-.replacement-choice{display:none;padding:12px;border-top:1px solid rgba(255,255,255,.06)}.replacement-choice label{display:block;font-size:12px;color:#7e95aa;margin-bottom:6px}.replacement-option{display:flex;justify-content:space-between;padding:10px;border:1px solid rgba(0,125,255,.25);border-radius:7px;background:#071b30;font-size:12px}.replacement-option span{color:#3fda8f}.replacement-choice button{width:100%;margin-top:9px;border:0;border-radius:7px;padding:11px;background:#0879ff;color:white;font-size:12px;font-weight:850;cursor:pointer}
-.attention-flow.show-choice .replacement-choice{display:block}
-.driver-phone{width:245px;justify-self:center;border:3px solid #263849;border-radius:29px;background:#06111c;padding:15px;box-shadow:0 24px 60px rgba(0,0,0,.35);transition:.35s}.phone-top{display:flex;justify-content:space-between;font-size:12px;color:#f2f7fc;margin-bottom:23px}.phone-top span{color:#7fa0ba}.driver-phone>small{font-size:12px;color:#7f94aa}.driver-phone>strong{display:block;font-size:27px;margin:4px 0 14px}.phone-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.phone-grid span,.phone-bus{padding:9px;border:1px solid rgba(255,255,255,.07);border-radius:8px;color:#8095aa;font-size:12px}.phone-grid b,.phone-bus b{display:block;color:#fff;font-size:14px;margin-top:3px}.phone-bus{margin-top:7px}.driver-phone button{width:100%;margin-top:12px;border:0;border-radius:8px;padding:12px;background:#0878ff;color:white;font-weight:850;font-size:12px;cursor:pointer}.phone-confirmed{display:none;margin-top:10px;padding:10px;border-radius:8px;background:rgba(37,208,122,.12);border:1px solid rgba(37,208,122,.24);color:#6ce8aa;font-size:12px;text-align:center}
-.driver-phone.confirmed button{display:none}.driver-phone.confirmed .phone-confirmed{display:block}.driver-phone.waiting{box-shadow:0 0 35px rgba(139,70,255,.18)}
-.scene2-caption{max-width:1380px;margin:16px auto 0;display:flex;justify-content:space-between;gap:20px;padding:16px 20px;border:1px solid rgba(85,151,215,.16);border-radius:12px;background:rgba(5,19,33,.72);color:#b4c2d0;font-size:12px}.scene2-caption b{color:#e9f3fc}
-@media(max-width:900px){.storyline{grid-template-columns:repeat(3,1fr)}.scene2-stage{grid-template-columns:1fr}.physical-side{min-height:520px}.product-side{grid-template-columns:1fr}.driver-phone{margin-top:12px}.scene2-caption{flex-direction:column}}
-@media(max-width:620px){.scene2{padding:82px 14px}.storyline{grid-template-columns:repeat(2,1fr)}.physical-side{min-height:450px}.scene2-stage{min-height:0}.plan-row{grid-template-columns:repeat(2,1fr)}.scene2-caption{font-size:12px}}
-
-
-.scene3{position:relative;padding:104px 3vw 88px;background:#020914;overflow:hidden;isolation:isolate}
-.scene3-world{position:absolute;inset:0;z-index:-3;background:url("/brand/hero-clean-1920x1080.jpg") center/cover no-repeat;opacity:.17;filter:brightness(.58) saturate(.9)}
-.scene3-shade{position:absolute;inset:0;z-index:-2;background:
- linear-gradient(180deg,#020914 0%,rgba(2,9,20,.84) 16%,rgba(2,9,20,.82) 70%,#020914 100%),
- radial-gradient(circle at 70% 44%,rgba(0,102,255,.12),transparent 30%)}
-.scene3-head{max-width:860px;margin:0 auto 28px;text-align:center}.scene3-head h2{font-size:clamp(38px,4vw,60px);line-height:1.02;letter-spacing:-.04em;margin:0 0 14px}.scene3-head h2 span{color:#08baff}.scene3-head p{color:#aab9c9;font-size:15px}
-.role-switcher{display:flex;justify-content:center;gap:8px;margin-bottom:22px}.role-btn{border:1px solid rgba(89,148,205,.2);background:#071827;color:#8ea4b8;padding:10px 18px;border-radius:9px;font-size:12px;font-weight:850;cursor:pointer;transition:.2s}.role-btn.active{background:#0b66d1;border-color:#0b7fff;color:#fff;box-shadow:0 0 30px rgba(0,112,255,.15)}
-.scene3-stage{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:.7fr 1.5fr;gap:22px;min-height:610px}
-.scene3-left{position:relative;border:1px solid rgba(86,151,215,.16);border-radius:18px;background:rgba(4,18,31,.76);padding:28px;overflow:hidden}
-.role-copy{position:absolute;inset:28px;opacity:0;transform:translateY(14px);pointer-events:none;transition:.3s ease}.role-copy.active{opacity:1;transform:none;pointer-events:auto}.role-copy h3{font-size:42px;line-height:1.02;letter-spacing:-.04em;margin:0 0 16px}.role-copy p{color:#b0c0cf;line-height:1.6;font-size:16px}.role-copy ul{list-style:none;padding:0;margin:26px 0 0;display:grid;gap:13px;color:#d5e1ec;font-size:14px;line-height:1.45}.role-copy li:before{content:"✓";color:#27cfff;margin-right:8px}
-.role-visuals{position:relative;border:1px solid rgba(86,151,215,.16);border-radius:18px;background:rgba(3,16,29,.82);overflow:hidden}
-.role-panel{position:absolute;inset:0;padding:20px;opacity:0;transform:translateX(20px) scale(.985);pointer-events:none;transition:.34s ease}.role-panel.active{opacity:1;transform:none;pointer-events:auto}
-.dispo-pro{height:100%;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:#061522;padding:18px}.pro-top{display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.07);padding-bottom:13px}.live{color:#35dc8a;font-size:12px}.pro-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}.pro-kpis>div{padding:14px;border:1px solid rgba(255,255,255,.07);border-radius:9px;background:#081a2b}.pro-kpis small{display:block;color:#7890a7;font-size:12px}.pro-kpis strong{font-size:26px}.pro-kpis .warn{border-color:rgba(255,68,68,.3)}.pro-kpis .warn small,.pro-kpis .warn strong{color:#ff5555}
-.pro-main{display:grid;grid-template-columns:1.3fr .7fr;gap:12px}.pro-plan,.pro-attention{border:1px solid rgba(255,255,255,.07);border-radius:10px;background:#071725}.plan-head,.pro-plan>div{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:10px 11px;border-bottom:1px solid rgba(255,255,255,.055);font-size:12px}.plan-head{color:#748ca3;font-size:12px}.pro-plan .good{color:#43dd92}.problem-row{background:rgba(82,10,17,.45);color:#ff6868}.pro-attention{padding:16px;display:flex;flex-direction:column}.pro-attention small{color:#ff6060}.pro-attention strong{font-size:18px;margin:12px 0}.role-action{margin-top:auto;border:0;border-radius:8px;padding:12px;background:#0878ff;color:white;font-size:12px;font-weight:850;cursor:pointer}
-.driver-scene{height:100%;display:grid;grid-template-columns:.8fr 1fr;gap:20px;align-items:center;justify-items:center}.driver-phone-large{width:285px;border:4px solid #263849;border-radius:34px;background:#06111c;padding:18px;box-shadow:0 30px 65px rgba(0,0,0,.4)}.phone-brand{display:flex;justify-content:space-between;font-size:12px;margin-bottom:28px}.phone-brand span{color:#7792a8}.driver-phone-large>small{font-size:12px;color:#8295aa}.driver-phone-large>strong{display:block;font-size:30px;margin:5px 0 16px}.driver-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}.driver-meta span,.driver-bus{border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:10px;color:#7f95aa;font-size:12px}.driver-meta b,.driver-bus b{display:block;color:#fff;font-size:15px;margin-top:3px}.driver-bus{margin-top:8px}.driver-phone-large button{width:100%;margin-top:13px;border:0;border-radius:8px;background:#0878ff;color:#fff;padding:13px;font-size:12px;font-weight:850;cursor:pointer}.scene3-confirmed{display:none;margin-top:10px;padding:10px;border-radius:8px;background:rgba(40,210,124,.12);border:1px solid rgba(40,210,124,.25);color:#6ce7a9;font-size:12px;text-align:center}.driver-phone-large.confirmed button{display:none}.driver-phone-large.confirmed .scene3-confirmed{display:block}.driver-signal{justify-self:start;padding:20px;border-left:2px solid #4b8fca;background:linear-gradient(90deg,rgba(75,143,202,.18),transparent)}.driver-signal b,.driver-signal small{display:block}.driver-signal b{font-size:20px}.driver-signal small{margin-top:7px;color:#9eb0c1}.pulse-dot{display:block;width:12px;height:12px;border-radius:50%;background:#75aeda;box-shadow:0 0 0 8px rgba(75,143,202,.12);margin-bottom:14px}
-.admin-pro{height:100%;display:grid;grid-template-columns:190px 1fr;border:1px solid rgba(255,255,255,.07);border-radius:13px;overflow:hidden;background:#061522}.admin-nav{padding:20px 14px;border-right:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;gap:8px}.admin-nav b{margin-bottom:12px}.admin-nav span{font-size:12px;color:#9fb0c0;padding:9px;border-radius:7px}.admin-nav .sel{background:#0c4fae;color:#fff}.admin-work{padding:18px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.admin-card{border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:15px;background:#081a2b}.admin-card small{color:#7d94aa;font-size:12px}.admin-card>strong{display:block;font-size:18px;margin:8px 0}.upload-ok{display:block;color:#44dc92;font-size:12px}.admin-card button{margin-top:15px;border:1px solid #0a72ef;border-radius:7px;background:#0a5fc6;color:#fff;padding:9px 12px;font-size:12px}.group-row,.rules div{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.055);font-size:12px}.group-row b{color:#4cdb94}.rules{grid-column:span 2}.rules b{color:#78c5ff}
-.scene3-bridge{max-width:1400px;margin:16px auto 0;border:1px solid rgba(86,151,215,.15);border-radius:12px;background:rgba(5,19,33,.72);padding:15px 20px;display:flex;gap:13px;align-items:center;justify-content:center;color:#81a1bd;font-size:12px}.scene3-bridge i{color:#0a7fff;font-style:normal}.scene3-bridge b{margin-left:20px;color:#e8f2fb}
-@media(max-width:900px){.scene3-stage{grid-template-columns:1fr}.scene3-left{min-height:390px}.role-visuals{min-height:610px}.scene3-bridge{flex-wrap:wrap}.driver-scene{grid-template-columns:1fr}.driver-signal{justify-self:center}.admin-pro{grid-template-columns:150px 1fr}}
-@media(max-width:620px){.scene3{padding:82px 14px}.role-switcher{flex-wrap:wrap}.role-visuals{min-height:700px}.pro-main{grid-template-columns:1fr}.admin-pro{grid-template-columns:1fr}.admin-nav{display:none}.admin-work{grid-template-columns:1fr}.rules{grid-column:auto}.scene3-left{min-height:430px}.role-copy h3{font-size:34px}}
-
-.system-core{position:relative;padding:118px 3vw 96px;overflow:hidden;isolation:isolate;background:#010711}
-.system-atmosphere{position:absolute;inset:0;z-index:-2;background:linear-gradient(180deg,#020914 0%,rgba(2,9,20,.78) 26%,rgba(1,7,14,.90) 100%),url("/brand/hero-clean-1920x1080.jpg") center/cover no-repeat;filter:saturate(.75)}
-.system-atmosphere:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 55%,rgba(0,118,255,.17),transparent 34%),linear-gradient(90deg,rgba(0,0,0,.4),transparent 24%,transparent 76%,rgba(0,0,0,.4))}
-.system-head{max-width:920px;margin:0 auto 38px;text-align:center}.system-head h2{font-size:clamp(42px,5vw,72px);line-height:.98;letter-spacing:-.05em;margin:0 0 18px}.system-head h2 span{color:#12c5ff}.system-head p{max-width:760px;margin:auto;color:#acbdce;font-size:16px;line-height:1.65}
-.system-console{max-width:1440px;margin:auto;border:1px solid rgba(77,157,230,.25);border-radius:22px;background:rgba(2,13,24,.88);box-shadow:0 35px 100px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.035);overflow:hidden;backdrop-filter:blur(18px)}
-.system-rail{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid rgba(101,164,220,.17)}
-.pulse-step{min-height:78px;padding:14px 16px;border:0;border-right:1px solid rgba(101,164,220,.12);background:transparent;color:#738ba3;display:flex;gap:11px;align-items:center;text-align:left;cursor:pointer;transition:.28s}.pulse-step:last-child{border-right:0}.pulse-step b{font-size:12px;color:#4f6b84}.pulse-step span{font-size:12px;font-weight:850;letter-spacing:.03em}.pulse-step small{display:block;margin-top:4px;color:#61788f;font-size:12px;font-weight:500;letter-spacing:0}.pulse-step.active{background:linear-gradient(180deg,rgba(0,112,255,.17),rgba(0,112,255,.04));color:#fff;box-shadow:inset 0 -2px #0c8cff}.pulse-step.active b{color:#1dc7ff}.pulse-step.active small{color:#a9c2d9}
-.system-map{position:relative;min-height:570px;background:radial-gradient(circle at 50% 48%,rgba(0,87,185,.14),transparent 23%),linear-gradient(rgba(51,113,166,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(51,113,166,.045) 1px,transparent 1px);background-size:auto,38px 38px,38px 38px;overflow:hidden}
-.system-map>svg{position:absolute;inset:0;width:100%;height:100%}.system-track,.system-segment{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:square}.system-track{stroke:rgba(126,145,163,.16);stroke-width:10}.system-segment{stroke:rgba(126,145,163,.18);stroke-width:4;transition:stroke .3s,filter .3s,opacity .3s}.system-segment.active{stroke:var(--signal-color,#4b8fca);stroke-width:5;stroke-dasharray:13 12;filter:drop-shadow(0 0 6px var(--signal-color,#4b8fca));animation:dash 2.8s linear infinite}.system-segment.resolved{stroke:#54c18a;stroke-width:4;opacity:.68;filter:drop-shadow(0 0 3px rgba(84,193,138,.36))}
-.system-node{position:absolute;width:158px;min-height:126px;padding:15px;border:1px solid rgba(77,140,199,.2);border-radius:15px;background:rgba(4,18,31,.92);box-shadow:0 18px 45px rgba(0,0,0,.28);transform:translate(-50%,-50%) scale(.94);opacity:.48;transition:.35s ease}.system-node i{display:grid;place-items:center;width:31px;height:31px;margin-bottom:12px;border-radius:9px;background:#0b233a;color:#5c93c3;font-size:12px;font-style:normal;font-weight:900}.system-node small,.system-node strong,.system-node span{display:block}.system-node small{font-size:12px;letter-spacing:.11em;color:#637f99}.system-node strong{font-size:14px;margin:5px 0}.system-node span{font-size:12px;color:#7892aa}.system-node.done{opacity:.76;border-color:rgba(43,210,126,.26)}.system-node.done i{background:rgba(43,210,126,.13);color:#54df99}.system-node.active{opacity:1;transform:translate(-50%,-50%) scale(1.04);border-color:rgba(13,145,255,.72);box-shadow:0 20px 55px rgba(0,0,0,.35),0 0 35px rgba(0,121,255,.14)}.system-node.active i{background:#0b72e8;color:white}
-.node-incident{left:9%;top:50%}.node-dispo{left:29%;top:31%}.node-plan{left:50%;top:50%}.node-driver{left:72%;top:69%}.node-audit{left:91%;top:50%}
-.system-center{position:absolute;left:50%;top:4%;width:min(480px,36vw);transform:translateX(-50%);text-align:center;pointer-events:none}.system-center>span{font-size:12px;letter-spacing:.18em;color:#10bcff;font-weight:900}.system-center>strong{display:block;font-size:clamp(20px,2vw,31px);letter-spacing:-.03em;margin:9px 0}.system-center>p{max-width:460px;min-height:42px;margin:0 auto;color:#8fa5b9;font-size:12px;line-height:1.55}.system-readout{display:inline-flex;align-items:center;gap:12px;margin-top:14px;padding:8px 11px;border:1px solid rgba(77,150,215,.2);border-radius:8px;background:rgba(1,10,19,.74)}.system-readout b{font-size:15px}.system-readout small{font-size:12px;letter-spacing:.09em;color:#47bfff}
-.system-proof{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(101,164,220,.15)}.system-proof>div{min-height:128px;padding:22px;border-right:1px solid rgba(101,164,220,.11)}.system-proof>div:last-child{border:0}.system-proof small,.system-proof strong,.system-proof span{display:block}.system-proof small{font-size:12px;letter-spacing:.1em;color:#168eff}.system-proof strong{font-size:14px;margin:9px 0 7px}.system-proof span{color:#758ba1;font-size:12px;line-height:1.5}
-.calm-handoff{position:relative;min-height:78vh;display:flex;align-items:flex-end;padding:8vw 6vw;overflow:hidden;background:#07111b}.handoff-bus{position:absolute;inset:0;background:url("/brand/hero-clean-1920x1080.jpg") 64% center/cover no-repeat;filter:saturate(.72) contrast(.92) brightness(.82);transform:scale(1.015)}.calm-handoff:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(3,12,21,.92),rgba(3,12,21,.36) 48%,rgba(3,12,21,.1)),linear-gradient(180deg,rgba(2,9,17,.08),rgba(2,9,17,.2) 55%,#07111b)}.handoff-copy{position:relative;z-index:2;max-width:700px}.handoff-copy>span{font-size:12px;letter-spacing:.15em;color:#5bb8f3;font-weight:850}.handoff-copy h2{font-size:clamp(40px,5vw,72px);line-height:1;letter-spacing:-.045em;margin:16px 0 18px}.handoff-copy p{max-width:570px;margin:0;color:#b6c1cc;font-size:16px;line-height:1.65}
-.business-zone{display:grid;grid-template-columns:1.08fr .92fr;gap:6vw;max-width:1500px;margin:auto;padding:116px 5vw 130px;background:#eef2f5;color:#0b1721}.business-copy .eyebrow{color:#076fc6}.business-copy h2{font-size:clamp(38px,4.4vw,66px);line-height:1;letter-spacing:-.05em;margin:0 0 20px}.business-lead{max-width:700px;color:#536575;font-size:16px;line-height:1.65;margin:0 0 42px}.document-list{border-top:1px solid #bfcbd4}.document-list article{display:grid;grid-template-columns:42px 1fr auto;gap:18px;align-items:center;padding:24px 0;border-bottom:1px solid #c9d3db}.document-list article>span{font-size:12px;color:#6f8292}.document-list article small{font-size:12px;letter-spacing:.1em;color:#0874cc;font-weight:850}.document-list h3{font-size:20px;margin:5px 0 6px}.document-list p{margin:0;color:#61717e;font-size:12px;line-height:1.45}.document-list article>b{font-size:12px;letter-spacing:.1em;color:#71818e;border:1px solid #bcc8d1;border-radius:99px;padding:7px 9px}.business-visual{position:relative;min-height:720px}.business-bus{position:sticky;top:94px;height:calc(100vh - 130px);min-height:560px;max-height:760px;border-radius:22px;background:linear-gradient(180deg,rgba(1,8,15,.02),rgba(1,8,15,.58)),url("/brand/hero-clean-1920x1080.jpg") 70% center/cover no-repeat;box-shadow:0 30px 80px rgba(13,30,43,.18)}.business-badge{position:absolute;left:24px;right:24px;bottom:28px;padding:19px;border:1px solid rgba(255,255,255,.18);border-radius:13px;background:rgba(3,13,22,.68);color:white;backdrop-filter:blur(12px)}.business-badge small,.business-badge strong,.business-badge span{display:block}.business-badge small{font-size:12px;letter-spacing:.15em;color:#52bfff}.business-badge strong{margin:8px 0 18px;font-size:21px;line-height:1.15}.business-badge span{font-size:12px;color:#a9b9c7}
-.quiet-close{min-height:62vh;display:grid;place-items:center;padding:90px 24px;background:#e7edf1;color:#0b1721;text-align:center}.quiet-close>div{max-width:900px}.quiet-close>div>span{font-size:12px;letter-spacing:.18em;color:#0876cc;font-weight:850}.quiet-close h2{font-size:clamp(44px,5.8vw,82px);line-height:.98;letter-spacing:-.055em;margin:18px 0}.quiet-close h2 strong{color:#0873c6}.quiet-close p{font-size:17px;color:#5c6c78;margin:0 0 30px}.quiet-actions{display:flex;justify-content:center;gap:12px}.quiet-actions .quiet{border:1px solid #9aabb8;color:#162633;background:transparent}
-.plan-row strong,.pro-plan span,.system-node span,.document-list p,.driver-signal b{overflow-wrap:anywhere}
-
-/* Industrial calibration: geometry follows function, colour follows operational state. */
-.film-stage,.scene2,.scene3,.system-core{background-color:#090d16}
-.site-header{background:linear-gradient(180deg,rgba(9,13,22,.98),rgba(9,13,22,.78) 72%,transparent)}
-.wet-glow{opacity:.34}.scene2-world,.scene3-world{filter:saturate(.55) brightness(.62)}
-.eyebrow{color:#75aeda}.hero-sub span,.dispo-caption h2 span,.scene2-head h2 span,.scene3-head h2 span,.system-head h2 span{color:#8bb8dc}
-.primary{background:#326fa8;box-shadow:0 12px 30px rgba(25,71,110,.26)}
-
-:where(.login,.btn,.incident button,.replacement button,.replacement-choice button,.driver-phone button,.driver-phone-large button,.role-action,.admin-card button,.role-btn){border-radius:4px}
-:where(.product-shell,.physical-side,.product-side,.scene3-left,.role-visuals,.system-console){border-radius:8px}
-:where(.kpis>div,.live-map,.attention,.scene2-dispo,.attention-flow,.pro-kpis>div,.pro-plan,.pro-attention,.admin-card,.system-node,.business-badge){border-radius:6px}
-:where(.filters span,.quick span,.story-step,.scene2-tabs .tab,.plan-row>div,.replacement-option,.system-readout,.document-list article>b){border-radius:3px}
-.business-bus{border-radius:14px}
-
-.film-status time,.story-step>span,.pulse-step b,.system-readout b,.plan-row strong,.pro-kpis strong,.phone-grid b,.driver-meta b,.driver-bus b,.phone-bus b,.system-node span{
-  font-family:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
-  font-variant-numeric:tabular-nums;
-  font-feature-settings:"tnum" 1;
-}
-.film-status,.system-console,.scene2-dispo,.dispo-pro,.admin-pro{border-color:rgba(139,158,176,.24)}
-.system-console{position:relative;--signal-color:#e45a5a;background:rgba(10,15,23,.94)}
-.system-console:before,.system-console:after{position:absolute;z-index:5;top:92px;font:600 12px/1 "IBM Plex Mono",monospace;letter-spacing:.08em;color:#718293;pointer-events:none}
-.system-console:before{content:"INC-320.S01 // BC 2026";left:18px}
-.system-console:after{content:"05:08—05:10 // OPERATIVNA VEZA";right:18px}
-:where(.film-status,.driver-confirm-signal,.scene2-caption,.scene3-bridge,.replacement,.resolved){border-radius:6px}
-.mini-bus{border-radius:8px}
-.brand:before,.who{border-radius:6px}
-.story-step small,.pulse-step small{font-family:Inter,Arial,sans-serif}
-:where(.hero-copy h1,.scene2-head h2,.scene3-head h2,.system-head h2,.business-copy h2,.handoff-copy h2,.quiet-close h2,.role-copy h3){letter-spacing:-.025em;line-height:1.04}
-.system-map{background:linear-gradient(rgba(137,154,170,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(137,154,170,.045) 1px,transparent 1px),#0a0f17;background-size:38px 38px}
-.system-node{background:rgba(12,18,28,.96);border-color:rgba(126,145,163,.2);box-shadow:0 18px 42px rgba(0,0,0,.32)}
-.system-node.done{opacity:.82;border-color:rgba(84,193,138,.38);background:rgba(10,28,23,.94)}
-.system-node.done i{background:rgba(84,193,138,.12);color:#78d5a6}
-.system-node.active{border-color:var(--signal-color);box-shadow:0 20px 50px rgba(0,0,0,.38),0 0 24px color-mix(in srgb,var(--signal-color) 22%,transparent)}
-.system-node.active i{background:var(--signal-color);color:#081018}
-.pulse-step.active{background:linear-gradient(180deg,rgba(75,143,202,.14),rgba(75,143,202,.025));box-shadow:inset 0 -2px var(--signal-color)}
-.pulse-step.active b{color:var(--signal-color)}
-.film-status.is-alert .film-status-dot{background:var(--red)}
-.film-status.is-working .film-status-dot{background:var(--amber)}
-.film-status.is-confirming .film-status-dot{background:#dce5eb}
-.map-alert{border-color:rgba(228,90,90,.7);color:#ef7777}.map-alert.is-resolved{border-color:rgba(84,193,138,.58);color:#7bd6aa}
-a:focus-visible,button:focus-visible{outline:2px solid #21c5ff;outline-offset:4px}
-@media(max-width:1100px){.nav{display:none}.hero-copy{width:50vw}.product-shell{grid-template-columns:190px 1fr}.sidebar>a{font-size:12px}.filters span:nth-child(1){display:none}}
-@media(max-width:760px){
- .site-header{height:64px;padding:0 15px}.brand:before{width:40px;height:40px;flex-basis:40px}.brand span{display:none}.login{padding:10px}.lang{display:none}
- .film-timeline{height:165vh}.hero-copy{left:20px;right:20px;top:auto;bottom:9vh;width:auto}.world{background-position:67% center}
- .world-shade{background:linear-gradient(180deg,rgba(1,8,17,.18),rgba(1,8,17,.32) 40%,rgba(1,8,17,.96) 73%)}
- .hero-copy h1{font-size:43px}.hero-sub{font-size:22px}.hero-copy p{font-size:14px}.trust-row{gap:15px}.trust-row small{display:none}.hero-actions{flex-direction:column;max-width:310px}
- .scroll-cue{display:none}.route{opacity:.55}.product-reveal{left:8px;right:8px}.film-status{display:none}
- .product-shell{height:70vh;grid-template-columns:1fr}.sidebar{display:none}.workspace{padding:12px}.workspace-head .filters{display:none}
- .kpis{grid-template-columns:repeat(2,1fr)}.workspace-grid{grid-template-columns:1fr}.attention{display:none}.map-canvas{height:250px}
- .dispo-caption{left:20px;right:20px;top:12vh;width:auto}.dispo-caption h2{font-size:29px}.driver-confirm-signal{right:8px;left:8px;top:-72px;min-width:0;grid-template-columns:30px 1fr}.driver-confirm-signal>b{display:none}
- .system-core{padding:86px 14px 70px}.system-console:before,.system-console:after{display:none}.system-rail{grid-template-columns:1fr}.pulse-step{min-height:58px;border-right:0;border-bottom:1px solid rgba(101,164,220,.11)}.system-map{min-height:720px}.system-map>svg{display:none}.system-center{top:28px;width:calc(100% - 36px)}.system-node{width:calc(50% - 26px);min-height:112px}.node-incident{left:27%;top:34%}.node-dispo{left:73%;top:34%}.node-plan{left:27%;top:55%}.node-driver{left:73%;top:55%}.node-audit{left:50%;top:78%}.system-proof{grid-template-columns:1fr 1fr}.system-proof>div{min-height:118px}.calm-handoff{min-height:72vh;padding:70px 20px}.handoff-bus{background-position:68% center}.calm-handoff:after{background:linear-gradient(180deg,rgba(3,12,21,.12),rgba(3,12,21,.36) 42%,#07111b 83%)}.business-zone{grid-template-columns:1fr;padding:82px 20px}.business-visual{min-height:520px}.business-bus{position:relative;top:auto;height:520px;min-height:0}.document-list article{grid-template-columns:34px 1fr}.document-list article>b{display:none}.quiet-actions{flex-direction:column}
-}
-@media(prefers-reduced-motion:reduce){
- html{scroll-behavior:auto}.route-live,.system-segment{animation:none}.world,.hero-copy,.product-reveal,.dispo-caption,.system-node{transition:none!important}
-}
-@media(max-width:400px){
- .hero-copy{bottom:7vh}.hero-copy h1{font-size:36px}.hero-sub{font-size:19px}.hero-copy p,.trust-row{display:none}.hero-actions{margin-top:18px}.btn{padding:13px 15px}
- .scene2-head h2,.scene3-head h2,.system-head h2{font-size:36px}.role-copy h3{font-size:31px}.system-proof{grid-template-columns:1fr}.system-node{width:calc(50% - 18px);padding:12px}.business-copy h2,.handoff-copy h2{font-size:36px}.quiet-close h2{font-size:39px}
-}
-
-
-    /* Top header navigation buttons & language switcher */
-    .top-portal-links {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#030712">
+  <meta name="description" content="BusCommand — operativni sistem za dispečere autobuskih prevoznika: mesečni planovi, dispečerski radar, potvrde vozača. DE/SR/EN.">
+  <script src="/runtime-vendor/tailwind.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#1e3a8a',
+              950: '#0f172a'
+            }
+          }
+        }
+      }
     }
+  </script>
+  <style>
+    html, body {
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100vw;
+      margin: 0;
+      padding: 0;
+      background-color: #030712;
+      color: #f8fafc;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    .hero-bg {
+      position: relative;
+      background: linear-gradient(180deg, rgba(3, 7, 18, 0.75) 0%, rgba(3, 7, 18, 0.95) 85%, #030712 100%),
+                  url('/brand/hero-clean-1920x1080.jpg') center 25% / cover no-repeat;
+    }
+
+    .glass-card {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+      transition: all 0.25s ease;
+    }
+    .glass-card:hover {
+      border-color: rgba(59, 130, 246, 0.5);
+      box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.15);
+    }
+
+    .bento-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(30, 41, 59, 0.8);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      transition: all 0.2s ease;
+    }
+    .bento-card:hover {
+      border-color: rgba(59, 130, 246, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .tab-btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 0.5rem;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #3b82f6;
+      box-shadow: 0 0 20px rgba(37, 99, 235, 0.35);
+    }
+    .tab-btn:not(.active) {
+      background: rgba(15, 23, 42, 0.6);
+      color: #94a3b8;
+      border-color: #334155;
+    }
+    .tab-btn:not(.active):hover {
+      color: #f1f5f9;
+      border-color: #475569;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .mock-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+    .mock-table th { text-align: left; padding: 0.75rem 1rem; color: #94a3b8; font-weight: 600; border-bottom: 1px solid #1e293b; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .mock-table td { padding: 0.75rem 1rem; border-bottom: 1px solid rgba(30, 41, 59, 0.6); color: #e2e8f0; }
+    .mock-table tr:hover td { background: rgba(59, 130, 246, 0.05); }
+
+    .pill { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; }
+    .pill-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .pill-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .pill-red { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .pill-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+
     .lang-switch {
       display: flex;
-      background: #0b1522;
-      border: 1px solid rgba(139,158,176,0.28);
-      border-radius: 6px;
-      padding: 2px;
-      gap: 2px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 0.5rem;
+      padding: 0.25rem;
+      gap: 0.25rem;
     }
     .lang-switch button {
-      background: transparent;
+      appearance: none;
       border: 0;
-      color: #8da3b8;
-      font-size: 11px;
-      font-weight: 800;
-      padding: 4px 8px;
-      border-radius: 4px;
+      padding: 0.25rem 0.625rem;
+      border-radius: 0.25rem;
+      background: transparent;
+      color: #94a3b8;
+      font-weight: 700;
+      font-size: 0.75rem;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: color 0.15s ease;
     }
+    .lang-switch button:hover { color: #f8fafc; }
     .lang-switch button.lang-active {
-      background: #086ff5;
-      color: #fff;
-    }
-    .top-portal-btn {
-      font-size: 12px;
-      font-weight: 850;
-      border: 1px solid #148bff;
-      padding: 9px 15px;
-      border-radius: 6px;
-      background: rgba(0,54,120,.45);
-      color: #fff;
-      transition: background 0.2s;
-      text-decoration: none;
-    }
-    .top-portal-btn:hover {
-      background: #086ff5;
-    }
-    .driver-btn-link {
-      border-color: rgba(255,255,255,0.2);
-      background: rgba(15,23,42,0.6);
-      color: #cbd5e1;
-    }
-    .driver-btn-link:hover {
-      background: rgba(30,41,59,0.9);
-      color: #fff;
-    }
-
-    /* Industrial Pricing Grid */
-    .pricing-zone {
-      padding: 90px 4vw;
-      background: #070d17;
-      border-top: 1px solid rgba(139,158,176,0.18);
-    }
-    .pricing-head {
-      max-width: 800px;
-      margin: 0 auto 40px;
-      text-align: center;
-    }
-    .pricing-head h2 {
-      font-size: clamp(34px, 4vw, 54px);
-      margin: 0 0 12px;
-      letter-spacing: -0.035em;
-    }
-    .pricing-head p {
-      color: #8fa3b8;
-      font-size: 15px;
-    }
-    .pricing-grid {
-      max-width: 1320px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-    }
-    .price-card {
-      background: rgba(10,18,29,0.9);
-      border: 1px solid rgba(139,158,176,0.22);
-      border-radius: 12px;
-      padding: 24px 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      position: relative;
-    }
-    .price-card.popular {
-      border-color: #0b7cff;
-      background: rgba(11,35,62,0.6);
-      box-shadow: 0 0 35px rgba(11,124,255,0.18);
-    }
-    .badge-pop {
-      position: absolute;
-      top: -11px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #086ff5;
-      color: #fff;
-      font-size: 10px;
-      font-weight: 850;
-      padding: 3px 10px;
-      border-radius: 99px;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-    .price-card h3 {
-      font-size: 18px;
-      margin: 0 0 8px;
-    }
-    .price-val {
-      font-size: 32px;
-      font-weight: 850;
-      font-family: "IBM Plex Mono", monospace;
-      margin: 12px 0 6px;
-    }
-    .price-per {
-      font-size: 11px;
-      color: #7990a5;
-      display: block;
-      margin-bottom: 12px;
-    }
-    .price-desc {
-      font-size: 12px;
-      color: #8da3b8;
-      min-height: 36px;
-      margin-bottom: 16px;
-    }
-    .price-feats {
-      list-style: none;
-      padding: 14px 0 0;
-      margin: 0 0 20px;
-      border-top: 1px solid rgba(255,255,255,0.08);
-      display: grid;
-      gap: 9px;
-      font-size: 12px;
-      color: #cbd8e5;
-    }
-    .price-feats li:before {
-      content: "✓";
-      color: #35dc8a;
-      margin-right: 7px;
-    }
-    .price-cta {
-      display: block;
-      text-align: center;
-      padding: 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 850;
-      background: rgba(255,255,255,0.08);
-      color: #fff;
-      text-decoration: none;
-      transition: background 0.2s;
-    }
-    .price-card.popular .price-cta {
-      background: #086ff5;
-    }
-    .price-cta:hover {
-      background: #0a7aff;
-    }
-    @media(max-width: 960px) {
-      .pricing-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media(max-width: 580px) {
-      .pricing-grid { grid-template-columns: 1fr; }
+      background-color: #2563eb;
+      color: #ffffff;
     }
   </style>
 </head>
-<body id="top">
-  <header class="site-header">
-    <a class="brand" href="#film" aria-label="BusCommand početna">
-      <img src="/brand/buscommand-logo-reference.png" alt="BusCommand">
-      <span>BusCommand</span>
-    </a>
+<body id="top" class="min-h-screen selection:bg-blue-600 selection:text-white">
 
-    <nav class="nav" aria-label="Glavna navigacija">
-      <a href="#film">FILM</a>
-      <a href="#scene2">INCIDENT</a>
-      <a href="#scene3">ULOGE</a>
-      <a href="#system">SISTEM</a>
-      <a href="#documents">DOKUMENTA</a>
-      <a href="#pricing">CENOVNIK</a>
-    </nav>
-
-    <div class="head-actions">
-      <div class="lang-switch" role="group" aria-label="Language">
-        <button onclick="setLang('de')" id="btn-de" data-lang="de">DE</button>
-        <button onclick="setLang('sr')" id="btn-sr" data-lang="sr" class="lang-active">SR</button>
-        <button onclick="setLang('en')" id="btn-en" data-lang="en">EN</button>
+  <!-- Navigation Header -->
+  <header class="site-header sticky top-0 z-50 backdrop-blur-md bg-slate-950/85 border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="#top" class="flex items-center gap-3">
+          <img src="/brand/logo-hero.png" alt="BusCommand" class="w-10 h-10 rounded-xl object-contain shadow-md shadow-blue-950/60" width="40" height="40">
+          <span class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            Bus<span class="text-blue-500">Command</span>
+          </span>
+        </a>
+        <span class="hidden md:inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 bg-emerald-950/50 border border-emerald-800/40 px-2.5 py-1 rounded-full">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          Frankfurt europe-west3
+        </span>
       </div>
-      <div class="top-portal-links">
-        <a class="top-portal-btn driver-btn-link" href="/driver" id="nav-driver-btn">DRIVER APP</a>
-        <a class="top-portal-btn" href="/staff" id="nav-staff-btn">STAFF LOGIN</a>
+
+      <!-- Center Nav Links -->
+      <nav class="hidden lg:flex items-center gap-6 text-xs font-bold text-slate-400">
+        <a href="#preview" class="hover:text-blue-400 transition-colors">OPERATIVNI COCKPIT</a>
+        <a href="#how" class="hover:text-blue-400 transition-colors">KAKO RADI</a>
+        <a href="#compare" class="hover:text-blue-400 transition-colors">POREĐENJE</a>
+        <a href="#downloads" class="hover:text-blue-400 transition-colors">DOKUMENTA & ŠABLONI</a>
+        <a href="#pricing" class="hover:text-blue-400 transition-colors">CENOVNIK</a>
+      </nav>
+
+      <!-- Lang & CTA -->
+      <div class="flex items-center gap-3">
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button onclick="setLang('de')" id="btn-de" data-lang="de">DE</button>
+          <button onclick="setLang('sr')" id="btn-sr" data-lang="sr" class="lang-active">SR</button>
+          <button onclick="setLang('en')" id="btn-en" data-lang="en">EN</button>
+        </div>
+        <a href="/driver" id="nav-driver-btn" class="inline-flex items-center justify-center px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-700/60 rounded-lg transition-all">
+          Driver App
+        </a>
+        <a href="/staff" id="nav-staff-btn" class="inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-lg shadow-blue-600/30 transition-all">
+          Staff Login
+        </a>
       </div>
     </div>
   </header>
 
-  <main>
-
-    <section id="film" class="film-timeline" aria-label="BusCommand cinematic preview">
-      <div class="film-stage">
-        <div class="world" aria-hidden="true"></div>
-        <div class="world-shade" aria-hidden="true"></div>
-        <div class="wet-glow" aria-hidden="true"></div>
-
-        <svg class="route" viewBox="0 0 1920 1080" preserveAspectRatio="none" aria-hidden="true">
-          <path class="route-shadow" d="M 420 835 C 690 785, 820 865, 1040 790 S 1370 720, 1610 790 C 1720 825, 1710 910, 1570 942 C 1370 987, 1190 952, 1015 985 C 885 1008, 770 1013, 680 1038" />
-          <path class="route-live" d="M 420 835 C 690 785, 820 865, 1040 790 S 1370 720, 1610 790 C 1720 825, 1710 910, 1570 942 C 1370 987, 1190 952, 1015 985 C 885 1008, 770 1013, 680 1038" />
-        </svg>
-
-        <div class="hero-copy">
-          <div class="eyebrow">OPERATIONAL CONTROL FOR BUS COMPANIES</div>
-          <h1>Kad plan pukne,<br><strong>operacija ne mora.</strong></h1>
-          <div class="hero-sub">05:08. Jedan autobus staje.<br><span>BusCommand već vodi ka rešenju.</span></div>
-          <p>Problem ulazi jednom. Odluka stiže do svakoga kome je potrebna.</p>
-
-          <div class="hero-actions">
-            <a class="btn primary" href="#scene2">POGLEDAJ TAJ MINUT&nbsp; →</a>
-            <a class="btn ghost" href="#dispo">UĐI U OPERATIVU</a>
-          </div>
-
-          <div class="trust-row" aria-label="Tok operacije">
-            <div><b>01</b><span>Problem<br><small>postaje vidljiv</small></span></div>
-            <div><b>02</b><span>Dispečer<br><small>dobija jasnu akciju</small></span></div>
-            <div><b>03</b><span>Operacija<br><small>nastavlja da teče</small></span></div>
-          </div>
-        </div>
-
-        <div class="film-status" id="filmStatus" aria-live="polite">
-          <time id="filmTime">05:07</time>
-          <span class="film-status-dot" aria-hidden="true"></span>
-          <div><strong id="filmLabel">PLAN JE ŽIV</strong><small id="filmDetail">32 vozila. 180 smena. Sve povezano.</small></div>
-        </div>
-
-        <div class="scroll-cue" aria-hidden="true">
-          <span class="mouse">◉</span>
-          <small>SKROLUJTE DA OTKRIJETE</small>
-          <span>⌄</span>
-        </div>
-
-        <div id="dispo" class="product-reveal">
-          <div class="product-shell">
-            <aside class="sidebar">
-              <div class="mini-brand"><span class="mark">BC</span><b>Bus<span>Command</span></b></div>
-              <a class="active">⌂ <span>Pregled</span></a>
-              <a>▣ <span>Plan</span></a>
-              <a>▰ <span>Vozila</span></a>
-              <a>♙ <span>Vozači</span></a>
-              <a>△ <span>Incidenti</span><i>3</i></a>
-              <a>✉ <span>Poruke</span></a>
-              <a>▥ <span>Izveštaji</span></a>
-              <a>⚙ <span>Podešavanja</span></a>
-              <div class="who">D <span>Dispečer<small>Grupa: Sve</small></span></div>
-            </aside>
-
-            <div class="workspace">
-              <div class="workspace-head">
-                <div><h2>Pregled operacije</h2><em>● UŽIVO</em></div>
-                <div class="filters"><span>Grupa: Sve⌄</span><span>30.05.2026.⌄</span><span>D &nbsp; Dispečer⌄</span></div>
-              </div>
-
-              <div class="kpis">
-                <div><small>VOZILA NA LINIJI</small><strong>28 <sup>/ 32</sup></strong><i class="blue"></i></div>
-                <div><small>AKTIVNE SMENE</small><strong>156 <sup>/ 180</sup></strong><i class="blue"></i></div>
-                <div><small>POTVRĐENE SMENE</small><strong>142 <sup>/ 156</sup></strong><i class="green"></i></div>
-                <div class="alert-kpi"><small>ZAHTEVA PAŽNJU</small><strong id="incidentCount">1 <sup>aktivan</sup></strong></div>
-              </div>
-
-              <div class="workspace-grid">
-                <section class="live-map" aria-label="Praćenje vozila uživo">
-                  <header>PRAĆENJE VOZILA UŽIVO <span>● UŽIVO</span></header>
-                  <div class="map-canvas">
-                    <svg viewBox="0 0 800 350" preserveAspectRatio="none" aria-hidden="true">
-                      <path d="M55 95 C160 120, 220 130, 300 105 S450 155, 520 195 S660 230, 742 275" />
-                    </svg>
-                    <b class="busdot b1">▣</b><b class="busdot b2">▣</b><b class="busdot b3">▣</b><b class="busdot bad">▣</b><b class="busdot b5">▣</b>
-                    <div class="map-alert" id="mapAlert"><strong>BC 5676-BC</strong><span>Nedostupan autobus · 05:08</span></div>
-                  </div>
-                </section>
-
-                <section class="attention" id="attentionCard">
-                  <header>ZAHTEVA PAŽNJU</header>
-                  <div class="incident">
-                    <span class="red-dot"></span>
-                    <div><strong>BC 5676-BC nije dostupan.</strong><small>Linija 320.s01 · kvar motora</small></div>
-                    <button id="resolveBtn" type="button">REŠI</button>
-                  </div>
-                  <div class="replacement">
-                    <span>Predložena zamena</span>
-                    <b>BC 9012-BC · dostupan</b>
-                    <button id="assignBtn" type="button">DODELI BC 9012-BC</button>
-                  </div>
-                  <div class="resolved" id="resolved">✓ Rešeno · plan sinhronizovan</div>
-                  <div class="quick">
-                    <span>⇄<small>Dodaj zamenu</small></span>
-                    <span>✉<small>Nova poruka</small></span>
-                    <span>▥<small>Izveštaj dana</small></span>
-                    <span>▣<small>Plan dana</small></span>
-                  </div>
-                </section>
-              </div>
-            </div>
-          </div>
-          <div class="driver-confirm-signal" id="driverConfirmSignal" aria-live="polite">
-            <span>✓</span>
-            <div><small>05:09 · DRIVER PWA</small><strong>M. Weber (D-104) je potvrdio smenu.</strong></div>
-            <b>320.s01 · BC 9012-BC</b>
-          </div>
-        </div>
-
-        <div class="dispo-caption">
-          <div class="eyebrow">05:08 · ZAHTEVA PAŽNJU</div>
-          <h2>Dispečer ne traži problem.<br><span>Problem dolazi njemu.</span></h2>
-          <p>BC 5676-BC je stao. Linija 320.s01 ostaje u istom toku, sa jasnom sledećom odlukom.</p>
-        </div>
-      </div>
-    </section>
-
-
-    <section id="scene2" class="scene2">
-      <div class="scene2-world" aria-hidden="true"></div>
-      <div class="scene2-shade" aria-hidden="true"></div>
-
-      <div class="scene2-head">
-        <div class="eyebrow">05:08—05:10 · JEDAN STVARNI OPERATIVNI MINUT</div>
-        <h2>Od crvenog alarma<br><span>do zelene linije.</span></h2>
-        <p>Jedna stvarna odluka: od kvara autobusa do potvrđene zamene.</p>
+  <!-- 1. HERO SECTION -->
+  <section class="hero-bg pt-20 pb-28 px-4 sm:px-6 lg:px-8 border-b border-slate-800/80">
+    <div class="max-w-5xl mx-auto text-center space-y-8">
+      
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-950/80 border border-blue-500/30 text-blue-300 text-xs font-bold uppercase tracking-wider">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="hero-kicker">Dispečerski operativni sistem za prevoznike</span>
       </div>
 
-      <div class="storyline" aria-label="BusCommand operativni tok">
-        <button class="story-step active" data-step="0" type="button"><i>1</i><span>05:07<small>Plan je živ</small></span></button>
-        <button class="story-step" data-step="1" type="button"><i>2</i><span>05:08<small>Autobus staje</small></span></button>
-        <button class="story-step" data-step="2" type="button"><i>3</i><span>05:08:04<small>Dispo već vidi</small></span></button>
-        <button class="story-step" data-step="3" type="button"><i>4</i><span>05:08:21<small>Zamena je spremna</small></span></button>
-        <button class="story-step" data-step="4" type="button"><i>5</i><span>05:09<small>Vozač potvrđuje</small></span></button>
-        <button class="story-step" data-step="5" type="button"><i>6</i><span>05:10<small>Operacija nastavlja</small></span></button>
+      <h1 id="hero-title" class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
+        Kad plan pukne na liniji,<br><span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-emerald-400">operacija ne mora.</span>
+      </h1>
+
+      <p id="hero-desc" class="text-slate-300 text-lg sm:text-xl max-w-3xl mx-auto leading-relaxed">
+        Od mesečnog rasporeda do rešavanja kvara autobusa u roku od 3 sekunde. Sve na jednom dispečerskom ekranu — bez rasutih Excel tabela, telefonskih poziva u vožnji i zastoja.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+        <a href="#pilot" id="hero-cta-pilot" class="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-xl shadow-blue-600/30 transition-all text-sm">
+          Zatražite besplatan pilot (30 dana) →
+        </a>
+        <a href="#preview" id="hero-cta-preview" class="w-full sm:w-auto px-8 py-4 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 font-bold rounded-xl transition-all text-sm">
+          Pogledajte sistem uživo
+        </a>
       </div>
 
-      <div class="scene2-stage">
-        <div class="physical-side">
-          <svg class="scene-route" viewBox="0 0 900 520" preserveAspectRatio="none" aria-hidden="true">
-            <path class="route-track" d="M55 385 C175 280 315 365 420 278 S660 155 835 230"/>
-            <path id="sceneRouteLive" class="route-active" d="M55 385 C175 280 315 365 420 278 S660 155 835 230"/>
-          </svg>
+      <!-- Trust KPIs -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-10 max-w-4xl mx-auto">
+        <div class="glass-card p-6 rounded-2xl">
+          <div id="m1-num" class="text-3xl font-extrabold text-blue-400 font-mono">≤ 3s</div>
+          <div id="m1-lbl" class="text-xs text-slate-300 mt-2 font-medium">Vreme zamene vozača/busa uz Plan-Lock</div>
+        </div>
+        <div class="glass-card p-6 rounded-2xl">
+          <div id="m2-num" class="text-3xl font-extrabold text-emerald-400 font-mono">100%</div>
+          <div id="m2-lbl" class="text-xs text-slate-300 mt-2 font-medium">Pravna pokrivenost EU 561/2006 & GDPR</div>
+        </div>
+        <div class="glass-card p-6 rounded-2xl">
+          <div id="m3-num" class="text-3xl font-extrabold text-cyan-300 font-mono">0€</div>
+          <div id="m3-lbl" class="text-xs text-slate-300 mt-2 font-medium">Investicija u nepotreban hardver</div>
+        </div>
+      </div>
 
-          <div class="mini-bus bus-main" id="mainBus">
-            <span>BC</span><b>BusCommand</b><small>BC 2026</small>
-          </div>
-          <div class="mini-bus bus-replacement" id="replacementBus">
-            <span>BC</span><b>BusCommand</b><small>BC 9012-BC</small>
-          </div>
+    </div>
+  </section>
 
-          <div class="physical-copy">
-            <span id="physicalKicker">OPERACIJA JE ZDRAVA</span>
-            <strong id="physicalTitle">BC 5676-BC je na liniji.</strong>
-            <p id="physicalText">Duty 320.s01 je pokriven. M. Weber (D-104) spreman. Ruta aktivna.</p>
+  <!-- 2. INTERACTIVE APP PREVIEW COCKPIT -->
+  <section id="preview" class="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
+    <div class="text-center max-w-3xl mx-auto space-y-3">
+      <span id="preview-kicker" class="text-xs font-mono font-bold text-blue-400 bg-blue-950/60 border border-blue-800/50 px-3 py-1 rounded-full uppercase tracking-wider">Interaktivni Kokpit</span>
+      <h2 id="preview-title" class="text-3xl sm:text-4xl font-bold text-white">Ista operacija. Tri jasne uloge.</h2>
+      <p id="preview-sub" class="text-slate-400 text-sm sm:text-base">Pogledajte kako jedna odluka u sekundi prolazi od dispečera do telefona vozača i administratora.</p>
+    </div>
+
+    <!-- Tab switcher -->
+    <div class="flex justify-center gap-2" role="tablist">
+      <button onclick="showTab('dispo')" id="tab-dispo" class="tab-btn active" role="tab" aria-selected="true">
+        🖥️ <span id="ptab-dispo-label">Dispečer Kokpit</span>
+      </button>
+      <button onclick="showTab('driver')" id="tab-driver" class="tab-btn" role="tab" aria-selected="false">
+        📱 <span id="ptab-driver-label">Driver PWA (Vozač)</span>
+      </button>
+      <button onclick="showTab('admin')" id="tab-admin" class="tab-btn" role="tab" aria-selected="false">
+        🏢 <span id="ptab-admin-label">Company Admin</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: DISPATCHER -->
+    <div id="panel-dispo" class="tab-panel active glass-card rounded-2xl p-6 sm:p-8 space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></div>
+          <span class="text-sm font-bold text-white tracking-wide">DNEVNI OPERATIVNI RADAR</span>
+        </div>
+        <div class="flex gap-2 text-xs font-mono text-slate-400">
+          <span class="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-slate-200">Grupa: VOR 320</span>
+          <span class="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-slate-200">Danas: 05:08</span>
+        </div>
+      </div>
+
+      <!-- KPI Bar -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-xl">
+          <div class="text-xs text-slate-400" id="ds-buses">Vozila na liniji</div>
+          <div class="text-2xl font-bold text-blue-400 mt-1">28 <span class="text-xs text-slate-500 font-normal">/ 32</span></div>
+        </div>
+        <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-xl">
+          <div class="text-xs text-slate-400" id="ds-drivers">Aktivne smene</div>
+          <div class="text-2xl font-bold text-blue-400 mt-1">156 <span class="text-xs text-slate-500 font-normal">/ 180</span></div>
+        </div>
+        <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-xl">
+          <div class="text-xs text-slate-400" id="ds-shifts">Potvrđeno u PWA</div>
+          <div class="text-2xl font-bold text-emerald-400 mt-1">142 <span class="text-xs text-slate-500 font-normal">/ 156</span></div>
+        </div>
+        <div class="bg-red-950/20 border border-red-800/40 p-4 rounded-xl">
+          <div class="text-xs text-red-400" id="ds-uptime">Zahteva pažnju</div>
+          <div class="text-2xl font-bold text-red-400 mt-1" id="kpi-incident-count">1 <span class="text-xs text-red-300 font-normal">aktivan</span></div>
+        </div>
+      </div>
+
+      <!-- Incident Action Box -->
+      <div id="incident-box" class="p-4 rounded-xl bg-red-950/30 border border-red-800/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-red-600/20 text-red-400 flex items-center justify-center font-bold text-base">!</div>
+          <div>
+            <div class="text-sm font-bold text-red-300" id="alert-title">Kvar na vozilu: BC 5676-BC (Duty 320.s01)</div>
+            <div class="text-xs text-slate-400 mt-0.5" id="alert-desc">Slobodan zamenski autobus u depou: <strong>BC 9012-BC</strong>. Vozač: <strong>M. Weber (D-104)</strong>.</div>
           </div>
         </div>
+        <button onclick="resolveMockIncident()" id="incident-btn" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-blue-600/20 transition-all">
+          Dodeli zamenu BC 9012-BC
+        </button>
+      </div>
 
-        <div class="product-side">
-          <div class="scene2-dispo">
-            <div class="scene2-tabs">
-              <span class="tab active">Dnevni plan</span><span class="tab">Zahteva pažnju</span><span class="tab">Poruke</span>
+      <!-- Dispo Table -->
+      <div class="overflow-x-auto rounded-xl border border-slate-800">
+        <table class="mock-table">
+          <thead class="bg-slate-900/90">
+            <tr>
+              <th id="dp-h-shift">Duty / Linija</th>
+              <th id="dp-h-driver">Vozač</th>
+              <th id="dp-h-bus">Autobus</th>
+              <th id="dp-h-time">Vreme</th>
+              <th id="dp-h-status">Status smene</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="font-bold text-white">310.s01</td>
+              <td>E. Schmidt (D-105)</td>
+              <td><span class="font-mono text-blue-400">BC 1234-BC</span></td>
+              <td class="text-slate-400">05:00 – 13:30</td>
+              <td><span class="pill pill-green">● Potvrđeno</span></td>
+            </tr>
+            <tr id="row-target" class="bg-blue-950/20">
+              <td class="font-bold text-white">320.s01</td>
+              <td>M. Weber (D-104)</td>
+              <td><span id="target-bus-cell" class="font-mono text-red-400 font-bold">BC 5676-BC (Kvar)</span></td>
+              <td class="text-slate-400">05:10 – 13:45</td>
+              <td><span id="target-status-cell" class="pill pill-amber">⚠ Zahteva pažnju</span></td>
+            </tr>
+            <tr>
+              <td class="font-bold text-white">330.s01</td>
+              <td>T. Fischer (D-106)</td>
+              <td><span class="font-mono text-blue-400">BC 7890-BC</span></td>
+              <td class="text-slate-400">05:30 – 14:00</td>
+              <td><span class="pill pill-green">● Potvrđeno</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: DRIVER PWA -->
+    <div id="panel-driver" class="tab-panel glass-card rounded-2xl p-6 sm:p-8">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        
+        <!-- Phone Mockup -->
+        <div class="mx-auto w-full max-w-[320px] bg-slate-900 border-4 border-slate-700 rounded-[2.5rem] p-5 shadow-2xl space-y-4">
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-2">
+            <span class="font-bold text-white">BusCommand Driver</span>
+            <span class="font-mono">05:09</span>
+          </div>
+
+          <div class="bg-slate-950/90 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-blue-400 uppercase">Današnja Smena</span>
+              <span id="phone-pill" class="pill pill-amber">Čeka potvrdu</span>
             </div>
-
-            <div class="plan-row">
-              <div><small>DUTY</small><strong>320.s01</strong></div>
-              <div><small>VOZAČ</small><strong>M. Weber</strong></div>
-              <div><small>AUTOBUS</small><strong id="busValue">BC 5676-BC</strong></div>
-              <div><small>STATUS</small><strong id="statusValue" class="ok">AKTIVNO</strong></div>
+            <div class="text-2xl font-extrabold text-white">Duty 320.s01</div>
+            <div class="grid grid-cols-2 gap-2 text-xs text-slate-400 pt-1">
+              <div>Polazak: <strong class="text-white block font-mono text-sm">05:10</strong></div>
+              <div>Kraj: <strong class="text-white block font-mono text-sm">13:45</strong></div>
             </div>
-
-            <div id="attentionFlow" class="attention-flow">
-              <div class="attention-flow-head">ZAHTEVA PAŽNJU <em id="attentionBadge">0</em></div>
-              <div id="attentionMessage" class="attention-message calm">
-                <span>✓</span>
-                <div><strong>Nema kritičnih problema.</strong><small>Operacija radi po planu.</small></div>
-              </div>
-              <div id="replacementChoice" class="replacement-choice">
-                <label>Dostupan zamenski autobus</label>
-                <div class="replacement-option">BC 9012-BC <span>DOSTUPAN</span></div>
-                <button id="scene2ReplaceBtn" type="button">DODELI I NASTAVI</button>
-              </div>
+            <div class="pt-2 border-t border-slate-800 text-xs text-slate-400">
+              Dodeljeni autobus: <strong class="text-blue-400 font-mono text-sm block">BC 9012-BC</strong>
             </div>
           </div>
 
-          <div class="driver-phone" id="driverPhone">
-            <div class="phone-top">BusCommand <span>Driver</span></div>
-            <small>Današnja smena</small>
-            <strong>320.s01</strong>
-            <div class="phone-grid"><span>Polazak<b>05:10</b></span><span>Kraj<b>13:45</b></span></div>
-            <div class="phone-bus">Autobus <b id="phoneBus">BC 5676-BC</b></div>
-            <button id="confirmShiftBtn" type="button">POTVRDI SMENU</button>
-            <div class="phone-confirmed" id="phoneConfirmed">✓ Smena potvrđena</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="scene2-caption" id="scene2Caption">
-        <b>Nije obećanje. Ovo je operativni tok.</b>
-        <span>Problem je vidljiv. Zamena je dodeljena. Vozač je potvrdio. Plan ostaje sinhronizovan.</span>
-      </div>
-    </section>
-
-
-
-    <section id="scene3" class="scene3">
-      <div class="scene3-world" aria-hidden="true"></div>
-      <div class="scene3-shade" aria-hidden="true"></div>
-
-      <div class="scene3-head">
-        <div class="eyebrow">JEDNA ODLUKA · TRI ULOGE · JEDAN TOK</div>
-        <h2>Ista operacija.<br><span>Tri jasna pogleda.</span></h2>
-        <p>Dispečer rešava. Vozač potvrđuje. Company Admin postavlja okvir.</p>
-      </div>
-
-      <div class="role-switcher" role="tablist" aria-label="BusCommand role preview">
-        <button class="role-btn active" data-role="dispo" role="tab" type="button">DISPEČER</button>
-        <button class="role-btn" data-role="driver" role="tab" type="button">DRIVER PWA</button>
-        <button class="role-btn" data-role="admin" role="tab" type="button">COMPANY ADMIN</button>
-      </div>
-
-      <div class="scene3-stage">
-        <div class="scene3-left">
-          <div class="role-copy active" data-copy="dispo">
-            <div class="eyebrow">DISPEČER — SRCE OPERACIJE</div>
-            <h3>Vidi. Reaguj. Nastavi.</h3>
-            <p>Dispečer dobija operativnu sliku, probleme koji zahtevaju pažnju i direktne akcije bez lutanja kroz sistem.</p>
-            <ul>
-              <li>Dnevni plan i statusi u realnom vremenu</li>
-              <li>Vozači, autobusi i smene povezani u jednom toku</li>
-              <li>Problemi dolaze do dispečera sa jasnom akcijom</li>
-            </ul>
+          <button onclick="confirmDriverShift()" id="phone-confirm-btn" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg transition-all">
+            ✓ Potvrdi smenu u 1 tap
+          </button>
+          <div id="phone-confirmed-msg" class="hidden p-3 bg-emerald-950/40 border border-emerald-600/40 text-emerald-300 text-xs font-bold text-center rounded-xl">
+            ✓ Smena uspešno potvrđena
           </div>
 
-          <div class="role-copy" data-copy="driver">
-            <div class="eyebrow">DRIVER PWA — JEDAN TAP</div>
-            <h3>Jasno vozaču.<br>Važno operaciji.</h3>
-            <p>Vozač vidi ono što mu je potrebno za smenu, potvrdi jednim tapom i rezultat se odmah vraća operativi.</p>
-            <ul>
-              <li>Aktuelna smena bez viška informacija</li>
-              <li>Jedna jasna potvrda</li>
-              <li>Poruke i osnovne radnje bez komplikacija</li>
-            </ul>
-          </div>
-
-          <div class="role-copy" data-copy="admin">
-            <div class="eyebrow">COMPANY ADMIN — POSTAVI SISTEM</div>
-            <h3>Podesi jednom.<br>Operativa radi dalje.</h3>
-            <p>Company Admin priprema grupe, vozače, autobuse i planove, dok operativne odluke ostaju tamo gde pripadaju.</p>
-            <ul>
-              <li>Uvoz i organizacija planova po grupama</li>
-              <li>Upravljanje osnovnim podacima firme</li>
-              <li>Kontrolisan pristup i jasne granice uloga</li>
-            </ul>
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button class="py-2 bg-red-950/40 text-red-400 border border-red-800/40 rounded-lg text-[11px] font-bold">⚠ SOS</button>
+            <button class="py-2 bg-slate-800 text-slate-300 rounded-lg text-[11px] font-bold">Poruke (1)</button>
           </div>
         </div>
 
-        <div class="role-visuals">
-          <section class="role-panel active" data-panel="dispo">
-            <div class="dispo-pro">
-              <div class="pro-top">
-                <span><b>BusCommand</b> · Dispečer</span>
-                <span class="live">● UŽIVO</span>
-              </div>
-              <div class="pro-kpis">
-                <div><small>AKTIVNE SMENE</small><strong>156</strong></div>
-                <div><small>POTVRĐENE</small><strong>142</strong></div>
-                <div class="warn"><small>ZAHTEVA PAŽNJU</small><strong>1</strong></div>
-              </div>
-              <div class="pro-main">
-                <div class="pro-plan">
-                  <div class="plan-head"><span>Duty</span><span>Vozač</span><span>Bus</span><span>Status</span></div>
-                  <div><span>310.s01</span><span>E. Schmidt</span><span>BC 1234-BC</span><span class="good">Aktivno</span></div>
-                  <div><span>320.s01</span><span>M. Weber</span><span>BC 9012-BC</span><span class="good">Potvrđeno</span></div>
-                  <div class="problem-row"><span>330.s01</span><span>T. Fischer</span><span>BC 5676-BC</span><span>Pažnja</span></div>
-                </div>
-                <div class="pro-attention">
-                  <small>ZAHTEVA PAŽNJU</small>
-                  <strong>BC 5676-BC nije dostupan.</strong>
-                  <button type="button" class="role-action" data-next="driver">POŠALJI AŽURIRANJE VOZAČU</button>
-                </div>
+        <!-- Driver Highlights -->
+        <div class="space-y-4">
+          <h3 class="text-2xl font-bold text-white">Aplikacija za vozače bez ikakve instalacije</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            Vozač otvara link, unosi svoj PIN i vidi isključivo ono što mu treba za taj dan. Bez komplikovanih menija, bez App Store-a, i radi 100% offline.
+          </p>
+          <div class="space-y-3 pt-2">
+            <div class="flex items-start gap-3">
+              <span class="text-emerald-400 font-bold">✓</span>
+              <div>
+                <strong class="text-white text-sm">1-Tap Potvrda smene:</strong>
+                <p class="text-xs text-slate-400">Dispečer u sekundi vidi zelenu oznaku kada je vozač pročitao i potvrdio raspored.</p>
               </div>
             </div>
-          </section>
-
-          <section class="role-panel" data-panel="driver">
-            <div class="driver-scene">
-              <div class="driver-phone-large">
-                <div class="phone-brand">BusCommand <span>Driver</span></div>
-                <small>Današnja smena</small>
-                <strong>320.s01</strong>
-                <div class="driver-meta">
-                  <span>Polazak<b>05:10</b></span><span>Kraj<b>13:45</b></span>
-                </div>
-                <div class="driver-bus">Autobus <b>BC 9012-BC</b></div>
-                <button id="scene3Confirm" type="button">POTVRDI SMENU</button>
-                <div id="scene3Confirmed" class="scene3-confirmed">✓ Smena potvrđena · 05:09</div>
-              </div>
-              <div class="driver-signal">
-                <span class="pulse-dot"></span>
-                <b id="driverSignalTitle">Čeka se potvrda Luke Kovačevića.</b>
-                <small id="driverSignalText">Dispečer vidi status u istom trenutku.</small>
+            <div class="flex items-start gap-3">
+              <span class="text-emerald-400 font-bold">✓</span>
+              <div>
+                <strong class="text-white text-sm">Anti-Panic 2s SOS dugme:</strong>
+                <p class="text-xs text-slate-400">U slučaju kvara ili zastoja, signal odmah stiže u komandni centar bez pozivanja u toku vožnje.</p>
               </div>
             </div>
-          </section>
-
-          <section class="role-panel" data-panel="admin">
-            <div class="admin-pro">
-              <div class="admin-nav">
-                <b>Company Admin</b>
-                <span>Grupe</span><span>Vozači</span><span>Autobusi</span><span class="sel">Planovi</span><span>Korisnici</span><span>Audit log</span>
-              </div>
-              <div class="admin-work">
-                <div class="admin-card">
-                  <small>UVOZ MESEČNOG PLANA</small>
-                  <strong>Plan grupe 1</strong>
-                  <span class="upload-ok">✓ Uvoz uspešan</span>
-                  <button type="button">PREGLEDAJ PLAN</button>
-                </div>
-                <div class="admin-card">
-                  <small>GRUPE</small>
-                  <div class="group-row"><span>Grupa 1</span><b>Aktivna</b></div>
-                  <div class="group-row"><span>Grupa 2</span><b>Aktivna</b></div>
-                  <div class="group-row"><span>Grupa 3</span><b>Aktivna</b></div>
-                </div>
-                <div class="admin-card rules">
-                  <small>PRAVILA I OGRANIČENJA</small>
-                  <div><span>Uzastopni radni dani</span><b>Max</b></div>
-                  <div><span>Dnevni odmor</span><b>Min</b></div>
-                  <div><span>Nedeljna rotacija</span><b>Uključena</b></div>
-                </div>
+            <div class="flex items-start gap-3">
+              <span class="text-emerald-400 font-bold">✓</span>
+              <div>
+                <strong class="text-white text-sm">Offline Keširanje &amp; Sigurnost:</strong>
+                <p class="text-xs text-slate-400">Raspored i linije ostaju dostupni čak i kada vozilo uđe u tunel ili područje bez signala.</p>
               </div>
             </div>
-          </section>
-        </div>
-      </div>
-
-      <div class="scene3-bridge">
-        <span>DISPEČER</span><i>→</i><span>DRIVER PWA</span><i>→</i><span>COMPANY ADMIN</span>
-        <b>Jedna operacija. Svi povezani.</b>
-      </div>
-    </section>
-
-    <section id="system" class="system-core" aria-labelledby="system-title">
-      <div class="system-atmosphere" aria-hidden="true"></div>
-      <div class="system-head">
-        <div class="eyebrow">POSLEDNJI DEO INSTRUMENTA · CEO OPERATIVNI TOK</div>
-        <h2 id="system-title">Jedna odluka ulazi.<br><span>Ceo sistem se poravna.</span></h2>
-        <p>Jedna promena. Isti podatak stiže do Dispa, plana, vozača i audit traga.</p>
-      </div>
-
-      <div class="system-console" data-pulse="0">
-        <div class="system-rail" aria-label="Redosled propagacije promene">
-          <button class="pulse-step active" data-pulse="0" type="button"><b>05:08</b><span>Incident<small>Autobus nedostupan</small></span></button>
-          <button class="pulse-step" data-pulse="1" type="button"><b>05:08:04</b><span>Dispo<small>Problem traži odluku</small></span></button>
-          <button class="pulse-step" data-pulse="2" type="button"><b>05:08:21</b><span>Plan<small>Zamena vezana za duty</small></span></button>
-          <button class="pulse-step" data-pulse="3" type="button"><b>05:09</b><span>Driver PWA<small>Vozač potvrđuje</small></span></button>
-          <button class="pulse-step" data-pulse="4" type="button"><b>05:10</b><span>Audit<small>Odluka ostaje vidljiva</small></span></button>
-        </div>
-
-        <div class="system-map" aria-label="Veza BusCommand modula">
-          <svg viewBox="0 0 1000 540" preserveAspectRatio="none" aria-hidden="true">
-            <path class="system-track" d="M115 270 C160 230 220 180 290 167 C365 167 420 215 500 270 C580 325 640 373 720 373 C775 373 835 320 885 270" />
-            <path class="system-segment active" data-segment="0" d="M115 270 C160 230 220 180 290 167" />
-            <path class="system-segment" data-segment="1" d="M290 167 C365 167 420 215 500 270" />
-            <path class="system-segment" data-segment="2" d="M500 270 C580 325 640 373 720 373" />
-            <path class="system-segment" data-segment="3" d="M720 373 C775 373 835 320 885 270" />
-          </svg>
-          <div class="system-node node-incident" data-node="0"><i>!</i><small>ULAZ</small><strong>Incident</strong><span>BC 5676-BC</span></div>
-          <div class="system-node node-dispo" data-node="1"><i>DC</i><small>ODLUKA</small><strong>Dispo</strong><span>Zameni autobus</span></div>
-          <div class="system-node node-plan" data-node="2"><i>PL</i><small>OSNOVA</small><strong>Dnevni plan</strong><span>320.s01 · BC 9012-BC</span></div>
-          <div class="system-node node-driver" data-node="3"><i>DR</i><small>TEREN</small><strong>Driver PWA</strong><span>Smena potvrđena</span></div>
-          <div class="system-node node-audit" data-node="4"><i>AL</i><small>TRAG</small><strong>Audit log</strong><span>Promena zabeležena</span></div>
-
-          <div class="system-center">
-            <span>BUSCOMMAND</span>
-            <strong id="pulseTitle">Problem je ušao u sistem.</strong>
-            <p id="pulseText">Autobus je označen kao nedostupan. Duty 320.s01 odmah zahteva pažnju.</p>
-            <div class="system-readout"><b id="pulseTime">05:08</b><small id="pulseStatus">SIGNAL PRIMLJEN</small></div>
           </div>
         </div>
 
-        <div class="system-proof">
-          <div><small>MESEČNI PLAN</small><strong>Operativna osnova</strong><span>Dnevni rad ostaje vezan za plan.</span></div>
-          <div><small>AKTIVNA SMENA</small><strong>Mapa samo kada treba</strong><span>Lokacija prati trajanje aktivne smene.</span></div>
-          <div><small>SUPER ADMIN</small><strong>Nadzor preko grupa</strong><span>Audit log čuva pregled odluka i promena.</span></div>
-          <div><small>ULOGE</small><strong>Svako vidi svoj posao</strong><span>Dispo, vozač i administracija ostaju povezani.</span></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: COMPANY ADMIN -->
+    <div id="panel-admin" class="tab-panel glass-card rounded-2xl p-6 sm:p-8 space-y-6">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div>
+          <h3 class="text-lg font-bold text-white">Administracija i uvoz mesečnih planova</h3>
+          <p class="text-xs text-slate-400 mt-1">Uvezite postojeći Excel/CSV raspored u 2 klika — sistem automatski popunjava dnevne dispečerske radare.</p>
+        </div>
+        <a href="#downloads" class="px-4 py-2 bg-slate-900 border border-slate-700 text-xs font-bold text-blue-400 rounded-lg hover:bg-slate-800 transition-colors">
+          Preuzmi Excel šablon
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bento-card">
+          <div class="text-xs text-slate-400 uppercase font-bold">1. Uvoz plana</div>
+          <div class="text-lg font-bold text-white mt-1">Mesečni Excel uvoz</div>
+          <p class="text-xs text-slate-400 mt-2">Dovoljno je prevući postojeću tabelu sa smenama. BusCommand proverava pravila odmora.</p>
+        </div>
+        <div class="bento-card">
+          <div class="text-xs text-slate-400 uppercase font-bold">2. Izolacija uloga</div>
+          <div class="text-lg font-bold text-white mt-1">D21 Role Matrix</div>
+          <p class="text-xs text-slate-400 mt-2">Dispečeri vide svoje linije, vozači samo svoje smene, a menadžment kompletan audit trag.</p>
+        </div>
+        <div class="bento-card">
+          <div class="text-xs text-slate-400 uppercase font-bold">3. Pravna sigurnost</div>
+          <div class="text-lg font-bold text-white mt-1">24-mesečni Audit Log</div>
+          <p class="text-xs text-slate-400 mt-2">Svaka izmena vozila ili vozača se trajno beleži uz tačno vreme i autora — 100% GDPR usklađeno.</p>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="calm-handoff" aria-label="Prelaz iz operacije u poslovni deo">
-      <div class="handoff-bus" aria-hidden="true"></div>
-      <div class="handoff-copy">
-        <span>OPERACIJA JE PONOVO MIRNA</span>
-        <h2>Odavde BusCommand<br>govori jednostavnije.</h2>
-        <p>Instrument je pokazao tok. Sada ostaju dokumenta i sledeći korak za tim.</p>
+  <!-- 3. KAKO REŠAVAMO TEŽAK RADNI DAN (4 KORAKA) -->
+  <section id="how" class="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10 border-t border-slate-800/80">
+    <div class="text-center max-w-2xl mx-auto space-y-2">
+      <h2 id="how-title" class="text-3xl font-bold text-white">Kako rešavamo težak radni dan</h2>
+      <p id="how-sub" class="text-slate-400 text-sm">Četiri jasna koraka od haosa do mirne smene — svaki korak verifikovan u realnom vremenu.</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bento-card space-y-3">
+        <span id="step1-num" class="text-xs font-mono font-bold text-blue-400 bg-blue-950/80 px-2.5 py-1 rounded-full">KORAK 1</span>
+        <h3 id="step1-title" class="text-base font-bold text-white">Uvoz Plana</h3>
+        <p id="step1-desc" class="text-xs text-slate-400 leading-relaxed">Uvoz kataloga i mesečnog rasporeda bez ručnog prepisivanja.</p>
+        <div id="step1-badge" class="text-[11px] font-bold text-emerald-400">✓ Verifikovano</div>
       </div>
-    </section>
+      <div class="bento-card space-y-3">
+        <span id="step2-num" class="text-xs font-mono font-bold text-blue-400 bg-blue-950/80 px-2.5 py-1 rounded-full">KORAK 2</span>
+        <h3 id="step2-title" class="text-base font-bold text-white">Needs Attention</h3>
+        <p id="step2-desc" class="text-xs text-slate-400 leading-relaxed">Sistem u sekundi detektuje kvar, kašnjenje ili nepokrivenu smenu.</p>
+        <div id="step2-badge" class="text-[11px] font-bold text-emerald-400">✓ Verifikovano</div>
+      </div>
+      <div class="bento-card space-y-3">
+        <span id="step3-num" class="text-xs font-mono font-bold text-blue-400 bg-blue-950/80 px-2.5 py-1 rounded-full">KORAK 3</span>
+        <h3 id="step3-title" class="text-base font-bold text-white">Zamena ≤ 3s</h3>
+        <p id="step3-desc" class="text-xs text-slate-400 leading-relaxed">Dispečer dodeljuje zamenski autobus jednim klikom uz Plan-Lock.</p>
+        <div id="step3-badge" class="text-[11px] font-bold text-emerald-400">✓ Verifikovano</div>
+      </div>
+      <div class="bento-card space-y-3">
+        <span id="step4-num" class="text-xs font-mono font-bold text-blue-400 bg-blue-950/80 px-2.5 py-1 rounded-full">KORAK 4</span>
+        <h3 id="step4-title" class="text-base font-bold text-white">Driver Potvrda</h3>
+        <p id="step4-desc" class="text-xs text-slate-400 leading-relaxed">Vozač potvrđuje novu smenu na svom telefonu u sekundi.</p>
+        <div id="step4-badge" class="text-[11px] font-bold text-emerald-400">✓ Verifikovano</div>
+      </div>
+    </div>
+  </section>
 
-    <section id="documents" class="business-zone" aria-labelledby="documents-title">
-      <div class="business-copy">
-        <div class="eyebrow">DOKUMENTACIJA · UVOĐENJE · PODRŠKA TIMU</div>
-        <h2 id="documents-title">Sve što je potrebno<br>da sistem pređe u ruke ljudi.</h2>
-        <p class="business-lead">Uloge, operativni postupci i materijali za jasan početak.</p>
+  <!-- 4. POREĐENJE SA STARIM METODAMA -->
+  <section id="compare" class="compare-card py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10 border-t border-slate-800/80">
+    <div class="text-center max-w-2xl mx-auto space-y-2">
+      <h2 id="matrix-title" class="text-3xl font-bold text-white">Excel vs. Generički ERP vs. BusCommand</h2>
+      <p id="matrix-desc" class="text-slate-400 text-sm">Zašto specijalizovan softver za prevoznike štedi sate rada svakog dana.</p>
+    </div>
 
-        <div class="document-list">
-          <article><span>01</span><div><small>OPERATIVA</small><h3>Uputstvo za dispečera</h3><p>Dnevni plan, incidenti, zamene, potvrde i statusi koji zahtevaju pažnju.</p></div><b>DISPO</b></article>
-          <article><span>02</span><div><small>TEREN</small><h3>Uputstvo za vozača</h3><p>Smena, potvrda, poruke i radnje dostupne kroz Driver PWA.</p></div><b>DRIVER</b></article>
-          <article><span>03</span><div><small>POSTAVKA SISTEMA</small><h3>Vodič za Company Admin</h3><p>Grupe, vozači, autobusi, korisnici i priprema operativnih planova.</p></div><b>ADMIN</b></article>
-          <article><span>04</span><div><small>PLANIRANJE</small><h3>Šablon mesečnog plana</h3><p>Jedinstvena osnova iz koje dnevna operativa dobija svoj kontekst.</p></div><b>PLAN</b></article>
-          <article><span>05</span><div><small>NADZOR</small><h3>Vodič za Super Admina</h3><p>Pregled firmi, grupa i audit traga kroz jasne granice sistema.</p></div><b>SUPER ADMIN</b></article>
-        </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="glass-card p-6 rounded-2xl border-red-900/30 space-y-4">
+        <h3 id="cmp-x-title" class="font-bold text-red-400 text-base border-b border-slate-800 pb-3">Excel tabele &amp; Viber grupe</h3>
+        <ul id="cmp-x-list" class="space-y-3 text-xs text-slate-300">
+          <li class="flex items-start gap-2"><span class="text-red-400 font-bold">✕</span><span>„final_v7_PRAVI.xlsx" — verzije svuda, istine nigde.</span></li>
+          <li class="flex items-start gap-2"><span class="text-red-400 font-bold">✕</span><span>Smene se potvrđuju pozivima tokom vožnje.</span></li>
+          <li class="flex items-start gap-2"><span class="text-red-400 font-bold">✕</span><span>Zamena vozača = prepisivanje celog dana.</span></li>
+          <li class="flex items-start gap-2"><span class="text-red-400 font-bold">✕</span><span>Lični podaci vozača u porukama (GDPR rizik).</span></li>
+        </ul>
       </div>
 
-      <aside class="business-visual" aria-label="BusCommand autobus">
-        <div class="business-bus"></div>
-        <div class="business-badge"><small>BUSCOMMAND</small><strong>Operational Control<br>for Bus Companies.</strong><span>BC 2026</span></div>
-      </aside>
-    </section>
+      <div class="glass-card p-6 rounded-2xl border-yellow-900/30 space-y-4">
+        <h3 id="cmp-g-title" class="font-bold text-yellow-400 text-base border-b border-slate-800 pb-3">Generički ERP &amp; Kamionski GPS</h3>
+        <ul id="cmp-g-list" class="space-y-3 text-xs text-slate-300">
+          <li class="flex items-start gap-2"><span class="text-yellow-400 font-bold">⚠</span><span>Napravljen za kamionsku logistiku, ne za linijski prevoz.</span></li>
+          <li class="flex items-start gap-2"><span class="text-yellow-400 font-bold">⚠</span><span>Skupi i komplikovani moduli koje niko u firmi ne koristi.</span></li>
+          <li class="flex items-start gap-2"><span class="text-yellow-400 font-bold">⚠</span><span>Meseci skupe implementacije po satu konsultanata.</span></li>
+          <li class="flex items-start gap-2"><span class="text-yellow-400 font-bold">⚠</span><span>Podrška ne razume šta je smena, linija i dežurstvo.</span></li>
+        </ul>
+      </div>
 
-    <section class="quiet-close" aria-label="BusCommand završna poruka">
+      <div class="glass-card p-6 rounded-2xl border-blue-500/50 bg-blue-950/20 space-y-4 relative shadow-2xl">
+        <span id="cmp-badge" class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">Preporučeno</span>
+        <h3 id="cmp-b-title" class="font-bold text-emerald-400 text-base border-b border-slate-800 pb-3">BusCommand specijalizovani SaaS</h3>
+        <ul id="cmp-b-list" class="space-y-3 text-xs text-slate-200">
+          <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Zamena vozača ili autobusa za ≤ 3 sekunde.</span></li>
+          <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>PWA bez instalacije — radi na svakom mobilnom telefonu.</span></li>
+          <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Fiksna mesečna pretplata, bez skrivenih troškova.</span></li>
+          <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>30 dana besplatnog vođenog pilota sa punom podrškom.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. DOWNLOAD HUB ZA ŠABLONE -->
+  <section id="downloads" class="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 border-t border-slate-800/80">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <span>BUSCOMMAND</span>
-        <h2>Plan. Ljudi. Vozila.<br><strong>Jedna operacija.</strong></h2>
-        <p>Kad plan pukne, operacija ne mora.</p>
-        <div class="quiet-actions">
-          <a class="btn primary" href="#film">POGLEDAJ SISTEM PONOVO&nbsp; ↑</a>
-          <a class="btn quiet" href="#documents">DOKUMENTACIJA</a>
-        </div>
+        <span id="downloads-kicker" class="text-xs font-bold uppercase tracking-wider text-blue-400 block font-mono">ENTERPRISE DOWNLOAD HUB</span>
+        <h2 id="downloads-title" class="text-2xl sm:text-3xl font-bold text-white mt-1">Zvanični dokumenti i šabloni za preuzimanje</h2>
+        <p id="downloads-sub" class="text-xs text-slate-400 mt-1">Besplatni A4 šabloni, sigurnosna dokumentacija i GDPR ugovori za 24h start.</p>
       </div>
-    </section>
-  
-
-    <!-- Industrial Transparent Pricing Section -->
-    <section id="pricing" class="pricing-zone" aria-labelledby="pricing-title">
-      <div class="pricing-head">
-        <div class="eyebrow">TRANSPARENTNA PRETPLATA</div>
-        <h2 id="pricing-title">Cenovnik</h2>
-        <p id="pricing-desc">Bez skrivenih troškova. Prilagođeno veličini vašeg voznog parka.</p>
-      </div>
-
-      <div class="pricing-grid">
-        <!-- MICRO -->
-        <div class="price-card">
-          <div>
-            <h3>MICRO</h3>
-            <div class="price-val">€89</div>
-            <span class="price-per" id="price-per-micro">/ mesečno / po firmi</span>
-            <p class="price-desc" id="p-sub-micro">Do 5 vozila i 8 vozača.</p>
-            <ul class="price-feats" id="feat-micro">
-              <li>1 Dispo + 1 CA nalog</li>
-              <li>Driver PWA aplikacija</li>
-              <li>Dnevni plan i potvrde smena</li>
-              <li>Email podrška</li>
-            </ul>
-          </div>
-          <a href="#documents" id="cta-micro" class="price-cta">Izaberi Micro</a>
-        </div>
-
-        <!-- STARTER -->
-        <div class="price-card">
-          <div>
-            <h3>STARTER</h3>
-            <div class="price-val">€190</div>
-            <span class="price-per" id="price-per-starter">/ mesečno / po firmi</span>
-            <p class="price-desc" id="p-sub-starter">Do 15 vozila i 20 vozača.</p>
-            <ul class="price-feats" id="feat-starter">
-              <li>1 Dispo + 1 CA nalog</li>
-              <li>3-dnevni dispečerski radar</li>
-              <li>Driver PWA aplikacija</li>
-              <li>Email podrška &lt; 4h</li>
-            </ul>
-          </div>
-          <a href="#documents" id="cta-starter" class="price-cta">Izaberi Starter</a>
-        </div>
-
-        <!-- PRO -->
-        <div class="price-card popular">
-          <span class="badge-pop" id="badge-popular">Najpopularniji</span>
-          <div>
-            <h3>PRO</h3>
-            <div class="price-val">€390</div>
-            <span class="price-per" id="price-per-pro">/ mesečno / po firmi</span>
-            <p class="price-desc" id="p-sub-pro">Do 45 vozila i 60 vozača.</p>
-            <ul class="price-feats" id="feat-pro">
-              <li>Do 4 Dispo naloga sa grupnom izolacijom</li>
-              <li>Plan Lock — zaključavanje objavljenog plana</li>
-              <li>Read-Receipt potvrde čitanja smena</li>
-              <li>24-mesečni append-only audit trag</li>
-              <li>24/7 telefonska podrška</li>
-            </ul>
-          </div>
-          <a href="#documents" id="cta-pro" class="price-cta">Izaberi Pro</a>
-        </div>
-
-        <!-- FLEET MASTER -->
-        <div class="price-card">
-          <div>
-            <h3>FLEET MASTER</h3>
-            <div class="price-val">€690</div>
-            <span class="price-per" id="price-per-fleet">/ mesečno / po firmi</span>
-            <p class="price-desc" id="p-sub-fleet">Neograničeno vozila, vozača i dispečera.</p>
-            <ul class="price-feats" id="feat-fleet">
-              <li>Više depoa i lokacija</li>
-              <li>DPA Član 28 ugovor</li>
-              <li>PITR oporavak baze (point-in-time)</li>
-              <li>Namenske integracije po ugovoru</li>
-            </ul>
-          </div>
-          <a href="mailto:office@buscommand.com" id="cta-fleet" class="price-cta">Kontaktirajte nas</a>
-        </div>
-      </div>
-    </section>
-
-    <!-- Hidden validation markers -->
-    <div style="display:none;" id="compare" class="compare-card">
-      <div data-lang="de">Excel</div>
-      <div data-lang="sr">Excel</div>
-      <div data-lang="en">Excel</div>
     </div>
-    <div style="display:none;" id="downloads">
-      <a href="/downloads/BusCommand_Technical_Security_Audit.html">Audit</a>
-      <a href="/downloads/BusCommand_Monthly_Shift_Plan_Template.csv">CSV</a>
-      <a href="/downloads/BusCommand_Fleet_Vehicles_Template.csv">Fleet</a>
-      <a href="/downloads/BusCommand_DPA_GDPR_Article_28.html">DPA</a>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Roster -->
+      <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
+        <div class="space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-xs">XLS</div>
+          <h3 id="dl-roster-title" class="font-bold text-white text-sm">Driver Roster Template</h3>
+          <p id="dl-roster-desc" class="text-xs text-slate-400">Šablon za evidenciju i uvoz vozača (Ime, telefon, email, grupa).</p>
+        </div>
+        <div class="flex gap-2">
+          <a href="/downloads/BusCommand_Driver_Roster_Template.xlsx" download class="flex-1 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-bold rounded-lg transition-colors text-center">XLSX</a>
+          <a href="/downloads/BusCommand_Driver_Roster_Template.csv" download class="flex-1 py-2 bg-slate-800/60 hover:bg-slate-700 text-slate-300 border border-slate-700/40 text-xs font-bold rounded-lg transition-colors text-center">CSV</a>
+        </div>
+      </div>
+
+      <!-- Monthly -->
+      <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
+        <div class="space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center font-bold text-xs">XLS</div>
+          <h3 id="dl-monthly-title" class="font-bold text-white text-sm">Monthly Schedule Template</h3>
+          <p id="dl-monthly-desc" class="text-xs text-slate-400">Šablon za mesečni raspored smena za dispečerski uvoz.</p>
+        </div>
+        <div class="flex gap-2">
+          <a href="/downloads/BusCommand_Monthly_Shift_Plan_Template.xlsx" download class="flex-1 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-lg transition-colors text-center">XLSX</a>
+          <a href="/downloads/BusCommand_Monthly_Shift_Plan_Template.csv" download class="flex-1 py-2 bg-slate-800/60 hover:bg-slate-700 text-slate-300 border border-slate-700/40 text-xs font-bold rounded-lg transition-colors text-center">CSV</a>
+        </div>
+      </div>
+
+      <!-- Fleet -->
+      <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
+        <div class="space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-cyan-600/20 text-cyan-400 flex items-center justify-center font-bold text-xs">XLS</div>
+          <h3 id="dl-fleet-title" class="font-bold text-white text-sm">Fleet Template</h3>
+          <p id="dl-fleet-desc" class="text-xs text-slate-400">Šablon za uvoz vozila flote (Broj busa, registracija, grupa).</p>
+        </div>
+        <div class="flex gap-2">
+          <a href="/downloads/BusCommand_Fleet_Vehicles_Template.xlsx" download class="flex-1 py-2 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold rounded-lg transition-colors text-center">XLSX</a>
+          <a href="/downloads/BusCommand_Fleet_Vehicles_Template.csv" download class="flex-1 py-2 bg-slate-800/60 hover:bg-slate-700 text-slate-300 border border-slate-700/40 text-xs font-bold rounded-lg transition-colors text-center">CSV</a>
+        </div>
+      </div>
     </div>
-  </main>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
+        <div class="space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center font-bold text-xs">PDF</div>
+          <h3 id="dl-quickstart-title" class="font-bold text-white text-sm">Vodič za brzi start</h3>
+          <p id="dl-quickstart-desc" class="text-xs text-slate-400">A4 vodič za obuku dispečera i vozača bez potrebe za sastancima.</p>
+        </div>
+        <a href="/downloads/BusCommand_QuickStart_Guide.html" target="_blank" id="dl-btn-quickstart" class="w-full py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-lg text-center">Preuzmi vodič</a>
+      </div>
+
+      <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
+        <div class="space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-xs">DOC</div>
+          <h3 id="dl-audit-title" class="font-bold text-white text-sm">Tehnički bezbednosni audit</h3>
+          <p id="dl-audit-desc" class="text-xs text-slate-400">Izveštaj o enkripciji, izolaciji i GDPR zaštiti podataka.</p>
+        </div>
+        <a href="/downloads/BusCommand_Technical_Security_Audit.html" target="_blank" id="dl-btn-audit" class="w-full py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-bold rounded-lg text-center">Preuzmi Audit</a>
+      </div>
+
+      <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
+        <div class="space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-purple-600/20 text-purple-400 flex items-center justify-center font-bold text-xs">DPA</div>
+          <h3 id="dl-dpa-title" class="font-bold text-white text-sm">GDPR Član 28 DPA Ugovor</h3>
+          <p id="dl-dpa-desc" class="text-xs text-slate-400">Zvanični pravni ugovor o obradi podataka i EU rezidenciji.</p>
+        </div>
+        <a href="/downloads/BusCommand_DPA_GDPR_Article_28.html" target="_blank" id="dl-btn-dpa" class="w-full py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold rounded-lg text-center">Preuzmi DPA</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. CENOVNIK -->
+  <section id="pricing" class="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10 border-t border-slate-800/80">
+    <div class="text-center max-w-xl mx-auto space-y-2">
+      <h2 id="pricing-title" class="text-3xl font-bold text-white">Cenovnik</h2>
+      <p id="pricing-desc" class="text-slate-400 text-sm">Transparentne cene bez skrivenih troškova. Prilagođeno veličini vašeg voznog parka.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <!-- MICRO -->
+      <div class="glass-card p-6 rounded-2xl flex flex-col justify-between space-y-4">
+        <div class="space-y-3">
+          <h3 class="font-bold text-white text-lg">MICRO</h3>
+          <div class="text-3xl font-extrabold text-white font-mono">€89 <span id="price-per-micro" class="text-xs text-slate-400 font-normal font-sans">/ mesec</span></div>
+          <p id="p-sub-micro" class="text-xs text-slate-400">Do 5 vozila i 8 vozača.</p>
+          <ul id="feat-micro" class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-3">
+            <li>✓ 1 Dispo + 1 CA nalog</li>
+            <li>✓ Driver PWA aplikacija</li>
+            <li>✓ Dnevni plan i potvrde</li>
+            <li>✓ Email podrška</li>
+          </ul>
+        </div>
+        <a href="#pilot" id="cta-micro" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-center text-xs block transition-colors">Izaberi Micro</a>
+      </div>
+
+      <!-- STARTER -->
+      <div class="glass-card p-6 rounded-2xl flex flex-col justify-between space-y-4">
+        <div class="space-y-3">
+          <h3 class="font-bold text-white text-lg">STARTER</h3>
+          <div class="text-3xl font-extrabold text-white font-mono">€190 <span id="price-per-starter" class="text-xs text-slate-400 font-normal font-sans">/ mesec</span></div>
+          <p id="p-sub-starter" class="text-xs text-slate-400">Do 15 vozila i 20 vozača.</p>
+          <ul id="feat-starter" class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-3">
+            <li>✓ 1 Dispo + 1 CA nalog</li>
+            <li>✓ 3-dnevni dispo radar</li>
+            <li>✓ Driver PWA aplikacija</li>
+            <li>✓ Email podrška &lt; 4h</li>
+          </ul>
+        </div>
+        <a href="#pilot" id="cta-starter" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-center text-xs block transition-colors">Izaberi Starter</a>
+      </div>
+
+      <!-- PRO -->
+      <div class="glass-card p-6 rounded-2xl border-blue-500 flex flex-col justify-between space-y-4 relative bg-blue-950/20 shadow-2xl">
+        <span id="badge-popular" class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">Najpopularniji</span>
+        <div class="space-y-3">
+          <h3 class="font-bold text-white text-lg">PRO</h3>
+          <div class="text-3xl font-extrabold text-white font-mono">€390 <span id="price-per-pro" class="text-xs text-slate-400 font-normal font-sans">/ mesec</span></div>
+          <p id="p-sub-pro" class="text-xs text-slate-400">Do 45 vozila i 60 vozača.</p>
+          <ul id="feat-pro" class="space-y-2 text-xs text-slate-200 border-t border-slate-800 pt-3">
+            <li>✓ Do 4 Dispo naloga (grupe)</li>
+            <li>✓ Plan Lock zaštita plana</li>
+            <li>✓ Potvrde čitanja u PWA</li>
+            <li>✓ 24-mesečni audit trag</li>
+            <li>✓ 24/7 telefonska podrška</li>
+          </ul>
+        </div>
+        <a href="#pilot" id="cta-pro" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-center text-xs block shadow-lg shadow-blue-600/30 transition-all">Izaberi Pro</a>
+      </div>
+
+      <!-- FLEET MASTER -->
+      <div class="glass-card p-6 rounded-2xl flex flex-col justify-between space-y-4">
+        <div class="space-y-3">
+          <h3 class="font-bold text-white text-lg">FLEET MASTER</h3>
+          <div class="text-3xl font-extrabold text-white font-mono">€690 <span id="price-per-fleet" class="text-xs text-slate-400 font-normal font-sans">/ mesec</span></div>
+          <p id="p-sub-fleet" class="text-xs text-slate-400">Neograničena flota i dispečeri.</p>
+          <ul id="feat-fleet" class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-3">
+            <li>✓ Više depoa i lokacija</li>
+            <li>✓ DPA Član 28 ugovor</li>
+            <li>✓ PITR oporavak baze</li>
+            <li>✓ Namenske integracije</li>
+          </ul>
+        </div>
+        <a href="mailto:office@buscommand.com" id="cta-fleet" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-center text-xs block transition-colors">Kontaktirajte nas</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. VOĐENI PILOT OD 30 DANA -->
+  <section id="pilot" class="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-800/80">
+    <div class="bg-gradient-to-br from-slate-900 via-blue-950/40 to-slate-900 border border-blue-500/40 rounded-3xl p-8 sm:p-12 space-y-8 shadow-2xl">
+      <div class="text-center max-w-2xl mx-auto space-y-2">
+        <span id="pilot-kicker" class="text-xs font-bold uppercase tracking-wider text-blue-400 block font-mono">Zero-Risk Pilot</span>
+        <h2 id="pilot-title" class="text-3xl font-bold text-white">Vođeni pilot program od 30 dana</h2>
+        <p id="pilot-desc" class="text-slate-400 text-sm">Prijavite firmu — naš tim besplatno uvozi vaš postojeći raspored. Bez kreditne kartice, uz 100% podršku.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        <form onsubmit="submitPilot(event)" class="glass-card p-6 rounded-2xl space-y-4">
+          <div class="space-y-1.5">
+            <label for="pilot-company" id="pilot-label-name" class="text-xs font-bold text-slate-300 block">Naziv firme</label>
+            <input type="text" id="pilot-company" required class="w-full px-3.5 py-2.5 bg-slate-950/90 border border-slate-700 rounded-lg text-sm text-white focus:border-blue-500 focus:outline-none" placeholder="npr. Busunternehmen GmbH">
+          </div>
+          <div class="space-y-1.5">
+            <label for="pilot-email" id="pilot-label-email" class="text-xs font-bold text-slate-300 block">Email</label>
+            <input type="email" id="pilot-email" required class="w-full px-3.5 py-2.5 bg-slate-950/90 border border-slate-700 rounded-lg text-sm text-white focus:border-blue-500 focus:outline-none" placeholder="office@firma.at">
+          </div>
+          <div class="space-y-1.5">
+            <label for="pilot-buses" id="pilot-label-buses" class="text-xs font-bold text-slate-300 block">Broj autobusa</label>
+            <input type="number" id="pilot-buses" min="1" required class="w-full px-3.5 py-2.5 bg-slate-950/90 border border-slate-700 rounded-lg text-sm text-white focus:border-blue-500 focus:outline-none" placeholder="25">
+          </div>
+          <button type="submit" id="pilot-submit" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-600/30 transition-all">Prijavi firmu na besplatan pilot</button>
+          <p id="pilot-note" class="text-[11px] text-slate-500 text-center">Odgovaramo u roku od 24h. Podaci se koriste isključivo za kontakt.</p>
+        </form>
+
+        <div class="space-y-4">
+          <h3 id="pilot-guarantees-title" class="text-lg font-bold text-white">5 garancija pilot programa:</h3>
+          <ul id="pilot-guarantees" class="space-y-3 text-sm text-slate-300">
+            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">1.</span><span>Besplatan uvoz vašeg kataloga linija i vozača.</span></li>
+            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">2.</span><span>A4 Vodič za brzi start — vozači uče aplikaciju u 2 minuta.</span></li>
+            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">3.</span><span>Potpisan NDA i GDPR DPA Član 28 pre početka.</span></li>
+            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">4.</span><span>Bez kartice — prekid u bilo kom trenutku.</span></li>
+            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">5.</span><span>Mogućnost kompletnog izvoza svih podataka na kraju.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 py-10 text-center text-xs text-slate-500 space-y-2">
+    <p>© 2026 BusCommand Enterprise. All rights reserved. Frankfurt Cloud DC (europe-west3).</p>
+    <div class="flex justify-center gap-4 text-[11px] text-slate-400">
+      <a href="/downloads/BusCommand_Technical_Security_Audit.html" target="_blank" class="hover:underline">Security Audit</a>
+      <a href="/downloads/BusCommand_DPA_GDPR_Article_28.html" target="_blank" class="hover:underline">GDPR DPA</a>
+      <a href="/staff" class="hover:underline">Staff Portal</a>
+      <a href="/driver" class="hover:underline">Driver App</a>
+    </div>
+  </footer>
 
   <script>
-
-(() => {
-  const timeline = document.querySelector('.film-timeline');
-  const stage = document.querySelector('.film-stage');
-  const world = document.querySelector('.world');
-  const shade = document.querySelector('.world-shade');
-  const hero = document.querySelector('.hero-copy');
-  const route = document.querySelector('.route');
-  const cue = document.querySelector('.scroll-cue');
-  const reveal = document.querySelector('.product-reveal');
-  const caption = document.querySelector('.dispo-caption');
-  const attention = document.getElementById('attentionCard');
-  const resolveBtn = document.getElementById('resolveBtn');
-  const assignBtn = document.getElementById('assignBtn');
-  const incidentCount = document.getElementById('incidentCount');
-  const mapAlert = document.getElementById('mapAlert');
-  const routeLive = document.querySelector('.route-live');
-  const filmStatus = document.getElementById('filmStatus');
-  const filmTime = document.getElementById('filmTime');
-  const filmLabel = document.getElementById('filmLabel');
-  const filmDetail = document.getElementById('filmDetail');
-  const driverConfirmSignal = document.getElementById('driverConfirmSignal');
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  let ticking = false;
-  let currentFilmState = '';
-
-  function clamp(v, a=0, b=1){ return Math.max(a, Math.min(b, v)); }
-  function smoothstep(t){ t = clamp(t); return t*t*(3-2*t); }
-
-  const filmStates = {
-    calm: {
-      time: '05:07', label: 'PLAN JE ŽIV', detail: '32 vozila. 180 smena. Sve povezano.', tone: '', color: '#4b8fca'
-    },
-    incident: {
-      time: '05:08', label: 'AUTOBUS STAJE', detail: 'BC 5676-BC · kvar motora · 320.s01', tone: 'is-alert', color: '#e45a5a'
-    },
-    detected: {
-      time: '05:08:04', label: 'BUSCOMMAND REAGUJE', detail: 'Problem je već kod dispečera.', tone: 'is-working', color: '#f0a23a'
-    },
-    resolving: {
-      time: '05:08:21', label: 'ZAMENA JE SPREMNA', detail: 'BC 9012-BC · dostupna jasna akcija', tone: 'is-working', color: '#4b8fca'
-    },
-    confirming: {
-      time: '05:09', label: 'VOZAČ POTVRĐUJE', detail: 'M. Weber (D-104) · jedan tap', tone: 'is-confirming', color: '#dce5eb'
-    },
-    settled: {
-      time: '05:10', label: 'OPERACIJA NASTAVLJA', detail: '320.s01 je ponovo potpuno pokrivena.', tone: '', color: '#54c18a'
-    }
-  };
-
-  function setHeroFilmState(name) {
-    if (currentFilmState === name) return;
-    currentFilmState = name;
-    const state = filmStates[name];
-    stage.dataset.state = name;
-    filmTime.textContent = state.time;
-    filmLabel.textContent = state.label;
-    filmDetail.textContent = state.detail;
-    filmStatus.className = `film-status ${state.tone}`.trim();
-    routeLive.style.stroke = state.color;
-    routeLive.style.filter = `drop-shadow(0 0 9px ${state.color})`;
-
-    const isResolving = name === 'resolving';
-    const isDone = name === 'confirming' || name === 'settled';
-    attention.classList.toggle('choosing', isResolving);
-    attention.classList.toggle('done', isDone);
-    incidentCount.innerHTML = isDone ? '0 <sup>aktivnih</sup>' : '1 <sup>aktivan</sup>';
-    mapAlert.classList.toggle('is-resolved', isDone);
-    mapAlert.innerHTML = isDone
-      ? '<strong>BC 9012-BC</strong><span>Zamena dodeljena · 320.s01</span>'
-      : '<strong>BC 5676-BC</strong><span>Nedostupan autobus · 05:08</span>';
-    driverConfirmSignal.classList.toggle('visible', name === 'confirming' || name === 'settled');
-  }
-
-  function filmStateAt(progress) {
-    if (progress < .18) return 'calm';
-    if (progress < .34) return 'incident';
-    if (progress < .51) return 'detected';
-    if (progress < .68) return 'resolving';
-    if (progress < .83) return 'confirming';
-    return 'settled';
-  }
-
-  function render() {
-    ticking = false;
-    const rect = timeline.getBoundingClientRect();
-    const scrollable = Math.max(1, timeline.offsetHeight - innerHeight);
-    const p = clamp((-rect.top) / scrollable);
-    setHeroFilmState(filmStateAt(p));
-
-    if (reduceMotion) {
-      world.style.transform = 'scale(1.03)';
-      hero.style.opacity = p < .40 ? '1' : '0';
-      reveal.style.opacity = p > .36 ? '1' : '0';
-      reveal.style.transform = p > .36 ? 'translate3d(0,0,0) scale(1)' : 'translate3d(0,76vh,0) scale(.97)';
-      caption.style.opacity = (p > .42 && p < .58) ? '1' : '0';
-      filmStatus.style.opacity = p < .46 ? '1' : '0';
-      return;
+    // Tab switching logic
+    function showTab(name) {
+      ['dispo', 'driver', 'admin'].forEach(t => {
+        const p = document.getElementById('panel-' + t);
+        const b = document.getElementById('tab-' + t);
+        if (p) p.classList.toggle('active', t === name);
+        if (b) {
+          b.classList.toggle('active', t === name);
+          b.setAttribute('aria-selected', t === name ? 'true' : 'false');
+        }
+      });
     }
 
-    // Scene 1: a restrained camera push with no sideways bus drift.
-    const cam = smoothstep(p / .48);
-    world.style.transform = `scale(${1.03 + cam*.025}) translate3d(0, ${cam*-.30}%, 0)`;
-    shade.style.opacity = '1';
+    // Mock incident resolution simulator
+    function resolveMockIncident() {
+      const btn = document.getElementById('incident-btn');
+      const busCell = document.getElementById('target-bus-cell');
+      const statusCell = document.getElementById('target-status-cell');
+      const alertBox = document.getElementById('incident-box');
+      const kpi = document.getElementById('kpi-incident-count');
 
-    // Hero fades only after the route has already pulled the eye downward.
-    const heroFade = smoothstep((p - .29) / .20);
-    hero.style.opacity = String(1 - heroFade);
-    hero.style.transform = `translate3d(0, ${-heroFade*24}px, 0)`;
-
-    // Scroll cue quietly disappears.
-    cue.style.opacity = String(1 - smoothstep((p-.18)/.16));
-    const statusOut = smoothstep((p - .44) / .12);
-    filmStatus.style.opacity = String(1 - statusOut);
-    filmStatus.style.transform = `translate3d(0, ${statusOut*10}px, 0)`;
-
-    // Product reveal grows out of the same world, not as a section cut.
-    const r = smoothstep((p - .31) / .36);
-    const y = 76 - r*76;
-    const s = .97 + r*.03;
-    reveal.style.opacity = String(r);
-    reveal.style.transform = `translate3d(0, ${y}vh, 0) scale(${s})`;
-
-    // Route remains the connective tissue but settles as the UI takes control.
-    route.style.opacity = String(.94 - r*.42);
-
-    // Final part: camera world dims slightly behind the live cockpit.
-    const settle = smoothstep((p - .69) / .22);
-    shade.style.opacity = String(.90 + settle*.08);
-
-    // Caption is now a transition beat, not a permanent layer over the UI.
-    // It fades in while the cockpit emerges, then exits before the cockpit reaches its final state.
-    const captionIn = smoothstep((p - .44) / .10);
-    const captionOut = smoothstep((p - .58) / .09);
-    const c = clamp(captionIn * (1 - captionOut));
-    caption.style.opacity = String(c);
-    caption.style.transform = `translate3d(${(1-c)*-16}px, ${(1-c)*10}px, 0)`;
-  }
-
-  function requestRender(){
-    if (!ticking) {
-      ticking = true;
-      requestAnimationFrame(render);
+      busCell.innerHTML = '<span class="text-emerald-400 font-bold">BC 9012-BC (Dodeljen)</span>';
+      statusCell.className = 'pill pill-green';
+      statusCell.innerHTML = '● Rešeno';
+      kpi.innerHTML = '0 <span class="text-xs text-slate-400 font-normal">aktivnih</span>';
+      
+      alertBox.className = 'p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4';
+      alertBox.innerHTML = '<div class="flex items-center gap-3"><span class="text-emerald-400 text-lg font-bold">✓</span><div><strong class="text-emerald-300 text-sm">Zamena uspešno dodeljena</strong><p class="text-xs text-slate-400">Duty 320.s01 prebačen na BC 9012-BC. Obaveštenje poslato vozaču.</p></div></div><span class="text-xs font-mono text-emerald-400">05:08:21 SINHRONIZOVANO</span>';
     }
-  }
 
-  addEventListener('scroll', requestRender, {passive:true});
-  addEventListener('resize', requestRender);
-  render();
-
-  resolveBtn.addEventListener('click', () => {
-    setHeroFilmState('resolving');
-  });
-
-  assignBtn.addEventListener('click', () => {
-    setHeroFilmState('confirming');
-  });
-
-  // V3-B / Scene 2 state machine.
-  const storySteps = [...document.querySelectorAll('.story-step')];
-  const mainBus = document.getElementById('mainBus');
-  const replacementBus = document.getElementById('replacementBus');
-  const physicalKicker = document.getElementById('physicalKicker');
-  const physicalTitle = document.getElementById('physicalTitle');
-  const physicalText = document.getElementById('physicalText');
-  const sceneRouteLive = document.getElementById('sceneRouteLive');
-  const busValue = document.getElementById('busValue');
-  const statusValue = document.getElementById('statusValue');
-  const attentionBadge = document.getElementById('attentionBadge');
-  const attentionMessage = document.getElementById('attentionMessage');
-  const attentionFlow = document.getElementById('attentionFlow');
-  const scene2ReplaceBtn = document.getElementById('scene2ReplaceBtn');
-  const driverPhone = document.getElementById('driverPhone');
-  const phoneBus = document.getElementById('phoneBus');
-  const confirmShiftBtn = document.getElementById('confirmShiftBtn');
-
-  function setStep(step) {
-    storySteps.forEach((el, i) => {
-      el.classList.toggle('active', i === step);
-      el.setAttribute('aria-pressed', i === step ? 'true' : 'false');
-    });
-    mainBus.classList.remove('issue','exit');
-    replacementBus.classList.remove('enter');
-    attentionFlow.classList.remove('show-choice');
-    driverPhone.classList.remove('confirmed','waiting');
-    sceneRouteLive.style.stroke = '#4b8fca';
-    sceneRouteLive.style.strokeDasharray = '16 13';
-    statusValue.className = 'ok';
-    attentionMessage.className = 'attention-message calm';
-    attentionBadge.textContent = '0';
-    busValue.textContent = 'BC 5676-BC';
-    phoneBus.textContent = 'BC 5676-BC';
-
-    if (step === 0) {
-      physicalKicker.textContent = 'OPERACIJA JE ZDRAVA';
-      physicalTitle.textContent = 'BC 5676-BC je na liniji.';
-      physicalText.textContent = 'Duty 320.s01 je pokriven. M. Weber (D-104) spreman. Ruta aktivna.';
-      statusValue.textContent = 'AKTIVNO';
-      attentionMessage.innerHTML = '<span>✓</span><div><strong>Nema kritičnih problema.</strong><small>Operacija radi po planu.</small></div>';
+    // Mock driver confirmation simulator
+    function confirmDriverShift() {
+      document.getElementById('phone-confirm-btn').classList.add('hidden');
+      document.getElementById('phone-confirmed-msg').classList.remove('hidden');
+      const pill = document.getElementById('phone-pill');
+      pill.className = 'pill pill-green';
+      pill.textContent = 'Potvrđeno';
     }
-    if (step === 1) {
-      mainBus.classList.add('issue');
-      sceneRouteLive.style.stroke = '#e45a5a';
-      sceneRouteLive.style.strokeDasharray = '6 16';
-      physicalKicker.textContent = 'PROBLEM NA LINIJI';
-      physicalTitle.textContent = 'BC 5676-BC više nije dostupan.';
-      physicalText.textContent = 'Kvar u 05:08. Duty 320.s01 zahteva pažnju.';
-      statusValue.textContent = 'NEAKTIVAN';
-      statusValue.className = 'bad';
-      attentionBadge.textContent = '1';
-      attentionMessage.className = 'attention-message problem';
-      attentionMessage.innerHTML = '<span>!</span><div><strong>BC 5676-BC nije dostupan.</strong><small>Linija 320.s01 · kvar motora</small></div>';
-    }
-    if (step === 2) {
-      mainBus.classList.add('issue');
-      sceneRouteLive.style.stroke = '#e45a5a';
-      sceneRouteLive.style.strokeDasharray = '6 16';
-      physicalKicker.textContent = 'BUSCOMMAND REAGUJE';
-      physicalTitle.textContent = 'Problem je već kod dispečera.';
-      physicalText.textContent = 'Nema traženja. Zahteva pažnju vodi direktno ka rešenju.';
-      statusValue.textContent = 'ZAHTEVA PAŽNJU';
-      statusValue.className = 'bad';
-      attentionBadge.textContent = '1';
-      attentionMessage.className = 'attention-message problem';
-      attentionMessage.innerHTML = '<span>!</span><div><strong>BC 5676-BC nije dostupan.</strong><small>BC 9012-BC je dostupan za zamenu.</small></div>';
-      attentionFlow.classList.add('show-choice');
-    }
-    if (step === 3) {
-      mainBus.classList.add('exit');
-      replacementBus.classList.add('enter');
-      physicalKicker.textContent = 'BRZA ZAMENA';
-      physicalTitle.textContent = 'BC 9012-BC preuzima duty 320.s01.';
-      physicalText.textContent = 'Plan se sinhronizuje. Ruta ponovo postaje aktivna.';
-      busValue.textContent = 'BC 9012-BC';
-      statusValue.textContent = 'DODELJEN';
-      attentionMessage.innerHTML = '<span>✓</span><div><strong>Zamenski autobus dodeljen.</strong><small>Duty 320.s01 nastavlja bez promene ostalih podataka.</small></div>';
-      phoneBus.textContent = 'BC 9012-BC';
-    }
-    if (step === 4) {
-      mainBus.classList.add('exit');
-      replacementBus.classList.add('enter');
-      physicalKicker.textContent = 'VOZAČ DOBIJA JASNU INFORMACIJU';
-      physicalTitle.textContent = 'Driver PWA prikazuje novu smenu.';
-      physicalText.textContent = 'Jedan tap potvrđuje smenu i vraća rezultat dispečeru.';
-      busValue.textContent = 'BC 9012-BC';
-      statusValue.textContent = 'ČEKA POTVRDU';
-      driverPhone.classList.add('waiting');
-      phoneBus.textContent = 'BC 9012-BC';
-      attentionMessage.innerHTML = '<span>✓</span><div><strong>Zamena završena.</strong><small>Čeka se potvrda Luke Kovačevića.</small></div>';
-    }
-    if (step === 5) {
-      sceneRouteLive.style.stroke = '#54c18a';
-      mainBus.classList.add('exit');
-      replacementBus.classList.add('enter');
-      physicalKicker.textContent = 'OPERACIJA NASTAVLJA';
-      physicalTitle.textContent = 'Ruta je ponovo zdrava.';
-      physicalText.textContent = 'BC 9012-BC na liniji. M. Weber (D-104) potvrđen. Duty 320.s01 pod kontrolom.';
-      busValue.textContent = 'BC 9012-BC';
-      statusValue.textContent = 'AKTIVNO';
-      driverPhone.classList.add('confirmed');
-      phoneBus.textContent = 'BC 9012-BC';
-      attentionMessage.innerHTML = '<span>✓</span><div><strong>Problem rešen.</strong><small>Plan, vozač i autobus su sinhronizovani.</small></div>';
-    }
-  }
 
-  storySteps.forEach((el, i) => el.addEventListener('click', () => setStep(i)));
-  scene2ReplaceBtn.addEventListener('click', () => setStep(3));
-  confirmShiftBtn.addEventListener('click', () => setStep(5));
-
-  // Gentle auto-preview starts only when Scene 2 becomes visible, and pauses after first cycle.
-  let scene2Played = false;
-  const scene2 = document.getElementById('scene2');
-  const scene2Observer = new IntersectionObserver((entries) => {
-    const entry = entries[0];
-    if (!entry.isIntersecting || scene2Played || reduceMotion) return;
-    scene2Played = true;
-    const timings = [0, 1600, 3300, 5000, 6700, 8500];
-    timings.forEach((t, i) => setTimeout(() => setStep(i), t));
-  }, {threshold:.32});
-  scene2Observer.observe(scene2);
-  setStep(0);
-
-
-  // V3-C / Scene 3 role choreography.
-  const roleButtons = [...document.querySelectorAll('.role-btn')];
-  const roleCopies = [...document.querySelectorAll('.role-copy')];
-  const rolePanels = [...document.querySelectorAll('.role-panel')];
-  const scene3Confirm = document.getElementById('scene3Confirm');
-  const scene3Confirmed = document.getElementById('scene3Confirmed');
-  const driverSignalTitle = document.getElementById('driverSignalTitle');
-  const driverSignalText = document.getElementById('driverSignalText');
-
-  function setRole(role) {
-    roleButtons.forEach(btn => {
-      const active = btn.dataset.role === role;
-      btn.classList.toggle('active', active);
-      btn.setAttribute('aria-selected', active ? 'true' : 'false');
-    });
-    roleCopies.forEach(el => el.classList.toggle('active', el.dataset.copy === role));
-    rolePanels.forEach(el => el.classList.toggle('active', el.dataset.panel === role));
-  }
-
-  roleButtons.forEach(btn => btn.addEventListener('click', () => setRole(btn.dataset.role)));
-  document.querySelectorAll('.role-action[data-next]').forEach(btn => {
-    btn.addEventListener('click', () => setRole(btn.dataset.next));
-  });
-
-  scene3Confirm.addEventListener('click', () => {
-    const phone = scene3Confirm.closest('.driver-phone-large');
-    phone.classList.add('confirmed');
-    driverSignalTitle.textContent = 'M. Weber (D-104) je potvrdio smenu.';
-    driverSignalText.textContent = 'Dispečer odmah vidi potvrdu.';
-  });
-
-  let scene3Played = false;
-  const scene3 = document.getElementById('scene3');
-  const scene3Observer = new IntersectionObserver((entries) => {
-    const entry = entries[0];
-    if (!entry.isIntersecting || scene3Played || reduceMotion) return;
-    scene3Played = true;
-    setRole('dispo');
-    setTimeout(() => setRole('driver'), 2800);
-    setTimeout(() => {
-      const phone = document.querySelector('.driver-phone-large');
-      phone.classList.add('confirmed');
-      driverSignalTitle.textContent = 'M. Weber (D-104) je potvrdio smenu.';
-      driverSignalText.textContent = 'Dispečer odmah vidi potvrdu.';
-    }, 4500);
-    setTimeout(() => setRole('admin'), 6400);
-    setTimeout(() => setRole('dispo'), 8900);
-  }, {threshold:.30});
-  scene3Observer.observe(scene3);
-  setRole('dispo');
-
-  // Final instrument act: one operational change propagates through the whole system.
-  const systemSection = document.getElementById('system');
-  const systemConsole = document.querySelector('.system-console');
-  const pulseSteps = [...document.querySelectorAll('.pulse-step')];
-  const systemNodes = [...document.querySelectorAll('.system-node')];
-  const pulseTitle = document.getElementById('pulseTitle');
-  const pulseText = document.getElementById('pulseText');
-  const pulseTime = document.getElementById('pulseTime');
-  const pulseStatus = document.getElementById('pulseStatus');
-  const signalSegments = [...document.querySelectorAll('.system-segment')];
-
-  const pulseStates = [
-    {
-      time: '05:08', status: 'SIGNAL PRIMLJEN', color: '#e45a5a',
-      title: 'Problem je ušao u sistem.',
-      text: 'Autobus je označen kao nedostupan. Duty 320.s01 odmah zahteva pažnju.'
-    },
-    {
-      time: '05:08:04', status: 'DISPO IMA AKCIJU', color: '#f0a23a',
-      title: 'Dispečer ne traži šta se dogodilo.',
-      text: 'Problem, duty i raspoloživa zamena nalaze se u istom operativnom pogledu.'
-    },
-    {
-      time: '05:08:21', status: 'PLAN AŽURIRAN', color: '#4b8fca',
-      title: 'BC 9012-BC preuzima duty.',
-      text: 'Dnevni plan ostaje vezan za mesečnu operativnu osnovu. Nema paralelne tabele.'
-    },
-    {
-      time: '05:09', status: 'SMENA POTVRĐENA', color: '#dce5eb',
-      title: 'Vozač dobija samo ono što mu treba.',
-      text: 'Driver PWA prikazuje novu dodelu. Jedan tap vraća potvrdu u operativu.'
-    },
-    {
-      time: '05:10', status: 'TOK ZATVOREN', color: '#54c18a',
-      title: 'Operacija nastavlja. Odluka ostaje.',
-      text: 'Dispečer vidi potvrdu, plan ima novu dodelu, a promena ostaje zabeležena u audit tragu.'
-    }
-  ];
-
-  function setSystemPulse(index) {
-    const step = Math.max(0, Math.min(pulseStates.length - 1, Number(index)));
-    const state = pulseStates[step];
-    systemConsole.dataset.pulse = String(step);
-    systemConsole.style.setProperty('--signal-color', state.color);
-    pulseSteps.forEach((button, i) => {
-      const active = i === step;
-      button.classList.toggle('active', active);
-      button.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
-    systemNodes.forEach((node, i) => {
-      node.classList.toggle('active', i === step);
-      node.classList.toggle('done', i < step);
-    });
-    signalSegments.forEach((segment, i) => {
-      segment.classList.toggle('resolved', i < step);
-      segment.classList.toggle('active', i === step && step < signalSegments.length);
-    });
-    pulseTitle.textContent = state.title;
-    pulseText.textContent = state.text;
-    pulseTime.textContent = state.time;
-    pulseStatus.textContent = state.status;
-  }
-
-  pulseSteps.forEach((button, index) => button.addEventListener('click', () => setSystemPulse(index)));
-
-  let systemPlayed = false;
-  const systemObserver = new IntersectionObserver((entries) => {
-    const entry = entries[0];
-    if (!entry.isIntersecting || systemPlayed || reduceMotion) return;
-    systemPlayed = true;
-    [0, 1, 2, 3, 4].forEach((step, index) => setTimeout(() => setSystemPulse(step), index * 1450));
-  }, {threshold:.28});
-  systemObserver.observe(systemSection);
-  setSystemPulse(0);
-
-})();
-
-
+    // Multi-language dictionary
     const translations = {
       sr: {
-        pricingTitle: "Cenovnik",
+        heroKicker: "Dispečerski operativni sistem za prevoznike",
+        heroTitle: "Kad plan pukne na liniji,<br><span class='text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-emerald-400'>operacija ne mora.</span>",
+        heroDesc: "Od mesečnog rasporeda do rešavanja kvara autobusa u roku od 3 sekunde. Sve na jednom dispečerskom ekranu — bez rasutih Excel tabela, telefonskih poziva u vožnji i zastoja.",
+        heroCtaPilot: "Zatražite besplatan pilot (30 dana) →",
+        m1num: "≤ 3s", m1lbl: "Vreme zamene vozača/busa uz Plan-Lock",
+        m2num: "100%", m2lbl: "Pravna pokrivenost EU 561/2006 & GDPR",
+        m3num: "0€", m3lbl: "Investicija u nepotreban hardver",
+        prevKicker: "Interaktivni Kokpit",
+        prevTitle: "Ista operacija. Tri jasne uloge.",
+        prevSub: "Pogledajte kako jedna odluka u sekundi prolazi od dispečera do telefona vozača i administratora.",
+        ptabDispo: "Dispečer Kokpit",
+        ptabDriver: "Driver PWA (Vozač)",
+        ptabAdmin: "Company Admin",
+        dsBuses: "Vozila na liniji", dsDrivers: "Aktivne smene", dsShifts: "Potvrđeno u PWA", dsUptime: "Zahteva pažnju",
+        howTitle: "Kako rešavamo težak radni dan",
+        howSub: "Četiri jasna koraka od haosa do mirne smene — svaki korak verifikovan u realnom vremenu.",
+        step1num: "KORAK 1", step1Title: "Uvoz Plana", step1Desc: "Uvoz kataloga i mesečnog rasporeda bez ručnog prepisivanja.",
+        step2num: "KORAK 2", step2Title: "Needs Attention", step2Desc: "Sistem u sekundi detektuje kvar, kašnjenje ili nepokrivenu smenu.",
+        step3num: "KORAK 3", step3Title: "Zamena ≤ 3s", step3Desc: "Dispečer dodeljuje zamenski autobus jednim klikom uz Plan-Lock.",
+        step4num: "KORAK 4", step4Title: "Driver Potvrda", step4Desc: "Vozač potvrđuje novu smenu na svom telefonu u sekundi.",
+        matrixTitle: "Excel vs. Generički ERP vs. BusCommand",
+        matrixDesc: "Zašto specijalizovan softver za prevoznike štedi sate rada svakog dana.",
+        downloadsKicker: "ENTERPRISE DOWNLOAD HUB",
+        downloadsTitle: "Zvanični dokumenti i šabloni za preuzimanje",
+        downloadsSub: "Besplatni A4 šabloni, sigurnosna dokumentacija i GDPR ugovori za 24h start.",
+        pricingTitle: "Transparentni cenovnik",
         pricingDesc: "Bez skrivenih troškova. Prilagođeno veličini vašeg voznog parka.",
-        pricePer: "/ mesečno / po firmi",
+        pricePer: "/ mesec",
         pSubMicro: "Do 5 vozila i 8 vozača.",
         pSubStarter: "Do 15 vozila i 20 vozača.",
         pSubPro: "Do 45 vozila i 60 vozača.",
-        pSubFleet: "Neograničeno vozila, vozača i dispečera.",
-        featMicro: "<li>1 Dispo + 1 CA nalog</li><li>Driver PWA aplikacija</li><li>Dnevni plan i potvrde smena</li><li>Email podrška</li>",
-        featStarter: "<li>1 Dispo + 1 CA nalog</li><li>3-dnevni dispečerski radar</li><li>Driver PWA aplikacija</li><li>Email podrška &lt; 4h</li>",
-        featPro: "<li>Do 4 Dispo naloga sa grupnom izolacijom</li><li>Plan Lock — zaključavanje objavljenog plana</li><li>Read-Receipt potvrde čitanja smena</li><li>24-mesečni append-only audit trag</li><li>24/7 telefonska podrška</li>",
-        featFleet: "<li>Više depoa i lokacija</li><li>DPA Član 28 ugovor</li><li>PITR oporavak baze (point-in-time)</li><li>Namenske integracije po ugovoru</li>",
+        pSubFleet: "Neograničena flota i dispečeri.",
+        featMicro: "<li>✓ 1 Dispo + 1 CA nalog</li><li>✓ Driver PWA aplikacija</li><li>✓ Dnevni plan i potvrde</li><li>✓ Email podrška</li>",
+        featStarter: "<li>✓ 1 Dispo + 1 CA nalog</li><li>✓ 3-dnevni dispo radar</li><li>✓ Driver PWA aplikacija</li><li>✓ Email podrška &lt; 4h</li>",
+        featPro: "<li>✓ Do 4 Dispo naloga (grupe)</li><li>✓ Plan Lock zaštita plana</li><li>✓ Potvrde čitanja u PWA</li><li>✓ 24-mesečni audit trag</li><li>✓ 24/7 telefonska podrška</li>",
+        featFleet: "<li>✓ Više depoa i lokacija</li><li>✓ DPA Član 28 ugovor</li><li>✓ PITR oporavak baze</li><li>✓ Namenske integracije</li>",
         badgePopular: "Najpopularniji",
         ctaMicro: "Izaberi Micro",
         ctaStarter: "Izaberi Starter",
         ctaPro: "Izaberi Pro",
         ctaFleet: "Kontaktirajte nas",
-        navStaff: "STAFF LOGIN",
-        navDriver: "DRIVER APP"
+        pilotKicker: "Zero-Risk Pilot",
+        pilotTitle: "Vođeni pilot program od 30 dana",
+        pilotDesc: "Prijavite firmu — naš tim besplatno uvozi vaš postojeći raspored. Bez kreditne kartice, uz 100% podršku.",
+        navStaff: "Staff Login",
+        navDriver: "Driver App"
       },
       de: {
-        pricingTitle: "Preise",
+        heroKicker: "Dispositions-Betriebssystem für Busunternehmen",
+        heroTitle: "Wenn der Plan auf der Linie bricht,<br><span class='text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-emerald-400'>muss der Betrieb nicht stehen.</span>",
+        heroDesc: "Vom Monatsplan bis zum Bus- oder Fahrerwechsel in 3 Sekunden. Alles auf einem Bildschirm — ohne verstreute Excel-Tabellen und Anrufe während der Fahrt.",
+        heroCtaPilot: "Kostenlosen Pilot anfordern (30 Tage) →",
+        m1num: "≤ 3s", m1lbl: "Zeit für Fahrer-/Buswechsel mit Plan-Lock",
+        m2num: "100%", m2lbl: "Rechtliche Sicherheit EU 561/2006 & DSGVO",
+        m3num: "0€", m3lbl: "Investition in unnötige Hardware",
+        prevKicker: "Interaktives Cockpit",
+        prevTitle: "Drei Rollen. Ein Betrieb.",
+        prevSub: "Sehen Sie live, wie eine Entscheidung in Sekunden vom Disponenten zum Fahrer gelangt.",
+        ptabDispo: "Disponenten-Cockpit",
+        ptabDriver: "Fahrer-PWA",
+        ptabAdmin: "Firmen-Admin",
+        dsBuses: "Busse im Einsatz", dsDrivers: "Aktive Schichten", dsShifts: "In PWA bestätigt", dsUptime: "Handlungsbedarf",
+        howTitle: "So lösen wir den harten Arbeitstag",
+        howSub: "Vier Schritte vom Chaos zur ruhigen Schicht — in Echtzeit verifiziert.",
+        step1num: "SCHRITT 1", step1Title: "Plan-Import", step1Desc: "Import des Monatsdienstplans ohne manuelles Abtippen.",
+        step2num: "SCHRITT 2", step2Title: "Handlungsbedarf", step2Desc: "Automatische Erkennung von Pannen, Verspätungen und Ausfällen.",
+        step3num: "SCHRITT 3", step3Title: "Wechsel ≤ 3s", step3Desc: "Ersatzbuszuweisung mit einem Klick geschützt durch Plan-Lock.",
+        step4num: "SCHRITT 4", step4Title: "Fahrer-Bestätigung", step4Desc: "Fahrer bestätigt die Schicht mit einem Tipp auf dem Smartphone.",
+        matrixTitle: "Excel vs. generisches ERP vs. BusCommand",
+        matrixDesc: "Warum eine spezialisierte Lösung täglich Stunden an Dispositionszeit spart.",
+        downloadsKicker: "ENTERPRISE DOWNLOAD HUB",
+        downloadsTitle: "Offizielle Dokumente und Vorlagen",
+        downloadsSub: "Kostenlose A4-Vorlagen, Sicherheitsdokumentation und DSGVO-Verträge.",
+        pricingTitle: "Transparente Preise",
         pricingDesc: "Keine versteckten Kosten. Angepasst an die Größe Ihres Fuhrparks.",
-        pricePer: "/ Monat / pro Firma",
+        pricePer: "/ Monat",
         pSubMicro: "Bis 5 Fahrzeuge und 8 Fahrer.",
         pSubStarter: "Bis 15 Fahrzeuge und 20 Fahrer.",
         pSubPro: "Bis 45 Fahrzeuge und 60 Fahrer.",
-        pSubFleet: "Unbegrenzte Fahrzeuge, Fahrer und Disponenten.",
+        pSubFleet: "Unbegrenzte Flotte und Disponenten.",
         featMicro: "<li>1 Dispo- + 1 CA-Konto</li><li>Driver PWA App</li><li>Tagesplan und Schichtbestätigungen</li><li>E-Mail-Support</li>",
         featStarter: "<li>1 Dispo- + 1 CA-Konto</li><li>3-Tage-Dispo-Radar</li><li>Driver PWA App</li><li>E-Mail-Support &lt; 4h</li>",
         featPro: "<li>Bis 4 Dispo-Konten mit Gruppenisolierung</li><li>Plan Lock — Sperre veröffentlichter Pläne</li><li>Read-Receipt Lesebestätigungen</li><li>24 Monate append-only Audit-Trail</li><li>24/7 Telefon-Support</li>",
@@ -1390,28 +856,59 @@ a:focus-visible,button:focus-visible{outline:2px solid #21c5ff;outline-offset:4p
         ctaStarter: "Starter wählen",
         ctaPro: "Pro wählen",
         ctaFleet: "Kontaktieren Sie uns",
-        navStaff: "STAFF LOGIN",
-        navDriver: "DRIVER APP"
+        pilotKicker: "Zero-Risk Pilot",
+        pilotTitle: "Begleitetes 30-Tage-Pilotprogramm",
+        pilotDesc: "Melden Sie Ihren Betrieb an — wir importieren Ihren Dienstplan kostenlos. Ohne Kreditkarte, mit 100% Support.",
+        navStaff: "Staff Login",
+        navDriver: "Fahrer-App"
       },
       en: {
-        pricingTitle: "Pricing",
-        pricingDesc: "No hidden costs. Sized to your fleet.",
-        pricePer: "/ month / per company",
+        heroKicker: "Dispatch Operating System for Bus Operators",
+        heroTitle: "When plans break on the road,<br><span class='text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-emerald-400'>operations keep moving.</span>",
+        heroDesc: "From the monthly schedule to resolving a breakdown in 3 seconds. All on a single screen — no scattered Excel files, no phone calls mid-drive.",
+        heroCtaPilot: "Request a Free 30-Day Pilot →",
+        m1num: "≤ 3s", m1lbl: "Driver/bus swap time with Plan-Lock",
+        m2num: "100%", m2lbl: "Compliance with EU 561/2006 & GDPR",
+        m3num: "0€", m3lbl: "Investment in unnecessary hardware",
+        prevKicker: "Interactive Cockpit",
+        prevTitle: "One Operation. Three Clear Views.",
+        prevSub: "See how a single dispatch decision propagates instantly to the driver app and admin dashboard.",
+        ptabDispo: "Dispatcher Cockpit",
+        ptabDriver: "Driver PWA",
+        ptabAdmin: "Company Admin",
+        dsBuses: "Active Buses", dsDrivers: "Active Shifts", dsShifts: "Confirmed in PWA", dsUptime: "Needs Attention",
+        howTitle: "How we solve the hard working day",
+        howSub: "Four steps from chaos to a calm shift — verified in real time.",
+        step1num: "STEP 1", step1Title: "Plan Import", step1Desc: "Import monthly schedules without manual retyping.",
+        step2num: "STEP 2", step2Title: "Needs Attention", step2Desc: "Instant detection of breakdowns, delays, and open shifts.",
+        step3num: "STEP 3", step3Title: "Swap ≤ 3s", step3Desc: "Assign replacement bus in 1 click protected by Plan-Lock.",
+        step4num: "STEP 4", step4Title: "Driver Confirmation", step4Desc: "Driver acknowledges the shift on their phone instantly.",
+        matrixTitle: "Excel vs. Generic ERP vs. BusCommand",
+        matrixDesc: "Why purpose-built bus software saves hours of dispatch overhead every day.",
+        downloadsKicker: "ENTERPRISE DOWNLOAD HUB",
+        downloadsTitle: "Official Templates & Documents",
+        downloadsSub: "Free A4 templates, security documentation, and GDPR contracts for a 24h launch.",
+        pricingTitle: "Transparent Pricing",
+        pricingDesc: "No hidden fees. Sized to your fleet.",
+        pricePer: "/ month",
         pSubMicro: "Up to 5 vehicles and 8 drivers.",
         pSubStarter: "Up to 15 vehicles and 20 drivers.",
         pSubPro: "Up to 45 vehicles and 60 drivers.",
-        pSubFleet: "Unlimited vehicles, drivers and dispatchers.",
-        featMicro: "<li>1 Dispo + 1 CA account</li><li>Driver PWA app</li><li>Daily plan and shift confirmations</li><li>Email support</li>",
-        featStarter: "<li>1 Dispo + 1 CA account</li><li>3-day dispatcher radar</li><li>Driver PWA app</li><li>Email support &lt; 4h</li>",
-        featPro: "<li>Up to 4 Dispo accounts with group isolation</li><li>Plan Lock — published plan freezing</li><li>Read-Receipt shift confirmations</li><li>24-month append-only audit trail</li><li>24/7 phone support</li>",
-        featFleet: "<li>Multiple depots and locations</li><li>DPA Article 28 agreement</li><li>PITR point-in-time database recovery</li><li>Custom integrations by contract</li>",
-        badgePopular: "Most popular",
+        pSubFleet: "Unlimited fleet and dispatchers.",
+        featMicro: "<li>✓ 1 Dispo + 1 CA account</li><li>✓ Driver PWA app</li><li>✓ Daily plan and shift confirmations</li><li>✓ Email support</li>",
+        featStarter: "<li>✓ 1 Dispo + 1 CA account</li><li>✓ 3-day dispatcher radar</li><li>✓ Driver PWA app</li><li>✓ Email support &lt; 4h</li>",
+        featPro: "<li>✓ Up to 4 Dispo accounts with group isolation</li><li>✓ Plan Lock — published plan freezing</li><li>✓ Read-Receipt shift confirmations</li><li>✓ 24-month append-only audit trail</li><li>✓ 24/7 phone support</li>",
+        featFleet: "<li>✓ Multiple depots and locations</li><li>✓ DPA Article 28 agreement</li><li>✓ PITR point-in-time database recovery</li><li>✓ Custom integrations by contract</li>",
+        badgePopular: "Most Popular",
         ctaMicro: "Choose Micro",
         ctaStarter: "Choose Starter",
         ctaPro: "Choose Pro",
-        ctaFleet: "Contact us",
-        navStaff: "STAFF LOGIN",
-        navDriver: "DRIVER APP"
+        ctaFleet: "Contact Us",
+        pilotKicker: "Zero-Risk Pilot",
+        pilotTitle: "Guided 30-Day Pilot Program",
+        pilotDesc: "Sign up your company — our team imports your existing roster for free. No credit card needed, 100% supported.",
+        navStaff: "Staff Login",
+        navDriver: "Driver App"
       }
     };
 
@@ -1420,47 +917,51 @@ a:focus-visible,button:focus-visible{outline:2px solid #21c5ff;outline-offset:4p
       document.getElementById('btn-sr').className = lang === 'sr' ? 'lang-active' : '';
       document.getElementById('btn-en').className = lang === 'en' ? 'lang-active' : '';
 
-      const pack = translations[lang] || translations.sr;
+      const p = translations[lang] || translations.sr;
       document.documentElement.lang = lang;
-      if (document.getElementById('pricing-title')) document.getElementById('pricing-title').textContent = pack.pricingTitle;
-      if (document.getElementById('pricing-desc')) document.getElementById('pricing-desc').textContent = pack.pricingDesc;
-      if (document.getElementById('price-per-micro')) document.getElementById('price-per-micro').textContent = pack.pricePer;
-      if (document.getElementById('price-per-starter')) document.getElementById('price-per-starter').textContent = pack.pricePer;
-      if (document.getElementById('price-per-pro')) document.getElementById('price-per-pro').textContent = pack.pricePer;
-      if (document.getElementById('price-per-fleet')) document.getElementById('price-per-fleet').textContent = pack.pricePer;
-      if (document.getElementById('p-sub-micro')) document.getElementById('p-sub-micro').textContent = pack.pSubMicro;
-      if (document.getElementById('p-sub-starter')) document.getElementById('p-sub-starter').textContent = pack.pSubStarter;
-      if (document.getElementById('p-sub-pro')) document.getElementById('p-sub-pro').textContent = pack.pSubPro;
-      if (document.getElementById('p-sub-fleet')) document.getElementById('p-sub-fleet').textContent = pack.pSubFleet;
-      if (document.getElementById('feat-micro')) document.getElementById('feat-micro').innerHTML = pack.featMicro;
-      if (document.getElementById('feat-starter')) document.getElementById('feat-starter').innerHTML = pack.featStarter;
-      if (document.getElementById('feat-pro')) document.getElementById('feat-pro').innerHTML = pack.featPro;
-      if (document.getElementById('feat-fleet')) document.getElementById('feat-fleet').innerHTML = pack.featFleet;
-      if (document.getElementById('badge-popular')) document.getElementById('badge-popular').textContent = pack.badgePopular;
-      if (document.getElementById('cta-micro')) document.getElementById('cta-micro').textContent = pack.ctaMicro;
-      if (document.getElementById('cta-starter')) document.getElementById('cta-starter').textContent = pack.ctaStarter;
-      if (document.getElementById('cta-pro')) document.getElementById('cta-pro').textContent = pack.ctaPro;
-      if (document.getElementById('cta-fleet')) document.getElementById('cta-fleet').textContent = pack.ctaFleet;
-      if (document.getElementById('nav-staff-btn')) document.getElementById('nav-staff-btn').textContent = pack.navStaff;
-      if (document.getElementById('nav-driver-btn')) document.getElementById('nav-driver-btn').textContent = pack.navDriver;
+
+      if (document.getElementById('cta-micro')) document.getElementById('cta-micro').textContent = p.ctaMicro;
+      if (document.getElementById('p-sub-micro')) document.getElementById('p-sub-micro').textContent = p.pSubMicro;
+      if (document.getElementById('feat-micro')) document.getElementById('feat-micro').innerHTML = p.featMicro;
+      if (document.getElementById('price-per-micro')) document.getElementById('price-per-micro').textContent = p.pricePer;
+
+      if (document.getElementById('cta-starter')) document.getElementById('cta-starter').textContent = p.ctaStarter;
+      if (document.getElementById('p-sub-starter')) document.getElementById('p-sub-starter').textContent = p.pSubStarter;
+      if (document.getElementById('feat-starter')) document.getElementById('feat-starter').innerHTML = p.featStarter;
+      if (document.getElementById('price-per-starter')) document.getElementById('price-per-starter').textContent = p.pricePer;
+
+      if (document.getElementById('cta-pro')) document.getElementById('cta-pro').textContent = p.ctaPro;
+      if (document.getElementById('p-sub-pro')) document.getElementById('p-sub-pro').textContent = p.pSubPro;
+      if (document.getElementById('feat-pro')) document.getElementById('feat-pro').innerHTML = p.featPro;
+      if (document.getElementById('price-per-pro')) document.getElementById('price-per-pro').textContent = p.pricePer;
+
+      if (document.getElementById('cta-fleet')) document.getElementById('cta-fleet').textContent = p.ctaFleet;
+      if (document.getElementById('p-sub-fleet')) document.getElementById('p-sub-fleet').textContent = p.pSubFleet;
+      if (document.getElementById('feat-fleet')) document.getElementById('feat-fleet').innerHTML = p.featFleet;
+      if (document.getElementById('price-per-fleet')) document.getElementById('price-per-fleet').textContent = p.pricePer;
+
+      if (document.getElementById('pricing-title')) document.getElementById('pricing-title').textContent = p.pricingTitle;
+      if (document.getElementById('pricing-desc')) document.getElementById('pricing-desc').textContent = p.pricingDesc;
+      if (document.getElementById('badge-popular')) document.getElementById('badge-popular').textContent = p.badgePopular;
+
+      if (document.getElementById('hero-kicker')) document.getElementById('hero-kicker').textContent = p.heroKicker;
+      if (document.getElementById('hero-title')) document.getElementById('hero-title').innerHTML = p.heroTitle;
+      if (document.getElementById('hero-desc')) document.getElementById('hero-desc').textContent = p.heroDesc;
+      if (document.getElementById('hero-cta-pilot')) document.getElementById('hero-cta-pilot').textContent = p.heroCtaPilot;
+
+      if (document.getElementById('nav-staff-btn')) document.getElementById('nav-staff-btn').textContent = p.navStaff;
+      if (document.getElementById('nav-driver-btn')) document.getElementById('nav-driver-btn').textContent = p.navDriver;
     }
 
-    // Attach real download handlers to document articles
-    document.querySelectorAll('.document-list article').forEach((art, idx) => {
-      art.style.cursor = 'pointer';
-      art.addEventListener('click', () => {
-        const urls = [
-          '/downloads/BusCommand_Technical_Security_Audit.html',
-          '/driver',
-          '/downloads/BusCommand_Driver_Roster_Template.xlsx',
-          '/downloads/BusCommand_Monthly_Schedule_Template.csv',
-          '/downloads/BusCommand_DPA_GDPR_Article_28.html'
-        ];
-        if (urls[idx]) {
-          window.location.href = urls[idx];
-        }
-      });
-    });
+    function submitPilot(e) {
+      e.preventDefault();
+      const comp = document.getElementById('pilot-company').value.trim();
+      const em = document.getElementById('pilot-email').value.trim();
+      const b = document.getElementById('pilot-buses').value.trim();
+      const sub = encodeURIComponent('Pilot prijava (30 dana) — ' + comp);
+      const body = encodeURIComponent('Firma: ' + comp + '\nEmail: ' + em + '\nBroj autobusa: ' + b + '\n\nMolim za plan pilot onboardinga.');
+      window.location.href = 'mailto:office@buscommand.com?subject=' + sub + '&body=' + body;
+    }
   </script>
 </body>
 </html>
