@@ -145,7 +145,11 @@ test.describe("Official Landing Page Enterprise E2E", () => {
 
     page.on("response", resp => {
       if (resp.status() >= 400) {
-        badResponses.push({ status: resp.status(), url: resp.url() });
+        badResponses.push({
+          status: resp.status(),
+          method: resp.request().method(),
+          url: resp.url()
+        });
       }
     });
 
@@ -172,7 +176,13 @@ test.describe("Official Landing Page Enterprise E2E", () => {
 
     const [pilotResponse] = await Promise.all([
       page.waitForResponse(
-        resp => resp.url().includes("/api/public/pilot-request") && resp.request().method() === "POST"
+        resp => {
+          try {
+            return new URL(resp.url()).pathname === "/api/public/pilot-request" && resp.request().method() === "POST";
+          } catch {
+            return false;
+          }
+        }
       ),
       page.click("#pilotSubmitBtn")
     ]);
@@ -190,21 +200,41 @@ test.describe("Official Landing Page Enterprise E2E", () => {
     await expect(feedback).toContainText("Sistem za slanje email obaveštenja trenutno nije dostupan.");
     await expect(feedback).toHaveClass(/pilot-feedback-error/);
 
-    // 4. Bad responses check: only the single expected 503 pilot-request response is permitted
-    const unexpectedResponses = badResponses.filter(
-      r => !(r.status === 503 && r.url.includes("/api/public/pilot-request")) && !r.url.includes("favicon")
-    );
-    expect(unexpectedResponses).toEqual([]);
+    // 4. Bad responses check: exactly one expected 503 pilot-request failure, zero unexpected
+    const isExpectedPilotFailure = (r) => {
+      try {
+        return new URL(r.url).pathname === "/api/public/pilot-request" &&
+          r.method === "POST" &&
+          r.status === 503;
+      } catch {
+        return false;
+      }
+    };
 
-    // 5. Console errors check: allow at most one Chromium resource load failure event for the 503 endpoint
-    const unexpectedConsoleErrors = consoleErrors.filter(item => {
-      if (item.url && item.url.includes("favicon")) return false;
-      const isExpected503Resource =
-        item.url.includes("/api/public/pilot-request") &&
-        item.text.includes("Failed to load resource") &&
-        item.text.includes("503");
-      return !isExpected503Resource;
-    });
+    const expectedPilotResponses = badResponses.filter(isExpectedPilotFailure);
+    const unexpectedResponses = badResponses.filter(r => !isExpectedPilotFailure(r));
+
+    expect(expectedPilotResponses.length).toBe(1);
+    expect(unexpectedResponses).toEqual([]);
+    expect(badResponses.length).toBe(1);
+
+    // 5. Console errors check: exactly 0 or 1 expected Chromium resource error for the 503 endpoint
+    const isExpected503ConsoleError = (item) => {
+      try {
+        const pathname = new URL(item.url).pathname;
+        const hasExactPath = pathname === "/api/public/pilot-request";
+        const hasResourcePattern = item.text.includes("Failed to load resource");
+        const has503 = item.text.includes("503");
+        return hasExactPath && hasResourcePattern && has503;
+      } catch {
+        return false;
+      }
+    };
+
+    const expectedConsoleErrors = consoleErrors.filter(isExpected503ConsoleError);
+    expect(expectedConsoleErrors.length).toBeLessThanOrEqual(1);
+
+    const unexpectedConsoleErrors = consoleErrors.filter(item => !isExpected503ConsoleError(item));
     expect(unexpectedConsoleErrors).toEqual([]);
 
     // 6. Every pageerror and requestfailed fails the test
