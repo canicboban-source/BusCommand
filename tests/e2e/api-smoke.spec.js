@@ -141,4 +141,35 @@ test.describe("API smoke", () => {
     const body = await res.json();
     expect(body.success).toBe(false);
   });
+
+  test("POST /api/public/pilot-request fails closed with 503 SMTP_NOT_CONFIGURED on real server", async ({ request }) => {
+    const res = await request.post(`${BASE}/api/public/pilot-request`, {
+      data: {
+        companyName: "Demo Bus Company",
+        contactName: "Jane Doe",
+        email: "pilot@example.com",
+        phone: "+381 11 123 4567",
+        fleetSize: "25",
+        tier: "starter",
+        message: "Real endpoint smoke verification."
+      }
+    });
+    expect(res.status()).toBe(503);
+    const body = await res.json();
+    expect(body.success).toBe(false);
+    expect(body.code).toBe("SMTP_NOT_CONFIGURED");
+  });
+
+  test("POST /api/public/pilot-request rejects real payload > 64 KB with HTTP 413", async ({ request }) => {
+    const oversizedPayload = {
+      companyName: "Oversized Corp",
+      contactName: "Tester",
+      email: "pilot@example.com",
+      message: "X".repeat(68 * 1024)
+    };
+    const res = await request.post(`${BASE}/api/public/pilot-request`, {
+      data: oversizedPayload
+    });
+    expect(res.status()).toBe(413);
+  });
 });

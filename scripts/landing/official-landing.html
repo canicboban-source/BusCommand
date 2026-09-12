@@ -3,1429 +3,1438 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#020914">
-  <title>BusCommand — Dispečerski operativni sistem za autobuske prevoznike</title>
-  <meta name="description" content="BusCommand povezuje plan, dispečera, vozača i vozilo u jedan operativni tok — od zastoja na liniji do potvrđene zamene u 3 sekunde.">
+  <meta name="theme-color" content="#030712">
+  <title>BusCommand — Operational Control for Bus Companies</title>
+  <meta name="description" content="BusCommand povezuje plan, dispečera, vozača i flotu u jedan operativni tok — od izostanka vozača do potvrđene zamene i nastavka operacije.">
   <link rel="preload" as="image" href="/brand/hero-clean-1920x1080.jpg">
-  <link rel="stylesheet" href="/brand/tailwind.css">
-  <style>
-    @font-face {
-      font-family: 'Space Grotesk';
-      font-style: normal;
-      font-weight: 500 700;
-      font-display: swap;
-      src: local('Space Grotesk'), local('Segoe UI'), local('Arial'), sans-serif;
-    }
-    :root {
-      --bg: #030812;
-      --panel: #071220;
-      --panel-border: rgba(56, 130, 214, 0.22);
-      --accent: #0b82ff;
-      --emerald: #10b981;
-      --danger: #ef4444;
-      --amber: #f59e0b;
-    }
-    body {
-      background-color: var(--bg);
-      color: #f1f5f9;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      overflow-x: hidden;
-      margin: 0;
-    }
-    h1, h2, h3, .font-heading {
-      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      letter-spacing: -0.03em;
-    }
-    .font-mono-num {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      font-variant-numeric: tabular-nums;
-    }
-    .glass-card {
-      background: rgba(7, 18, 32, 0.85);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--panel-border);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-    }
-    .hero-cinematic {
-      position: relative;
-      background: radial-gradient(circle at 50% 30%, rgba(11, 130, 255, 0.15), transparent 70%),
-                  linear-gradient(180deg, rgba(3, 8, 18, 0.4) 0%, rgba(3, 8, 18, 0.95) 100%),
-                  url('/brand/hero-clean-1920x1080.jpg') center 30%/cover no-repeat;
-    }
-    .route-glow {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 1;
-    }
-    .route-svg-path {
-      fill: none;
-      stroke: #0b82ff;
-      stroke-width: 4;
-      filter: drop-shadow(0 0 10px #0b82ff);
-      stroke-dasharray: 18 14;
-      animation: dashMove 6s linear infinite;
-    }
-    @keyframes dashMove {
-      to { stroke-dashoffset: -64; }
-    }
-    .story-btn {
-      transition: all 0.25s ease;
-      cursor: pointer;
-    }
-    .story-btn.active {
-      background: rgba(11, 130, 255, 0.22);
-      border-color: #0b82ff;
-      box-shadow: 0 0 25px rgba(11, 130, 255, 0.35);
-    }
-    .story-btn.active .step-num {
-      background: #0b82ff;
-      color: #fff;
-    }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.375rem;
-      padding: 0.2rem 0.6rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .pill-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .pill-red { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-    .pill-blue { background: rgba(11, 130, 255, 0.15); color: #60a5fa; border: 1px solid rgba(11, 130, 255, 0.3); }
-    .pill-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-    
-    .lang-switch button {
-      padding: 0.25rem 0.6rem;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: #94a3b8;
-      border-radius: 0.375rem;
-      transition: all 0.2s;
-    }
-    .lang-switch button.lang-active {
-      background: #0b82ff;
-      color: #ffffff;
-      box-shadow: 0 2px 8px rgba(11, 130, 255, 0.4);
-    }
-    .bento-cell {
-      background: rgba(8, 20, 36, 0.7);
-      border: 1px solid rgba(56, 130, 214, 0.18);
-      border-radius: 1rem;
-      padding: 1.5rem;
-      transition: border-color 0.2s ease, transform 0.2s ease;
-    }
-    .bento-cell:hover {
-      border-color: rgba(56, 130, 214, 0.45);
-      transform: translateY(-2px);
-    }
-    .phone-mockup {
-      border: 3px solid #1e293b;
-      border-radius: 2rem;
-      background: #040c18;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(11, 130, 255, 0.15);
-    }
-  </style>
+  <link rel="stylesheet" href="css/landing.css">
+  <link rel="icon" type="image/png" href="/brand/logo-hero.png">
 </head>
 <body id="top">
 
-  <!-- TOP NAVIGATION HEADER -->
-  <header class="fixed top-0 left-0 right-0 z-50 h-16 bg-[#030812]/90 backdrop-blur-md border-b border-slate-800/80">
-    <div class="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-      <!-- Logo & Cloud Region -->
-      <div class="flex items-center gap-3">
-        <a href="#top" class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-md shadow-blue-600/40">
-            BC
-          </div>
-          <span class="text-xl font-bold tracking-tight text-white flex items-center">
-            Bus<span class="text-blue-500">Command</span>
-          </span>
-        </a>
-        <span class="hidden md:inline-flex items-center gap-1.5 text-[11px] font-mono-num text-emerald-400 bg-emerald-950/60 border border-emerald-800/50 px-2.5 py-0.5 rounded-full">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          Frankfurt europe-west3
-        </span>
-      </div>
+  <!-- HEADER -->
+  <header class="site-header">
+    <a class="brand" href="#top">
+      <img class="brand-logo-img" src="/brand/buscommand-logo-reference.png" alt="BusCommand Logo" width="36" height="36">
+      <span>BUS<b>COMMAND</b></span>
+    </a>
 
-      <!-- Center Links -->
-      <nav class="hidden lg:flex items-center gap-6 text-xs font-bold text-slate-400 uppercase tracking-wider">
-        <a href="#story" id="nav-story" class="hover:text-blue-400 transition-colors">Operativni Minut (Film)</a>
-        <a href="#roles" id="nav-roles" class="hover:text-blue-400 transition-colors">3 Uloge</a>
-        <a href="#compare" id="nav-compare" class="hover:text-blue-400 transition-colors">Poređenje</a>
-        <a href="#downloads" id="nav-downloads" class="hover:text-blue-400 transition-colors">Dokumenta &amp; Šabloni</a>
-        <a href="#pricing" id="nav-pricing" class="hover:text-blue-400 transition-colors">Cenovnik</a>
-      </nav>
+    <div class="cloud-region">
+      <span class="cloud-dot"></span>
+      <span>Frankfurt Cloud DC (europe-west3)</span>
+    </div>
 
-      <!-- Language Switcher & Portals -->
-      <div class="flex items-center gap-3">
-        <div class="lang-switch bg-slate-900 border border-slate-700/80 p-0.5 rounded-lg flex items-center" role="group" aria-label="Language Selector">
-          <button onclick="setLang('de')" id="btn-de" data-lang="de">DE</button>
-          <button onclick="setLang('sr')" id="btn-sr" data-lang="sr" class="lang-active">SR</button>
-          <button onclick="setLang('en')" id="btn-en" data-lang="en">EN</button>
-        </div>
-        <a href="/driver" id="nav-driver-btn" class="inline-flex items-center justify-center px-3.5 py-1.5 text-xs font-bold text-slate-200 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-lg transition-all">
-          Driver App
-        </a>
-        <a href="/staff" id="nav-staff-btn" class="inline-flex items-center justify-center px-4 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-lg shadow-blue-600/30 transition-all">
-          Staff Login
-        </a>
+    <nav class="nav">
+      <a href="#incident" id="nav-incident">INCIDENT</a>
+      <a href="#roles" id="nav-roles">ULOGE</a>
+      <a href="#system" id="nav-system">SISTEM</a>
+      <a href="#compare" id="nav-compare">POREĐENJE</a>
+      <a href="#downloads" id="nav-downloads">DOKUMENTA</a>
+      <a href="#pricing" id="nav-pricing">CENOVNIK</a>
+    </nav>
+
+    <div class="head-actions">
+      <div class="lang-switch" role="group" aria-label="Language selection">
+        <button class="lang-btn" data-lang="de" id="lang-btn-de" onclick="setLanguage('de')">DE</button>
+        <button class="lang-btn active" data-lang="sr" id="lang-btn-sr" onclick="setLanguage('sr')">SR</button>
+        <button class="lang-btn" data-lang="en" id="lang-btn-en" onclick="setLanguage('en')">EN</button>
       </div>
+      <a class="btn-driver-nav" href="/driver" id="nav-driver-btn">Driver App</a>
+      <a class="btn-staff-nav" href="/staff" id="nav-staff-btn">Staff Login</a>
     </div>
   </header>
 
-  <!-- 1. CINEMATIC HERO SECTION -->
-  <section class="hero-cinematic pt-28 pb-24 px-4 sm:px-6 lg:px-8 border-b border-slate-800/80 relative overflow-hidden">
-    <svg class="route-glow" viewBox="0 0 1920 600" preserveAspectRatio="none" aria-hidden="true">
-      <path class="route-svg-path" d="M 0 350 C 450 250, 700 480, 1100 320 S 1600 200, 1920 380" />
-    </svg>
+  <main>
+    <!-- HERO SECTION -->
+    <section class="hero-stage">
+      <div class="hero-bus-bg" aria-hidden="true"></div>
+      <div class="hero-asphalt-glow" aria-hidden="true"></div>
 
-    <div class="max-w-5xl mx-auto text-center space-y-8 relative z-10">
-      
-      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-950/80 border border-blue-500/40 text-blue-300 text-xs font-bold uppercase tracking-wider">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span id="hero-kicker">Dispečerski operativni sistem za autobuske prevoznike</span>
-      </div>
+      <div class="hero-content">
+        <span class="eyebrow" id="hero-eyebrow">OPERATIONAL CONTROL FOR BUS COMPANIES</span>
+        <h1 class="hero-h1" id="hero-h1">Kad plan pukne,<br><strong>operacija ne mora.</strong></h1>
+        <p class="hero-sub" id="hero-sub">05:08. Vozač javlja izostanak.<br><span>BusCommand već vodi ka rešenju.</span></p>
+        <p class="hero-p" id="hero-p">Izostanak vozača ulazi jednom. Odluka stiže do svakoga kome je potrebna. Bez rasutih Excel tabela, telefonskih poziva u vožnji i zastoja na liniji.</p>
 
-      <h1 id="hero-title" class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-tight">
-        Kad plan pukne na liniji,<br><span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-emerald-400">operacija ne mora.</span>
-      </h1>
-
-      <p id="hero-desc" class="text-slate-300 text-lg sm:text-xl max-w-3xl mx-auto leading-relaxed">
-        Od mesečnog rasporeda do rešavanja kvara autobusa u roku od 3 sekunde. Sve na jednom dispečerskom ekranu — bez rasutih Excel tabela, telefonskih poziva u vožnji i zastoja.
-      </p>
-
-      <!-- Action Buttons -->
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-        <a href="#pilot" id="hero-cta-pilot" class="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-2xl shadow-blue-600/40 transition-all text-sm">
-          Zatražite besplatan pilot (30 dana) →
-        </a>
-        <a href="#story" id="hero-cta-preview" class="w-full sm:w-auto px-8 py-4 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold rounded-xl transition-all text-sm">
-          Pogledajte operativni minut
-        </a>
-      </div>
-
-      <!-- Trust Metrics -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 max-w-4xl mx-auto">
-        <div class="glass-card p-5 rounded-xl border border-slate-700/60">
-          <div id="m1-num" class="text-3xl font-extrabold text-blue-400 font-mono-num">≤ 3s</div>
-          <div id="m1-lbl" class="text-xs text-slate-300 mt-1 font-medium">Vreme zamene vozača/busa uz Plan-Lock</div>
+        <div class="hero-ctas">
+          <a class="btn primary" href="#incident" id="hero-cta-minute">POGLEDAJ TAJ MINUT →</a>
+          <a class="btn secondary" href="#pilot" id="hero-cta-pilot">ZATRAŽITE PILOT (30 DANA)</a>
         </div>
-        <div class="glass-card p-5 rounded-xl border border-slate-700/60">
-          <div id="m2-num" class="text-3xl font-extrabold text-emerald-400 font-mono-num">100%</div>
-          <div id="m2-lbl" class="text-xs text-slate-300 mt-1 font-medium">Pravna pokrivenost EU 561/2006 &amp; GDPR</div>
-        </div>
-        <div class="glass-card p-5 rounded-xl border border-slate-700/60">
-          <div id="m3-num" class="text-3xl font-extrabold text-cyan-300 font-mono-num">0€</div>
-          <div id="m3-lbl" class="text-xs text-slate-300 mt-1 font-medium">Investicija u nepotreban hardver</div>
-        </div>
-      </div>
 
-    </div>
-  </section>
-
-
-  <!-- 2. MASTERPIECE CINEMATIC OPERATIONAL MINUTE (05:07 — 05:10) -->
-  <section id="story" class="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
-    <div class="text-center max-w-3xl mx-auto space-y-3">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/60 border border-blue-800/50 text-blue-400 text-xs font-mono font-bold uppercase tracking-wider">
-        <span class="w-2 h-2 rounded-full bg-blue-400 animate-ping"></span>
-        <span id="story-kicker">05:07 — 05:10 // JEDAN STVARNI OPERATIVNI MINUT</span>
-      </div>
-      <h2 id="story-title" class="text-3xl sm:text-5xl font-bold text-white">Od crvenog alarma do zelene linije.</h2>
-      <p id="story-desc" class="text-slate-400 text-sm sm:text-base">Kliknite na korake timeline-a i pratite kako BusCommand automatski vodi operaciju od kvara do potvrđene zamene.</p>
-    </div>
-
-    <!-- Timeline Stepper Track -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-      <button onclick="setStoryStep(0)" id="step-btn-0" class="story-btn active p-3 rounded-xl bg-slate-900/80 border border-slate-700 text-left flex items-center gap-2.5">
-        <span class="step-num w-7 h-7 rounded-full bg-slate-800 text-slate-300 font-bold text-xs flex items-center justify-center">1</span>
-        <div>
-          <div class="text-[11px] font-mono-num font-bold text-slate-200" id="step-time-0">05:07</div>
-          <div class="text-[11px] text-slate-400" id="step-lbl-0">Plan je živ</div>
-        </div>
-      </button>
-      <button onclick="setStoryStep(1)" id="step-btn-1" class="story-btn p-3 rounded-xl bg-slate-900/80 border border-slate-700 text-left flex items-center gap-2.5">
-        <span class="step-num w-7 h-7 rounded-full bg-slate-800 text-slate-300 font-bold text-xs flex items-center justify-center">2</span>
-        <div>
-          <div class="text-[11px] font-mono-num font-bold text-slate-200" id="step-time-1">05:08</div>
-          <div class="text-[11px] text-slate-400" id="step-lbl-1">Autobus staje</div>
-        </div>
-      </button>
-      <button onclick="setStoryStep(2)" id="step-btn-2" class="story-btn p-3 rounded-xl bg-slate-900/80 border border-slate-700 text-left flex items-center gap-2.5">
-        <span class="step-num w-7 h-7 rounded-full bg-slate-800 text-slate-300 font-bold text-xs flex items-center justify-center">3</span>
-        <div>
-          <div class="text-[11px] font-mono-num font-bold text-slate-200" id="step-time-2">05:08:04</div>
-          <div class="text-[11px] text-slate-400" id="step-lbl-2">Dispo reaguje</div>
-        </div>
-      </button>
-      <button onclick="setStoryStep(3)" id="step-btn-3" class="story-btn p-3 rounded-xl bg-slate-900/80 border border-slate-700 text-left flex items-center gap-2.5">
-        <span class="step-num w-7 h-7 rounded-full bg-slate-800 text-slate-300 font-bold text-xs flex items-center justify-center">4</span>
-        <div>
-          <div class="text-[11px] font-mono-num font-bold text-slate-200" id="step-time-3">05:08:21</div>
-          <div class="text-[11px] text-slate-400" id="step-lbl-3">Zamena spremna</div>
-        </div>
-      </button>
-      <button onclick="setStoryStep(4)" id="step-btn-4" class="story-btn p-3 rounded-xl bg-slate-900/80 border border-slate-700 text-left flex items-center gap-2.5">
-        <span class="step-num w-7 h-7 rounded-full bg-slate-800 text-slate-300 font-bold text-xs flex items-center justify-center">5</span>
-        <div>
-          <div class="text-[11px] font-mono-num font-bold text-slate-200" id="step-time-4">05:09</div>
-          <div class="text-[11px] text-slate-400" id="step-lbl-4">Vozač potvrđuje</div>
-        </div>
-      </button>
-      <button onclick="setStoryStep(5)" id="step-btn-5" class="story-btn p-3 rounded-xl bg-slate-900/80 border border-slate-700 text-left flex items-center gap-2.5">
-        <span class="step-num w-7 h-7 rounded-full bg-slate-800 text-slate-300 font-bold text-xs flex items-center justify-center">6</span>
-        <div>
-          <div class="text-[11px] font-mono-num font-bold text-slate-200" id="step-time-5">05:10</div>
-          <div class="text-[11px] text-slate-400" id="step-lbl-5">Linija teče</div>
-        </div>
-      </button>
-    </div>
-
-    <!-- Live Stage Simulator (Dual Card: Dispo Cockpit & Driver Phone) -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-      
-      <!-- Left: Dispo Command Radar (8 Cols) -->
-      <div class="lg:col-span-8 glass-card p-6 rounded-2xl flex flex-col justify-between space-y-6">
-        <div>
-          <!-- Header Bar -->
-          <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-            <div class="flex items-center gap-3">
-              <div class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></div>
-              <span id="story-status-pill" class="pill pill-green font-mono-num">05:07 // OPERACIJA UŽIVO</span>
-            </div>
-            <div class="text-xs font-mono-num text-slate-400">Linija: <strong class="text-white">Duty 320.s01</strong></div>
+        <div class="trust-strip">
+          <div class="trust-item">
+            <span class="trust-icon">✓</span>
+            <div><strong id="tr1-title">Problem</strong> <span id="tr1-desc">vidljiv u sekundi</span></div>
           </div>
+          <div class="trust-item">
+            <span class="trust-icon">✓</span>
+            <div><strong id="tr2-title">Dispečer</strong> <span id="tr2-desc">dobija jasnu akciju</span></div>
+          </div>
+          <div class="trust-item">
+            <span class="trust-icon">✓</span>
+            <div><strong id="tr3-title">Operacija</strong> <span id="tr3-desc">nastavlja da teče</span></div>
+          </div>
+        </div>
+      </div>
 
-          <!-- Dynamic Story Banner -->
-          <div id="story-banner-box" class="p-4 mt-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-start gap-4">
-            <div id="story-banner-icon" class="text-2xl text-emerald-400">✓</div>
-            <div>
-              <h4 id="story-banner-title" class="text-base font-bold text-white">Duty 320.s01 je pokriven i aktivan</h4>
-              <p id="story-banner-desc" class="text-xs text-slate-300 mt-0.5">Autobus BC 5676-BC je na liniji. Vozač M. Weber (D-104) obavlja zadatak bez odstupanja.</p>
+      <!-- COCKPIT REVEAL -->
+      <div class="cockpit-reveal" id="cockpit">
+        <div class="cockpit-head">
+          <div class="cockpit-title">
+            <span id="cockpit-title">Pregled operacije</span>
+            <span class="live-badge" id="cockpit-live">● UŽIVO</span>
+          </div>
+          <div class="mono" style="font-size:11px;color:#94a3b8;">VOR 320 · DEMONSTRACIONI SCENARIO</div>
+        </div>
+
+        <div class="cockpit-grid">
+          <!-- KPI Col -->
+          <div class="kpi-col">
+            <div class="kpi-card">
+              <div class="kpi-val green" id="kpi-buses-val">32</div>
+              <div class="kpi-lbl" id="kpi-buses-lbl">VOZILA NA LINIJI</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-val" id="kpi-shifts-val">180</div>
+              <div class="kpi-lbl" id="kpi-shifts-lbl">AKTIVNE SMENE</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-val green" id="kpi-conf-val">179</div>
+              <div class="kpi-lbl" id="kpi-conf-lbl">POTVRĐENE SMENE</div>
+            </div>
+            <div class="kpi-card alert">
+              <div class="kpi-val red" id="kpi-alert-val">1</div>
+              <div class="kpi-lbl" id="kpi-alert-lbl">SMENA BEZ VOZAČA</div>
             </div>
           </div>
 
-          <!-- Dispo Radar Table -->
-          <div class="mt-4 overflow-x-auto">
-            <table class="w-full text-xs text-left">
-              <thead>
-                <tr class="text-slate-500 border-b border-slate-800 font-mono-num">
-                  <th class="py-2">DUTY</th>
-                  <th class="py-2">VOZAČ</th>
-                  <th class="py-2">AUTOBUS</th>
-                  <th class="py-2">POLAZAK</th>
-                  <th class="py-2 text-right">STATUS</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-800/60">
-                <tr class="text-slate-300">
-                  <td class="py-2.5 font-bold text-white font-mono-num">320.s01</td>
-                  <td class="py-2.5" id="tbl-driver">M. Weber (D-104)</td>
-                  <td class="py-2.5 font-mono-num" id="tbl-bus"><span class="text-emerald-400">BC 5676-BC</span></td>
-                  <td class="py-2.5 font-mono-num">05:10 - 13:45</td>
-                  <td class="py-2.5 text-right" id="tbl-status"><span class="pill pill-green">AKTIVNO</span></td>
-                </tr>
-                <tr class="text-slate-300">
-                  <td class="py-2.5 font-bold text-white font-mono-num">320.s02</td>
-                  <td class="py-2.5">E. Schmidt (D-108)</td>
-                  <td class="py-2.5 font-mono-num text-slate-400">BC 8821-BC</td>
-                  <td class="py-2.5 font-mono-num">05:30 - 14:00</td>
-                  <td class="py-2.5 text-right"><span class="pill pill-green">AKTIVNO</span></td>
-                </tr>
-                <tr class="text-slate-300">
-                  <td class="py-2.5 font-bold text-white font-mono-num">320.s03</td>
-                  <td class="py-2.5">T. Fischer (D-112)</td>
-                  <td class="py-2.5 font-mono-num text-slate-400">BC 4410-BC</td>
-                  <td class="py-2.5 font-mono-num">06:00 - 14:30</td>
-                  <td class="py-2.5 text-right"><span class="pill pill-green">AKTIVNO</span></td>
-                </tr>
-              </tbody>
-            </table>
+          <!-- Map Col -->
+          <div class="map-col">
+            <div class="map-canvas">
+              <svg viewBox="0 0 800 400" preserveAspectRatio="none">
+                <path class="route-bg" d="M 50,320 Q 250,80 450,220 T 750,120" />
+                <path class="route-live" id="sceneRouteLive" d="M 50,320 Q 250,80 450,220 T 750,120" />
+              </svg>
+              <!-- Interactive Pins -->
+              <div class="bus-pin alert" id="pin-alert" style="left:45%;top:55%;" title="Duty 320.s01 - Marko Petrović (Nedostupan)">!</div>
+              <div class="bus-pin standby" id="pin-standby" style="left:28%;top:40%;" title="Luka Kovačević (Standby)">P</div>
+              <div class="bus-pin" style="left:75%;top:30%;" title="BC 9012 (U vožnji)">✓</div>
+            </div>
+          </div>
+
+          <!-- Radar Col -->
+          <div class="radar-col">
+            <div class="radar-title" id="radar-title">DISPO RADAR</div>
+            <div class="radar-item active" id="radar-card-alert">
+              <div class="r-time">05:08:12 · HITNO</div>
+              <div class="r-head" id="radar-alert-head">Duty 320.s01 nema vozača</div>
+              <div class="r-sub" id="radar-alert-sub">Marko P. javio bolovanje · Polazak 05:25</div>
+            </div>
+            <div class="radar-item" id="radar-card-action">
+              <div class="r-time">05:08:28 · PREDLOG SISTEMA</div>
+              <div class="r-head" id="radar-act-head">Dodeliti: Luka Kovačević</div>
+              <div class="r-sub" id="radar-act-sub">Standby vozač iz iste grupe (VOR 320)</div>
+            </div>
           </div>
         </div>
+      </div>
+    </section>
 
-        <!-- Dispo Interactive Action Bar -->
-        <div id="dispo-action-bar" class="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div class="text-xs text-slate-400" id="dispo-action-note">Operativni tok pod punom kontrolom dispečera.</div>
-          <button onclick="simulateDispoAction()" id="dispo-action-btn" class="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-600/30 transition-all">
-            Simuliraj kvar u 05:08 →
+    <!-- SECTION 2: 05:08 INCIDENT MINUTE -->
+    <section class="section" id="incident">
+      <div class="section-head">
+        <span class="eyebrow" id="sc2-eyebrow">05:08—05:10 · JEDAN STVARNI OPERATIVNI MINUT</span>
+        <h2 id="sc2-title">Od izostanka vozača<br><span>do potvrđene zamene.</span></h2>
+        <p id="sc2-desc">Jedna stvarna dispečerska odluka: izostanak vozača rešava se u sekundi bez telefonskih poziva u vožnji i bez konflikta u rasporedu.</p>
+      </div>
+
+      <div class="scrolly-grid">
+        <!-- Story Steps Nav -->
+        <div class="story-timeline" role="tablist">
+          <button class="step-btn active" role="tab" aria-selected="true" onclick="setStoryStep(0)" id="step-btn-0">
+            <span class="step-dot">1</span>
+            <div class="step-info">
+              <span class="step-time">05:07</span>
+              <span class="step-title" id="s2-step-0">Plan je spreman</span>
+            </div>
+          </button>
+          <button class="step-btn" role="tab" aria-selected="false" onclick="setStoryStep(1)" id="step-btn-1">
+            <span class="step-dot">2</span>
+            <div class="step-info">
+              <span class="step-time">05:08</span>
+              <span class="step-title" id="s2-step-1">Vozač javlja izostanak</span>
+            </div>
+          </button>
+          <button class="step-btn" role="tab" aria-selected="false" onclick="setStoryStep(2)" id="step-btn-2">
+            <span class="step-dot">3</span>
+            <div class="step-info">
+              <span class="step-time">05:08:12</span>
+              <span class="step-title" id="s2-step-2">Dispo radar reaguje</span>
+            </div>
+          </button>
+          <button class="step-btn" role="tab" aria-selected="false" onclick="setStoryStep(3)" id="step-btn-3">
+            <span class="step-dot">4</span>
+            <div class="step-info">
+              <span class="step-time">05:08:28</span>
+              <span class="step-title" id="s2-step-3">Plan Lock & Zamena</span>
+            </div>
+          </button>
+          <button class="step-btn" role="tab" aria-selected="false" onclick="setStoryStep(4)" id="step-btn-4">
+            <span class="step-dot">5</span>
+            <div class="step-info">
+              <span class="step-time">05:09:02</span>
+              <span class="step-title" id="s2-step-4">Vozač potvrđuje na PWA</span>
+            </div>
+          </button>
+          <button class="step-btn" role="tab" aria-selected="false" onclick="setStoryStep(5)" id="step-btn-5">
+            <span class="step-dot">6</span>
+            <div class="step-info">
+              <span class="step-time">05:10:00</span>
+              <span class="step-title" id="s2-step-5">Operacija teče & Audit</span>
+            </div>
           </button>
         </div>
-      </div>
 
-      <!-- Right: Driver PWA Phone Mockup (4 Cols) -->
-      <div class="lg:col-span-4 flex flex-col items-center justify-center">
-        <div class="phone-mockup w-full max-w-[280px] p-4 space-y-4">
-          
-          <div class="flex items-center justify-between text-[11px] text-slate-400 border-b border-slate-800 pb-2">
-            <span class="font-bold text-white flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-blue-500"></span> Driver PWA
-            </span>
-            <span id="phone-clock" class="font-mono-num">05:07</span>
+        <!-- Interactive Stage Display -->
+        <div class="interactive-stage">
+          <div class="stage-hero-box">
+            <div class="stage-kicker" id="story-kicker">FAZA 1: STABILNA OPERACIJA</div>
+            <div class="stage-title" id="story-title">Dnevni raspored je sinhronizovan</div>
+            <div class="stage-desc" id="story-desc">Sve linije jutarnjeg špica su popunjene. Dispečer ima pregled svih vozila i vozača.</div>
           </div>
 
-          <div class="space-y-1">
-            <div class="text-[10px] text-slate-500 uppercase tracking-wider" id="phone-duty-lbl">Dodeljena smena</div>
-            <div class="text-2xl font-black text-white font-mono-num" id="phone-duty-val">320.s01</div>
-            <div class="text-xs text-slate-300" id="phone-driver-name">M. Weber (D-104)</div>
-          </div>
-
-          <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-2">
-            <div class="flex justify-between text-xs">
-              <span class="text-slate-400" id="phone-bus-lbl">Vozilo:</span>
-              <strong class="text-emerald-400 font-mono-num" id="phone-bus-val">BC 5676-BC</strong>
+          <div class="stage-split">
+            <!-- Left: Dispo Panel Mock -->
+            <div class="mock-card">
+              <div class="mock-head">
+                <span>Dnevni plan · Smena 320.s01</span>
+                <span class="tag-badge ok" id="mock-status-badge">POTVRĐENO</span>
+              </div>
+              <div class="mock-row">
+                <span style="color:#94a3b8;">Linija & Polazak:</span>
+                <span class="mono" style="font-weight:700;">VOR 320 · 05:25</span>
+              </div>
+              <div class="mock-row">
+                <span style="color:#94a3b8;">Autobus:</span>
+                <span class="mono" style="font-weight:700;">BC 5676-BC</span>
+              </div>
+              <div class="mock-row">
+                <span style="color:#94a3b8;">Dodeljen vozač:</span>
+                <span id="mock-driver-name" style="font-weight:700;">Marko Petrović</span>
+              </div>
+              <div class="mock-row">
+                <span style="color:#94a3b8;">Plan Lock status:</span>
+                <span class="mono" id="mock-lock-status" style="color:#10b981;">OTKLJUČANO</span>
+              </div>
             </div>
-            <div class="flex justify-between text-xs">
-              <span class="text-slate-400" id="phone-time-lbl">Vreme:</span>
-              <span class="text-slate-200 font-mono-num">05:10 — 13:45</span>
+
+            <!-- Right: Driver PWA Phone -->
+            <div class="pwa-phone">
+              <div class="pwa-screen">
+                <div class="pwa-header">
+                  <span>BusCommand Driver</span>
+                  <span class="mono" id="pwa-clock">05:07</span>
+                </div>
+                <div class="pwa-shift-box">
+                  <div style="font-size:10px;color:#94a3b8;margin-bottom:3px;" id="pwa-duty-lbl">Dodeljena smena:</div>
+                  <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:6px;" id="pwa-duty-name">Duty 320.s01 (05:25 - 13:45)</div>
+                  <div style="font-size:11px;color:#cbd5e1;" id="pwa-driver-assigned">Vozač: Marko Petrović</div>
+                </div>
+                <button class="pwa-btn-confirm confirmed" id="pwa-btn" onclick="triggerPwaConfirm()">
+                  ✓ Smena potvrđena
+                </button>
+              </div>
             </div>
-            <div class="flex justify-between text-xs items-center">
-              <span class="text-slate-400" id="phone-status-lbl">Status:</span>
-              <span id="phone-pill" class="pill pill-green">Spremno</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: 4 ROLES & 3 OPERATIONAL SURFACES -->
+    <section class="section" id="roles">
+      <div class="section-head">
+        <span class="eyebrow" id="sc3-eyebrow">SISTEMSKE ULOGE I OPERATIVNE POVRŠINE</span>
+        <h2 id="sc3-title">Jedna operacija.<br><span>Jasne odgovornosti.</span></h2>
+        <p id="sc3-desc">BusCommand platforma povezuje 4 uloge (Super Admin, Company Admin, Dispečer, Vozač), a svakom operativnom članu pruža namensku radnu površinu.</p>
+      </div>
+
+      <div class="roles-switch-bar" role="tablist">
+        <button class="role-btn active" role="tab" id="role-btn-dispo" onclick="setRole('dispo')">DISPEČER</button>
+        <button class="role-btn" role="tab" id="role-btn-driver" onclick="setRole('driver')">DRIVER PWA</button>
+        <button class="role-btn" role="tab" id="role-btn-admin" onclick="setRole('admin')">COMPANY ADMIN</button>
+      </div>
+
+      <!-- Panel Dispo -->
+      <div class="role-panel active" id="role-panel-dispo">
+        <div class="role-content">
+          <h3 id="role-dispo-title">Dispečerski radar i upravljanje smenama</h3>
+          <p id="role-dispo-desc">Dispečer ima potpunu kontrolu nad dnevnim operacijama. Reaguje na izostanke, preraspoređuje vozače i vozila bez ručnog traženja po tabelama.</p>
+          <div class="role-badges">
+            <span class="role-tag">Dispo radar u realnom vremenu</span>
+            <span class="role-tag">Plan Lock zaštita od konflikta</span>
+            <span class="role-tag">Brza zamena u 1 klik</span>
+          </div>
+        </div>
+        <div class="mock-card">
+          <div class="mock-head"><span>DISPO COCKPIT</span><span class="tag-badge ok">AKTIVNO</span></div>
+          <div class="mock-row"><span>Pregled grupa:</span><span style="font-weight:700;">VOR 320, VOR 321, Noćne linije</span></div>
+          <div class="mock-row"><span>Slobodni standby:</span><span style="font-weight:700;color:#10b981;">3 vozača u pripravnosti</span></div>
+          <div class="mock-row"><span>SOS i vanredno:</span><span style="color:#10b981;">0 aktivnih alarma</span></div>
+        </div>
+      </div>
+
+      <!-- Panel Driver -->
+      <div class="role-panel" id="role-panel-driver">
+        <div class="role-content">
+          <h3 id="role-driver-title">Driver PWA mobilna aplikacija</h3>
+          <p id="role-driver-desc">Vozač na svom pametnom telefonu uvek vidi aktuelnu smenu, broj autobusa i polazak. Potvrđuje smenu jednim dodirom bez pozivanja dispečera.</p>
+          <div class="role-badges">
+            <span class="role-tag">1-tap potvrda smene</span>
+            <span class="role-tag">Pre-trip digitalna provera</span>
+            <span class="role-tag">Radi offline (PWA keš)</span>
+          </div>
+        </div>
+        <div class="mock-card">
+          <div class="mock-head"><span>DRIVER PWA</span><span class="tag-badge ok">POVEZAN</span></div>
+          <div class="mock-row"><span>Prijava:</span><span style="font-weight:700;">PIN / Telefonski broj</span></div>
+          <div class="mock-row"><span>Današnji zadatak:</span><span style="font-weight:700;">Duty 320.s01 · 05:25</span></div>
+          <div class="mock-row"><span>Status potvrde:</span><span style="color:#10b981;font-weight:700;">Potvrđeno (05:09:02)</span></div>
+        </div>
+      </div>
+
+      <!-- Panel Admin -->
+      <div class="role-panel" id="role-panel-admin">
+        <div class="role-content">
+          <h3 id="role-admin-title">Company Admin kontrolna tabla</h3>
+          <p id="role-admin-desc">Company Admin uvozi mesečne planove, raspoređuje dispo grupe, vodi evidenciju flote i vozača i pristupa revizionom tragu u skladu sa GDPR standardima.</p>
+          <div class="role-badges">
+            <span class="role-tag">Excel / CSV uvoz rasporeda</span>
+            <span class="role-tag">Upravljanje dispo grupama</span>
+            <span class="role-tag">24-mesečni audit log</span>
+          </div>
+        </div>
+        <div class="mock-card">
+          <div class="mock-head"><span>ADMINISTRACIJA</span><span class="tag-badge ok">SINHRONIZOVANO</span></div>
+          <div class="mock-row"><span>Uvezen mesečni plan:</span><span style="font-weight:700;">Avgust 2026 (5.420 smena)</span></div>
+          <div class="mock-row"><span>Evidencija flote:</span><span style="font-weight:700;">32 registrovana autobusa</span></div>
+          <div class="mock-row"><span>Revizioni trag:</span><span style="font-weight:700;">100% zabeleženih promena</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: 5-NODE SYSTEM PULSE -->
+    <section class="section" id="system">
+      <div class="section-head">
+        <span class="eyebrow" id="sys-eyebrow">CELOKUPAN OPERATIVNI TOK</span>
+        <h2 id="sys-title">Jedna odluka ulazi.<br><span>Ceo sistem se poravna.</span></h2>
+        <p id="sys-desc">Svaka izmena prolazi kroz pet tačaka kontrole: od prijave problema do trajnog zapisa u bazi.</p>
+      </div>
+
+      <div class="pulse-bar" role="tablist">
+        <div class="pulse-step active" onclick="setSystemPulse(0)" id="pulse-btn-0">
+          <b id="p-step-0-b">1. Incident</b>
+          <span id="p-step-0-s" style="display:block;font-size:10px;color:#94a3b8;">Izostanak vozača</span>
+        </div>
+        <div class="pulse-step" onclick="setSystemPulse(1)" id="pulse-btn-1">
+          <b id="p-step-1-b">2. Dispo</b>
+          <span id="p-step-1-s" style="display:block;font-size:10px;color:#94a3b8;">Radar izoluje problem</span>
+        </div>
+        <div class="pulse-step" onclick="setSystemPulse(2)" id="pulse-btn-2">
+          <b id="p-step-2-b">3. Plan Lock</b>
+          <span id="p-step-2-s" style="display:block;font-size:10px;color:#94a3b8;">Zaključavanje izmene</span>
+        </div>
+        <div class="pulse-step" onclick="setSystemPulse(3)" id="pulse-btn-3">
+          <b id="p-step-3-b">4. Driver PWA</b>
+          <span id="p-step-3-s" style="display:block;font-size:10px;color:#94a3b8;">1-tap potvrda</span>
+        </div>
+        <div class="pulse-step" onclick="setSystemPulse(4)" id="pulse-btn-4">
+          <b id="p-step-4-b">5. Audit</b>
+          <span id="p-step-4-s" style="display:block;font-size:10px;color:#94a3b8;">Arhiviran zapis</span>
+        </div>
+      </div>
+
+      <div class="pulse-stage">
+        <div class="pulse-display">
+          <div class="pulse-time mono" id="pulseTime">05:08:00</div>
+          <div class="pulse-status" id="pulseStatus">SIGNAL PRIMLJEN</div>
+        </div>
+        <div class="pulse-body">
+          <h4 id="pulseTitle">Vozač prijavljuje izostanak</h4>
+          <p id="pulseText">Sistem odmah registruje da je smena Duty 320.s01 ostala bez vozača i aktivira upozorenje u dispečerskom centru.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: COMPARE MATRIX -->
+    <section class="section" id="compare">
+      <div class="section-head">
+        <h2 id="cmp-sec-title">Excel vs. Generički ERP vs. BusCommand</h2>
+        <p id="cmp-sec-desc">Zašto specijalizovan dispečerski sistem štedi sate rada svakog dana i sprečava skupe greške.</p>
+      </div>
+
+      <div class="cmp-grid">
+        <div class="cmp-card">
+          <h3 id="cmp-card1-title">Excel & Viber grupe</h3>
+          <ul class="cmp-list">
+            <li class="bad">✕ Rasute verzije tabela i prepisivanje</li>
+            <li class="bad">✕ Pozivi vozača u toku vožnje</li>
+            <li class="bad">✕ Nema potvrde smene smene</li>
+            <li class="bad">✕ Rizik od duplog raspoređivanja</li>
+            <li class="bad">✕ Nema zakonskog revizionog traga</li>
+          </ul>
+        </div>
+
+        <div class="cmp-card">
+          <h3 id="cmp-card2-title">Generički ERP softver</h3>
+          <ul class="cmp-list">
+            <li class="bad">✕ Prekomplikovano za brze dispo izmene</li>
+            <li class="bad">✕ Vozači nemaju namensku mobilnu aplikaciju</li>
+            <li class="bad">✕ Nema radarskog prikaza slobodnih standby vozača</li>
+            <li class="bad">✕ Skupo uvođenje i spora obuka</li>
+          </ul>
+        </div>
+
+        <div class="cmp-card featured">
+          <h3 id="cmp-card3-title">BusCommand SaaS</h3>
+          <ul class="cmp-list">
+            <li class="good">✓ 1-tap zamena vozača za manje od 30 sekundi</li>
+            <li class="good">✓ Plan Lock zaštita od istovremenih izmena</li>
+            <li class="good">✓ Driver PWA mobilna potvrda smene</li>
+            <li class="good">✓ Uvoz postojećih Excel/CSV rasporeda</li>
+            <li class="good">✓ 24-mesečni nepromenljivi audit log</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: DOWNLOADS HUB -->
+    <section class="section" id="downloads">
+      <div class="section-head">
+        <h2 id="dl-sec-title">Zvanična dokumenta i šabloni</h2>
+        <p id="dl-sec-desc">Preuzmite standardizovane šablone za uvoz rasporeda i bezbednosnu dokumentaciju.</p>
+      </div>
+
+      <div class="dl-grid">
+        <div class="dl-card">
+          <div>
+            <div class="dl-icon">SEC</div>
+            <h4 id="dl-card1-title">Bezbednosni audit</h4>
+            <p id="dl-card1-desc">Izveštaj o enkripciji, multi-tenant izolaciji baze i zaštiti podataka.</p>
+          </div>
+          <a class="dl-btn" href="/downloads/BusCommand_Technical_Security_Audit.html" target="_blank" id="dl-card1-btn">Pregledaj izveštaj</a>
+        </div>
+
+        <div class="dl-card">
+          <div>
+            <div class="dl-icon">CSV</div>
+            <h4 id="dl-card2-title">Šablon plana smena</h4>
+            <p id="dl-card2-desc">Standardni format za uvoz mesečnog rasporeda vozača i linija.</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a class="dl-btn" href="/downloads/BusCommand_Monthly_Shift_Plan_Template.csv" download id="dl-card2-btn">Preuzmi CSV</a>
+            <a class="dl-btn" href="/downloads/BusCommand_Monthly_Shift_Plan_Template.xlsx" download>Excel</a>
+          </div>
+        </div>
+
+        <div class="dl-card">
+          <div>
+            <div class="dl-icon">FLE</div>
+            <h4 id="dl-card3-title">Šablon voznog parka</h4>
+            <p id="dl-card3-desc">Struktura za unos vozila, registracionih oznaka i depoa.</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a class="dl-btn" href="/downloads/BusCommand_Fleet_Vehicles_Template.csv" download id="dl-card3-btn">Preuzmi CSV</a>
+            <a class="dl-btn" href="/downloads/BusCommand_Fleet_Vehicles_Template.xlsx" download>Excel</a>
+          </div>
+        </div>
+
+        <div class="dl-card">
+          <div>
+            <div class="dl-icon">DPA</div>
+            <h4 id="dl-card4-title">GDPR Član 28 DPA</h4>
+            <p id="dl-card4-desc">Pravni ugovor o obradi podataka usklađen sa propisima EU.</p>
+          </div>
+          <a class="dl-btn" href="/downloads/BusCommand_DPA_GDPR_Article_28.html" target="_blank" id="dl-card4-btn">Pregledaj DPA</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 7: CENOVNIK (PRICING) & 30-DAY PILOT -->
+    <section class="pricing-section" id="pricing">
+      <div class="section-head">
+        <h2 id="pricing-title">Cenovnik</h2>
+        <p id="pricing-desc">Transparentne cene bez skrivenih troškova. Prilagođeno flotama od 5 do 50+ autobusa.</p>
+      </div>
+
+      <div class="pricing-grid">
+        <!-- MICRO -->
+        <div class="price-card">
+          <div>
+            <div class="price-tier-name">MICRO</div>
+            <div class="price-amount">€89 <span id="price-per-micro">/ mesec</span></div>
+            <div class="price-sub" id="p-sub-micro">Do 5 vozila i 8 vozača.</div>
+            <ul class="price-features" id="feat-micro">
+              <li>✓ 1 Dispo + 1 CA nalog</li>
+              <li>✓ Driver PWA aplikacija</li>
+              <li>✓ Dnevni plan i potvrde</li>
+              <li>✓ Email podrška</li>
+            </ul>
+          </div>
+          <a class="price-cta" href="#pilot" id="cta-micro">Izaberi Micro</a>
+        </div>
+
+        <!-- STARTER -->
+        <div class="price-card">
+          <div>
+            <div class="price-tier-name">STARTER</div>
+            <div class="price-amount">€190 <span id="price-per-starter">/ mesec</span></div>
+            <div class="price-sub" id="p-sub-starter">15 do 20 autobusa i do 25 vozača.</div>
+            <ul class="price-features" id="feat-starter">
+              <li>✓ 1 Dispo + 1 CA nalog</li>
+              <li>✓ 3-dnevni dispo radar</li>
+              <li>✓ Driver PWA aplikacija</li>
+              <li>✓ Email podrška (radni dan)</li>
+            </ul>
+          </div>
+          <a class="price-cta" href="#pilot" id="cta-starter">Izaberi Starter</a>
+        </div>
+
+        <!-- PRO -->
+        <div class="price-card featured">
+          <div class="pop-badge" id="badge-popular">Najpopularniji</div>
+          <div>
+            <div class="price-tier-name">PRO</div>
+            <div class="price-amount">€390 <span id="price-per-pro">/ mesec</span></div>
+            <div class="price-sub" id="p-sub-pro">20 do 50 autobusa i do 70 vozača.</div>
+            <ul class="price-features" id="feat-pro">
+              <li>✓ Do 4 Dispo naloga (grupe)</li>
+              <li>✓ Plan Lock zaštita plana</li>
+              <li>✓ Potvrde čitanja u PWA</li>
+              <li>✓ 24-mesečni audit trag</li>
+              <li>✓ Dežurna podrška za hitne slučajeve</li>
+            </ul>
+          </div>
+          <a class="price-cta" href="#pilot" id="cta-pro">Izaberi Pro</a>
+        </div>
+
+        <!-- FLEET -->
+        <div class="price-card">
+          <div>
+            <div class="price-tier-name">FLEET</div>
+            <div class="price-amount">€690 <span id="price-per-fleet">/ mesec</span></div>
+            <div class="price-sub" id="p-sub-fleet">50+ autobusa, više depoa i lokacija.</div>
+            <ul class="price-features" id="feat-fleet">
+              <li>✓ Neograničeno dispečera i vozača</li>
+              <li>✓ Više depoa i lokacija</li>
+              <li>✓ DPA Član 28 ugovor</li>
+              <li>✓ PITR oporavak baze</li>
+              <li>✓ Namenske ERP integracije</li>
+            </ul>
+          </div>
+          <a class="price-cta" href="#pilot" id="cta-fleet">Kontaktirajte nas</a>
+        </div>
+      </div>
+
+      <!-- 30-DAY PILOT FORM -->
+      <div class="pilot-box" id="pilot">
+        <div class="pilot-form">
+          <div class="eyebrow" id="pilot-badge">30 DANA BESPLATNOG PILOTA</div>
+          <h3 id="pilotTitle" style="font-size:22px;font-weight:800;color:#fff;">Prijavite vašu kompaniju</h3>
+          <p id="pilotDesc" style="font-size:13px;color:#94a3b8;line-height:1.5;">Naš tim besplatno uvozi vaš postojeći raspored i konfiguriše sistem za vašu firmu. Bez kreditne kartice.</p>
+
+          <form id="pilotForm" onsubmit="handlePilotSubmit(event)">
+            <input type="text" id="p-hp" name="company_site" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;">
+            <div class="form-row">
+              <label for="p-comp" id="lbl-comp-name">Naziv kompanije</label>
+              <input id="p-comp" type="text" placeholder="npr. Lasta d.o.o." required>
             </div>
-          </div>
-
-          <!-- Driver Action Button -->
-          <div class="pt-2">
-            <button onclick="simulateDriverTap()" id="phone-confirm-btn" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-600/30 transition-all">
-              Potvrdi smenu ✓
-            </button>
-            <div id="phone-confirmed-msg" class="hidden text-center py-2.5 bg-emerald-950/60 border border-emerald-800/60 rounded-xl text-emerald-400 text-xs font-bold">
-              ✓ Smena uspešno potvrđena
+            <div class="form-row">
+              <label for="p-name" id="lbl-contact-name">Kontakt osoba</label>
+              <input id="p-name" type="text" placeholder="Ime i prezime" required>
             </div>
-          </div>
-
-          <div class="text-[10px] text-center text-slate-500" id="phone-disclaimer">
-            Bez instalacije. Radi na svakom pametnom telefonu.
-          </div>
-
+            <div class="form-row">
+              <label for="p-email" id="lbl-comp-email">Poslovni Email</label>
+              <input id="p-email" type="email" placeholder="dispo@firma.rs" required>
+            </div>
+            <div class="form-row">
+              <label for="p-phone" id="lbl-contact-phone">Telefon (opciono)</label>
+              <input id="p-phone" type="tel" placeholder="+381 ... / +43 ...">
+            </div>
+            <div class="form-row">
+              <label for="p-buses" id="lbl-comp-buses">Broj autobusa u voznom parku</label>
+              <input id="p-buses" type="number" min="1" value="25" required>
+            </div>
+            <div class="form-row">
+              <label for="p-msg" id="lbl-notes">Napomena ili specifični zahtevi (opciono)</label>
+              <textarea id="p-msg" rows="2" placeholder="Informacije o linijama, dispečerima ili postojećem softveru..."></textarea>
+            </div>
+            <button class="btn-pilot-submit" type="submit" id="pilotSubmitBtn">Prijavite firmu na 30-dnevni pilot →</button>
+            <div id="pilot-feedback" style="display:none;margin-top:14px;padding:12px 14px;border-radius:8px;font-size:13px;line-height:1.5;"></div>
+          </form>
         </div>
-      </div>
 
-    </div>
-  </section>
-
-
-  <!-- 3. TRI ULOGE — JEDNA OPERACIJA -->
-  <section id="roles" class="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10 border-t border-slate-800/80">
-    <div class="text-center max-w-3xl mx-auto space-y-3">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/60 border border-blue-800/50 text-blue-400 text-xs font-mono font-bold uppercase tracking-wider">
-        <span id="roles-kicker">STRUKTURA OPERACIJE</span>
-      </div>
-      <h2 id="roles-title" class="text-3xl sm:text-4xl font-bold text-white">Ista operacija. Tri jasne uloge.</h2>
-      <p id="roles-desc" class="text-slate-400 text-sm sm:text-base">Svaki član tima vidi tačno ono što mu je potrebno za miran i tačan radni dan.</p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      
-      <!-- Role 1: Dispečer -->
-      <div class="bento-cell space-y-4">
-        <div class="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center text-lg font-bold border border-blue-500/30">
-          🖥️
-        </div>
-        <h3 id="role1-title" class="text-xl font-bold text-white">Dispečer Kokpit</h3>
-        <p id="role1-desc" class="text-xs text-slate-300 leading-relaxed">
-          3-dnevni dispo radar, instant detekcija zastoja, zamena autobusa u ≤ 3 sekunde uz Plan-Lock zaštitu plana.
-        </p>
-        <ul id="role1-list" class="space-y-2 text-xs text-slate-400 border-t border-slate-800 pt-3">
-          <li>✓ Pregled svih linija i smena u realnom vremenu</li>
-          <li>✓ Dodeljivanje zamena jednim klikom</li>
-          <li>✓ SOS alarmi i direktne poruke vozačima</li>
-        </ul>
-      </div>
-
-      <!-- Role 2: Vozač -->
-      <div class="bento-cell space-y-4">
-        <div class="w-10 h-10 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center text-lg font-bold border border-emerald-500/30">
-          📱
-        </div>
-        <h3 id="role2-title" class="text-xl font-bold text-white">Driver PWA Aplikacija</h3>
-        <p id="role2-desc" class="text-xs text-slate-300 leading-relaxed">
-          Čista mobilna aplikacija bez instalacije. Vozač prima raspored, potvrđuje smene i prijavljuje probleme bez poziva.
-        </p>
-        <ul id="role2-list" class="space-y-2 text-xs text-slate-400 border-t border-slate-800 pt-3">
-          <li>✓ 1-tap potvrda smene</li>
-          <li>✓ Siguran SMS OTP pristup bez lozinki</li>
-          <li>✓ Brza prijava zastoja ili kvara vozila</li>
-        </ul>
-      </div>
-
-      <!-- Role 3: Company Admin -->
-      <div class="bento-cell space-y-4">
-        <div class="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center text-lg font-bold border border-purple-500/30">
-          🏢
-        </div>
-        <h3 id="role3-title" class="text-xl font-bold text-white">Company Administrator</h3>
-        <p id="role3-desc" class="text-xs text-slate-300 leading-relaxed">
-          Uvoz mesečnih Excel planova, raspodela linijskih grupa, evidencija flote i pravna usaglašenost.
-        </p>
-        <ul id="role3-list" class="space-y-2 text-xs text-slate-400 border-t border-slate-800 pt-3">
-          <li>✓ Uvoz mesečnog rasporeda za 2 minuta</li>
-          <li>✓ Izolacija prava po dispečerskim grupama</li>
-          <li>✓ GDPR DPA Član 28 i revizioni trag</li>
-        </ul>
-      </div>
-
-    </div>
-  </section>
-
-
-  <!-- 4. POREĐENJE SA STARIM METODAMA -->
-  <section id="compare" class="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10 border-t border-slate-800/80">
-    <div class="text-center max-w-2xl mx-auto space-y-2">
-      <h2 id="matrix-title" class="text-3xl sm:text-4xl font-bold text-white">Excel vs. Generički ERP vs. BusCommand</h2>
-      <p id="matrix-desc" class="text-slate-400 text-sm">Zašto specijalizovan softver za autobuske prevoznike štedi sate rada svakog dana.</p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div class="glass-card p-6 rounded-2xl border-red-900/30 space-y-4">
-        <h3 id="cmp-x-title" class="font-bold text-red-400 text-base border-b border-slate-800 pb-3">Excel tabele &amp; Viber grupe</h3>
-        <ul id="cmp-x-list" class="space-y-3 text-xs text-slate-300">
-          <li class="flex items-start gap-2"><span class="text-red-400 font-bold">✕</span><span>„final_v7_PRAVI.xlsx" — verzije svuda, istine nigde.</span></li>
-          <li class="flex items-start gap-2"><span class="text-red-400 font-bold">✕</span><span>Smene se potvrđuju pozivima tokom vožnje.</span></li>
-          <li class="flex items-start gap-2"><span class="text-red-400 font-bold">✕</span><span>Zamena vozača = prepisivanje celog dana.</span></li>
-          <li class="flex items-start gap-2"><span class="text-red-400 font-bold">✕</span><span>Lični podaci vozača u porukama (GDPR rizik).</span></li>
-        </ul>
-      </div>
-
-      <div class="glass-card p-6 rounded-2xl border-yellow-900/30 space-y-4">
-        <h3 id="cmp-g-title" class="font-bold text-yellow-400 text-base border-b border-slate-800 pb-3">Generički ERP &amp; Kamionski GPS</h3>
-        <ul id="cmp-g-list" class="space-y-3 text-xs text-slate-300">
-          <li class="flex items-start gap-2"><span class="text-yellow-400 font-bold">⚠</span><span>Napravljen za kamione, ne za linijski prevoz.</span></li>
-          <li class="flex items-start gap-2"><span class="text-yellow-400 font-bold">⚠</span><span>Skupi i komplikovani moduli koje niko ne koristi.</span></li>
-          <li class="flex items-start gap-2"><span class="text-yellow-400 font-bold">⚠</span><span>Meseci skupe implementacije po satu konsultanata.</span></li>
-          <li class="flex items-start gap-2"><span class="text-yellow-400 font-bold">⚠</span><span>Podrška ne razume šta je smena, linija i dežurstvo.</span></li>
-        </ul>
-      </div>
-
-      <div class="glass-card p-6 rounded-2xl border-blue-500/50 bg-blue-950/20 space-y-4 relative shadow-2xl">
-        <span id="cmp-badge" class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">Preporučeno</span>
-        <h3 id="cmp-b-title" class="font-bold text-emerald-400 text-base border-b border-slate-800 pb-3">BusCommand specijalizovani SaaS</h3>
-        <ul id="cmp-b-list" class="space-y-3 text-xs text-slate-200">
-          <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Zamena vozača ili autobusa za ≤ 3 sekunde.</span></li>
-          <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>PWA bez instalacije — radi na svakom telefonu.</span></li>
-          <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Fiksna mesečna pretplata, bez skrivenih troškova.</span></li>
-          <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span><span>30 dana besplatnog vođenog pilota uz punu podršku.</span></li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-
-  <!-- 5. DOWNLOAD HUB ZA ŠABLONE -->
-  <section id="downloads" class="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 border-t border-slate-800/80">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div>
-        <span id="downloads-kicker" class="text-xs font-bold uppercase tracking-wider text-blue-400 block font-mono">ENTERPRISE DOWNLOAD HUB</span>
-        <h2 id="downloads-title" class="text-2xl sm:text-3xl font-bold text-white mt-1">Zvanični dokumenti i šabloni za preuzimanje</h2>
-        <p id="downloads-sub" class="text-xs text-slate-400 mt-1">Besplatni A4 šabloni, sigurnosna dokumentacija i GDPR ugovori za 24h start.</p>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <!-- Roster -->
-      <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
-        <div class="space-y-2">
-          <div class="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-xs">XLS</div>
-          <h3 id="dl-roster-title" class="font-bold text-white text-sm">Driver Roster Template</h3>
-          <p id="dl-roster-desc" class="text-xs text-slate-400">Šablon za evidenciju i uvoz vozača (Ime, telefon, email, grupa).</p>
-        </div>
-        <div class="flex gap-2">
-          <a href="/downloads/BusCommand_Driver_Roster_Template.xlsx" download class="flex-1 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-bold rounded-lg transition-colors text-center">XLSX</a>
-          <a href="/downloads/BusCommand_Driver_Roster_Template.csv" download class="flex-1 py-2 bg-slate-800/60 hover:bg-slate-700 text-slate-300 border border-slate-700/40 text-xs font-bold rounded-lg transition-colors text-center">CSV</a>
-        </div>
-      </div>
-
-      <!-- Monthly -->
-      <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
-        <div class="space-y-2">
-          <div class="w-8 h-8 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center font-bold text-xs">XLS</div>
-          <h3 id="dl-monthly-title" class="font-bold text-white text-sm">Monthly Schedule Template</h3>
-          <p id="dl-monthly-desc" class="text-xs text-slate-400">Šablon za mesečni raspored smena za dispečerski uvoz.</p>
-        </div>
-        <div class="flex gap-2">
-          <a href="/downloads/BusCommand_Monthly_Shift_Plan_Template.xlsx" download class="flex-1 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-lg transition-colors text-center">XLSX</a>
-          <a href="/downloads/BusCommand_Monthly_Shift_Plan_Template.csv" download class="flex-1 py-2 bg-slate-800/60 hover:bg-slate-700 text-slate-300 border border-slate-700/40 text-xs font-bold rounded-lg transition-colors text-center">CSV</a>
-        </div>
-      </div>
-
-      <!-- Fleet -->
-      <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
-        <div class="space-y-2">
-          <div class="w-8 h-8 rounded-lg bg-cyan-600/20 text-cyan-400 flex items-center justify-center font-bold text-xs">XLS</div>
-          <h3 id="dl-fleet-title" class="font-bold text-white text-sm">Fleet Template</h3>
-          <p id="dl-fleet-desc" class="text-xs text-slate-400">Šablon za uvoz vozila flote (Broj busa, registracija, grupa).</p>
-        </div>
-        <div class="flex gap-2">
-          <a href="/downloads/BusCommand_Fleet_Vehicles_Template.xlsx" download class="flex-1 py-2 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold rounded-lg transition-colors text-center">XLSX</a>
-          <a href="/downloads/BusCommand_Fleet_Vehicles_Template.csv" download class="flex-1 py-2 bg-slate-800/60 hover:bg-slate-700 text-slate-300 border border-slate-700/40 text-xs font-bold rounded-lg transition-colors text-center">CSV</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
-        <div class="space-y-2">
-          <div class="w-8 h-8 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center font-bold text-xs">PDF</div>
-          <h3 id="dl-quickstart-title" class="font-bold text-white text-sm">Vodič za brzi start</h3>
-          <p id="dl-quickstart-desc" class="text-xs text-slate-400">A4 vodič za obuku dispečera i vozača bez potrebe za sastancima.</p>
-        </div>
-        <a href="/downloads/BusCommand_QuickStart_Guide.html" target="_blank" id="dl-btn-quickstart" class="w-full py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-lg text-center">Preuzmi vodič</a>
-      </div>
-
-      <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
-        <div class="space-y-2">
-          <div class="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-xs">DOC</div>
-          <h3 id="dl-audit-title" class="font-bold text-white text-sm">Tehnički bezbednosni audit</h3>
-          <p id="dl-audit-desc" class="text-xs text-slate-400">Izveštaj o enkripciji, izolaciji i GDPR zaštiti podataka.</p>
-        </div>
-        <a href="/downloads/BusCommand_Technical_Security_Audit.html" target="_blank" id="dl-btn-audit" class="w-full py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-bold rounded-lg text-center">Preuzmi Audit</a>
-      </div>
-
-      <div class="glass-card p-5 rounded-xl flex flex-col justify-between space-y-4">
-        <div class="space-y-2">
-          <div class="w-8 h-8 rounded-lg bg-purple-600/20 text-purple-400 flex items-center justify-center font-bold text-xs">DPA</div>
-          <h3 id="dl-dpa-title" class="font-bold text-white text-sm">GDPR Član 28 DPA Ugovor</h3>
-          <p id="dl-dpa-desc" class="text-xs text-slate-400">Zvanični pravni ugovor o obradi podataka i EU rezidenciji.</p>
-        </div>
-        <a href="/downloads/BusCommand_DPA_GDPR_Article_28.html" target="_blank" id="dl-btn-dpa" class="w-full py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold rounded-lg text-center">Preuzmi DPA</a>
-      </div>
-    </div>
-  </section>
-
-
-  <!-- 6. CENOVNIK -->
-  <section id="pricing" class="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10 border-t border-slate-800/80">
-    <div class="text-center max-w-xl mx-auto space-y-2">
-      <h2 id="pricing-title" class="text-3xl sm:text-4xl font-bold text-white">Cenovnik</h2>
-      <p id="pricing-desc" class="text-slate-400 text-sm">Transparentne cene bez skrivenih troškova. Prilagođeno operacijama od 15 i više autobusa.</p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <!-- MICRO (Entry for small fleets) -->
-      <div class="glass-card p-6 rounded-2xl flex flex-col justify-between space-y-4 opacity-75 hover:opacity-100 transition-opacity">
-        <div class="space-y-3">
-          <h3 class="font-bold text-white text-lg">MICRO</h3>
-          <div class="text-3xl font-extrabold text-white font-mono-num">€89 <span id="price-per-micro" class="text-xs text-slate-400 font-normal font-sans">/ mesec</span></div>
-          <p id="p-sub-micro" class="text-xs text-slate-400">Do 5 vozila i 8 vozača.</p>
-          <ul id="feat-micro" class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-3">
-            <li>✓ 1 Dispo + 1 CA nalog</li>
-            <li>✓ Driver PWA aplikacija</li>
-            <li>✓ Dnevni plan i potvrde</li>
-            <li>✓ Email podrška</li>
-          </ul>
-        </div>
-        <a href="#pilot" id="cta-micro" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-center text-xs block transition-colors">Izaberi Micro</a>
-      </div>
-
-      <!-- STARTER (15-20 Buses) -->
-      <div class="glass-card p-6 rounded-2xl flex flex-col justify-between space-y-4 border-blue-500/30">
-        <div class="space-y-3">
-          <h3 class="font-bold text-white text-lg">STARTER</h3>
-          <div class="text-3xl font-extrabold text-white font-mono-num">€190 <span id="price-per-starter" class="text-xs text-slate-400 font-normal font-sans">/ mesec</span></div>
-          <p id="p-sub-starter" class="text-xs text-slate-400">15 do 20 autobusa i do 25 vozača.</p>
-          <ul id="feat-starter" class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-3">
-            <li>✓ 1 Dispo + 1 CA nalog</li>
-            <li>✓ 3-dnevni dispo radar</li>
-            <li>✓ Driver PWA aplikacija</li>
-            <li>✓ Email podrška &lt; 4h</li>
-          </ul>
-        </div>
-        <a href="#pilot" id="cta-starter" class="w-full py-2.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/40 font-bold rounded-xl text-center text-xs block transition-colors">Izaberi Starter</a>
-      </div>
-
-      <!-- PRO (20-50 Buses - Most Popular) -->
-      <div class="glass-card p-6 rounded-2xl flex flex-col justify-between space-y-4 border-blue-500 bg-blue-950/30 relative shadow-2xl">
-        <span id="badge-popular" class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">Najpopularniji</span>
-        <div class="space-y-3">
-          <h3 class="font-bold text-white text-lg">PRO</h3>
-          <div class="text-3xl font-extrabold text-white font-mono-num">€390 <span id="price-per-pro" class="text-xs text-slate-400 font-normal font-sans">/ mesec</span></div>
-          <p id="p-sub-pro" class="text-xs text-slate-400">20 do 50 autobusa i do 70 vozača.</p>
-          <ul id="feat-pro" class="space-y-2 text-xs text-slate-200 border-t border-slate-800 pt-3">
-            <li>✓ Do 4 Dispo naloga (grupe)</li>
-            <li>✓ Plan Lock zaštita plana</li>
-            <li>✓ Potvrde čitanja u PWA</li>
-            <li>✓ 24-mesečni audit trag</li>
-            <li>✓ 24/7 dežurna podrška</li>
-          </ul>
-        </div>
-        <a href="#pilot" id="cta-pro" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-center text-xs block shadow-lg shadow-blue-600/40 transition-colors">Izaberi Pro</a>
-      </div>
-
-      <!-- FLEET (50+ Buses) -->
-      <div class="glass-card p-6 rounded-2xl flex flex-col justify-between space-y-4">
-        <div class="space-y-3">
-          <h3 class="font-bold text-white text-lg">FLEET</h3>
-          <div class="text-3xl font-extrabold text-white font-mono-num">€690 <span id="price-per-fleet" class="text-xs text-slate-400 font-normal font-sans">/ mesec</span></div>
-          <p id="p-sub-fleet" class="text-xs text-slate-400">50+ autobusa, više depoa i gradova.</p>
-          <ul id="feat-fleet" class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-3">
-            <li>✓ Neograničeno dispečera i vozača</li>
-            <li>✓ Više depoa i lokacija</li>
-            <li>✓ DPA Član 28 ugovor</li>
-            <li>✓ PITR oporavak baze</li>
-            <li>✓ Namenske integracije</li>
-          </ul>
-        </div>
-        <a href="#pilot" id="cta-fleet" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-center text-xs block transition-colors">Kontaktirajte nas</a>
-      </div>
-    </div>
-  </section>
-
-
-  <!-- 7. VOĐENI PILOT OD 30 DANA -->
-  <section id="pilot" class="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-800/80">
-    <div class="bg-gradient-to-br from-slate-900 via-blue-950/40 to-slate-900 border border-blue-500/40 rounded-3xl p-8 sm:p-12 space-y-8 shadow-2xl">
-      <div class="text-center max-w-2xl mx-auto space-y-2">
-        <span id="pilot-kicker" class="text-xs font-bold uppercase tracking-wider text-blue-400 block font-mono">Zero-Risk Pilot</span>
-        <h2 id="pilot-title" class="text-3xl sm:text-4xl font-bold text-white">Vođeni pilot program od 30 dana</h2>
-        <p id="pilot-desc" class="text-slate-400 text-sm">Prijavite firmu — naš tim besplatno uvozi vaš postojeći raspored. Bez kreditne kartice, uz 100% podršku.</p>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-        <form onsubmit="submitPilot(event)" class="glass-card p-6 rounded-2xl space-y-4">
-          <div class="space-y-1.5">
-            <label for="pilot-company" id="pilot-label-name" class="text-xs font-bold text-slate-300 block">Naziv firme</label>
-            <input type="text" id="pilot-company" required class="w-full px-3.5 py-2.5 bg-slate-950/90 border border-slate-700 rounded-lg text-sm text-white focus:border-blue-500 focus:outline-none" placeholder="npr. Busunternehmen GmbH">
-          </div>
-          <div class="space-y-1.5">
-            <label for="pilot-email" id="pilot-label-email" class="text-xs font-bold text-slate-300 block">Email</label>
-            <input type="email" id="pilot-email" required class="w-full px-3.5 py-2.5 bg-slate-950/90 border border-slate-700 rounded-lg text-sm text-white focus:border-blue-500 focus:outline-none" placeholder="office@firma.at">
-          </div>
-          <div class="space-y-1.5">
-            <label for="pilot-buses" id="pilot-label-buses" class="text-xs font-bold text-slate-300 block">Broj autobusa</label>
-            <input type="number" id="pilot-buses" min="1" required class="w-full px-3.5 py-2.5 bg-slate-950/90 border border-slate-700 rounded-lg text-sm text-white focus:border-blue-500 focus:outline-none" placeholder="25">
-          </div>
-          <button type="submit" id="pilot-submit" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-600/30 transition-all">Prijavi firmu na besplatan pilot</button>
-          <p id="pilot-note" class="text-[11px] text-slate-500 text-center">Odgovaramo u roku od 24h. Podaci se koriste isključivo za kontakt.</p>
-        </form>
-
-        <div class="space-y-4">
-          <h3 id="pilot-guarantees-title" class="text-lg font-bold text-white">5 garancija pilot programa:</h3>
-          <ul id="pilot-guarantees" class="space-y-3 text-sm text-slate-300">
-            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">1.</span><span id="pg1">Besplatan uvoz vašeg kataloga linija i vozača.</span></li>
-            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">2.</span><span id="pg2">A4 Vodič za brzi start — vozači uče aplikaciju u 2 minuta.</span></li>
-            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">3.</span><span id="pg3">Potpisan NDA i GDPR DPA Član 28 pre početka.</span></li>
-            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">4.</span><span id="pg4">Bez kartice — prekid u bilo kom trenutku.</span></li>
-            <li class="flex items-start gap-2.5 glass-card p-4 rounded-xl"><span class="text-emerald-400 font-bold">5.</span><span id="pg5">Mogućnost kompletnog izvoza svih podataka na kraju.</span></li>
+        <div class="pilot-info">
+          <h4 id="pilot-guar-title">5 garancija pilot programa:</h4>
+          <ul class="pilot-checklist">
+            <li><b>1.</b> <span id="pg1">Besplatan uvoz vašeg kataloga linija i vozača.</span></li>
+            <li><b>2.</b> <span id="pg2">A4 Vodič za brzi start — vozači uče aplikaciju u 2 minuta.</span></li>
+            <li><b>3.</b> <span id="pg3">Potpisan NDA i GDPR DPA Član 28 pre početka.</span></li>
+            <li><b>4.</b> <span id="pg4">Bez kartice — prekid u bilo kom trenutku.</span></li>
+            <li><b>5.</b> <span id="pg5">Mogućnost kompletnog izvoza svih podataka na kraju.</span></li>
           </ul>
         </div>
       </div>
+    </section>
+
+    <!-- QUIET CLOSE -->
+    <section class="quiet-close">
+      <h2 id="close-title">Plan. Ljudi. Flota.<br><strong>Jedna operacija.</strong></h2>
+      <p id="close-desc">Kad plan pukne, operacija ne mora.</p>
+      <div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap;">
+        <a class="btn primary" href="#top" id="close-cta-top">POGLEDAJ SISTEM PONOVO ↑</a>
+        <a class="btn secondary" href="#downloads" id="close-cta-doc">DOKUMENTACIJA</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div>
+      <span style="font-weight:700;color:#fff;">BUSCOMMAND</span> · <span id="footer-copy">Sva prava zadržana. Frankfurt Cloud DC (europe-west3).</span>
     </div>
-  </section>
-
-
-  <!-- FOOTER -->
-  <footer class="border-t border-slate-800/80 py-10 text-center text-xs text-slate-500 space-y-2">
-    <p id="footer-copy">© 2026 BusCommand Enterprise. Sva prava zadržana. Frankfurt Cloud DC (europe-west3).</p>
-    <div class="flex justify-center gap-4 text-[11px] text-slate-400">
-      <a href="/downloads/BusCommand_Technical_Security_Audit.html" target="_blank" class="hover:underline">Security Audit</a>
-      <a href="/downloads/BusCommand_DPA_GDPR_Article_28.html" target="_blank" class="hover:underline">GDPR DPA</a>
-      <a href="/staff" class="hover:underline">Staff Portal</a>
-      <a href="/driver" class="hover:underline">Driver App</a>
+    <div style="display:flex;gap:18px;">
+      <a href="/downloads/BusCommand_Technical_Security_Audit.html" target="_blank" style="color:#94a3b8;" id="footer-audit-link">Bezbednosna revizija</a>
+      <a href="/downloads/BusCommand_DPA_GDPR_Article_28.html" target="_blank" style="color:#94a3b8;">DPA Član 28</a>
     </div>
   </footer>
 
-
-  <!-- INTERACTIVE LOGIC & COMPLETE MULTI-LANGUAGE TRANSLATION ENGINE -->
+  <!-- SCRIPT -->
   <script>
+    let activeLang = 'sr';
     let currentStoryStep = 0;
-    let currentLang = 'sr';
+    let currentSystemPulse = 0;
+    let autoplayTimer = null;
+    let userInteracted = false;
 
+    // 05:08 Incident Driver-Unavailable Story Data
     const storyData = {
       sr: [
         {
-          time: '05:07',
-          statusPill: '05:07 // OPERACIJA UŽIVO',
-          pillClass: 'pill pill-green',
-          icon: '✓',
-          title: 'Duty 320.s01 je pokriven i aktivan',
-          desc: 'Autobus BC 5676-BC je na liniji. Vozač M. Weber (D-104) obavlja zadatak bez odstupanja.',
-          busVal: '<span class="text-emerald-400">BC 5676-BC</span>',
-          tblStatus: '<span class="pill pill-green">AKTIVNO</span>',
-          actionNote: 'Operativni tok pod punom kontrolom dispečera.',
-          actionBtn: 'Simuliraj kvar u 05:08 →',
-          phoneBus: 'BC 5676-BC',
-          phonePill: 'Spremno',
-          phonePillClass: 'pill pill-green'
+          kicker: "05:07 · PLAN JE SPREMAN",
+          title: "Dnevni raspored je sinhronizovan",
+          desc: "Sve linije jutarnjeg špica su popunjene (32 vozila, 180 smena). Dispečer ima pregled celokupne operacije.",
+          driverName: "Marko Petrović",
+          statusBadge: "POTVRĐENO",
+          statusClass: "tag-badge ok",
+          lockStatus: "OTKLJUČANO",
+          pwaClock: "05:07",
+          pwaDuty: "Duty 320.s01 (05:25 - 13:45)",
+          pwaDriver: "Vozač: Marko Petrović",
+          pwaBtnText: "✓ Smena potvrđena",
+          pwaConfirmed: true,
+          pinAlert: false
         },
         {
-          time: '05:08',
-          statusPill: '05:08 // CRVENI ALARM',
-          pillClass: 'pill pill-red',
-          icon: '!',
-          title: 'BC 5676-BC nije dostupan (Kvar motora)',
-          desc: 'Duty 320.s01 je prekinut. BusCommand odmah aktivira dispečersku pažnju.',
-          busVal: '<span class="text-red-400">BC 5676-BC (Kvar)</span>',
-          tblStatus: '<span class="pill pill-red">NEAKTIVNO</span>',
-          actionNote: 'Detektovan prekid linije u sekundi.',
-          actionBtn: 'Pronađi slobodnu zamenu →',
-          phoneBus: 'BC 5676-BC',
-          phonePill: 'Zastoj',
-          phonePillClass: 'pill pill-red'
+          kicker: "05:08 · IZOSTANAK VOZAČA",
+          title: "Vozač javlja da je nedostupan",
+          desc: "Vozač Marko Petrović javlja izostanak (bolovanje). Smena 320.s01 (polazak 05:25) ostaje nepopunjena i zahteva hitnu dispo odluku.",
+          driverName: "Marko Petrović (Nedostupan)",
+          statusBadge: "NEDOSTUPAN",
+          statusClass: "tag-badge alert",
+          lockStatus: "POTREBNA ZAMENA",
+          pwaClock: "05:08",
+          pwaDuty: "Duty 320.s01 · IZOSTANAK",
+          pwaDriver: "Vozač: Marko Petrović (Bolovanje)",
+          pwaBtnText: "✕ Nedostupan za smenu",
+          pwaConfirmed: false,
+          pinAlert: true
         },
         {
-          time: '05:08:04',
-          statusPill: '05:08:04 // DISPO PREPORUKA',
-          pillClass: 'pill pill-amber',
-          icon: '⚡',
-          title: 'Pronađen dostupan zamenski autobus',
-          desc: 'Vozilo BC 9012-BC je slobodno u bazi i spremno za preuzimanje linije 320.s01.',
-          busVal: '<span class="text-amber-400">BC 5676-BC ➔ BC 9012-BC</span>',
-          tblStatus: '<span class="pill pill-amber">PREPORUKA</span>',
-          actionNote: 'Automatski predlog zamene bez traženja po tabelama.',
-          actionBtn: 'Dodeli zamenski BC 9012-BC (≤ 3s) →',
-          phoneBus: 'BC 9012-BC',
-          phonePill: 'Čeka zamenu',
-          phonePillClass: 'pill pill-amber'
+          kicker: "05:08:12 · DISPO RADAR",
+          title: "Radar izoluje praznu smenu",
+          desc: "Dispo radar automatski prepoznaje prekid i nudi slobodne standby vozače iz iste dispo grupe (VOR 320).",
+          driverName: "Traženje zamene...",
+          statusBadge: "RADAR AKTIVAN",
+          statusClass: "tag-badge alert",
+          lockStatus: "PREDLOG: Luka Kovačević",
+          pwaClock: "05:08",
+          pwaDuty: "Duty 320.s01 (Polazak 05:25)",
+          pwaDriver: "Predlog: Luka Kovačević (Standby)",
+          pwaBtnText: "Čeka dodelu dispečera...",
+          pwaConfirmed: false,
+          pinAlert: true
         },
         {
-          time: '05:08:21',
-          statusPill: '05:08:21 // ZAMENA DODELJENA',
-          pillClass: 'pill pill-blue',
-          icon: '⇄',
-          title: 'BC 9012-BC uspešno dodeljen uz Plan-Lock',
-          desc: 'Duty 320.s01 je prebačen na novo vozilo. Obaveštenje je automatski poslato na Driver PWA.',
-          busVal: '<span class="text-blue-400 font-bold">BC 9012-BC (Dodeljen)</span>',
-          tblStatus: '<span class="pill pill-blue">ČEKA POTVRDU</span>',
-          actionNote: 'Vozač M. Weber (D-104) dobija trenutno obaveštenje na telefon.',
-          actionBtn: 'Pogledaj potvrdu vozača →',
-          phoneBus: 'BC 9012-BC',
-          phonePill: 'Nova smena',
-          phonePillClass: 'pill pill-blue'
+          kicker: "05:08:28 · PLAN LOCK & ZAMENA",
+          title: "Dispečer dodeljuje zamenu (Luka K.)",
+          desc: "Dispečer bira zamenskog vozača. Plan Lock zaključava smenu u bazi i sprečava konflikt istovremenih izmena dok traje ažuriranje.",
+          driverName: "Luka Kovačević (Standby)",
+          statusBadge: "DODELJENO",
+          statusClass: "tag-badge standby",
+          lockStatus: "PLAN LOCK AKTIVAN",
+          pwaClock: "05:08",
+          pwaDuty: "Duty 320.s01 · NOVA SMENA",
+          pwaDriver: "Vozač: Luka Kovačević",
+          pwaBtnText: "Dodirnite za potvrdu smene",
+          pwaConfirmed: false,
+          pinAlert: false
         },
         {
-          time: '05:09',
-          statusPill: '05:09 // POTVRDA U PWA',
-          pillClass: 'pill pill-green',
-          icon: '📱',
-          title: 'Vozač M. Weber je potvrdio novu smenu',
-          desc: 'Jednim dodirom na mobilnom telefonu smena je prihvaćena bez ijednog telefonskog poziva.',
-          busVal: '<span class="text-emerald-400 font-bold">BC 9012-BC</span>',
-          tblStatus: '<span class="pill pill-green">POTVRĐENO</span>',
-          actionNote: 'Povratna informacija trenutno zabeležena u sistemu.',
-          actionBtn: 'Završi ciklus →',
-          phoneBus: 'BC 9012-BC',
-          phonePill: 'Potvrđeno ✓',
-          phonePillClass: 'pill pill-green'
+          kicker: "05:09:02 · POTVRDA U PWA",
+          title: "Vozač potvrđuje 1 dodirom na telefonu",
+          desc: "Vozač Luka Kovačević dobija push notifikaciju na Driver PWA aplikaciji i potvrđuje preuzimanje smene jednim tapom.",
+          driverName: "Luka Kovačević",
+          statusBadge: "POTVRĐENO",
+          statusClass: "tag-badge ok",
+          lockStatus: "ZAKLJUČANO & SAČUVANO",
+          pwaClock: "05:09",
+          pwaDuty: "Duty 320.s01 (05:25 - 13:45)",
+          pwaDriver: "Vozač: Luka Kovačević",
+          pwaBtnText: "✓ Smena potvrđena (05:09:02)",
+          pwaConfirmed: true,
+          pinAlert: false
         },
         {
-          time: '05:10',
-          statusPill: '05:10 // OPERACIJA ZDRAVA',
-          pillClass: 'pill pill-green',
-          icon: '✓',
-          title: 'Operacija nesmetano nastavlja rad',
-          desc: 'Duty 320.s01 se odvija po rasporedu. Svi podaci i revizije su arhivirani po EU propisima.',
-          busVal: '<span class="text-emerald-400">BC 9012-BC (U pokretu)</span>',
-          tblStatus: '<span class="pill pill-green">AKTIVNO</span>',
-          actionNote: 'Kompletan incident rešen za manje od 3 minuta.',
-          actionBtn: 'Vrati na početak ↺',
-          phoneBus: 'BC 9012-BC',
-          phonePill: 'Na liniji',
-          phonePillClass: 'pill pill-green'
+          kicker: "05:10:00 · OPERACIJA TEČE & AUDIT",
+          title: "Operacija stabilna, odluka u audit logu",
+          desc: "Smena 320.s01 je pokrivena i operativni kontinuitet je očuvan. Odluka dispečera, dodela zamene i potvrda vozača zabeleženi su u revizionom tragu sa vremenskim žigom.",
+          driverName: "Luka Kovačević",
+          statusBadge: "OPERATIVNO",
+          statusClass: "tag-badge ok",
+          lockStatus: "AUDIT LOG ARHIVIRAN",
+          pwaClock: "05:10",
+          pwaDuty: "Duty 320.s01 (Aktivna smena)",
+          pwaDriver: "Vozač: Luka Kovačević",
+          pwaBtnText: "✓ Smena u toku",
+          pwaConfirmed: true,
+          pinAlert: false
         }
       ],
       de: [
         {
-          time: '05:07',
-          statusPill: '05:07 // BETRIEB LIVE',
-          pillClass: 'pill pill-green',
-          icon: '✓',
-          title: 'Duty 320.s01 ist besetzt und aktiv',
-          desc: 'Bus BC 5676-BC ist im Einsatz. Fahrer M. Weber (D-104) fährt pünktlich nach Plan.',
-          busVal: '<span class="text-emerald-400">BC 5676-BC</span>',
-          tblStatus: '<span class="pill pill-green">AKTIV</span>',
-          actionNote: 'Betriebsablauf unter vollständiger Kontrolle des Disponenten.',
-          actionBtn: 'Panne um 05:08 simulieren →',
-          phoneBus: 'BC 5676-BC',
-          phonePill: 'Bereit',
-          phonePillClass: 'pill pill-green'
+          kicker: "05:07 · PLAN IST BEREIT",
+          title: "Tagesdienstplan ist synchronisiert",
+          desc: "Alle Schichten der Morgenspitze sind besetzt (32 Fahrzeuge, 180 Schichten). Der Disponent hat die volle Übersicht.",
+          driverName: "Marko Petrović",
+          statusBadge: "BESTÄTIGT",
+          statusClass: "tag-badge ok",
+          lockStatus: "ENTSPERRT",
+          pwaClock: "05:07",
+          pwaDuty: "Duty 320.s01 (05:25 - 13:45)",
+          pwaDriver: "Fahrer: Marko Petrović",
+          pwaBtnText: "✓ Schicht bestätigt",
+          pwaConfirmed: true,
+          pinAlert: false
         },
         {
-          time: '05:08',
-          statusPill: '05:08 // ROTER ALARM',
-          pillClass: 'pill pill-red',
-          icon: '!',
-          title: 'BC 5676-BC nicht verfügbar (Motorschaden)',
-          desc: 'Duty 320.s01 unterbrochen. BusCommand alarmiert sofort die Disposition.',
-          busVal: '<span class="text-red-400">BC 5676-BC (Defekt)</span>',
-          tblStatus: '<span class="pill pill-red">INAKTIV</span>',
-          actionNote: 'Ausfall sekundengenau erkannt.',
-          actionBtn: 'Freien Ersatzbus suchen →',
-          phoneBus: 'BC 5676-BC',
-          phonePill: 'Ausfall',
-          phonePillClass: 'pill pill-red'
+          kicker: "05:08 · FAHRERAUSFALL",
+          title: "Fahrer meldet Ausfall (Krankheit)",
+          desc: "Fahrer Marko Petrović meldet sich krank. Schicht 320.s01 (Abfahrt 05:25) ist unbesetzt und erfordert sofortiges Handeln.",
+          driverName: "Marko Petrović (Ausfall)",
+          statusBadge: "UNBESETZT",
+          statusClass: "tag-badge alert",
+          lockStatus: "ERSATZ NÖTIG",
+          pwaClock: "05:08",
+          pwaDuty: "Duty 320.s01 · AUSFALL",
+          pwaDriver: "Fahrer: Marko Petrović (Krank)",
+          pwaBtnText: "✕ Schicht nicht verfügbar",
+          pwaConfirmed: false,
+          pinAlert: true
         },
         {
-          time: '05:08:04',
-          statusPill: '05:08:04 // DISPO-EMPFEHLUNG',
-          pillClass: 'pill pill-amber',
-          icon: '⚡',
-          title: 'Verfügbarer Ersatzbus gefunden',
-          desc: 'Fahrzeug BC 9012-BC ist im Depot verfügbar und bereit für Duty 320.s01.',
-          busVal: '<span class="text-amber-400">BC 5676-BC ➔ BC 9012-BC</span>',
-          tblStatus: '<span class="pill pill-amber">EMPFEHLUNG</span>',
-          actionNote: 'Automatischer Zuweisungsvorschlag ohne Tabellensuche.',
-          actionBtn: 'Ersatzbus BC 9012-BC zuweisen (≤ 3s) →',
-          phoneBus: 'BC 9012-BC',
-          phonePill: 'Warte Ersatz',
-          phonePillClass: 'pill pill-amber'
+          kicker: "05:08:12 · DISPO-RADAR",
+          title: "Radar isoliert offene Schicht",
+          desc: "Das Dispo-Radar erkennt die Lücke automatisch und schlägt verfügbare Bereitschaftsfahrer derselben Gruppe vor.",
+          driverName: "Ersatzsuche...",
+          statusBadge: "RADAR AKTIV",
+          statusClass: "tag-badge alert",
+          lockStatus: "VORSCHLAG: Luka Kovačević",
+          pwaClock: "05:08",
+          pwaDuty: "Duty 320.s01 (Abfahrt 05:25)",
+          pwaDriver: "Vorschlag: Luka Kovačević (Standby)",
+          pwaBtnText: "Warte auf Zuweisung...",
+          pwaConfirmed: false,
+          pinAlert: true
         },
         {
-          time: '05:08:21',
-          statusPill: '05:08:21 // ERSATZ ZUGEWIESEN',
-          pillClass: 'pill pill-blue',
-          icon: '⇄',
-          title: 'BC 9012-BC mit Plan-Lock zugewiesen',
-          desc: 'Duty 320.s01 auf Ersatzbus übertragen. Benachrichtigung automatisch an Fahrer-PWA gesendet.',
-          busVal: '<span class="text-blue-400 font-bold">BC 9012-BC (Zugewiesen)</span>',
-          tblStatus: '<span class="pill pill-blue">BESTÄTIGUNG OFFEN</span>',
-          actionNote: 'Fahrer M. Weber (D-104) erhält sofortige Push-Meldung.',
-          actionBtn: 'Fahrer-Bestätigung ansehen →',
-          phoneBus: 'BC 9012-BC',
-          phonePill: 'Neue Schicht',
-          phonePillClass: 'pill pill-blue'
+          kicker: "05:08:28 · PLAN-LOCK & ZUWEISUNG",
+          title: "Disponent weist Ersatz zu (Luka K.)",
+          desc: "Der Disponent wählt den Ersatzfahrer. Plan-Lock sperrt die Schicht in der Datenbank, um Mutationskonflikte zu verhindern.",
+          driverName: "Luka Kovačević (Standby)",
+          statusBadge: "ZUGEWIESEN",
+          statusClass: "tag-badge standby",
+          lockStatus: "PLAN-LOCK AKTIV",
+          pwaClock: "05:08",
+          pwaDuty: "Duty 320.s01 · NEUER DIENST",
+          pwaDriver: "Fahrer: Luka Kovačević",
+          pwaBtnText: "Tippen zum Bestätigen",
+          pwaConfirmed: false,
+          pinAlert: false
         },
         {
-          time: '05:09',
-          statusPill: '05:09 // PWA BESTÄTIGUNG',
-          pillClass: 'pill pill-green',
-          icon: '📱',
-          title: 'Fahrer M. Weber hat die Schicht bestätigt',
-          desc: 'Mit einem Fingertipp auf dem Smartphone bestätigt — ohne Anrufe während der Fahrt.',
-          busVal: '<span class="text-emerald-400 font-bold">BC 9012-BC</span>',
-          tblStatus: '<span class="pill pill-green">BESTÄTIGT</span>',
-          actionNote: 'Rückmeldung sofort im Disponenten-Cockpit verbucht.',
-          actionBtn: 'Ablauf abschließen →',
-          phoneBus: 'BC 9012-BC',
-          phonePill: 'Bestätigt ✓',
-          phonePillClass: 'pill pill-green'
+          kicker: "05:09:02 · BESTÄTIGUNG IN PWA",
+          title: "Fahrer bestätigt mit 1 Fingertipp",
+          desc: "Fahrer Luka Kovačević erhält die Push-Nachricht in der Driver PWA und bestätigt den Dienst mit einem einzigen Fingertipp.",
+          driverName: "Luka Kovačević",
+          statusBadge: "BESTÄTIGT",
+          statusClass: "tag-badge ok",
+          lockStatus: "GESICHERT & GESPEICHERT",
+          pwaClock: "05:09",
+          pwaDuty: "Duty 320.s01 (05:25 - 13:45)",
+          pwaDriver: "Fahrer: Luka Kovačević",
+          pwaBtnText: "✓ Schicht bestätigt (05:09:02)",
+          pwaConfirmed: true,
+          pinAlert: false
         },
         {
-          time: '05:10',
-          statusPill: '05:10 // BETRIEB STABIL',
-          pillClass: 'pill pill-green',
-          icon: '✓',
-          title: 'Betrieb läuft planmäßig weiter',
-          desc: 'Duty 320.s01 ist wieder vollständig gedeckt. Alle Audit-Logs nach EU 561/2006 gesichert.',
-          busVal: '<span class="text-emerald-400">BC 9012-BC (Unterwegs)</span>',
-          tblStatus: '<span class="pill pill-green">AKTIV</span>',
-          actionNote: 'Gesamter Vorfall in unter 3 Minuten gelöst.',
-          actionBtn: 'Zurück zum Anfang ↺',
-          phoneBus: 'BC 9012-BC',
-          phonePill: 'Auf Linie',
-          phonePillClass: 'pill pill-green'
+          kicker: "05:10:00 · BETRIEB LÄUFT & AUDIT",
+          title: "Betrieb stabil, Vorgang im Audit-Trail",
+          desc: "Schicht 320.s01 ist besetzt und die Betriebskontinuität ist gesichert. Disponentenentscheidung, Fahrerwechsel und Bestätigung sind im Audit-Trail archiviert.",
+          driverName: "Luka Kovačević",
+          statusBadge: "BETRIEBSBEREIT",
+          statusClass: "tag-badge ok",
+          lockStatus: "AUDIT-LOG ARCHIVIERT",
+          pwaClock: "05:10",
+          pwaDuty: "Duty 320.s01 (Aktiver Dienst)",
+          pwaDriver: "Fahrer: Luka Kovačević",
+          pwaBtnText: "✓ Dienst läuft",
+          pwaConfirmed: true,
+          pinAlert: false
         }
       ],
       en: [
         {
-          time: '05:07',
-          statusPill: '05:07 // LIVE OPERATIONS',
-          pillClass: 'pill pill-green',
-          icon: '✓',
-          title: 'Duty 320.s01 is covered and active',
-          desc: 'Bus BC 5676-BC is on route. Driver M. Weber (D-104) is running on schedule.',
-          busVal: '<span class="text-emerald-400">BC 5676-BC</span>',
-          tblStatus: '<span class="pill pill-green">ACTIVE</span>',
-          actionNote: 'Operations under full dispatcher control.',
-          actionBtn: 'Simulate Breakdown at 05:08 →',
-          phoneBus: 'BC 5676-BC',
-          phonePill: 'Ready',
-          phonePillClass: 'pill pill-green'
+          kicker: "05:07 · ROSTER READY",
+          title: "Daily roster synchronized",
+          desc: "All peak morning lines are covered (32 vehicles, 180 shifts). The dispatcher has complete situational clarity.",
+          driverName: "Marko Petrović",
+          statusBadge: "CONFIRMED",
+          statusClass: "tag-badge ok",
+          lockStatus: "UNLOCKED",
+          pwaClock: "05:07",
+          pwaDuty: "Duty 320.s01 (05:25 - 13:45)",
+          pwaDriver: "Driver: Marko Petrović",
+          pwaBtnText: "✓ Shift confirmed",
+          pwaConfirmed: true,
+          pinAlert: false
         },
         {
-          time: '05:08',
-          statusPill: '05:08 // RED ALERT',
-          pillClass: 'pill pill-red',
-          icon: '!',
-          title: 'BC 5676-BC unavailable (Engine failure)',
-          desc: 'Duty 320.s01 interrupted. BusCommand instantly alerts dispatch.',
-          busVal: '<span class="text-red-400">BC 5676-BC (Defect)</span>',
-          tblStatus: '<span class="pill pill-red">INACTIVE</span>',
-          actionNote: 'Breakdown detected in seconds.',
-          actionBtn: 'Find Available Spare Bus →',
-          phoneBus: 'BC 5676-BC',
-          phonePill: 'Stopped',
-          phonePillClass: 'pill pill-red'
+          kicker: "05:08 · DRIVER UNAVAILABLE",
+          title: "Driver calls in sick",
+          desc: "Driver Marko Petrović reports sickness. Duty 320.s01 (05:25 departure) becomes uncovered and requires an instant decision.",
+          driverName: "Marko Petrović (Unavailable)",
+          statusBadge: "UNCOVERED",
+          statusClass: "tag-badge alert",
+          lockStatus: "COVERAGE REQUIRED",
+          pwaClock: "05:08",
+          pwaDuty: "Duty 320.s01 · UNCOVERED",
+          pwaDriver: "Driver: Marko Petrović (Sick)",
+          pwaBtnText: "✕ Shift unavailable",
+          pwaConfirmed: false,
+          pinAlert: true
         },
         {
-          time: '05:08:04',
-          statusPill: '05:08:04 // DISPATCH RECOMMENDATION',
-          pillClass: 'pill pill-amber',
-          icon: '⚡',
-          title: 'Available spare vehicle identified',
-          desc: 'Bus BC 9012-BC is idle at the depot and ready to take over Duty 320.s01.',
-          busVal: '<span class="text-amber-400">BC 5676-BC ➔ BC 9012-BC</span>',
-          tblStatus: '<span class="pill pill-amber">RECOMMENDED</span>',
-          actionNote: 'Automated swap proposal without searching spreadsheets.',
-          actionBtn: 'Assign Spare BC 9012-BC (≤ 3s) →',
-          phoneBus: 'BC 9012-BC',
-          phonePill: 'Waiting Spare',
-          phonePillClass: 'pill pill-amber'
+          kicker: "05:08:12 · DISPATCH RADAR",
+          title: "Radar isolates the gap",
+          desc: "Dispatch radar automatically identifies the uncovered shift and suggests available standby drivers from the same group.",
+          driverName: "Finding standby...",
+          statusBadge: "RADAR ALERT",
+          statusClass: "tag-badge alert",
+          lockStatus: "SUGGESTION: Luka Kovačević",
+          pwaClock: "05:08",
+          pwaDuty: "Duty 320.s01 (Departure 05:25)",
+          pwaDriver: "Suggested: Luka Kovačević (Standby)",
+          pwaBtnText: "Awaiting dispatcher assignment...",
+          pwaConfirmed: false,
+          pinAlert: true
         },
         {
-          time: '05:08:21',
-          statusPill: '05:08:21 // REPLACEMENT ASSIGNED',
-          pillClass: 'pill pill-blue',
-          icon: '⇄',
-          title: 'BC 9012-BC assigned with Plan-Lock',
-          desc: 'Duty 320.s01 transferred to replacement bus. Notification pushed directly to Driver PWA.',
-          busVal: '<span class="text-blue-400 font-bold">BC 9012-BC (Assigned)</span>',
-          tblStatus: '<span class="pill pill-blue">AWAITING CONFIRM</span>',
-          actionNote: 'Driver M. Weber (D-104) receives instant shift notification.',
-          actionBtn: 'View Driver Confirmation →',
-          phoneBus: 'BC 9012-BC',
-          phonePill: 'New Shift',
-          phonePillClass: 'pill pill-blue'
+          kicker: "05:08:28 · PLAN LOCK & ASSIGN",
+          title: "Dispatcher assigns standby (Luka K.)",
+          desc: "Dispatcher assigns the standby driver. Plan Lock locks the roster record in the database, preventing concurrent conflicts.",
+          driverName: "Luka Kovačević (Standby)",
+          statusBadge: "ASSIGNED",
+          statusClass: "tag-badge standby",
+          lockStatus: "PLAN LOCK ENGAGED",
+          pwaClock: "05:08",
+          pwaDuty: "Duty 320.s01 · NEW DUTY",
+          pwaDriver: "Driver: Luka Kovačević",
+          pwaBtnText: "Tap to confirm duty",
+          pwaConfirmed: false,
+          pinAlert: false
         },
         {
-          time: '05:09',
-          statusPill: '05:09 // PWA CONFIRMATION',
-          pillClass: 'pill pill-green',
-          icon: '📱',
-          title: 'Driver M. Weber acknowledged the shift',
-          desc: 'Confirmed with a single tap on mobile phone — zero distracted driving calls.',
-          busVal: '<span class="text-emerald-400 font-bold">BC 9012-BC</span>',
-          tblStatus: '<span class="pill pill-green">CONFIRMED</span>',
-          actionNote: 'Instant receipt recorded in dispatch dashboard.',
-          actionBtn: 'Complete Cycle →',
-          phoneBus: 'BC 9012-BC',
-          phonePill: 'Confirmed ✓',
-          phonePillClass: 'pill pill-green'
+          kicker: "05:09:02 · PWA CONFIRMATION",
+          title: "Driver confirms in 1 tap on mobile",
+          desc: "Driver Luka Kovačević receives an instant PWA push alert and acknowledges duty acceptance with a single tap.",
+          driverName: "Luka Kovačević",
+          statusBadge: "CONFIRMED",
+          statusClass: "tag-badge ok",
+          lockStatus: "LOCKED & PERSISTED",
+          pwaClock: "05:09",
+          pwaDuty: "Duty 320.s01 (05:25 - 13:45)",
+          pwaDriver: "Driver: Luka Kovačević",
+          pwaBtnText: "✓ Shift confirmed (05:09:02)",
+          pwaConfirmed: true,
+          pinAlert: false
         },
         {
-          time: '05:10',
-          statusPill: '05:10 // OPERATIONS STABLE',
-          pillClass: 'pill pill-green',
-          icon: '✓',
-          title: 'Operations running smoothly on schedule',
-          desc: 'Duty 320.s01 fully recovered. Complete audit trail stored for EU compliance.',
-          busVal: '<span class="text-emerald-400">BC 9012-BC (On Route)</span>',
-          tblStatus: '<span class="pill pill-green">ACTIVE</span>',
-          actionNote: 'Entire incident resolved in under 3 minutes.',
-          actionBtn: 'Restart Demo ↺',
-          phoneBus: 'BC 9012-BC',
-          phonePill: 'On Route',
-          phonePillClass: 'pill pill-green'
+          kicker: "05:10:00 · OPERATIONS RESUME & AUDIT",
+          title: "Operations stable, decision in audit log",
+          desc: "Duty 320.s01 is covered and service continuity is restored. Dispatcher action, driver reassignment, and confirmation are sealed in the audit log.",
+          driverName: "Luka Kovačević",
+          statusBadge: "OPERATIONAL",
+          statusClass: "tag-badge ok",
+          lockStatus: "AUDIT LOG PRESERVED",
+          pwaClock: "05:10",
+          pwaDuty: "Duty 320.s01 (Active Shift)",
+          pwaDriver: "Driver: Luka Kovačević",
+          pwaBtnText: "✓ Duty in progress",
+          pwaConfirmed: true,
+          pinAlert: false
         }
       ]
     };
 
     function setStoryStep(step) {
       currentStoryStep = step;
-      for (let i = 0; i <= 5; i++) {
+      for (let i = 0; i < 6; i++) {
         const btn = document.getElementById('step-btn-' + i);
         if (btn) {
           btn.classList.toggle('active', i === step);
+          btn.setAttribute('aria-selected', i === step ? 'true' : 'false');
         }
       }
+      const data = (storyData[activeLang] || storyData.sr)[step];
+      document.getElementById('story-kicker').textContent = data.kicker;
+      document.getElementById('story-title').textContent = data.title;
+      document.getElementById('story-desc').textContent = data.desc;
+      document.getElementById('mock-driver-name').textContent = data.driverName;
+      document.getElementById('mock-status-badge').textContent = data.statusBadge;
+      document.getElementById('mock-status-badge').className = data.statusClass;
+      document.getElementById('mock-lock-status').textContent = data.lockStatus;
+      document.getElementById('pwa-clock').textContent = data.pwaClock;
+      document.getElementById('pwa-duty-name').textContent = data.pwaDuty;
+      document.getElementById('pwa-driver-assigned').textContent = data.pwaDriver;
+      const pwaBtn = document.getElementById('pwa-btn');
+      pwaBtn.textContent = data.pwaBtnText;
+      pwaBtn.classList.toggle('confirmed', data.pwaConfirmed);
 
-      const list = storyData[currentLang] || storyData.sr;
-      const s = list[step];
+      const pinAlert = document.getElementById('pin-alert');
+      if (pinAlert) pinAlert.style.display = (step === 1 || step === 2) ? 'flex' : 'none';
+      const routeLive = document.getElementById('sceneRouteLive');
+      if (routeLive) routeLive.style.stroke = (step === 1 || step === 2) ? '#ef4444' : (step >= 4 ? '#10b981' : '#087cff');
+    }
 
-      document.getElementById('story-status-pill').textContent = s.statusPill;
-      document.getElementById('story-status-pill').className = s.pillClass;
-
-      document.getElementById('story-banner-icon').textContent = s.icon;
-      document.getElementById('story-banner-title').textContent = s.title;
-      document.getElementById('story-banner-desc').textContent = s.desc;
-
-      document.getElementById('tbl-bus').innerHTML = s.busVal;
-      document.getElementById('tbl-status').innerHTML = s.tblStatus;
-
-      document.getElementById('dispo-action-note').textContent = s.actionNote;
-      document.getElementById('dispo-action-btn').textContent = s.actionBtn;
-
-      document.getElementById('phone-clock').textContent = s.time;
-      document.getElementById('phone-bus-val').textContent = s.phoneBus;
-      document.getElementById('phone-pill').textContent = s.phonePill;
-      document.getElementById('phone-pill').className = s.phonePillClass;
-
-      const confirmBtn = document.getElementById('phone-confirm-btn');
-      const confirmedMsg = document.getElementById('phone-confirmed-msg');
-      if (step >= 4) {
-        confirmBtn.classList.add('hidden');
-        confirmedMsg.classList.remove('hidden');
-      } else {
-        confirmBtn.classList.remove('hidden');
-        confirmedMsg.classList.add('hidden');
+    function triggerPwaConfirm() {
+      if (currentStoryStep < 4) {
+        setStoryStep(4);
       }
     }
 
-    function simulateDispoAction() {
-      const nextStep = (currentStoryStep + 1) % 6;
-      setStoryStep(nextStep);
+    // Role Switcher
+    function setRole(role) {
+      ['dispo', 'driver', 'admin'].forEach(r => {
+        const btn = document.getElementById('role-btn-' + r);
+        const panel = document.getElementById('role-panel-' + r);
+        if (btn) btn.classList.toggle('active', r === role);
+        if (panel) panel.classList.toggle('active', r === role);
+      });
     }
 
-    function simulateDriverTap() {
-      setStoryStep(4);
+    // 5-Node System Console
+    const systemData = {
+      sr: [
+        { time: "05:08:00", status: "SIGNAL PRIMLJEN", title: "Vozač prijavljuje izostanak", text: "Sistem registruje da je smena Duty 320.s01 ostala bez vozača i šalje signal operativi." },
+        { time: "05:08:12", status: "DISPO RADAR", title: "Radar izoluje nepopunjenu smenu", text: "Dispečer dobija jasan vizuelni alarm i listu slobodnih standby vozača iz iste grupe." },
+        { time: "05:08:28", status: "PLAN LOCK", title: "Dodeljena zamena & zaključan plan", text: "Plan Lock zaključava slog u bazi i sprečava konflikt istovremenih izmena više korisnika." },
+        { time: "05:09:02", status: "DRIVER PWA", title: "Vozač potvrdio smenu na telefonu", text: "Driver PWA evidentira potvrdu jednim tapom bez ijednog telefonskog poziva u vožnji." },
+        { time: "05:10:00", status: "AUDIT LOG", title: "Zabeležen revizioni trag (24 meseca)", text: "Zapisana kompletna odluka: dispečer, zamenski vozač, smena i tačan vremenski žig." }
+      ],
+      de: [
+        { time: "05:08:00", status: "SIGNAL EMPFANGEN", title: "Fahrerausfall im System erfasst", text: "System registriert unbesetzte Schicht Duty 320.s01 und alarmiert die Leitstelle." },
+        { time: "05:08:12", status: "DISPO-RADAR", title: "Radar isoliert die offene Schicht", text: "Disponent sieht das Problem sofort und erhält passende Reservefahrer derselben Gruppe." },
+        { time: "05:08:28", status: "PLAN-LOCK", title: "Ersatzzuweisung & Plan-Lock aktiv", text: "Plan-Lock sperrt die Mutation in der Datenbank und verhindert Doppeldisposition." },
+        { time: "05:09:02", status: "DRIVER PWA", title: "Fahrer bestätigt per PWA-App", text: "Driver PWA registriert die Bestätigung. Kein Anruf während der Fahrt nötig." },
+        { time: "05:10:00", status: "AUDIT-TRAIL", title: "Revisionssicher archiviert (24 Monate)", text: "Vollständiger Vorgang archiviert: Disponent, Fahrerwechsel und exakter Zeitstempel." }
+      ],
+      en: [
+        { time: "05:08:00", status: "SIGNAL RECEIVED", title: "Driver sickness logged", text: "System registers uncovered Duty 320.s01 and sends an immediate alert to dispatch." },
+        { time: "05:08:12", status: "DISPATCH RADAR", title: "Radar isolates uncovered shift", text: "Dispatcher sees the gap instantly with automated suggestions of standby drivers." },
+        { time: "05:08:28", status: "PLAN-LOCK", title: "Standby assigned & plan locked", text: "Plan-Lock secures the roster record, eliminating concurrent modification conflicts." },
+        { time: "05:09:02", status: "DRIVER PWA", title: "Driver acknowledges on mobile", text: "Driver PWA records acknowledgment with 1 tap. Zero incoming phone calls to dispatch." },
+        { time: "05:10:00", status: "AUDIT LOG", title: "Immutable audit trail (24 months)", text: "Transaction permanently logged with dispatcher identity, driver id, and timestamps." }
+      ]
+    };
+
+    function setSystemPulse(idx) {
+      currentSystemPulse = idx;
+      for (let i = 0; i < 5; i++) {
+        const btn = document.getElementById('pulse-btn-' + i);
+        if (btn) btn.classList.toggle('active', i === idx);
+      }
+      const data = (systemData[activeLang] || systemData.sr)[idx];
+      document.getElementById('pulseTime').textContent = data.time;
+      document.getElementById('pulseStatus').textContent = data.status;
+      document.getElementById('pulseTitle').textContent = data.title;
+      document.getElementById('pulseText').textContent = data.text;
     }
 
-    const dict = {
+    // Language switcher
+    const translations = {
       sr: {
-        navStory: "Operativni Minut (Film)",
-        navRoles: "3 Uloge",
-        navCompare: "Poređenje",
-        navDownloads: "Dokumenta & Šabloni",
-        navPricing: "Cenovnik",
-        heroKicker: "Dispečerski operativni sistem za autobuske prevoznike",
-        heroTitle: "Kad plan pukne na liniji,<br><span class='text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-emerald-400'>operacija ne mora.</span>",
-        heroDesc: "Od mesečnog rasporeda do rešavanja kvara autobusa u roku od 3 sekunde. Sve na jednom dispečerskom ekranu — bez rasutih Excel tabela, telefonskih poziva u vožnji i zastoja.",
-        heroCtaPilot: "Zatražite besplatan pilot (30 dana) →",
-        heroCtaPreview: "Pogledajte operativni minut",
-        m1num: "≤ 3s", m1lbl: "Vreme zamene vozača/busa uz Plan-Lock",
-        m2num: "100%", m2lbl: "Pravna pokrivenost EU 561/2006 & GDPR",
-        m3num: "0€", m3lbl: "Investicija u nepotreban hardver",
-        storyKicker: "05:07 — 05:10 // JEDAN STVARNI OPERATIVNI MINUT",
-        storyTitle: "Od crvenog alarma do zelene linije.",
-        storyDesc: "Kliknite na korake timeline-a i pratite kako BusCommand automatski vodi operaciju od kvara do potvrđene zamene.",
-        s0lbl: "Plan je živ", s1lbl: "Autobus staje", s2lbl: "Dispo reaguje", s3lbl: "Zamena spremna", s4lbl: "Vozač potvrđuje", s5lbl: "Linija teče",
-        phoneDutyLbl: "Dodeljena smena",
-        phoneBusLbl: "Vozilo:",
-        phoneTimeLbl: "Vreme:",
-        phoneStatusLbl: "Status:",
-        phoneBtn: "Potvrdi smenu ✓",
-        phoneConfirmed: "✓ Smena uspešno potvrđena",
-        phoneDisclaimer: "Bez instalacije. Radi na svakom pametnom telefonu.",
-        rolesKicker: "STRUKTURA OPERACIJE",
-        rolesTitle: "Ista operacija. Tri jasne uloge.",
-        rolesDesc: "Svaki član tima vidi tačno ono što mu je potrebno za miran i tačan radni dan.",
-        role1Title: "Dispečer Kokpit",
-        role1Desc: "3-dnevni dispo radar, instant detekcija zastoja, zamena autobusa u ≤ 3 sekunde uz Plan-Lock zaštitu plana.",
-        role1List: "<li>✓ Pregled svih linija i smena u realnom vremenu</li><li>✓ Dodeljivanje zamena jednim klikom</li><li>✓ SOS alarmi i direktne poruke vozačima</li>",
-        role2Title: "Driver PWA Aplikacija",
-        role2Desc: "Čista mobilna aplikacija bez instalacije. Vozač prima raspored, potvrđuje smene i prijavljuje probleme bez poziva.",
-        role2List: "<li>✓ 1-tap potvrda smene</li><li>✓ Siguran SMS OTP pristup bez lozinki</li><li>✓ Brza prijava zastoja ili kvara vozila</li>",
-        role3Title: "Company Administrator",
-        role3Desc: "Uvoz mesečnih Excel planova, raspodela linijskih grupa, evidencija flote i pravna usaglašenost.",
-        role3List: "<li>✓ Uvoz mesečnog rasporeda za 2 minuta</li><li>✓ Izolacija prava po dispečerskim grupama</li><li>✓ GDPR DPA Član 28 i revizioni trag</li>",
-        matrixTitle: "Excel vs. Generički ERP vs. BusCommand",
-        matrixDesc: "Zašto specijalizovan softver za autobuske prevoznike štedi sate rada svakog dana.",
-        downloadsKicker: "ENTERPRISE DOWNLOAD HUB",
-        downloadsTitle: "Zvanični dokumenti i šabloni za preuzimanje",
-        downloadsSub: "Besplatni A4 šabloni, sigurnosna dokumentacija i GDPR ugovori za 24h start.",
+        navIncident: "INCIDENT", navRoles: "ULOGE", navSystem: "SISTEM", navCompare: "POREĐENJE", navDownloads: "DOKUMENTA", navPricing: "CENOVNIK",
+        navDriverBtn: "Driver App", navStaffBtn: "Staff Login",
+        heroEyebrow: "OPERATIONAL CONTROL FOR BUS COMPANIES",
+        heroH1: "Kad plan pukne,<br><strong>operacija ne mora.</strong>",
+        heroSub: "05:08. Vozač javlja izostanak.<br><span>BusCommand već vodi ka rešenju.</span>",
+        heroP: "Izostanak vozača ulazi jednom. Odluka stiže do svakoga kome je potrebna. Bez rasutih Excel tabela, telefonskih poziva u vožnji i zastoja na liniji.",
+        heroCtaMinute: "POGLEDAJ TAJ MINUT →",
+        heroCtaPilot: "ZATRAŽITE PILOT (30 DANA)",
+        tr1Title: "Problem", tr1Desc: "vidljiv u sekundi",
+        tr2Title: "Dispečer", tr2Desc: "dobija jasnu akciju",
+        tr3Title: "Operacija", tr3Desc: "nastavlja da teče",
+        cockpitTitle: "Pregled operacije", cockpitLive: "● UŽIVO",
+        kpiBuses: "VOZILA NA LINIJI", kpiShifts: "AKTIVNE SMENE", kpiConf: "POTVRĐENE SMENE", kpiAlert: "SMENA BEZ VOZAČA",
+        radarTitle: "DISPO RADAR", radarAlertHead: "Duty 320.s01 nema vozača", radarAlertSub: "Marko P. javio bolovanje · Polazak 05:25",
+        radarActHead: "Dodeliti: Luka Kovačević", radarActSub: "Standby vozač iz iste grupe (VOR 320)",
+        sc2Eyebrow: "05:08—05:10 · JEDAN STVARNI OPERATIVNI MINUT",
+        sc2Title: "Od izostanka vozača<br><span>do potvrđene zamene.</span>",
+        sc2Desc: "Jedna stvarna dispečerska odluka: izostanak vozača rešava se u sekundi bez telefonskih poziva u vožnji i bez konflikta u rasporedu.",
+        s2Step0: "Plan je spreman", s2Step1: "Vozač javlja izostanak", s2Step2: "Dispo radar reaguje", s2Step3: "Plan Lock & Zamena", s2Step4: "Vozač potvrđuje na PWA", s2Step5: "Operacija teče & Audit",
+        sc3Eyebrow: "SISTEMSKE ULOGE I OPERATIVNE POVRŠINE",
+        sc3Title: "Jedna operacija.<br><span>Jasne odgovornosti.</span>",
+        sc3Desc: "BusCommand platforma povezuje 4 uloge (Super Admin, Company Admin, Dispečer, Vozač), a svakom operativnom članu pruža namensku radnu površinu.",
+        roleDispoBtn: "DISPEČER", roleDriverBtn: "DRIVER PWA", roleAdminBtn: "COMPANY ADMIN",
+        roleDispoTitle: "Dispečerski radar i upravljanje smenama",
+        roleDispoDesc: "Dispečer ima potpunu kontrolu nad dnevnim operacijama. Reaguje na izostanke, preraspoređuje vozače i vozila bez ručnog traženja po tabelama.",
+        roleDriverTitle: "Driver PWA mobilna aplikacija",
+        roleDriverDesc: "Vozač na svom pametnom telefonu uvek vidi aktuelnu smenu, broj autobusa i polazak. Potvrđuje smenu jednim dodirom bez pozivanja dispečera.",
+        roleAdminTitle: "Company Admin kontrolna tabla",
+        roleAdminDesc: "Company Admin uvozi mesečne planove, raspoređuje dispo grupe, vodi evidenciju flote i vozača i pristupa revizionom tragu u skladu sa GDPR standardima.",
+        sysEyebrow: "CELOKUPAN OPERATIVNI TOK",
+        sysTitle: "Jedna odluka ulazi.<br><span>Ceo sistem se poravna.</span>",
+        sysDesc: "Svaka izmena prolazi kroz pet tačaka kontrole: od prijave problema do trajnog zapisa u bazi.",
+        pStep0B: "1. Incident", pStep0S: "Izostanak vozača",
+        pStep1B: "2. Dispo", pStep1S: "Radar izoluje problem",
+        pStep2B: "3. Plan Lock", pStep2S: "Zaključavanje izmene",
+        pStep3B: "4. Driver PWA", pStep3S: "1-tap potvrda",
+        pStep4B: "5. Audit", pStep4S: "Arhiviran zapis",
+        cmpSecTitle: "Excel vs. Generički ERP vs. BusCommand",
+        cmpSecDesc: "Zašto specijalizovan dispečerski sistem štedi sate rada svakog dana i sprečava skupe greške.",
+        cmpCard1Title: "Excel & Viber grupe", cmpCard2Title: "Generički ERP softver", cmpCard3Title: "BusCommand SaaS",
+        dlSecTitle: "Zvanična dokumenta i šabloni",
+        dlSecDesc: "Preuzmite standardizovane šablone za uvoz rasporeda i bezbednosnu dokumentaciju.",
+        dlCard1Title: "Bezbednosni audit", dlCard1Desc: "Izveštaj o enkripciji, multi-tenant izolaciji baze i zaštiti podataka.", dlCard1Btn: "Pregledaj izveštaj",
+        dlCard2Title: "Šablon plana smena", dlCard2Desc: "Standardni format za uvoz mesečnog rasporeda vozača i linija.", dlCard2Btn: "Preuzmi Excel",
+        dlCard3Title: "Šablon voznog parka", dlCard3Desc: "Struktura za unos vozila, registracionih oznaka i depoa.", dlCard3Btn: "Preuzmi šablon",
+        dlCard4Title: "GDPR Član 28 DPA", dlCard4Desc: "Pravni ugovor o obradi podataka usklađen sa propisima EU.", dlCard4Btn: "Pregledaj DPA",
         pricingTitle: "Cenovnik",
-        pricingDesc: "Transparentne cene bez skrivenih troškova. Prilagođeno operacijama od 15 i više autobusa.",
+        pricingDesc: "Transparentne cene bez skrivenih troškova. Prilagođeno flotama od 5 do 50+ autobusa.",
         pricePer: "/ mesec",
         pSubMicro: "Do 5 vozila i 8 vozača.",
         pSubStarter: "15 do 20 autobusa i do 25 vozača.",
         pSubPro: "20 do 50 autobusa i do 70 vozača.",
-        pSubFleet: "50+ autobusa, više depoa i gradova.",
+        pSubFleet: "50+ autobusa, više depoa i lokacija.",
         featMicro: "<li>✓ 1 Dispo + 1 CA nalog</li><li>✓ Driver PWA aplikacija</li><li>✓ Dnevni plan i potvrde</li><li>✓ Email podrška</li>",
         featStarter: "<li>✓ 1 Dispo + 1 CA nalog</li><li>✓ 3-dnevni dispo radar</li><li>✓ Driver PWA aplikacija</li><li>✓ Email podrška &lt; 4h</li>",
         featPro: "<li>✓ Do 4 Dispo naloga (grupe)</li><li>✓ Plan Lock zaštita plana</li><li>✓ Potvrde čitanja u PWA</li><li>✓ 24-mesečni audit trag</li><li>✓ 24/7 dežurna podrška</li>",
-        featFleet: "<li>✓ Neograničeno dispečera i vozača</li><li>✓ Više depoa i lokacija</li><li>✓ DPA Član 28 ugovor</li><li>✓ PITR oporavak baze</li><li>✓ Namenske integracije</li>",
+        featFleet: "<li>✓ Neograničeno dispečera i vozača</li><li>✓ Više depoa i lokacija</li><li>✓ DPA Član 28 ugovor</li><li>✓ PITR oporavak baze</li><li>✓ Namenske ERP integracije</li>",
         badgePopular: "Najpopularniji",
-        ctaMicro: "Izaberi Micro",
-        ctaStarter: "Izaberi Starter",
-        ctaPro: "Izaberi Pro",
-        ctaFleet: "Kontaktirajte nas",
-        pilotKicker: "Zero-Risk Pilot",
-        pilotTitle: "Vođeni pilot program od 30 dana",
-        pilotDesc: "Prijavite firmu — naš tim besplatno uvozi vaš postojeći raspored. Bez kreditne kartice, uz 100% podršku.",
-        pilotLabelName: "Naziv firme",
-        pilotLabelEmail: "Email",
-        pilotLabelBuses: "Broj autobusa",
-        pilotSubmit: "Prijavi firmu na besplatan pilot",
-        pilotNote: "Odgovaramo u roku od 24h. Podaci se koriste isključivo za kontakt.",
-        pilotGuaranteesTitle: "5 garancija pilot programa:",
+        ctaMicro: "Izaberi Micro", ctaStarter: "Izaberi Starter", ctaPro: "Izaberi Pro", ctaFleet: "Kontaktirajte nas",
+        pilotBadge: "30 DANA BESPLATNOG PILOTA",
+        pilotTitle: "Prijavite vašu kompaniju",
+        pilotDesc: "Naš tim besplatno uvozi vaš postojeći raspored i konfiguriše sistem za vašu firmu. Bez kreditne kartice.",
+        lblCompName: "Naziv kompanije", lblContactName: "Kontakt osoba", lblCompEmail: "Poslovni Email", lblContactPhone: "Telefon (opciono)", lblCompBuses: "Broj autobusa u voznom parku", lblNotes: "Napomena ili specifični zahtevi (opciono)", pilotSending: "Slanje prijave...", pilotSuccess: "Hvala na prijavi! Vaš zahtev za 30-dnevni pilot je uspešno poslat na info@buscommand.com. Naš tim kontaktiraće vas u najkraćem roku.", pilotError: "Došlo je do greške prilikom slanja prijave. Molimo pošaljite email direktno na info@buscommand.com.",
+        pilotBtn: "Prijavite firmu na 30-dnevni pilot →",
+        pilotGuarTitle: "5 garancija pilot programa:",
         pg1: "Besplatan uvoz vašeg kataloga linija i vozača.",
         pg2: "A4 Vodič za brzi start — vozači uče aplikaciju u 2 minuta.",
         pg3: "Potpisan NDA i GDPR DPA Član 28 pre početka.",
         pg4: "Bez kartice — prekid u bilo kom trenutku.",
         pg5: "Mogućnost kompletnog izvoza svih podataka na kraju.",
-        footerCopy: "© 2026 BusCommand Enterprise. Sva prava zadržana. Frankfurt Cloud DC (europe-west3)."
+        closeTitle: "Plan. Ljudi. Flota.<br><strong>Jedna operacija.</strong>",
+        closeDesc: "Kad plan pukne, operacija ne mora.",
+        closeCtaTop: "POGLEDAJ SISTEM PONOVO ↑", closeCtaDoc: "DOKUMENTACIJA",
+        footerCopy: "Sva prava zadržana. Frankfurt Cloud DC (europe-west3).",
+        footerAuditLink: "Bezbednosna revizija"
       },
       de: {
-        navStory: "Betriebsminute (Film)",
-        navRoles: "3 Rollen",
-        navCompare: "Vergleich",
-        navDownloads: "Dokumente & Vorlagen",
-        navPricing: "Preise",
-        heroKicker: "Dispositions-Betriebssystem für Busunternehmen",
-        heroTitle: "Wenn der Plan auf der Linie bricht,<br><span class='text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-emerald-400'>muss der Betrieb nicht stehen.</span>",
-        heroDesc: "Vom Monatsplan bis zum Bus- oder Fahrerwechsel in 3 Sekunden. Alles auf einem Bildschirm — ohne verstreute Excel-Tabellen und Anrufe während der Fahrt.",
-        heroCtaPilot: "Kostenlosen Pilot anfordern (30 Tage) →",
-        heroCtaPreview: "Betriebsminute ansehen",
-        m1num: "≤ 3s", m1lbl: "Zeit für Fahrer-/Buswechsel mit Plan-Lock",
-        m2num: "100%", m2lbl: "Rechtliche Sicherheit EU 561/2006 & DSGVO",
-        m3num: "0€", m3lbl: "Investition in unnötige Hardware",
-        storyKicker: "05:07 — 05:10 // EINE ECHTE BETRIEBSMINUTE",
-        storyTitle: "Vom roten Alarm zur grünen Linie.",
-        storyDesc: "Klicken Sie durch die Timeline-Schritte und sehen Sie, wie BusCommand den Betrieb vom Ausfall bis zum bestätigten Ersatz führt.",
-        s0lbl: "Plan ist live", s1lbl: "Bus fällt aus", s2lbl: "Dispo reagiert", s3lbl: "Ersatz bereit", s4lbl: "Fahrer bestätigt", s5lbl: "Betrieb läuft",
-        phoneDutyLbl: "Zugewiesene Schicht",
-        phoneBusLbl: "Fahrzeug:",
-        phoneTimeLbl: "Zeit:",
-        phoneStatusLbl: "Status:",
-        phoneBtn: "Schichtübernahme bestätigen ✓",
-        phoneConfirmed: "✓ Schicht erfolgreich bestätigt",
-        phoneDisclaimer: "Ohne Installation. Funktioniert auf jedem Smartphone.",
-        rolesKicker: "BETRIEBSSTRUKTUR",
-        rolesTitle: "Ein Betrieb. Drei klare Rollen.",
-        rolesDesc: "Jedes Teammitglied sieht genau das, was für einen reibungslosen Ablauf nötig ist.",
-        role1Title: "Disponenten-Cockpit",
-        role1Desc: "3-Tage-Dispo-Radar, sofortige Störungserkennung, Fahrzeugwechsel in ≤ 3 Sekunden mit Plan-Lock.",
-        role1List: "<li>✓ Alle Linien und Schichten in Echtzeit</li><li>✓ Zuweisung von Ersatzbussen mit einem Klick</li><li>✓ SOS-Alarme und Direktnachrichten an Fahrer</li>",
-        role2Title: "Fahrer-PWA App",
-        role2Desc: "Schlanke Web-App ohne Installation. Fahrer empfangen Pläne, bestätigen Schichten und melden Ausfälle ohne Telefonate.",
-        role2List: "<li>✓ 1-Tap Schichtbestätigung</li><li>✓ Sicherer SMS-OTP-Login ohne Passwörter</li><li>✓ Schnelle Störungsmeldung bei Pannen</li>",
-        role3Title: "Firmen-Administrator",
-        role3Desc: "Import von Monats-Excel-Plänen, Verwaltung von Liniengruppen, Fuhrparkverwaltung und DSGVO-Konformität.",
-        role3List: "<li>✓ Dienstplan-Import in 2 Minuten</li><li>✓ Rechte-Isolierung nach Dispositionsgruppen</li><li>✓ DSGVO Art. 28 Auftragsverarbeitung & Audit-Trail</li>",
-        matrixTitle: "Excel vs. generisches ERP vs. BusCommand",
-        matrixDesc: "Warum eine spezialisierte Bus-Dispositionssoftware täglich Stunden spart.",
-        downloadsKicker: "ENTERPRISE DOWNLOAD HUB",
-        downloadsTitle: "Offizielle Dokumente und Vorlagen",
-        downloadsSub: "Kostenlose A4-Vorlagen, Sicherheitsdokumentation und DSGVO-Verträge für den 24h-Start.",
+        navIncident: "VORFALL", navRoles: "ROLLEN", navSystem: "SYSTEM", navCompare: "VERGLEICH", navDownloads: "DOKUMENTE", navPricing: "PREISE",
+        navDriverBtn: "Fahrer App", navStaffBtn: "Staff Login",
+        heroEyebrow: "OPERATIONAL CONTROL FOR BUS COMPANIES",
+        heroH1: "Wenn der Plan bricht,<br><strong>muss der Betrieb nicht stehen.</strong>",
+        heroSub: "05:08. Ein Fahrer fällt aus.<br><span>BusCommand führt bereits zur Lösung.</span>",
+        heroP: "Ein Fahrerausfall wird einmal erfasst. Die Entscheidung erreicht jeden, der sie benötigt. Ohne verstreute Excel-Tabellen und Anrufe während der Fahrt.",
+        heroCtaMinute: "DIESE MINUTE ANSEHEN →",
+        heroCtaPilot: "PILOT ANFORDERN (30 TAGE)",
+        tr1Title: "Problem", tr1Desc: "sofort sichtbar",
+        tr2Title: "Disponent", tr2Desc: "erhält klare Aktion",
+        tr3Title: "Betrieb", tr3Desc: "läuft stabil weiter",
+        cockpitTitle: "Betriebsübersicht", cockpitLive: "● LIVE",
+        kpiBuses: "BUSSE IM EINSATZ", kpiShifts: "AKTIVE SCHICHTEN", kpiConf: "BESTÄTIGTE SCHICHTEN", kpiAlert: "UNBESETZTE SCHICHT",
+        radarTitle: "DISPO-RADAR", radarAlertHead: "Duty 320.s01 unbesetzt", radarAlertSub: "Marko P. krankgemeldet · Abfahrt 05:25",
+        radarActHead: "Zuweisen: Luka Kovačević", radarActSub: "Bereitschaftsfahrer derselben Gruppe (VOR 320)",
+        sc2Eyebrow: "05:08—05:10 · EINE ECHTE BETRIEBSMINUTE",
+        sc2Title: "Vom Fahrerausfall<br><span>zur bestätigten Schicht.</span>",
+        sc2Desc: "Eine echte Dispositionsentscheidung: Fahrerausfall sekundenschnell gelöst, ohne Anrufe während der Fahrt und ohne Planungskonflikte.",
+        s2Step0: "Plan ist bereit", s2Step1: "Fahrer meldet Ausfall", s2Step2: "Dispo-Radar reagiert", s2Step3: "Plan-Lock & Zuweisung", s2Step4: "Fahrer bestätigt per PWA", s2Step5: "Betrieb läuft & Audit",
+        sc3Eyebrow: "SYSTEMROLLEN & BETRIEBSOBERFLÄCHEN",
+        sc3Title: "Ein Betrieb.<br><span>Klare Kompetenzen.</span>",
+        sc3Desc: "Die Plattform verbindet 4 Rollen (Super Admin, Firmen-Admin, Disponent, Fahrer) und bietet jedem eine dedizierte Arbeitsoberfläche.",
+        roleDispoBtn: "DISPONENT", roleDriverBtn: "DRIVER PWA", roleAdminBtn: "FIRMEN-ADMIN",
+        roleDispoTitle: "Dispositionsradar & Schichtsteuerung",
+        roleDispoDesc: "Der Disponent behält die volle operative Kontrolle. Reagiert auf Ausfälle und weist Fahrer ohne Tabellensuche neu zu.",
+        roleDriverTitle: "Driver PWA Mobile App",
+        roleDriverDesc: "Der Fahrer sieht seinen aktuellen Dienst auf dem Smartphone und bestätigt mit 1 Fingertipp ohne Anruf in der Leitstelle.",
+        roleAdminTitle: "Firmen-Admin Kontrollzentrum",
+        roleAdminDesc: "Der Firmen-Admin importiert Dienstpläne, verwaltet Dispo-Gruppen, Fahrzeuge und Fahrpersonal und greift auf den DSGVO-Audit-Trail zu.",
+        sysEyebrow: "VOLLER BETRIEBSABLAUF",
+        sysTitle: "Eine Entscheidung geht ein.<br><span>Ganzes System synchronisiert.</span>",
+        sysDesc: "Jede Mutation durchläuft fünf Kontrollpunkte: vom Vorfall bis zum revisionssicheren Eintrag.",
+        pStep0B: "1. Vorfall", pStep0S: "Fahrerausfall gemeldet",
+        pStep1B: "2. Dispo", pStep1S: "Radar isoliert Problem",
+        pStep2B: "3. Plan-Lock", pStep2S: "Mutation gesperrt",
+        pStep3B: "4. Driver PWA", pStep3S: "1-Fingertipp Bestätigung",
+        pStep4B: "5. Audit", pStep4S: "Eintrag archiviert",
+        cmpSecTitle: "Excel vs. Standard-ERP vs. BusCommand",
+        cmpSecDesc: "Warum spezialisierte Dispositionssoftware täglich Stunden einspart und teure Fehler vermeidet.",
+        cmpCard1Title: "Excel & WhatsApp", cmpCard2Title: "Generische ERP-Software", cmpCard3Title: "BusCommand SaaS",
+        dlSecTitle: "Offizielle Dokumente & Vorlagen",
+        dlSecDesc: "Laden Sie standardisierte Dienstplanvorlagen und Sicherheitsberichte herunter.",
+        dlCard1Title: "Technisches Sicherheitsaudit", dlCard1Desc: "Bericht über Verschlüsselung, Mandantentrennung und Datenschutz.", dlCard1Btn: "Bericht ansehen",
+        dlCard2Title: "Dienstplan-Vorlage", dlCard2Desc: "Standardisiertes Format für den Import von Fahrern und Schichten.", dlCard2Btn: "Excel herunterladen",
+        dlCard3Title: "Fuhrpark-Vorlage", dlCard3Desc: "CSV/Excel-Struktur für Busse, Kennzeichen und Betriebshöfe.", dlCard3Btn: "Vorlage herunterladen",
+        dlCard4Title: "DSGVO Art. 28 AVV", dlCard4Desc: "Rechtssicherer Vertrag zur Auftragsverarbeitung nach EU-Recht.", dlCard4Btn: "AVV einsehen",
         pricingTitle: "Preise",
-        pricingDesc: "Transparente Festpreise ohne versteckte Kosten. Ausgelegt für Flotten ab 15 Bussen.",
+        pricingDesc: "Transparente Konditionen ohne versteckte Kosten. Abgestimmt auf Flotten von 5 bis 50+ Fahrzeugen.",
         pricePer: "/ Monat",
         pSubMicro: "Bis 5 Fahrzeuge und 8 Fahrer.",
-        pSubStarter: "15 bis 20 Fahrzeuge und bis 25 Fahrer.",
-        pSubPro: "20 bis 50 Fahrzeuge und bis 70 Fahrer.",
-        pSubFleet: "50+ Fahrzeuge, mehrere Depots und Standorte.",
-        featMicro: "<li>✓ 1 Dispo- + 1 CA-Konto</li><li>✓ Driver PWA App</li><li>✓ Tagesplan und Schichtbestätigungen</li><li>✓ E-Mail-Support</li>",
-        featStarter: "<li>✓ 1 Dispo- + 1 CA-Konto</li><li>✓ 3-Tage-Dispo-Radar</li><li>✓ Driver PWA App</li><li>✓ E-Mail-Support &lt; 4h</li>",
-        featPro: "<li>✓ Bis 4 Dispo-Konten mit Gruppenisolierung</li><li>✓ Plan Lock — Sperre veröffentlichter Pläne</li><li>✓ Read-Receipt Lesebestätigungen</li><li>✓ 24 Monate append-only Audit-Trail</li><li>✓ 24/7 Telefon-Support</li>",
-        featFleet: "<li>✓ Unbegrenzte Disponenten und Fahrer</li><li>✓ Mehrere Depots und Standorte</li><li>✓ DPA Art. 28 Vertrag</li><li>✓ PITR-Datenbankwiederherstellung</li><li>✓ Individuelle Integrationen nach Vertrag</li>",
+        pSubStarter: "15 bis 20 Busse und bis 25 Fahrer.",
+        pSubPro: "20 bis 50 Busse und bis 70 Fahrer.",
+        pSubFleet: "50+ Busse, mehrere Depots & Standorte.",
+        featMicro: "<li>✓ 1 Dispo + 1 Firmen-Admin</li><li>✓ Driver PWA App</li><li>✓ Tagesplan & Bestätigungen</li><li>✓ E-Mail-Support</li>",
+        featStarter: "<li>✓ 1 Dispo + 1 Firmen-Admin</li><li>✓ 3-Tage Dispo-Radar</li><li>✓ Driver PWA App</li><li>✓ E-Mail-Support &lt; 4h</li>",
+        featPro: "<li>✓ Bis 4 Dispo-Konten (Gruppen)</li><li>✓ Plan-Lock Schutz</li><li>✓ Lesebestätigungen in PWA</li><li>✓ 24 Monate Audit-Trail</li><li>✓ 24/7 Bereitschaftssupport</li>",
+        featFleet: "<li>✓ Unbegrenzte Disponenten & Fahrer</li><li>✓ Mehrere Betriebshöfe</li><li>✓ DSGVO Art. 28 AVV</li><li>✓ PITR-Datenbankwiederherstellung</li><li>✓ Individuelle Schnittstellen</li>",
         badgePopular: "Am beliebtesten",
-        ctaMicro: "Micro wählen",
-        ctaStarter: "Starter wählen",
-        ctaPro: "Pro wählen",
-        ctaFleet: "Kontaktieren Sie uns",
-        pilotKicker: "Zero-Risk Pilot",
-        pilotTitle: "Begleitetes 30-Tage-Pilotprogramm",
-        pilotDesc: "Melden Sie Ihren Betrieb an — wir importieren Ihren Dienstplan kostenlos. Ohne Kreditkarte, mit 100% Support.",
-        pilotLabelName: "Firmenname",
-        pilotLabelEmail: "E-Mail",
-        pilotLabelBuses: "Anzahl Busse",
-        pilotSubmit: "Kostenlosen Pilot anfordern",
-        pilotNote: "Wir antworten innerhalb von 24 Stunden. Daten werden nur für den Kontakt genutzt.",
-        pilotGuaranteesTitle: "5 Garantien des Pilotprogramms:",
-        pg1: "Kostenloser Import Ihres Linienkatalogs und Dienstplans.",
-        pg2: "A4-Schnellstart-Anleitung — Fahrer lernen die App in 2 Minuten.",
-        pg3: "Unterzeichnete NDA & DSGVO Art. 28 DPA vor Beginn.",
-        pg4: "Ohne Kreditkarte — jederzeit kündbar.",
-        pg5: "Vollständiger Datenexport jederzeit gewährleistet.",
-        footerCopy: "© 2026 BusCommand Enterprise. Alle Rechte vorbehalten. Frankfurt Cloud DC (europe-west3)."
+        ctaMicro: "Micro wählen", ctaStarter: "Starter wählen", ctaPro: "Pro wählen", ctaFleet: "Kontakt aufnehmen",
+        pilotBadge: "30 TAGE KOSTENLOSER PILOT",
+        pilotTitle: "Registrieren Sie Ihren Betrieb",
+        pilotDesc: "Unser Team importiert kostenlos Ihren aktuellen Dienstplan und richtet das System ein. Ohne Kreditkarte.",
+        lblCompName: "Firmenname", lblContactName: "Ansprechpartner", lblCompEmail: "Geschäftliche E-Mail", lblContactPhone: "Telefon (optional)", lblCompBuses: "Anzahl Busse im Fuhrpark", lblNotes: "Anmerkungen oder spezifische Anforderungen (optional)", pilotSending: "Anfrage wird gesendet...", pilotSuccess: "Vielen Dank für Ihre Anfrage! Ihre Anfrage für den 30-Tage-Pilot wurde erfolgreich an info@buscommand.com übermittelt.", pilotError: "Fehler beim Senden der Anfrage. Bitte senden Sie uns eine E-Mail an info@buscommand.com.",
+        pilotBtn: "Kostenlosen Pilot anfordern →",
+        pilotGuarTitle: "5 Pilot-Garantien:",
+        pg1: "Kostenloser Import Ihres Linien- und Fahrerkatalogs.",
+        pg2: "A4 Quick-Start-Guide — Fahrer lernen die App in 2 Minuten.",
+        pg3: "Unterzeichnete NDA & DSGVO Art. 28 AVV vor dem Start.",
+        pg4: "Keine Karte — jederzeit kündbar.",
+        pg5: "Vollständiger Datenexport aller Daten am Ende.",
+        closeTitle: "Plan. Personal. Fuhrpark.<br><strong>Ein Betrieb.</strong>",
+        closeDesc: "Wenn der Plan bricht, muss der Betrieb nicht stehen.",
+        closeCtaTop: "SYSTEM NOCHMALS ANSEHEN ↑", closeCtaDoc: "DOKUMENTATION",
+        footerCopy: "Alle Rechte vorbehalten. Frankfurt Cloud DC (europe-west3).",
+        footerAuditLink: "Sicherheitsprüfung"
       },
       en: {
-        navStory: "Operational Minute (Film)",
-        navRoles: "3 Roles",
-        navCompare: "Comparison",
-        navDownloads: "Documents & Templates",
-        navPricing: "Pricing",
-        heroKicker: "Dispatch Operating System for Bus Operators",
-        heroTitle: "When plans break on the road,<br><span class='text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-emerald-400'>operations keep moving.</span>",
-        heroDesc: "From the monthly schedule to resolving a breakdown in 3 seconds. All on a single screen — no scattered Excel files, no phone calls mid-drive.",
-        heroCtaPilot: "Request a Free 30-Day Pilot →",
-        heroCtaPreview: "Watch the Operational Minute",
-        m1num: "≤ 3s", m1lbl: "Driver/bus swap time with Plan-Lock",
-        m2num: "100%", m2lbl: "Compliance with EU 561/2006 & GDPR",
-        m3num: "0€", m3lbl: "Investment in unnecessary hardware",
-        storyKicker: "05:07 — 05:10 // ONE REAL OPERATIONAL MINUTE",
-        storyTitle: "From a red alert to a green line.",
-        storyDesc: "Click through the timeline steps to see how BusCommand automatically guides operations from failure to confirmed replacement.",
-        s0lbl: "Plan is live", s1lbl: "Bus stops", s2lbl: "Dispo acts", s3lbl: "Spare ready", s4lbl: "Driver confirms", s5lbl: "Route moving",
-        phoneDutyLbl: "Assigned Shift",
-        phoneBusLbl: "Vehicle:",
-        phoneTimeLbl: "Time:",
-        phoneStatusLbl: "Status:",
-        phoneBtn: "Confirm Shift Acknowledgment ✓",
-        phoneConfirmed: "✓ Shift successfully confirmed",
-        phoneDisclaimer: "No installation required. Works on any smartphone.",
-        rolesKicker: "OPERATIONAL ARCHITECTURE",
-        rolesTitle: "One Operation. Three Clear Views.",
-        rolesDesc: "Every team member gets exactly what they need for a calm and punctual working day.",
-        role1Title: "Dispatcher Cockpit",
-        role1Desc: "3-day dispatch radar, instant stoppage detection, spare vehicle assignment in ≤ 3 seconds with Plan-Lock.",
-        role1List: "<li>✓ Real-time overview of all lines and shifts</li><li>✓ Single-click spare bus assignment</li><li>✓ SOS alerts and direct driver messaging</li>",
-        role2Title: "Driver PWA App",
-        role2Desc: "Clean mobile web application without app store installs. Drivers receive schedules, confirm shifts, and report issues.",
-        role2List: "<li>✓ 1-tap shift confirmation</li><li>✓ Secure SMS OTP login without passwords</li><li>✓ Fast incident and breakdown reporting</li>",
-        role3Title: "Company Administrator",
-        role3Desc: "Monthly Excel schedule import, route group allocation, fleet vehicle management, and legal compliance.",
-        role3List: "<li>✓ Monthly roster import in 2 minutes</li><li>✓ Role isolation across dispatcher groups</li><li>✓ GDPR Article 28 DPA & append-only audit trail</li>",
-        matrixTitle: "Excel vs. Generic ERP vs. BusCommand",
-        matrixDesc: "Why purpose-built bus software saves hours of dispatch overhead every day.",
-        downloadsKicker: "ENTERPRISE DOWNLOAD HUB",
-        downloadsTitle: "Official Templates & Documents",
-        downloadsSub: "Free A4 templates, security documentation, and GDPR contracts for a 24h launch.",
+        navIncident: "INCIDENT", navRoles: "ROLES", navSystem: "SYSTEM", navCompare: "COMPARE", navDownloads: "DOCUMENTS", navPricing: "PRICING",
+        navDriverBtn: "Driver App", navStaffBtn: "Staff Login",
+        heroEyebrow: "OPERATIONAL CONTROL FOR BUS COMPANIES",
+        heroH1: "When the plan fails,<br><strong>service shouldn't stop.</strong>",
+        heroSub: "05:08. Driver calls in sick.<br><span>BusCommand is already resolving it.</span>",
+        heroP: "An uncovered duty is logged once. The decision reaches everyone who needs it. Without fragmented spreadsheets, calls while driving, or service gaps.",
+        heroCtaMinute: "REVIEW THAT MINUTE →",
+        heroCtaPilot: "REQUEST 30-DAY PILOT",
+        tr1Title: "Incident", tr1Desc: "visible in under a second",
+        tr2Title: "Dispatcher", tr2Desc: "prompted with 1 clear action",
+        tr3Title: "Operation", tr3Desc: "continues uninterrupted",
+        cockpitTitle: "Fleet Operations Overview", cockpitLive: "● LIVE",
+        kpiBuses: "BUSES ON ROUTE", kpiShifts: "ACTIVE SHIFTS", kpiConf: "CONFIRMED SHIFTS", kpiAlert: "UNCOVERED SHIFT",
+        radarTitle: "DISPATCH RADAR", radarAlertHead: "Duty 320.s01 uncovered", radarAlertSub: "Marko P. called in sick · 05:25 departure",
+        radarActHead: "Assign: Luka Kovačević", radarActSub: "Standby driver from same group (VOR 320)",
+        sc2Eyebrow: "05:08—05:10 · ONE REAL OPERATIONAL MINUTE",
+        sc2Title: "From driver absence<br><span>to confirmed replacement.</span>",
+        sc2Desc: "One actual dispatch decision: driver sickness resolved in seconds with zero phone calls while driving and zero roster concurrency conflicts.",
+        s2Step0: "Roster Ready", s2Step1: "Driver Unavailable", s2Step2: "Radar Alerts", s2Step3: "Plan Lock & Assign", s2Step4: "Driver Confirms (PWA)", s2Step5: "Operations Resume & Audit",
+        sc3Eyebrow: "SYSTEM ROLES & OPERATIONAL SURFACES",
+        sc3Title: "One operation.<br><span>Clear governance.</span>",
+        sc3Desc: "The BusCommand platform unifies 4 roles (Super Admin, Company Admin, Dispatcher, Driver) with tailored operational surfaces for each tier.",
+        roleDispoBtn: "DISPATCHER", roleDriverBtn: "DRIVER PWA", roleAdminBtn: "COMPANY ADMIN",
+        roleDispoTitle: "Dispatch Radar & Shift Operations",
+        roleDispoDesc: "The dispatcher has complete operational control. Responds to driver gaps and re-allocates duties without spreadsheet searches.",
+        roleDriverTitle: "Driver PWA Mobile App",
+        roleDriverDesc: "Drivers view their exact active duty, departure, and assigned vehicle on mobile, confirming in 1 tap with zero incoming phone calls.",
+        roleAdminTitle: "Company Admin Management Console",
+        roleAdminDesc: "Company Admin imports monthly rosters, manages dispatch groups, fleet records, and reviews compliance audit logs under GDPR.",
+        sysEyebrow: "FULL OPERATIONAL WORKFLOW",
+        sysTitle: "One decision logged.<br><span>Entire system synchronizes.</span>",
+        sysDesc: "Every dispatch mutation passes through five control checkpoints: from initial alert to immutable audit trail.",
+        pStep0B: "1. Incident", pStep0S: "Driver sickness logged",
+        pStep1B: "2. Dispo", pStep1S: "Radar isolates gap",
+        pStep2B: "3. Plan Lock", pStep2S: "Mutation secured",
+        pStep3B: "4. Driver PWA", pStep3S: "1-tap acknowledgement",
+        pStep4B: "5. Audit", pStep4S: "Record archived",
+        cmpSecTitle: "Excel vs. Generic ERP vs. BusCommand",
+        cmpSecDesc: "Why dedicated bus dispatch software saves daily overhead and prevents costly operational errors.",
+        cmpCard1Title: "Spreadsheets & Chats", cmpCard2Title: "Generic Truck ERP", cmpCard3Title: "BusCommand SaaS",
+        dlSecTitle: "Official Technical Documents & Templates",
+        dlSecDesc: "Download standardized shift roster templates and security audit documentation.",
+        dlCard1Title: "Technical Security Audit", dlCard1Desc: "Comprehensive report on encryption, multi-tenant isolation, and data safety.", dlCard1Btn: "Read audit report",
+        dlCard2Title: "Shift Roster Template", dlCard2Desc: "Standardized format for importing drivers and vehicle duties.", dlCard2Btn: "Download Excel",
+        dlCard3Title: "Fleet Vehicles Template", dlCard3Desc: "Clean CSV/Excel structure for vehicles, license plates, and depots.", dlCard3Btn: "Download template",
+        dlCard4Title: "GDPR Article 28 DPA", dlCard4Desc: "Legally vetted Data Processing Agreement compliant with EU law.", dlCard4Btn: "Inspect DPA",
         pricingTitle: "Pricing",
-        pricingDesc: "Transparent fixed pricing with no hidden fees. Tailored for fleets of 15+ buses.",
+        pricingDesc: "Predictable, transparent subscription tiers. Tailored for fleets from 5 to 50+ vehicles.",
         pricePer: "/ month",
         pSubMicro: "Up to 5 vehicles and 8 drivers.",
-        pSubStarter: "15 to 20 vehicles and up to 25 drivers.",
-        pSubPro: "20 to 50 vehicles and up to 70 drivers.",
-        pSubFleet: "50+ vehicles, multiple depots and cities.",
-        featMicro: "<li>✓ 1 Dispo + 1 CA account</li><li>✓ Driver PWA app</li><li>✓ Daily plan and shift confirmations</li><li>✓ Email support</li>",
-        featStarter: "<li>✓ 1 Dispo + 1 CA account</li><li>✓ 3-day dispatcher radar</li><li>✓ Driver PWA app</li><li>✓ Email support &lt; 4h</li>",
-        featPro: "<li>✓ Up to 4 Dispo accounts with group isolation</li><li>✓ Plan Lock — published plan freezing</li><li>✓ Read-Receipt shift confirmations</li><li>✓ 24-month append-only audit trail</li><li>✓ 24/7 phone support</li>",
-        featFleet: "<li>✓ Unlimited dispatchers and drivers</li><li>✓ Multiple depots and locations</li><li>✓ DPA Article 28 agreement</li><li>✓ PITR point-in-time database recovery</li><li>✓ Custom integrations by contract</li>",
+        pSubStarter: "15 to 20 buses and up to 25 drivers.",
+        pSubPro: "20 to 50 buses and up to 70 drivers.",
+        pSubFleet: "50+ buses, multi-depot & locations.",
+        featMicro: "<li>✓ 1 Dispo + 1 CA seat</li><li>✓ Driver PWA app</li><li>✓ Daily roster & confirms</li><li>✓ Email support</li>",
+        featStarter: "<li>✓ 1 Dispo + 1 CA seat</li><li>✓ 3-day dispatch radar</li><li>✓ Driver PWA app</li><li>✓ Email support &lt; 4h</li>",
+        featPro: "<li>✓ Up to 4 Dispo seats (groups)</li><li>✓ Plan Lock concurrency guard</li><li>✓ PWA read receipts</li><li>✓ 24-month audit trail</li><li>✓ 24/7 on-call support</li>",
+        featFleet: "<li>✓ Unlimited dispatchers & drivers</li><li>✓ Multi-depot operations</li><li>✓ GDPR Article 28 DPA</li><li>✓ Point-in-time recovery (PITR)</li><li>✓ Custom ERP integrations</li>",
         badgePopular: "Most Popular",
-        ctaMicro: "Choose Micro",
-        ctaStarter: "Choose Starter",
-        ctaPro: "Choose Pro",
-        ctaFleet: "Contact Us",
-        pilotKicker: "Zero-Risk Pilot",
-        pilotTitle: "Guided 30-Day Pilot Program",
-        pilotDesc: "Sign up your company — our team imports your existing roster for free. No credit card needed, 100% supported.",
-        pilotLabelName: "Company Name",
-        pilotLabelEmail: "Email",
-        pilotLabelBuses: "Number of Buses",
-        pilotSubmit: "Request Free 30-Day Pilot",
-        pilotNote: "We respond within 24 hours. Information is used strictly for contact.",
-        pilotGuaranteesTitle: "5 Pilot Program Guarantees:",
-        pg1: "Free import of your route catalog and driver roster.",
+        ctaMicro: "Choose Micro", ctaStarter: "Choose Starter", ctaPro: "Choose Pro", ctaFleet: "Contact Fleet Team",
+        pilotBadge: "30-DAY FREE GUIDED PILOT",
+        pilotTitle: "Register your company",
+        pilotDesc: "Our team imports your existing roster and configures your company workspace free of charge. No credit card.",
+        lblCompName: "Company Name", lblContactName: "Contact Person", lblCompEmail: "Business Email", lblContactPhone: "Phone (optional)", lblCompBuses: "Number of Buses in Fleet", lblNotes: "Notes or specific requirements (optional)", pilotSending: "Submitting request...", pilotSuccess: "Thank you for your request! Your 30-day pilot application has been successfully submitted to info@buscommand.com.", pilotError: "Error submitting application. Please email us directly at info@buscommand.com.",
+        pilotBtn: "Request Free 30-Day Pilot →",
+        pilotGuarTitle: "5 Pilot Guarantees:",
+        pg1: "Free concierge import of your route catalog and drivers.",
         pg2: "A4 Quick-Start Guide — drivers learn the app in 2 minutes.",
-        pg3: "Signed NDA & GDPR Article 28 DPA prior to start.",
-        pg4: "No credit card required — cancel anytime.",
-        pg5: "Full data export guaranteed at any time.",
-        footerCopy: "© 2026 BusCommand Enterprise. All rights reserved. Frankfurt Cloud DC (europe-west3)."
+        pg3: "Countersigned NDA and GDPR Article 28 DPA before kickoff.",
+        pg4: "No card required — cancel anytime with zero friction.",
+        pg5: "Full data export capability at the end.",
+        closeTitle: "Roster. Team. Fleet.<br><strong>One operation.</strong>",
+        closeDesc: "When the plan fails, service shouldn't stop.",
+        closeCtaTop: "REVIEW SYSTEM AGAIN ↑", closeCtaDoc: "DOCUMENTATION",
+        footerCopy: "All rights reserved. Frankfurt Cloud DC (europe-west3).",
+        footerAuditLink: "Security audit"
       }
     };
 
-    function setLang(lang) {
-      currentLang = lang;
+    function setLanguage(lang) {
+      if (!translations[lang]) return;
+      activeLang = lang;
       document.documentElement.lang = lang;
 
       ['de', 'sr', 'en'].forEach(l => {
-        const btn = document.getElementById('btn-' + l);
-        if (btn) btn.className = (l === lang ? 'lang-active' : '');
+        const b = document.getElementById('lang-btn-' + l);
+        if (b) b.classList.toggle('active', l === lang);
       });
 
-      const p = dict[lang] || dict.sr;
+      const t = translations[lang];
 
-      // Header Nav
-      if (document.getElementById('nav-story')) document.getElementById('nav-story').textContent = p.navStory;
-      if (document.getElementById('nav-roles')) document.getElementById('nav-roles').textContent = p.navRoles;
-      if (document.getElementById('nav-compare')) document.getElementById('nav-compare').textContent = p.navCompare;
-      if (document.getElementById('nav-downloads')) document.getElementById('nav-downloads').textContent = p.navDownloads;
-      if (document.getElementById('nav-pricing')) document.getElementById('nav-pricing').textContent = p.navPricing;
+      // Navigation
+      const navInc = document.getElementById('nav-incident'); if (navInc) navInc.textContent = t.navIncident;
+      const navRol = document.getElementById('nav-roles'); if (navRol) navRol.textContent = t.navRoles;
+      const navSys = document.getElementById('nav-system'); if (navSys) navSys.textContent = t.navSystem;
+      const navCmp = document.getElementById('nav-compare'); if (navCmp) navCmp.textContent = t.navCompare;
+      const navDl = document.getElementById('nav-downloads'); if (navDl) navDl.textContent = t.navDownloads;
+      const navPri = document.getElementById('nav-pricing'); if (navPri) navPri.textContent = t.navPricing;
+      const navDri = document.getElementById('nav-driver-btn'); if (navDri) navDri.textContent = t.navDriverBtn;
+      const navStf = document.getElementById('nav-staff-btn'); if (navStf) navStf.textContent = t.navStaffBtn;
 
       // Hero
-      if (document.getElementById('hero-kicker')) document.getElementById('hero-kicker').textContent = p.heroKicker;
-      if (document.getElementById('hero-title')) document.getElementById('hero-title').innerHTML = p.heroTitle;
-      if (document.getElementById('hero-desc')) document.getElementById('hero-desc').textContent = p.heroDesc;
-      if (document.getElementById('hero-cta-pilot')) document.getElementById('hero-cta-pilot').textContent = p.heroCtaPilot;
-      if (document.getElementById('hero-cta-preview')) document.getElementById('hero-cta-preview').textContent = p.heroCtaPreview;
-      if (document.getElementById('m1-num')) document.getElementById('m1-num').textContent = p.m1num;
-      if (document.getElementById('m1-lbl')) document.getElementById('m1-lbl').textContent = p.m1lbl;
-      if (document.getElementById('m2-num')) document.getElementById('m2-num').textContent = p.m2num;
-      if (document.getElementById('m2-lbl')) document.getElementById('m2-lbl').textContent = p.m2lbl;
-      if (document.getElementById('m3-num')) document.getElementById('m3-num').textContent = p.m3num;
-      if (document.getElementById('m3-lbl')) document.getElementById('m3-lbl').textContent = p.m3lbl;
+      const hEye = document.getElementById('hero-eyebrow'); if (hEye) hEye.textContent = t.heroEyebrow;
+      const hH1 = document.getElementById('hero-h1'); if (hH1) hH1.innerHTML = t.heroH1;
+      const hSub = document.getElementById('hero-sub'); if (hSub) hSub.innerHTML = t.heroSub;
+      const hP = document.getElementById('hero-p'); if (hP) hP.textContent = t.heroP;
+      const hCtaM = document.getElementById('hero-cta-minute'); if (hCtaM) hCtaM.textContent = t.heroCtaMinute;
+      const hCtaP = document.getElementById('hero-cta-pilot'); if (hCtaP) hCtaP.textContent = t.heroCtaPilot;
+      const tr1T = document.getElementById('tr1-title'); if (tr1T) tr1T.textContent = t.tr1Title;
+      const tr1D = document.getElementById('tr1-desc'); if (tr1D) tr1D.textContent = t.tr1Desc;
+      const tr2T = document.getElementById('tr2-title'); if (tr2T) tr2T.textContent = t.tr2Title;
+      const tr2D = document.getElementById('tr2-desc'); if (tr2D) tr2D.textContent = t.tr2Desc;
+      const tr3T = document.getElementById('tr3-title'); if (tr3T) tr3T.textContent = t.tr3Title;
+      const tr3D = document.getElementById('tr3-desc'); if (tr3D) tr3D.textContent = t.tr3Desc;
 
-      // Story Section
-      if (document.getElementById('story-kicker')) document.getElementById('story-kicker').textContent = p.storyKicker;
-      if (document.getElementById('story-title')) document.getElementById('story-title').textContent = p.storyTitle;
-      if (document.getElementById('story-desc')) document.getElementById('story-desc').textContent = p.storyDesc;
-      if (document.getElementById('step-lbl-0')) document.getElementById('step-lbl-0').textContent = p.s0lbl;
-      if (document.getElementById('step-lbl-1')) document.getElementById('step-lbl-1').textContent = p.s1lbl;
-      if (document.getElementById('step-lbl-2')) document.getElementById('step-lbl-2').textContent = p.s2lbl;
-      if (document.getElementById('step-lbl-3')) document.getElementById('step-lbl-3').textContent = p.s3lbl;
-      if (document.getElementById('step-lbl-4')) document.getElementById('step-lbl-4').textContent = p.s4lbl;
-      if (document.getElementById('step-lbl-5')) document.getElementById('step-lbl-5').textContent = p.s5lbl;
+      // Cockpit
+      const cTitle = document.getElementById('cockpit-title'); if (cTitle) cTitle.textContent = t.cockpitTitle;
+      const cLive = document.getElementById('cockpit-live'); if (cLive) cLive.textContent = t.cockpitLive;
+      const kpB = document.getElementById('kpi-buses-lbl'); if (kpB) kpB.textContent = t.kpiBuses;
+      const kpS = document.getElementById('kpi-shifts-lbl'); if (kpS) kpS.textContent = t.kpiShifts;
+      const kpC = document.getElementById('kpi-conf-lbl'); if (kpC) kpC.textContent = t.kpiConf;
+      const kpA = document.getElementById('kpi-alert-lbl'); if (kpA) kpA.textContent = t.kpiAlert;
+      const rTit = document.getElementById('radar-title'); if (rTit) rTit.textContent = t.radarTitle;
+      const rAH = document.getElementById('radar-alert-head'); if (rAH) rAH.textContent = t.radarAlertHead;
+      const rAS = document.getElementById('radar-alert-sub'); if (rAS) rAS.textContent = t.radarAlertSub;
+      const rAcH = document.getElementById('radar-act-head'); if (rAcH) rAcH.textContent = t.radarActHead;
+      const rAcS = document.getElementById('radar-act-sub'); if (rAcS) rAcS.textContent = t.radarActSub;
 
-      // Driver Phone labels
-      if (document.getElementById('phone-duty-lbl')) document.getElementById('phone-duty-lbl').textContent = p.phoneDutyLbl;
-      if (document.getElementById('phone-bus-lbl')) document.getElementById('phone-bus-lbl').textContent = p.phoneBusLbl;
-      if (document.getElementById('phone-time-lbl')) document.getElementById('phone-time-lbl').textContent = p.phoneTimeLbl;
-      if (document.getElementById('phone-status-lbl')) document.getElementById('phone-status-lbl').textContent = p.phoneStatusLbl;
-      if (document.getElementById('phone-confirm-btn')) document.getElementById('phone-confirm-btn').textContent = p.phoneBtn;
-      if (document.getElementById('phone-confirmed-msg')) document.getElementById('phone-confirmed-msg').textContent = p.phoneConfirmed;
-      if (document.getElementById('phone-disclaimer')) document.getElementById('phone-disclaimer').textContent = p.phoneDisclaimer;
+      // Section 2
+      const s2Eye = document.getElementById('sc2-eyebrow'); if (s2Eye) s2Eye.textContent = t.sc2Eyebrow;
+      const s2T = document.getElementById('sc2-title'); if (s2T) s2T.innerHTML = t.sc2Title;
+      const s2D = document.getElementById('sc2-desc'); if (s2D) s2D.textContent = t.sc2Desc;
+      for (let i = 0; i < 6; i++) {
+        const el = document.getElementById('s2-step-' + i);
+        if (el) el.textContent = t['s2Step' + i];
+      }
 
-      // Roles
-      if (document.getElementById('roles-kicker')) document.getElementById('roles-kicker').textContent = p.rolesKicker;
-      if (document.getElementById('roles-title')) document.getElementById('roles-title').textContent = p.rolesTitle;
-      if (document.getElementById('roles-desc')) document.getElementById('roles-desc').textContent = p.rolesDesc;
-      if (document.getElementById('role1-title')) document.getElementById('role1-title').textContent = p.role1Title;
-      if (document.getElementById('role1-desc')) document.getElementById('role1-desc').textContent = p.role1Desc;
-      if (document.getElementById('role1-list')) document.getElementById('role1-list').innerHTML = p.role1List;
-      if (document.getElementById('role2-title')) document.getElementById('role2-title').textContent = p.role2Title;
-      if (document.getElementById('role2-desc')) document.getElementById('role2-desc').textContent = p.role2Desc;
-      if (document.getElementById('role2-list')) document.getElementById('role2-list').innerHTML = p.role2List;
-      if (document.getElementById('role3-title')) document.getElementById('role3-title').textContent = p.role3Title;
-      if (document.getElementById('role3-desc')) document.getElementById('role3-desc').textContent = p.role3Desc;
-      if (document.getElementById('role3-list')) document.getElementById('role3-list').innerHTML = p.role3List;
+      // Section 3
+      const s3Eye = document.getElementById('sc3-eyebrow'); if (s3Eye) s3Eye.textContent = t.sc3Eyebrow;
+      const s3T = document.getElementById('sc3-title'); if (s3T) s3T.innerHTML = t.sc3Title;
+      const s3D = document.getElementById('sc3-desc'); if (s3D) s3D.textContent = t.sc3Desc;
+      const rDis = document.getElementById('role-btn-dispo'); if (rDis) rDis.textContent = t.roleDispoBtn;
+      const rDri = document.getElementById('role-btn-driver'); if (rDri) rDri.textContent = t.roleDriverBtn;
+      const rAdm = document.getElementById('role-btn-admin'); if (rAdm) rAdm.textContent = t.roleAdminBtn;
+      const rDT = document.getElementById('role-dispo-title'); if (rDT) rDT.textContent = t.roleDispoTitle;
+      const rDD = document.getElementById('role-dispo-desc'); if (rDD) rDD.textContent = t.roleDispoDesc;
+      const rDrT = document.getElementById('role-driver-title'); if (rDrT) rDrT.textContent = t.roleDriverTitle;
+      const rDrD = document.getElementById('role-driver-desc'); if (rDrD) rDrD.textContent = t.roleDriverDesc;
+      const rAdT = document.getElementById('role-admin-title'); if (rAdT) rAdT.textContent = t.roleAdminTitle;
+      const rAdD = document.getElementById('role-admin-desc'); if (rAdD) rAdD.textContent = t.roleAdminDesc;
 
-      // Comparison
-      if (document.getElementById('matrix-title')) document.getElementById('matrix-title').textContent = p.matrixTitle;
-      if (document.getElementById('matrix-desc')) document.getElementById('matrix-desc').textContent = p.matrixDesc;
+      // Section 4
+      const sysEye = document.getElementById('sys-eyebrow'); if (sysEye) sysEye.textContent = t.sysEyebrow;
+      const sysT = document.getElementById('system-title'); if (sysT) sysT.innerHTML = t.sysTitle;
+      const sysD = document.getElementById('sys-desc'); if (sysD) sysD.textContent = t.sysDesc;
+      for (let i = 0; i < 5; i++) {
+        const b = document.getElementById('p-step-' + i + '-b'); if (b) b.textContent = t['pStep' + i + 'B'];
+        const s = document.getElementById('p-step-' + i + '-s'); if (s) s.textContent = t['pStep' + i + 'S'];
+      }
 
-      // Downloads
-      if (document.getElementById('downloads-kicker')) document.getElementById('downloads-kicker').textContent = p.downloadsKicker;
-      if (document.getElementById('downloads-title')) document.getElementById('downloads-title').textContent = p.downloadsTitle;
-      if (document.getElementById('downloads-sub')) document.getElementById('downloads-sub').textContent = p.downloadsSub;
+      // Section 5
+      const cmpST = document.getElementById('cmp-sec-title'); if (cmpST) cmpST.textContent = t.cmpSecTitle;
+      const cmpSD = document.getElementById('cmp-sec-desc'); if (cmpSD) cmpSD.textContent = t.cmpSecDesc;
+      const cmpC1 = document.getElementById('cmp-card1-title'); if (cmpC1) cmpC1.textContent = t.cmpCard1Title;
+      const cmpC2 = document.getElementById('cmp-card2-title'); if (cmpC2) cmpC2.textContent = t.cmpCard2Title;
+      const cmpC3 = document.getElementById('cmp-card3-title'); if (cmpC3) cmpC3.textContent = t.cmpCard3Title;
 
-      // Pricing
-      if (document.getElementById('pricing-title')) document.getElementById('pricing-title').textContent = p.pricingTitle;
-      if (document.getElementById('pricing-desc')) document.getElementById('pricing-desc').textContent = p.pricingDesc;
-      if (document.getElementById('badge-popular')) document.getElementById('badge-popular').textContent = p.badgePopular;
+      // Section 6
+      const dlST = document.getElementById('dl-sec-title'); if (dlST) dlST.textContent = t.dlSecTitle;
+      const dlSD = document.getElementById('dl-sec-desc'); if (dlSD) dlSD.textContent = t.dlSecDesc;
+      for (let i = 1; i <= 4; i++) {
+        const tit = document.getElementById('dl-card' + i + '-title'); if (tit) tit.textContent = t['dlCard' + i + 'Title'];
+        const desc = document.getElementById('dl-card' + i + '-desc'); if (desc) desc.textContent = t['dlCard' + i + 'Desc'];
+        const btn = document.getElementById('dl-card' + i + '-btn'); if (btn) btn.textContent = t['dlCard' + i + 'Btn'];
+      }
 
-      if (document.getElementById('price-per-micro')) document.getElementById('price-per-micro').textContent = p.pricePer;
-      if (document.getElementById('p-sub-micro')) document.getElementById('p-sub-micro').textContent = p.pSubMicro;
-      if (document.getElementById('feat-micro')) document.getElementById('feat-micro').innerHTML = p.featMicro;
-      if (document.getElementById('cta-micro')) document.getElementById('cta-micro').textContent = p.ctaMicro;
+      // Section 7 (Pricing & Pilot)
+      const pTit = document.getElementById('pricing-title'); if (pTit) pTit.textContent = t.pricingTitle;
+      const pDes = document.getElementById('pricing-desc'); if (pDes) pDes.textContent = t.pricingDesc;
+      const pPerM = document.getElementById('price-per-micro'); if (pPerM) pPerM.textContent = t.pricePer;
+      const pPerS = document.getElementById('price-per-starter'); if (pPerS) pPerS.textContent = t.pricePer;
+      const pPerP = document.getElementById('price-per-pro'); if (pPerP) pPerP.textContent = t.pricePer;
+      const pPerF = document.getElementById('price-per-fleet'); if (pPerF) pPerF.textContent = t.pricePer;
+      const pSubM = document.getElementById('p-sub-micro'); if (pSubM) pSubM.textContent = t.pSubMicro;
+      const pSubS = document.getElementById('p-sub-starter'); if (pSubS) pSubS.textContent = t.pSubStarter;
+      const pSubP = document.getElementById('p-sub-pro'); if (pSubP) pSubP.textContent = t.pSubPro;
+      const pSubF = document.getElementById('p-sub-fleet'); if (pSubF) pSubF.textContent = t.pSubFleet;
+      const fMic = document.getElementById('feat-micro'); if (fMic) fMic.innerHTML = t.featMicro;
+      const fSta = document.getElementById('feat-starter'); if (fSta) fSta.innerHTML = t.featStarter;
+      const fPro = document.getElementById('feat-pro'); if (fPro) fPro.innerHTML = t.featPro;
+      const fFle = document.getElementById('feat-fleet'); if (fFle) fFle.innerHTML = t.featFleet;
+      const bPop = document.getElementById('badge-popular'); if (bPop) bPop.textContent = t.badgePopular;
+      const ctaM = document.getElementById('cta-micro'); if (ctaM) ctaM.textContent = t.ctaMicro;
+      const ctaS = document.getElementById('cta-starter'); if (ctaS) ctaS.textContent = t.ctaStarter;
+      const ctaP = document.getElementById('cta-pro'); if (ctaP) ctaP.textContent = t.ctaPro;
+      const ctaF = document.getElementById('cta-fleet'); if (ctaF) ctaF.textContent = t.ctaFleet;
 
-      if (document.getElementById('price-per-starter')) document.getElementById('price-per-starter').textContent = p.pricePer;
-      if (document.getElementById('p-sub-starter')) document.getElementById('p-sub-starter').textContent = p.pSubStarter;
-      if (document.getElementById('feat-starter')) document.getElementById('feat-starter').innerHTML = p.featStarter;
-      if (document.getElementById('cta-starter')) document.getElementById('cta-starter').textContent = p.ctaStarter;
+      // Pilot form
+      const pilB = document.getElementById('pilot-badge'); if (pilB) pilB.textContent = t.pilotBadge;
+      const pilT = document.getElementById('pilotTitle'); if (pilT) pilT.textContent = t.pilotTitle;
+      const pilD = document.getElementById('pilotDesc'); if (pilD) pilD.textContent = t.pilotDesc;
+      const lCN = document.getElementById('lbl-comp-name'); if (lCN) lCN.textContent = t.lblCompName;
+      const lCE = document.getElementById('lbl-comp-email'); if (lCE) lCE.textContent = t.lblCompEmail;
+      const lCB = document.getElementById('lbl-comp-buses'); if (lCB) lCB.textContent = t.lblCompBuses;
+      const pBtn = document.getElementById('pilotSubmitBtn'); if (pBtn) pBtn.textContent = t.pilotBtn;
+      const pGT = document.getElementById('pilot-guar-title'); if (pGT) pGT.textContent = t.pilotGuarTitle;
+      for (let i = 1; i <= 5; i++) {
+        const el = document.getElementById('pg' + i); if (el) el.textContent = t['pg' + i];
+      }
 
-      if (document.getElementById('price-per-pro')) document.getElementById('price-per-pro').textContent = p.pricePer;
-      if (document.getElementById('p-sub-pro')) document.getElementById('p-sub-pro').textContent = p.pSubPro;
-      if (document.getElementById('feat-pro')) document.getElementById('feat-pro').innerHTML = p.featPro;
-      if (document.getElementById('cta-pro')) document.getElementById('cta-pro').textContent = p.ctaPro;
-
-      if (document.getElementById('price-per-fleet')) document.getElementById('price-per-fleet').textContent = p.pricePer;
-      if (document.getElementById('p-sub-fleet')) document.getElementById('p-sub-fleet').textContent = p.pSubFleet;
-      if (document.getElementById('feat-fleet')) document.getElementById('feat-fleet').innerHTML = p.featFleet;
-      if (document.getElementById('cta-fleet')) document.getElementById('cta-fleet').textContent = p.ctaFleet;
-
-      // Pilot
-      if (document.getElementById('pilot-kicker')) document.getElementById('pilot-kicker').textContent = p.pilotKicker;
-      if (document.getElementById('pilot-title')) document.getElementById('pilot-title').textContent = p.pilotTitle;
-      if (document.getElementById('pilot-desc')) document.getElementById('pilot-desc').textContent = p.pilotDesc;
-      if (document.getElementById('pilot-label-name')) document.getElementById('pilot-label-name').textContent = p.pilotLabelName;
-      if (document.getElementById('pilot-label-email')) document.getElementById('pilot-label-email').textContent = p.pilotLabelEmail;
-      if (document.getElementById('pilot-label-buses')) document.getElementById('pilot-label-buses').textContent = p.pilotLabelBuses;
-      if (document.getElementById('pilot-submit')) document.getElementById('pilot-submit').textContent = p.pilotSubmit;
-      if (document.getElementById('pilot-note')) document.getElementById('pilot-note').textContent = p.pilotNote;
-      if (document.getElementById('pilot-guarantees-title')) document.getElementById('pilot-guarantees-title').textContent = p.pilotGuaranteesTitle;
-      if (document.getElementById('pg1')) document.getElementById('pg1').textContent = p.pg1;
-      if (document.getElementById('pg2')) document.getElementById('pg2').textContent = p.pg2;
-      if (document.getElementById('pg3')) document.getElementById('pg3').textContent = p.pg3;
-      if (document.getElementById('pg4')) document.getElementById('pg4').textContent = p.pg4;
-      if (document.getElementById('pg5')) document.getElementById('pg5').textContent = p.pg5;
-
-      if (document.getElementById('footer-copy')) document.getElementById('footer-copy').textContent = p.footerCopy;
+      // Quiet close & footer
+      const clT = document.getElementById('close-title'); if (clT) clT.innerHTML = t.closeTitle;
+      const clD = document.getElementById('close-desc'); if (clD) clD.textContent = t.closeDesc;
+      const clCT = document.getElementById('close-cta-top'); if (clCT) clCT.textContent = t.closeCtaTop;
+      const clCD = document.getElementById('close-cta-doc'); if (clCD) clCD.textContent = t.closeCtaDoc;
+      const fCopy = document.getElementById('footer-copy'); if (fCopy) fCopy.textContent = t.footerCopy;
+      const fAud = document.getElementById('footer-audit-link'); if (fAud) fAud.textContent = t.footerAuditLink;
 
       setStoryStep(currentStoryStep);
+      setSystemPulse(currentSystemPulse);
     }
 
-    function submitPilot(e) {
+    async function handlePilotSubmit(e) {
       e.preventDefault();
-      const comp = document.getElementById('pilot-company').value;
-      alert((currentLang === 'de' ? 'Vielen Dank! Anfrage gesendet für: ' : currentLang === 'en' ? 'Thank you! Pilot requested for: ' : 'Hvala na prijavi za: ') + comp);
+      const hp = document.getElementById('p-hp') ? document.getElementById('p-hp').value : '';
+      if (hp && hp.trim().length > 0) return; // Silent anti-bot rejection
+
+      const comp = (document.getElementById('p-comp') ? document.getElementById('p-comp').value : '').trim();
+      const contact = (document.getElementById('p-name') ? document.getElementById('p-name').value : '').trim();
+      const email = (document.getElementById('p-email') ? document.getElementById('p-email').value : '').trim();
+      const phone = (document.getElementById('p-phone') ? document.getElementById('p-phone').value : '').trim();
+      const buses = (document.getElementById('p-buses') ? document.getElementById('p-buses').value : '').trim();
+      const message = (document.getElementById('p-msg') ? document.getElementById('p-msg').value : '').trim();
+
+      const btn = document.getElementById('pilotSubmitBtn');
+      const feedback = document.getElementById('pilot-feedback');
+      const t = translations[activeLang] || translations.sr;
+
+      if (btn) {
+        btn.disabled = true;
+        btn.dataset.origText = btn.textContent;
+        btn.textContent = t.pilotSending;
+      }
+      if (feedback) {
+        feedback.style.display = 'none';
+        feedback.className = '';
+        feedback.textContent = '';
+      }
+
+      try {
+        const resp = await fetch('/api/public/pilot-request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            companyName: comp,
+            contactName: contact,
+            email: email,
+            phone: phone,
+            fleetSize: buses,
+            message: message,
+            lang: activeLang
+          })
+        });
+
+        const data = await resp.json().catch(() => ({}));
+
+        if (resp.ok && data.success) {
+          if (feedback) {
+            feedback.style.display = 'block';
+            feedback.className = 'pilot-feedback-success';
+            feedback.textContent = t.pilotSuccess;
+          }
+          const form = document.getElementById('pilotForm');
+          if (form) form.reset();
+        } else {
+          if (feedback) {
+            feedback.style.display = 'block';
+            feedback.className = 'pilot-feedback-error';
+            feedback.textContent = data.error || t.pilotError;
+          }
+        }
+      } catch (err) {
+        if (feedback) {
+          feedback.style.display = 'block';
+          feedback.className = 'pilot-feedback-error';
+          feedback.textContent = t.pilotError;
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = btn.dataset.origText || t.pilotBtn;
+        }
+      }
     }
 
-    // Auto-detect browser language or default to German if in DACH
+    // Initialize
     document.addEventListener('DOMContentLoaded', () => {
-      const userLang = (navigator.language || 'sr').toLowerCase();
-      if (userLang.startsWith('de')) {
-        setLang('de');
-      } else if (userLang.startsWith('en')) {
-        setLang('en');
-      } else {
-        setLang('sr');
-      }
+      setLanguage('sr');
+      setStoryStep(0);
+      setSystemPulse(0);
     });
   </script>
 </body>

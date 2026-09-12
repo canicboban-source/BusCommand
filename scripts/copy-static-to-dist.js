@@ -79,7 +79,8 @@ for (const rel of [
   "css/design-tokens.css",
   "css/driver-pwa.css",
   "css/brand.css",
-  "css/staff-desktop.css"
+  "css/staff-desktop.css",
+  "css/landing.css"
 ]) {
   const srcCss = path.join(ROOT, rel);
   if (!fs.existsSync(srcCss)) {

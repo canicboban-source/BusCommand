@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: buscommand-preview
+    name: buscommand
     runtime: node
     plan: free
     region: frankfurt
@@ -33,6 +33,16 @@ services:
       # here is answered 403 application/json by the CORS gate on every /api call.
       - key: CORS_ORIGINS
         value: https://buscommand.com,https://www.buscommand.com,https://app.buscommand.com,https://d.buscommand.com,https://buscommand-preview.onrender.com
+      - key: PLATFORM_SMTP_HOST
+        value: smtppro.zoho.eu
+      - key: PLATFORM_SMTP_PORT
+        value: "465"
+      - key: PLATFORM_SMTP_USER
+        value: info@buscommand.com
+      - key: PLATFORM_SMTP_PASS
+        sync: false
+      - key: PLATFORM_SMTP_FROM
+        value: '"BusCommand Pilot" <info@buscommand.com>'
 
   - type: cron
     name: buscommand-confirm-dispatch
