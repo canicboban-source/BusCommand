@@ -120,6 +120,14 @@ export default [
   },
   {
     files: ["tests/e2e/**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        ...globals.node,
+        ...globals.browser
+      }
+    },
     rules: {
       "no-undef": "off"
     }
