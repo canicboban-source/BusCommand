@@ -1,57 +1,55 @@
-// BusCommand — Driver CSV uvoz vozača (header-aware, separator ;)
+// Package-import adapter for driver CSV. Parser is the shared canonical contract.
+// Never maps PIN / company_code / activation / password columns onto a driver.
 
-function detectSeparator(headerLine) {
-    if (headerLine.includes(";")) return ";";
-    if (headerLine.includes("\t")) return "\t";
-    return ",";
-}
+import contractNs from "./driver-import-contract.cjs";
+
+const contract = contractNs?.parseDriverCsv ? contractNs : (contractNs?.default || contractNs);
+
+const CREDENTIAL_PROFILE_KEYS = Object.freeze([
+    "pin",
+    "initialPin",
+    "initial_pin",
+    "company_code",
+    "activation_code",
+    "password",
+    "passcode",
+    "otp",
+    "activationOtp",
+    "companyCode"
+]);
 
 function parseDriverCsv(text) {
-    const lines = (text || "").split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    if (!lines.length) return { drivers: [], errors: ["Prazan fajl"] };
+    return contract.parseDriverCsv(text);
+}
 
-    const sep = detectSeparator(lines[0]);
-    const headers = lines[0].split(sep).map(h => h.trim().toLowerCase());
+function stripCredentialFields(record) {
+    const next = { ...(record || {}) };
+    for (const key of CREDENTIAL_PROFILE_KEYS) delete next[key];
+    return next;
+}
 
-    const col = (needles) => headers.findIndex(h => needles.some(n => h.includes(n)));
-
-    const idx = {
-        name: col(["ime_prezime", "ime", "name", "vozač", "vozac"]),
-        email: col(["email", "e-mail"]),
-        companyId: col(["firma_id", "firm_id", "company"]),
-        pin: col(["licni_kod", "pin", "kod_za_app", "kod"]),
-        phone: col(["telefon", "phone"]),
-        group: col(["grupa", "group"])
-    };
-
-    if (idx.name < 0 || idx.pin < 0) {
-        return { drivers: [], errors: ["CSV mora imati kolone za ime i PIN (licni_kod_za_app)."] };
-    }
-
-    const drivers = [];
-    const errors = [];
-
-    for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split(sep).map(c => c.trim());
-        const name = cols[idx.name] || "";
-        const pin = cols[idx.pin] || "";
-        if (!name || !pin) continue;
-
-        drivers.push({
-            name,
-            pin,
-            email: idx.email >= 0 ? cols[idx.email] : "",
-            companyId: idx.companyId >= 0 ? cols[idx.companyId] : "",
-            phone: idx.phone >= 0 ? cols[idx.phone] : "",
-            groupName: idx.group >= 0 ? cols[idx.group] : ""
-        });
-    }
-
-    if (!drivers.length) errors.push("Nijedan vozač nije parsiran.");
-
-    return { drivers, errors, format: "driver-csv" };
+function localDriverRecordFromCanonical(driver, { id, groupId, companyId } = {}) {
+    const firstName = String(driver?.first_name || "").trim();
+    const lastName = String(driver?.last_name || "").trim();
+    return stripCredentialFields({
+        id,
+        eid: String(driver?.eid || "").trim(),
+        firstName,
+        lastName,
+        name: [firstName, lastName].filter(Boolean).join(" "),
+        email: driver?.email || "",
+        phone: driver?.phone || "",
+        postalCode: driver?.postal_code || "",
+        companyId: companyId || "",
+        groupId,
+        active: false,
+        codeActivated: false
+    });
 }
 
 export {
-    parseDriverCsv
+    parseDriverCsv,
+    localDriverRecordFromCanonical,
+    stripCredentialFields,
+    CREDENTIAL_PROFILE_KEYS
 };

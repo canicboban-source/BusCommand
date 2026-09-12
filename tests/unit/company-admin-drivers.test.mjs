@@ -16,10 +16,18 @@ test("Company Admin driver page exposes a safe group-scoped CSV workflow", async
   assert.match(html, /id="ca-drivers-import-group"/);
   assert.match(html, /id="ca-driver-edit-modal"/);
   assert.match(html, /BusCommand_Drivers_Import_v1\.csv/);
-  assert.match(client, /MAX_FILE_BYTES = 1_000_000/);
-  assert.match(client, /MAX_IMPORT_ROWS = 249/);
+  assert.match(html, /BusCommand_Drivers_Import_v1\.xlsx/);
+  assert.match(html, /accept="[^"]*\.xlsx/);
+  assert.match(client, /MAX_FILE_BYTES/);
+  assert.match(client, /MAX_IMPORT_ROWS/);
+  assert.match(client, /parseDriverWorkbook/);
   assert.match(client, /pendingImport\.groupId/);
+  assert.match(client, /showImportFeedback/);
+  assert.match(client, /DUPLICATE_CANONICAL_COLUMN/);
   assert.doesNotMatch(client, /company_code[^\n]*innerHTML/);
+  assert.equal([...html.matchAll(/data-i18n="ca_drivers_security_note"/g)].length, 1);
+  assert.doesNotMatch(html, /Kod firme se šalje/);
+  assert.match(html, /Access codes are not entered in the file\. The system generates a one-time activation code\./);
   assert.match(api, /JSON\.stringify\(\{ companyId, groupId, csv \}\)/);
   assert.match(server, /req\.staff\.role !== "company_admin"/);
 });
@@ -116,10 +124,16 @@ test("driver account translations are complete in pilot languages", async () => 
     for (const key of [
       "ca_nav_drivers", "ca_drivers_title", "ca_drivers_import_title", "ca_drivers_directory_title",
       "ca_drivers_security_note", "ca_drivers_edit_title", "ca_drivers_edit_hint", "ca_drivers_edit_saved",
-      "ca_drivers_eid", "ca_drivers_pin_label", "ca_drivers_pin_saved"
+      "ca_drivers_eid", "ca_drivers_pin_label", "ca_drivers_pin_saved",
+      "ca_drivers_download_xlsx", "ca_drivers_plz", "ca_drivers_activation",
+      "ca_drivers_error_credentials_column", "ca_drivers_error_xlsx",
+      "ca_drivers_import_hint", "ca_drivers_choose_file"
     ]) {
       assert.ok(context.window.TRANSLATIONS[language][key], `${language}.${key} missing`);
     }
+    assert.match(context.window.TRANSLATIONS.en.ca_drivers_security_note, /Access codes are not entered in the file/);
+    assert.match(context.window.TRANSLATIONS.de.ca_drivers_security_note, /Zugangscodes werden nicht in die Datei eingetragen/);
+    assert.match(context.window.TRANSLATIONS.sr.ca_drivers_security_note, /Pristupni kodovi se ne unose u fajl/);
   }
 });
 

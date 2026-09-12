@@ -2,6 +2,8 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const {
   parseServiceAccountJson,
   validateHttpsPublicOrigin,
@@ -194,6 +196,16 @@ test("development/production contracts remain available without staging requirem
   assert.equal(prod.hasFirebase, false);
 });
 
+test("api-server validates runtime before heavy route imports and listen", () => {
+  const src = fs.readFileSync(path.join(__dirname, "../../api-server.js"), "utf8");
+  const gate = src.indexOf("validateRuntimeBeforeListen");
+  const routes = src.indexOf('require("./server/driver-routes")');
+  const listen = src.indexOf("app.listen(");
+  assert.ok(gate > 0 && routes > gate, "credential gate must run before driver-routes");
+  assert.ok(listen > routes, "listen must stay after route registration");
+  assert.match(src, /process\.exit\(1\)/);
+});
+
 test("api-server process exits before listen on staging credential failure", async () => {
   const { spawn } = require("node:child_process");
   const path = require("node:path");
@@ -206,18 +218,31 @@ test("api-server process exits before listen on staging credential failure", asy
       NODE_ENV: "production",
       BUSCOMMAND_ENV: "staging",
       CORS_ORIGINS: STAGING_ORIGIN,
-      APP_PUBLIC_URL: STAGING_ORIGIN
+      APP_PUBLIC_URL: STAGING_ORIGIN,
+      // Parent shells may still hold Playwright/QA flags. Blank them so this
+      // spawn actually exercises missing staging credentials, not QA bypass.
+      BUSCOMMAND_QA_HARNESS: "",
+      BUSCOMMAND_FORCE_SMS_STUB: "",
+      FIRESTORE_EMULATOR_HOST: "",
+      FIREBASE_AUTH_EMULATOR_HOST: "",
+      PLAYWRIGHT_TEST: "",
+      PW_TEST: "",
+      FIREBASE_SERVICE_ACCOUNT_JSON: "",
+      GOOGLE_APPLICATION_CREDENTIALS: ""
     },
     stdio: ["ignore", "pipe", "pipe"]
   });
   let stderr = "";
   child.stderr.on("data", (chunk) => { stderr += String(chunk); });
   const code = await new Promise((resolve) => {
-    child.on("exit", (exitCode) => resolve(exitCode));
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       child.kill("SIGTERM");
       resolve(-1);
     }, 8000);
+    child.on("exit", (exitCode) => {
+      clearTimeout(timer);
+      resolve(exitCode);
+    });
   });
   assert.equal(code, 1);
   assert.match(stderr, /Runtime configuration invalid/);

@@ -21,7 +21,8 @@ test("D24.2.1-A: import path does not hash company_code or pass bcryptCompare", 
   assert.doesNotMatch(importSlice, /companyCodePlain/);
   assert.doesNotMatch(importSlice, /bcryptCompare/);
   assert.doesNotMatch(importSlice, /COMPANY_CODE_EXISTS/);
-  assert.match(importSlice, /legacyCompanyCodeIgnored/);
+  assert.match(importSlice, /generateActivationOtp/);
+  assert.doesNotMatch(importSlice, /legacyCompanyCodeIgnored/);
 });
 
 test("D24.2.1-A: guard commit has no company-code / bcrypt in tx contract", () => {
@@ -35,20 +36,23 @@ test("D24.2.1-A: guard commit has no company-code / bcrypt in tx contract", () =
   assert.doesNotMatch(guard, /bcryptCompare/);
 });
 
-test("D24.2.1-A: legacy CSV company_code column parses but value is cleared", () => {
-  const csv = "eid,first_name,last_name,phone,email,company_code\nE1,Ana,Ivic,+431,a@x.com,SECRETCODE\n";
-  const drivers = parseDriverCsv(csv);
-  assert.equal(drivers.legacyCompanyCodeIgnored, true);
-  assert.equal(drivers.length, 1);
-  assert.equal(drivers[0].company_code, "");
-  assert.equal(drivers[0].eid, "E1");
+test("D24.2.1-A: credential CSV columns are rejected fail-closed", () => {
+  const csv = "eid,last_name,first_name,email,phone,postal_code,company_code\nE1,Ivic,Ana,a@x.invalid,+431,1010,SECRETCODE\n";
+  assert.throws(
+    () => parseDriverCsv(csv),
+    (error) => {
+      assert.equal(error.code, "CREDENTIAL_COLUMNS_FORBIDDEN");
+      assert.doesNotMatch(error.message, /SECRETCODE/);
+      return true;
+    }
+  );
 });
 
 test("D24.2.1-A: official CSV without company_code still parses", () => {
-  const csv = "eid,first_name,last_name,phone,email\nE2,Bob,Ivic,+432,b@x.com\n";
+  const csv = "eid,last_name,first_name,email,phone,postal_code\nE2,Ivic,Bob,b@x.invalid,+43100000000,1010\n";
   const drivers = parseDriverCsv(csv);
-  assert.equal(drivers.legacyCompanyCodeIgnored, false);
   assert.equal(drivers[0].eid, "E2");
+  assert.equal(drivers[0].postal_code, "1010");
 });
 
 test("D24.2.1-A: template has no company_code column", () => {
@@ -56,8 +60,8 @@ test("D24.2.1-A: template has no company_code column", () => {
     path.join(root, "public", "templates", "BusCommand_Drivers_Import_v1.csv"),
     "utf8"
   );
-  assert.match(tpl, /^eid,first_name,last_name,phone,email\s*$/m);
-  assert.doesNotMatch(tpl, /company_code/);
+  assert.match(tpl, /eid,last_name,first_name,email,phone,postal_code/);
+  assert.doesNotMatch(tpl, /company_code|Initial_PIN/i);
 });
 
 test("D24.2.1-A: i18n legacy notice exists for de/en/sr", () => {

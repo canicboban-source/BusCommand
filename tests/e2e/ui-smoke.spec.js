@@ -352,21 +352,21 @@ test.describe("UI smoke", () => {
       name: "drivers-e2e.csv",
       mimeType: "text/csv",
       buffer: Buffer.from([
-        "eid,first_name,last_name,phone,email,company_code",
-        "E2E-001,Ana,Jovanovic,+43660000001,ana.jovanovic@example.com,TEST-001",
-        "E2E-002,Marko,Petrovic,+43660000002,marko.petrovic@example.com,TEST-002"
+        "eid,last_name,first_name,email,phone,postal_code",
+        "E2E-001,Jovanovic,Ana,ana.jovanovic@example.invalid,+43660000001,1010",
+        "E2E-002,Petrovic,Marko,marko.petrovic@example.invalid,+43660000002,1020"
       ].join("\n"))
     });
     await expect(page.locator("#ca-drivers-import-preview tbody tr")).toHaveCount(2);
-    await expect(page.locator("#ca-drivers-import-preview")).not.toContainText("BC-ANA-2026");
+    await expect(page.locator("#ca-drivers-import-preview")).toContainText("1010");
     await expect(page.locator("#ca-drivers-import-preview")).not.toContainText("TEST-001");
-    await expect(page.locator(".company-drivers-legacy-notice")).toBeVisible();
+    await expect(page.locator(".company-drivers-legacy-notice")).toHaveCount(0);
     await page.locator("#ca-drivers-import-preview .company-drivers-import-button").click();
     await expect(page.locator("#ca-drivers-stat-total")).toHaveText("3");
 
     await page.locator("#ca-drivers-search").fill("Ana Jovanovic");
     await expect(page.locator("#ca-drivers-directory tbody tr")).toHaveCount(1);
-    await expect(page.locator("#ca-drivers-directory")).toContainText("ana.jovanovic@example.com");
+    await expect(page.locator("#ca-drivers-directory")).toContainText("ana.jovanovic@example.invalid");
 
     await page.locator("#ca-drivers-search").fill("");
     // Seed driver starts active (assignment E2E); deactivate explicitly to exercise inactive filter.

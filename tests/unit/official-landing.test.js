@@ -20,7 +20,8 @@ test("official landing source is the rich presentation, not a two-button card", 
     'data-lang="en"',
     "/downloads/BusCommand_Technical_Security_Audit.html",
     "/downloads/BusCommand_Monthly_Shift_Plan_Template.csv",
-    "/downloads/BusCommand_Fleet_Vehicles_Template.csv",
+    "/downloads/BusCommand_Driver_Roster_Template.csv",
+    "/downloads/BusCommand_Driver_Roster_Template.xlsx",
     "/downloads/BusCommand_DPA_GDPR_Article_28.html",
     'href="/staff"',
     'href="/driver"',
@@ -490,4 +491,30 @@ test("public CTA and incident labels have an explicit SR/EN/DE contract", () => 
   assert.match(src, /data-i18n-title="navStaffBtn"/);
   assert.match(src, /id="nav-driver-btn"[^>]*href="\/driver"|href="\/driver"[^>]*id="nav-driver-btn"/);
   assert.match(src, /id="nav-staff-btn"[^>]*href="\/staff"|href="\/staff"[^>]*id="nav-staff-btn"/);
+});
+
+test("landing Downloads card 5 is driver import CSV+XLSX in SR/EN/DE", () => {
+  const src = fs.readFileSync(LANDING_SRC, "utf8");
+  const m = src.match(/const translations = ({[\s\S]*?});\s*function setLanguage/);
+  assert.ok(m, "translations object missing in source");
+  const translations = (new Function(`return ${m[1]}`))();
+  assert.equal(translations.sr.dlCard5Title, "Uvoz vozača");
+  assert.equal(
+    translations.sr.dlCard5Desc,
+    "CSV i XLSX šabloni za bezbedan unos vozača. Pristupni kodovi se ne unose u fajl."
+  );
+  assert.equal(translations.en.dlCard5Title, "Driver Import");
+  assert.equal(
+    translations.en.dlCard5Desc,
+    "CSV and XLSX templates for secure driver onboarding. Access codes are never imported from files."
+  );
+  assert.equal(translations.de.dlCard5Title, "Fahrerimport");
+  assert.equal(
+    translations.de.dlCard5Desc,
+    "CSV- und XLSX-Vorlagen für die sichere Fahreranlage. Zugangscodes werden niemals aus Dateien importiert."
+  );
+  assert.match(src, /id="dl-card5-title"/);
+  assert.match(src, /id="dl-card5-xlsx"/);
+  assert.match(src, /href="\/downloads\/BusCommand_Driver_Roster_Template\.xlsx"/);
+  assert.match(src, /href="\/downloads\/BusCommand_Driver_Roster_Template\.csv"/);
 });

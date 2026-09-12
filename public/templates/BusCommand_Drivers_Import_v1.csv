@@ -1,1 +1,2 @@
-eid,first_name,last_name,phone,email
+﻿eid,last_name,first_name,email,phone,postal_code
+EMP-001,Sample,Driver,driver01@example.invalid,+43100000000,1010

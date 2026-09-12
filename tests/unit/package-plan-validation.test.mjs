@@ -60,6 +60,9 @@ test("package import exposes only verified CSV/XLSX formats and separates dispat
     const hub = readFileSync(join(root, "js/dispatcher/data-hub.js"), "utf8");
     assert.match(html, /id="package-import-files"[^>]*accept="\.csv,\.xlsx"/);
     assert.doesNotMatch(html, /id="package-import-files"[^>]*accept="[^"]*\.xls(?:,|")/);
-    assert.match(importer, /pkg_driver_csv_admin_only/);
-    assert.match(hub, /import_plan_only_title/);
+  assert.match(importer, /pkg_driver_csv_admin_only/);
+  assert.match(importer, /driver-import-contract/);
+  assert.match(importer, /CREDENTIAL_COLUMNS_FORBIDDEN/);
+  assert.doesNotMatch(importer, /pin:\s*d\.pin/);
+  assert.match(hub, /import_plan_only_title/);
 });

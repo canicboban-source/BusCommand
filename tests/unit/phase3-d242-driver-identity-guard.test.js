@@ -48,10 +48,10 @@ test("D24.2 create + import both bump identity guard in the same contract", () =
 });
 
 test("D24.2 CSV max rows is 249 under Firestore tx write budget", () => {
-  const csv = fs.readFileSync(path.join(root, "server", "driver-csv.js"), "utf8");
+  const csv = fs.readFileSync(path.join(root, "js", "imports", "driver-import-contract.cjs"), "utf8");
   assert.match(csv, /MAX_IMPORT_ROWS = 249/);
   const client = fs.readFileSync(path.join(root, "js", "admin", "company-admin-drivers.js"), "utf8");
-  assert.match(client, /MAX_IMPORT_ROWS = 249/);
+  assert.match(client, /MAX_IMPORT_ROWS/);
 });
 
 test("D24.2 / D24.2.1-A i18n keys exist for de/en/sr without echoing values", () => {

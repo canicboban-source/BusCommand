@@ -5,11 +5,31 @@
 
 require("./server/load-env").loadEnvFile();
 
+const fs   = require("fs");
+const path = require("path");
+
+const SERVICE_ACCOUNT_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS
+  ? path.resolve(process.env.GOOGLE_APPLICATION_CREDENTIALS)
+  : path.join(__dirname, "firebase-admin-key.json");
+const SERVICE_ACCOUNT_JSON = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+
+const { validateRuntimeBeforeListen } = require("./server/runtime-isolation");
+
+let runtimeValidation;
+try {
+  runtimeValidation = validateRuntimeBeforeListen(process.env, {
+    keyFileExists: fs.existsSync(SERVICE_ACCOUNT_PATH)
+  });
+} catch (err) {
+  // Fail-fast before Express, Firebase Admin, route imports, schedulers, or listen.
+  // process.exit(1) is safe here: no sockets or background handles exist yet.
+  console.error("Runtime configuration invalid:", err.code || "runtime-config-invalid");
+  process.exit(1);
+}
+
 const express = require("express");
 const bcrypt  = require("bcrypt");
 const crypto  = require("crypto");
-const path    = require("path");
-const fs      = require("fs");
 const cors    = require("cors");
 const os      = require("os");
 const helmet  = require("helmet");
@@ -97,23 +117,8 @@ const {
 const { version: APP_VERSION } = require("./package.json");
 
 const PORT = Number(process.env.PORT) || 8766;
-const SERVICE_ACCOUNT_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS
-  ? path.resolve(process.env.GOOGLE_APPLICATION_CREDENTIALS)
-  : path.join(__dirname, "firebase-admin-key.json");
-const SERVICE_ACCOUNT_JSON = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
 
 const { evaluateCorsOrigin } = require("./server/cors-policy");
-const { validateRuntimeBeforeListen } = require("./server/runtime-isolation");
-
-let runtimeValidation;
-try {
-  runtimeValidation = validateRuntimeBeforeListen(process.env, {
-    keyFileExists: fs.existsSync(SERVICE_ACCOUNT_PATH)
-  });
-} catch (err) {
-  console.error("Runtime configuration invalid:", err.code || "runtime-config-invalid");
-  process.exit(1);
-}
 
 const corsPolicy = runtimeValidation.corsPolicy;
 const HAS_FIREBASE = runtimeValidation.hasFirebase;
