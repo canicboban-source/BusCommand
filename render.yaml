@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: buscommand-preview
+    name: buscommand
     runtime: node
     plan: free
     region: frankfurt
