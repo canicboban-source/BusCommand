@@ -432,6 +432,7 @@ function safeProfilePayload(driver, groupId, companyId, createdAt) {
     lastName: driver.last_name,
     phone: driver.phone,
     email: driver.email,
+    postalCode: String(driver.postal_code || driver.postalCode || "").trim().slice(0, 10),
     groupId: home,
     lineId: home,
     // knownGroupIds = CA metadata (D18); home always included. Not a Dispo Firestore directory grant.
@@ -1397,10 +1398,9 @@ function registerDriverRoutes(app, deps) {
     if (req.staff.role !== "company_admin") return res.status(403).json({ success: false, error: "Samo administrator firme može uvoziti vozačke naloge." });
     try {
       const drivers = parseDriverCsv(parsed.data.csv);
-      const legacyCompanyCodeIgnored = drivers.legacyCompanyCodeIgnored === true;
       const FieldValue = admin().firestore.FieldValue;
       // OTP hashes prepared outside the tx; EID uniqueness + writes use D24.2 guard.
-      // D24.2.1-A: CSV company_code is ignored — never hashed or written.
+      // Credential columns are rejected by parseDriverCsv (never hashed or written).
       const preparedRows = await Promise.all(drivers.map(async (driver) => {
         const otp = generateActivationOtp();
         const driverId = crypto.randomUUID();
@@ -1486,20 +1486,27 @@ function registerDriverRoutes(app, deps) {
         count: drivers.length,
         groupId: parsed.data.groupId,
         smsProvider: smsProvider.mode,
-        smsQueued: smsResults.filter((row) => row.status === "stub_queued" || row.status === "sent").length,
-        legacyCompanyCodeIgnored
+        smsQueued: smsResults.filter((row) => row.status === "stub_queued" || row.status === "sent").length
       });
       return res.status(201).json({
         success: true,
         imported: drivers.length,
-        legacyCompanyCodeIgnored,
         activation: {
           otpTtlHours: 24,
           smsProvider: smsProvider.mode,
           deliveries: smsResults
         }
       });
-    } catch (error) { return res.status(400).json({ success: false, error: error.message }); }
+    } catch (error) {
+      const code = error.code || (error.message === "Pristupni kodovi se ne uvoze fajlom."
+        ? "CREDENTIAL_COLUMNS_FORBIDDEN"
+        : undefined);
+      return res.status(400).json({
+        success: false,
+        error: error.message,
+        ...(code ? { code } : {})
+      });
+    }
   });
 
   app.post("/api/staff/drivers/:driverId/resend-activation", rateLimit(8, 10 * 60_000), requireStaff, async (req, res) => {

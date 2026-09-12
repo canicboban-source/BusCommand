@@ -977,9 +977,14 @@
                             <h2><i data-lucide="contact-round" class="section-title-icon"></i> <span data-i18n="ca_drivers_title">Vozački nalozi</span></h2>
                             <p class="subtitle" data-i18n="ca_drivers_subtitle">Uvoz, pregled i kontrola pristupa vozača. Raspored smena ostaje u nadležnosti dispečera.</p>
                         </div>
-                        <a class="btn-secondary" href="/templates/BusCommand_Drivers_Import_v1.csv" download>
-                            <i data-lucide="file-down"></i> <span data-i18n="ca_drivers_download_template">Preuzmi CSV šablon</span>
-                        </a>
+                        <div class="company-drivers-template-links">
+                            <a class="btn-secondary" href="/templates/BusCommand_Drivers_Import_v1.csv" download>
+                                <i data-lucide="file-down"></i> <span data-i18n="ca_drivers_download_template">Preuzmi CSV šablon</span>
+                            </a>
+                            <a class="btn-secondary" href="/templates/BusCommand_Drivers_Import_v1.xlsx" download>
+                                <i data-lucide="file-spreadsheet"></i> <span data-i18n="ca_drivers_download_xlsx">Preuzmi XLSX šablon</span>
+                            </a>
+                        </div>
                     </div>
 
                     <div class="company-drivers-summary" aria-label="Sažetak vozačkih naloga">
@@ -1010,9 +1015,9 @@
                         <div class="card company-drivers-import-card">
                             <div class="company-drivers-card-heading">
                                 <div>
-                                    <span class="service-plan-kicker" data-i18n="ca_drivers_import_kicker">CSV UVOZ</span>
+                                    <span class="service-plan-kicker" data-i18n="ca_drivers_import_kicker">CSV / XLSX UVOZ</span>
                                     <h3 data-i18n="ca_drivers_import_title">Uvezite vozače u izabranu grupu</h3>
-                                    <p data-i18n="ca_drivers_import_hint">Prihvata BusCommand CSV i pilot format (ime_prezime;firma_id;licni_kod_za_app;…). Izaberite grupu kao rezervu; ako CSV ima kolonu grupa koja odgovara postojećoj liniji, koristi se ona.</p>
+                                    <p data-i18n="ca_drivers_import_hint">Prihvata CSV i XLSX: EID, prezime, ime, email, telefon, PLZ. PIN i aktivacioni kodovi se ne unose u fajl. Sistem šalje jednokratni aktivacioni kod.</p>
                                 </div>
                                 <i data-lucide="shield-check" aria-hidden="true"></i>
                             </div>
@@ -1024,11 +1029,11 @@
                             </label>
                             <label class="company-drivers-dropzone" for="ca-drivers-import-file" id="ca-drivers-dropzone">
                                 <i data-lucide="file-spreadsheet" aria-hidden="true"></i>
-                                <strong data-i18n="ca_drivers_choose_file">Izaberi CSV fajl</strong>
-                                <span data-i18n="ca_drivers_file_rules">UTF-8 CSV · najviše 1 MB · do 250 vozača</span>
+                                <strong data-i18n="ca_drivers_choose_file">Izaberi CSV ili XLSX fajl</strong>
+                                <span data-i18n="ca_drivers_file_rules">CSV ili XLSX · najviše 1 MB · do 249 vozača</span>
                             </label>
-                            <input type="file" id="ca-drivers-import-file" accept=".csv,text/csv" hidden data-change-action="handleCompanyDriversFile" data-change-pass="event">
-                            <p class="company-drivers-security-note"><i data-lucide="lock-keyhole"></i> <span data-i18n="ca_drivers_security_note">Kod firme se šalje direktno serveru, čuva se samo kao hash i nikada se ne prikazuje nakon uvoza.</span></p>
+                            <input type="file" id="ca-drivers-import-file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden data-change-action="handleCompanyDriversFile" data-change-pass="event">
+                            <p class="company-drivers-security-note"><i data-lucide="lock-keyhole"></i> <span data-i18n="ca_drivers_security_note">Access codes are not entered in the file. The system generates a one-time activation code.</span></p>
                             <div id="ca-drivers-import-preview" aria-live="polite"></div>
                         </div>
                         </div>

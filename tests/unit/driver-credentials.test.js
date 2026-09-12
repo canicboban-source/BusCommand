@@ -22,6 +22,8 @@ test("new import payload splits safe profile from OTP activation credentials", a
   for (const field of SENSITIVE_DRIVER_FIELDS) assert.equal(Object.hasOwn(profile, field), false);
   assert.equal(profile.groupId, "310");
   assert.equal(profile.companyId, "alpha");
+  assert.equal(profile.postalCode, "");
+  assert.equal(profile.codeActivated, false);
   assert.equal(credentials.loginCodeHash, undefined);
   assert.equal(credentials.activationUsedAt, null);
   assert.match(credentials.activationCodeHash, /^\$2[aby]\$12\$/);

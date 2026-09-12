@@ -39,6 +39,7 @@ test("company admin UI accepts versioned XLSX CSV and structured PDF without bun
   assert.match(html, /\/templates\/BusCommand_Dienstplan_Blank_v1\.xlsx/);
   assert.match(html, /\/templates\/BusCommand_Dienstplan_Blank_v1\.csv/);
   assert.match(html, /\/templates\/BusCommand_Drivers_Import_v1\.csv/);
+  assert.match(html, /\/templates\/BusCommand_Drivers_Import_v1\.xlsx/);
   assert.match(module, /ApiClient\.previewServicePlan/);
   assert.match(module, /ApiClient\.publishServicePlan/);
   assert.match(module, /ApiClient\.activateServicePlan/);

@@ -13,28 +13,69 @@ import { closeModal, showModal } from "../ui/modals.js";
 import { t, tp } from "../ui/i18n.js";
 import { icon, tx } from "../ui/markup.js";
 import { rowActionsMenuHtml } from "../ui/row-actions-menu.js";
+import { ensureXlsx } from "../core/office-parsers.js";
 
 const MAX_FILE_BYTES = 1_000_000;
-/** Keep in sync with server/driver-csv.js (D24.2 guard tx write budget). */
+/** Keep in sync with js/imports/driver-import-contract.cjs (D24.2 guard tx write budget). */
 const MAX_IMPORT_ROWS = 249;
 const PAGE_SIZE = 25;
-const REQUIRED_CORE = ["eid", "phone", "email"];
-const HEADER_ALIASES = Object.freeze({
-    eid: ["eid", "employee_id", "employeeid", "personalnummer", "mitarbeiternummer", "maticni_broj", "maticni broj", "broj_zaposlenog", "firma_id", "firm_id"],
-    first_name: ["first_name", "firstname", "vorname", "ime"],
-    last_name: ["last_name", "lastname", "nachname", "prezime"],
-    full_name: ["ime_prezime", "name", "vozac", "vozač", "full_name", "fullname"],
-    phone: ["phone", "telephone", "telefon", "telefonnummer"],
-    email: ["email", "e-mail", "e_mail"],
-    // Legacy CSV company_code column is accepted but ignored (D24.2.1-A).
-    // NEVER alias pin/login_code here — personal login codes are set after SMS OTP.
-    company_code: [
-        "company_code", "companycode", "firmencode", "firmen_code", "firmin_kod", "firmin kod", "kod_firme"
-    ],
-    group: ["grupa", "grupa_csv", "group", "group_id", "groupid", "linie", "line", "linija"]
-});
+
+async function loadDriverImportContract() {
+    const mod = await import("../imports/driver-import-contract.cjs");
+    return mod.default || mod;
+}
+
+function importErrorMessage(error) {
+    const code = error?.code || "";
+    const map = {
+        EMPTY: "ca_drivers_error_empty",
+        NO_ROWS: "ca_drivers_error_no_rows",
+        TOO_MANY: "ca_drivers_error_too_many",
+        CREDENTIAL_COLUMNS_FORBIDDEN: "ca_drivers_error_credentials_column",
+        MISSING_COLUMNS: "ca_drivers_error_columns",
+        REQUIRED_FIELD: "ca_drivers_error_required",
+        INVALID_EMAIL: "ca_drivers_error_email",
+        INVALID_PHONE: "ca_drivers_error_phone",
+        DUPLICATE_EID: "ca_drivers_error_duplicate",
+        DUPLICATE_CANONICAL_COLUMN: "ca_drivers_error_duplicate",
+        UNCLOSED_QUOTE: "ca_drivers_error_unclosed_quote",
+        FORMULA_FORBIDDEN: "ca_drivers_error_xlsx",
+        MACRO_FORBIDDEN: "ca_drivers_error_xlsx",
+        HIDDEN_SHEET_FORBIDDEN: "ca_drivers_error_xlsx",
+        XLSX_INVALID: "ca_drivers_error_xlsx",
+        XLSX_UNAVAILABLE: "ca_drivers_error_xlsx"
+    };
+    if (code === "TOO_MANY") return t(map[code], { count: MAX_IMPORT_ROWS });
+    if (code === "MISSING_COLUMNS") {
+        const columns = String(error.message || "").replace(/^Nedostaju kolone:\s*/i, "").replace(/\.$/, "");
+        return t("ca_drivers_error_columns", { columns });
+    }
+    if (code === "REQUIRED_FIELD") {
+        const match = /Red (\d+): (\w+)/i.exec(error.message || "");
+        if (match) return t("ca_drivers_error_required", { row: match[1], field: match[2] });
+    }
+    if (code === "INVALID_EMAIL") {
+        const match = /Red (\d+)/i.exec(error.message || "");
+        if (match) return t("ca_drivers_error_email", { row: match[1] });
+    }
+    if (code === "INVALID_PHONE") {
+        const match = /Red (\d+)/i.exec(error.message || "");
+        if (match) return t("ca_drivers_error_phone", { row: match[1] });
+    }
+    if (code === "DUPLICATE_EID") {
+        const match = /redu (\d+)/i.exec(error.message || "");
+        return t("ca_drivers_error_duplicate", { field: "eid", row: match?.[1] || "" });
+    }
+    if (code === "DUPLICATE_CANONICAL_COLUMN") {
+        const match = /Duplikat kolone:\s*(\w+)/i.exec(error.message || "");
+        return t("ca_drivers_error_duplicate", { field: match?.[1] || "column", row: "1" });
+    }
+    if (map[code]) return t(map[code]);
+    return error?.message || t("error_generic");
+}
 
 let pendingImport = null;
+let importFeedbackToast = null;
 let currentPage = 1;
 let importPending = false;
 let editSavePending = false;
@@ -42,118 +83,15 @@ let driversFilterTimer = null;
 const statusPending = new Set();
 const recentlyDeletedIds = new Map();
 
-function normalizeHeader(value) {
-    return String(value || "").replace(/^\uFEFF/, "").trim().toLowerCase();
+async function parseCompanyDriversCsv(text) {
+    const { parseDriverCsv } = await loadDriverImportContract();
+    return parseDriverCsv(text);
 }
 
-function detectDelimiter(line) {
-    const counts = { ",": 0, ";": 0, "\t": 0 };
-    let quoted = false;
-    for (let index = 0; index < line.length; index += 1) {
-        if (line[index] === '"') {
-            if (quoted && line[index + 1] === '"') index += 1;
-            else quoted = !quoted;
-        } else if (!quoted && Object.hasOwn(counts, line[index])) {
-            counts[line[index]] += 1;
-        }
-    }
-    return Object.entries(counts).sort((left, right) => right[1] - left[1])[0][0];
-}
-
-function parseCsvRows(text, delimiter) {
-    const rows = [];
-    let row = [];
-    let field = "";
-    let quoted = false;
-    for (let index = 0; index < text.length; index += 1) {
-        const character = text[index];
-        if (character === '"') {
-            if (quoted && text[index + 1] === '"') {
-                field += '"';
-                index += 1;
-            } else quoted = !quoted;
-        } else if (!quoted && character === delimiter) {
-            row.push(field);
-            field = "";
-        } else if (!quoted && (character === "\n" || character === "\r")) {
-            if (character === "\r" && text[index + 1] === "\n") index += 1;
-            row.push(field);
-            field = "";
-            if (row.some((cell) => cell.trim())) rows.push(row);
-            row = [];
-        } else field += character;
-    }
-    if (quoted) throw new Error(t("ca_drivers_error_unclosed_quote"));
-    row.push(field);
-    if (row.some((cell) => cell.trim())) rows.push(row);
-    return rows;
-}
-
-function splitFullName(name) {
-    const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
-    if (!parts.length) return { first_name: "", last_name: "" };
-    if (parts.length === 1) return { first_name: parts[0], last_name: parts[0] };
-    return {
-        first_name: parts.slice(0, -1).join(" "),
-        last_name: parts[parts.length - 1]
-    };
-}
-
-function parseCompanyDriversCsv(text) {
-    if (typeof text !== "string" || !text.trim()) throw new Error(t("ca_drivers_error_empty"));
-    const delimiter = detectDelimiter(text.split(/\r?\n/, 1)[0]);
-    const rows = parseCsvRows(text, delimiter);
-    if (rows.length < 2) throw new Error(t("ca_drivers_error_no_rows"));
-    if (rows.length - 1 > MAX_IMPORT_ROWS) throw new Error(t("ca_drivers_error_too_many", { count: MAX_IMPORT_ROWS }));
-
-    const lookup = new Map();
-    Object.entries(HEADER_ALIASES).forEach(([canonical, aliases]) => {
-        aliases.forEach((alias) => lookup.set(normalizeHeader(alias), canonical));
-    });
-    const headers = rows[0].map((header) => lookup.get(normalizeHeader(header)) || null);
-    const legacyCompanyCodeIgnored = headers.includes("company_code");
-    const hasNames = headers.includes("first_name") && headers.includes("last_name");
-    const hasFullName = headers.includes("full_name");
-    const missing = REQUIRED_CORE.filter((key) => !headers.includes(key));
-    if (!hasNames && !hasFullName) missing.push("first_name/last_name|ime_prezime");
-    if (missing.length) throw new Error(t("ca_drivers_error_columns", { columns: missing.join(", ") }));
-
-    const drivers = rows.slice(1).map((cells, rowIndex) => {
-        const raw = {};
-        headers.forEach((key, columnIndex) => {
-            if (key) raw[key] = String(cells[columnIndex] || "").trim();
-        });
-        let firstName = raw.first_name || "";
-        let lastName = raw.last_name || "";
-        if ((!firstName || !lastName) && raw.full_name) {
-            const split = splitFullName(raw.full_name);
-            firstName = firstName || split.first_name;
-            lastName = lastName || split.last_name;
-        }
-        const driver = {
-            eid: raw.eid || "",
-            first_name: firstName,
-            last_name: lastName,
-            phone: raw.phone || "",
-            email: raw.email || "",
-            company_code: "",
-            group: raw.group || ""
-        };
-        const missingValue = ["eid", "first_name", "last_name", "phone", "email"]
-            .find((key) => !driver[key]);
-        if (missingValue) throw new Error(t("ca_drivers_error_required", { row: rowIndex + 2, field: missingValue }));
-        if (!/^\S+@\S+\.\S+$/.test(driver.email)) throw new Error(t("ca_drivers_error_email", { row: rowIndex + 2 }));
-        return driver;
-    });
-
-    const seen = new Set();
-    drivers.forEach((driver, index) => {
-        const value = String(driver.eid || "").toLowerCase();
-        if (!value) return;
-        if (seen.has(value)) throw new Error(t("ca_drivers_error_duplicate", { field: "eid", row: index + 2 }));
-        seen.add(value);
-    });
-    return { drivers, delimiter, legacyCompanyCodeIgnored };
+function showImportFeedback(message, type = "success", duration = 4000) {
+    if (importFeedbackToast?.remove) importFeedbackToast.remove();
+    importFeedbackToast = showToast(message, type, duration) || null;
+    return importFeedbackToast;
 }
 
 function resolveDriverGroupId(groupValue, fallbackGroupId) {
@@ -443,9 +381,10 @@ function renderImportPreview() {
     const rows = pendingImport.drivers.slice(0, 8).map((driver) => `
         <tr>
             <td>${escapeHtml(driver.eid)}</td>
-            <td><strong>${escapeHtml(`${driver.first_name} ${driver.last_name}`)}</strong></td>
+            <td><strong>${escapeHtml(`${driver.last_name} ${driver.first_name}`)}</strong></td>
             <td>${escapeHtml(driver.email)}</td>
             <td>${escapeHtml(driver.phone)}</td>
+            <td>${escapeHtml(driver.postal_code || "—")}</td>
             <td><span class="company-driver-code-ready">${icon("message-square-lock")}${t("ca_drivers_activation_ready")}</span></td>
         </tr>`).join("");
     container.innerHTML = `
@@ -453,12 +392,9 @@ function renderImportPreview() {
             <div><strong>${escapeHtml(pendingImport.fileName)}</strong><span>${tp("ca_drivers_preview_summary", pendingImport.drivers.length, { count: pendingImport.drivers.length, group: group?.name || pendingImport.groupId })}</span></div>
             <button type="button" class="btn-icon-nav" ${actionAttr("clearCompanyDriversImport")} aria-label="${tx("ca_drivers_clear_import")}" title="${tx("ca_drivers_clear_import")}">${icon("x")}</button>
         </div>
-        ${pendingImport.legacyCompanyCodeIgnored
-        ? `<p class="company-drivers-legacy-notice" role="status">${tx("ca_drivers_legacy_company_code_ignored")}</p>`
-        : ""}
         <div class="company-drivers-table-wrap">
             <table class="company-drivers-table">
-                <thead><tr><th>EID</th><th>${t("ca_drivers_name")}</th><th>Email</th><th>${t("ca_drivers_phone")}</th><th>${t("ca_drivers_activation")}</th></tr></thead>
+                <thead><tr><th>EID</th><th>${t("ca_drivers_name")}</th><th>Email</th><th>${t("ca_drivers_phone")}</th><th>${t("ca_drivers_plz")}</th><th>${t("ca_drivers_activation")}</th></tr></thead>
                 <tbody>${rows}</tbody>
             </table>
         </div>
@@ -598,28 +534,40 @@ async function handleCompanyDriversFile(event) {
     if (!file) return;
     const groupId = String(document.getElementById("ca-drivers-import-group")?.value || "");
     if (!groupId) {
-        showToast(t("ca_drivers_select_group"), "error");
+        showImportFeedback(t("ca_drivers_select_group"), "error");
         return;
     }
-    if (!file.name.toLowerCase().endsWith(".csv") || file.size > MAX_FILE_BYTES) {
-        showToast(file.size > MAX_FILE_BYTES ? t("ca_drivers_file_too_large") : t("ca_drivers_file_type"), "error");
+    const name = String(file.name || "").toLowerCase();
+    const isCsv = name.endsWith(".csv");
+    const isXlsx = name.endsWith(".xlsx");
+    if ((!isCsv && !isXlsx) || file.size > MAX_FILE_BYTES) {
+        showImportFeedback(file.size > MAX_FILE_BYTES ? t("ca_drivers_file_too_large") : t("ca_drivers_file_type"), "error");
         return;
     }
     try {
-        const text = await file.text();
-        const parsed = parseCompanyDriversCsv(text);
-        pendingImport = { ...parsed, csv: text, groupId, fileName: file.name };
+        const { parseDriverCsv, parseDriverWorkbook } = await loadDriverImportContract();
+        let drivers;
+        if (isXlsx) {
+            const XLSX = await ensureXlsx();
+            const bytes = new Uint8Array(await file.arrayBuffer());
+            drivers = parseDriverWorkbook(XLSX, bytes);
+        } else {
+            drivers = parseDriverCsv(await file.text());
+        }
+        pendingImport = { drivers, groupId, fileName: file.name };
         renderImportPreview();
-        showToast(tp("ca_drivers_preview_ready", parsed.drivers.length, { count: parsed.drivers.length }), "success");
+        showImportFeedback(tp("ca_drivers_preview_ready", drivers.length, { count: drivers.length }), "success");
     } catch (error) {
         pendingImport = null;
         renderImportPreview();
-        showToast(error.message || t("error_generic"), "error", 6000);
+        showImportFeedback(importErrorMessage(error), "error", 6000);
     }
 }
 
 function clearCompanyDriversImport() {
     pendingImport = null;
+    if (importFeedbackToast?.remove) importFeedbackToast.remove();
+    importFeedbackToast = null;
     renderImportPreview();
 }
 
@@ -629,19 +577,11 @@ function applyDemoImport(drivers, groupId) {
         window.state.drivers.push({
             id: crypto.randomUUID(), firstName: driver.first_name, lastName: driver.last_name,
             name: `${driver.first_name} ${driver.last_name}`, phone: driver.phone, email: driver.email,
+            postalCode: driver.postal_code || "",
             groupId, lineId: groupId, companyId, active: true, codeActivated: false
         });
     });
     saveState();
-}
-
-function driversToCanonicalCsv(drivers) {
-    const escape = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-    const header = "eid,first_name,last_name,phone,email";
-    const rows = drivers.map((driver) => [
-        driver.eid, driver.first_name, driver.last_name, driver.phone, driver.email
-    ].map(escape).join(","));
-    return [header, ...rows].join("\n");
 }
 
 async function confirmCompanyDriversImport() {
@@ -655,12 +595,12 @@ async function confirmCompanyDriversImport() {
         grouped.get(groupId).push(driver);
     });
     if (!grouped.size) {
-        showToast(t("ca_drivers_select_group"), "error");
+        showImportFeedback(t("ca_drivers_select_group"), "error");
         return;
     }
     for (const groupId of grouped.keys()) {
         if (!companyGroups().some((group) => String(group.id) === String(groupId))) {
-            showToast(t("ca_drivers_select_group"), "error");
+            showImportFeedback(t("ca_drivers_select_group"), "error");
             return;
         }
     }
@@ -676,6 +616,7 @@ async function confirmCompanyDriversImport() {
         if (USE_LOCAL_STATE) {
             grouped.forEach((drivers, groupId) => applyDemoImport(drivers, groupId));
         } else {
+            const { driversToCanonicalCsv } = await loadDriverImportContract();
             for (const [groupId, drivers] of grouped.entries()) {
                 const result = await ApiClient.importDriversCsv(
                     window.currentUser?.companyId,
@@ -690,10 +631,10 @@ async function confirmCompanyDriversImport() {
                     if (result.code === "EID_EXISTS") {
                         throw new Error(t("ca_drivers_import_conflict"));
                     }
+                    if (result.code === "CREDENTIAL_COLUMNS_FORBIDDEN") {
+                        throw new Error(t("ca_drivers_error_credentials_column"));
+                    }
                     throw new Error(result.error || t("error_generic"));
-                }
-                if (result.legacyCompanyCodeIgnored) {
-                    showToast(t("ca_drivers_legacy_company_code_ignored"), "info", 7000);
                 }
             }
             const refreshed = await loadStateFromFirestore(window.currentUser.companyId);
@@ -703,9 +644,9 @@ async function confirmCompanyDriversImport() {
         pendingImport = null;
         currentPage = 1;
         renderCompanyAdminDrivers();
-        showToast(tp("driver_import_success", count, { count }), "success", 5000);
+        showImportFeedback(tp("driver_import_success", count, { count }), "success", 5000);
     } catch (error) {
-        showToast(error.message || t("error_generic"), "error", 6000);
+        showImportFeedback(error.message || t("error_generic"), "error", 6000);
     } finally {
         importPending = false;
         renderImportPreview();

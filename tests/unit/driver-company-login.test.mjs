@@ -86,17 +86,16 @@ test("SMS activation portalUrl includes ?company=", () => {
     assert.equal([...routes.matchAll(/portalUrl:\s*"\/driver\.html"/g)].length, 0);
 });
 
-test("CA driver import hint is translated and describes secure SMS activation", () => {
+test("CA driver import hint is translated and forbids file-based access codes", () => {
     const tr = readFileSync(join(root, "translations.js"), "utf8");
-    assert.match(tr, /eid, first_name, last_name, phone, email/);
+    assert.match(tr, /ca_drivers_error_credentials_column/);
+    assert.match(tr, /Access codes cannot be imported from files/);
+    assert.match(tr, /Pristupni kodovi se ne uvoze fajlom/);
+    assert.match(tr, /Zugangscodes werden nicht aus Dateien importiert/);
+    assert.match(tr, /one-time activation code/);
+    assert.match(tr, /jednokratni aktivacioni kod/);
+    assert.match(tr, /einmaligen Aktivierungscode/);
     assert.doesNotMatch(tr, /eid, first_name, last_name, phone, email, company_code/);
-    assert.match(tr, /buses are entered manually per group/);
-    assert.match(tr, /Busse werden manuell pro Gruppe erfasst/);
-    assert.match(tr, /buseve unosite ručno po grupi/);
-    assert.match(tr, /ca_drivers_legacy_company_code_ignored/);
-    assert.match(tr, /Activation uses SMS OTP/);
-    assert.match(tr, /Aktivierung per SMS-OTP/);
-    assert.match(tr, /Aktivacija ide SMS OTP-om/);
 });
 
 test("CA wizard placeholders are i18n keys not hard Serbian", () => {

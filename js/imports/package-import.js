@@ -10,7 +10,6 @@ import { renderDispatcherDashboard } from "../dispatcher/dashboard.js";
 import { renderMonthlyPlansView } from "../dispatcher/monthly-plans.js";
 import { renderDispatcherDataHub } from "../dispatcher/data-hub.js";
 import { renderGroupHub } from "../dispatcher/group-hub.js";
-import { parseDriverCsv } from "./driver-csv-import.js";
 import { parseMonthlyPlanWorkbook, readExcelWorkbook } from "./monthly-plan-excel.js";
 import { isMonthlyPlanCsv, parseMonthlyPlanCsv } from "./monthly-plan-csv.js";
 import { t } from "../ui/i18n.js";
@@ -23,6 +22,68 @@ import { persistImportedMonthlyPlan } from "./monthly-plan-persist.js";
 let _pendingPackage = null;
 
 const GROUP_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#ec4899", "#14b8a6"];
+const CREDENTIAL_PROFILE_KEYS = [
+    "pin", "initialPin", "initial_pin", "company_code", "activation_code",
+    "password", "passcode", "otp", "activationOtp", "companyCode"
+];
+
+function isCompanyAdminRole(role = window.currentUser?.role) {
+    return role === "company-admin" || role === "company_admin";
+}
+
+async function loadDriverImportContract() {
+    const mod = await import("./driver-import-contract.cjs");
+    return mod.default || mod;
+}
+
+function mapDriverImportError(err) {
+    const code = err?.code || "";
+    if (code === "CREDENTIAL_COLUMNS_FORBIDDEN") return t("ca_drivers_error_credentials_column");
+    if (code === "DUPLICATE_CANONICAL_COLUMN") {
+        const match = /Duplikat kolone:\s*(\w+)/i.exec(err.message || "");
+        return t("ca_drivers_error_duplicate", { field: match?.[1] || "column", row: "1" });
+    }
+    if (code === "DUPLICATE_EID") return t("ca_drivers_error_duplicate", { field: "eid", row: "" });
+    if (code === "MISSING_COLUMNS") {
+        const columns = String(err.message || "").replace(/^Nedostaju kolone:\s*/i, "").replace(/\.$/, "");
+        return t("ca_drivers_error_columns", { columns });
+    }
+    if (
+        code === "FORMULA_FORBIDDEN"
+        || code === "MACRO_FORBIDDEN"
+        || code === "HIDDEN_SHEET_FORBIDDEN"
+        || code === "XLSX_INVALID"
+        || code === "XLSX_UNAVAILABLE"
+    ) {
+        return t("ca_drivers_error_xlsx");
+    }
+    return t("error_generic");
+}
+
+function stripCredentialFields(record) {
+    const next = { ...(record || {}) };
+    for (const key of CREDENTIAL_PROFILE_KEYS) delete next[key];
+    return next;
+}
+
+function localDriverRecordFromCanonical(driver, { id, groupId, companyId } = {}) {
+    const firstName = String(driver?.first_name || "").trim();
+    const lastName = String(driver?.last_name || "").trim();
+    return stripCredentialFields({
+        id,
+        eid: String(driver?.eid || "").trim(),
+        firstName,
+        lastName,
+        name: [firstName, lastName].filter(Boolean).join(" "),
+        email: driver?.email || "",
+        phone: driver?.phone || "",
+        postalCode: driver?.postal_code || "",
+        companyId: companyId || "",
+        groupId,
+        active: false,
+        codeActivated: false
+    });
+}
 
 function normalizePersonName(value) {
     return String(value || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
@@ -110,25 +171,32 @@ function applyDriversFromCsv(parsed) {
     ensureLineGroup(lineId);
 
     let count = 0;
-    parsed.drivers.forEach((d, i) => {
-        const groupId = ensureGroupByName(d.groupName || "G1", lineId);
-        const existingIdx = window.state.drivers.findIndex(x => x.name.toLowerCase() === d.name.toLowerCase());
-
-        const entry = {
-            id: existingIdx >= 0 ? window.state.drivers[existingIdx].id : `drv-imp-${Date.now()}-${i}`,
-            name: d.name,
-            pin: d.pin,
-            email: d.email || "",
-            phone: d.phone || "",
-            companyId: d.companyId || "",
+    const rows = Array.isArray(parsed?.drivers) ? parsed.drivers : [];
+    rows.forEach((d, i) => {
+        const groupName = d.group || d.groupName || "G1";
+        const groupId = ensureGroupByName(groupName, lineId);
+        const name = [d.first_name, d.last_name].filter(Boolean).join(" ").trim()
+            || String(d.name || "").trim();
+        const existingIdx = window.state.drivers.findIndex((x) => {
+            if (d.eid && x.eid && String(x.eid).toLowerCase() === String(d.eid).toLowerCase()) return true;
+            return name && String(x.name || "").toLowerCase() === name.toLowerCase();
+        });
+        const id = existingIdx >= 0 ? window.state.drivers[existingIdx].id : `drv-imp-${Date.now()}-${i}`;
+        const entry = localDriverRecordFromCanonical(d, {
+            id,
             groupId,
-            active: false
-        };
-        assignDriverToLine(entry, lineId, d.groupName || "G1");
+            companyId: window.currentUser?.companyId || ""
+        });
+        assignDriverToLine(entry, lineId, groupName);
 
-        if (existingIdx >= 0) window.state.drivers[existingIdx] = { ...window.state.drivers[existingIdx], ...entry };
-        else window.state.drivers.push(entry);
-        if (d.bereitschaft) window.state.bereitschaftDriver = d.name;
+        if (existingIdx >= 0) {
+            window.state.drivers[existingIdx] = stripCredentialFields({
+                ...window.state.drivers[existingIdx],
+                ...entry
+            });
+        } else {
+            window.state.drivers.push(entry);
+        }
         count++;
     });
     return count;
@@ -262,20 +330,23 @@ async function processPackageFiles(fileList) {
                     pkg.planDrivers += Object.keys(parsed.byDriver || {}).length;
                     pkg.month = pkg.month || parsed.month;
                     pkg.driverNames.push(...Object.keys(parsed.byDriver || {}));
-                } else if (window.currentUser?.role !== "company-admin" && !USE_LOCAL_STATE) {
+                } else if (!isCompanyAdminRole()) {
                     pkg.errors.push(t("pkg_driver_csv_admin_only"));
                 } else if (pkg.driverCsvText) {
                     pkg.errors.push(t("pkg_only_one_driver_csv") || `Only one driver CSV is allowed: ${file.name}`);
-                } else if (USE_LOCAL_STATE) {
-                    pkg.driverCsvText = text;
-                    const parsed = parseDriverCsv(text);
-                    if (parsed.errors?.length) pkg.errors.push(...parsed.errors);
-                    pkg.drivers = parsed;
-                    pkg.driverCount = parsed.drivers.length;
                 } else {
-                    pkg.driverCsvText = text;
-                    pkg.driverCount = Math.max(0, text.split(/\r?\n/).filter(line => line.trim()).length - 1);
-                    pkg.drivers = { drivers: pkg.driverCount ? [{ secureServerImport: true }] : [] };
+                    try {
+                        const { parseDriverCsv, driversToCanonicalCsv } = await loadDriverImportContract();
+                        const drivers = parseDriverCsv(text);
+                        pkg.driverCsvText = driversToCanonicalCsv(drivers);
+                        pkg.drivers = { drivers };
+                        pkg.driverCount = drivers.length;
+                        pkg.driverNames.push(...drivers.map((driver) => (
+                            `${driver.first_name || ""} ${driver.last_name || ""}`.trim() || driver.eid
+                        )));
+                    } catch (err) {
+                        pkg.errors.push(mapDriverImportError(err));
+                    }
                 }
             } else if (name.endsWith(".xlsx")) {
                 const wb = await readExcelWorkbook(file);
@@ -347,18 +418,21 @@ async function confirmPackageImport() {
     }
 
     if (p.drivers?.drivers?.length) {
+        if (!isCompanyAdminRole()) {
+            showToast(t("ca_drivers_admin_only"), "error", 6000);
+            return;
+        }
         if (USE_LOCAL_STATE) {
             const n = applyDriversFromCsv(p.drivers);
             msg.push(t("pkg_saved_drivers", { count: n }));
         } else {
-            if (window.currentUser?.role !== "company-admin") {
-                showToast(t("ca_drivers_admin_only"), "error", 6000);
-                return;
-            }
             const groupId = getActiveLineId();
             const result = await ApiClient.importDriversCsv(window.currentUser?.companyId, groupId, p.driverCsvText || "");
             if (!result.success) {
-                showToast(result.error || t("error_generic"), "error");
+                const errMsg = result.code === "CREDENTIAL_COLUMNS_FORBIDDEN"
+                    ? t("ca_drivers_error_credentials_column")
+                    : (result.error || t("error_generic"));
+                showToast(errMsg, "error");
                 return;
             }
             msg.push(t("pkg_saved_drivers", { count: result.imported }));
@@ -434,5 +508,8 @@ export {
     clearPackageImport,
     confirmPackageImport,
     processPackageFiles,
-    validatePlanBatch
+    validatePlanBatch,
+    applyDriversFromCsv,
+    isCompanyAdminRole,
+    localDriverRecordFromCanonical
 };

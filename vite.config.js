@@ -18,7 +18,8 @@ export default defineConfig({
       // bundle, so Vite would otherwise modulepreload it — but its filename still
       // reads "plan-import", which the D17 lazy-load contract treats as the heavy
       // chunk. Keep it a normal on-demand fetch instead of a preload hint.
-      resolveDependencies: (_filename, deps) => deps.filter((dep) => !/plan-import/i.test(dep)),
+      resolveDependencies: (_filename, deps) =>
+        deps.filter((dep) => !/plan-import|driver-import-contract/i.test(dep)),
     },
     rollupOptions: {
       input: {

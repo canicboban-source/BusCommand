@@ -6,6 +6,7 @@ import fs from "fs";
 import path from "path";
 import { createRequire } from "module";
 import { fileURLToPath } from "url";
+import { writeAllDriverImportTemplates } from "./generate-driver-import-templates.mjs";
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -102,11 +103,7 @@ function writeXlsx() {
 }
 
 function writeDriversCsv() {
-  // Header-only official driver import template (no sample people).
-  const dest = path.join(outDir, "BusCommand_Drivers_Import_v1.csv");
-  const csv = "eid,first_name,last_name,phone,email\n";
-  fs.writeFileSync(dest, csv, "utf8");
-  console.log("Wrote", dest);
+  writeAllDriverImportTemplates(root);
 }
 
 function writeMonthlyGroupTemplates() {

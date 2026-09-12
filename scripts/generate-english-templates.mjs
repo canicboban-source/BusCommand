@@ -6,6 +6,7 @@ import fs from "fs";
 import path from "path";
 import { createRequire } from "module";
 import { fileURLToPath } from "url";
+import { writeAllDriverImportTemplates } from "./generate-driver-import-templates.mjs";
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -150,81 +151,11 @@ function writeFleetXlsx() {
 }
 
 function writeDriverRosterCsv() {
-  const csv = `# BusCommand Driver Roster Template (for Company Admin)
-# Instructions:
-# 1. Fill in the required columns below with driver information
-# 2. EID: Unique employee identifier (required)
-# 3. Last_Name: Driver's last name (required)
-# 4. First_Name: Driver's first name (required)
-# 5. Email: Driver's email address (required)
-# 6. Phone: Driver's phone number (required)
-# 7. PLZ: Postal code (optional)
-# 8. Initial_PIN: Initial 4-6 digit PIN (optional, system generates if empty)
-# 9. Line_Group: Route group assignment (e.g., 310, 320)
-# 10. Remove this header section (lines starting with #) before importing
-# 11. Import via BusCommand Company Admin: Drivers → Import Roster
-# Example row: EMP001,Mustermann,Max,max.mustermann@email.com,+436991234567,1010,1234,310
-EID,Last_Name,First_Name,Email,Phone,PLZ,Initial_PIN,Line_Group`;
-
-  const dest = path.join(outDir, "BusCommand_Driver_Roster_Template.csv");
-  fs.writeFileSync(dest, csv, "utf8");
-  console.log("Wrote", dest);
+  writeAllDriverImportTemplates(root);
 }
 
 function writeDriverRosterXlsx() {
-  const XLSX = ensureXlsx();
-  if (!XLSX) {
-    console.log("Skipping Driver Roster XLSX generation (xlsx package not available)");
-    return;
-  }
-
-  const wb = XLSX.utils.book_new();
-
-  // Main sheet with headers and example
-  const data = [
-    ["EID", "Last_Name", "First_Name", "Email", "Phone", "PLZ", "Initial_PIN", "Line_Group"],
-    ["EMP001", "Mustermann", "Max", "max.mustermann@email.com", "+436991234567", "1010", "1234", "310"],
-    ["EMP002", "Schmidt", "Anna", "anna.schmidt@email.com", "+436992345678", "1020", "5678", "320"],
-    ["EMP003", "Weber", "Karl", "karl.weber@email.com", "+436993456789", "1030", "9012", "310"]
-  ];
-
-  const sheet = XLSX.utils.aoa_to_sheet(data);
-  XLSX.utils.book_append_sheet(wb, sheet, "Driver Roster");
-
-  // Instructions sheet
-  const instructions = [
-    ["INSTRUCTIONS FOR BUSCOMMAND DRIVER ROSTER IMPORT"],
-    [""],
-    ["HOW TO USE THIS TEMPLATE:"],
-    ["1. Fill in the required columns with driver information"],
-    ["2. EID: Unique employee identifier (required)"],
-    ["3. Last_Name: Driver's last name (required)"],
-    ["4. First_Name: Driver's first name (required)"],
-    ["5. Email: Driver's email address (required)"],
-    ["6. Phone: Driver's phone number (required)"],
-    ["7. PLZ: Postal code (optional)"],
-    ["8. Initial_PIN: Initial 4-6 digit PIN (optional, system generates if empty)"],
-    ["9. Line_Group: Route group assignment (e.g., 310, 320)"],
-    ["10. Remove the example rows before importing your actual data"],
-    ["11. Import via BusCommand Company Admin: Drivers → Import Roster"],
-    [""],
-    ["COLUMN DESCRIPTIONS:"],
-    ["EID - Required. Unique employee identifier"],
-    ["Last_Name - Required. Driver's last name"],
-    ["First_Name - Required. Driver's first name"],
-    ["Email - Required. Driver's email address"],
-    ["Phone - Required. Driver's phone number"],
-    ["PLZ - Optional. Postal code"],
-    ["Initial_PIN - Optional. Initial 4-6 digit PIN"],
-    ["Line_Group - Required. Route group assignment"]
-  ];
-
-  const instructionSheet = XLSX.utils.aoa_to_sheet(instructions);
-  XLSX.utils.book_append_sheet(wb, instructionSheet, "Instructions");
-
-  const dest = path.join(outDir, "BusCommand_Driver_Roster_Template.xlsx");
-  XLSX.writeFile(wb, dest);
-  console.log("Wrote", dest);
+  // CSV+XLSX for landing and in-app templates are written together.
 }
 
 function writeMonthlyScheduleCsv() {

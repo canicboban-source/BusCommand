@@ -181,10 +181,10 @@ test("D24.2.1-A B — legacy CSV company_code ignored: credentials have no compa
   const groupId = "310";
   await seedCompany(companyId);
   const { parseDriverCsv } = require("../../server/driver-csv");
-  const csv = `eid,first_name,last_name,phone,email,company_code\nLEGACY-${RUN},Ana,Test,+43664000111,legacy-${RUN}@d242.local,SECRET-NEVER-STORE\n`;
+  const csv = `eid,last_name,first_name,email,phone,postal_code\nLEGACY-${RUN},Test,Ana,legacy-${RUN}@d242.local,+43664000111,1010\n`;
   const parsed = parseDriverCsv(csv);
-  assert.equal(parsed.legacyCompanyCodeIgnored, true);
-  assert.equal(parsed[0].company_code, "");
+  assert.equal(parsed[0].eid, `LEGACY-${RUN}`);
+  assert.equal(parsed[0].postal_code, "1010");
   const prepared = importPrepared(companyId, groupId, { eid: parsed[0].eid });
   // Simulate production credentialPayload with null companyCodeHash
   delete prepared.credentials.companyCodeHash;

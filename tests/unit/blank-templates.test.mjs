@@ -54,9 +54,16 @@ test("blank Dienstplan XLSX has PLAN/SMENE/AKTIVNOSTI sheets without duties", ()
   assert.doesNotMatch(smene, /<row r="2"/);
 });
 
-test("drivers import CSV is header-only official blank", () => {
-  const csv = fs.readFileSync(path.join(templates, "BusCommand_Drivers_Import_v1.csv"), "utf8").trim();
-  assert.equal(csv, "eid,first_name,last_name,phone,email");
+test("drivers import CSV/XLSX use the secure canonical contract", () => {
+  const csv = fs.readFileSync(path.join(templates, "BusCommand_Drivers_Import_v1.csv"), "utf8").replace(/^\uFEFF/, "").trim();
+  assert.match(csv, /^eid,last_name,first_name,email,phone,postal_code/);
+  assert.match(csv, /EMP-001,Sample,Driver,driver01@example\.invalid,\+43100000000,1010/);
+  assert.doesNotMatch(csv, /Initial_PIN|company_code|password/i);
+
+  const xlsxPath = path.join(templates, "BusCommand_Drivers_Import_v1.xlsx");
+  assert.ok(fs.existsSync(xlsxPath));
+  const workbook = readXlsxEntry(xlsxPath, "xl/workbook.xml");
+  assert.match(workbook, /sheet name="Drivers"/);
 });
 
 test("monthly group CSV and XLSX are header-only official blanks", () => {
