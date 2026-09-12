@@ -94,7 +94,10 @@ test("Company Admin can edit driver profile fields and CA-only EID/PIN controls"
   assert.match(registerSrc, /createManualCompanyDriver/);
   assert.match(registerSrc, /listCompanyDriversForAdmin/);
   assert.match(registerSrc, /driver_manual_created/);
-  assert.match(validation, /\\d\{5,12\}/);
+  const createBodyBlock = validation.match(
+    /const companyDriverCreateBody = z\.object\(\{[\s\S]*?\}\)\.strict\(\);/
+  )?.[0] || "";
+  assert.doesNotMatch(createBodyBlock, /companyCode|PIN|personal/i);
   assert.match(firebase, /sanitizeDriverRecordForClient/);
   assert.match(firebase, /role !== "company-admin" && role !== "superadmin"/);
   // Manual add must not chain CSV import + PIN (partial-state risk).
@@ -104,6 +107,8 @@ test("Company Admin can edit driver profile fields and CA-only EID/PIN controls"
   assert.ok(manualAddFn.includes("createCompanyDriver"), "manual add must call atomic create");
   assert.doesNotMatch(manualAddFn, /importDriversCsv/);
   assert.doesNotMatch(manualAddFn, /setCompanyDriverPersonalCode/);
+  assert.doesNotMatch(manualAddFn, /companyCode|\.pin\b|PIN:/);
+  assert.doesNotMatch(html, /id="ca-driver-add-pin"/);
   // D24.1: profile write path must not embed eid (ops module owns create).
   const ops = await read("../../server/company-admin-driver-ops.js");
   const profileSet = ops.match(/tx\.set\(profileCol\.doc\(driverId\), \{[\s\S]*?\}\);/)?.[0] || "";
@@ -112,6 +117,8 @@ test("Company Admin can edit driver profile fields and CA-only EID/PIN controls"
   assert.ok(credentialSet, "credential tx.set missing");
   assert.doesNotMatch(profileSet, /\beid\b/);
   assert.match(credentialSet, /\beid\b/);
+  assert.match(credentialSet, /activationCodeHash/);
+  assert.doesNotMatch(credentialSet, /loginCodeHash/);
   assert.match(ops, /tx\.get\(companyRef\.collection\("groups"\)\.doc\(groupId\)\)/);
 });
 
@@ -127,7 +134,7 @@ test("driver account translations are complete in pilot languages", async () => 
       "ca_drivers_eid", "ca_drivers_pin_label", "ca_drivers_pin_saved",
       "ca_drivers_download_xlsx", "ca_drivers_plz", "ca_drivers_activation",
       "ca_drivers_error_credentials_column", "ca_drivers_error_xlsx",
-      "ca_drivers_import_hint", "ca_drivers_choose_file"
+      "ca_drivers_import_hint", "ca_drivers_choose_file", "ca_drivers_add_sms_failed"
     ]) {
       assert.ok(context.window.TRANSLATIONS[language][key], `${language}.${key} missing`);
     }

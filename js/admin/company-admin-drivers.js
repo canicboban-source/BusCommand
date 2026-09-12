@@ -178,7 +178,6 @@ function readManualDriverForm() {
         licenseExpiry: String(document.getElementById("ca-driver-add-license-expiry")?.value || "").trim(),
         cpcExpiry: String(document.getElementById("ca-driver-add-cpc-expiry")?.value || "").trim(),
         medicalExpiry: String(document.getElementById("ca-driver-add-medical-expiry")?.value || "").trim(),
-        pin: String(document.getElementById("ca-driver-add-pin")?.value || "").trim(),
         groupId,
         knownGroupIds: normalizeKnownGroupIds({ knownGroupIds: knownFromDom, groupId }, groupId)
     };
@@ -194,8 +193,7 @@ function clearManualDriverForm() {
         "ca-driver-add-postal-code",
         "ca-driver-add-license-expiry",
         "ca-driver-add-cpc-expiry",
-        "ca-driver-add-medical-expiry",
-        "ca-driver-add-pin"
+        "ca-driver-add-medical-expiry"
     ]) {
         const el = document.getElementById(id);
         if (el) el.value = "";
@@ -209,12 +207,11 @@ function validateManualDriver(draft) {
     if (!draft.groupId || !companyGroups().some((group) => String(group.id) === draft.groupId)) {
         return t("ca_drivers_select_group");
     }
-    for (const field of ["eid", "first_name", "last_name", "phone", "email", "pin"]) {
+    for (const field of ["eid", "first_name", "last_name", "phone", "email"]) {
         if (!draft[field]) return t("ca_drivers_edit_required");
     }
     if (!/^\S+@\S+\.\S+$/.test(draft.email)) return t("ca_drivers_edit_email_invalid");
     if (!/^\+[1-9]\d{7,14}$/.test(draft.phone)) return t("ca_drivers_add_phone_e164");
-    if (!/^\d{5,12}$/.test(draft.pin)) return t("ca_drivers_add_pin_invalid");
     return "";
 }
 
@@ -273,10 +270,8 @@ async function submitCompanyDriverManualAdd(event) {
             if (created) {
                 Object.assign(created, {
                     knownGroupIds: draft.knownGroupIds,
-                    pin: draft.pin,
-                    company_code: draft.pin,
-                    hasPersonalCode: true,
-                    codeActivated: true
+                    hasPersonalCode: false,
+                    codeActivated: false
                 });
                 saveState();
             }
@@ -294,8 +289,7 @@ async function submitCompanyDriverManualAdd(event) {
                 cpcExpiry: draft.cpcExpiry,
                 medicalExpiry: draft.medicalExpiry,
                 groupId: draft.groupId,
-                knownGroupIds: draft.knownGroupIds,
-                companyCode: draft.pin
+                knownGroupIds: draft.knownGroupIds
             });
             if (!result.success) {
                 if (result.code === "DRIVER_LIMIT_REACHED") {
@@ -311,16 +305,12 @@ async function submitCompanyDriverManualAdd(event) {
             window.state.drivers = refreshed?.drivers || [];
             recentlyDeletedIds.clear();
             await enrichCompanyDriversFromApi();
-            // Never persist plaintext PIN on the client driver object.
-            if (result.companyCode) {
-                showToast(
-                    `${t("ca_drivers_add_success")} PIN: ${result.companyCode}`,
-                    "success",
-                    10000
-                );
-            } else {
-                showToast(t("ca_drivers_add_success"), "success", 6000);
-            }
+            const smsDelivered = ["sent", "stub_queued"].includes(result.activation?.smsStatus);
+            showToast(
+                t(smsDelivered ? "ca_drivers_add_success" : "ca_drivers_add_sms_failed"),
+                smsDelivered ? "success" : "warning",
+                7000
+            );
             clearManualDriverForm();
             closeCompanyDriverAddModal();
             currentPage = 1;
@@ -331,7 +321,7 @@ async function submitCompanyDriverManualAdd(event) {
         closeCompanyDriverAddModal();
         currentPage = 1;
         await renderCompanyAdminDrivers();
-        showToast(t("ca_drivers_add_success"), "success", 6000);
+        showToast(t("ca_drivers_add_sms_failed"), "warning", 7000);
         return true;
     } catch (err) {
         showToast(err.message || t("ca_drivers_add_failed") || t("error_generic"), "error", 6000);

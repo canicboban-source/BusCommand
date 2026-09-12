@@ -66,6 +66,40 @@ test.describe("secure CA driver import contract", () => {
     await expect(page.locator("#ca-drivers-import-preview")).not.toContainText("Initial_PIN");
   });
 
+  test("manual add has no PIN input and creates a pending activation account", async ({ page }) => {
+    await openCaDrivers(page, "en");
+    await page.locator("#ca-driver-add-open").click();
+    await expect(page.locator("#ca-driver-add-modal")).toBeVisible();
+    await expect(page.locator("#ca-driver-add-pin")).toHaveCount(0);
+    await expect(page.locator('[data-i18n="ca_drivers_add_sms_note"]')).toContainText("No access code here");
+    await page.screenshot({
+      path: path.join(SHOT_DIR, "ca-manual-add-no-pin.png"),
+      fullPage: false
+    });
+
+    await page.locator("#ca-driver-add-eid").fill("MANUAL-OTP-001");
+    await page.locator("#ca-driver-add-first-name").fill("Mina");
+    await page.locator("#ca-driver-add-last-name").fill("Otp");
+    await page.locator("#ca-driver-add-email").fill("mina.otp@example.invalid");
+    await page.locator("#ca-driver-add-phone").fill("+43100000001");
+    await page.locator("#ca-driver-add-group").selectOption("101");
+    await page.screenshot({
+      path: path.join(SHOT_DIR, "ca-manual-add-ready.png"),
+      fullPage: false
+    });
+    const before = Number(await page.locator("#ca-drivers-stat-total").textContent());
+    await page.locator("#ca-driver-add-submit").click();
+    await expect(page.locator("#ca-driver-add-modal")).toBeHidden();
+    await expect(page.locator(".toast-warning")).toContainText("Driver added, but SMS failed");
+    await expect(page.locator("#ca-drivers-stat-total")).toHaveText(String(before + 1));
+    await page.locator("#ca-drivers-search").fill("MANUAL-OTP-001");
+    await expect(page.locator("#ca-drivers-directory")).toContainText("Not set");
+    await page.screenshot({
+      path: path.join(SHOT_DIR, "ca-manual-add-pending.png"),
+      fullPage: false
+    });
+  });
+
   for (const lang of ["en", "de", "sr"]) {
     test(`credential column is rejected in ${lang} with a single toast`, async ({ page }) => {
       await openCaDrivers(page, lang);

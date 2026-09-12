@@ -37,7 +37,12 @@ const pinoHttp = require("pino-http");
 
 const { logger } = require("./server/logger");
 const { buildStartupInfo } = require("./server/startup-info");
-const { registerDriverRoutes } = require("./server/driver-routes");
+const {
+  registerDriverRoutes,
+  generateActivationOtp,
+  activationExpiresAt,
+  smsProvider
+} = require("./server/driver-routes");
 const {
   readDriverIdentityGuardInTx,
   writeDriverIdentityGuardBumpInTx,
@@ -1463,7 +1468,10 @@ registerCompanyAdminDriverRoutes(app, {
   },
   bcryptHash: (value, rounds) => bcrypt.hash(value, rounds),
   randomUUID: () => crypto.randomUUID(),
-  logAudit: (...args) => _logAuditEvent(...args)
+  logAudit: (...args) => _logAuditEvent(...args),
+  generateActivationOtp,
+  activationExpiresAt,
+  smsProvider
 });
 
 app.post(

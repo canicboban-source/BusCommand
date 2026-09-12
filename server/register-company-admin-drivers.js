@@ -18,7 +18,10 @@ function registerCompanyAdminDriverRoutes(app, deps) {
     FieldValue,
     bcryptHash,
     randomUUID,
-    logAudit
+    logAudit,
+    generateActivationOtp,
+    activationExpiresAt,
+    smsProvider
   } = deps;
 
   app.post(
@@ -31,21 +34,32 @@ function registerCompanyAdminDriverRoutes(app, deps) {
       if (!companyId) return;
       const body = req.validatedBody;
       try {
+        const otp = generateActivationOtp();
         const created = await createManualCompanyDriver({
           db,
           FieldValue,
-          bcryptHash,
           randomUUID,
           companyId,
           body,
-          actorUid: req.staffUser.uid
+          activationCodeHash: await bcryptHash(otp, 12),
+          activationExpiresAt: activationExpiresAt().toISOString()
+        });
+
+        const sms = await smsProvider.sendActivationSms({
+          phone: body.phone,
+          companyId,
+          driverId: created.driverId,
+          portalUrl: `/driver.html?company=${encodeURIComponent(companyId)}`,
+          otp
         });
 
         await logAudit(companyId, req.staffUser.uid, "driver_manual_created", {
           driverId: created.driverId,
           groupId: body.groupId,
           knownGroupCount: (created.driver.knownGroupIds || []).length,
-          codeActivated: true
+          codeActivated: false,
+          smsStatus: sms.status,
+          smsProvider: smsProvider.mode
         }, {
           actorRole: req.staffUser.role,
           actorName: req.staffUser.name || null
@@ -54,10 +68,14 @@ function registerCompanyAdminDriverRoutes(app, deps) {
         return res.status(201).json({
           success: true,
           driverId: created.driverId,
-          companyCode: created.companyCode,
-          codeActivated: true,
+          codeActivated: false,
           driver: created.driver,
-          message: "Vozač je kreiran. Prikaži PIN sada — više se neće moći pročitati."
+          activation: {
+            otpTtlHours: 24,
+            smsProvider: smsProvider.mode,
+            smsStatus: sms.status
+          },
+          message: "Vozač je kreiran. Aktivacioni kod je prosleđen SMS servisu."
         });
       } catch (err) {
         if (err?.code === "group-not-found") {

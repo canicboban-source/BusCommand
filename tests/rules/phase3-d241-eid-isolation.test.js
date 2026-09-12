@@ -135,7 +135,6 @@ test("D24.1 createManualCompanyDriver: profile has no EID/PIN/hash; credentials 
   const created = await createManualCompanyDriver({
     db,
     FieldValue: admin.firestore.FieldValue,
-    bcryptHash: (v, r) => bcrypt.hash(v, r),
     randomUUID: () => crypto.randomUUID(),
     companyId,
     body: {
@@ -144,11 +143,11 @@ test("D24.1 createManualCompanyDriver: profile has no EID/PIN/hash; credentials 
       phone: "+43699111",
       email: "novi@d241.local",
       eid: "EID-D241-OK",
-      companyCode: "12345",
       groupId: "310",
       knownGroupIds: ["310"]
     },
-    actorUid: "admin-a",
+    activationCodeHash: "test-activation-hash",
+    activationExpiresAt: "2026-09-13T12:00:00.000Z",
     assertGroupsExist: async () => {}
   });
 

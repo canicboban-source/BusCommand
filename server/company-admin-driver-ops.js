@@ -36,12 +36,17 @@ function normalizeEid(value) {
 async function createManualCompanyDriver({
   db,
   FieldValue,
-  bcryptHash,
   randomUUID,
   companyId,
   body,
-  actorUid
+  activationCodeHash,
+  activationExpiresAt
 }) {
+  if (!activationCodeHash || !activationExpiresAt) {
+    const err = new Error("Aktivacioni podaci nisu pripremljeni.");
+    err.code = "activation-not-prepared";
+    throw err;
+  }
   const companyRef = db.collection("companies").doc(companyId);
   const profileCol = companyRef.collection("drivers");
   const credentialCol = companyRef.collection("driver_credentials");
@@ -54,7 +59,6 @@ async function createManualCompanyDriver({
   if (!knownGroupIds.includes(body.groupId)) knownGroupIds.unshift(body.groupId);
 
   const eid = normalizeEid(body.eid);
-  const loginCodeHash = await bcryptHash(body.companyCode, 12);
   const driverId = randomUUID();
 
   const { resolveLicenseSnapshot } = require("./license-packages");
@@ -119,21 +123,17 @@ async function createManualCompanyDriver({
       knownGroupIds,
       companyId,
       active: true,
-      codeActivated: true,
+      codeActivated: false,
       licenseExpiry: body.licenseExpiry || "",
       cpcExpiry: body.cpcExpiry || "",
       medicalExpiry: body.medicalExpiry || "",
-      createdAt: nowTs,
-      personalCodeSetAt: nowTs,
-      personalCodeSetBy: actorUid
+      createdAt: nowTs
     });
     tx.set(credentialCol.doc(driverId), {
       eid,
-      loginCodeHash,
-      activationUsedAt: nowTs,
-      activatedAt: nowTs,
-      personalCodeUpdatedAt: nowTs,
-      personalCodeUpdatedBy: actorUid,
+      activationCodeHash,
+      activationExpiresAt,
+      activationUsedAt: null,
       createdAt: nowTs
     });
     writeDriverIdentityGuardBumpInTx(tx, FieldValue, guard);
@@ -141,8 +141,7 @@ async function createManualCompanyDriver({
 
   return {
     driverId,
-    companyCode: body.companyCode,
-    codeActivated: true,
+    codeActivated: false,
     driver: {
       id: driverId,
       firstName: body.firstName,
@@ -157,8 +156,8 @@ async function createManualCompanyDriver({
       knownGroupIds,
       companyId,
       active: true,
-      codeActivated: true,
-      hasPersonalCode: true,
+      codeActivated: false,
+      hasPersonalCode: false,
       licenseExpiry: body.licenseExpiry || "",
       cpcExpiry: body.cpcExpiry || "",
       medicalExpiry: body.medicalExpiry || ""

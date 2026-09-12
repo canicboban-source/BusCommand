@@ -78,7 +78,7 @@ test("companyDriverCreateBody accepts an optional postalCode", () => {
   const result = companyDriverCreateBody.safeParse({
     companyId: "acme", eid: "EID-1", firstName: "Ana", lastName: "Test",
     phone: "+431234567", email: "ana@example.test", groupId: "310",
-    postalCode: "1010", companyCode: "12345"
+    postalCode: "1010"
   });
   assert.equal(result.success, true);
   assert.equal(result.data.postalCode, "1010");

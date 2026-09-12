@@ -236,20 +236,19 @@ const companyDriverPersonalCodeBody = z.object({
 }).strict();
 
 /**
- * CA manual driver create — atomic profile + credentials + PIN + known groups.
- * Never accepts OTP plaintext; PIN is hashed server-side and returned once.
+ * CA manual driver create — atomic profile + pending OTP credentials + known groups.
+ * Activation codes are generated server-side and never accepted from the client.
  */
 const companyDriverCreateBody = z.object({
   companyId: z.string().trim().min(1).max(64),
   eid: z.string().trim().min(1).max(64),
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().min(1).max(80),
-  phone: z.string().trim().min(3).max(40),
+  phone: z.string().trim().regex(/^\+[1-9]\d{7,14}$/, "Telefon mora biti u E.164 formatu."),
   email: z.string().trim().toLowerCase().email().max(254),
   groupId: driverGroupIdSchema,
   postalCode: driverPostalCodeSchema,
   knownGroupIds: z.array(driverGroupIdSchema).max(40).optional().default([]),
-  companyCode: z.string().trim().regex(/^\d{5,12}$/, "Lični kod mora imati 5–12 cifara."),
   /** Compliance expiry dates (ISO YYYY-MM-DD or empty). CA-only, optional. */
   licenseExpiry: driverExpiryDateSchema,
   cpcExpiry: driverExpiryDateSchema,

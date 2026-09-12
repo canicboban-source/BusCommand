@@ -350,7 +350,6 @@ test("D24.1.1 create: group deletion during mutation window → group-not-found,
   await companyRef.set({ name: companyId });
   await companyRef.collection("settings").doc("main").set({ status: "active", maxDrivers: 20 });
   await companyRef.collection("groups").doc("310").set({ lineId: "310", active: true });
-  const bcrypt = require("bcrypt");
   const crypto = require("crypto");
 
   // After in-tx group read, delete the group so commit retries → group-not-found.
@@ -362,14 +361,14 @@ test("D24.1.1 create: group deletion during mutation window → group-not-found,
       () => createManualCompanyDriver({
         db,
         FieldValue: admin.firestore.FieldValue,
-        bcryptHash: (v, r) => bcrypt.hash(v, r),
         randomUUID: () => crypto.randomUUID(),
         companyId,
         body: {
           firstName: "G", lastName: "R", phone: "+1", email: "g@r.local",
-          eid: "EID-GROUP-RACE", companyCode: "12345", groupId: "310", knownGroupIds: ["310"]
+          eid: "EID-GROUP-RACE", groupId: "310", knownGroupIds: ["310"]
         },
-        actorUid: "ca-1"
+        activationCodeHash: "test-activation-hash",
+        activationExpiresAt: "2026-09-13T12:00:00.000Z"
       }),
       (err) => err.code === "group-not-found"
     );

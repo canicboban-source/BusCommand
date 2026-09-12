@@ -69,6 +69,8 @@ test("D24.1.1 HTTP: production create route refuses dispatcher / cross-tenant; C
   const mem = memoryDb();
   mem.store.set("companies/alpha/settings/main", { status: "active", maxDrivers: 50 });
   mem.store.set("companies/alpha/groups/310", { lineId: "310", active: true });
+  const smsCalls = [];
+  const audits = [];
 
   const auth = createStaffAuth({
     hasFirebase: () => true,
@@ -116,7 +118,16 @@ test("D24.1.1 HTTP: production create route refuses dispatcher / cross-tenant; C
     FieldValue: { serverTimestamp: () => "TS" },
     bcryptHash: (v, r) => bcrypt.hash(v, r),
     randomUUID: () => crypto.randomUUID(),
-    logAudit: async () => {}
+    logAudit: async (...args) => { audits.push(args); },
+    generateActivationOtp: () => "482913",
+    activationExpiresAt: () => new Date("2026-09-13T12:00:00.000Z"),
+    smsProvider: {
+      mode: "stub",
+      sendActivationSms: async (payload) => {
+        smsCalls.push(payload);
+        return { status: "stub_queued", reason: null, providerMessageId: "stub" };
+      }
+    }
   });
 
   const server = await new Promise((resolve) => {
@@ -130,7 +141,6 @@ test("D24.1.1 HTTP: production create route refuses dispatcher / cross-tenant; C
     phone: "+43699111",
     email: "novi@d2411.local",
     eid: "EID-D2411",
-    companyCode: "12345",
     groupId: "310",
     knownGroupIds: ["310"]
   };
@@ -159,9 +169,21 @@ test("D24.1.1 HTTP: production create route refuses dispatcher / cross-tenant; C
     const json = await ok.json();
     assert.equal(json.success, true);
     assert.equal(json.driver.eid, "EID-D2411");
+    assert.equal(json.codeActivated, false);
+    assert.equal(json.activation.smsStatus, "stub_queued");
+    assert.equal(Object.hasOwn(json, "companyCode"), false);
     const profilePath = [...mem.store.keys()].find((k) => k.includes("/drivers/") && !k.includes("credentials"));
     assert.ok(profilePath);
     assert.equal(mem.store.get(profilePath).eid, undefined);
+    assert.equal(mem.store.get(profilePath).codeActivated, false);
+    const credentialPath = [...mem.store.keys()].find((k) => k.includes("/driver_credentials/"));
+    assert.ok(credentialPath);
+    assert.ok(mem.store.get(credentialPath).activationCodeHash);
+    assert.equal(mem.store.get(credentialPath).loginCodeHash, undefined);
+    assert.equal(smsCalls.length, 1);
+    assert.equal(smsCalls[0].otp, "482913");
+    assert.equal(JSON.stringify(json).includes("482913"), false);
+    assert.equal(JSON.stringify(audits).includes("482913"), false);
   } finally {
     await new Promise((r) => server.close(r));
   }
