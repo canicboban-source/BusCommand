@@ -104,10 +104,12 @@ async function seedBase() {
   await seedActiveDutyCatalog(companyRef, GROUP_ID, "310.S01");
   await seedActiveDutyCatalog(companyRef, GROUP_B, "311.S01");
   await companyRef.collection("drivers").doc(DRIVER_A).set({
-    active: true, groupId: GROUP_ID, firstName: "Ana", lastName: "A", name: "Ana A"
+    active: true, codeActivated: true, groupId: GROUP_ID, knownGroupIds: [GROUP_ID],
+    companyId: COMPANY_ID, firstName: "Ana", lastName: "A", name: "Ana A"
   });
   await companyRef.collection("drivers").doc(DRIVER_B).set({
-    active: true, groupId: GROUP_B, firstName: "Bob", lastName: "B", name: "Bob B"
+    active: true, codeActivated: true, groupId: GROUP_B, knownGroupIds: [GROUP_B],
+    companyId: COMPANY_ID, firstName: "Bob", lastName: "B", name: "Bob B"
   });
   await companyRef.collection("buses").doc("bus-101").set({
     number: "101", active: true, opsStatus: "active", groupId: GROUP_ID

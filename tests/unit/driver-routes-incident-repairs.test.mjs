@@ -10,8 +10,8 @@ async function startRealHttpServer() {
 
     const mockDbData = {
         drivers: new Map([
-            ["Vwz3K9LpQ2mNx8yRt1bC4dE6fGh7", { id: "Vwz3K9LpQ2mNx8yRt1bC4dE6fGh7", name: "Boban Canić", active: true, groupId: "101", companyId: "comp-1" }],
-            ["K2mNx8yRt1bC4dE6fGh7Vwz3K9Lp", { id: "K2mNx8yRt1bC4dE6fGh7Vwz3K9Lp", name: "Petar Petrović", active: true, groupId: "101", companyId: "comp-1" }],
+            ["Vwz3K9LpQ2mNx8yRt1bC4dE6fGh7", { id: "Vwz3K9LpQ2mNx8yRt1bC4dE6fGh7", name: "Boban Canić", active: true, codeActivated: true, groupId: "101", knownGroupIds: ["101"], companyId: "comp-1" }],
+            ["K2mNx8yRt1bC4dE6fGh7Vwz3K9Lp", { id: "K2mNx8yRt1bC4dE6fGh7Vwz3K9Lp", name: "Petar Petrović", active: true, codeActivated: true, groupId: "101", knownGroupIds: ["101"], companyId: "comp-1" }],
             ["ForeignDriverUid999999999999", { id: "ForeignDriverUid999999999999", name: "Foreign Driver", active: true, groupId: "102", companyId: "comp-2" }]
         ]),
         shifts: new Map(),
@@ -268,6 +268,8 @@ test("Real HTTP Stack: Incident resolution accepts 28-character Firebase UIDs an
             date: "2026-08-23",
             shiftType: "morning",
             shiftName: "101.S01",
+            start: "05:00",
+            end: "13:00",
             bus: "101",
             status: "open",
             revision: 0

@@ -19,7 +19,10 @@ function baseState() {
         name: "Luka Kovačević",
         groupId: "101",
         lineId: "101",
+        knownGroupIds: ["101"],
         active: true,
+        codeActivated: true,
+        companyId: "qa-local",
         bus: "BUS-101",
         email: "luka@example.test",
         phone: "+4310000001"
@@ -29,7 +32,10 @@ function baseState() {
         name: "Standby Driver",
         groupId: "101",
         lineId: "101",
+        knownGroupIds: ["101"],
         active: true,
+        codeActivated: true,
+        companyId: "qa-local",
         bus: "",
         email: "standby@example.test",
         phone: "+4310000002"

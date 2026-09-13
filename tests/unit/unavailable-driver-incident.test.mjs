@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import express from "express";
-import { registerDriverRoutes } from "../../server/driver-routes.js";
+import { registerDriverRoutes, setReplacementResolveHookForTests } from "../../server/driver-routes.js";
 
 async function startTestServer() {
     const app = express();
@@ -10,10 +10,11 @@ async function startTestServer() {
 
     const mockDbData = {
         drivers: new Map([
-            ["drv-luka-1", { id: "drv-luka-1", name: "Luka Kovačević", active: true, groupId: "101", companyId: "comp-1" }],
-            ["drv-marko-2", { id: "drv-marko-2", name: "Marko Jovanović", active: true, groupId: "101", companyId: "comp-1" }],
-            ["drv-foreign-9", { id: "drv-foreign-9", name: "Foreign Driver", active: true, groupId: "102", companyId: "comp-2" }]
+            ["drv-luka-1", { id: "drv-luka-1", firstName: "Luka", lastName: "Kovačević", name: "Luka Kovačević", active: true, codeActivated: true, groupId: "101", lineId: "101", knownGroupIds: ["101"], companyId: "comp-1", postalCode: "1010", eid: "EID-LUKA-SECRET" }],
+            ["drv-marko-2", { id: "drv-marko-2", firstName: "Marko", lastName: "Jovanović", name: "Marko Jovanović", active: true, codeActivated: true, groupId: "101", lineId: "101", knownGroupIds: ["101"], companyId: "comp-1", postalCode: "1010", eid: "EID-SECRET-4711", email: "marko@secret.test", pin: "9999" }],
+            ["drv-foreign-9", { id: "drv-foreign-9", firstName: "Foreign", lastName: "Driver", name: "Foreign Driver", active: true, codeActivated: true, groupId: "102", lineId: "102", knownGroupIds: ["102"], companyId: "comp-2" }]
         ]),
+        vacations: new Map(),
         shifts: new Map(),
         schedules: new Map(),
         reports: new Map(),
@@ -69,8 +70,11 @@ async function startTestServer() {
                     const store = mockDbData[colName] || new Map();
                     const matched = [];
                     for (const [docId, data] of store.entries()) {
-                        const match = filters.every(({ field: f, val: v }) => {
-                            return data[f] === v;
+                        const match = filters.every(({ field: f, op: o, val: v }) => {
+                            if (o === "==") return data[f] === v;
+                            if (o === ">=") return data[f] >= v;
+                            if (o === "<=") return data[f] <= v;
+                            return false;
                         });
                         if (match) {
                             matched.push({
@@ -568,4 +572,357 @@ test("todayDateStr respects operational timezone across UTC midnight boundaries"
     const simulatedUtcMidnightBoundary = new Date("2026-08-29T22:03:21Z");
     assert.equal(todayDateStr("Europe/Vienna", simulatedUtcMidnightBoundary), "2026-08-30");
     assert.equal(todayDateStr("UTC", simulatedUtcMidnightBoundary), "2026-08-29");
+});
+
+function seedCoverageResolve(srv, { today, reportId = "rep-cov-1", originalId = "drv-luka-1", extra = {} }) {
+    srv.mockDbData.shifts.set(`${originalId}_${today}`, {
+        driverId: originalId,
+        date: today,
+        type: "morning",
+        name: "101.S01",
+        routeCode: "101.S01",
+        bus: "101",
+        start: "05:00",
+        end: "13:00",
+        revision: 1
+    });
+    srv.mockDbData.reports.set(reportId, {
+        id: reportId,
+        driverId: originalId,
+        date: today,
+        groupId: "101",
+        type: "coverage:disruption",
+        status: "open",
+        revision: 0,
+        shiftType: "morning",
+        shiftName: "101.S01",
+        start: "05:00",
+        end: "13:00",
+        bus: "101",
+        ...extra
+    });
+}
+
+test("valid replacement updates daily and monthly plan and does not rewrite D+1", async () => {
+    const srv = await startTestServer();
+    try {
+        const today = todayDateStr();
+        const [y, m, d] = today.split("-").map(Number);
+        const next = new Date(Date.UTC(y, m - 1, d + 1));
+        const tomorrow = next.toISOString().slice(0, 10);
+        seedCoverageResolve(srv, { today });
+        srv.mockDbData.shifts.set(`drv-marko-2_${tomorrow}`, {
+            driverId: "drv-marko-2",
+            date: tomorrow,
+            type: "morning",
+            start: "05:00",
+            end: "13:00",
+            revision: 3
+        });
+        const res = await srv.request("/api/staff/operational-incidents/rep-cov-1/resolve", {
+            method: "PUT",
+            token: "staff-token-disp",
+            body: {
+                type: "replacement",
+                replacementDriverId: "drv-marko-2",
+                replacementBus: "101",
+                expectedOriginalRevision: 1,
+                expectedReplacementRevision: 0
+            }
+        });
+        assert.equal(res.status, 200, res.text);
+        assert.equal(srv.mockDbData.shifts.get(`drv-marko-2_${today}`)?.type, "morning");
+        assert.equal(srv.mockDbData.shifts.get(`drv-luka-1_${today}`), undefined);
+        const month = today.slice(0, 7);
+        const day = Number(today.slice(8, 10));
+        const schedule = srv.mockDbData.schedules.get(`drv-marko-2_${month}`);
+        assert.equal(schedule?.parsedShifts?.[day]?.type, "morning");
+        assert.equal(srv.mockDbData.shifts.get(`drv-marko-2_${tomorrow}`)?.revision, 3);
+        const audit = [...srv.mockDbData.audit_log.values()].find((row) => row.action === "operational_incident_resolved");
+        const blob = JSON.stringify(audit);
+        assert.equal(audit.details.eligibility.eligible, true);
+        assert.equal(Object.prototype.hasOwnProperty.call(audit.details.eligibility, "samePlz"), false);
+        assert.doesNotMatch(blob, /pin|otp|loginCodeHash|activationOtp|EID-SECRET/i);
+    } finally {
+        await srv.close();
+    }
+});
+
+test("server rejects unknown group, inactive activation, and approved absence", async () => {
+    const srv = await startTestServer();
+    try {
+        const today = todayDateStr();
+        seedCoverageResolve(srv, { today });
+        srv.mockDbData.drivers.get("drv-marko-2").knownGroupIds = ["202"];
+        srv.mockDbData.drivers.get("drv-marko-2").groupId = "202";
+        srv.mockDbData.drivers.get("drv-marko-2").lineId = "202";
+        let res = await srv.request("/api/staff/operational-incidents/rep-cov-1/resolve", {
+            method: "PUT",
+            token: "staff-token-disp",
+            body: {
+                type: "replacement",
+                replacementDriverId: "drv-marko-2",
+                replacementBus: "101",
+                expectedOriginalRevision: 1,
+                expectedReplacementRevision: 0
+            }
+        });
+        assert.equal(res.status, 409);
+        assert.equal(res.json.code, "REPLACEMENT_NOT_ELIGIBLE");
+        assert.ok(res.json.blocks.includes("UNKNOWN_GROUP"));
+        assert.equal(typeof res.json.error, "string");
+        assert.doesNotMatch(JSON.stringify(res.json), /Marko|1010|otp|pin|EID-SECRET|secret\.test/i);
+
+        srv.mockDbData.drivers.get("drv-marko-2").groupId = "101";
+        srv.mockDbData.drivers.get("drv-marko-2").lineId = "101";
+        srv.mockDbData.drivers.get("drv-marko-2").knownGroupIds = ["101"];
+        srv.mockDbData.drivers.get("drv-marko-2").codeActivated = false;
+        res = await srv.request("/api/staff/operational-incidents/rep-cov-1/resolve", {
+            method: "PUT",
+            token: "staff-token-disp",
+            body: {
+                type: "replacement",
+                replacementDriverId: "drv-marko-2",
+                replacementBus: "101",
+                expectedOriginalRevision: 1,
+                expectedReplacementRevision: 0
+            }
+        });
+        assert.equal(res.json.blocks.includes("DRIVER_NOT_ACTIVATED"), true);
+
+        srv.mockDbData.drivers.get("drv-marko-2").codeActivated = true;
+        srv.mockDbData.vacations.set("vac-1", {
+            driverId: "drv-marko-2",
+            status: "approved",
+            start: today,
+            end: today
+        });
+        res = await srv.request("/api/staff/operational-incidents/rep-cov-1/resolve", {
+            method: "PUT",
+            token: "staff-token-disp",
+            body: {
+                type: "replacement",
+                replacementDriverId: "drv-marko-2",
+                replacementBus: "101",
+                expectedOriginalRevision: 1,
+                expectedReplacementRevision: 0
+            }
+        });
+        assert.ok(res.json.blocks.includes("APPROVED_ABSENCE"));
+        assert.equal(srv.mockDbData.shifts.get("drv-luka-1_" + today)?.type, "morning");
+    } finally {
+        await srv.close();
+    }
+});
+
+test("legacy missing codeActivated is a hard block; foreign-tenant leave does not affect an activated driver", async () => {
+    const srv = await startTestServer();
+    try {
+        const today = todayDateStr();
+        seedCoverageResolve(srv, { today, reportId: "rep-legacy-1" });
+        const marko = srv.mockDbData.drivers.get("drv-marko-2");
+        delete marko.codeActivated;
+        let res = await srv.request("/api/staff/operational-incidents/rep-legacy-1/resolve", {
+            method: "PUT",
+            token: "staff-token-disp",
+            body: {
+                type: "replacement",
+                replacementDriverId: "drv-marko-2",
+                replacementBus: "101",
+                expectedOriginalRevision: 1,
+                expectedReplacementRevision: 0
+            }
+        });
+        assert.equal(res.status, 409);
+        assert.ok(res.json.blocks.includes("DRIVER_NOT_ACTIVATED"));
+        assert.doesNotMatch(JSON.stringify(res.json), /EID-SECRET|secret\.test|9999|loginCodeHash|activationOtp/i);
+
+        marko.codeActivated = true;
+        srv.mockDbData.vacations.set("vac-foreign", {
+            driverId: "drv-marko-2",
+            companyId: "comp-2",
+            status: "approved",
+            start: today,
+            end: today
+        });
+        res = await srv.request("/api/staff/operational-incidents/rep-legacy-1/resolve", {
+            method: "PUT",
+            token: "staff-token-disp",
+            body: {
+                type: "replacement",
+                replacementDriverId: "drv-marko-2",
+                replacementBus: "101",
+                expectedOriginalRevision: 1,
+                expectedReplacementRevision: 0
+            }
+        });
+        assert.equal(res.status, 200, res.text);
+        const audit = [...srv.mockDbData.audit_log.values()].find((row) => row.action === "operational_incident_resolved");
+        const blob = JSON.stringify({ body: res.json, audit });
+        assert.equal(audit.details.eligibility.eligible, true);
+        assert.doesNotMatch(blob, /EID-SECRET|secret\.test|9999|loginCodeHash|activationOtp/i);
+    } finally {
+        await srv.close();
+    }
+});
+
+test("41 historical vacations do not hide the overlapping approved leave", async () => {
+    const srv = await startTestServer();
+    try {
+        const today = todayDateStr();
+        seedCoverageResolve(srv, { today, reportId: "rep-hist-1" });
+        for (let i = 0; i < 41; i += 1) {
+            const day = String((i % 28) + 1).padStart(2, "0");
+            const month = i < 28 ? "01" : "02";
+            srv.mockDbData.vacations.set(`hist-${i}`, {
+                driverId: "drv-marko-2",
+                status: "approved",
+                start: `2020-${month}-${day}`,
+                end: `2020-${month}-${day}`
+            });
+        }
+        srv.mockDbData.vacations.set("vac-relevant", {
+            driverId: "drv-marko-2",
+            status: "approved",
+            start: today,
+            end: today
+        });
+        const res = await srv.request("/api/staff/operational-incidents/rep-hist-1/resolve", {
+            method: "PUT",
+            token: "staff-token-disp",
+            body: {
+                type: "replacement",
+                replacementDriverId: "drv-marko-2",
+                replacementBus: "101",
+                expectedOriginalRevision: 1,
+                expectedReplacementRevision: 0
+            }
+        });
+        assert.equal(res.status, 409);
+        assert.ok(res.json.blocks.includes("APPROVED_ABSENCE"));
+        assert.equal(srv.mockDbData.shifts.get("drv-luka-1_" + today)?.type, "morning");
+    } finally {
+        await srv.close();
+    }
+});
+
+test("pending overlapping leave does not block replacement", async () => {
+    const srv = await startTestServer();
+    try {
+        const today = todayDateStr();
+        seedCoverageResolve(srv, { today, reportId: "rep-pending-1" });
+        srv.mockDbData.vacations.set("vac-pending", {
+            driverId: "drv-marko-2",
+            status: "pending",
+            start: today,
+            end: today
+        });
+        const res = await srv.request("/api/staff/operational-incidents/rep-pending-1/resolve", {
+            method: "PUT",
+            token: "staff-token-disp",
+            body: {
+                type: "replacement",
+                replacementDriverId: "drv-marko-2",
+                replacementBus: "101",
+                expectedOriginalRevision: 1,
+                expectedReplacementRevision: 0
+            }
+        });
+        assert.equal(res.status, 200, res.text);
+        assert.doesNotMatch(JSON.stringify(res.json), /EID-SECRET|loginCodeHash|activationOtp/i);
+    } finally {
+        await srv.close();
+    }
+});
+
+test("concurrent leave approval during resolve blocks the replacement", async () => {
+    const srv = await startTestServer();
+    try {
+        const today = todayDateStr();
+        seedCoverageResolve(srv, { today, reportId: "rep-race-1" });
+        srv.mockDbData.vacations.set("vac-race", {
+            driverId: "drv-marko-2",
+            status: "pending",
+            start: today,
+            end: today
+        });
+        setReplacementResolveHookForTests(async () => {
+            srv.mockDbData.vacations.get("vac-race").status = "approved";
+        });
+        const res = await srv.request("/api/staff/operational-incidents/rep-race-1/resolve", {
+            method: "PUT",
+            token: "staff-token-disp",
+            body: {
+                type: "replacement",
+                replacementDriverId: "drv-marko-2",
+                replacementBus: "101",
+                expectedOriginalRevision: 1,
+                expectedReplacementRevision: 0
+            }
+        });
+        assert.equal(res.status, 409);
+        assert.ok(res.json.blocks.includes("APPROVED_ABSENCE"));
+        assert.equal(srv.mockDbData.shifts.get("drv-luka-1_" + today)?.type, "morning");
+        assert.doesNotMatch(JSON.stringify(res.json), /EID-SECRET|loginCodeHash|activationOtp|9999/i);
+    } finally {
+        setReplacementResolveHookForTests(null);
+        await srv.close();
+    }
+});
+
+test("second concurrent resolver loses the same eligible candidate", async () => {
+    const srv = await startTestServer();
+    try {
+        const today = todayDateStr();
+        srv.mockDbData.drivers.set("drv-petar-3", {
+            id: "drv-petar-3",
+            firstName: "Petar",
+            lastName: "Ilić",
+            active: true,
+            codeActivated: true,
+            groupId: "101",
+            knownGroupIds: ["101"],
+            companyId: "comp-1"
+        });
+        seedCoverageResolve(srv, { today, reportId: "rep-a", originalId: "drv-luka-1" });
+        seedCoverageResolve(srv, { today, reportId: "rep-b", originalId: "drv-petar-3", extra: { bus: "102" } });
+        srv.mockDbData.shifts.set(`drv-petar-3_${today}`, {
+            ...(srv.mockDbData.shifts.get(`drv-petar-3_${today}`) || {}),
+            bus: "102"
+        });
+        srv.mockDbData.buses.set("102", { number: "102", active: true, opsStatus: "active", groupId: "101" });
+        const payload = {
+            type: "replacement",
+            replacementDriverId: "drv-marko-2",
+            replacementBus: "101",
+            expectedOriginalRevision: 1,
+            expectedReplacementRevision: 0
+        };
+        const first = await srv.request("/api/staff/operational-incidents/rep-a/resolve", {
+            method: "PUT", token: "staff-token-disp", body: payload
+        });
+        assert.equal(first.status, 200, first.text);
+        const second = await srv.request("/api/staff/operational-incidents/rep-b/resolve", {
+            method: "PUT", token: "staff-token-disp", body: payload
+        });
+        assert.equal(second.status, 409, second.text);
+        assert.ok(
+            ["REVISION_CONFLICT", "DRIVER_NOT_AVAILABLE", "BUS_NOT_AVAILABLE", "REPLACEMENT_NOT_ELIGIBLE", "DUTY_ALREADY_ASSIGNED"].includes(second.json.code),
+            second.text
+        );
+        const retry = await srv.request("/api/staff/operational-incidents/rep-b/resolve", {
+            method: "PUT",
+            token: "staff-token-disp",
+            body: { ...payload, expectedReplacementRevision: 1 }
+        });
+        assert.equal(retry.status, 409, retry.text);
+        assert.ok(
+            retry.json.code === "DRIVER_NOT_AVAILABLE"
+            || retry.json.code === "REPLACEMENT_NOT_ELIGIBLE"
+            || (retry.json.blocks || []).includes("DUTY_OVERLAP"),
+            retry.text
+        );
+    } finally {
+        await srv.close();
+    }
 });

@@ -75,14 +75,20 @@ async function seedCompany() {
   });
   await companyRef.collection("drivers").doc(DRIVER_LUKA).set({
     active: true,
+    codeActivated: true,
     groupId: GROUP_310,
+    knownGroupIds: [GROUP_310],
+    companyId: COMPANY_ID,
     firstName: "Luka",
     lastName: "Kovacevic",
     name: "Luka Kovacevic"
   });
   await companyRef.collection("drivers").doc(DRIVER_MARKO).set({
     active: true,
+    codeActivated: true,
     groupId: GROUP_310,
+    knownGroupIds: [GROUP_310],
+    companyId: COMPANY_ID,
     firstName: "Marko",
     lastName: "Jovanovic",
     name: "Marko Jovanovic"

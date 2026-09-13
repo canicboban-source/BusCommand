@@ -19,7 +19,11 @@ function cockpitState() {
         name: "Original Driver",
         groupId: "101",
         lineId: "101",
+        knownGroupIds: ["101"],
         active: true,
+        codeActivated: true,
+        companyId: "qa-local",
+        postalCode: "1010",
         bus: "BUS-1",
         email: "original@example.test",
         phone: "+4310000001"
@@ -29,7 +33,11 @@ function cockpitState() {
         name: "Standby Driver",
         groupId: "101",
         lineId: "101",
+        knownGroupIds: ["101"],
         active: true,
+        codeActivated: true,
+        companyId: "qa-local",
+        postalCode: "1010",
         bus: "",
         email: "standby@example.test",
         phone: "+4310000002"
@@ -282,17 +290,23 @@ test.describe("Dispatcher cockpit resolution flows", () => {
         lineId: "101",
         knownGroupIds: ["101"],
         active: true,
+        codeActivated: true,
+        companyId: "qa-local",
+        postalCode: "1010",
         bus: "BUS-1",
         email: "original@example.test",
         phone: "+4310000001"
       },
       {
         id: "drv-knows",
-        name: "Knows Line Driver",
+        name: "Mila Reserve",
         groupId: "202",
         lineId: "202",
         knownGroupIds: ["202", "101"],
         active: true,
+        codeActivated: true,
+        companyId: "qa-local",
+        postalCode: "1010",
         bus: "",
         email: "knows@example.test",
         phone: "+4310000005"
@@ -304,9 +318,26 @@ test.describe("Dispatcher cockpit resolution flows", () => {
         lineId: "202",
         knownGroupIds: ["202"],
         active: true,
+        codeActivated: true,
+        companyId: "qa-local",
+        postalCode: "9999",
         bus: "",
         email: "other@example.test",
         phone: "+4310000006"
+      },
+      {
+        id: "drv-inactive-pin",
+        name: "Unactivated Driver",
+        groupId: "101",
+        lineId: "101",
+        knownGroupIds: ["101"],
+        active: true,
+        codeActivated: false,
+        companyId: "qa-local",
+        postalCode: "1010",
+        bus: "",
+        email: "unactivated@example.test",
+        phone: "+4310000007"
       }
     ];
     state.buses = [
@@ -348,11 +379,63 @@ test.describe("Dispatcher cockpit resolution flows", () => {
     await page.evaluate(() => window.openOpsAttentionPanel("coverage:report-coverage-knows"));
     const card = page.locator(".ops-attention-card").filter({ hasText: /unavailable|nedostupan|nicht verfügbar/i }).first();
     await expect(card).toBeVisible();
-    const otherGroup = card.locator('[data-attn-field="driver"] optgroup').filter({
-      has: page.locator('option[value="drv-knows"]')
+    await expect(card.locator('option[value="drv-knows"]')).toHaveCount(1);
+    await expect(card.locator('option[value="drv-other"]')).toHaveCount(0);
+    await expect(card.locator('option[value="drv-inactive-pin"]')).toHaveCount(0);
+    await expect(card.locator('option[value="drv-knows"]')).toHaveText("Mila Reserve");
+    await expect(card.locator('option[value="drv-knows"]')).not.toHaveText(/home group|same PLZ|pending leave|knows line|rest \d/i);
+    const radarIds = await page.evaluate(() =>
+      (window.listCoverageReplacementCandidates(window.state.reports[0]) || []).map((row) => row.id)
+    );
+    expect(radarIds).toEqual(["drv-knows"]);
+
+    const emptyCopy = {
+      en: "No eligible replacement for this duty.",
+      de: "Kein geeigneter Ersatz für diese Schicht.",
+      sr: "Nema podobnog vozača za ovu smenu."
+    };
+    const mixedRank = /home group|same PLZ|pending leave|knows line|rest \d/i;
+    for (const lang of ["en", "de", "sr"]) {
+      await page.evaluate((nextLang) => {
+        localStorage.setItem("buscommand_lang", nextLang);
+        if (window.state) window.state.language = nextLang;
+        const sel = document.getElementById("header-lang-select");
+        if (sel) {
+          sel.value = nextLang;
+          sel.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        window.openOpsAttentionPanel("coverage:report-coverage-knows");
+      }, lang);
+      const localized = page.locator(".ops-attention-card").filter({ hasText: /unavailable|nedostupan|nicht verfügbar/i }).first();
+      await expect(localized.locator('option[value="drv-knows"]')).toHaveText("Mila Reserve");
+      const optionText = await localized.locator('option[value="drv-knows"]').innerText();
+      expect(optionText).not.toMatch(mixedRank);
+      expect(optionText).not.toMatch(/No eligible replacement|Kein geeigneter Ersatz|Nema podobnog vozača/);
+    }
+
+    await page.evaluate(() => {
+      const other = window.state.drivers.find((row) => row.id === "drv-knows");
+      if (other) other.knownGroupIds = ["202"];
     });
-    await expect(otherGroup.locator("option").nth(0)).toHaveAttribute("value", "drv-knows");
-    await expect(otherGroup.locator("option[value='drv-knows']")).toContainText(/knows 101|zna 101|kennt 101/i);
+    for (const lang of ["en", "de", "sr"]) {
+      await page.evaluate((nextLang) => {
+        localStorage.setItem("buscommand_lang", nextLang);
+        if (window.state) window.state.language = nextLang;
+        const sel = document.getElementById("header-lang-select");
+        if (sel) {
+          sel.value = nextLang;
+          sel.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        window.openOpsAttentionPanel("coverage:report-coverage-knows");
+      }, lang);
+      const emptyCard = page.locator(".ops-attention-card").filter({ hasText: /unavailable|nedostupan|nicht verfügbar/i }).first();
+      const emptyText = await emptyCard.locator("select[data-attn-field='driver'] option").first().innerText();
+      expect(emptyText.trim()).toBe(emptyCopy[lang]);
+      for (const other of Object.values(emptyCopy)) {
+        if (other !== emptyCopy[lang]) expect(emptyText).not.toContain(other);
+      }
+      expect(emptyText).not.toMatch(mixedRank);
+    }
   });
 
   test("wrong shift code is corrected from catalog inside Needs attention", async ({ page }) => {
@@ -613,6 +696,23 @@ test.describe("Dispatcher cockpit resolution flows", () => {
       bus: "BUS-1",
       routeCode: "101.S01"
     }));
+    const month = todayIso().slice(0, 7);
+    const day = Number(todayIso().slice(8, 10));
+    const monthly = await page.evaluate(({ month, day }) => {
+      const sch = (window.state.schedules || []).find((s) =>
+        s.id === `drv-standby_${month}` || s.driverId === "drv-standby"
+      );
+      return sch?.parsedShifts?.[day] || sch?.parsedShifts?.[String(day)] || null;
+    }, { month, day });
+    expect(monthly).toEqual(expect.objectContaining({ type: "morning" }));
+    const tomorrow = (() => {
+      const [y, m, d] = todayIso().split("-").map(Number);
+      return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
+    })();
+    const d1 = await page.evaluate((date) =>
+      window.state.shifts.find((item) => item.driverId === "drv-standby" && item.date === date) || null
+    , tomorrow);
+    expect(d1).toBeNull();
   });
 
   test("desktop native select options remain readable on a light Windows-style popup", async ({ page }) => {

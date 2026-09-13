@@ -19,7 +19,6 @@ import { saveState } from "../core/state.js";
 import { busHasGroup } from "../data/bus-group-membership.js";
 import { busIsAssignable } from "../data/bus-ops.js";
 import { busOptions } from "./daily-plan.js";
-import { driverKnowsGroup } from "../data/driver-known-groups.js";
 import {
     collectOpsAttentionItems,
     collectInactiveBusAttentionItems,
@@ -32,7 +31,9 @@ import {
     applyCoverageResolution,
     resolveCoverageAvailableAgain,
     resolveCoverageAvailableAgainFromCard,
-    syncOpsPlanHealthAttentionState
+    syncOpsPlanHealthAttentionState,
+    listCoverageReplacementCandidates,
+    eligibilityUiText
 } from "./ops-attention.js";
 import { paintPlanHealthBanner } from "./plan-health-banner.js";
 import {
@@ -700,13 +701,7 @@ function activeCoverageIncident(driver, date) {
 const AVAILABLE_REPLACEMENT_TYPES = new Set(["off", "clear", "bereitschaft", "standby"]);
 
 function coverageDriverCandidates(report) {
-    const groupId = String(report?.groupId || report?.lineId || "");
-    return getVisibleDrivers().filter(driver => {
-        if (driver.active === false || driverUid(driver) === report.driverId) return false;
-        if (!driverKnowsGroup(driver, groupId)) return false;
-        const duty = getShiftForDriverIdOnly(driverUid(driver), report.date);
-        return !duty || AVAILABLE_REPLACEMENT_TYPES.has(String(duty.type || "").toLowerCase());
-    });
+    return listCoverageReplacementCandidates(report);
 }
 
 function coverageBusCandidates(report) {
@@ -782,8 +777,8 @@ function openCoverageResolver(reportId, preferredReplacementDriverId = "") {
     const busSelect = modal.querySelector("#ops-coverage-bus");
     const preferred = String(preferredReplacementDriverId || "");
     driverSelect.innerHTML = drivers.length
-        ? drivers.map(driver => `<option value="${escapeHtml(driverUid(driver))}" ${driverUid(driver) === preferred ? "selected" : ""}>${escapeHtml(driver.name)}</option>`).join("")
-        : `<option value="" disabled selected>${escapeHtml(t("ops_coverage_no_drivers"))}</option>`;
+        ? drivers.map(row => `<option value="${escapeHtml(row.id || driverUid(row.driver || row))}" ${String(row.id || driverUid(row.driver || row)) === preferred ? "selected" : ""}>${escapeHtml(row.label || row.name || "")}</option>`).join("")
+        : `<option value="" disabled selected>${escapeHtml(eligibilityUiText("no_candidates"))}</option>`;
     busSelect.innerHTML = buses.length
         ? buses.map(bus => {
             const number = String(bus.number || "");
@@ -794,7 +789,7 @@ function openCoverageResolver(reportId, preferredReplacementDriverId = "") {
     modal.querySelector("#ops-coverage-resolver-original").textContent =
         t("ops_coverage_original_driver", { driver: report.driver || "—" });
     modal.querySelector("#ops-coverage-resolver-status").textContent =
-        !drivers.length ? t("ops_coverage_no_drivers") : (!buses.length ? t("ops_coverage_no_buses") : "");
+        !drivers.length ? eligibilityUiText("no_candidates") : (!buses.length ? t("ops_coverage_no_buses") : "");
     modal.querySelector("button[type='submit']").disabled = !drivers.length || !buses.length;
     modal.classList.remove("hidden");
     modal.style.display = "flex";

@@ -82,7 +82,8 @@ test("ops-attention.js radar action and coverage resolution use driverId", async
     assert.match(source, /const replacementShift = getShiftForDriverIdOnly\(driverUid\(replacement\), report\.date\)/);
     assert.match(source, /setShiftForDriverIdOnly\(report\.driverId, original\.name \|\| "", report\.date, \{ type: "clear" \}\)/);
     assert.match(source, /setShiftForDriverIdOnly\(replacementDriverId, replacement\.name \|\| "", report\.date/);
-    assert.match(source, /isDriverFree\(driver, dateStr\)[\s\S]*?getShiftForDriverIdOnly\(driverUid\(driver\), dateStr\)/);
+    assert.match(source, /evaluateReplacementEligibility\(replacementEligibilityInput\(report, driver\)\)/);
+    assert.match(source, /getShiftForDriverIdOnly\(driverUid\(driver\), dateStr\)/);
     assert.match(source, /usedBusesOnDate\(dateStr, excludeDriverId\)[\s\S]*?getShiftForDriverIdOnly\(driverUid\(driver\), dateStr\)/);
 });
 

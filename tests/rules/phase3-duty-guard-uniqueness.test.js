@@ -87,13 +87,16 @@ async function seedBase() {
   await seedActiveDutyCatalog(companyRef, GROUP_ID, DUTY_CODE);
   await seedActiveDutyCatalog(companyRef, GROUP_B, "311.S01");
   await companyRef.collection("drivers").doc(DRIVER_A).set({
-    active: true, groupId: GROUP_ID, firstName: "Dušan", lastName: "Popović", name: "Dušan Popović"
+    active: true, codeActivated: true, groupId: GROUP_ID, knownGroupIds: [GROUP_ID],
+    companyId: COMPANY_ID, firstName: "Dušan", lastName: "Popović", name: "Dušan Popović"
   });
   await companyRef.collection("drivers").doc(DRIVER_B).set({
-    active: true, groupId: GROUP_ID, firstName: "Aleksandar", lastName: "Nikolić", name: "Aleksandar Nikolić"
+    active: true, codeActivated: true, groupId: GROUP_ID, knownGroupIds: [GROUP_ID],
+    companyId: COMPANY_ID, firstName: "Aleksandar", lastName: "Nikolić", name: "Aleksandar Nikolić"
   });
   await companyRef.collection("drivers").doc(DRIVER_C).set({
-    active: true, groupId: GROUP_ID, firstName: "Nemanja", lastName: "Petrović", name: "Nemanja Petrović"
+    active: true, codeActivated: true, groupId: GROUP_ID, knownGroupIds: [GROUP_ID],
+    companyId: COMPANY_ID, firstName: "Nemanja", lastName: "Petrović", name: "Nemanja Petrović"
   });
   await companyRef.collection("buses").doc("bus-101").set({
     number: "101", active: true, opsStatus: "active", groupId: GROUP_ID, lineIds: [GROUP_ID]
@@ -543,6 +546,8 @@ test("FAZA 3 / 9: Canonical Duty Instance Guard Uniqueness Suite", async (t) => 
       severity: "sev_critical",
       shiftType: "morning",
       shiftName: DUTY_CODE,
+      start: "06:00",
+      end: "14:00",
       bus: "101",
       reason: "Vozač se razboleo",
       description: "Zamena potrebna",
@@ -643,6 +648,8 @@ test("FAZA 3 / 9: Canonical Duty Instance Guard Uniqueness Suite", async (t) => 
       severity: "sev_critical",
       shiftType: "morning",
       shiftName: DUTY_CODE,
+      start: "06:00",
+      end: "14:00",
       bus: "101",
       reason: "Vozač se razboleo",
       description: "Zamena potrebna",

@@ -49,6 +49,11 @@ const {
 } = require("./assignment-resource-guard");
 const { getActiveServicePlan, getActiveServicePlanInTx } = require("./service-plans");
 const {
+  evaluateReplacementEligibility,
+  auditEligibilitySnapshot,
+  neighborDates
+} = require("../js/dispatcher/replacement-eligibility.cjs");
+const {
   canonicalDutyGuardKey,
   dutyGuardRef,
   evaluateDutyGuardClaim,
@@ -63,6 +68,11 @@ const { commitImportedDriversWithIdentityGuard } = require("./company-admin-driv
 let _assignmentMutationHookForTests = null;
 function setAssignmentMutationHookForTests(fn) {
   _assignmentMutationHookForTests = typeof fn === "function" ? fn : null;
+}
+/** Test-only barrier in coverage resolve after reads, before eligibility. */
+let _replacementResolveHookForTests = null;
+function setReplacementResolveHookForTests(fn) {
+  _replacementResolveHookForTests = typeof fn === "function" ? fn : null;
 }
 const {
   PlanImportValidationError,
@@ -3365,16 +3375,48 @@ function registerDriverRoutes(app, deps) {
       const busConflictQuery = companyRef.collection("shifts")
         .where("date", "==", date)
         .where("bus", "==", parsed.data.replacementBus);
+      // Tenant: companies/{req.staff.companyId}/vacations
+      // Driver + live window: driverId == replacement AND end >= target date (composite index).
+      // Historical ended leaves drop out; overlapping/current/future remain. No fail-open limit.
+      const vacationQuery = companyRef.collection("vacations")
+        .where("driverId", "==", parsed.data.replacementDriverId)
+        .where("end", ">=", date);
+      const replacementDriverLiveRef = companyRef.collection("drivers").doc(parsed.data.replacementDriverId);
+      const neighborDateList = neighborDates(date).filter((item) => item !== date);
+      const neighborShiftRefs = neighborDateList.map((item) =>
+        companyRef.collection("shifts").doc(shiftDocumentId(parsed.data.replacementDriverId, item))
+      );
+      const extraMonths = [...new Set(neighborDateList.map((item) => scheduleMonthFromDate(item)))]
+        .filter((item) => item && item !== month);
+      const extraScheduleRefs = extraMonths.map((item) =>
+        companyRef.collection("schedules").doc(scheduleDocumentId(parsed.data.replacementDriverId, replacementName, item).canonical)
+      );
+      const profileSnap = await companyRef.collection("profile").doc("main").get();
+      const profileData = profileSnap.exists ? (profileSnap.data() || {}) : {};
+      const timezone = validTimezone(profileData.timezone) ? profileData.timezone : "Europe/Vienna";
 
       const result = await db().runTransaction(async (tx) => {
-        const [reportSnap, originalShiftSnap, replacementShiftSnap, originalScheduleSnap, replacementScheduleSnap, busConflicts] = await Promise.all([
+        const coreSnaps = await Promise.all([
           tx.get(reportRef),
           tx.get(originalShiftRef),
           tx.get(replacementShiftRef),
           tx.get(originalScheduleRef),
           tx.get(replacementScheduleRef),
-          tx.get(busConflictQuery)
+          tx.get(busConflictQuery),
+          tx.get(replacementDriverLiveRef),
+          tx.get(vacationQuery),
+          ...neighborShiftRefs.map((ref) => tx.get(ref)),
+          ...extraScheduleRefs.map((ref) => tx.get(ref))
         ]);
+        const reportSnap = coreSnaps[0];
+        const originalShiftSnap = coreSnaps[1];
+        const replacementShiftSnap = coreSnaps[2];
+        const originalScheduleSnap = coreSnaps[3];
+        const replacementScheduleSnap = coreSnaps[4];
+        const busConflicts = coreSnaps[5];
+        const replacementDriverLiveSnap = coreSnaps[6];
+        const neighborShiftSnaps = coreSnaps.slice(8, 8 + neighborShiftRefs.length);
+        const extraScheduleSnaps = coreSnaps.slice(8 + neighborShiftRefs.length);
         const replacementGroupId = replacementDriver.groupId || replacementDriver.lineId || groupId;
         const lockScopes = new Map();
         if (groupId && month) lockScopes.set(`${groupId}|${month}`, { groupId, month });
@@ -3479,6 +3521,69 @@ function registerDriverRoutes(app, deps) {
             };
             throw error;
           }
+        }
+
+        const liveCandidate = replacementDriverLiveSnap.exists
+          ? { id: parsed.data.replacementDriverId, ...(replacementDriverLiveSnap.data() || {}), name: replacementName }
+          : null;
+        const candidateShifts = [];
+        if (replacementShiftSnap.exists) {
+          candidateShifts.push({
+            ...(replacementShiftSnap.data() || {}),
+            date,
+            driverId: parsed.data.replacementDriverId
+          });
+        }
+        neighborShiftSnaps.forEach((snap, index) => {
+          if (!snap.exists) return;
+          candidateShifts.push({
+            ...(snap.data() || {}),
+            date: neighborDateList[index],
+            driverId: parsed.data.replacementDriverId
+          });
+        });
+        const candidateSchedules = [];
+        if (replacementScheduleSnap.exists) {
+          candidateSchedules.push({ month, ...(replacementScheduleSnap.data() || {}) });
+        }
+        extraScheduleSnaps.forEach((snap, index) => {
+          if (!snap.exists) return;
+          candidateSchedules.push({ month: extraMonths[index], ...(snap.data() || {}) });
+        });
+        if (_replacementResolveHookForTests) {
+          await _replacementResolveHookForTests({
+            phase: "before-eligibility",
+            companyRef,
+            tx,
+            date,
+            replacementDriverId: parsed.data.replacementDriverId
+          });
+        }
+        const vacationSnapLive = await tx.get(vacationQuery);
+        const absences = (vacationSnapLive.docs || [])
+          .map((doc) => doc.data() || {})
+          .filter((row) => String(row.driverId || "").trim() === parsed.data.replacementDriverId);
+        const eligibility = evaluateReplacementEligibility({
+          tenantId: req.staff.companyId,
+          candidate: liveCandidate,
+          originalDriverId: initialReport.driverId,
+          targetGroupId: groupId,
+          targetShift: {
+            date,
+            type: shiftData.type,
+            start: shiftData.start || initialReport.start || null,
+            end: shiftData.end || initialReport.end || null
+          },
+          timezone,
+          shifts: candidateShifts,
+          schedules: candidateSchedules,
+          absences
+        });
+        if (!eligibility.eligible) {
+          const error = new Error("replacement_not_eligible");
+          error.code = "REPLACEMENT_NOT_ELIGIBLE";
+          error.blocks = (eligibility.hardBlocks || []).map((row) => row.code);
+          throw error;
         }
 
         for (const gate of importGates) {
@@ -3596,7 +3701,8 @@ function registerDriverRoutes(app, deps) {
             date,
             affectedEntity: initialReport.affectedEntity || "driver",
             revision: problemRevision,
-            resolutionType: "replacement"
+            resolutionType: "replacement",
+            eligibility: auditEligibilitySnapshot(eligibility)
           }
         });
         return { replacementShift, resolution, problemRevision };
@@ -3707,6 +3813,14 @@ function registerDriverRoutes(app, deps) {
       }
       if (error.code === "incident_not_active") {
         return res.status(409).json({ success: false, code: "INCIDENT_NOT_ACTIVE", error: "Incident više nije aktivan." });
+      }
+      if (error.code === "REPLACEMENT_NOT_ELIGIBLE") {
+        return res.status(409).json({
+          success: false,
+          code: "REPLACEMENT_NOT_ELIGIBLE",
+          blocks: Array.isArray(error.blocks) ? error.blocks : [],
+          error: "Zamena nije dozvoljena."
+        });
       }
       req.log?.error?.({ err: error }, "Atomsko rešavanje operativnog incidenta nije uspelo");
       return res.status(500).json({ success: false, error: "Incident nije mogao bezbedno da se reši." });
@@ -5028,5 +5142,6 @@ module.exports = {
   inclusiveDays, vacationOverlaps,
   generateActivationOtp, verifyActivationOtp, isValidPersonalLoginCode,
   hashSecret, activationExpiresAt, smsProvider,
-  setAssignmentMutationHookForTests
+  setAssignmentMutationHookForTests,
+  setReplacementResolveHookForTests
 };
