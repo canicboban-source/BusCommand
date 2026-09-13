@@ -14,6 +14,11 @@ import { t, tp } from "../ui/i18n.js";
 import { icon, tx } from "../ui/markup.js";
 import { rowActionsMenuHtml } from "../ui/row-actions-menu.js";
 import { ensureXlsx } from "../core/office-parsers.js";
+import {
+    stripDriverSecrets,
+    viewCompanyDrivers,
+    findCompanyDriverRecord
+} from "./company-admin-driver-records.js";
 
 const MAX_FILE_BYTES = 1_000_000;
 /** Keep in sync with js/imports/driver-import-contract.cjs (D24.2 guard tx write budget). */
@@ -106,18 +111,6 @@ function resolveDriverGroupId(groupValue, fallbackGroupId) {
     return match ? String(match.id) : fallbackGroupId;
 }
 
-function stripDriverSecrets(driver) {
-    if (!driver || typeof driver !== "object") return driver;
-    const next = { ...driver };
-    delete next.pin;
-    delete next.company_code;
-    delete next.companyCode;
-    delete next.activationOtp;
-    delete next.loginCode;
-    delete next.password;
-    return next;
-}
-
 function activationLabel(driver) {
     const status = driver?.activationStatus
         || (driver?.codeActivated === true ? "activated" : "pending");
@@ -133,10 +126,16 @@ function deliveryToast(activation) {
 }
 
 function companyDrivers() {
-    const companyId = window.currentUser?.companyId;
-    return (window.state.drivers || [])
-        .map(stripDriverSecrets)
-        .filter((driver) => !companyId || !driver.companyId || driver.companyId === companyId);
+    return viewCompanyDrivers(window.state?.drivers, window.currentUser?.companyId);
+}
+
+/** Tenant-scoped original row in `window.state.drivers` — mutations only. */
+function findMutableCompanyDriver(driverId) {
+    return findCompanyDriverRecord(
+        window.state?.drivers,
+        window.currentUser?.companyId,
+        driverId
+    );
 }
 
 function companyGroups() {
@@ -696,7 +695,7 @@ function changeCompanyDriversPage(page) {
 }
 
 function toggleCompanyDriverStatus(driverId) {
-    const driver = companyDrivers().find((entry) => entry.id === driverId);
+    const driver = findMutableCompanyDriver(driverId);
     if (!driver || statusPending.has(driverId)) return;
     const nextActive = driver.active === false;
     showConfirm(t(nextActive ? "driver_confirm_activate" : "driver_confirm_deactivate", { name: driverName(driver) }), async () => {
@@ -753,7 +752,7 @@ function deleteCompanyDriver(driverId) {
 function requestCompanyDriverActivationReset() {
     if (resetActivationPending || editSavePending) return;
     const driverId = String(document.getElementById("ca-driver-edit-id")?.value || "").trim();
-    const driver = companyDrivers().find((entry) => entry.id === driverId);
+    const driver = findMutableCompanyDriver(driverId);
     if (!driver) {
         showImportFeedback(t("ca_drivers_edit_not_found"), "error");
         return;
@@ -905,7 +904,7 @@ async function saveCompanyDriverEdit() {
     const cpcExpiry = String(document.getElementById("ca-driver-edit-cpc-expiry")?.value || "").trim();
     const medicalExpiry = String(document.getElementById("ca-driver-edit-medical-expiry")?.value || "").trim();
     const groupId = String(document.getElementById("ca-driver-edit-group")?.value || "").trim();
-    const driver = companyDrivers().find((entry) => entry.id === driverId);
+    const driver = findMutableCompanyDriver(driverId);
     if (!driver) {
         showToast(t("ca_drivers_edit_not_found"), "error");
         return;

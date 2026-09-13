@@ -376,10 +376,19 @@ test.describe("UI smoke", () => {
       if (typeof window.renderCompanyAdminDrivers === "function") window.renderCompanyAdminDrivers();
     });
     await page.locator("#ca-drivers-status-filter").selectOption("inactive");
-    await expect(page.locator("#ca-drivers-directory tbody tr")).toHaveCount(1);
-    await page.locator("#ca-drivers-directory .row-actions-trigger").click();
+    const inactiveRow = page.locator("#ca-drivers-directory tbody tr");
+    await expect(inactiveRow).toHaveCount(1);
+    await expect(inactiveRow).toContainText("E2E Driver");
+    await inactiveRow.locator(".row-actions-trigger").click();
     await page.locator("body > .row-actions-menu .company-driver-status-action:visible").click();
+    await expect(page.locator("#global-confirm-modal")).toBeVisible();
     await page.locator("#global-confirm-yes").click();
+    await expect.poll(() => page.evaluate(() => {
+      const seed = (window.state.drivers || []).find((driver) =>
+        driver.id === "drv-e2e" || driver.name === "E2E Driver"
+      );
+      return seed?.active;
+    })).toBe(true);
     await expect(page.locator("#ca-drivers-stat-active")).toHaveText("3");
     await expect(page.locator("#ca-drivers-directory tbody tr")).toHaveCount(0);
 
