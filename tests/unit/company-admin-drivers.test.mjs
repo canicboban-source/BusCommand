@@ -62,20 +62,24 @@ test("Company Admin can edit driver profile fields and CA-only EID/PIN controls"
   assert.match(html, /id="ca-driver-edit-modal"/);
   assert.match(html, /id="ca-driver-edit-first-name"/);
   assert.match(html, /id="ca-driver-edit-eid"/);
-  assert.match(html, /id="ca-driver-edit-pin"/);
+  assert.doesNotMatch(html, /id="ca-driver-edit-pin"/);
+  assert.doesNotMatch(html, /id="ca-driver-add-pin"/);
+  assert.match(html, /id="ca-driver-reset-activation"/);
   assert.match(client, /openCompanyDriverEdit/);
   assert.match(client, /ApiClient\.updateCompanyDriver/);
   assert.match(client, /listCompanyDrivers/);
-  assert.match(client, /setCompanyDriverPersonalCode/);
+  assert.match(client, /resetCompanyDriverActivation/);
+  assert.doesNotMatch(client, /setCompanyDriverPersonalCode/);
   assert.match(client, /createCompanyDriver/);
   assert.match(client, /ApiClient\.createCompanyDriver/);
   assert.match(client, /ca_drivers_eid/);
   assert.doesNotMatch(client, /updateCompanyDriver\([^)]*(?:eid|pin|company_code)/);
   assert.match(api, /updateCompanyDriver\(companyId, driverId, payload\)/);
   assert.match(api, /createCompanyDriver\(companyId, payload\)/);
-  assert.match(api, /personal-code/);
+  assert.match(api, /reset-activation/);
+  assert.doesNotMatch(api, /personal-code/);
   assert.match(validation, /companyDriverProfileBody/);
-  assert.match(validation, /companyDriverPersonalCodeBody/);
+  assert.match(validation, /companyDriverResetActivationBody/);
   assert.match(validation, /companyDriverCreateBody/);
   assert.match(validation, /\.strict\(\)/);
   const profileBodyBlock = validation.match(
@@ -87,14 +91,15 @@ test("Company Admin can edit driver profile fields and CA-only EID/PIN controls"
   assert.match(server, /registerCompanyAdminDriverRoutes/);
   assert.match(server, /app\.patch\(\s*"\/api\/company-admin\/drivers\/:driverId"/);
   assert.match(server, /driver_profile_updated/);
-  assert.match(server, /driver_personal_code_set/);
+  assert.match(server, /DIRECT_PIN_SET_REMOVED/);
+  assert.doesNotMatch(server, /driver_personal_code_set/);
   assert.doesNotMatch(server, /batch\.update\([^\n]*\{\s*eid\s*\}/);
   const registerSrc = await read("../../server/register-company-admin-drivers.js");
   assert.match(registerSrc, /app\.post\(\s*"\/api\/company-admin\/drivers"/);
   assert.match(registerSrc, /createManualCompanyDriver/);
   assert.match(registerSrc, /listCompanyDriversForAdmin/);
   assert.match(registerSrc, /driver_manual_created/);
-  assert.match(validation, /\\d\{5,12\}/);
+  assert.doesNotMatch(validation, /companyDriverPersonalCodeBody/);
   assert.match(firebase, /sanitizeDriverRecordForClient/);
   assert.match(firebase, /role !== "company-admin" && role !== "superadmin"/);
   // Manual add must not chain CSV import + PIN (partial-state risk).
@@ -125,6 +130,8 @@ test("driver account translations are complete in pilot languages", async () => 
       "ca_nav_drivers", "ca_drivers_title", "ca_drivers_import_title", "ca_drivers_directory_title",
       "ca_drivers_security_note", "ca_drivers_edit_title", "ca_drivers_edit_hint", "ca_drivers_edit_saved",
       "ca_drivers_eid", "ca_drivers_pin_label", "ca_drivers_pin_saved",
+      "ca_drivers_pin_note", "ca_drivers_pin_missing", "ca_drivers_pin_placeholder",
+      "ca_drivers_pin_set", "ca_drivers_add_sms_note", "ca_drivers_add_pin_invalid",
       "ca_drivers_download_xlsx", "ca_drivers_plz", "ca_drivers_activation",
       "ca_drivers_error_credentials_column", "ca_drivers_error_xlsx",
       "ca_drivers_import_hint", "ca_drivers_choose_file"

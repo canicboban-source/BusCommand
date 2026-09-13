@@ -18,6 +18,20 @@ const {
   findEidConflict,
   eidKey
 } = require("./driver-identity-guard");
+const {
+  generateActivationOtp,
+  activationExpiresAt,
+  hashSecret,
+  isActivationExpired
+} = require("./driver-activation-otp");
+
+const ACTIVATION_HASH_COST = 12;
+
+function activationStatusFor(profile, credentials, now = new Date()) {
+  if (profile?.codeActivated === true) return "activated";
+  if (!credentials?.activationCodeHash || isActivationExpired(credentials, now)) return "expired";
+  return "pending";
+}
 
 /** Test-only: runs after in-tx uniqueness reads, before profile/credential/guard writes. */
 let _createDriverMutationHookForTests = null;
@@ -36,11 +50,12 @@ function normalizeEid(value) {
 async function createManualCompanyDriver({
   db,
   FieldValue,
-  bcryptHash,
+  bcryptHash: _bcryptHash,
   randomUUID,
   companyId,
   body,
-  actorUid
+  actorUid: _actorUid,
+  activation
 }) {
   const companyRef = db.collection("companies").doc(companyId);
   const profileCol = companyRef.collection("drivers");
@@ -54,8 +69,13 @@ async function createManualCompanyDriver({
   if (!knownGroupIds.includes(body.groupId)) knownGroupIds.unshift(body.groupId);
 
   const eid = normalizeEid(body.eid);
-  const loginCodeHash = await bcryptHash(body.companyCode, 12);
   const driverId = randomUUID();
+  let activationCodeHash = activation?.activationCodeHash;
+  let expiresAt = activation?.activationExpiresAt;
+  if (!activationCodeHash) {
+    activationCodeHash = await hashSecret(generateActivationOtp(), ACTIVATION_HASH_COST);
+    expiresAt = activationExpiresAt().toISOString();
+  }
 
   const { resolveLicenseSnapshot } = require("./license-packages");
 
@@ -119,21 +139,17 @@ async function createManualCompanyDriver({
       knownGroupIds,
       companyId,
       active: true,
-      codeActivated: true,
+      codeActivated: false,
       licenseExpiry: body.licenseExpiry || "",
       cpcExpiry: body.cpcExpiry || "",
       medicalExpiry: body.medicalExpiry || "",
-      createdAt: nowTs,
-      personalCodeSetAt: nowTs,
-      personalCodeSetBy: actorUid
+      createdAt: nowTs
     });
     tx.set(credentialCol.doc(driverId), {
       eid,
-      loginCodeHash,
-      activationUsedAt: nowTs,
-      activatedAt: nowTs,
-      personalCodeUpdatedAt: nowTs,
-      personalCodeUpdatedBy: actorUid,
+      activationCodeHash,
+      activationExpiresAt: expiresAt,
+      activationUsedAt: null,
       createdAt: nowTs
     });
     writeDriverIdentityGuardBumpInTx(tx, FieldValue, guard);
@@ -141,8 +157,7 @@ async function createManualCompanyDriver({
 
   return {
     driverId,
-    companyCode: body.companyCode,
-    codeActivated: true,
+    codeActivated: false,
     driver: {
       id: driverId,
       firstName: body.firstName,
@@ -157,13 +172,69 @@ async function createManualCompanyDriver({
       knownGroupIds,
       companyId,
       active: true,
-      codeActivated: true,
-      hasPersonalCode: true,
+      codeActivated: false,
+      hasPersonalCode: false,
+      activationStatus: "pending",
       licenseExpiry: body.licenseExpiry || "",
       cpcExpiry: body.cpcExpiry || "",
       medicalExpiry: body.medicalExpiry || ""
     }
   };
+}
+
+/**
+ * CA PIN reset / OTP resend: last committed hash wins. Never returns plaintext
+ * to HTTP callers — `otp` is ephemeral for SMS only.
+ * Activated accounts lose loginCodeHash and become pending; pending accounts rotate OTP.
+ */
+async function resetCompanyDriverActivation({
+  db,
+  FieldValue,
+  companyId,
+  driverId,
+  generateOtp = generateActivationOtp,
+  hashOtp = (value) => hashSecret(value, ACTIVATION_HASH_COST)
+}) {
+  const otp = generateOtp();
+  const activationCodeHash = await hashOtp(otp);
+  const expiresAt = activationExpiresAt().toISOString();
+  const companyRef = db.collection("companies").doc(companyId);
+  const profileRef = companyRef.collection("drivers").doc(driverId);
+  const credentialRef = companyRef.collection("driver_credentials").doc(driverId);
+
+  let phone = "";
+  await db.runTransaction(async (tx) => {
+    const [profileSnap, credentialSnap] = await Promise.all([
+      tx.get(profileRef),
+      tx.get(credentialRef)
+    ]);
+    if (!profileSnap.exists || !credentialSnap.exists) {
+      const err = new Error("not-found");
+      err.code = "not-found";
+      throw err;
+    }
+    phone = String(profileSnap.data()?.phone || "");
+    const deleteField = typeof FieldValue.delete === "function" ? FieldValue.delete() : undefined;
+    tx.update(credentialRef, {
+      activationCodeHash,
+      activationExpiresAt: expiresAt,
+      activationUsedAt: null,
+      ...(deleteField ? {
+        loginCodeHash: deleteField,
+        companyCodeHash: deleteField,
+        temporaryCodeHash: deleteField,
+        temporaryHash: deleteField
+      } : {
+        loginCodeHash: null,
+        companyCodeHash: null
+      })
+    });
+    tx.update(profileRef, {
+      codeActivated: false
+    });
+  });
+
+  return { driverId, otp, phone };
 }
 
 /**
@@ -264,18 +335,20 @@ async function listCompanyDriversForAdmin({ db, companyId }) {
   const eidById = new Map(
     credSnap.docs.map((doc) => [doc.id, normalizeEid(doc.data()?.eid)])
   );
-  const hasLoginCodeById = new Map(
-    credSnap.docs.map((doc) => [doc.id, Boolean(doc.data()?.loginCodeHash)])
+  const credById = new Map(
+    credSnap.docs.map((doc) => [doc.id, doc.data() || {}])
   );
 
   const drivers = profileSnap.docs.map((doc) => {
     const data = doc.data() || {};
     const eid = eidById.get(doc.id) || "";
+    const credentials = credById.get(doc.id) || {};
     const homeGroup = data.groupId || data.lineId || "";
     const known = Array.isArray(data.knownGroupIds)
       ? data.knownGroupIds.map((id) => String(id || "").trim()).filter(Boolean)
       : [];
     if (homeGroup && !known.includes(homeGroup)) known.unshift(homeGroup);
+    const activationStatus = activationStatusFor(data, credentials);
     return {
       id: doc.id,
       firstName: data.firstName || "",
@@ -291,7 +364,8 @@ async function listCompanyDriversForAdmin({ db, companyId }) {
       eid,
       active: data.active !== false,
       codeActivated: data.codeActivated === true,
-      hasPersonalCode: hasLoginCodeById.get(doc.id) === true || data.codeActivated === true,
+      hasPersonalCode: Boolean(credentials.loginCodeHash) && data.codeActivated === true,
+      activationStatus,
       licenseExpiry: data.licenseExpiry || "",
       cpcExpiry: data.cpcExpiry || "",
       medicalExpiry: data.medicalExpiry || "",
@@ -309,6 +383,7 @@ async function listCompanyDriversForAdmin({ db, companyId }) {
 
 module.exports = {
   createManualCompanyDriver,
+  resetCompanyDriverActivation,
   commitImportedDriversWithIdentityGuard,
   listCompanyDriversForAdmin,
   setCreateDriverMutationHookForTests,
@@ -316,5 +391,6 @@ module.exports = {
   profileHasCredentialFieldKey,
   CREDENTIAL_FIELDS,
   normalizeEid,
-  eidKey
+  eidKey,
+  activationStatusFor
 };

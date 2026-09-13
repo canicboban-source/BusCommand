@@ -1,6 +1,6 @@
 // BusCommand — staff surface action handlers
 import { applyBrandingSettings, clearCompanyBrandingLogo, handleCompanyBrandingLogoFile } from "./admin/company-admin-branding.js";
-import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriverAddModal, closeCompanyDriverEdit, confirmCompanyDriversImport, deleteCompanyDriver, toggleDriverPinVisibility, handleCompanyDriversFile, handleCompanyDriversFilter, handleCompanyDriversSearch, openCompanyDriverAddModal, openCompanyDriverEdit, saveCompanyDriverEdit, submitCompanyDriverManualAdd, toggleCompanyDriverStatus } from "./admin/company-admin-drivers.js";
+import { changeCompanyDriversPage, clearCompanyDriversImport, closeCompanyDriverAddModal, closeCompanyDriverEdit, confirmCompanyDriversImport, deleteCompanyDriver, handleCompanyDriversFile, handleCompanyDriversFilter, handleCompanyDriversSearch, openCompanyDriverAddModal, openCompanyDriverEdit, requestCompanyDriverActivationReset, saveCompanyDriverEdit, submitCompanyDriverManualAdd, toggleCompanyDriverStatus } from "./admin/company-admin-drivers.js";
 import { renderCompanyAdminBuses, openCompanyBusesOverview, openCaBusAddModal, closeCaBusAddModal, submitCaBusAdd, openCaBusEdit, saveCaBusEdit, cancelCaBusEdit, changeCaBusGroup, quickSetCaBusStatus, setCaBusOtherLine, toggleCaBusActive } from "./admin/company-admin-buses.js";
 import { cancelCompanyGroupEdit, deleteCompanyGroup, focusCompanyGroupForm, saveCompanyGroup, startEditCompanyGroup } from "./admin/company-admin-groups.js";
 import { clearCompanyServicePlanPreview, closeCompanyServicePlanDuty, closeCompanyServicePlanHistory, deleteDraftDuty, discardServicePlanDraft, handleCompanyServicePlanFile, handleCompanyServicePlanGroupChange, openAddDutyForm, closeAddDutyForm, openCompanyServicePlanDuty, openCompanyServicePlanHistory, openEditDutyForm, closeEditDutyForm, publishCompanyServicePlan, publishServicePlanDraft, renderDraftDutyTable, renderServicePlanEditor, startServicePlanDraft, submitAddDuty, submitEditDuty, activateCompanyServicePlanVersion } from "./admin/company-admin-service-plan.js";
@@ -572,7 +572,7 @@ const HANDLERS = {
     removeCompanyDispatcher,
     toggleCompanyDriverStatus,
     deleteCompanyDriver,
-    toggleDriverPinVisibility,
+    requestCompanyDriverActivationReset,
     toggleDriverActive,
     toggleDriverKG,
     toggleTheme,

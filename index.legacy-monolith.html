@@ -1396,7 +1396,7 @@
                                 <div>
                                     <span class="service-plan-kicker" data-i18n="ca_drivers_add_kicker">JEDAN VOZAČ</span>
                                     <h3 data-i18n="ca_drivers_add_title">Dodaj vozača ručno</h3>
-                                    <p data-i18n="ca_drivers_add_hint">Redosled: EID, ime, prezime, email, telefon, PIN, grupa(e).</p>
+                                    <p data-i18n="ca_drivers_add_hint">Redosled: EID, ime, prezime, email, telefon, PLZ, grupa(e).</p>
                                 </div>
                                 <i data-lucide="user-plus" aria-hidden="true"></i>
                             </div>
@@ -1471,7 +1471,7 @@
                                     <i data-lucide="x" style="width:16px;height:16px;"></i>
                                 </button>
                             </div>
-                            <p style="margin:0 0 16px;font-size:0.85rem;color:var(--text-muted);" data-i18n="ca_drivers_add_hint">Redosled: EID, ime, prezime, email, telefon, PIN, grupa(e).</p>
+                            <p style="margin:0 0 16px;font-size:0.85rem;color:var(--text-muted);" data-i18n="ca_drivers_add_hint">Redosled: EID, ime, prezime, email, telefon, PLZ, grupa(e).</p>
                             <form id="ca-driver-add-form" class="company-drivers-add-form" data-submit-action="submitCompanyDriverManualAdd" novalidate>
                                 <div class="company-drivers-add-fields">
                                     <label class="form-group" for="ca-driver-add-eid">
@@ -1510,13 +1510,6 @@
                                         <span data-i18n="ca_drivers_medical_expiry">Istek medicinskog pregleda</span>
                                         <input type="date" id="ca-driver-add-medical-expiry" autocomplete="off">
                                     </label>
-                                    <label class="form-group" for="ca-driver-add-pin">
-                                        <span data-i18n="ca_drivers_add_pin">PIN (5–12 cifara)</span>
-                                        <span class="company-pin-input-wrap">
-                                            <input type="password" id="ca-driver-add-pin" inputmode="numeric" pattern="[0-9]{5,12}" minlength="5" maxlength="12" value="" autocomplete="new-password" required data-i18n-placeholder="ca_drivers_pin_placeholder">
-                                            <button type="button" class="company-pin-toggle" data-action="toggleDriverPinVisibility" data-action-args='["ca-driver-add-pin"]' aria-label="PIN" title="PIN"><i data-lucide="eye"></i></button>
-                                        </span>
-                                    </label>
                                     <label class="form-group" for="ca-driver-add-group">
                                         <span data-i18n="ca_drivers_add_primary_group">Primarna grupa</span>
                                         <select id="ca-driver-add-group" required>
@@ -1529,7 +1522,7 @@
                                     <p class="company-driver-known-hint" data-i18n="ca_drivers_add_extra_groups_hint">Disponenti svih označenih grupa vide ovog vozača.</p>
                                     <div id="ca-driver-add-known-groups" class="company-driver-known-grid"></div>
                                 </fieldset>
-                                <p class="company-drivers-security-note"><i data-lucide="smartphone"></i> <span data-i18n="ca_drivers_add_sms_note">SMS aktivacija na telefon; uneti PIN postaje prijavni kod.</span></p>
+                                <p class="company-drivers-security-note"><i data-lucide="smartphone"></i> <span data-i18n="ca_drivers_add_sms_note">Sistem šalje jednokratni aktivacioni kod SMS-om. Vozač zatim sam postavlja lični PIN.</span></p>
                                 <div class="company-driver-add-actions">
                                     <button type="button" class="btn-secondary" data-action="closeCompanyDriverAddModal"><span data-i18n="btn_cancel">Otkaži</span></button>
                                     <button type="submit" id="ca-driver-add-submit" class="btn-primary company-drivers-add-submit">
@@ -1550,7 +1543,7 @@
                                 <i data-lucide="user-round-pen" style="width:20px;height:20px;color:var(--primary-color);"></i>
                                 <span data-i18n="ca_drivers_edit_title">Izmena profila vozača</span>
                             </h3>
-                            <p style="margin:0 0 16px;font-size:0.82rem;color:var(--text-muted);" data-i18n="ca_drivers_edit_hint">CA vidi EID i može postaviti novi lični kod (PIN). Disponent vidi samo ime, email i telefon.</p>
+                            <p style="margin:0 0 16px;font-size:0.82rem;color:var(--text-muted);" data-i18n="ca_drivers_edit_hint">CA vidi EID. Disponent vidi samo ime, email i telefon.</p>
                             <input type="hidden" id="ca-driver-edit-id" value="">
                             <div class="company-driver-edit-grid">
                                 <label class="form-group" for="ca-driver-edit-eid">
@@ -1602,12 +1595,6 @@
                                         <option value="inactive" data-i18n="driver_status_inactive">Neaktivan</option>
                                     </select>
                                 </label>
-                                <label class="form-group company-driver-edit-group" for="ca-driver-edit-pin">
-                                    <span data-i18n="ca_drivers_pin_label">Novi lični kod (PIN)</span>
-                                    <span class="company-pin-input-wrap">
-                                        <input type="password" id="ca-driver-edit-pin" inputmode="numeric" pattern="[0-9]{5,12}" minlength="5" maxlength="12" value="" autocomplete="new-password" data-i18n-placeholder="ca_drivers_pin_placeholder">
-                                        <button type="button" class="company-pin-toggle" data-action="toggleDriverPinVisibility" data-action-args='["ca-driver-edit-pin"]' aria-label="PIN" title="PIN"><i data-lucide="eye"></i></button>
-                                    </span>
                                 </label>
                             </div>
                             <fieldset class="company-driver-known-fieldset">
@@ -1615,8 +1602,11 @@
                                 <p class="company-driver-known-hint" data-i18n="ca_drivers_known_hint">Matična grupa je uvek uključena. Dodatne linije možete uvek menjati (npr. kad vozač nauči novu liniju). Disponent vidi redosled zamene.</p>
                                 <div id="ca-driver-edit-known-groups" class="company-driver-known-grid" role="group" aria-label="Known lines"></div>
                             </fieldset>
-                            <p id="ca-driver-edit-pin-note" style="margin:0 0 12px;font-size:0.78rem;color:var(--text-muted);" data-i18n="ca_drivers_pin_note">Postojeći PIN je sačuvan kao hash — unesite novi samo ako želite zamenu. Prikaže se jednom posle čuvanja.</p>
-                            <div style="display:flex;gap:10px;margin-top:18px;">
+                            <p id="ca-driver-edit-pin-note" style="margin:0 0 12px;font-size:0.78rem;color:var(--text-muted);" data-i18n="ca_drivers_pin_note">Sistem šalje jednokratni kod SMS-om. Vozač sam postavlja novi PIN. Trenutni PIN i sesije prestaju da važe.</p>
+                            <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;">
+                                <button type="button" id="ca-driver-reset-activation" class="btn-secondary" style="flex:1 1 100%;min-height:42px;" data-action="requestCompanyDriverActivationReset">
+                                    <i data-lucide="message-square-lock"></i> <span data-i18n="ca_drivers_pin_label">Pošalji kod za ponovno postavljanje PIN-a</span>
+                                </button>
                                 <button type="button" class="btn-secondary" style="flex:1;height:42px;" data-action="closeCompanyDriverEdit"><span data-i18n="btn_cancel">Otkaži</span></button>
                                 <button type="button" id="ca-driver-edit-save" class="btn-primary" style="flex:1;height:42px;" data-action="saveCompanyDriverEdit">
                                     <i data-lucide="save"></i> <span data-i18n="btn_save_changes">Sačuvaj izmene</span>

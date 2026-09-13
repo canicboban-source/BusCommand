@@ -80,7 +80,6 @@ function manualArgs(companyId, bodyOverrides = {}) {
       phone: "+43664000001",
       email: `ana-${crypto.randomUUID().slice(0, 8)}@d242.local`,
       eid: "EID-DEFAULT",
-      companyCode: "12345",
       groupId: "310",
       knownGroupIds: ["310"],
       ...bodyOverrides

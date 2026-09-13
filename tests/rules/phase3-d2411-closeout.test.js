@@ -367,7 +367,7 @@ test("D24.1.1 create: group deletion during mutation window → group-not-found,
         companyId,
         body: {
           firstName: "G", lastName: "R", phone: "+1", email: "g@r.local",
-          eid: "EID-GROUP-RACE", companyCode: "12345", groupId: "310", knownGroupIds: ["310"]
+          eid: "EID-GROUP-RACE", groupId: "310", knownGroupIds: ["310"]
         },
         actorUid: "ca-1"
       }),

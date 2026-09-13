@@ -106,7 +106,7 @@ const {
   companyGroupBody,
   companyGroupUpdateBody,
   companyDriverProfileBody,
-  companyDriverPersonalCodeBody,
+  companyDriverResetActivationBody,
   companyDriverCreateBody,
   companyDriverDeleteBody,
   companyDriverEidBody,
@@ -1449,12 +1449,14 @@ app.delete(
 );
 
 const { registerCompanyAdminDriverRoutes } = require("./server/register-company-admin-drivers");
+const { createSmsProvider } = require("./server/sms-provider");
 registerCompanyAdminDriverRoutes(app, {
   rateLimit,
   requireCompanyAdmin,
   requireOwnCompany,
   validateBody,
   companyDriverCreateBody,
+  companyDriverResetActivationBody,
   db,
   // Lazy: QA harness may boot with admin === null (D24.1.1).
   FieldValue: {
@@ -1463,73 +1465,29 @@ registerCompanyAdminDriverRoutes(app, {
   },
   bcryptHash: (value, rounds) => bcrypt.hash(value, rounds),
   randomUUID: () => crypto.randomUUID(),
-  logAudit: (...args) => _logAuditEvent(...args)
+  logAudit: (...args) => _logAuditEvent(...args),
+  smsProvider: createSmsProvider(),
+  revokeRefreshTokens: async (driverId) => {
+    try {
+      await admin.auth().revokeRefreshTokens(driverId);
+    } catch (revokeErr) {
+      // Auth user may not exist yet for pending OTP accounts.
+    }
+  }
 });
 
 app.post(
   "/api/company-admin/drivers/:driverId/personal-code",
   rateLimit(10, 5 * 60 * 1000),
   requireCompanyAdmin,
-  validateBody(companyDriverPersonalCodeBody),
   async (req, res) => {
     const companyId = requireOwnCompany(req, res);
     if (!companyId) return;
-    const driverId = String(req.params.driverId || "").trim();
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(driverId)) {
-      return res.status(400).json({ success: false, error: "Nevažeći vozač." });
-    }
-    const companyCode = String(req.validatedBody.companyCode || "").trim();
-    try {
-      const companyRef = db.collection("companies").doc(companyId);
-      const profileRef = companyRef.collection("drivers").doc(driverId);
-      const credentialRef = companyRef.collection("driver_credentials").doc(driverId);
-      const [profileSnap, credentialSnap] = await Promise.all([profileRef.get(), credentialRef.get()]);
-      if (!profileSnap.exists || !credentialSnap.exists) {
-        return res.status(404).json({ success: false, error: "Vozač nije pronađen." });
-      }
-      // CA "personal code (PIN)" must be the same secret driver login checks:
-      // loginCodeHash + codeActivated=true. Writing only companyCodeHash left
-      // imported drivers stuck on OTP-only verifyDriverLogin (live-review 7A.1).
-      const loginCodeHash = await bcrypt.hash(companyCode, 12);
-      const nowTs = admin.firestore.FieldValue.serverTimestamp();
-      const batch = db.batch();
-      batch.update(credentialRef, {
-        loginCodeHash,
-        activationCodeHash: admin.firestore.FieldValue.delete(),
-        activationExpiresAt: admin.firestore.FieldValue.delete(),
-        activationUsedAt: nowTs,
-        activatedAt: nowTs,
-        personalCodeUpdatedAt: nowTs,
-        personalCodeUpdatedBy: req.staffUser.uid
-      });
-      batch.update(profileRef, {
-        codeActivated: true,
-        personalCodeSetAt: nowTs,
-        personalCodeSetBy: req.staffUser.uid
-      });
-      await batch.commit();
-      try {
-        await admin.auth().revokeRefreshTokens(driverId);
-      } catch (revokeErr) {
-        req.log?.warn?.({ err: revokeErr, driverId }, "Revoke after CA personal-code set failed");
-      }
-      await _logAuditEvent(companyId, req.staffUser.uid, "driver_personal_code_set", {
-        driverId
-      }, {
-        actorRole: req.staffUser.role,
-        actorName: req.staffUser.name || null
-      });
-      return res.json({
-        success: true,
-        driverId,
-        companyCode,
-        codeActivated: true,
-        message: "Lični kod (PIN) je sačuvan. Prikaži ga vozaču sada — više se neće moći pročitati."
-      });
-    } catch (err) {
-      req.log?.error({ err }, "company-admin personal-code failed");
-      return res.status(500).json({ success: false, error: "Lični kod nije sačuvan." });
-    }
+    return res.status(410).json({
+      success: false,
+      code: "DIRECT_PIN_SET_REMOVED",
+      error: "Direct PIN set was removed."
+    });
   }
 );
 

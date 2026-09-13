@@ -229,15 +229,15 @@ const companyDriverDeleteBody = z.object({
   companyId: z.string().trim().min(1).max(64)
 }).strict();
 
-/** CA-only: set a new personal login code (PIN) — plaintext returned once. Must match driver login rules. */
-const companyDriverPersonalCodeBody = z.object({
-  companyId: z.string().trim().min(1).max(64),
-  companyCode: z.string().trim().regex(/^\d{5,12}$/, "Lični kod mora imati 5–12 cifara.")
+/** CA-only: rotate/resend the one-time activation SMS. Rejects PIN/OTP fields. */
+const companyDriverResetActivationBody = z.object({
+  companyId: z.string().trim().min(1).max(64)
 }).strict();
 
 /**
- * CA manual driver create — atomic profile + credentials + PIN + known groups.
- * Never accepts OTP plaintext; PIN is hashed server-side and returned once.
+ * CA manual driver create — EID + contact + group. Credentials are OTP-only.
+ * companyCode / company_code / pin / initialPin / loginCode / password /
+ * activationCode / otp are rejected by .strict().
  */
 const companyDriverCreateBody = z.object({
   companyId: z.string().trim().min(1).max(64),
@@ -249,7 +249,6 @@ const companyDriverCreateBody = z.object({
   groupId: driverGroupIdSchema,
   postalCode: driverPostalCodeSchema,
   knownGroupIds: z.array(driverGroupIdSchema).max(40).optional().default([]),
-  companyCode: z.string().trim().regex(/^\d{5,12}$/, "Lični kod mora imati 5–12 cifara."),
   /** Compliance expiry dates (ISO YYYY-MM-DD or empty). CA-only, optional. */
   licenseExpiry: driverExpiryDateSchema,
   cpcExpiry: driverExpiryDateSchema,
@@ -341,7 +340,7 @@ module.exports = {
   companyGroupBody,
   companyGroupUpdateBody,
   companyDriverProfileBody,
-  companyDriverPersonalCodeBody,
+  companyDriverResetActivationBody,
   companyDriverCreateBody,
   companyDriverDeleteBody,
   companyDriverEidBody,
