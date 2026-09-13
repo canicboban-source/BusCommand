@@ -19,7 +19,7 @@ export default defineConfig({
       // reads "plan-import", which the D17 lazy-load contract treats as the heavy
       // chunk. Keep it a normal on-demand fetch instead of a preload hint.
       resolveDependencies: (_filename, deps) =>
-        deps.filter((dep) => !/plan-import|driver-import-contract/i.test(dep)),
+        deps.filter((dep) => !/plan-import|driver-import-contract|replacement-eligibility/i.test(dep)),
     },
     rollupOptions: {
       input: {
@@ -31,6 +31,7 @@ export default defineConfig({
         manualChunks(id) {
           const norm = id.replaceAll("\\", "/");
           if (norm.endsWith("/translations.js")) return "translations";
+          if (norm.includes("/replacement-eligibility")) return "replacement-eligibility";
           return undefined;
         },
       },

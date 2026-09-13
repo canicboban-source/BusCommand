@@ -58,7 +58,7 @@ export default [
   },
   js.configs.recommended,
   {
-    files: ["**/*.js", "**/*.mjs"],
+    files: ["**/*.js", "**/*.mjs", "**/*.cjs"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",
@@ -74,6 +74,15 @@ export default [
       "no-constant-condition": "warn",
       "no-constant-binary-expression": "warn",
       "no-useless-escape": "warn"
+    }
+  },
+  {
+    files: ["**/*.cjs"],
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: {
+        ...globals.node
+      }
     }
   },
   {

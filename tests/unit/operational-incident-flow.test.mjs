@@ -51,7 +51,13 @@ test("atomic resolver validates schedule availability and writes plan plus audit
     assert.match(route, /status: "resolved"/);
     assert.match(route, /action: "operational_incident_resolved"/);
     assert.match(route, /tmpl_shift_now/);
-    assert.match(route, /sameDriverRefs/);
+    assert.match(route, /evaluateReplacementEligibility/);
+    assert.match(route, /REPLACEMENT_NOT_ELIGIBLE/);
+    assert.match(route, /eligibility: auditEligibilitySnapshot/);
+    assert.match(route, /\.where\("end", ">=", date\)/);
+    assert.doesNotMatch(route, /VACATION_QUERY_LIMIT/);
+    assert.doesNotMatch(route, /referencePostalCode/);
+    assert.doesNotMatch(route, /tx\.set\(neighborShiftRefs/);
 });
 
 test("incident workflow has genuine EN SR and DE text", async () => {
@@ -61,4 +67,12 @@ test("incident workflow has genuine EN SR and DE text", async () => {
         "Driver cannot continue the shift",
         "Fahrer kann die Schicht nicht fortsetzen"
     ]) assert.match(translations, new RegExp(phrase));
+});
+
+test("new vacation writes store canonical statuses, not localized labels", async () => {
+    const source = await read("../../server/driver-routes.js");
+    assert.match(source, /status: "pending"/);
+    assert.match(source, /vacationStatusSchema = z\.object\(\{ status: z\.enum\(\["approved", "rejected"\]\) \}\)/);
+    assert.match(source, /status: status\.data\.status/);
+    assert.doesNotMatch(source, /status:\s*"(odobreno|Na čekanju|pending leave|Approved)"/);
 });

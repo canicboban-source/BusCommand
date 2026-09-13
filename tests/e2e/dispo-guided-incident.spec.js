@@ -22,7 +22,9 @@ function guidedState() {
         bus: "91103",
         groupId: "101",
         lineId: "101",
+        knownGroupIds: ["101"],
         active: true,
+        codeActivated: true,
         companyId: "qa-local"
       },
       {
@@ -32,7 +34,9 @@ function guidedState() {
         bus: "",
         groupId: "101",
         lineId: "101",
+        knownGroupIds: ["101"],
         active: true,
+        codeActivated: true,
         companyId: "qa-local"
       }
     ],

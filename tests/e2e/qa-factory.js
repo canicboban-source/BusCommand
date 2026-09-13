@@ -60,8 +60,10 @@ function createEphemeralQaState(overrides = {}) {
         bus: "101",
         groupId,
         lineId: groupId,
+        knownGroupIds: [groupId],
         // Active by default — assignment mutations refuse inactive drivers (D24.1.1).
         active: true,
+        codeActivated: true,
         companyId
       }
     ],

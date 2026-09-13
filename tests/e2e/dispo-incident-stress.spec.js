@@ -61,6 +61,8 @@ function buildFleetState(driverCount, busCount) {
       lineId: "101",
       knownGroupIds: ["101"],
       active: true,
+      codeActivated: true,
+      companyId: "qa-local",
       bus,
       email: `d${i}@example.test`,
       phone: `+43100${String(i).padStart(6, "0")}`,

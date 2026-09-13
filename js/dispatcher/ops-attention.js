@@ -1,5 +1,7 @@
 // BusCommand — jedan panel „Zahteva pažnju“: problem + rešenje na istom mestu
-import { getVisibleDrivers, showToast, escapeHtml, todayDateStr, operationalDateStr, addCalendarDays } from "../core/utils.js";
+import { getVisibleDrivers, showToast, escapeHtml, todayDateStr, operationalDateStr, addCalendarDays, operationalTimezone } from "../core/utils.js";
+import eligibilityContractNs from "./replacement-eligibility.cjs";
+import eligibilityI18nNs from "./replacement-eligibility-i18n.cjs";
 import { getShiftForDriverIdOnly, setShiftForDriverIdOnly, getDailyPlanForDate } from "../core/shift-plan.js";
 import { actionAttr } from "../core/action-delegate.js";
 import { t } from "../ui/i18n.js";
@@ -12,20 +14,35 @@ import {
 } from "./report-model.js";
 import { persistShift, openShiftCell } from "./shifts.js";
 import { ApiClient } from "../core/api-client.js";
-import { saveState } from "../core/state.js";
+import { saveState, resolveUiLanguage } from "../core/state.js";
 import { busHasGroup } from "../data/bus-group-membership.js";
 import { busIsAssignable, normalizeBusGarage } from "../data/bus-ops.js";
 import { listAssignableCatalogCodes, ensureShiftCatalogForEdit } from "../core/line-shift-catalog.js";
 import { getGroupById } from "../data/groups.js";
-import { driverKnowsGroup, normalizeKnownGroupIds } from "../data/driver-known-groups.js";
+import { normalizeKnownGroupIds } from "../data/driver-known-groups.js";
 import { switchSection } from "../layout/navigation.js";
 
 function domSafeId(id) {
     return String(id || "").replace(/[^a-zA-Z0-9_-]/g, "_");
 }
 
-const AVAILABLE_REPLACEMENT_TYPES = new Set(["off", "clear", "bereitschaft", "standby", ""]);
+const eligibilityContract = eligibilityContractNs?.evaluateReplacementEligibility
+    ? eligibilityContractNs
+    : (eligibilityContractNs?.default || eligibilityContractNs);
+const eligibilityI18n = eligibilityI18nNs?.eligibilityMessage
+    ? eligibilityI18nNs
+    : (eligibilityI18nNs?.default || eligibilityI18nNs);
+
 const OPERATIONAL_TYPES = new Set(["morning", "afternoon", "night", "bereitschaft", "standby"]);
+const {
+    evaluateReplacementEligibility,
+    compareReplacementRanking
+} = eligibilityContract;
+const { eligibilityMessage } = eligibilityI18n;
+
+function eligibilityUiText(key) {
+    return eligibilityMessage(resolveUiLanguage(), key);
+}
 
 let _focusItemId = "";
 let _pendingApply = false;
@@ -48,6 +65,98 @@ function companyDrivers() {
     const all = window.state.drivers || [];
     if (!companyId) return all.filter(d => d.active !== false);
     return all.filter(d => d.active !== false && (!d.companyId || d.companyId === companyId));
+}
+
+function driverAbsences(driverId) {
+    const id = String(driverId || "");
+    const tenantId = String(window.currentUser?.companyId || "");
+    return (window.state.vacations || []).filter((row) => {
+        const owner = String(row?.driverId || row?.driverUid || "").trim();
+        if (!id || owner !== id) return false;
+        const rowTenant = String(row?.companyId || "").trim();
+        if (tenantId && rowTenant && rowTenant !== tenantId) return false;
+        return true;
+    });
+}
+
+function shiftsForDriver(driverId) {
+    const id = String(driverId || "");
+    return (window.state.shifts || []).filter((row) => String(row?.driverId || "") === id);
+}
+
+function schedulesForDriver(driverId) {
+    const id = String(driverId || "");
+    return (window.state.schedules || []).filter((row) =>
+        String(row?.driverId || "") === id || String(row?.id || "").startsWith(`${id}_`)
+    );
+}
+
+function coverageTargetShift(report) {
+    const date = String(report?.date || todayDateStr());
+    const existing = report?.driverId ? getShiftForDriverIdOnly(report.driverId, date) : null;
+    return {
+        date,
+        type: report?.shiftType || existing?.type || "morning",
+        start: report?.start || existing?.start || null,
+        end: report?.end || existing?.end || null,
+        name: report?.shiftName || existing?.name || "",
+        routeCode: report?.routeCode || existing?.routeCode || ""
+    };
+}
+
+function replacementEligibilityInput(report, candidate) {
+    const targetShift = coverageTargetShift(report);
+    const candidateId = driverUid(candidate);
+    return {
+        tenantId: window.currentUser?.companyId || "",
+        candidate,
+        originalDriverId: String(report?.driverId || ""),
+        targetGroupId: String(report?.groupId || report?.lineId || ""),
+        targetShift,
+        timezone: operationalTimezone(),
+        shifts: shiftsForDriver(candidateId),
+        schedules: schedulesForDriver(candidateId),
+        absences: driverAbsences(candidateId)
+    };
+}
+
+function replacementRankLabel(row) {
+    return String(row.ranking?.nameKey || row.driver?.name || row.name || row.id || "");
+}
+
+function listCoverageReplacementCandidates(report) {
+    const rows = [];
+    for (const driver of companyDrivers()) {
+        const evaluation = evaluateReplacementEligibility(replacementEligibilityInput(report, driver));
+        if (!evaluation.eligible) continue;
+        rows.push({
+            driver,
+            id: driverUid(driver),
+            name: driver.name,
+            groupId: String(driver.groupId || driver.lineId || ""),
+            knowsTarget: evaluation.ranking.knowsTarget,
+            label: replacementRankLabel({ ...evaluation, driver, id: driverUid(driver) }),
+            knownGroupIds: normalizeKnownGroupIds(driver),
+            ...evaluation
+        });
+    }
+    rows.sort(compareReplacementRanking);
+    return rows;
+}
+
+function coverageReplacementPools(report) {
+    const rows = listCoverageReplacementCandidates(report);
+    const target = String(report?.groupId || report?.lineId || "");
+    const same = [];
+    const company = [];
+    const otherGroups = [];
+    for (const row of rows) {
+        const gid = String(row.groupId || "").trim();
+        if (gid && gid === target) same.push(row);
+        else if (!gid) company.push(row);
+        else otherGroups.push(row);
+    }
+    return { same, company, otherGroups, all: rows };
 }
 
 function groupLabel(groupId) {
@@ -79,53 +188,6 @@ function visibleOperationalReports() {
 function isOperationalDuty(shift) {
     if (!shift) return false;
     return OPERATIONAL_TYPES.has(String(shift.type || "").toLowerCase());
-}
-
-function isDriverFree(driver, dateStr) {
-    const duty = getShiftForDriverIdOnly(driverUid(driver), dateStr);
-    return !duty || AVAILABLE_REPLACEMENT_TYPES.has(String(duty.type || "").toLowerCase());
-}
-
-/**
- * Fast path pools (closest first):
- * 1) this group → 2) company / unassigned free → 3) other groups free
- */
-function freeDriverPools(groupId, excludeDriverId, dateStr) {
-    const target = String(groupId || "");
-    const same = [];
-    const company = [];
-    const otherGroups = [];
-    const knowsHint = t("ops_attn_knows_line") || "zna";
-    for (const driver of companyDrivers()) {
-        const id = driverUid(driver);
-        if (!id || id === excludeDriverId) continue;
-        if (!isDriverFree(driver, dateStr)) continue;
-        const gid = String(driver.groupId || driver.lineId || "").trim();
-        const knows = driverKnowsGroup(driver, target);
-        const parts = [driver.name];
-        if (gid && gid !== target) parts.push(groupLabel(gid));
-        if (knows && target) parts.push(`${knowsHint} ${target}`);
-        const row = {
-            id,
-            name: driver.name,
-            groupId: gid,
-            knowsTarget: knows,
-            label: parts.join(" · "),
-            driver,
-            knownGroupIds: normalizeKnownGroupIds(driver)
-        };
-        if (gid && gid === target) same.push(row);
-        else if (!gid) company.push(row);
-        else otherGroups.push(row);
-    }
-    const sortPool = (a, b) => {
-        if (Boolean(a.knowsTarget) !== Boolean(b.knowsTarget)) return a.knowsTarget ? -1 : 1;
-        return String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" });
-    };
-    same.sort(sortPool);
-    company.sort(sortPool);
-    otherGroups.sort(sortPool);
-    return { same, company, otherGroups, all: [...same, ...company, ...otherGroups] };
 }
 
 function usedBusesOnDate(dateStr, excludeDriverId) {
@@ -236,7 +298,7 @@ function collectOpsAttentionItems() {
             seenCoverageKeys.add(coverageKey);
             coveredDriverIds.add(String(report.driverId || ""));
             const groupId = report.groupId || report.lineId || "";
-            const drivers = freeDriverPools(groupId, report.driverId, report.date || today);
+            const drivers = coverageReplacementPools(report);
             const buses = freeBusPools(groupId, report.date || today, report.driverId, report.bus);
             items.push({
                 id: `coverage:${report.id}`,
@@ -775,7 +837,7 @@ function renderAttentionCard(item) {
         solution = `
             <label class="ops-attention-label" for="attn-drv-${sid}">${escapeHtml(t("ops_attn_pick_driver") || "Slobodan / dostupan vozač")}</label>
             <select id="attn-drv-${sid}" class="ops-attention-select" data-attn-field="driver">
-                ${pooledOptionList(item.driverPools, { emptyLabel: t("ops_coverage_no_drivers") || "Nema slobodnog vozača" })}
+                ${pooledOptionList(item.driverPools, { emptyLabel: eligibilityUiText("no_candidates") })}
             </select>
             <label class="ops-attention-label" for="attn-bus-${sid}">${escapeHtml(t("ops_attn_pick_bus") || "Autobus")}</label>
             <select id="attn-bus-${sid}" class="ops-attention-select" data-attn-field="bus">
@@ -1006,6 +1068,13 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
     }
     const originalShift = getShiftForDriverIdOnly(report.driverId, report.date);
     const replacementShift = getShiftForDriverIdOnly(driverUid(replacement), report.date);
+    const eligibility = evaluateReplacementEligibility(replacementEligibilityInput(report, replacement));
+    if (!eligibility.eligible) {
+        const message = eligibilityUiText("blocked");
+        if (statusEl) statusEl.textContent = message;
+        showToast(message, "error");
+        return false;
+    }
     if (statusEl) statusEl.textContent = t("report_resolving") || "Rešavanje…";
     let result;
     if (USE_LOCAL_STATE) {
@@ -1040,7 +1109,9 @@ async function applyCoverageResolution(reportId, replacementDriverId, replacemen
         });
     }
     if (!result?.success) {
-        const message = result?.error || t("ops_resolver_failed");
+        const message = eligibilityUiText("blocked")
+            || result?.error
+            || t("ops_resolver_failed");
         if (statusEl) statusEl.textContent = message;
         showToast(message, "error");
         return false;
@@ -1366,6 +1437,8 @@ export {
     refreshOpsAttentionPanelIfOpen,
     applyOpsAttentionFix,
     applyCoverageResolution,
+    listCoverageReplacementCandidates,
+    eligibilityUiText,
     resolveCoverageAvailableAgain,
     resolveCoverageAvailableAgainFromCard,
     syncOpsPlanHealthAttentionState,
@@ -1378,5 +1451,7 @@ if (typeof window !== "undefined") {
     window.collectAllAttentionItems = collectAllAttentionItems;
     window.openOpsAttentionPanel = openOpsAttentionPanel;
     window.closeOpsAttentionPanel = closeOpsAttentionPanel;
+    window.listCoverageReplacementCandidates = listCoverageReplacementCandidates;
+    window.evaluateReplacementEligibility = evaluateReplacementEligibility;
     window.focusOpsAttentionItem = focusOpsAttentionItem;
 }
