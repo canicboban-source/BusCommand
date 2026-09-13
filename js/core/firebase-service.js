@@ -22,7 +22,17 @@ import { resolveDispatcherGroupIds, filterAssignedGroups } from "./dispatcher-sc
 import { isGranularCollectionAllowed } from "./firestore-load-policy.js";
 import ApiClient from "./api-client.js";
 import { checkSOSStatus } from "../maps/sos-siren.js";
-import { invokeRemoteRender } from "./remote-render-registry.js";
+import {
+    invokeRemoteRender,
+    CA_DASH,
+    CA_DRV,
+    DISPO_SHIFTS,
+    DISPO_DASH,
+    DISPO_MAP,
+    DISPO_REP,
+    DRV_MSG,
+    DRV_DASH
+} from "./remote-render-registry.js";
 
 let db = null;
 
@@ -581,50 +591,46 @@ async function saveStateToFirestore(stateObj, companyId) {
     }
 }
 
-function _invokeRender(exportName, ...args) {
-    invokeRemoteRender(exportName, ...args);
-}
-
-function _handleRemoteCollectionUpdate(itemKey) {
+function handleRemoteCollectionUpdate(itemKey) {
     const user = window.currentUser;
     if (!user) return;
 
     if (itemKey === "messages" && user.role === "driver") {
-        _invokeRender("renderDriverMessages");
+        invokeRemoteRender(DRV_MSG);
     }
     if (itemKey === "shifts") {
         if (user.role === "dispatcher") {
             const active = document.querySelector(".content-section:not(.hidden)");
             if (active && active.id === "dispatcher-shifts") {
-                _invokeRender("renderDispatcherShifts");
+                invokeRemoteRender(DISPO_SHIFTS);
             }
         }
         if (user.role === "driver") {
-            _invokeRender("renderDriverDashboard");
+            invokeRemoteRender(DRV_DASH);
         }
     }
     if (itemKey === "drivers" && user.role === "dispatcher") {
         const active = document.querySelector(".content-section:not(.hidden)");
         if (active && active.id === "dispatcher-dashboard") {
-            _invokeRender("renderDispatcherDashboard");
+            invokeRemoteRender(DISPO_DASH);
         } else if (active && (active.id === "dispatcher-live-map-section" || active.id === "dispatcher-live-map")) {
-            _invokeRender("updateMapMarkers");
+            invokeRemoteRender(DISPO_MAP);
         }
     }
     if (itemKey === "reports" && user.role === "dispatcher") {
         const active = document.querySelector(".content-section:not(.hidden)");
         if (active?.id === "dispatcher-dashboard") {
-            _invokeRender("renderDispatcherDashboard");
+            invokeRemoteRender(DISPO_DASH);
         } else if (active?.id === "dispatcher-reports") {
-            _invokeRender("renderDispatcherReports");
+            invokeRemoteRender(DISPO_REP);
         }
     }
     if (itemKey === "drivers" && user.role === "company-admin") {
         const active = document.querySelector(".content-section:not(.hidden)");
         if (active?.id === "company-admin-drivers") {
-            _invokeRender("renderCompanyAdminDrivers");
+            invokeRemoteRender(CA_DRV);
         } else if (active?.id === "company-admin-dashboard") {
-            _invokeRender("renderCompanyAdminDashboard");
+            invokeRemoteRender(CA_DASH);
         }
     }
 }
@@ -636,7 +642,7 @@ function _applyRemoteDocs(item, docs, companyId) {
     if (JSON.stringify(window.state[item.key]) === JSON.stringify(updatedList)) return;
     window.state[item.key] = updatedList;
     _markBaselineFromList(item.key, updatedList);
-    _handleRemoteCollectionUpdate(item.key);
+    handleRemoteCollectionUpdate(item.key);
     localStorage.setItem(getStateStorageKey(companyId), JSON.stringify(window.state));
 }
 
@@ -667,7 +673,7 @@ function _startDispatcherAccessSync(companyRef, companyId) {
                 }
                 _markBaselineFromList("groups", window.state.groups);
                 localStorage.setItem(getStateStorageKey(companyId), JSON.stringify(window.state));
-                _handleRemoteCollectionUpdate("groups");
+                handleRemoteCollectionUpdate("groups");
             });
             _dispatcherGroupListeners.push(unsubscribe);
         });
@@ -808,7 +814,7 @@ function startFirestoreSync(companyId) {
             console.log(`🔄 Firebase: Remote update for ${item.key}`);
             window.state[item.key] = updatedList;
             _markBaselineFromList(item.key, updatedList);
-            _handleRemoteCollectionUpdate(item.key);
+            handleRemoteCollectionUpdate(item.key);
 
             localStorage.setItem(
                 getStateStorageKey(companyId),
@@ -945,10 +951,6 @@ export {
     sanitizeDriverRecordForClient,
     handleRemoteCollectionUpdate
 };
-
-function handleRemoteCollectionUpdate(itemKey) {
-    _handleRemoteCollectionUpdate(itemKey);
-}
 
 try {
     if (typeof window !== "undefined" && window.__BUSCOMMAND_QA_HARNESS__ === true) {

@@ -4,28 +4,31 @@
  * dynamic-imports UI modules by path.
  */
 
-export const REMOTE_RENDER_CALLBACK_NAMES = Object.freeze([
-  "renderCompanyAdminDashboard",
-  "renderCompanyAdminDrivers",
-  "renderDispatcherShifts",
-  "renderDispatcherDashboard",
-  "updateMapMarkers",
-  "renderDispatcherReports",
-  "renderDriverMessages",
-  "renderDriverDashboard"
-]);
+export const CA_DASH = "renderCompanyAdminDashboard";
+export const CA_DRV = "renderCompanyAdminDrivers";
+export const DISPO_SHIFTS = "renderDispatcherShifts";
+export const DISPO_DASH = "renderDispatcherDashboard";
+export const DISPO_MAP = "updateMapMarkers";
+export const DISPO_REP = "renderDispatcherReports";
+export const DRV_MSG = "renderDriverMessages";
+export const DRV_DASH = "renderDriverDashboard";
 
-const ALLOWED = new Set(REMOTE_RENDER_CALLBACK_NAMES);
+const ALLOWED = new Set([
+  CA_DASH,
+  CA_DRV,
+  DISPO_SHIFTS,
+  DISPO_DASH,
+  DISPO_MAP,
+  DISPO_REP,
+  DRV_MSG,
+  DRV_DASH
+]);
 const callbacks = new Map();
 
-function assertAllowedName(name) {
-  if (!ALLOWED.has(name)) {
-    throw new Error(`Remote render callback name is not allowed: ${String(name || "")}`);
-  }
-}
-
 export function registerRemoteRenderCallback(name, fn) {
-  assertAllowedName(name);
+  if (!ALLOWED.has(name)) {
+    throw new Error("Remote render callback name is not allowed");
+  }
   if (typeof fn !== "function") {
     throw new Error("Remote render callback must be a function");
   }
@@ -33,18 +36,14 @@ export function registerRemoteRenderCallback(name, fn) {
 }
 
 export function registerRemoteRenderCallbacks(map) {
-  const entries = map && typeof map === "object" ? Object.entries(map) : [];
-  for (const [name, fn] of entries) {
-    registerRemoteRenderCallback(name, fn);
+  if (!map || typeof map !== "object") return;
+  for (const name of Object.keys(map)) {
+    registerRemoteRenderCallback(name, map[name]);
   }
 }
 
 export function invokeRemoteRender(name, ...args) {
-  if (!ALLOWED.has(name)) {
-    console.warn("Firebase render callback missing:", name);
-    return;
-  }
-  const fn = callbacks.get(name);
+  const fn = ALLOWED.has(name) ? callbacks.get(name) : undefined;
   if (typeof fn !== "function") {
     console.warn("Firebase render callback missing:", name);
     return;
