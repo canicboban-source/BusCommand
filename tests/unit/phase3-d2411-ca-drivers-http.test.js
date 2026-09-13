@@ -10,7 +10,7 @@ const crypto = require("node:crypto");
 const bcrypt = require("bcrypt");
 const { createStaffAuth } = require("../../server/staff-auth");
 const { registerCompanyAdminDriverRoutes } = require("../../server/register-company-admin-drivers");
-const { companyDriverCreateBody, validateBody } = require("../../server/validation");
+const { companyDriverCreateBody, companyDriverResetActivationBody, validateBody } = require("../../server/validation");
 
 const ROOT = path.join(__dirname, "..", "..");
 const API = fs.readFileSync(path.join(ROOT, "api-server.js"), "utf8");
@@ -112,11 +112,16 @@ test("D24.1.1 HTTP: production create route refuses dispatcher / cross-tenant; C
     requireOwnCompany: auth.requireOwnCompany,
     validateBody,
     companyDriverCreateBody,
+    companyDriverResetActivationBody,
     db: mem,
-    FieldValue: { serverTimestamp: () => "TS" },
+    FieldValue: { serverTimestamp: () => "TS", delete: () => ({ __delete: true }) },
     bcryptHash: (v, r) => bcrypt.hash(v, r),
     randomUUID: () => crypto.randomUUID(),
-    logAudit: async () => {}
+    logAudit: async () => {},
+    smsProvider: {
+      mode: "stub",
+      sendActivationSms: async () => ({ status: "stub_queued", reason: null, providerMessageId: "stub-1" })
+    }
   });
 
   const server = await new Promise((resolve) => {
@@ -130,7 +135,6 @@ test("D24.1.1 HTTP: production create route refuses dispatcher / cross-tenant; C
     phone: "+43699111",
     email: "novi@d2411.local",
     eid: "EID-D2411",
-    companyCode: "12345",
     groupId: "310",
     knownGroupIds: ["310"]
   };
@@ -159,6 +163,10 @@ test("D24.1.1 HTTP: production create route refuses dispatcher / cross-tenant; C
     const json = await ok.json();
     assert.equal(json.success, true);
     assert.equal(json.driver.eid, "EID-D2411");
+    assert.equal(json.codeActivated, false);
+    assert.equal(json.companyCode, undefined);
+    assert.equal(json.activation.smsStatus, "stub_queued");
+    assert.doesNotMatch(JSON.stringify(json), /12345|activationCodeHash|loginCodeHash|"otp":/);
     const profilePath = [...mem.store.keys()].find((k) => k.includes("/drivers/") && !k.includes("credentials"));
     assert.ok(profilePath);
     assert.equal(mem.store.get(profilePath).eid, undefined);

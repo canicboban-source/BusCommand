@@ -144,7 +144,6 @@ test("D24.1 createManualCompanyDriver: profile has no EID/PIN/hash; credentials 
       phone: "+43699111",
       email: "novi@d241.local",
       eid: "EID-D241-OK",
-      companyCode: "12345",
       groupId: "310",
       knownGroupIds: ["310"]
     },
@@ -160,7 +159,9 @@ test("D24.1 createManualCompanyDriver: profile has no EID/PIN/hash; credentials 
   assert.equal(profile.loginCodeHash, undefined);
   assert.equal(profile.passwordHash, undefined);
   assert.equal(creds.eid, "EID-D241-OK");
-  assert.ok(creds.loginCodeHash);
+  assert.ok(creds.activationCodeHash);
+  assert.equal(creds.loginCodeHash, undefined);
+  assert.equal(profile.codeActivated, false);
   assert.equal(profileHasCredentialFields(profile), false);
 
   const listed = await listCompanyDriversForAdmin({ db, companyId });
@@ -203,7 +204,7 @@ test("D24.1 create: duplicate EID sequential → EID_EXISTS (server authoritativ
     companyId,
     body: {
       firstName: "A", lastName: "B", phone: "+1", email: "a@d241.local",
-      eid: "EID-DUP", companyCode: "12345", groupId: "310", knownGroupIds: ["310"]
+          eid: "EID-DUP", groupId: "310", knownGroupIds: ["310"]
     },
     actorUid: "admin-a",
     assertGroupsExist: async () => {}

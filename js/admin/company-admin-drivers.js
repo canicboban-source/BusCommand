@@ -14,6 +14,11 @@ import { t, tp } from "../ui/i18n.js";
 import { icon, tx } from "../ui/markup.js";
 import { rowActionsMenuHtml } from "../ui/row-actions-menu.js";
 import { ensureXlsx } from "../core/office-parsers.js";
+import {
+    stripDriverSecrets,
+    viewCompanyDrivers,
+    findCompanyDriverRecord
+} from "./company-admin-driver-records.js";
 
 const MAX_FILE_BYTES = 1_000_000;
 /** Keep in sync with js/imports/driver-import-contract.cjs (D24.2 guard tx write budget). */
@@ -79,6 +84,7 @@ let importFeedbackToast = null;
 let currentPage = 1;
 let importPending = false;
 let editSavePending = false;
+let resetActivationPending = false;
 let driversFilterTimer = null;
 const statusPending = new Set();
 const recentlyDeletedIds = new Map();
@@ -105,9 +111,31 @@ function resolveDriverGroupId(groupValue, fallbackGroupId) {
     return match ? String(match.id) : fallbackGroupId;
 }
 
+function activationLabel(driver) {
+    const status = driver?.activationStatus
+        || (driver?.codeActivated === true ? "activated" : "pending");
+    if (status === "activated") return t("ca_drivers_pin_set");
+    if (status === "expired") return t("ca_drivers_pin_placeholder");
+    return t("ca_drivers_pin_missing");
+}
+
+function deliveryToast(activation) {
+    const status = String(activation?.smsStatus || "");
+    if (status === "sent" || status === "stub_queued") return { key: "ca_drivers_pin_saved", type: "success" };
+    return { key: "ca_drivers_add_pin_invalid", type: "error" };
+}
+
 function companyDrivers() {
-    const companyId = window.currentUser?.companyId;
-    return (window.state.drivers || []).filter((driver) => !companyId || !driver.companyId || driver.companyId === companyId);
+    return viewCompanyDrivers(window.state?.drivers, window.currentUser?.companyId);
+}
+
+/** Tenant-scoped original row in `window.state.drivers` — mutations only. */
+function findMutableCompanyDriver(driverId) {
+    return findCompanyDriverRecord(
+        window.state?.drivers,
+        window.currentUser?.companyId,
+        driverId
+    );
 }
 
 function companyGroups() {
@@ -178,7 +206,6 @@ function readManualDriverForm() {
         licenseExpiry: String(document.getElementById("ca-driver-add-license-expiry")?.value || "").trim(),
         cpcExpiry: String(document.getElementById("ca-driver-add-cpc-expiry")?.value || "").trim(),
         medicalExpiry: String(document.getElementById("ca-driver-add-medical-expiry")?.value || "").trim(),
-        pin: String(document.getElementById("ca-driver-add-pin")?.value || "").trim(),
         groupId,
         knownGroupIds: normalizeKnownGroupIds({ knownGroupIds: knownFromDom, groupId }, groupId)
     };
@@ -194,8 +221,7 @@ function clearManualDriverForm() {
         "ca-driver-add-postal-code",
         "ca-driver-add-license-expiry",
         "ca-driver-add-cpc-expiry",
-        "ca-driver-add-medical-expiry",
-        "ca-driver-add-pin"
+        "ca-driver-add-medical-expiry"
     ]) {
         const el = document.getElementById(id);
         if (el) el.value = "";
@@ -209,12 +235,11 @@ function validateManualDriver(draft) {
     if (!draft.groupId || !companyGroups().some((group) => String(group.id) === draft.groupId)) {
         return t("ca_drivers_select_group");
     }
-    for (const field of ["eid", "first_name", "last_name", "phone", "email", "pin"]) {
+    for (const field of ["eid", "first_name", "last_name", "phone", "email"]) {
         if (!draft[field]) return t("ca_drivers_edit_required");
     }
     if (!/^\S+@\S+\.\S+$/.test(draft.email)) return t("ca_drivers_edit_email_invalid");
     if (!/^\+[1-9]\d{7,14}$/.test(draft.phone)) return t("ca_drivers_add_phone_e164");
-    if (!/^\d{5,12}$/.test(draft.pin)) return t("ca_drivers_add_pin_invalid");
     return "";
 }
 
@@ -260,8 +285,7 @@ async function submitCompanyDriverManualAdd(event) {
         first_name: draft.first_name,
         last_name: draft.last_name,
         phone: draft.phone,
-        email: draft.email,
-        company_code: ""
+        email: draft.email
     };
     const submitBtn = document.getElementById("ca-driver-add-submit");
     importPending = true;
@@ -273,16 +297,17 @@ async function submitCompanyDriverManualAdd(event) {
             if (created) {
                 Object.assign(created, {
                     knownGroupIds: draft.knownGroupIds,
-                    pin: draft.pin,
-                    company_code: draft.pin,
-                    hasPersonalCode: true,
-                    codeActivated: true
+                    hasPersonalCode: false,
+                    codeActivated: false,
+                    activationStatus: "pending"
                 });
+                delete created.pin;
+                delete created.company_code;
+                delete created.companyCode;
                 saveState();
             }
         } else {
             const companyId = window.currentUser?.companyId;
-            // Atomic create: profile + credentials + PIN + known groups in one server write.
             const result = await ApiClient.createCompanyDriver(companyId, {
                 eid: draft.eid,
                 firstName: draft.first_name,
@@ -294,8 +319,7 @@ async function submitCompanyDriverManualAdd(event) {
                 cpcExpiry: draft.cpcExpiry,
                 medicalExpiry: draft.medicalExpiry,
                 groupId: draft.groupId,
-                knownGroupIds: draft.knownGroupIds,
-                companyCode: draft.pin
+                knownGroupIds: draft.knownGroupIds
             });
             if (!result.success) {
                 if (result.code === "DRIVER_LIMIT_REACHED") {
@@ -308,19 +332,15 @@ async function submitCompanyDriverManualAdd(event) {
                 throw new Error(result.error || t("ca_drivers_add_failed") || t("error_generic"));
             }
             const refreshed = await loadStateFromFirestore(companyId);
-            window.state.drivers = refreshed?.drivers || [];
+            window.state.drivers = (refreshed?.drivers || []).map(stripDriverSecrets);
             recentlyDeletedIds.clear();
             await enrichCompanyDriversFromApi();
-            // Never persist plaintext PIN on the client driver object.
-            if (result.companyCode) {
-                showToast(
-                    `${t("ca_drivers_add_success")} PIN: ${result.companyCode}`,
-                    "success",
-                    10000
-                );
-            } else {
-                showToast(t("ca_drivers_add_success"), "success", 6000);
-            }
+            const delivery = deliveryToast(result.activation);
+            showImportFeedback(
+                `${t("ca_drivers_add_success")} ${t(delivery.key)}`,
+                delivery.type,
+                6000
+            );
             clearManualDriverForm();
             closeCompanyDriverAddModal();
             currentPage = 1;
@@ -331,10 +351,10 @@ async function submitCompanyDriverManualAdd(event) {
         closeCompanyDriverAddModal();
         currentPage = 1;
         await renderCompanyAdminDrivers();
-        showToast(t("ca_drivers_add_success"), "success", 6000);
+        showImportFeedback(t("ca_drivers_add_success"), "success", 6000);
         return true;
     } catch (err) {
-        showToast(err.message || t("ca_drivers_add_failed") || t("error_generic"), "error", 6000);
+        showImportFeedback(err.message || t("ca_drivers_add_failed") || t("error_generic"), "error", 6000);
         return false;
     } finally {
         importPending = false;
@@ -476,9 +496,7 @@ function renderDirectory() {
             <td data-label="${t("ca_plan_group")}">${group ? `<span class="company-driver-group-dot" style="--driver-group-color:${escapeHtml(group.color || "#3d7ef5")}"></span>${escapeHtml(group.name)}` : `<span class="company-driver-unassigned">${t("ca_drivers_unassigned")}</span>`}</td>
             <td data-label="${t("ca_drivers_known_lines")}">${escapeHtml(knownLinesLabel(driver))}</td>
             <td data-label="${t("ca_drivers_phone")}">${escapeHtml(driver.phone || "—")}</td>
-            <td data-label="${t("ca_drivers_pin_short")}">${driver.hasPersonalCode === false
-        ? `<button type="button" class="company-driver-pin-missing" ${actionAttr("openCompanyDriverEdit", [driver.id, "pin"])} title="${escapeHtml(t("ca_drivers_pin_set_action") || "Postavite PIN")}"><i data-lucide="key-round"></i>${escapeHtml(t("ca_drivers_pin_missing") || "Nije postavljen")}</button>`
-        : `<span class="company-driver-pin-status is-set"><i data-lucide="check"></i>${escapeHtml(t("ca_drivers_pin_set") || "Postavljen")}</span>`}</td>
+            <td data-label="${t("ca_drivers_pin_short")}">${escapeHtml(activationLabel(driver))}</td>
             <td data-label="${t("ca_drivers_compliance")}">${compliancePillHtml(driver)}</td>
             <td data-label="${t("ca_col_status")}"><span class="company-driver-status ${active ? "is-active" : "is-inactive"}"><i data-lucide="${active ? "circle-check" : "circle-pause"}"></i>${t(active ? "driver_status_active" : "driver_status_inactive")}</span></td>
             <td data-label="${t("table_actions")}"><div class="company-driver-row-actions">
@@ -575,10 +593,13 @@ function applyDemoImport(drivers, groupId) {
     const companyId = window.currentUser?.companyId || "demo";
     drivers.forEach((driver) => {
         window.state.drivers.push({
-            id: crypto.randomUUID(), firstName: driver.first_name, lastName: driver.last_name,
+            id: crypto.randomUUID(),
+            eid: String(driver.eid || "").trim(),
+            firstName: driver.first_name, lastName: driver.last_name,
             name: `${driver.first_name} ${driver.last_name}`, phone: driver.phone, email: driver.email,
             postalCode: driver.postal_code || "",
-            groupId, lineId: groupId, companyId, active: true, codeActivated: false
+            groupId, lineId: groupId, companyId, active: true, codeActivated: false,
+            hasPersonalCode: false, activationStatus: "pending"
         });
     });
     saveState();
@@ -674,7 +695,7 @@ function changeCompanyDriversPage(page) {
 }
 
 function toggleCompanyDriverStatus(driverId) {
-    const driver = companyDrivers().find((entry) => entry.id === driverId);
+    const driver = findMutableCompanyDriver(driverId);
     if (!driver || statusPending.has(driverId)) return;
     const nextActive = driver.active === false;
     showConfirm(t(nextActive ? "driver_confirm_activate" : "driver_confirm_deactivate", { name: driverName(driver) }), async () => {
@@ -727,17 +748,54 @@ function deleteCompanyDriver(driverId) {
     }, { danger: true, title: t("ca_drivers_delete_confirm_title"), confirmText: t("ca_drivers_delete") || "Obriši" });
 }
 
-/** Eye toggle for PIN inputs — switches password↔text, never blocks typing. */
-function toggleDriverPinVisibility(inputId) {
-    const input = document.getElementById(inputId);
-    if (!input) return;
-    const showing = input.type === "text";
-    input.type = showing ? "password" : "text";
-    input.focus();
-    input.setSelectionRange(input.value.length, input.value.length);
-    const button = input.closest(".company-pin-input-wrap")?.querySelector(".company-pin-toggle i");
-    if (button) button.setAttribute("data-lucide", showing ? "eye" : "eye-off");
-    if (typeof lucide !== "undefined") lucide.createIcons();
+/** Eye toggle removed — CA never types a driver PIN. */
+function requestCompanyDriverActivationReset() {
+    if (resetActivationPending || editSavePending) return;
+    const driverId = String(document.getElementById("ca-driver-edit-id")?.value || "").trim();
+    const driver = findMutableCompanyDriver(driverId);
+    if (!driver) {
+        showImportFeedback(t("ca_drivers_edit_not_found"), "error");
+        return;
+    }
+    showConfirm(t("ca_drivers_pin_note"), async () => {
+        if (resetActivationPending) return;
+        resetActivationPending = true;
+        const resetBtn = document.getElementById("ca-driver-reset-activation");
+        if (resetBtn) resetBtn.disabled = true;
+        try {
+            if (USE_LOCAL_STATE) {
+                Object.assign(driver, {
+                    codeActivated: false,
+                    hasPersonalCode: false,
+                    activationStatus: "pending"
+                });
+                delete driver.pin;
+                delete driver.company_code;
+                delete driver.companyCode;
+                saveState();
+                showImportFeedback(t("ca_drivers_pin_saved"), "success", 6000);
+            } else {
+                const result = await ApiClient.resetCompanyDriverActivation(
+                    window.currentUser?.companyId,
+                    driverId
+                );
+                if (!result.success) throw new Error(result.error || t("ca_drivers_edit_failed"));
+                await enrichCompanyDriversFromApi();
+                const delivery = deliveryToast(result.activation);
+                showImportFeedback(t(delivery.key), delivery.type, 6000);
+            }
+            await renderCompanyAdminDrivers();
+        } catch (error) {
+            showImportFeedback(error.message || t("ca_drivers_edit_failed"), "error", 6000);
+        } finally {
+            resetActivationPending = false;
+            if (resetBtn) resetBtn.disabled = false;
+        }
+    }, {
+        title: t("ca_drivers_pin_label"),
+        confirmText: t("ca_drivers_pin_set_action"),
+        danger: true
+    });
 }
 
 function openCompanyDriverAddModal() {
@@ -763,13 +821,11 @@ function openCompanyDriverEdit(driverId, focusField = "") {
     const email = document.getElementById("ca-driver-edit-email");
     const postalCode = document.getElementById("ca-driver-edit-postal-code");
     const group = document.getElementById("ca-driver-edit-group");
-    const pin = document.getElementById("ca-driver-edit-pin");
     const status = document.getElementById("ca-driver-edit-status");
     if (!idInput || !firstName || !lastName || !phone || !email || !group) return;
 
     idInput.value = String(driver.id);
     if (eidInput) eidInput.value = String(driver.eid || "—");
-    if (pin) pin.value = "";
     if (status) status.value = driver.active === false ? "inactive" : "active";
     firstName.value = String(driver.firstName || "").trim()
         || String(driverName(driver)).trim().split(/\s+/).slice(0, -1).join(" ")
@@ -793,7 +849,7 @@ function openCompanyDriverEdit(driverId, focusField = "") {
         const selected = readKnownGroupIdsFromDom(document.getElementById("ca-driver-edit-known-groups"));
         paintKnownGroupChecks(selected, group.value);
     };
-    showModal("ca-driver-edit-modal", focusField === "pin" ? pin : firstName);
+    showModal("ca-driver-edit-modal", firstName);
     refreshIcons();
 }
 
@@ -848,8 +904,7 @@ async function saveCompanyDriverEdit() {
     const cpcExpiry = String(document.getElementById("ca-driver-edit-cpc-expiry")?.value || "").trim();
     const medicalExpiry = String(document.getElementById("ca-driver-edit-medical-expiry")?.value || "").trim();
     const groupId = String(document.getElementById("ca-driver-edit-group")?.value || "").trim();
-    const personalCode = String(document.getElementById("ca-driver-edit-pin")?.value || "").trim();
-    const driver = companyDrivers().find((entry) => entry.id === driverId);
+    const driver = findMutableCompanyDriver(driverId);
     if (!driver) {
         showToast(t("ca_drivers_edit_not_found"), "error");
         return;
@@ -887,8 +942,7 @@ async function saveCompanyDriverEdit() {
                 lineId: groupId,
                 knownGroupIds,
                 active,
-                ...(eidChanged ? { eid: eidValue } : {}),
-                ...(personalCode ? { pin: personalCode, company_code: personalCode, hasPersonalCode: true, codeActivated: true } : {})
+                ...(eidChanged ? { eid: eidValue } : {})
             });
             saveState();
         } else {
@@ -898,30 +952,15 @@ async function saveCompanyDriverEdit() {
                 const eidResult = await ApiClient.setCompanyDriverEid(window.currentUser?.companyId, driverId, eidValue);
                 if (!eidResult.success) throw new Error(result.error || t("ca_drivers_edit_failed"));
             }
-            if (personalCode) {
-                const codeResult = await ApiClient.setCompanyDriverPersonalCode(
-                    window.currentUser?.companyId,
-                    driverId,
-                    personalCode
-                );
-                if (!codeResult.success) throw new Error(codeResult.error || t("ca_drivers_edit_failed"));
-                showToast(
-                    t("ca_drivers_pin_saved", { code: codeResult.companyCode || personalCode }),
-                    "success",
-                    10000
-                );
-            }
             await enrichCompanyDriversFromApi();
         }
         closeModal("ca-driver-edit-modal");
         const idInput = document.getElementById("ca-driver-edit-id");
         if (idInput) idInput.value = "";
-        const pinInput = document.getElementById("ca-driver-edit-pin");
-        if (pinInput) pinInput.value = "";
         await renderCompanyAdminDrivers();
-        if (!personalCode) showToast(t("ca_drivers_edit_saved"), "success");
+        showImportFeedback(t("ca_drivers_edit_saved"), "success");
     } catch (error) {
-        showToast(error.message || t("ca_drivers_edit_failed"), "error", 6000);
+        showImportFeedback(error.message || t("ca_drivers_edit_failed"), "error", 6000);
     } finally {
         editSavePending = false;
         if (saveBtn) saveBtn.disabled = false;
@@ -935,12 +974,13 @@ async function enrichCompanyDriversFromApi() {
     const byId = new Map(result.drivers.map((driver) => [driver.id, driver]));
     window.state.drivers = (window.state.drivers || []).map((driver) => {
         const enriched = byId.get(driver.id);
-        if (!enriched) return driver;
-        return {
+        if (!enriched) return stripDriverSecrets(driver);
+        return stripDriverSecrets({
             ...driver,
             eid: enriched.eid || driver.eid || "",
-            hasPersonalCode: enriched.hasPersonalCode !== false,
+            hasPersonalCode: enriched.hasPersonalCode === true,
             codeActivated: enriched.codeActivated === true,
+            activationStatus: enriched.activationStatus || (enriched.codeActivated === true ? "activated" : "pending"),
             firstName: enriched.firstName || driver.firstName,
             lastName: enriched.lastName || driver.lastName,
             name: enriched.name || driver.name,
@@ -956,14 +996,14 @@ async function enrichCompanyDriversFromApi() {
                 ? enriched.knownGroupIds
                 : normalizeKnownGroupIds(driver),
             active: enriched.active !== false
-        };
+        });
     });
     result.drivers.forEach((driver) => {
         const deletedAt = recentlyDeletedIds.get(driver.id);
         if (deletedAt && Date.now() - deletedAt < 30000) return;
         if (deletedAt) recentlyDeletedIds.delete(driver.id);
         if (!(window.state.drivers || []).some((entry) => entry.id === driver.id)) {
-            window.state.drivers.push(driver);
+            window.state.drivers.push(stripDriverSecrets(driver));
         }
     });
 }
@@ -972,6 +1012,9 @@ async function renderCompanyAdminDrivers() {
     if (window.currentUser?.role !== "company-admin") return;
     if (!USE_LOCAL_STATE) {
         try { await enrichCompanyDriversFromApi(); } catch { /* keep local state */ }
+    }
+    if (Array.isArray(window.state.drivers)) {
+        window.state.drivers = window.state.drivers.map(stripDriverSecrets);
     }
     populateGroupControls();
     renderSummary();
@@ -991,10 +1034,10 @@ export {
     changeCompanyDriversPage,
     toggleCompanyDriverStatus,
     deleteCompanyDriver,
-    toggleDriverPinVisibility,
     openCompanyDriverAddModal,
     closeCompanyDriverAddModal,
     openCompanyDriverEdit,
     closeCompanyDriverEdit,
-    saveCompanyDriverEdit
+    saveCompanyDriverEdit,
+    requestCompanyDriverActivationReset
 };
