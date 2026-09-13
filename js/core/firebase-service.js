@@ -22,6 +22,7 @@ import { resolveDispatcherGroupIds, filterAssignedGroups } from "./dispatcher-sc
 import { isGranularCollectionAllowed } from "./firestore-load-policy.js";
 import ApiClient from "./api-client.js";
 import { checkSOSStatus } from "../maps/sos-siren.js";
+import { invokeRemoteRender } from "./remote-render-registry.js";
 
 let db = null;
 
@@ -580,14 +581,8 @@ async function saveStateToFirestore(stateObj, companyId) {
     }
 }
 
-async function _invokeRender(modulePath, exportName) {
-    try {
-        const mod = await import(modulePath);
-        const fn = mod[exportName];
-        if (typeof fn === "function") fn();
-    } catch (err) {
-        console.warn("Firebase render callback failed:", exportName, err);
-    }
+function _invokeRender(exportName, ...args) {
+    invokeRemoteRender(exportName, ...args);
 }
 
 function _handleRemoteCollectionUpdate(itemKey) {
@@ -595,41 +590,41 @@ function _handleRemoteCollectionUpdate(itemKey) {
     if (!user) return;
 
     if (itemKey === "messages" && user.role === "driver") {
-        _invokeRender("../driver/messages-inbox.js", "renderDriverMessages");
+        _invokeRender("renderDriverMessages");
     }
     if (itemKey === "shifts") {
         if (user.role === "dispatcher") {
             const active = document.querySelector(".content-section:not(.hidden)");
             if (active && active.id === "dispatcher-shifts") {
-                _invokeRender("../dispatcher/shifts.js", "renderDispatcherShifts");
+                _invokeRender("renderDispatcherShifts");
             }
         }
         if (user.role === "driver") {
-            _invokeRender("../driver/dashboard.js", "renderDriverDashboard");
+            _invokeRender("renderDriverDashboard");
         }
     }
     if (itemKey === "drivers" && user.role === "dispatcher") {
         const active = document.querySelector(".content-section:not(.hidden)");
         if (active && active.id === "dispatcher-dashboard") {
-            _invokeRender("../dispatcher/dashboard.js", "renderDispatcherDashboard");
+            _invokeRender("renderDispatcherDashboard");
         } else if (active && (active.id === "dispatcher-live-map-section" || active.id === "dispatcher-live-map")) {
-            _invokeRender("../maps/live-map-core.js", "updateMapMarkers");
+            _invokeRender("updateMapMarkers");
         }
     }
     if (itemKey === "reports" && user.role === "dispatcher") {
         const active = document.querySelector(".content-section:not(.hidden)");
         if (active?.id === "dispatcher-dashboard") {
-            _invokeRender("../dispatcher/dashboard.js", "renderDispatcherDashboard");
+            _invokeRender("renderDispatcherDashboard");
         } else if (active?.id === "dispatcher-reports") {
-            _invokeRender("../dispatcher/reports.js", "renderDispatcherReports");
+            _invokeRender("renderDispatcherReports");
         }
     }
     if (itemKey === "drivers" && user.role === "company-admin") {
         const active = document.querySelector(".content-section:not(.hidden)");
         if (active?.id === "company-admin-drivers") {
-            _invokeRender("../admin/company-admin-drivers.js", "renderCompanyAdminDrivers");
+            _invokeRender("renderCompanyAdminDrivers");
         } else if (active?.id === "company-admin-dashboard") {
-            _invokeRender("../admin/company-admin.js", "renderCompanyAdminDashboard");
+            _invokeRender("renderCompanyAdminDashboard");
         }
     }
 }
@@ -947,5 +942,18 @@ export {
     stopFirestoreSync,
     showFirebaseStatus,
     initFirebase,
-    sanitizeDriverRecordForClient
+    sanitizeDriverRecordForClient,
+    handleRemoteCollectionUpdate
 };
+
+function handleRemoteCollectionUpdate(itemKey) {
+    _handleRemoteCollectionUpdate(itemKey);
+}
+
+try {
+    if (typeof window !== "undefined" && window.__BUSCOMMAND_QA_HARNESS__ === true) {
+        window.__bcHandleRemoteCollectionUpdateForTests = handleRemoteCollectionUpdate;
+    }
+} catch {
+    /* ignore */
+}

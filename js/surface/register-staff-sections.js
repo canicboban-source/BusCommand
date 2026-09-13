@@ -16,7 +16,8 @@ import { renderCompanyAdminSettings } from "../admin/company-admin-settings.js";
 import { renderCompanyAdminBuses } from "../admin/company-admin-buses.js";
 import { renderDispatcherShifts } from "../dispatcher/shifts.js";
 import { renderDispatcherVacations } from "../dispatcher/vacations.js";
-import { initDispatcherLiveMap } from "../maps/live-map-core.js";
+import { initDispatcherLiveMap, updateMapMarkers } from "../maps/live-map-core.js";
+import { registerRemoteRenderCallbacks } from "../core/remote-render-registry.js";
 import { renderScheduleHistory } from "../data/schedules.js";
 import { refreshDailyPlanOnDateChange, renderDailyPlanFullPage, bindDailyPlanFullPage } from "../dispatcher/daily-plan.js";
 import { renderMonthlyPlansView, renderMonthlyPlansFullPage } from "../dispatcher/monthly-plans.js";
@@ -24,6 +25,14 @@ import { renderGroupHub, renderPlanGroupPicker } from "../dispatcher/group-hub.j
 import { renderDispatcherVehicles, openVehiclesForGroup } from "../dispatcher/vehicles-panel.js";
 
 export function registerStaffSections() {
+    registerRemoteRenderCallbacks({
+        renderCompanyAdminDashboard,
+        renderCompanyAdminDrivers,
+        renderDispatcherShifts,
+        renderDispatcherDashboard,
+        renderDispatcherReports,
+        updateMapMarkers
+    });
     registerSectionHandlers({
         "dispatcher-dashboard": () => renderDispatcherDashboard(),
         "dispatcher-daily-plan-pick": () => renderPlanGroupPicker("daily"),
