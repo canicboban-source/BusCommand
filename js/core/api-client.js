@@ -13,7 +13,7 @@ const ApiClient = (() => {
         if (!headers["Content-Type"] && options.body) {
             headers["Content-Type"] = "application/json";
         }
-        let token = null;
+        let token;
         try {
             token = await _getToken();
         } catch {

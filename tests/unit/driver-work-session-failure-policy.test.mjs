@@ -298,11 +298,12 @@ test("source still terminates only on the allowlisted auth path; login/bootstrap
         readFile(LOGIN_DRIVER, "utf8"),
         readFile(BOOTSTRAP, "utf8")
     ]);
-    assert.match(workSession, /function isTerminalDriverSessionFailure\(result\)/);
     assert.match(workSession, /status === 401/);
     assert.match(workSession, /ACTIVATION_REQUIRED/);
-    assert.match(workSession, /await terminateDriverSession\("driver_session_ended"\)/);
-    assert.match(workSession, /applyFailClosedWorkPolicy\(\)/);
+    assert.match(workSession, /function terminateDriverSession\(messageKey = "driver_session_ended"\)/);
+    assert.match(workSession, /await terminateDriverSession\(\)/);
+    assert.match(workSession, /status: "unknown"/);
+    assert.match(workSession, /configureDriverGpsGate\(\)/);
     assert.doesNotMatch(workSession, /if \(!result\.success\) \{\s*policy = result\.policy/);
     assert.match(loginDriver, /if \(!\(await prepareDriverWorkSession\(\)\)\) return;/);
     assert.match(bootstrap, /if \(authUser\.role === "driver" && isDriverSurface\(\) && !\(await prepareDriverWorkSession\(\)\)\)/);
