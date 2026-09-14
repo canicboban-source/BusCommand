@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { URL } from "node:url";
+import vm from "node:vm";
 import { DEFAULT_BRAND_COLOR } from "../../js/admin/company-admin-branding-model.js";
 
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
@@ -49,7 +50,9 @@ test("p7 staff and driver surfaces expose i18n aria labels for icon controls", a
 
 test("required p7 keys exist in en, sr and de", async () => {
   const src = await read("../../translations.js");
-  // Evaluate only the assigned language objects is heavy; assert key presence in each Object.assign block.
+  const sandbox = { window: {}, console };
+  vm.runInNewContext(src, sandbox, { filename: "translations.js", timeout: 20000 });
+  const dicts = sandbox.window.TRANSLATIONS;
   const keys = [
     "role_superadmin",
     "sa_err_incorrect_pin",
@@ -61,7 +64,10 @@ test("required p7 keys exist in en, sr and de", async () => {
     "stealth_inspect_banner"
   ];
   for (const key of keys) {
-    const hits = src.match(new RegExp(`${key}:`, "g")) || [];
-    assert.ok(hits.length >= 3, `${key} should exist in at least en/sr/de (found ${hits.length})`);
+    for (const lang of ["en", "sr", "de"]) {
+      const value = dicts[lang][key];
+      assert.equal(typeof value, "string", `${lang}.${key}`);
+      assert.notEqual(value, key);
+    }
   }
 });

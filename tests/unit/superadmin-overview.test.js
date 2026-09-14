@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("fs");
 const path = require("path");
+const vm = require("node:vm");
 const {
   createRequireSuperAdmin,
   createSuperAdminOverviewHandler,
@@ -131,5 +132,11 @@ test("production client clears stale counters and reloads company admins from se
   assert.match(production, /element\.textContent = "—"/);
   assert.match(production, /superadmin_stats_error/);
   assert.doesNotMatch(production, /localStorage|_renderSuperAdminDashboardDemo/);
-  assert.equal((translations.match(/superadmin_stats_error:/g) || []).length, 3);
+  const sandbox = { window: {}, console };
+  vm.runInNewContext(translations, sandbox, { filename: "translations.js", timeout: 20000 });
+  for (const lang of ["en", "sr", "de"]) {
+    const value = sandbox.window.TRANSLATIONS[lang].superadmin_stats_error;
+    assert.equal(typeof value, "string", `${lang}.superadmin_stats_error`);
+    assert.notEqual(value, "superadmin_stats_error");
+  }
 });

@@ -2,6 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { URL } from "node:url";
+import vm from "node:vm";
+
+function assertRuntimeKey(dicts, key) {
+  for (const lang of ["en", "sr", "de"]) {
+    const value = dicts[lang][key];
+    assert.equal(typeof value, "string", `${lang}.${key}`);
+    assert.notEqual(value, key);
+  }
+}
 
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
@@ -47,7 +56,9 @@ test("truly empty daily slot still supports a direct single assignment", async (
 
 test("daily replacement guidance exists in EN SR and DE", async () => {
   const translations = await read("../../translations.js");
-  assert.equal((translations.match(/shift_future_monthly_only:/g) || []).length, 3);
+  const sandbox = { window: {}, console };
+  vm.runInNewContext(translations, sandbox, { filename: "translations.js", timeout: 20000 });
+  assertRuntimeKey(sandbox.window.TRANSLATIONS, "shift_future_monthly_only");
 });
 
 test("drag-and-drop driver pool and slot drop targets are wired", async () => {
@@ -75,9 +86,9 @@ test("drag-and-drop driver pool and slot drop targets are wired", async () => {
   // Assigned drivers are also draggable between slots
   assert.match(source, /dnd-assigned-driver/);
   assert.match(source, /data-assigned-driver/);
-  // Translations exist in all 3 languages
+  const sandbox = { window: {}, console };
+  vm.runInNewContext(translations, sandbox, { filename: "translations.js", timeout: 20000 });
   for (const key of ["dnd_pool_label", "dnd_pool_hint", "dnd_drop_here"]) {
-    assert.equal((translations.match(new RegExp(`${key}:`, "g")) || []).length, 3,
-      `${key} must appear in all 3 languages`);
+    assertRuntimeKey(sandbox.window.TRANSLATIONS, key);
   }
 });
