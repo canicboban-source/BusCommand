@@ -42,6 +42,25 @@ async function terminateDriverSession(messageKey = "driver_session_ended") {
     if (messageKey) showToast(t(messageKey), "info", 6000);
 }
 
+/** Positive allowlist: only proven auth/session denials may destroy login.
+ *  401 on this GET is requireActivatedDriver (missing / invalid / revoked token).
+ *  403 ACTIVATION_REQUIRED is non-driver role, unfinished activation, or missing tenant. */
+function isTerminalDriverSessionFailure(result) {
+    if (!result || result.success !== false) return false;
+    const status = Number(result.status);
+    const code = typeof result.code === "string" ? result.code : "";
+    if (status === 401) return true;
+    return status === 403 && code === "ACTIVATION_REQUIRED";
+}
+
+/** Keep 24/7 auth, but never trust a failed work-session payload for GPS or shift rights. */
+function applyFailClosedWorkPolicy() {
+    clearWorkTimers();
+    configureDriverGpsGate({ liveGps: false, sessionActive: false });
+    stopDriverGpsTracking();
+    policy = { status: "unknown", features: { liveGps: false } };
+}
+
 /** Shift ended but the driver stays signed in (24/7): close the GPS gate,
  *  drop live sync and surface the neutral off-duty status. */
 function enterDriverIdleMode(announce = true) {
@@ -81,9 +100,12 @@ async function prepareDriverWorkSession() {
     if (USE_LOCAL_STATE) return true;
     const result = await ApiClient.getDriverWorkSession();
     if (!result.success) {
-        policy = result.policy || null;
-        await terminateDriverSession("driver_session_ended");
-        return false;
+        if (isTerminalDriverSessionFailure(result)) {
+            await terminateDriverSession("driver_session_ended");
+            return false;
+        }
+        applyFailClosedWorkPolicy();
+        return true;
     }
     policy = result.policy || null;
     configureDriverGpsGate({

@@ -16,7 +16,9 @@ const ApiClient = (() => {
         let token = null;
         try {
             token = await _getToken();
-        } catch { /* ignore token lookup error */ }
+        } catch {
+            return { success: false, code: "TOKEN_LOOKUP_ERROR", status: 0 };
+        }
         if (token) headers["Authorization"] = "Bearer " + token;
 
         let res;

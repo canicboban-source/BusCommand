@@ -1,6 +1,16 @@
-import test from "node:test";
+import test, { after } from "node:test";
 import assert from "node:assert/strict";
+import Auth from "../../js/core/auth-client.js";
 import { ApiClient } from "../../js/core/api-client.js";
+
+const originalGetIdToken = Auth.getIdToken;
+// Signed-out / public callers return null (not throw). Node unit tests have no
+// Firebase SDK, so pin the anonymous contract instead of the old swallowed
+// getIdToken exception that used to send a request anyway.
+Auth.getIdToken = async () => null;
+after(() => {
+    Auth.getIdToken = originalGetIdToken;
+});
 
 function mockWindowFetch(responder) {
     globalThis.window = {
