@@ -2,8 +2,7 @@
 import {
     getShiftForDriverDate,
     parseBusFromText,
-    parseRouteCodeFromText,
-    setShiftForDriverDate
+    parseRouteCodeFromText
 } from "../core/shift-plan.js";
 import { resolveUiLanguage, saveState } from "../core/state.js";
 import {
@@ -1346,16 +1345,21 @@ async function deleteMonthlyPlan(scheduleKey, driverName, month) {
         const [year, mon] = monthKey.split("-").map(Number);
         const totalDays = new Date(year, mon, 0).getDate();
         const driver = window.state.drivers?.find((d) => d.name === name) || null;
+        if (!driver?.id) {
+            showToast(t("med_driver_missing") || "Vozač za ovaj plan nije pronađen.", "error");
+            return;
+        }
 
+        let fail = 0;
         for (let day = 1; day <= totalDays; day++) {
             const dateStr = `${monthKey}-${String(day).padStart(2, "0")}`;
             const existing = getShiftForDriverDate(name, dateStr);
             if (!existing || existing.type === "clear" || existing.type === "off") continue;
-            if (driver && existing.source === "shift") {
-                await persistShift(driver, dateStr, "clear");
-            } else {
-                setShiftForDriverDate(name, dateStr, { type: "clear", syncSchedule: true });
-            }
+            if (!await persistShift(driver, dateStr, "clear")) fail += 1;
+        }
+        if (fail) {
+            loadMonthlyPlanForDriver();
+            return;
         }
 
         window.state.schedules = (window.state.schedules || []).filter((s) => s.id !== key && s.id !== schedule.id);
