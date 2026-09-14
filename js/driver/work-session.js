@@ -30,7 +30,7 @@ function clearWorkTimers() {
 
 async function terminateDriverSession(messageKey = "driver_session_ended") {
     clearWorkTimers();
-    configureDriverGpsGate({ liveGps: false, sessionActive: false });
+    configureDriverGpsGate();
     stopDriverGpsTracking();
     stopFirestoreSync();
     policy = null;
@@ -45,7 +45,7 @@ async function terminateDriverSession(messageKey = "driver_session_ended") {
 /** Shift ended but the driver stays signed in (24/7): close the GPS gate,
  *  drop live sync and surface the neutral off-duty status. */
 function enterDriverIdleMode(announce = true) {
-    configureDriverGpsGate({ liveGps: false, sessionActive: false });
+    configureDriverGpsGate();
     stopDriverGpsTracking();
     policy = { ...(policy || {}), status: "off_duty" };
     if (announce) showToast(t("driver_shift_idle_24_7") || t("driver_session_ended"), "info", 6000);
@@ -81,9 +81,18 @@ async function prepareDriverWorkSession() {
     if (USE_LOCAL_STATE) return true;
     const result = await ApiClient.getDriverWorkSession();
     if (!result.success) {
-        policy = result.policy || null;
-        await terminateDriverSession("driver_session_ended");
-        return false;
+        // Terminal only: HTTP 401, or 403 ACTIVATION_REQUIRED. gps-track defaults
+        // already fail-close when configureDriverGpsGate() is called with no args.
+        const status = Number(result.status);
+        if (status === 401 || status === 403 && result.code === "ACTIVATION_REQUIRED") {
+            await terminateDriverSession();
+            return false;
+        }
+        clearWorkTimers();
+        configureDriverGpsGate();
+        stopDriverGpsTracking();
+        policy = { status: "unknown", features: { liveGps: false } };
+        return true;
     }
     policy = result.policy || null;
     configureDriverGpsGate({

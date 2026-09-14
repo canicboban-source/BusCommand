@@ -13,10 +13,12 @@ const ApiClient = (() => {
         if (!headers["Content-Type"] && options.body) {
             headers["Content-Type"] = "application/json";
         }
-        let token = null;
+        let token;
         try {
             token = await _getToken();
-        } catch { /* ignore token lookup error */ }
+        } catch {
+            return { success: false, code: "TOKEN_LOOKUP_ERROR", status: 0 };
+        }
         if (token) headers["Authorization"] = "Bearer " + token;
 
         let res;
