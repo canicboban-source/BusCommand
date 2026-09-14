@@ -22,6 +22,17 @@ import { resolveDispatcherGroupIds, filterAssignedGroups } from "./dispatcher-sc
 import { isGranularCollectionAllowed } from "./firestore-load-policy.js";
 import ApiClient from "./api-client.js";
 import { checkSOSStatus } from "../maps/sos-siren.js";
+import {
+    invokeRemoteRender,
+    CA_DASH,
+    CA_DRV,
+    DISPO_SHIFTS,
+    DISPO_DASH,
+    DISPO_MAP,
+    DISPO_REP,
+    DRV_MSG,
+    DRV_DASH
+} from "./remote-render-registry.js";
 
 let db = null;
 
@@ -580,56 +591,46 @@ async function saveStateToFirestore(stateObj, companyId) {
     }
 }
 
-async function _invokeRender(modulePath, exportName) {
-    try {
-        const mod = await import(modulePath);
-        const fn = mod[exportName];
-        if (typeof fn === "function") fn();
-    } catch (err) {
-        console.warn("Firebase render callback failed:", exportName, err);
-    }
-}
-
-function _handleRemoteCollectionUpdate(itemKey) {
+function handleRemoteCollectionUpdate(itemKey) {
     const user = window.currentUser;
     if (!user) return;
 
     if (itemKey === "messages" && user.role === "driver") {
-        _invokeRender("../driver/messages-inbox.js", "renderDriverMessages");
+        invokeRemoteRender(DRV_MSG);
     }
     if (itemKey === "shifts") {
         if (user.role === "dispatcher") {
             const active = document.querySelector(".content-section:not(.hidden)");
             if (active && active.id === "dispatcher-shifts") {
-                _invokeRender("../dispatcher/shifts.js", "renderDispatcherShifts");
+                invokeRemoteRender(DISPO_SHIFTS);
             }
         }
         if (user.role === "driver") {
-            _invokeRender("../driver/dashboard.js", "renderDriverDashboard");
+            invokeRemoteRender(DRV_DASH);
         }
     }
     if (itemKey === "drivers" && user.role === "dispatcher") {
         const active = document.querySelector(".content-section:not(.hidden)");
         if (active && active.id === "dispatcher-dashboard") {
-            _invokeRender("../dispatcher/dashboard.js", "renderDispatcherDashboard");
+            invokeRemoteRender(DISPO_DASH);
         } else if (active && (active.id === "dispatcher-live-map-section" || active.id === "dispatcher-live-map")) {
-            _invokeRender("../maps/live-map-core.js", "updateMapMarkers");
+            invokeRemoteRender(DISPO_MAP);
         }
     }
     if (itemKey === "reports" && user.role === "dispatcher") {
         const active = document.querySelector(".content-section:not(.hidden)");
         if (active?.id === "dispatcher-dashboard") {
-            _invokeRender("../dispatcher/dashboard.js", "renderDispatcherDashboard");
+            invokeRemoteRender(DISPO_DASH);
         } else if (active?.id === "dispatcher-reports") {
-            _invokeRender("../dispatcher/reports.js", "renderDispatcherReports");
+            invokeRemoteRender(DISPO_REP);
         }
     }
     if (itemKey === "drivers" && user.role === "company-admin") {
         const active = document.querySelector(".content-section:not(.hidden)");
         if (active?.id === "company-admin-drivers") {
-            _invokeRender("../admin/company-admin-drivers.js", "renderCompanyAdminDrivers");
+            invokeRemoteRender(CA_DRV);
         } else if (active?.id === "company-admin-dashboard") {
-            _invokeRender("../admin/company-admin.js", "renderCompanyAdminDashboard");
+            invokeRemoteRender(CA_DASH);
         }
     }
 }
@@ -641,7 +642,7 @@ function _applyRemoteDocs(item, docs, companyId) {
     if (JSON.stringify(window.state[item.key]) === JSON.stringify(updatedList)) return;
     window.state[item.key] = updatedList;
     _markBaselineFromList(item.key, updatedList);
-    _handleRemoteCollectionUpdate(item.key);
+    handleRemoteCollectionUpdate(item.key);
     localStorage.setItem(getStateStorageKey(companyId), JSON.stringify(window.state));
 }
 
@@ -672,7 +673,7 @@ function _startDispatcherAccessSync(companyRef, companyId) {
                 }
                 _markBaselineFromList("groups", window.state.groups);
                 localStorage.setItem(getStateStorageKey(companyId), JSON.stringify(window.state));
-                _handleRemoteCollectionUpdate("groups");
+                handleRemoteCollectionUpdate("groups");
             });
             _dispatcherGroupListeners.push(unsubscribe);
         });
@@ -813,7 +814,7 @@ function startFirestoreSync(companyId) {
             console.log(`🔄 Firebase: Remote update for ${item.key}`);
             window.state[item.key] = updatedList;
             _markBaselineFromList(item.key, updatedList);
-            _handleRemoteCollectionUpdate(item.key);
+            handleRemoteCollectionUpdate(item.key);
 
             localStorage.setItem(
                 getStateStorageKey(companyId),
@@ -947,5 +948,14 @@ export {
     stopFirestoreSync,
     showFirebaseStatus,
     initFirebase,
-    sanitizeDriverRecordForClient
+    sanitizeDriverRecordForClient,
+    handleRemoteCollectionUpdate
 };
+
+try {
+    if (typeof window !== "undefined" && window.__BUSCOMMAND_QA_HARNESS__ === true) {
+        window.__bcHandleRemoteCollectionUpdateForTests = handleRemoteCollectionUpdate;
+    }
+} catch {
+    /* ignore */
+}
