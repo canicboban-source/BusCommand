@@ -1,6 +1,6 @@
 // BusCommand ESM v9.5
 import { saveState } from "../core/state.js";
-import { showToast, refreshIcons } from "../core/utils.js";
+import { escapeHtml, showToast, refreshIcons } from "../core/utils.js";
 import { countDriversForLineGroup, countBusesForLineGroup } from "./group-membership.js";
 import { scheduleRefreshObservedSections } from "../core/state-observer.js";
 import { showConfirm } from "../ui/confirm-modal.js";
@@ -69,7 +69,7 @@ function renderGroupFilterBar(containerId) {
         const clickAttrs = isFormedLineGroup(g.id)
             ? actionAttr("openGroupHub", [g.id])
             : actionAttr("setGroupFilter", [g.id]);
-        html += `<button ${clickAttrs} class="bc-filter-chip is-line${isActive ? " is-on" : ""}" style="--bc-chip-color:${g.color}">${g.name}</button>`;
+        html += `<button ${clickAttrs} class="bc-filter-chip is-line${isActive ? " is-on" : ""}" style="--bc-chip-color:${g.color}">${escapeHtml(g.name)}</button>`;
     });
 
     bar.innerHTML = html;
@@ -94,8 +94,8 @@ function renderGroupsList() {
         const busCount = isLine ? countBusesForLineGroup(g.id) : 0;
         return `<div class="bc-list-row" style="--bc-chip-color:${g.color}">
             <div class="bc-list-main">
-                <div class="bc-list-title is-bold">${g.name}</div>
-                <div class="bc-list-sub">${driverCount} ${t("drivers_count")}${busCount ? ` · ${busCount} ${t("buses_count")}` : ""}${g.description ? " · " + g.description : ""}</div>
+                <div class="bc-list-title is-bold">${escapeHtml(g.name)}</div>
+                <div class="bc-list-sub">${driverCount} ${t("drivers_count")}${busCount ? ` · ${busCount} ${t("buses_count")}` : ""}${g.description ? " · " + escapeHtml(g.description) : ""}</div>
             </div>
             ${isLine ? `<button ${actionAttr("openGroupHub", [g.id])} class="bc-mini-btn is-info">${t("btn_open_group")}</button>` : ""}
             <button ${actionAttr("deleteGroup", [g.id])} class="bc-mini-btn is-danger">${t("btn_delete") || "Obriši"}</button>

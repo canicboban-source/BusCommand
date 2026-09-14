@@ -188,7 +188,7 @@ function renderMonthlyPlansView() {
                 background: ${isActive ? g.color + "33" : "transparent"};
                 color: ${isActive ? g.color : "var(--text-muted)"};
                 transition: all 0.15s; margin-right: 8px; margin-bottom: 8px;">
-                ${g.name}
+                ${escapeHtml(g.name)}
             </button>`;
         }).join("");
     }
