@@ -77,3 +77,26 @@ test("plan-import.js escapes fileName/driver/duty/bus/importId in innerHTML path
   assert.match(optionHtml, /&lt;img/);
   assert.equal(optionHtml.includes(maliciousLabel), false);
 });
+
+test("group-hub.js picker interpolates escapeHtml(g.name) into innerHTML (WIDE-23 source guard)", () => {
+  const src = fs.readFileSync(path.join(__dirname, "../../js/dispatcher/group-hub.js"), "utf8");
+  assert.match(src, /import\s*\{\s*escapeHtml[\s\S]*\}\s*from\s*["']\.\.\/core\/utils\.js["']/);
+  assert.match(src, /\$\{escapeHtml\(g\.name\)\}/);
+  assert.doesNotMatch(src, /\$\{g\.name\}/);
+});
+
+test("groups.js filter/list interpolates escapeHtml(g.name) into innerHTML (WIDE-23 sibling guard)", () => {
+  const src = fs.readFileSync(path.join(__dirname, "../../js/data/groups.js"), "utf8");
+  assert.match(src, /import\s*\{\s*escapeHtml[\s\S]*\}\s*from\s*["']\.\.\/core\/utils\.js["']/);
+  assert.match(src, /\$\{escapeHtml\(g\.name\)\}/);
+  assert.match(src, /escapeHtml\(g\.description\)/);
+  assert.doesNotMatch(src, /\$\{g\.name\}/);
+  assert.doesNotMatch(src, /\+ g\.description/);
+});
+
+test("monthly-plans.js group chips interpolate escapeHtml(g.name) into innerHTML (WIDE-23 sibling guard)", () => {
+  const src = fs.readFileSync(path.join(__dirname, "../../js/dispatcher/monthly-plans.js"), "utf8");
+  assert.match(src, /function escapeHtml\(/);
+  assert.match(src, /\$\{escapeHtml\(g\.name\)\}/);
+  assert.doesNotMatch(src, /\$\{g\.name\}/);
+});

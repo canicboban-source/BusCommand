@@ -438,7 +438,7 @@ function renderGroupsPickerGrid(containerId, onGroupClickName, hintKey = "plan_p
                 style="margin:0;text-align:left;cursor:pointer;border-left:4px solid ${g.color};width:100%;">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;">
                     <div>
-                        <div style="font-size:1.15rem;font-weight:700;">${g.name}</div>
+                        <div style="font-size:1.15rem;font-weight:700;">${escapeHtml(g.name)}</div>
                         <div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">${t("plan_pick_line") || "Linija"} ${g.id}</div>
                     </div>
                     <span style="font-size:0.72rem;padding:4px 8px;border-radius:12px;font-weight:700;
