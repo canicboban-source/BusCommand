@@ -21,6 +21,8 @@ const {
 } = require("../../server/smtp-secret-crypto.js");
 const {
   buildEncryptedSmtpSettingsDoc,
+  buildLegacySmtpMigrationPatch,
+  migrateLegacySmtpPasswordIfUnchanged,
   toPublicSmtpSettings,
   smtpAuditMeta,
   prepareSmtpForSend
@@ -33,6 +35,32 @@ function testKey() {
 
 function envWithKey(key = testKey()) {
   return { [ENV_KEY]: key.toString("base64") };
+}
+
+function transactionHarness(initial, beforeRead) {
+  let state = { ...initial };
+  const updates = [];
+  return {
+    ref: { path: "companies/comp-1/settings/email_smtp" },
+    firestore: {
+      async runTransaction(callback) {
+        if (beforeRead) state = { ...state, ...beforeRead({ ...state }) };
+        return callback({
+          async get() {
+            return { exists: true, data: () => ({ ...state }) };
+          },
+          update(_ref, patch) {
+            updates.push({ ...patch });
+            state = { ...state, ...patch };
+          }
+        });
+      }
+    },
+    get state() {
+      return { ...state };
+    },
+    updates
+  };
 }
 
 test("encrypt/decrypt round trip with AAD tenant binding", () => {
@@ -124,6 +152,146 @@ test("legacy plaintext resolve marks needsMigration and encrypt rewrite works", 
     decryptSmtpPassword(prepared.migrateDoc.pass, "comp-1", { env }),
     "legacy-plain"
   );
+});
+
+test("legacy plaintext transaction migration succeeds when pass is unchanged", async () => {
+  const env = envWithKey();
+  const legacy = {
+    host: "old.example.com",
+    port: 587,
+    user: "old-user",
+    pass: "legacy-plain",
+    from: "old@example.com",
+    enabled: true
+  };
+  const harness = transactionHarness(legacy);
+  const patch = buildLegacySmtpMigrationPatch(legacy.pass, "comp-1", { env });
+  const result = await migrateLegacySmtpPasswordIfUnchanged(
+    harness.firestore,
+    harness.ref,
+    legacy.pass,
+    patch
+  );
+
+  assert.equal(result.migrated, true);
+  assert.equal(harness.updates.length, 1);
+  assert.equal(isEncryptedSmtpSecret(harness.state.pass), true);
+  assert.equal(decryptSmtpPassword(harness.state.pass, "comp-1", { env }), legacy.pass);
+  assert.equal(harness.state.host, legacy.host);
+});
+
+test("concurrent newer SMTP save wins over stale plaintext migration", async () => {
+  const env = envWithKey();
+  const legacy = { host: "old.example.com", pass: "legacy-plain", enabled: true };
+  const newer = buildEncryptedSmtpSettingsDoc(
+    {
+      host: "new.example.com",
+      port: 465,
+      user: "new-user",
+      pass: "new-secret",
+      from: "new@example.com",
+      enabled: true
+    },
+    "comp-1",
+    "new-ca",
+    { env }
+  );
+  const harness = transactionHarness(legacy, () => newer);
+  const patch = buildLegacySmtpMigrationPatch(legacy.pass, "comp-1", { env });
+  const result = await migrateLegacySmtpPasswordIfUnchanged(
+    harness.firestore,
+    harness.ref,
+    legacy.pass,
+    patch
+  );
+
+  assert.equal(result.migrated, false);
+  assert.equal(harness.updates.length, 0);
+  assert.deepEqual(harness.state, newer);
+});
+
+test("migration patch never overwrites newer non-secret configuration", async () => {
+  const env = envWithKey();
+  const observed = {
+    host: "old.example.com",
+    port: 587,
+    user: "old-user",
+    pass: "same-legacy-pass",
+    from: "old@example.com",
+    enabled: true
+  };
+  const concurrentFields = {
+    host: "new.example.com",
+    port: 465,
+    user: "new-user",
+    pass: observed.pass,
+    from: "new@example.com",
+    enabled: false
+  };
+  const harness = transactionHarness(observed, () => concurrentFields);
+  const patch = buildLegacySmtpMigrationPatch(observed.pass, "comp-1", { env });
+  const result = await migrateLegacySmtpPasswordIfUnchanged(
+    harness.firestore,
+    harness.ref,
+    observed.pass,
+    patch
+  );
+
+  assert.equal(result.migrated, true);
+  assert.deepEqual(
+    {
+      host: harness.state.host,
+      port: harness.state.port,
+      user: harness.state.user,
+      from: harness.state.from,
+      enabled: harness.state.enabled
+    },
+    {
+      host: concurrentFields.host,
+      port: concurrentFields.port,
+      user: concurrentFields.user,
+      from: concurrentFields.from,
+      enabled: concurrentFields.enabled
+    }
+  );
+  assert.deepEqual(Object.keys(harness.updates[0]).sort(), ["migratedAt", "migratedFrom", "pass"]);
+});
+
+test("send-path migration uses the same CAS and cannot replace a concurrent save", async () => {
+  const env = envWithKey();
+  const legacy = {
+    host: "old.example.com",
+    port: 587,
+    user: "old-user",
+    pass: "legacy-send-pass",
+    from: "old@example.com",
+    enabled: true
+  };
+  const prepared = prepareSmtpForSend(legacy, "comp-1", { env });
+  const newer = buildEncryptedSmtpSettingsDoc(
+    {
+      host: "new.example.com",
+      port: 465,
+      user: "new-user",
+      pass: "new-send-pass",
+      from: "new@example.com",
+      enabled: true
+    },
+    "comp-1",
+    "new-ca",
+    { env }
+  );
+  const harness = transactionHarness(legacy, () => newer);
+  const result = await migrateLegacySmtpPasswordIfUnchanged(
+    harness.firestore,
+    harness.ref,
+    legacy.pass,
+    prepared.migrateDoc
+  );
+
+  assert.equal(result.migrated, false);
+  assert.equal(harness.updates.length, 0);
+  assert.deepEqual(harness.state, newer);
 });
 
 test("buildEncryptedSmtpSettingsDoc never stores plaintext password", () => {
@@ -237,7 +405,8 @@ test("API routes encrypt on save and strip secrets on GET (source contract)", ()
 test("confirmation scheduler decrypts via prepareSmtpForSend (source contract)", () => {
   const src = readFileSync(resolve("server/confirmation-scheduler.js"), "utf8");
   assert.match(src, /prepareSmtpForSend/);
-  assert.match(src, /migrateDoc/);
+  assert.match(src, /migrateLegacySmtpPasswordIfUnchanged/);
+  assert.doesNotMatch(src, /smtpRef\.set\(prepared\.migrateDoc/);
 });
 
 test("CA-only email-smtp routes remain gated (source contract)", () => {

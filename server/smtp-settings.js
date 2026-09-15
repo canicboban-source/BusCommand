@@ -66,6 +66,60 @@ function smtpAuditMeta({ host, port, from, enabled, pass }) {
 }
 
 /**
+ * Build the secret-only patch used to migrate one observed legacy password.
+ * Configuration fields are intentionally excluded so migration cannot replace
+ * a newer CA save.
+ */
+function buildLegacySmtpMigrationPatch(legacyPass, companyId, opts = {}) {
+  return {
+    pass: encryptSmtpPassword(legacyPass, companyId, opts),
+    migratedAt: (opts.now || (() => new Date().toISOString()))(),
+    migratedFrom: "plaintext"
+  };
+}
+
+/**
+ * Transactionally rewrite a legacy password only while the stored value still
+ * exactly matches the plaintext originally observed by the caller.
+ *
+ * @returns {Promise<{ migrated: boolean, data: object|null }>}
+ */
+async function migrateLegacySmtpPasswordIfUnchanged(
+  firestore,
+  ref,
+  observedLegacyPass,
+  migrationPatch
+) {
+  if (!isEncryptedSmtpSecret(migrationPatch?.pass)) {
+    throw new SmtpSecretError(
+      "SMTP_SECRET_MIGRATION_INVALID",
+      "SMTP migration patch must contain an encrypted password"
+    );
+  }
+  const secretOnlyPatch = {
+    pass: migrationPatch.pass,
+    migratedAt: migrationPatch.migratedAt,
+    migratedFrom: "plaintext"
+  };
+  return firestore.runTransaction(async (tx) => {
+    const currentSnap = await tx.get(ref);
+    if (!currentSnap.exists) return { migrated: false, data: null };
+
+    const current = currentSnap.data() || {};
+    if (
+      typeof observedLegacyPass !== "string" ||
+      isEncryptedSmtpSecret(observedLegacyPass) ||
+      current.pass !== observedLegacyPass
+    ) {
+      return { migrated: false, data: current };
+    }
+
+    tx.update(ref, secretOnlyPatch);
+    return { migrated: true, data: { ...current, ...secretOnlyPatch } };
+  });
+}
+
+/**
  * Resolve smtp config for sending: decrypt (or accept legacy plaintext) and
  * optionally return a migrated encrypted doc for rewrite.
  * @returns {{ smtp: object, migrateDoc: object|null }}
@@ -93,18 +147,15 @@ function prepareSmtpForSend(smtpDoc, companyId, opts = {}) {
   };
   let migrateDoc = null;
   if (resolved.needsMigration) {
-    migrateDoc = {
-      ...smtpDoc,
-      pass: encryptSmtpPassword(resolved.password, companyId, opts),
-      migratedAt: (opts.now || (() => new Date().toISOString()))(),
-      migratedFrom: "plaintext"
-    };
+    migrateDoc = buildLegacySmtpMigrationPatch(resolved.password, companyId, opts);
   }
   return { smtp, migrateDoc };
 }
 
 module.exports = {
   buildEncryptedSmtpSettingsDoc,
+  buildLegacySmtpMigrationPatch,
+  migrateLegacySmtpPasswordIfUnchanged,
   toPublicSmtpSettings,
   smtpAuditMeta,
   prepareSmtpForSend,

@@ -14,7 +14,10 @@ const {
 } = require("./confirmation-outbox");
 const { createSmsProvider } = require("./sms-provider");
 const { sendEmail, buildShiftConfirmationEmail } = require("./email-provider");
-const { prepareSmtpForSend } = require("./smtp-settings");
+const {
+  prepareSmtpForSend,
+  migrateLegacySmtpPasswordIfUnchanged
+} = require("./smtp-settings");
 
 function isSchedulerEnabled(settingsMain) {
   return settingsMain?.features?.shiftConfirmationScheduler === true;
@@ -195,7 +198,12 @@ function createConfirmationScheduler({
         const prepared = prepareSmtpForSend(smtpCfg, data.companyId);
         if (prepared.migrateDoc) {
           try {
-            await smtpRef.set(prepared.migrateDoc, { merge: true });
+            await migrateLegacySmtpPasswordIfUnchanged(
+              db(),
+              smtpRef,
+              smtpCfg.pass,
+              prepared.migrateDoc
+            );
           } catch { /* migration rewrite best-effort; send may still proceed */ }
         }
         if (prepared.smtp?.pass && prepared.smtp?.host) {

@@ -73,6 +73,8 @@ const { createSupportSessionHandlers } = require("./server/support-session");
 const { createConfirmationScheduler } = require("./server/confirmation-scheduler");
 const {
   buildEncryptedSmtpSettingsDoc,
+  buildLegacySmtpMigrationPatch,
+  migrateLegacySmtpPasswordIfUnchanged,
   toPublicSmtpSettings,
   smtpAuditMeta,
   SmtpSecretError
@@ -1339,22 +1341,14 @@ app.get(
       // Lazy migrate legacy plaintext once, then return public view only.
       if (data.pass && typeof data.pass === "string" && !isEncryptedSmtpSecret(data.pass)) {
         try {
-          const migrated = buildEncryptedSmtpSettingsDoc(
-            {
-              host: data.host,
-              port: data.port,
-              user: data.user,
-              pass: data.pass,
-              from: data.from,
-              enabled: data.enabled
-            },
-            companyId,
-            req.staffUser.uid
+          const migrationPatch = buildLegacySmtpMigrationPatch(data.pass, companyId);
+          const migration = await migrateLegacySmtpPasswordIfUnchanged(
+            db,
+            ref,
+            data.pass,
+            migrationPatch
           );
-          migrated.migratedAt = new Date().toISOString();
-          migrated.migratedFrom = "plaintext";
-          await ref.set(migrated, { merge: true });
-          return res.json({ success: true, smtp: toPublicSmtpSettings(migrated) });
+          return res.json({ success: true, smtp: toPublicSmtpSettings(migration.data) });
         } catch (err) {
           if (err instanceof SmtpSecretError) {
             // Key missing: still never return plaintext; fail-closed on secret field.
