@@ -8,7 +8,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
 test("daily and monthly group cards register working delegated handlers", () => {
   const hub = readFileSync(join(root, "js/dispatcher/group-hub.js"), "utf8");
-  const staffActions = readFileSync(join(root, "js/register-onclick-staff.js"), "utf8");
+  const staffActions = readFileSync(join(root, "js/register-onclick-dispatcher.js"), "utf8");
 
   assert.match(hub, /renderGroupsPickerGrid\("daily-plan-groups-grid", "openDailyPlanForGroup"\)/);
   assert.match(hub, /renderGroupsPickerGrid\("monthly-plan-groups-grid", "openMonthlyPlanForGroup"\)/);

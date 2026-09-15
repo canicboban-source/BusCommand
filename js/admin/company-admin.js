@@ -12,7 +12,6 @@ import {
     itemBelongsToCompany
 } from "./company-admin-overview-model.js";
 import ApiClient from "../core/api-client.js";
-import { openGroupHub } from "../dispatcher/group-hub.js";
 import { getFormedLineGroupIds } from "../data/groups.js";
 import { canViewOperationalRoster } from "../core/ui-permissions.js";
 import { icon, tx, btnSecondary, btnPrimary } from "../ui/markup.js";
@@ -291,8 +290,14 @@ function openCompanyOpsOverview() {
         showToast(t("hub_no_groups") || "No groups created.", "error");
         return;
     }
-    openGroupHub(first.id);
-    showToast(t("ops_readonly_banner") || "Read-only operational view.", "info");
+    void import("../dispatcher/group-hub.js")
+        .then((mod) => {
+            mod.openGroupHub(first.id);
+            showToast(t("ops_readonly_banner") || "Read-only operational view.", "info");
+        })
+        .catch(() => {
+            showToast(t("error_generic"), "error");
+        });
 }
 
 export {

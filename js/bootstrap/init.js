@@ -25,6 +25,12 @@ import { assertSurfaceRole, isDriverSurface, isStaffSurface } from "../core/app-
 import { USE_LOCAL_STATE, COMPANY_ID } from "../core/runtime-config.js";
 import { purgeLegacyDemoStorage } from "../core/purge-legacy-demo-storage.js";
 
+async function ensureStaffRoleGraphIfNeeded(role) {
+    if (!isStaffSurface()) return;
+    const { ensureStaffRoleGraph } = await import("../staff/ensure-staff-role-graph.js");
+    await ensureStaffRoleGraph(role);
+}
+
 function setAuthLoading(visible, errorKey = null) {
     let overlay = document.getElementById("production-auth-loading");
     if (!overlay) {
@@ -182,7 +188,8 @@ async function bootstrapBusCommand() {
                 };
                 if (authUser.role === "superadmin") {
                     setAuthLoading(false);
-                    showAppLayout();
+                    await ensureStaffRoleGraphIfNeeded(authUser.role);
+                    await showAppLayout();
                     return;
                 }
                 try {
@@ -191,11 +198,12 @@ async function bootstrapBusCommand() {
                         setAuthLoading(false);
                         return;
                     }
+                    await ensureStaffRoleGraphIfNeeded(authUser.role);
                     await initFirebase(confirmedCompanyId);
                     persistUserSession(window.currentUser);
                     applyBrandingToUI();
                     setAuthLoading(false);
-                    showAppLayout();
+                    await showAppLayout();
                 } catch (error) {
                     console.warn("Authenticated company initialization failed.", error);
                     setAuthLoading(true, "auth_cloud_load_failed");
@@ -206,7 +214,8 @@ async function bootstrapBusCommand() {
     }
 
     if (window.currentUser && USE_LOCAL_STATE) {
-        showAppLayout();
+        await ensureStaffRoleGraphIfNeeded(window.currentUser.role);
+        await showAppLayout();
     } else if (USE_LOCAL_STATE) {
         showLoginScreen(false);
     }

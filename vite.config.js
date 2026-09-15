@@ -9,17 +9,24 @@ export default defineConfig({
   // Public assets are copied from an explicit allow-list after build.
   // This prevents internal/test fixtures from being published accidentally.
   publicDir: false,
-  build: {
+    build: {
     outDir: "dist",
     emptyOutDir: true,
+    manifest: true,
     modulePreload: {
       // plan-import-loader.js is a shared lazy-module-loader utility (also used by
       // msg-compose/sa-create-company-flow). It's a static dep of the eager staff
       // bundle, so Vite would otherwise modulepreload it — but its filename still
       // reads "plan-import", which the D17 lazy-load contract treats as the heavy
       // chunk. Keep it a normal on-demand fetch instead of a preload hint.
+      // Staff role graphs are dynamic-only — never modulepreload CA/Dispo payloads.
       resolveDependencies: (_filename, deps) =>
-        deps.filter((dep) => !/plan-import|driver-import-contract|replacement-eligibility/i.test(dep)),
+        deps.filter(
+          (dep) =>
+            !/plan-import|driver-import-contract|replacement-eligibility|install-company-admin-role|install-dispatcher-role|staff-role-ca|staff-role-dispatcher/i.test(
+              dep
+            )
+        ),
     },
     rollupOptions: {
       input: {
@@ -32,6 +39,8 @@ export default defineConfig({
           const norm = id.replaceAll("\\", "/");
           if (norm.endsWith("/translations.js")) return "translations";
           if (norm.includes("/replacement-eligibility")) return "replacement-eligibility";
+          // Do NOT force staff role installers into manualChunks — that re-merges
+          // shared symbols into the anonymous Staff entry and undoes the split.
           return undefined;
         },
       },

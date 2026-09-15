@@ -1,10 +1,5 @@
 // Staff-only section renderers for the state observer (§27 / Ch17).
-// Kept off the driver entry graph so /driver.html does not preload dispatcher chunks.
-import { registerSectionRenderer } from "./state-observer.js";
-import { renderDispatcherDashboard } from "../dispatcher/dashboard.js";
-import { renderDispatcherShifts } from "../dispatcher/shifts.js";
-import { renderGroupHub } from "../dispatcher/group-hub.js";
-
-registerSectionRenderer("dispatcher-dashboard", renderDispatcherDashboard);
-registerSectionRenderer("dispatcher-shifts", renderDispatcherShifts);
-registerSectionRenderer("dispatcher-group-hub", renderGroupHub);
+// Dispatcher renderers register from the Dispatcher role graph installer so
+// /staff.html anonymous payload does not preload Dispo UI.
+// Driver surface must never import this file.
+export {};

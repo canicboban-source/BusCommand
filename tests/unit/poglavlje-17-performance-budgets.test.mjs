@@ -12,14 +12,17 @@ test("driver entry does not import staff dispatcher state-observer setup", () =>
   const staff = read("js/main-staff.js");
   const setup = read("js/core/state-observer-setup.js");
   const staffSetup = read("js/core/state-observer-setup-staff.js");
+  const dispoRole = read("js/staff/install-dispatcher-role.js");
   const i18n = read("js/ui/i18n.js");
 
   assert.doesNotMatch(driver, /state-observer-setup-staff/);
   assert.doesNotMatch(driver, /state-observer-setup\.js/);
   assert.match(staff, /state-observer-setup-staff\.js/);
   assert.doesNotMatch(setup, /renderDispatcherDashboard|renderGroupHub|dispatcher\//);
-  assert.match(staffSetup, /renderDispatcherDashboard/);
-  assert.match(staffSetup, /renderGroupHub/);
+  // Dispo observer renderers install from the Dispatcher role graph (not anonymous Staff).
+  assert.doesNotMatch(staffSetup, /renderDispatcherDashboard/);
+  assert.match(dispoRole, /renderDispatcherDashboard/);
+  assert.match(dispoRole, /renderGroupHub/);
   assert.doesNotMatch(i18n, /import \{ populateTemplateSelect \} from/);
   assert.match(i18n, /msg-compose-loader\.js/);
   assert.match(i18n, /getMsgComposeIfLoaded/);
@@ -84,20 +87,22 @@ test("D17 decision and SURFACE split item reflect Ch17 work", () => {
 });
 
 test("lazy CA audit log loader wires dynamic import and action handlers without eager bundle pollution", async () => {
-  const staffSections = read("js/surface/register-staff-sections.js");
+  const caSections = read("js/surface/register-company-admin-sections.js");
+  const caOnClick = read("js/register-onclick-company-admin.js");
   const staffOnClick = read("js/register-onclick-staff.js");
 
-  // Verify static import is absent in staff section registrations
-  assert.doesNotMatch(staffSections, /import \{ renderCompanyAdminAudit \} from/);
-  assert.match(staffSections, /import\("\.\.\/admin\/company-admin-audit\.js"\)/);
+  // Verify static import is absent in CA section registrations
+  assert.doesNotMatch(caSections, /import \{ renderCompanyAdminAudit \} from/);
+  assert.match(caSections, /import\("\.\.\/admin\/company-admin-audit\.js"\)/);
 
-  // Verify lazy loaders and dynamic handlers in staff onclick
-  assert.doesNotMatch(staffOnClick, /import \{ handleCompanyAuditFilters/);
-  assert.match(staffOnClick, /function loadCompanyAdminAudit\(\)/);
-  assert.match(staffOnClick, /handleCompanyAuditFilters\s*\(/);
-  assert.match(staffOnClick, /refreshCompanyAudit\s*\(/);
-  assert.match(staffOnClick, /resetCompanyAuditFilters\s*\(/);
-  assert.match(staffOnClick, /loadMoreCompanyAudit\s*\(/);
+  // Verify lazy loaders and dynamic handlers in CA onclick (not anonymous Staff)
+  assert.doesNotMatch(staffOnClick, /loadCompanyAdminAudit/);
+  assert.doesNotMatch(caOnClick, /import \{ handleCompanyAuditFilters/);
+  assert.match(caOnClick, /function loadCompanyAdminAudit\(\)/);
+  assert.match(caOnClick, /handleCompanyAuditFilters\s*\(/);
+  assert.match(caOnClick, /refreshCompanyAudit\s*\(/);
+  assert.match(caOnClick, /resetCompanyAuditFilters\s*\(/);
+  assert.match(caOnClick, /loadMoreCompanyAudit\s*\(/);
 
   // Verify target module exports the expected interface
   const auditSource = read("js/admin/company-admin-audit.js");

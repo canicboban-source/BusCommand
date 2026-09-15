@@ -14,7 +14,7 @@ function read(rel) {
 }
 
 test("openMonthlyPlanImport is registered on staff action registry", () => {
-    const registry = read("js/register-onclick-staff.js");
+    const registry = read("js/register-onclick-dispatcher.js");
     const hub = read("js/dispatcher/group-hub.js");
 
     assert.match(registry, /openMonthlyPlanImport/);

@@ -8,8 +8,8 @@ const path = require("node:path");
 
 const root = path.join(__dirname, "../..");
 
-test("2R-B source: register-onclick-staff lazy-loads plan-import (no static import)", () => {
-  const src = fs.readFileSync(path.join(root, "js/register-onclick-staff.js"), "utf8");
+test("2R-B source: register-onclick-dispatcher lazy-loads plan-import (no static import)", () => {
+  const src = fs.readFileSync(path.join(root, "js/register-onclick-dispatcher.js"), "utf8");
   assert.doesNotMatch(
     src,
     /import\s*\{[^}]*confirmBulkPlanImport[^}]*\}\s*from\s*["']\.\/dispatcher\/plan-import\.js["']/

@@ -14,7 +14,7 @@ function isLocalSuperAdminAccount(user) {
 }
 
 /** QA local-state only: authenticate SA from harness-seeded users (never packaged demo). */
-function tryLocalQaSuperAdminLogin(email, password, errEl) {
+async function tryLocalQaSuperAdminLogin(email, password, errEl) {
     if (!USE_LOCAL_STATE) return false;
     const localUsers = [
         ...(window.state?.companyAdmins || []),
@@ -40,7 +40,7 @@ function tryLocalQaSuperAdminLogin(email, password, errEl) {
         email: found.email || email
     };
     persistUserSession(window.currentUser);
-    showAppLayout();
+    await showAppLayout();
     return true;
 }
 
@@ -114,7 +114,7 @@ async function confirmSuperAdminPin() {
     }
 
     // QA local-state seed first — logo modal must match staff-form SA login.
-    if (tryLocalQaSuperAdminLogin(email, pass, err)) return;
+    if (await tryLocalQaSuperAdminLogin(email, pass, err)) return;
 
     try {
         const result = await Auth.loginWithEmail(email, pass);
@@ -130,7 +130,7 @@ async function confirmSuperAdminPin() {
         closeSuperAdminModal();
         window.currentUser = { ...result.user, role: "superadmin", id: result.user.uid };
         persistUserSession(window.currentUser);
-        showAppLayout();
+        await showAppLayout();
     } catch {
         if (err) err.textContent = t("sa_err_login_failed");
     }
