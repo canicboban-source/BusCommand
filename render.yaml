@@ -17,6 +17,10 @@ services:
         sync: false
       - key: CONFIRMATION_JOB_SECRET
         sync: false
+      # AES-256-GCM key for tenant SMTP passwords at rest. Dashboard-only —
+      # never a VITE_* variable, never a literal value in this file.
+      - key: BUSCOMMAND_SMTP_SECRET_KEY
+        sync: false
       - key: VITE_FIREBASE_API_KEY
         value: AIzaSyCr9Q8b36nRRX_JIEmYgbLGaS7LEG1LRIo
       - key: VITE_FIREBASE_AUTH_DOMAIN
@@ -74,4 +78,6 @@ services:
       - key: NODE_VERSION
         value: "22"
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: BUSCOMMAND_SMTP_SECRET_KEY
         sync: false
