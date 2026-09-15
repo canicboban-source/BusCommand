@@ -12,6 +12,44 @@ import { clearPackageImport, confirmPackageImport, handlePackageImportDrop, hand
 import { wizardAddDriverRow, wizardBack, wizardHandleLogo, wizardNext, wizardSelectColor, wizardSkip } from "./features/onboarding.js";
 import { mergeStaffActionHandlers } from "./staff/staff-action-handlers.js";
 
+/** CA read-only ops entry points — load Dispo UI only when CA opens operational view. */
+async function openGroupHub(...args) {
+    const mod = await import("./dispatcher/group-hub.js");
+    return mod.openGroupHub(...args);
+}
+async function openVehiclesForGroup(...args) {
+    const mod = await import("./dispatcher/vehicles-panel.js");
+    return mod.openVehiclesForGroup(...args);
+}
+async function openMonthlyPlansFull(...args) {
+    const mod = await import("./dispatcher/group-hub.js");
+    return mod.openMonthlyPlansFull(...args);
+}
+async function openDailyPlanFull(...args) {
+    const mod = await import("./dispatcher/group-hub.js");
+    return mod.openDailyPlanFull(...args);
+}
+async function openMonthlyPlanImport(...args) {
+    const mod = await import("./dispatcher/group-hub.js");
+    return mod.openMonthlyPlanImport(...args);
+}
+async function openDailyPlanForGroup(...args) {
+    const mod = await import("./dispatcher/group-hub.js");
+    return mod.openDailyPlanForGroup(...args);
+}
+async function openMonthlyPlanForGroup(...args) {
+    const mod = await import("./dispatcher/group-hub.js");
+    return mod.openMonthlyPlanForGroup(...args);
+}
+async function backFromPlanFullPage(...args) {
+    const mod = await import("./dispatcher/group-hub.js");
+    return mod.backFromPlanFullPage(...args);
+}
+async function closeGroupHub(...args) {
+    const mod = await import("./dispatcher/group-hub.js");
+    return mod.closeGroupHub(...args);
+}
+
 function loadCompanyAdminOnboarding() {
     return import("./admin/company-admin-onboarding.js");
 }
@@ -52,6 +90,7 @@ async function caWizardSkip(...args) {
 const COMPANY_ADMIN_HANDLERS = {
     addCompanyDispatcher,
     applyBrandingSettings,
+    backFromPlanFullPage,
     caWizardBack,
     caWizardNext,
     caWizardSelectColor,
@@ -70,6 +109,7 @@ const COMPANY_ADMIN_HANDLERS = {
     closeCompanyDriverEdit,
     closeCompanyServicePlanDuty,
     closeCompanyServicePlanHistory,
+    closeGroupHub,
     confirmCompanyDriversImport,
     submitCompanyDriverManualAdd,
     confirmPackageImport,
@@ -87,6 +127,13 @@ const COMPANY_ADMIN_HANDLERS = {
     quickSetCaBusStatus,
     setCaBusOtherLine,
     toggleCaBusActive,
+    openDailyPlanForGroup,
+    openDailyPlanFull,
+    openGroupHub,
+    openMonthlyPlanForGroup,
+    openMonthlyPlanImport,
+    openMonthlyPlansFull,
+    openVehiclesForGroup,
     renderCompanyAdminBuses,
     exportDriversCSV,
     focusCompanyDispatcherForm,

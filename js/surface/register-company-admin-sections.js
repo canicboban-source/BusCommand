@@ -27,6 +27,40 @@ export function registerCompanyAdminSections() {
             const { renderCompanyAdminAudit } = await import("../admin/company-admin-audit.js");
             renderCompanyAdminAudit();
         },
+        // CA operational read-only view (D27) — Dispo sections, rendered on demand.
+        "dispatcher-group-hub": async () => {
+            const { renderGroupHub } = await import("../dispatcher/group-hub.js");
+            renderGroupHub();
+        },
+        "dispatcher-vehicles": async () => {
+            const { renderDispatcherVehicles } = await import("../dispatcher/vehicles-panel.js");
+            renderDispatcherVehicles();
+        },
+        "dispatcher-monthly-plans-full": async () => {
+            const { renderMonthlyPlansFullPage } = await import("../dispatcher/monthly-plans.js");
+            renderMonthlyPlansFullPage();
+        },
+        "dispatcher-daily-plan-full": async () => {
+            const mod = await import("../dispatcher/daily-plan.js");
+            mod.bindDailyPlanFullPage();
+            mod.renderDailyPlanFullPage();
+        },
+        "dispatcher-daily-plan-pick": async () => {
+            const { renderPlanGroupPicker } = await import("../dispatcher/group-hub.js");
+            renderPlanGroupPicker("daily");
+        },
+        "dispatcher-monthly-plan-pick": async () => {
+            const { renderPlanGroupPicker } = await import("../dispatcher/group-hub.js");
+            renderPlanGroupPicker("monthly");
+        },
+        "dispatcher-dashboard": async () => {
+            const { renderDispatcherDashboard } = await import("../dispatcher/dashboard.js");
+            renderDispatcherDashboard();
+        },
+        "dispatcher-shifts": async () => {
+            const { renderDispatcherShifts } = await import("../dispatcher/shifts.js");
+            renderDispatcherShifts();
+        },
         "superadmin-dashboard": () => {}
     });
 }

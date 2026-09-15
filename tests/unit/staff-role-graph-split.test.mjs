@@ -74,13 +74,15 @@ test("role installers are idempotent and concurrent loads share one Promise", as
   assert.equal(typeof recovered.install, "function");
 });
 
-test("CA role graph does not import Dispatcher dashboard implementation", () => {
+test("CA role graph does not statically import Dispatcher dashboard implementation", () => {
   const ca = read("js/staff/install-company-admin-role.js");
   const caSections = read("js/surface/register-company-admin-sections.js");
-  assert.doesNotMatch(ca, /dispatcher\/dashboard/);
-  assert.doesNotMatch(ca, /live-map-core/);
-  assert.doesNotMatch(caSections, /renderDispatcherDashboard/);
+  assert.doesNotMatch(ca, /from ["'].*dispatcher\/dashboard/);
+  assert.doesNotMatch(ca, /from ["'].*live-map-core/);
+  assert.doesNotMatch(caSections, /from ["'].*renderDispatcherDashboard|from ["'].*dispatcher\/dashboard/);
   assert.match(caSections, /renderCompanyAdminDashboard/);
+  // CA may lazy-import Dispo sections for read-only ops view.
+  assert.match(caSections, /import\("\.\.\/dispatcher\/group-hub\.js"\)/);
 });
 
 test("Dispatcher role graph does not import Company Admin dashboard implementation", () => {
