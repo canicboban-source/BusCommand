@@ -4,6 +4,16 @@ import { sendEmail, buildShiftConfirmationEmail, buildExpiryWarningEmail, isStub
 import { companyEmailSmtpBody } from "../../server/validation.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import vm from "node:vm";
+
+function loadTranslations() {
+  const sandbox = { window: {}, console };
+  vm.runInNewContext(readFileSync(resolve("translations.js"), "utf8"), sandbox, {
+    filename: "translations.js",
+    timeout: 20000
+  });
+  return sandbox.window.TRANSLATIONS;
+}
 
 test("email provider returns stub_sent in test/harness mode", async () => {
   const result = await sendEmail({
@@ -162,11 +172,14 @@ test("SMTP validation schema rejects invalid email in from field", () => {
 });
 
 test("email SMTP i18n keys exist in all 3 languages", () => {
-  const translations = readFileSync(resolve("translations.js"), "utf8");
+  const dicts = loadTranslations();
   const keys = ["ca_settings_email_kicker", "ca_settings_email_title", "ca_smtp_host", "ca_smtp_port", "ca_smtp_user", "ca_smtp_pass", "ca_smtp_from", "ca_smtp_enabled", "ca_smtp_save", "ca_smtp_saved"];
   for (const key of keys) {
-    const count = (translations.match(new RegExp(`${key}:`, "g")) || []).length;
-    assert.equal(count, 3, `${key} must appear in all 3 languages (got ${count})`);
+    for (const lang of ["en", "sr", "de"]) {
+      const value = dicts[lang][key];
+      assert.equal(typeof value, "string", `${lang}.${key}`);
+      assert.notEqual(value, key);
+    }
   }
 });
 

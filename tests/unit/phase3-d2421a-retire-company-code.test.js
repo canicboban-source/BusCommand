@@ -7,6 +7,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 const { parseDriverCsv } = require("../../server/driver-csv");
 
 const root = path.join(__dirname, "..", "..");
@@ -66,7 +67,13 @@ test("D24.2.1-A: template has no company_code column", () => {
 
 test("D24.2.1-A: i18n legacy notice exists for de/en/sr", () => {
   const tr = fs.readFileSync(path.join(root, "translations.js"), "utf8");
-  assert.equal([...tr.matchAll(/ca_drivers_legacy_company_code_ignored:/g)].length, 3);
+  const sandbox = { window: {}, console };
+  vm.runInNewContext(tr, sandbox, { filename: "translations.js", timeout: 20000 });
+  for (const lang of ["en", "sr", "de"]) {
+    const value = sandbox.window.TRANSLATIONS[lang].ca_drivers_legacy_company_code_ignored;
+    assert.equal(typeof value, "string", `${lang}.ca_drivers_legacy_company_code_ignored`);
+    assert.notEqual(value, "ca_drivers_legacy_company_code_ignored");
+  }
   assert.doesNotMatch(tr, /ca_drivers_company_code_exists:/);
 });
 
