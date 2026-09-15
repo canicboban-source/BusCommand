@@ -1,7 +1,8 @@
 /**
  * Email provider adapter — per-tenant SMTP.
  * Modes: stub (local/dev, logs but does not send), smtp (production, uses nodemailer).
- * SMTP credentials are stored per-tenant in Firestore settings/main.emailSmtp.
+ * SMTP credentials live per-tenant in Firestore settings/email_smtp;
+ * passwords are AES-256-GCM encrypted at rest (see smtp-secret-crypto.js).
  * BusCommand never sends from its own address — the company's SMTP server is the sender.
  */
 "use strict";

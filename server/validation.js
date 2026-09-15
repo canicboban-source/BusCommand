@@ -129,7 +129,7 @@ const companyProfileSettingsBody = z.object({
 });
 
 /** CA-only: per-tenant SMTP settings for email notifications.
- *  Credentials are stored in Firestore and never sent to the client after save. */
+ *  Password is encrypted at rest (AES-256-GCM); never returned after save. */
 const companyEmailSmtpBody = z.object({
   companyId: z.string().trim().min(1).max(64),
   host: z.string().trim().min(3).max(255),
