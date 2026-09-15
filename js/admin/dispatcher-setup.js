@@ -5,10 +5,14 @@ import { showToast, refreshIcons } from "../core/utils.js";
 import { rejectDispatcherWithoutGroups } from "../auth/login-ui.js";
 import { persistUserSession, syncUserSession } from "../auth/login-session.js";
 import { clearAllPasswordFields, clearAuthSetupFields } from "../auth/password-fields.js";
-import { openGroupHub } from "../dispatcher/group-hub.js";
 import { showAppLayout } from "../layout/shell.js";
 import { t } from "../ui/i18n.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
+
+async function openGroupHubLazy(...args) {
+    const { openGroupHub } = await import("../dispatcher/group-hub.js");
+    return openGroupHub(...args);
+}
 
 function exitImpersonation() {
     // Remove read-only banner + any leftover SA overlays from inspect entry.
@@ -158,7 +162,7 @@ function createDispatcherGroup() {
     document.getElementById("dispatcher-group-setup-view").classList.add("hidden");
     showAppLayout();
     showToast(t("group_added") || "Grupa dodata — sada uvezite vozače i plan.", "success", 6000);
-    openGroupHub(id);
+    void openGroupHubLazy(id);
 }
 
 function enterDispatcherActiveGroup() {
@@ -188,7 +192,7 @@ function enterDispatcherActiveGroup() {
     
     document.getElementById("dispatcher-group-setup-view").classList.add("hidden");
     showAppLayout();
-    openGroupHub(gId);
+    void openGroupHubLazy(gId);
 }
 
 function switchToGroupSetup() {

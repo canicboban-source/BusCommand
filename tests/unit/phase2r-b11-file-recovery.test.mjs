@@ -102,7 +102,7 @@ test("2R-B.1.1 A: performance entry alone can supply trusted same-origin URL", a
 });
 
 test("2R-B.1.1 B/C source: register wrappers snapshot files before await; clear input; no English fallback", () => {
-  const reg = fs.readFileSync(path.join(root, "js/register-onclick-staff.js"), "utf8");
+  const reg = fs.readFileSync(path.join(root, "js/register-onclick-dispatcher.js"), "utf8");
   assert.match(reg, /Array\.from\(event\?\.dataTransfer\?\.files/);
   assert.match(reg, /Array\.from\(input\?\.files/);
   assert.match(reg, /input\.value\s*=\s*""/);

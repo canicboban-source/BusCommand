@@ -1,12 +1,10 @@
 // BusCommand — staff surface app shell (SA / CA / dispatcher)
-import { renderCompanyAdminDashboard } from "../admin/company-admin.js";
 import { loadSuperadminModule } from "../admin/superadmin-loader.js";
 import { checkSOSStatus } from "../maps/sos-siren.js";
 import { rejectDispatcherWithoutGroups, clearAllSensitiveAuthFields } from "../auth/login-ui.js";
 import { clearUserSession, syncUserSession } from "../auth/login-session.js";
 import { switchSection } from "./navigation.js";
 import { requestNotificationPermission } from "../maps/gps-track.js";
-import { initDispatcherLiveMap } from "../maps/live-map-core.js";
 import { t } from "../ui/i18n.js";
 import { applyUiLanguagePreference } from "../core/state.js";
 import { actionAttr } from "../core/action-delegate.js";
@@ -15,8 +13,9 @@ import { escapeHtml } from "../core/utils.js";
 import { updateTrialBadge } from "../core/license.js";
 import { startHeaderConnectionStatus } from "../ui/connection-status.js";
 import { sanitizeDispatcherActiveGroups } from "../core/dispatcher-scope.js";
+import { ensureStaffRoleGraph } from "../staff/ensure-staff-role-graph.js";
 
-export function showAppLayout() {
+export async function showAppLayout() {
     if (!canUseDriverOperationalUi()) return false;
     const role = window.currentUser?.role;
     if (!role || role === "driver") {
@@ -27,6 +26,9 @@ export function showAppLayout() {
         window.currentUser = null;
         return false;
     }
+
+    // Role graph must finish before first dashboard paint / section handlers.
+    await ensureStaffRoleGraph(role);
 
     // Keep SA/CA/dispatcher UI in sync with language select (buscommand_lang),
     // even when tenant state merges would otherwise reset language to FRESH_STATE "en".
@@ -75,8 +77,9 @@ export function showAppLayout() {
         dispNav?.classList.add("hidden");
         saNav?.classList.add("hidden");
         caNav?.classList.remove("hidden");
+        const { renderCompanyAdminDashboard } = await import("../admin/company-admin.js");
         renderCompanyAdminDashboard();
-        // Lazy onboarding chunk — keeps D17 staff budget under 568 KiB ceiling.
+        // Lazy onboarding chunk — keeps D17 staff budget under ceiling.
         switchSection("company-admin-dashboard");
         void import("../admin/company-admin-onboarding.js").then((mod) => {
             if (mod.shouldShowCompanyAdminOnboarding()) {
@@ -139,13 +142,16 @@ export function showAppLayout() {
         saNav?.classList.add("hidden");
         caNav?.classList.add("hidden");
         switchSection("dispatcher-dashboard");
+        const { initDispatcherLiveMap } = await import("../maps/live-map-core.js");
         setTimeout(() => initDispatcherLiveMap(), 300);
         requestNotificationPermission();
     }
 
     checkSOSStatus();
-    import("../dispatcher/help-support.js")
-        .then((mod) => mod.syncDispatcherHelpButton())
-        .catch(() => {});
+    if (role === "dispatcher") {
+        import("../dispatcher/help-support.js")
+            .then((mod) => mod.syncDispatcherHelpButton())
+            .catch(() => {});
+    }
     return true;
 }

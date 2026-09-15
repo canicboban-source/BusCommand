@@ -16,6 +16,7 @@ import { isDriverSurface, isStaffRole } from "../core/app-surface.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { isHardStaffAuthError, staffAuthErrorKey } from "./staff-login-errors.js";
 import { clearDriverSensitiveCaches } from "../driver/offline-snapshot.js";
+import { ensureStaffRoleGraph } from "../staff/ensure-staff-role-graph.js";
 
 async function rejectNonStaffFirebaseSession() {
     try { await firebase.auth().signOut(); } catch { /* ignore */ }
@@ -110,10 +111,11 @@ async function loginAsDispatcher() {
 
             // Super Admin has no tenant — skip license + Firestore (would throw on null companyId).
             if (window.currentUser.role === "superadmin") {
+                await ensureStaffRoleGraph(window.currentUser.role);
                 persistUserSession(window.currentUser);
                 if (btn) { btn.disabled = false; btn.style.opacity = ""; }
                 passInput.value = "";
-                showAppLayout();
+                await showAppLayout();
                 return;
             }
 
@@ -129,6 +131,8 @@ async function loginAsDispatcher() {
                 passInput.value = "";
                 return;
             }
+            // Role graph before Firestore so remote-render callbacks exist for first snapshot.
+            await ensureStaffRoleGraph(window.currentUser.role);
             await initFirebase(confirmedCompanyId);
             persistUserSession(window.currentUser);
             if (btn) { btn.disabled = false; btn.style.opacity = ""; }
@@ -140,7 +144,7 @@ async function loginAsDispatcher() {
                 }
             }
             passInput.value = "";
-            showAppLayout();
+            await showAppLayout();
             return;
         } catch (err) {
             const btn = document.getElementById("dispatcher-login-btn");
@@ -190,8 +194,9 @@ async function loginAsDispatcher() {
             email: companyAdmin.email,
             companyId: companyAdmin.companyId || companyAdmin.id
         };
+        await ensureStaffRoleGraph(window.currentUser.role);
         persistUserSession(window.currentUser);
-        showAppLayout();
+        await showAppLayout();
         return;
     }
 
@@ -236,8 +241,9 @@ async function loginAsDispatcher() {
     }
 
     passInput.value = "";
+    await ensureStaffRoleGraph(window.currentUser.role);
     persistUserSession(window.currentUser);
-    showAppLayout();
+    await showAppLayout();
 }
 
 function forgotDispatcherPassword() {

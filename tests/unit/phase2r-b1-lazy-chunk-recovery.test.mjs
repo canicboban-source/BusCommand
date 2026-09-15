@@ -215,7 +215,7 @@ test("2R-B.1 prefetch failure releases cache via production helpers", async () =
 });
 
 test("2R-B.1 D: plan-import stays lazy; staff.html must not modulepreload it", () => {
-  const reg = fs.readFileSync(path.join(root, "js/register-onclick-staff.js"), "utf8");
+  const reg = fs.readFileSync(path.join(root, "js/register-onclick-dispatcher.js"), "utf8");
   assert.match(reg, /from\s*["']\.\/dispatcher\/plan-import-loader\.js["']/);
   assert.match(reg, /withPlanImportModule/);
   assert.match(reg, /plan_import_chunk_load_failed/);

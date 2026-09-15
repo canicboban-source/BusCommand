@@ -228,7 +228,7 @@ test("H1-A.1 getIfLoaded is read-only and does not start import", async () => {
 });
 
 test("H1-A.1 section handler separates load catch from execution catch", () => {
-  const sections = fs.readFileSync(path.join(root, "js/surface/register-staff-sections.js"), "utf8");
+  const sections = fs.readFileSync(path.join(root, "js/surface/register-dispatcher-sections.js"), "utf8");
   const body = sections.match(
     /"dispatcher-messages":\s*async\s*\(\)\s*=>\s*\{([\s\S]*?)\},\s*\n\s*"superadmin-dashboard"/
   )?.[1] || "";
@@ -251,8 +251,9 @@ test("H1-A.1 i18n translateUI peeks without loadMsgCompose", () => {
 
 test("H1-A staff graph no longer statically imports msg-compose/sent-messages", () => {
   const install = fs.readFileSync(path.join(root, "js/install-staff.js"), "utf8");
-  const sections = fs.readFileSync(path.join(root, "js/surface/register-staff-sections.js"), "utf8");
-  const reg = fs.readFileSync(path.join(root, "js/register-onclick-staff.js"), "utf8");
+  const sections = fs.readFileSync(path.join(root, "js/surface/register-dispatcher-sections.js"), "utf8");
+  const reg = fs.readFileSync(path.join(root, "js/register-onclick-dispatcher.js"), "utf8");
+  const staffReg = fs.readFileSync(path.join(root, "js/register-onclick-staff.js"), "utf8");
   assert.doesNotMatch(install, /dispatcher\/msg-compose\.js/);
   assert.doesNotMatch(install, /dispatcher\/sent-messages\.js/);
   assert.doesNotMatch(sections, /from ["']\.\.\/dispatcher\/msg-compose\.js["']/);
@@ -262,4 +263,5 @@ test("H1-A staff graph no longer statically imports msg-compose/sent-messages", 
   assert.match(reg, /loadMsgCompose/);
   assert.match(reg, /msg_compose_chunk_load_failed/);
   assert.match(reg, /error_generic/);
+  assert.doesNotMatch(staffReg, /loadMsgCompose/);
 });

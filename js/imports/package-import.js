@@ -6,10 +6,6 @@ import { initializeLoginSelects } from "../auth/login-ui.js";
 import { renderDriversList } from "../data/drivers.js";
 import { assignDriverToLine } from "../data/group-membership.js";
 import { renderGroupsList, getActiveLineId } from "../data/groups.js";
-import { renderDispatcherDashboard } from "../dispatcher/dashboard.js";
-import { renderMonthlyPlansView } from "../dispatcher/monthly-plans.js";
-import { renderDispatcherDataHub } from "../dispatcher/data-hub.js";
-import { renderGroupHub } from "../dispatcher/group-hub.js";
 import { parseMonthlyPlanWorkbook, readExcelWorkbook } from "./monthly-plan-excel.js";
 import { isMonthlyPlanCsv, parseMonthlyPlanCsv } from "./monthly-plan-csv.js";
 import { t } from "../ui/i18n.js";
@@ -18,6 +14,20 @@ import ApiClient from "../core/api-client.js";
 import { USE_LOCAL_STATE } from "../core/runtime-config.js";
 import { loadStateFromFirestore } from "../core/firebase-service.js";
 import { persistImportedMonthlyPlan } from "./monthly-plan-persist.js";
+
+async function refreshOpsViewsAfterPackageImport() {
+    const [{ renderMonthlyPlansView }, { renderDispatcherDashboard }, { renderDispatcherDataHub }, { renderGroupHub }] =
+        await Promise.all([
+            import("../dispatcher/monthly-plans.js"),
+            import("../dispatcher/dashboard.js"),
+            import("../dispatcher/data-hub.js"),
+            import("../dispatcher/group-hub.js")
+        ]);
+    renderMonthlyPlansView();
+    renderDispatcherDashboard();
+    renderDispatcherDataHub();
+    if (window.state.activeGroupHubId) renderGroupHub();
+}
 
 let _pendingPackage = null;
 
@@ -492,10 +502,11 @@ async function confirmPackageImport() {
     renderPackageImportPreview();
     renderDriversList();
     renderGroupsList();
-    renderMonthlyPlansView();
-    renderDispatcherDashboard();
-    renderDispatcherDataHub();
-    if (window.state.activeGroupHubId) renderGroupHub();
+    try {
+        await refreshOpsViewsAfterPackageImport();
+    } catch (err) {
+        console.warn("[package-import] ops view refresh failed", err);
+    }
     initializeLoginSelects();
 
     showToast(t("pkg_import_done", { summary: msg.join(" + ") }), "success", 5000);

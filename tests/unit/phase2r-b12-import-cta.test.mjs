@@ -52,7 +52,7 @@ test("plan_import_choose_files is exact EN/DE/SR (formats stay in dropzone)", ()
 
 test("lazy plan-import reliability contracts remain (B.1 / B.1.1)", () => {
   const loader = read("js/dispatcher/plan-import-loader.js");
-  const register = read("js/register-onclick-staff.js");
+  const register = read("js/register-onclick-dispatcher.js");
   assert.match(loader, /isTrustedPlanImportRecoveryUrl/);
   assert.match(loader, /cached === attempt/);
   assert.match(register, /Array\.from\([\s\S]*files|snapshot|File\[\]/);
