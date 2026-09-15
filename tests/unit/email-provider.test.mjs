@@ -199,6 +199,7 @@ test("api-server exposes POST and GET email-smtp endpoints", () => {
   const src = readFileSync(resolve("api-server.js"), "utf8");
   assert.match(src, /\/api\/company-admin\/email-smtp/);
   assert.match(src, /requireCompanyAdmin/);
-  // Password must never be returned in GET
-  assert.match(src, /const \{ pass: _pass, \.\.\.safe \} = data/);
+  // Password / ciphertext must never be returned in GET
+  assert.match(src, /toPublicSmtpSettings/);
+  assert.doesNotMatch(src, /res\.json\(\{\s*success:\s*true,\s*smtp:\s*safe\s*\}\)/);
 });

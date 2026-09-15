@@ -72,6 +72,15 @@ const {
 const { createSupportSessionHandlers } = require("./server/support-session");
 const { createConfirmationScheduler } = require("./server/confirmation-scheduler");
 const {
+  buildEncryptedSmtpSettingsDoc,
+  buildLegacySmtpMigrationPatch,
+  migrateLegacySmtpPasswordIfUnchanged,
+  toPublicSmtpSettings,
+  smtpAuditMeta,
+  SmtpSecretError
+} = require("./server/smtp-settings");
+const { isEncryptedSmtpSecret } = require("./server/smtp-secret-crypto");
+const {
   getActiveServicePlan,
   getServicePlanVersion,
   listServicePlanHistory,
@@ -1264,7 +1273,7 @@ app.put(
 );
 
 /** CA-only: save per-tenant SMTP settings for email notifications.
- *  Password is stored in Firestore and never returned to the client on GET. */
+ *  Password is AES-256-GCM encrypted at rest; never returned to the client on GET. */
 app.post(
   "/api/company-admin/email-smtp",
   rateLimit(10, 5 * 60 * 1000),
@@ -1274,22 +1283,38 @@ app.post(
     const companyId = requireOwnCompany(req, res);
     if (!companyId) return;
     const { host, port, user, pass, from, enabled } = req.validatedBody;
+    let doc;
+    try {
+      doc = buildEncryptedSmtpSettingsDoc(
+        { host, port, user, pass, from, enabled },
+        companyId,
+        req.staffUser.uid
+      );
+    } catch (err) {
+      if (err instanceof SmtpSecretError) {
+        req.log?.error({ code: err.code }, "Email SMTP encryption unavailable");
+        return res.status(503).json({
+          success: false,
+          error: "SMTP secret storage is not configured.",
+          code: err.code
+        });
+      }
+      throw err;
+    }
     try {
       await db.collection("companies").doc(companyId)
         .collection("settings").doc("email_smtp")
-        .set({
-          host, port, user, pass, from, enabled,
-          updatedAt: new Date().toISOString(),
-          updatedBy: req.staffUser.uid
-        });
-      await _logAuditEvent(companyId, req.staffUser.uid, "email_smtp_updated", {
-        host, port, from, enabled,
-        hasPassword: Boolean(pass)
-      }, {
+        .set(doc);
+      await _logAuditEvent(companyId, req.staffUser.uid, "email_smtp_updated", smtpAuditMeta({
+        host, port, from, enabled, pass
+      }), {
         actorRole: req.staffUser.role,
         actorName: req.staffUser.name || null
       });
-      return res.json({ success: true, smtp: { host, port, user, from, enabled } });
+      return res.json({
+        success: true,
+        smtp: toPublicSmtpSettings(doc)
+      });
     } catch (err) {
       req.log?.error({ err }, "Email SMTP settings save failed");
       return res.status(500).json({ success: false, error: "SMTP podešavanja nisu sačuvana." });
@@ -1297,7 +1322,7 @@ app.post(
   }
 );
 
-/** CA-only: get per-tenant SMTP settings — password is never returned. */
+/** CA-only: get per-tenant SMTP settings — password/ciphertext never returned. */
 app.get(
   "/api/company-admin/email-smtp",
   rateLimit(30, 5 * 60 * 1000),
@@ -1306,15 +1331,34 @@ app.get(
     const companyId = requireOwnCompany(req, res);
     if (!companyId) return;
     try {
-      const snap = await db.collection("companies").doc(companyId)
-        .collection("settings").doc("email_smtp").get();
+      const ref = db.collection("companies").doc(companyId)
+        .collection("settings").doc("email_smtp");
+      const snap = await ref.get();
       if (!snap.exists) {
         return res.json({ success: true, smtp: null });
       }
-      const data = snap.data();
-      // Never return the password to the client
-      const { pass: _pass, ...safe } = data;
-      return res.json({ success: true, smtp: safe });
+      const data = snap.data() || {};
+      // Lazy migrate legacy plaintext once, then return public view only.
+      if (data.pass && typeof data.pass === "string" && !isEncryptedSmtpSecret(data.pass)) {
+        try {
+          const migrationPatch = buildLegacySmtpMigrationPatch(data.pass, companyId);
+          const migration = await migrateLegacySmtpPasswordIfUnchanged(
+            db,
+            ref,
+            data.pass,
+            migrationPatch
+          );
+          return res.json({ success: true, smtp: toPublicSmtpSettings(migration.data) });
+        } catch (err) {
+          if (err instanceof SmtpSecretError) {
+            // Key missing: still never return plaintext; fail-closed on secret field.
+            req.log?.warn({ code: err.code }, "Email SMTP plaintext migration deferred");
+            return res.json({ success: true, smtp: toPublicSmtpSettings(data) });
+          }
+          throw err;
+        }
+      }
+      return res.json({ success: true, smtp: toPublicSmtpSettings(data) });
     } catch (err) {
       req.log?.error({ err }, "Email SMTP settings load failed");
       return res.status(500).json({ success: false, error: "SMTP podešavanja nisu učitana." });

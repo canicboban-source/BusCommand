@@ -75,7 +75,7 @@ test("Firebase Web API key appears only in declared configuration", () => {
 
 test("server secrets are injected by the platform, never stored in the repository", () => {
   const render = fs.readFileSync(path.join(root, "render.yaml"), "utf8");
-  for (const secret of ["FIREBASE_SERVICE_ACCOUNT_JSON", "CONFIRMATION_JOB_SECRET"]) {
+  for (const secret of ["FIREBASE_SERVICE_ACCOUNT_JSON", "CONFIRMATION_JOB_SECRET", "BUSCOMMAND_SMTP_SECRET_KEY"]) {
     const declaration = new RegExp(`key: ${secret}[\\s\\S]{0,40}sync: false`);
     assert.match(render, declaration, `${secret} must be declared as an unsynced secret`);
     assert.doesNotMatch(render, new RegExp(`key: ${secret}[\\s\\S]{0,40}value:`));

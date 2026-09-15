@@ -14,6 +14,10 @@ const {
 } = require("./confirmation-outbox");
 const { createSmsProvider } = require("./sms-provider");
 const { sendEmail, buildShiftConfirmationEmail } = require("./email-provider");
+const {
+  prepareSmtpForSend,
+  migrateLegacySmtpPasswordIfUnchanged
+} = require("./smtp-settings");
 
 function isSchedulerEnabled(settingsMain) {
   return settingsMain?.features?.shiftConfirmationScheduler === true;
@@ -188,9 +192,21 @@ function createConfirmationScheduler({
     if (data.email) {
       try {
         const companyRef = db().collection("companies").doc(data.companyId);
-        const smtpSnap = await companyRef.collection("settings").doc("email_smtp").get();
+        const smtpRef = companyRef.collection("settings").doc("email_smtp");
+        const smtpSnap = await smtpRef.get();
         const smtpCfg = smtpSnap.exists ? smtpSnap.data() : null;
-        if (smtpCfg?.enabled && smtpCfg?.host && smtpCfg?.pass) {
+        const prepared = prepareSmtpForSend(smtpCfg, data.companyId);
+        if (prepared.migrateDoc) {
+          try {
+            await migrateLegacySmtpPasswordIfUnchanged(
+              db(),
+              smtpRef,
+              smtpCfg.pass,
+              prepared.migrateDoc
+            );
+          } catch { /* migration rewrite best-effort; send may still proceed */ }
+        }
+        if (prepared.smtp?.pass && prepared.smtp?.host) {
           const driverName = data.driverName || data.label || "";
           const lang = String(data.lang || "en");
           const mail = buildShiftConfirmationEmail({
@@ -203,7 +219,7 @@ function createConfirmationScheduler({
             companyName: data.companyName || ""
           }, lang);
           emailResult = await sendEmail({
-            smtp: smtpCfg,
+            smtp: prepared.smtp,
             to: data.email,
             subject: mail.subject,
             text: mail.text,
